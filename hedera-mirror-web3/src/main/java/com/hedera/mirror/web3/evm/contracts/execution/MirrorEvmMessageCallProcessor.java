@@ -16,6 +16,11 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.wrapUnsafely;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -28,6 +33,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -35,15 +43,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
-
-import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.wrapUnsafely;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 public class MirrorEvmMessageCallProcessor extends AbstractEvmMessageCallProcessor {
     private final AbstractAutoCreationLogic autoCreationLogic;

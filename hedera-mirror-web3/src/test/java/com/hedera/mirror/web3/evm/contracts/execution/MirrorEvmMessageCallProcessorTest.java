@@ -16,30 +16,6 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
-import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.services.stream.proto.ContractActionType;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.precompile.ECRECPrecompiledContract;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-
-import java.time.Instant;
-import java.util.Optional;
-
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -53,6 +29,27 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
+import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.services.stream.proto.ContractActionType;
+import java.time.Instant;
+import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.ECRECPrecompiledContract;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 
 class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBaseTest {
 
@@ -71,7 +68,13 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
         when(messageFrame.getWorldUpdater()).thenReturn(updater);
         opcodeTracer = Mockito.spy(new OpcodeTracer(precompilesHolder));
         subject = new MirrorEvmMessageCallProcessor(
-                autoCreationLogic, entityAddressSequencer, evm, precompiles, precompilesHolder, gasCalculatorHederaV22, address -> false);
+                autoCreationLogic,
+                entityAddressSequencer,
+                evm,
+                precompiles,
+                precompilesHolder,
+                gasCalculatorHederaV22,
+                address -> false);
     }
 
     @Test
@@ -148,7 +151,13 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
     @Test
     void startWithNonHTSPrecompiledContractAddress() {
         subject = new MirrorEvmMessageCallProcessor(
-                autoCreationLogic, entityAddressSequencer, evm, precompiles, precompilesHolder, gasCalculatorHederaV22, address -> true);
+                autoCreationLogic,
+                entityAddressSequencer,
+                evm,
+                precompiles,
+                precompilesHolder,
+                gasCalculatorHederaV22,
+                address -> true);
         var contractAddress = Address.fromHexString("0x2EE");
         var recAddress = Address.fromHexString(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS);
         when(messageFrame.getContractAddress()).thenReturn(contractAddress);
@@ -170,7 +179,13 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
     @Test
     void startWithHTSPrecompiledContractAddress() {
         subject = new MirrorEvmMessageCallProcessor(
-                autoCreationLogic, entityAddressSequencer, evm, precompiles, precompilesHolder, gasCalculatorHederaV22, address -> true);
+                autoCreationLogic,
+                entityAddressSequencer,
+                evm,
+                precompiles,
+                precompilesHolder,
+                gasCalculatorHederaV22,
+                address -> true);
         var contractAddress = Address.fromHexString(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS);
         var recAddress = Address.fromHexString(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS);
         when(messageFrame.getContractAddress()).thenReturn(contractAddress);
@@ -186,7 +201,13 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
     @Test
     void startWithNonHTSAndWithoutValuePrecompiledContractAddress() {
         subject = new MirrorEvmMessageCallProcessor(
-                autoCreationLogic, entityAddressSequencer, evm, precompiles, precompilesHolder, gasCalculatorHederaV22, address -> true);
+                autoCreationLogic,
+                entityAddressSequencer,
+                evm,
+                precompiles,
+                precompilesHolder,
+                gasCalculatorHederaV22,
+                address -> true);
         var contractAddress = Address.fromHexString(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS);
         var recAddress = Address.fromHexString(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS);
         when(messageFrame.getContractAddress()).thenReturn(contractAddress);
@@ -197,35 +218,5 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
 
         verify(opcodeTracer).tracePrecompileResult(messageFrame, ContractActionType.SYSTEM);
         assertNull(messageFrame.getState());
-    }
-
-    @NotNull
-    private static Operation createOperation() {
-       return new Operation() {
-            @Override
-            public OperationResult execute(MessageFrame frame, EVM evm) {
-                return null;
-            }
-
-            @Override
-            public int getOpcode() {
-                return 0;
-            }
-
-            @Override
-            public String getName() {
-                return "Test";
-            }
-
-            @Override
-            public int getStackItemsConsumed() {
-                return 0;
-            }
-
-            @Override
-            public int getStackItemsProduced() {
-                return 0;
-            }
-        };
     }
 }

@@ -16,12 +16,24 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
+import static com.hedera.services.stream.proto.ContractActionType.SYSTEM;
+import static org.apache.tuweni.bytes.Bytes.EMPTY;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
+
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.swirlds.base.utility.Pair;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -31,19 +43,6 @@ import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
-
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
-
-import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
-import static com.hedera.services.stream.proto.ContractActionType.SYSTEM;
-import static org.apache.tuweni.bytes.Bytes.EMPTY;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCallProcessor {
 
@@ -73,14 +72,16 @@ public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCa
                 && operationTracer instanceof HederaOperationTracer hederaOperationTracer) {
             hederaOperationTracer.tracePrecompileResult(frame, isHederaPrecompile ? SYSTEM : PRECOMPILE);
         }
-        final Integer evmHtsPrecompiledContractAddressNum = Integer.parseInt(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS.substring(2), 16);
-            // check a contract address because an HTS token create call can receive value
-        final boolean nonHTS = Integer.compareUnsigned(contractAddress.getInt(16), evmHtsPrecompiledContractAddressNum) != 0;
+        final Integer evmHtsPrecompiledContractAddressNum =
+                Integer.parseInt(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS.substring(2), 16);
+        // check a contract address because an HTS token create call can receive value
+        final boolean nonHTS =
+                Integer.compareUnsigned(contractAddress.getInt(16), evmHtsPrecompiledContractAddressNum) != 0;
 
-        if (!isNativePrecompile &&
-                systemAccountDetector.test(frame.getContractAddress()) &&
-                frame.getValue().greaterThan(Wei.ZERO) &&
-                nonHTS) {
+        if (!isNativePrecompile
+                && systemAccountDetector.test(frame.getContractAddress())
+                && frame.getValue().greaterThan(Wei.ZERO)
+                && nonHTS) {
             // cannot send value to native precompile calls, since there are collisions with system account
             // and value will be transferred to the system account, which is undesired
             frame.setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.INVALID_FEE_SUBMITTED));
