@@ -455,35 +455,65 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @RetryAsserts
-    @Then("{account} rejects token with {int} and returns them to {account}")
-    public void rejectFungibleToken(AccountNameEnum ownerName, int amount, AccountNameEnum treasuryName) {
-        var treasury = accountClient.getAccount(treasuryName).getAccountId();
+    @Given("{account} rejects the fungible token")
+    public void rejectFungibleToken(AccountNameEnum ownerName) {
         var owner = accountClient.getAccount(ownerName);
-        long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
-
         networkTransactionResponse = tokenClient.rejectFungibleToken(List.of(tokenId), owner);
-
         assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
         assertThat(networkTransactionResponse.getReceipt()).isNotNull();
-        assertThat(getTokenBalance(owner.getAccountId(), tokenId)).isZero();
-        assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + amount);
     }
 
     @RetryAsserts
-    @Then("{account} rejects token and returns it to {account}")
-    public void rejectNonFungibleToken(AccountNameEnum ownerName, AccountNameEnum treasuryName) {
-        var nftId = new NftId(tokenId, 2L);
-        var owner = accountClient.getAccount(ownerName);
+    @Then("the mirror node REST API should return the transaction {account} returns {int} fungible token to {account}")
+    public void verifyTokenTransferForRejectedFungibleToken(
+            AccountNameEnum senderName, long amount, AccountNameEnum treasuryName) {
+        var sender = accountClient.getAccount(senderName).getAccountId();
         var treasury = accountClient.getAccount(treasuryName).getAccountId();
-        long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
+
+        var transactionDetail = verifyTransactions();
+        assertThat(transactionDetail.getTokenTransfers())
+                .containsExactlyInAnyOrder(
+                        new TransactionTokenTransfersInner()
+                                .account(sender.toString())
+                                .amount(-amount)
+                                .isApproval(false)
+                                .tokenId(tokenId.toString()),
+                        new TransactionTokenTransfersInner()
+                                .account(treasury.toString())
+                                .amount(amount)
+                                .isApproval(false)
+                                .tokenId(tokenId.toString()));
+        assertThat(getTokenBalance(sender, tokenId)).isZero();
+    }
+
+    @Given("{account} rejects serial number index {int}")
+    public void rejectNonFungibleToken(AccountNameEnum ownerName, int index) {
+        long serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
+        var nftId = new NftId(tokenId, serialNumber);
+        var owner = accountClient.getAccount(ownerName);
 
         networkTransactionResponse = tokenClient.rejectNonFungibleToken(List.of(nftId), owner);
-
         assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
         assertThat(networkTransactionResponse.getReceipt()).isNotNull();
-        assertThat(getTokenBalance(owner.getAccountId(), tokenId)).isZero();
-        assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + 1);
+    }
+
+    @RetryAsserts
+    @Then(
+            "the mirror node REST API should return the transaction {account} returns serial number index {int} to {account}")
+    public void verifyTokenTransferForRejectedNft(AccountNameEnum senderName, int index, AccountNameEnum treasuryName) {
+        var sender = accountClient.getAccount(senderName).getAccountId();
+        var treasury = accountClient.getAccount(treasuryName).getAccountId();
+        long serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
+
+        var transactionDetail = verifyTransactions();
+        assertThat(transactionDetail.getNftTransfers())
+                .containsExactly(new TransactionNftTransfersInner()
+                        .isApproval(false)
+                        .receiverAccountId(treasury.toString())
+                        .senderAccountId(sender.toString())
+                        .serialNumber(serialNumber)
+                        .tokenId(tokenId.toString()));
+        assertThat(getTokenBalance(sender, tokenId)).isZero();
     }
 
     @Given("I burn serial number index {int} from token")

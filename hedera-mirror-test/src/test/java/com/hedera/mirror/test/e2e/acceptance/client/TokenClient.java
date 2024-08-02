@@ -110,7 +110,7 @@ public class TokenClient extends AbstractNetworkClient {
                         metadataKey,
                         metadata);
             } catch (Exception e) {
-                log.warn("Issue creating additional token: {}, operator: {}, ex: {}", tokenNameEnum, operator, e);
+                log.warn("Issue creating additional token: {}, operator: {}, ex:", tokenNameEnum, operator, e);
                 return null;
             }
         });
