@@ -155,7 +155,7 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
                 "ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923";
         var resultBytes = Bytes.concatenate(result.stream().map(Bytes::wrap).toArray(Bytes[]::new))
                 .toArray();
-        var expected = hexStringToByteArray(expectedResultHexString);
+        var expected = ByteString.fromHex(expectedResultHexString).toByteArray();
         assertArrayEquals(resultBytes, expected);
     }
 
@@ -174,8 +174,8 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
                 domainBuilder.recordFile().customize(r -> r.index(0L)).persist();
         var result = contract.call_getBlockHash(BigInteger.valueOf(recordFileForBlockHash.getIndex()))
                 .send();
-        var expectedResult =
-                hexStringToByteArray(recordFileForBlockHash.getHash().substring(0, 64));
+        var expectedResult = ByteString.fromHex(recordFileForBlockHash.getHash().substring(0, 64))
+                .toByteArray();
         assertThat(result).isEqualTo(expectedResult);
     }
 
@@ -185,8 +185,9 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
         final var genesisRecordFileForBlockHash =
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         var result = contract.call_getBlockHash(BigInteger.ZERO).send();
-        var expectedResult =
-                hexStringToByteArray(genesisRecordFileForBlockHash.getHash().substring(0, 64));
+        var expectedResult = ByteString.fromHex(
+                        genesisRecordFileForBlockHash.getHash().substring(0, 64))
+                .toByteArray();
         assertThat(result).isEqualTo(expectedResult);
     }
 
@@ -194,7 +195,7 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     void getLatestBlockHashIsNotEmpty() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_getLatestBlockHash().send();
-        var expectedResult = hexStringToByteArray(EMPTY_BLOCK_HASH);
+        var expectedResult = ByteString.fromHex((EMPTY_BLOCK_HASH)).toByteArray();
         assertThat(result).isNotEqualTo(expectedResult);
     }
 
@@ -203,7 +204,7 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result =
                 contract.call_getBlockHash(BigInteger.valueOf(Long.MAX_VALUE)).send();
-        var expectedResult = hexStringToByteArray(EMPTY_BLOCK_HASH);
+        var expectedResult = ByteString.fromHex((EMPTY_BLOCK_HASH)).toByteArray();
         assertThat(result).isEqualTo(expectedResult);
     }
 
@@ -218,7 +219,8 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     void testSystemContractCodeHash(String input) throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_getCodeHash(input).send();
-        var expectedResult = hexStringToByteArray(EMPTY_BLOCK_HASH);
+        var expectedResult = ByteString.fromHex((EMPTY_BLOCK_HASH)).toByteArray();
+        ;
         assertThat(result).isEqualTo(expectedResult);
     }
 
@@ -261,7 +263,8 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
 
         final var result = contract.call_getCodeHash(address.toString()).send();
         String keccak256ofEthCallExpected = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
-        assertThat(result).isEqualTo(hexStringToByteArray(keccak256ofEthCallExpected));
+        assertThat(result)
+                .isEqualTo(ByteString.fromHex((keccak256ofEthCallExpected)).toByteArray());
     }
 
     @Test
@@ -318,14 +321,5 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
                     MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
                     assertEquals(exception.getMessage(), INVALID_SOLIDITY_ADDRESS.name());
                 });
-    }
-
-    private static byte[] hexStringToByteArray(String hex) {
-        int len = hex.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4) + Character.digit(hex.charAt(i + 1), 16));
-        }
-        return data;
     }
 }
