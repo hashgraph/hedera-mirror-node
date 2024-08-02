@@ -19,10 +19,12 @@ package com.hedera.mirror.web3.utils;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 
 import com.google.protobuf.ByteString;
+import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 
+@UtilityClass
 public class ContractCallTestUtil {
 
     public static final long TRANSACTION_GAS_LIMIT = 15_000_000L;
