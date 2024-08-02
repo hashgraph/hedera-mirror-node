@@ -220,7 +220,6 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_getCodeHash(input).send();
         var expectedResult = ByteString.fromHex((EMPTY_BLOCK_HASH)).toByteArray();
-        ;
         assertThat(result).isEqualTo(expectedResult);
     }
 
