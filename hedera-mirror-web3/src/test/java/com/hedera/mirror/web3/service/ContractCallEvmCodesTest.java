@@ -23,8 +23,11 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.Web3IntegrationTest;
@@ -35,7 +38,9 @@ import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.mirror.web3.web3j.generated.EthCall;
 import com.hedera.mirror.web3.web3j.generated.EvmCodes;
 import com.hedera.mirror.web3.web3j.generated.EvmCodes.G1Point;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +50,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Import;
+import org.web3j.abi.FunctionReturnDecoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.AbiTypes;
+import org.web3j.abi.datatypes.Type;
 
 @Import(Web3jTestConfiguration.class)
 @RequiredArgsConstructor
@@ -54,6 +64,9 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     private final TestWeb3jService testWeb3jService;
 
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    @SpyBean
+    private ContractExecutionService contractExecutionService;
 
     @BeforeEach
     void beforeAll() {
@@ -212,10 +225,24 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     void testNonSystemContractEthCallCodeHash() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         final var ethCallContract = testWeb3jService.deploy(EthCall::deploy);
+
+        final List<Bytes> capturedOutputs = new ArrayList<>();
+        doAnswer(invocation -> {
+                    HederaEvmTransactionProcessingResult result =
+                            (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                    capturedOutputs.add(result.getOutput()); // Capture the result
+                    return result;
+                })
+                .when(contractExecutionService)
+                .callContract(any(), any());
+
         final var result =
                 contract.call_getCodeHash(ethCallContract.getContractAddress()).send();
-        String keccak256ofEthCallExpected = "4d458231141d3a62c392d17732d8839ab80c88d9307b97906286065349c3a1d8";
-        assertThat(result).isEqualTo(hexStringToByteArray(keccak256ofEthCallExpected));
+
+        final var expectedOutput = capturedOutputs.getFirst().toHexString();
+        final var byteArrOutput = FunctionReturnDecoder.decode(
+                expectedOutput, List.of(TypeReference.create((Class<Type>) AbiTypes.getType("bytes32"))));
+        assertArrayEquals(result, (byte[]) byteArrOutput.getFirst().getValue());
     }
 
     @Test
