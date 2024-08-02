@@ -129,11 +129,25 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
     void nodeUpdate() {
         entityProperties.getPersist().setNodes(true);
         var recordItem = recordItemBuilder.nodeUpdate().build();
-        var expectedNode = getExpectedNode(recordItem);
-        expectedNode.setAdminKey(
-                recordItem.getTransactionBody().getNodeUpdate().getAdminKey().toByteArray());
-        expectedNode.setCreatedTimestamp(0);
+        var nodeUpdate = recordItem.getTransactionBody().getNodeUpdate();
+        var timestamp = recordItem.getConsensusTimestamp() - 1;
+        var node = domainBuilder
+                .node()
+                .customize(n -> n.createdTimestamp(timestamp)
+                        .nodeId(nodeUpdate.getNodeId())
+                        .timestampRange(Range.atLeast(timestamp)))
+                .persist();
+
+        var expectedNode = Node.builder()
+                .adminKey(nodeUpdate.getAdminKey().toByteArray())
+                .createdTimestamp(node.getCreatedTimestamp())
+                .nodeId(node.getNodeId())
+                .timestampRange(Range.atLeast(recordItem.getConsensusTimestamp()))
+                .build();
+
         parseRecordItemAndCommit(recordItem);
+
+        node.setTimestampUpper(recordItem.getConsensusTimestamp());
 
         softly.assertThat(entityRepository.count()).isZero();
         softly.assertThat(transactionRepository.findAll())
@@ -143,17 +157,34 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                 .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
                 .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
         softly.assertThat(nodeRepository.findAll()).containsExactly(expectedNode);
+        softly.assertThat(findHistory(Node.class)).containsExactly(node);
     }
 
     @Test
     void nodeUpdateWithoutAdminKeyUpdate() {
         entityProperties.getPersist().setNodes(true);
+
         var recordItem = recordItemBuilder.nodeUpdate().build();
-        var expectedNode = getExpectedNode(recordItem);
-        expectedNode.setCreatedTimestamp(0);
-        expectedNode.setAdminKey(
-                recordItem.getTransactionBody().getNodeUpdate().getAdminKey().toByteArray());
+        var nodeUpdate = recordItem.getTransactionBody().getNodeUpdate();
+        var timestamp = recordItem.getConsensusTimestamp() - 1;
+        var node = domainBuilder
+                .node()
+                .customize(n -> n.adminKey(nodeUpdate.getAdminKey().toByteArray())
+                        .createdTimestamp(timestamp)
+                        .nodeId(nodeUpdate.getNodeId())
+                        .timestampRange(Range.atLeast(timestamp)))
+                .persist();
+
+        var expectedNode = Node.builder()
+                .adminKey(nodeUpdate.getAdminKey().toByteArray())
+                .createdTimestamp(node.getCreatedTimestamp())
+                .nodeId(node.getNodeId())
+                .timestampRange(Range.atLeast(recordItem.getConsensusTimestamp()))
+                .build();
+
         parseRecordItemAndCommit(recordItem);
+
+        node.setTimestampUpper(recordItem.getConsensusTimestamp());
 
         softly.assertThat(entityRepository.count()).isZero();
         softly.assertThat(transactionRepository.findAll())
@@ -163,16 +194,26 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                 .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
                 .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
         softly.assertThat(nodeRepository.findAll()).containsExactly(expectedNode);
+        softly.assertThat(findHistory(Node.class)).containsExactly(node);
     }
 
     @Test
     void nodeDelete() {
         entityProperties.getPersist().setNodes(true);
-        var recordItem = recordItemBuilder.nodeDelete().build();
+        var node = domainBuilder.node().persist();
+        var recordItem = recordItemBuilder
+                .nodeDelete()
+                .receipt(r -> r.setNodeId(node.getNodeId()))
+                .transactionBody(b -> b.setNodeId(node.getNodeId()))
+                .build();
         var expectedNode = getExpectedNode(recordItem);
         expectedNode.setDeleted(true);
-        expectedNode.setCreatedTimestamp(0);
+        expectedNode.setCreatedTimestamp(node.getCreatedTimestamp());
+        expectedNode.setAdminKey(node.getAdminKey());
+
         parseRecordItemAndCommit(recordItem);
+
+        node.setTimestampUpper(recordItem.getConsensusTimestamp());
 
         softly.assertThat(entityRepository.count()).isZero();
         softly.assertThat(transactionRepository.findAll())
@@ -182,6 +223,7 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                 .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
                 .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
         softly.assertThat(nodeRepository.findAll()).containsExactly(expectedNode);
+        softly.assertThat(findHistory(Node.class)).containsExactly(node);
     }
 
     private static Node getExpectedNode(RecordItem recordItem) {

@@ -20,6 +20,7 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
 import jakarta.persistence.Column;
+import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -37,11 +38,11 @@ public abstract class AbstractNode implements History {
     private byte[] adminKey;
 
     @Column(updatable = false)
-    private long createdTimestamp;
+    private Long createdTimestamp;
 
     private boolean deleted;
 
-    @jakarta.persistence.Id
+    @Id
     private Long nodeId;
 
     private Range<Long> timestampRange;

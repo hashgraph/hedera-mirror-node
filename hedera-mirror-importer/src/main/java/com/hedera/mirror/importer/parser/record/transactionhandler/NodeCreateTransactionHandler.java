@@ -52,20 +52,20 @@ class NodeCreateTransactionHandler extends AbstractTransactionHandler {
         transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
 
-        if (!recordItem.isSuccessful()) {
-            return;
-        }
         parseNode(recordItem);
     }
 
     private void parseNode(RecordItem recordItem) {
-        var nodeCreate = recordItem.getTransactionBody().getNodeCreate();
-        long consensusTimestamp = recordItem.getConsensusTimestamp();
-        entityListener.onNode(Node.builder()
-                .adminKey(nodeCreate.getAdminKey().toByteArray())
-                .createdTimestamp(consensusTimestamp)
-                .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
-                .timestampRange(Range.atLeast(consensusTimestamp))
-                .build());
+        if (recordItem.isSuccessful()) {
+            var nodeCreate = recordItem.getTransactionBody().getNodeCreate();
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+            entityListener.onNode(Node.builder()
+                    .adminKey(nodeCreate.getAdminKey().toByteArray())
+                    .createdTimestamp(consensusTimestamp)
+                    .deleted(false)
+                    .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
+                    .timestampRange(Range.atLeast(consensusTimestamp))
+                    .build());
+        }
     }
 }
