@@ -30,7 +30,6 @@ Feature: HTS Base Coverage Feature
     And I transfer <amount> tokens to CAROL
     Then CAROL rejects the fungible token
     Then the mirror node REST API should return the transaction CAROL returns <amount> fungible token to OPERATOR
-    Then I burn <amount> from the token
     Then I burn <modifySupplyAmount> from the token
     And the mirror node REST API should return the transaction
     Then I mint <modifySupplyAmount> from the token
