@@ -2,7 +2,7 @@
 create table if not exists node
 (
     admin_key              bytea           null,
-    created_timestamp      bigint          not null,
+    created_timestamp      bigint          null,
     deleted                boolean         default false not null,
     node_id                bigint          not null,
     timestamp_range        int8range       not null

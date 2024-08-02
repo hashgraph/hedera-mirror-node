@@ -31,7 +31,7 @@ import lombok.experimental.SuperBuilder;
 @MappedSuperclass
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-@Upsertable(history = true, skipPartialUpdate = true)
+@Upsertable(history = true)
 public abstract class AbstractNode implements History {
 
     @ToString.Exclude

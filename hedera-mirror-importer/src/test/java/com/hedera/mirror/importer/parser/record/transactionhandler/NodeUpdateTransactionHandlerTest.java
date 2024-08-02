@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -26,9 +27,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.testcontainers.shaded.org.apache.commons.lang.BooleanUtils;
+import org.junit.jupiter.api.Test;
 
 class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -57,11 +56,9 @@ class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         entityProperties.getPersist().setNodes(false);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void nodeUpdateTransaction(boolean isPersist) {
-
-        entityProperties.getPersist().setNodes(isPersist);
+    @Test
+    void nodeUpdateTransactionNoPersist() {
+        entityProperties.getPersist().setNodes(false);
 
         // given
         var recordItem = recordItemBuilder.nodeUpdate().build();
@@ -73,22 +70,39 @@ class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
-        var transactionBytes = isPersist ? recordItem.getTransaction().toByteArray() : null;
-        var transactionRecordBytes =
-                isPersist ? recordItem.getTransactionRecord().toByteArray() : null;
+        // then
+        assertThat(transaction.getTransactionBytes()).isNull();
+        assertThat(transaction.getTransactionRecordBytes()).isNull();
+        verify(entityListener, times(0)).onNode(any());
+    }
+
+    @Test
+    void nodeUpdateTransactionPersist() {
+        entityProperties.getPersist().setNodes(true);
+
+        // given
+        var recordItem = recordItemBuilder.nodeUpdate().build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.transactionBytes(null).transactionRecordBytes(null))
+                .get();
+
+        // when
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        var transactionBytes = recordItem.getTransaction().toByteArray();
+        var transactionRecordBytes = recordItem.getTransactionRecord().toByteArray();
+
         // then
         assertThat(transaction.getTransactionBytes()).containsExactly(transactionBytes);
         assertThat(transaction.getTransactionRecordBytes()).containsExactly(transactionRecordBytes);
-        verify(entityListener, times(BooleanUtils.toInteger(isPersist))).onNode(assertArg(t -> assertThat(t)
+
+        var adminKey =
+                recordItem.getTransactionBody().getNodeUpdate().getAdminKey().toByteArray();
+        verify(entityListener, times(1)).onNode(assertArg(t -> assertThat(t)
                 .isNotNull()
                 .returns(recordItem.getTransactionRecord().getReceipt().getNodeId(), Node::getNodeId)
-                .returns(
-                        recordItem
-                                .getTransactionBody()
-                                .getNodeUpdate()
-                                .getAdminKey()
-                                .toByteArray(),
-                        Node::getAdminKey)
+                .returns(adminKey, Node::getAdminKey)
                 .returns(recordItem.getConsensusTimestamp(), Node::getTimestampLower)
                 .returns(false, Node::isDeleted)));
     }

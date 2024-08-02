@@ -586,6 +586,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private Node mergeNode(Node previous, Node current) {
         previous.setTimestampUpper(current.getTimestampLower());
+        current.setCreatedTimestamp(previous.getCreatedTimestamp());
+
+        if (current.getAdminKey() == null) {
+            current.setAdminKey(previous.getAdminKey());
+        }
         return current;
     }
 

@@ -51,7 +51,6 @@ class NodeCreateTransactionHandler extends AbstractTransactionHandler {
         }
         transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
-
         parseNode(recordItem);
     }
 

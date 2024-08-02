@@ -51,9 +51,6 @@ class NodeUpdateTransactionHandler extends AbstractTransactionHandler {
         }
         transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
-        if (!recordItem.isSuccessful()) {
-            return;
-        }
         parseNode(recordItem);
     }
 
