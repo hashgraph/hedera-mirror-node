@@ -54,8 +54,6 @@ import reactor.test.StepVerifier;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ClusterHealthIndicatorTest {
 
-    private static final Duration WAIT = Duration.ofSeconds(10L);
-
     @Mock
     private MirrorSubscriber mirrorSubscriber;
 
