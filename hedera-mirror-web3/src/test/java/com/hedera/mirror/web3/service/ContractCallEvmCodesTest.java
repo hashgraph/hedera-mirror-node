@@ -41,7 +41,6 @@ import com.hedera.mirror.web3.web3j.generated.EvmCodes.G1Point;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -61,8 +60,9 @@ import org.web3j.abi.datatypes.Type;
 @RequiredArgsConstructor
 class ContractCallEvmCodesTest extends Web3IntegrationTest {
 
-    private final TestWeb3jService testWeb3jService;
+    private static final String EMPTY_BLOCK_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 
+    private final TestWeb3jService testWeb3jService;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @SpyBean
@@ -150,12 +150,13 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     @Test
     void BLAKE2BFPrecompileContract() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
-        var result = contract.call_blake2().send();
-        String expectedResultHexString =
-                "0xba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923";
-        List<byte[]> expetedList = convertBlake2HexToList(expectedResultHexString.substring(2));
-        assertThat(result.get(0)).isEqualTo(expetedList.get(0));
-        assertThat(result.get(1)).isEqualTo(expetedList.get(1));
+        List<byte[]> result = contract.call_blake2().send();
+        var expectedResultHexString =
+                "ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923";
+        var resultBytes = Bytes.concatenate(result.stream().map(Bytes::wrap).toArray(Bytes[]::new))
+                .toArray();
+        var expected = hexStringToByteArray(expectedResultHexString);
+        assertArrayEquals(resultBytes, expected);
     }
 
     @Test
@@ -193,7 +194,7 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     void getLatestBlockHashIsNotEmpty() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_getLatestBlockHash().send();
-        var expectedResult = hexStringToByteArray("0000000000000000000000000000000000000000000000000000000000000000");
+        var expectedResult = hexStringToByteArray(EMPTY_BLOCK_HASH);
         assertThat(result).isNotEqualTo(expectedResult);
     }
 
@@ -202,22 +203,22 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result =
                 contract.call_getBlockHash(BigInteger.valueOf(Long.MAX_VALUE)).send();
-        var expectedResult = hexStringToByteArray("0000000000000000000000000000000000000000000000000000000000000000");
+        var expectedResult = hexStringToByteArray(EMPTY_BLOCK_HASH);
         assertThat(result).isEqualTo(expectedResult);
     }
 
     @ParameterizedTest
     @CsvSource({
         // function getCodeHash with parameter hedera system accounts, expected 0 bytes
-        "0000000000000000000000000000000000000000000000000000000000000167, 0000000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000168, 0000000000000000000000000000000000000000000000000000000000000000",
-        "00000000000000000000000000000000000000000000000000000000000002ee, 0000000000000000000000000000000000000000000000000000000000000000",
-        "00000000000000000000000000000000000000000000000000000000000002e4, 0000000000000000000000000000000000000000000000000000000000000000",
+        "0000000000000000000000000000000000000000000000000000000000000167",
+        "0000000000000000000000000000000000000000000000000000000000000168",
+        "00000000000000000000000000000000000000000000000000000000000002ee",
+        "00000000000000000000000000000000000000000000000000000000000002e4",
     })
-    void testSystemContractCodeHash(String input, String expectedOutput) throws Exception {
+    void testSystemContractCodeHash(String input) throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_getCodeHash(input).send();
-        var expectedResult = hexStringToByteArray(expectedOutput);
+        var expectedResult = hexStringToByteArray(EMPTY_BLOCK_HASH);
         assertThat(result).isEqualTo(expectedResult);
     }
 
@@ -317,17 +318,6 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
                     MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
                     assertEquals(exception.getMessage(), INVALID_SOLIDITY_ADDRESS.name());
                 });
-    }
-
-    private List<byte[]> convertBlake2HexToList(String hex) {
-        // Convert hex string to byte array
-        byte[] byteArray = hexStringToByteArray(hex);
-
-        // Split byte array into two equal parts
-        int mid = byteArray.length / 2;
-        byte[] firstPart = Arrays.copyOfRange(byteArray, 0, mid);
-        byte[] secondPart = Arrays.copyOfRange(byteArray, mid, byteArray.length);
-        return Arrays.asList(firstPart, secondPart);
     }
 
     private static byte[] hexStringToByteArray(String hex) {
