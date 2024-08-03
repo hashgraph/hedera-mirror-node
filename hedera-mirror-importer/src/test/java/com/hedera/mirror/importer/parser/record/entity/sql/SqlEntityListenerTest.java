@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -2937,6 +2938,23 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         // then
         assertThat(ethereumTransactionRepository.findAll()).containsExactly(ethereumTransaction);
         assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHash);
+    }
+
+    @Test
+    void onEthereumTransactionWithEmptyHash() {
+        entityProperties.getPersist().setTransactionHash(true);
+        var ethereumTransaction = domainBuilder
+                .ethereumTransaction(false)
+                .customize(e -> e.hash(EMPTY_BYTE_ARRAY))
+                .get();
+        sqlEntityListener.onEthereumTransaction(ethereumTransaction);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(ethereumTransactionRepository.findAll()).containsExactly(ethereumTransaction);
+        assertThat(transactionHashRepository.findAll()).isEmpty();
     }
 
     @Test
