@@ -1747,9 +1747,9 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         var node1 = domainBuilder.node().get();
         var node2 = domainBuilder
                 .node()
-                .customize(node -> node.nodeId(node1.getNodeId()))
-                .customize(node -> node.createdTimestamp(null))
                 .customize(node -> node.adminKey(null))
+                .customize(node -> node.createdTimestamp(null))
+                .customize(node -> node.nodeId(node1.getNodeId()))
                 .get();
 
         // when
@@ -1772,9 +1772,34 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         var node1 = domainBuilder.node().get();
         var node2 = domainBuilder
                 .node()
-                .customize(node -> node.nodeId(node1.getNodeId()))
-                .customize(node -> node.deleted(true))
                 .customize(node -> node.adminKey(null))
+                .customize(node -> node.createdTimestamp(null))
+                .customize(node -> node.deleted(true))
+                .customize(node -> node.nodeId(node1.getNodeId()))
+                .get();
+
+        // when
+        sqlEntityListener.onNode(node1);
+        sqlEntityListener.onNode(node2);
+        completeFileAndCommit();
+
+        node1.setTimestampUpper(node2.getTimestampLower());
+        node2.setCreatedTimestamp(node1.getCreatedTimestamp());
+        node2.setAdminKey(node1.getAdminKey());
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactly(node2);
+        assertThat(findHistory(Node.class)).containsExactly(node1);
+    }
+
+    @Test
+    void onNodeMergeUpdateAdminKey() {
+        // given
+        var node1 = domainBuilder.node().get();
+        var node2 = domainBuilder
+                .node()
+                .customize(node -> node.createdTimestamp(null))
+                .customize(node -> node.nodeId(node1.getNodeId()))
                 .get();
 
         // when

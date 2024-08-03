@@ -106,4 +106,36 @@ class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(recordItem.getConsensusTimestamp(), Node::getTimestampLower)
                 .returns(false, Node::isDeleted)));
     }
+
+    @Test
+    void nodeUpdateTransactionPersistNoAdminKey() {
+        entityProperties.getPersist().setNodes(true);
+
+        // given
+        var recordItem = recordItemBuilder
+                .nodeUpdate()
+                .transactionBody(NodeUpdateTransactionBody.Builder::clearAdminKey)
+                .build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.transactionBytes(null).transactionRecordBytes(null))
+                .get();
+
+        // when
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        var transactionBytes = recordItem.getTransaction().toByteArray();
+        var transactionRecordBytes = recordItem.getTransactionRecord().toByteArray();
+
+        // then
+        assertThat(transaction.getTransactionBytes()).containsExactly(transactionBytes);
+        assertThat(transaction.getTransactionRecordBytes()).containsExactly(transactionRecordBytes);
+
+        verify(entityListener, times(1)).onNode(assertArg(t -> assertThat(t)
+                .isNotNull()
+                .returns(recordItem.getTransactionRecord().getReceipt().getNodeId(), Node::getNodeId)
+                .returns(null, Node::getAdminKey)
+                .returns(recordItem.getConsensusTimestamp(), Node::getTimestampLower)
+                .returns(false, Node::isDeleted)));
+    }
 }
