@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 
-public class ContractCallAddressThisTest extends ContractCallTestSetup {
+class ContractCallAddressThisTest extends ContractCallTestSetup {
 
     @BeforeEach
     void beforeAll() {

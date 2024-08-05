@@ -81,14 +81,14 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     }
 
     @Test
-    void ECRECPrecompiledContract() throws Exception {
+    void recoverAddressPrecompiledContract() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_recoverAddress().send();
         assertThat(result).isNotEmpty();
     }
 
     @Test
-    void SHA256PrecompiledContract() throws Exception {
+    void sha256PrecompiledContract() throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_calculateSHA256().send();
@@ -97,7 +97,7 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     }
 
     @Test
-    void RIPEMD160PrecompiledContract() throws Exception {
+    void calculateRIPEMD160PrecompiledContract() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_calculateRIPEMD160().send();
         assertThat(Bytes.wrap(result).toHexString())
@@ -105,21 +105,21 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     }
 
     @Test
-    void IDPrecompiledContract() throws Exception {
+    void idPrecompiledContract() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_identity().send();
         assertThat(Bytes.wrap(result).toHexString()).contains("48656c6c6f2c20576f726c64");
     }
 
     @Test
-    void BigIntegerModularExponentiationPrecompiledContract() throws Exception {
+    void bigIntegerModularExponentiationPrecompiledContract() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_modExp().send();
         assertThat(result).isEqualTo(BigInteger.valueOf(4));
     }
 
     @Test
-    void AltBN128AddPrecompiledContract() throws Exception {
+    void altBN128AddPrecompiledContract() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_addPoints().send();
         assertThat(result)
@@ -130,7 +130,7 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     }
 
     @Test
-    void AltBN128MulPrecompiledContract() throws Exception {
+    void altBN128MulPrecompiledContract() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_multiplyPoints().send();
         assertThat(result)
@@ -141,14 +141,14 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     }
 
     @Test
-    void AltBN128PairingPrecompiledContract() throws Exception {
+    void altBN128PairingPrecompiledContract() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_pairingCheck().send();
         assertThat(result).isEqualTo(true);
     }
 
     @Test
-    void BLAKE2BFPrecompileContract() throws Exception {
+    void blake2BFPrecompileContract() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         List<byte[]> result = contract.call_blake2().send();
         var expectedResultHexString =
