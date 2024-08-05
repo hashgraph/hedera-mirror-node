@@ -46,7 +46,8 @@ public record RestSpecNormalized(
     public static RestSpecNormalized from(RestSpec restSpec) {
         List<SpecTestNormalized> normalizedTests;
         if (CollectionUtils.isEmpty(restSpec.tests())) {
-            var specTest = new SpecTest(restSpec.url(), restSpec.urls(), restSpec.responseStatus(), restSpec.responseJson());
+            var specTest = new SpecTest(restSpec.responseHeaders(), restSpec.responseJson(), restSpec.responseStatus(),
+                    restSpec.url(), restSpec.urls());
             normalizedTests = List.of(SpecTestNormalized.from(specTest));
         }
         else {

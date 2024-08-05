@@ -15,17 +15,21 @@
  */
 package com.hedera.mirror.restjava.spec.model;
 
+import com.hedera.mirror.restjava.spec.converter.JsonAsStringDeserializer;
 import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.springframework.util.StringUtils;
 
+
 public record SpecTest(
-        String url,
-        List<String> urls,
-        int responseStatus,
+        Map<String, String> responseHeaders,
         @JsonDeserialize(using = JsonAsStringDeserializer.class)
-        String responseJson) {
+        String responseJson,
+        int responseStatus,
+        String url,
+        List<String> urls) {
 
         public List<String> getNormalizedUrls() {
                 return Stream.concat(

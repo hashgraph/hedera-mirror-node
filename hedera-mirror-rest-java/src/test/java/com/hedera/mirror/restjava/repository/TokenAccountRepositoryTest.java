@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.spec.model;
+package com.hedera.mirror.restjava.repository;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import java.io.IOException;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class JsonAsStringDeserializer extends JsonDeserializer<String> {
-    @Override
-    public String deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JacksonException {
-        return jp.readValueAsTree().toString();
+import com.hedera.mirror.restjava.RestJavaIntegrationTest;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
+
+@RequiredArgsConstructor
+class TokenAccountRepositoryTest extends RestJavaIntegrationTest {
+
+    private final TokenAccountRepository tokenAccountRepository;
+
+    @Test
+    void findById() {
+        var entity = domainBuilder.tokenAccount().persist();
+        assertThat(tokenAccountRepository.findById(entity.getId())).get().isEqualTo(entity);
     }
 }

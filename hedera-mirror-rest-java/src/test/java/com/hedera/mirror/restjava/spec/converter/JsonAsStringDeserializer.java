@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.repository;
+package com.hedera.mirror.restjava.spec.converter;
 
-import com.hedera.mirror.common.domain.token.AbstractTokenAccount.Id;
-import com.hedera.mirror.common.domain.token.TokenAccount;
-import org.springframework.data.repository.CrudRepository;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import java.io.IOException;
 
-public interface TokenAccountRepository extends CrudRepository<TokenAccount, Id> {
+public class JsonAsStringDeserializer extends JsonDeserializer<String> {
+    @Override
+    public String deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JacksonException {
+        return jp.readValueAsTree().toString();
+    }
 }

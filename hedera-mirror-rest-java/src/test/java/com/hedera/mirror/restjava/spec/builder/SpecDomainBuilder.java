@@ -20,7 +20,6 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
-import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -29,7 +28,6 @@ import lombok.RequiredArgsConstructor;
  * integrationDomainOps.js and attribute names provided in the spec test JSON setup.
  */
 @Named
-@CustomLog
 @RequiredArgsConstructor
 public class SpecDomainBuilder {
 

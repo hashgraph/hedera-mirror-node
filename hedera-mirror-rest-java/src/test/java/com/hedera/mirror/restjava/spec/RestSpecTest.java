@@ -20,43 +20,34 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
-import com.hedera.mirror.restjava.RestJavaProperties;
 import com.hedera.mirror.restjava.spec.builder.SpecDomainBuilder;
 import com.hedera.mirror.restjava.spec.model.RestSpec;
 import com.hedera.mirror.restjava.spec.model.RestSpecNormalized;
 import com.hedera.mirror.restjava.spec.config.SpecTestConfig;
-import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
-import lombok.RequiredArgsConstructor;
 import org.json.JSONException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.runner.RunWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestClient;
 import org.testcontainers.containers.GenericContainer;
 
-@RequiredArgsConstructor
 @RunWith(SpringRunner.class)
-@EnableConfigurationProperties(value = RestJavaProperties.class)
 @SpringBootTest(
         classes = SpecTestConfig.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class RestSpecTest extends RestJavaIntegrationTest {
+
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
-
-
     private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");
     private static final List<Path> SELECTED_SPECS = List.of(
             REST_BASE_PATH.resolve("accounts/alias-into-evm-address.json"),
@@ -64,32 +55,24 @@ public class RestSpecTest extends RestJavaIntegrationTest {
             REST_BASE_PATH.resolve("accounts/specific-id.json")
     );
 
-    @Resource
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
+    private final RestClient restClient;
+    private final SpecDomainBuilder specDomainBuilder;
 
-    @Resource
-    private SpecDomainBuilder specDomainBuilder;
+    RestSpecTest(
+            GenericContainer<?> jsRestApi,
+            ObjectMapper objectMapper,
+            SpecDomainBuilder specDomainBuilder) {
+        this.objectMapper = objectMapper;
+        this.specDomainBuilder = specDomainBuilder;
 
-    @Resource
-    private GenericContainer<?> jsRestApi;
-
-    @Resource
-    private RestJavaProperties properties;
-
-    @LocalServerPort
-    private int port;
-
-    private RestClient.Builder restClientBuilder;
-
-    private String baseJsRestApiUrl;
-
-    @BeforeEach
-    final void setup() {
-        baseJsRestApiUrl = "http://%s:%d".formatted(jsRestApi.getHost(), jsRestApi.getMappedPort(JS_REST_API_CONTAINER_PORT));
-        restClientBuilder = RestClient.builder()
+        var baseJsRestApiUrl = "http://%s:%d".formatted(jsRestApi.getHost(), jsRestApi.getMappedPort(JS_REST_API_CONTAINER_PORT));
+        this.restClient = RestClient.builder()
+                .baseUrl(baseJsRestApiUrl)
                 .defaultHeader("Accept", "application/json")
                 .defaultHeader("Access-Control-Request-Method", "GET")
-                .defaultHeader("Origin", "http://example.com");
+                .defaultHeader("Origin", "http://example.com")
+                .build();
     }
 
     @ParameterizedTest
@@ -101,8 +84,8 @@ public class RestSpecTest extends RestJavaIntegrationTest {
 
         for (var specTest : spec.tests()) {
             for (var url : specTest.urls()) {
-                var restClient = restClientBuilder.baseUrl(baseJsRestApiUrl + url).build();
                 var response = restClient.get()
+                        .uri(url)
                         .retrieve()
                         .toEntity(String.class);
 

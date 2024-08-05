@@ -44,8 +44,6 @@ abstract class AbstractEntityBuilder<B> {
     /*
      * Common handy spec attribute value converter functions to be used by subclasses.
      */
-    protected static final Function<Object, Object> IGNORE_CONVERTER = value -> IGNORE_ATTRIBUTE_SIGNAL;
-
     protected static final Function<Object, Object> BASE32_CONVERTER = value -> value == null ? null : BASE32.decode(value.toString());
 
     protected static final Function<Object, Object> ENTITY_ID_CONVERTER = value -> value == null ? null

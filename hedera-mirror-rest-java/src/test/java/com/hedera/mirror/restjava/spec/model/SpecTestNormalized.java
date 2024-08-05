@@ -16,6 +16,7 @@
 package com.hedera.mirror.restjava.spec.model;
 
 import java.util.List;
+import java.util.Map;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -23,14 +24,16 @@ import org.springframework.util.CollectionUtils;
  * (largely around the seemingly optional "tests" array and the use of "url" vs "urls"), this class represents a
  * valid instance of a single test to be contained by {@link RestSpecNormalized}.
  *
- * @param urls the API URL(s) to be invoked
- * @param responseStatus expected integer HTTP status code expected upon success
+ * @param responseHeaders expected HTTP headers returned in response
  * @param responseJson JSON response expected from the API upon success
+ * @param responseStatus expected integer HTTP status code expected upon success
+ * @param urls the API URL(s) to be invoked
  */
 public record SpecTestNormalized(
-        List<String> urls,
+        Map<String, String> responseHeaders,
+        String responseJson,
         int responseStatus,
-        String responseJson) {
+        List<String> urls) {
 
     public SpecTestNormalized {
         if (CollectionUtils.isEmpty(urls)) {
@@ -39,7 +42,7 @@ public record SpecTestNormalized(
     }
 
     static SpecTestNormalized from(SpecTest specTest) {
-        return new SpecTestNormalized(specTest.getNormalizedUrls(), specTest.responseStatus(), specTest.responseJson());
+        return new SpecTestNormalized(specTest.responseHeaders(), specTest.responseJson(), specTest.responseStatus(), specTest.getNormalizedUrls());
     }
 
     static List<SpecTestNormalized> allFrom(List<SpecTest> specTests) {
