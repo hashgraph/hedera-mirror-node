@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import RestError from "./restError.js";
+import RestError from './restError.js';
 
 const InvalidArgumentErrorMessageFormat = 'Invalid parameter: ';
 const invalidParamUsageMessageFormat = 'Invalid parameter usage: ';
@@ -28,7 +28,8 @@ class InvalidArgumentError extends RestError {
   static UNKNOWN_PARAM_USAGE = 'unknownParamUsage';
 
   constructor(errorMessage) {
-    super(errorMessage);
+    super();
+    this.message = errorMessage;
   }
 
   // factory method to help common case

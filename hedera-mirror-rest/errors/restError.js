@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-class RestError extends Error {
-    constructor(errorMessage) {
-        super();
-        this.message = errorMessage;
-    }
-}
+// Wrapper for all non-terminal errors we wish to not exit the node process for
+class RestError extends Error {}
 
 export default RestError;

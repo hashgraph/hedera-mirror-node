@@ -18,18 +18,17 @@ import {
   DbError,
   FileDecodeError,
   FileDownloadError,
-  InvalidArgumentError, InvalidClauseError,
+  InvalidArgumentError,
+  InvalidClauseError,
   InvalidConfigError,
-  NotFoundError
+  NotFoundError,
 } from '../../errors';
 
-import {handleUncaughtException} from "../../middleware/httpErrorHandler.js";
-
+import {handleUncaughtException} from '../../middleware/httpErrorHandler';
 
 describe('Server error handler', () => {
-
   test('Throws Error for non rest error', () => {
-    const exception = () => handleUncaughtException(new InvalidConfigError("Bad Config"))
+    const exception = () => handleUncaughtException(new InvalidConfigError('Bad Config'));
     expect(exception).toThrow(InvalidConfigError);
   });
 
