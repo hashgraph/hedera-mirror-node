@@ -163,7 +163,6 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         defaultTransactionHashTypes = entityProperties.getPersist().getTransactionHashTypes();
 
         entityProperties.getPersist().setEntityHistory(true);
-        entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
     }
 
@@ -171,7 +170,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     void afterEach() {
         entityProperties.getPersist().setEntityHistory(true);
         entityProperties.getPersist().setTransactionHashTypes(defaultTransactionHashTypes);
-        entityProperties.getPersist().setTransactionHash(false);
+        entityProperties.getPersist().setTransactionHash(true);
         entityProperties.getPersist().setTrackBalance(true);
     }
 
@@ -1305,7 +1304,6 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
             names = {"CRYPTOTRANSFER", "CONSENSUSSUBMITMESSAGE"})
     void onTransactionHashByTransactionType(TransactionType includedTransactionType) {
         // given
-        entityProperties.getPersist().setTransactionHash(true);
         entityProperties.getPersist().setTransactionHashTypes(Set.of(includedTransactionType));
         var consensusSubmitMessage = domainBuilder
                 .transaction()
@@ -1330,7 +1328,6 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     @Test
     void onTransactionHashWhenFilterEmpty() {
         // given
-        entityProperties.getPersist().setTransactionHash(true);
         entityProperties.getPersist().setTransactionHashTypes(Collections.emptySet());
         var consensusSubmitMessage = domainBuilder
                 .transaction()
@@ -2942,7 +2939,6 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
 
     @Test
     void onEthereumTransactionWithEmptyHash() {
-        entityProperties.getPersist().setTransactionHash(true);
         var ethereumTransaction = domainBuilder
                 .ethereumTransaction(false)
                 .customize(e -> e.hash(EMPTY_BYTE_ARRAY))

@@ -69,7 +69,6 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
     @BeforeEach
     void setup() {
         defaultTransactionHashTypes = entityProperties.getPersist().getTransactionHashTypes();
-        entityProperties.getPersist().setTransactionHash(true);
         migrationProperties = new MigrationProperties();
         migrationProperties = importerProperties.getMigration().get(MIGRATION_NAME);
         migrationProperties.getParams().put("startTimestamp", String.valueOf(DEFAULT_START_TIMESTAMP));
@@ -79,6 +78,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
 
     @AfterEach
     void teardown() {
+        entityProperties.getPersist().setTransactionHash(true);
         entityProperties.getPersist().setTransactionHashTypes(defaultTransactionHashTypes);
         migrationProperties.getParams().clear();
     }
@@ -333,8 +333,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
         domainBuilder
                 .transaction()
                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
-                .persist()
-                .toTransactionHash();
+                .persist();
         expected.addAll(persistEthereumTransaction(DEFAULT_START_TIMESTAMP + 1, SkipTransaction.NATIVE));
         persistEthereumTransactionWithEmptyHash(DEFAULT_START_TIMESTAMP + 2);
 
