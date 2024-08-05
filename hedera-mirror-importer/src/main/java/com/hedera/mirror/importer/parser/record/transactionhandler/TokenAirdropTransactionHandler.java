@@ -18,10 +18,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
 
 @Named
-@RequiredArgsConstructor
 class TokenAirdropTransactionHandler extends AbstractTransactionHandler {
 
     @Override
