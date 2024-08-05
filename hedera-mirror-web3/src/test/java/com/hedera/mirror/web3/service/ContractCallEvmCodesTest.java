@@ -30,11 +30,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
-import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.mirror.web3.web3j.generated.EthCall;
 import com.hedera.mirror.web3.web3j.generated.EvmCodes;
 import com.hedera.mirror.web3.web3j.generated.EvmCodes.G1Point;
@@ -42,35 +40,30 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.context.annotation.Import;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.AbiTypes;
 import org.web3j.abi.datatypes.Type;
 
-@Import(Web3jTestConfiguration.class)
-@RequiredArgsConstructor
-class ContractCallEvmCodesTest extends Web3IntegrationTest {
+class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
     private static final String EMPTY_BLOCK_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 
-    private final TestWeb3jService testWeb3jService;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @SpyBean
     private ContractExecutionService contractExecutionService;
 
-    @BeforeEach
-    void beforeAll() {
-        domainBuilder.recordFile().persist();
+    private ContractCallEvmCodesTest(
+            TestWeb3jService testWeb3jService, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        super(testWeb3jService);
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
     @Test
