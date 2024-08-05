@@ -865,7 +865,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         genesisBlockPersist();
         historicalBlocksPersist();
         historicalDataPersist();
-        evmCodesContractPersist();
         ethCallContractPersist();
         reverterContractPersist();
         stateContractPersist();
@@ -873,7 +872,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         systemExchangeRateContractPersist();
         internalCallerContractPersist();
         pseudoRandomNumberGeneratorContractPersist();
-        addressThisContractPersist();
         final var modificationContract = modificationContractPersist();
         modificationWithoutKeyContractPersist();
         final var ercContract = ercContractPersist();
@@ -2138,7 +2136,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     // Contracts persist
-    private void evmCodesContractPersist() {
+    protected void evmCodesContractPersist() {
         final var evmCodesContractBytes = functionEncodeDecoder.getContractBytes(EVM_CODES_BYTES_PATH);
         final var evmCodesContractEntityId = entityIdFromEvmAddress(EVM_CODES_CONTRACT_ADDRESS);
         final var evmCodesContractEvmAddress = toEvmAddress(evmCodesContractEntityId);
@@ -2449,41 +2447,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(f -> f.bytes(randomNumberContractBytes))
                 .persist();
         return randomNumberContractEntityId;
-    }
-
-    private EntityId addressThisContractPersist() {
-        final var addressThisContractBytes = functionEncodeDecoder.getContractBytes(ADDRESS_THIS_CONTRACT_BYTES_PATH);
-        final var addressThisContractEntityId = entityIdFromEvmAddress(ADDRESS_THIS_CONTRACT_ADDRESS);
-        final var addressThisEvmAddress = toEvmAddress(addressThisContractEntityId);
-
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(addressThisContractEntityId.getId())
-                        .num(addressThisContractEntityId.getNum())
-                        .evmAddress(addressThisEvmAddress)
-                        .type(CONTRACT)
-                        .balance(1500L))
-                .persist();
-
-        domainBuilder
-                .contract()
-                .customize(c -> c.id(addressThisContractEntityId.getId()).runtimeBytecode(addressThisContractBytes))
-                .persist();
-
-        domainBuilder
-                .contractState()
-                .customize(c -> c.contractId(addressThisContractEntityId.getId())
-                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
-                                .toArrayUnsafe())
-                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
-                                .toArrayUnsafe()))
-                .persist();
-
-        domainBuilder
-                .recordFile()
-                .customize(f -> f.bytes(addressThisContractBytes))
-                .persist();
-        return addressThisContractEntityId;
     }
 
     protected EntityId nestedEthCallsContractPersist() {
