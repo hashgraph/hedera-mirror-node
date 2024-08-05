@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import RestError from './restError';
+// Wrapper for all non-terminal errors we wish to not exit the node process for
+class RestError extends Error {}
 
-class DbError extends RestError {}
-
-export default DbError;
+export default RestError;
