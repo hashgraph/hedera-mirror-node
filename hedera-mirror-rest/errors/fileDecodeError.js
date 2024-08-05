@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import RestError from "./restError.js";
+import RestError from './restError';
 
 const FileDecodeErrorMessage =
   'Failed to decode file contents. Ensure timestamp filters cover the complete file create/update and append transactions';

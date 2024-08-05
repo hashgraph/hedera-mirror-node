@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import RestError from "./restError.js";
+import RestError from './restError';
 
 const InvalidClauseErrorMessage = 'Invalid clause produced after parsing query parameters';
 

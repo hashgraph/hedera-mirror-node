@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-import RestError from "./restError.js";
+import RestError from './restError';
 
-class DbError extends RestError {
-  constructor(errorMessage) {
-    super(errorMessage);
-  }
-}
+class DbError extends RestError {}
 
 export default DbError;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import RestError from "./restError.js";
+import RestError from './restError';
 
 const NotFoundErrorMessage = 'Not found';
 
