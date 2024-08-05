@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+import RestError from './restError';
+
 const NotFoundErrorMessage = 'Not found';
 
-class NotFoundError extends Error {
+class NotFoundError extends RestError {
   constructor(errorMessage) {
-    super();
-    this.message = errorMessage === undefined ? NotFoundErrorMessage : errorMessage;
+    super(errorMessage === undefined ? NotFoundErrorMessage : errorMessage);
   }
 }
 

@@ -331,6 +331,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @Test
     void balanceCallToNonSystemAccountReturnsBalance() {
         // getAccountBalance(address)
+        evmCodesContractPersist();
         final var balanceCall =
                 "0x93423e9c000000000000000000000000" + EVM_CODES_CONTRACT_ADDRESS.toUnprefixedHexString();
         final var serviceParameters = serviceParametersForExecution(

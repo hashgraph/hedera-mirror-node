@@ -68,6 +68,9 @@ const protoToName = {
   55: 'NODEUPDATE',
   56: 'NODEDELETE',
   57: 'TOKENREJECT',
+  58: 'TOKENAIRDROP',
+  59: 'TOKENCANCELAIRDROP',
+  60: 'TOKENCLAIMAIRDROP',
 };
 
 // Temporary extra mappings until we can update the hashgraph proto dependency with the latest types

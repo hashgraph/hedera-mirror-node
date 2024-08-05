@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+import RestError from './restError';
+
 const InvalidClauseErrorMessage = 'Invalid clause produced after parsing query parameters';
 
-class InvalidClauseError extends Error {
+class InvalidClauseError extends RestError {
   constructor(errorMessage) {
-    super();
-    this.message = errorMessage === undefined ? InvalidClauseErrorMessage : errorMessage;
+    super(errorMessage === undefined ? InvalidClauseErrorMessage : errorMessage);
   }
 }
 
