@@ -16,10 +16,13 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,8 @@ import lombok.RequiredArgsConstructor;
 @Named
 @RequiredArgsConstructor
 class NodeUpdateTransactionHandler extends AbstractTransactionHandler {
+
+    private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
     @Override
@@ -46,5 +51,24 @@ class NodeUpdateTransactionHandler extends AbstractTransactionHandler {
         }
         transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
+        parseNode(recordItem);
+    }
+
+    private void parseNode(RecordItem recordItem) {
+        if (recordItem.isSuccessful()) {
+            var nodeUpdate = recordItem.getTransactionBody().getNodeUpdate();
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+            var node = new Node();
+
+            if (nodeUpdate.hasAdminKey()) {
+                node.setAdminKey(nodeUpdate.getAdminKey().toByteArray());
+            }
+
+            node.setDeleted(false);
+            node.setNodeId(recordItem.getTransactionRecord().getReceipt().getNodeId());
+            node.setTimestampRange(Range.atLeast(consensusTimestamp));
+
+            entityListener.onNode(node);
+        }
     }
 }

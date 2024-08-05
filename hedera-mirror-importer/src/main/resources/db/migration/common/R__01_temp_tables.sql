@@ -27,6 +27,7 @@ call create_temp_table_safe('entity', 'id');
 call create_temp_table_safe('entity_stake', variadic array[]::text[]);
 call create_temp_table_safe('nft_allowance', 'owner', 'spender', 'token_id');
 call create_temp_table_safe('nft', 'token_id', 'serial_number');
+call create_temp_table_safe('node', 'node_id');
 call create_temp_table_safe('schedule', 'schedule_id');
 call create_temp_table_safe('token_account', 'account_id', 'token_id');
 call create_temp_table_safe('token_allowance', 'owner', 'spender', 'token_id');

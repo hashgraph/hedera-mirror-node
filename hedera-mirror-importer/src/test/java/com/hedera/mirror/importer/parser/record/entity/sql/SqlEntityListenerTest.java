@@ -37,6 +37,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.CustomFee;
@@ -80,6 +81,7 @@ import com.hedera.mirror.importer.repository.NetworkFreezeRepository;
 import com.hedera.mirror.importer.repository.NetworkStakeRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.NodeRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.repository.PrngRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
@@ -139,6 +141,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     private final NetworkStakeRepository networkStakeRepository;
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
+    private final NodeRepository nodeRepository;
     private final NodeStakeRepository nodeStakeRepository;
     private final ParserContext parserContext;
     private final PrngRepository prngRepository;
@@ -1719,6 +1722,158 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         }
         assertThat(transactionRepository.findAll()).containsExactly(transaction);
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
+    }
+
+    @Test
+    void onNode() {
+        // given
+        var node1 = domainBuilder.node().get();
+        var node2 = domainBuilder.node().get();
+
+        // when
+        sqlEntityListener.onNode(node1);
+        sqlEntityListener.onNode(node2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactlyInAnyOrder(node1, node2);
+    }
+
+    @Test
+    void onNodeMerge() {
+        // given
+        var node1 = domainBuilder.node().get();
+        var node2 = domainBuilder
+                .node()
+                .customize(node -> node.adminKey(null))
+                .customize(node -> node.createdTimestamp(null))
+                .customize(node -> node.nodeId(node1.getNodeId()))
+                .get();
+
+        // when
+        sqlEntityListener.onNode(node1);
+        sqlEntityListener.onNode(node2);
+        completeFileAndCommit();
+
+        node1.setTimestampUpper(node2.getTimestampLower());
+        node2.setCreatedTimestamp(node1.getCreatedTimestamp());
+        node2.setAdminKey(node1.getAdminKey());
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactly(node2);
+        assertThat(findHistory(Node.class)).containsExactly(node1);
+    }
+
+    @Test
+    void onNodeMergeWithDelete() {
+        // given
+        var node1 = domainBuilder.node().get();
+        var node2 = domainBuilder
+                .node()
+                .customize(node -> node.adminKey(null))
+                .customize(node -> node.createdTimestamp(null))
+                .customize(node -> node.deleted(true))
+                .customize(node -> node.nodeId(node1.getNodeId()))
+                .get();
+
+        // when
+        sqlEntityListener.onNode(node1);
+        sqlEntityListener.onNode(node2);
+        completeFileAndCommit();
+
+        node1.setTimestampUpper(node2.getTimestampLower());
+        node2.setCreatedTimestamp(node1.getCreatedTimestamp());
+        node2.setAdminKey(node1.getAdminKey());
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactly(node2);
+        assertThat(findHistory(Node.class)).containsExactly(node1);
+    }
+
+    @Test
+    void onNodeMergeUpdateAdminKey() {
+        // given
+        var node1 = domainBuilder.node().get();
+        var node2 = domainBuilder
+                .node()
+                .customize(node -> node.createdTimestamp(null))
+                .customize(node -> node.nodeId(node1.getNodeId()))
+                .get();
+
+        // when
+        sqlEntityListener.onNode(node1);
+        sqlEntityListener.onNode(node2);
+        completeFileAndCommit();
+
+        node1.setTimestampUpper(node2.getTimestampLower());
+        node2.setCreatedTimestamp(node1.getCreatedTimestamp());
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactly(node2);
+        assertThat(findHistory(Node.class)).containsExactly(node1);
+    }
+
+    @Test
+    void onNodeHistory() {
+        // given
+        var nodeCreate = domainBuilder.node().get();
+        var nodeUpdate = nodeCreate.toBuilder()
+                .adminKey(domainBuilder.key())
+                .createdTimestamp(null)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+        var nodeDelete = nodeUpdate.toBuilder()
+                .createdTimestamp(null)
+                .deleted(true)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+
+        // when create the node
+        sqlEntityListener.onNode(nodeCreate);
+        completeFileAndCommit();
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactly(nodeCreate);
+        assertThat(findHistory(Node.class)).isEmpty();
+
+        // when update the node
+        var mergedUpdate = nodeCreate.toBuilder().build();
+        mergedUpdate.setTimestampUpper(nodeUpdate.getTimestampLower());
+        sqlEntityListener.onNode(nodeUpdate);
+        completeFileAndCommit();
+
+        nodeUpdate.setCreatedTimestamp(nodeCreate.getCreatedTimestamp());
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactly(nodeUpdate);
+        assertThat(findHistory(Node.class)).containsExactly(mergedUpdate);
+
+        var mergedUpdate2 = nodeUpdate.toBuilder().build();
+        mergedUpdate2.setTimestampUpper(nodeDelete.getTimestampLower());
+
+        // when delete the node
+        sqlEntityListener.onNode(nodeDelete);
+        completeFileAndCommit();
+
+        nodeDelete.setCreatedTimestamp(nodeCreate.getCreatedTimestamp());
+        // then
+        assertThat(nodeRepository.findAll()).containsExactlyInAnyOrder(nodeDelete);
+        assertThat(findHistory(Node.class)).containsExactlyInAnyOrder(mergedUpdate, mergedUpdate2);
+    }
+
+    @Test
+    void onNodePartialUpdate() {
+        // given
+        var nodeUpdate =
+                domainBuilder.node().customize(n -> n.createdTimestamp(null)).get();
+
+        // when
+        sqlEntityListener.onNode(nodeUpdate);
+        completeFileAndCommit();
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactly(nodeUpdate);
+        assertThat(findHistory(Node.class)).isEmpty();
     }
 
     @Test
