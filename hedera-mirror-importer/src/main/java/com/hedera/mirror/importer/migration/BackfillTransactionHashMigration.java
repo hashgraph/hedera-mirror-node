@@ -47,7 +47,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
             insert into transaction_hash (consensus_timestamp, hash, payer_account_id)
             select consensus_timestamp, hash, payer_account_id
             from ethereum_transaction
-            where consensus_timestamp >= :startTimestamp;
+            where length(hash) > 0 and consensus_timestamp >= :startTimestamp;
             """;
     private static final String START_TIMESTAMP_KEY = "startTimestamp";
     private static final String STRATEGY_KEY = "strategy";
