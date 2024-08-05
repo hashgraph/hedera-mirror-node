@@ -31,6 +31,7 @@ import com.hedera.mirror.importer.repository.NetworkStakeRepository;
 import com.hedera.mirror.importer.repository.NodeRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
+import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,14 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
     private final NodeRepository nodeRepository;
     private final NetworkStakeRepository networkStakeRepository;
     private final NodeStakeRepository nodeStakeRepository;
+
+    private static Node getExpectedNode(RecordItem recordItem) {
+        return Node.builder()
+                .createdTimestamp(recordItem.getConsensusTimestamp())
+                .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
+                .timestampRange(Range.atLeast(recordItem.getConsensusTimestamp()))
+                .build();
+    }
 
     @AfterEach
     void teardown() {
@@ -164,19 +173,21 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
     void nodeUpdateWithoutAdminKeyUpdate() {
         entityProperties.getPersist().setNodes(true);
 
-        var recordItem = recordItemBuilder.nodeUpdate().build();
+        var recordItem = recordItemBuilder
+                .nodeUpdate()
+                .transactionBody(NodeUpdateTransactionBody.Builder::clearAdminKey)
+                .build();
         var nodeUpdate = recordItem.getTransactionBody().getNodeUpdate();
         var timestamp = recordItem.getConsensusTimestamp() - 1;
         var node = domainBuilder
                 .node()
-                .customize(n -> n.adminKey(nodeUpdate.getAdminKey().toByteArray())
-                        .createdTimestamp(timestamp)
+                .customize(n -> n.createdTimestamp(timestamp)
                         .nodeId(nodeUpdate.getNodeId())
                         .timestampRange(Range.atLeast(timestamp)))
                 .persist();
 
         var expectedNode = Node.builder()
-                .adminKey(nodeUpdate.getAdminKey().toByteArray())
+                .adminKey(node.getAdminKey())
                 .createdTimestamp(node.getCreatedTimestamp())
                 .nodeId(node.getNodeId())
                 .timestampRange(Range.atLeast(recordItem.getConsensusTimestamp()))
@@ -224,13 +235,5 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                 .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
         softly.assertThat(nodeRepository.findAll()).containsExactly(expectedNode);
         softly.assertThat(findHistory(Node.class)).containsExactly(node);
-    }
-
-    private static Node getExpectedNode(RecordItem recordItem) {
-        return Node.builder()
-                .createdTimestamp(recordItem.getConsensusTimestamp())
-                .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
-                .timestampRange(Range.atLeast(recordItem.getConsensusTimestamp()))
-                .build();
     }
 }
