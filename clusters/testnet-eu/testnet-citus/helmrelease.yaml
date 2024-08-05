@@ -42,6 +42,7 @@ spec:
         enabled: false
     importer:
       env:
+        HEDERA_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "0"
         HEDERA_MIRROR_IMPORTER_NETWORK: "TESTNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
@@ -77,6 +78,12 @@ spec:
         persistentVolume:
           size: 900Gi
     test:
+      config:
+        hedera:
+          mirror:
+            test:
+              acceptance:
+                operatorBalance: 200000000000
       cucumberTags: "@acceptance and not @equivalence and not @historical and not @estimateprecompile"
       enabled: false
     web3:
