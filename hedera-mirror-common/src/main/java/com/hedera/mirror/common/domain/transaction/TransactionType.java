@@ -77,7 +77,10 @@ public enum TransactionType {
     NODECREATE(54, EntityOperation.NONE),
     NODEUPDATE(55, EntityOperation.NONE),
     NODEDELETE(56, EntityOperation.NONE),
-    TOKENREJECT(57, EntityOperation.NONE);
+    TOKENREJECT(57, EntityOperation.NONE),
+    TOKENAIRDROP(58, EntityOperation.NONE),
+    TOKENCANCELAIRDROP(59, EntityOperation.NONE),
+    TOKENCLAIMAIRDROP(60, EntityOperation.NONE);
 
     private static final Map<Integer, TransactionType> idMap =
             Arrays.stream(values()).collect(Collectors.toMap(TransactionType::getProtoId, Function.identity()));

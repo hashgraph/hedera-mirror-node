@@ -165,6 +165,7 @@ class PubSubMessageTest {
                     "seconds": "0",
                     "nanos": 123456789
                   },
+                 "newPendingAirdrops": [],
                  "memo": "",
                  "transactionFee": "0",
                   "transferList": {
