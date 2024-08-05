@@ -60,8 +60,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
     @SpyBean
     private ContractExecutionService contractExecutionService;
 
-    private ContractCallEvmCodesTest(
-            TestWeb3jService testWeb3jService, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    ContractCallEvmCodesTest(TestWeb3jService testWeb3jService, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         super(testWeb3jService);
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
