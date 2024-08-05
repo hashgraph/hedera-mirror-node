@@ -35,6 +35,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -52,8 +54,9 @@ public class MirrorEvmMessageCallProcessor extends AbstractEvmMessageCallProcess
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final PrecompiledContractProvider precompilesHolder,
-            final GasCalculatorHederaV22 gasCalculator) {
-        super(evm, precompiles, precompilesHolder.getHederaPrecompiles());
+            final GasCalculatorHederaV22 gasCalculator,
+            final Predicate<Address> systemAccountDetector) {
+        super(evm, precompiles, precompilesHolder.getHederaPrecompiles(), systemAccountDetector);
         this.autoCreationLogic = autoCreationLogic;
         this.entityAddressSequencer = entityAddressSequencer;
 

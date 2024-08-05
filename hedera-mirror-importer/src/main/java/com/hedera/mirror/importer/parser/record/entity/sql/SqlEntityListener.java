@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.util.CollectionUtils;
 
@@ -201,7 +202,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onEthereumTransaction(EthereumTransaction ethereumTransaction) throws ImporterException {
         context.add(ethereumTransaction);
 
-        if (entityProperties.getPersist().shouldPersistTransactionHash(TransactionType.ETHEREUMTRANSACTION)) {
+        if (entityProperties.getPersist().shouldPersistTransactionHash(TransactionType.ETHEREUMTRANSACTION)
+                && ArrayUtils.isNotEmpty(ethereumTransaction.getHash())) {
             context.add(ethereumTransaction.toTransactionHash());
         }
     }

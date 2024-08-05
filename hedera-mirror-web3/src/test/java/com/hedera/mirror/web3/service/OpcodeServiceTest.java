@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.doAnswer;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -261,11 +263,25 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             }
         }
 
+        @Getter
+        @RequiredArgsConstructor
+        private enum DynamicCallsContractFunctions implements ContractFunctionProviderEnum {
+            MINT_NFT("mintTokenGetTotalSupplyAndBalanceOfTreasury", new Object[] {
+                NFT_ADDRESS,
+                0L,
+                new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()},
+                OWNER_ADDRESS
+            });
+
+            private final String name;
+            private final Object[] functionParameters;
+        }
+
         @ParameterizedTest
         @MethodSource("tracerOptions")
         void callWithDifferentCombinationsOfTracerOptions(final OpcodeTracerOptions options) {
             contractEntityId = dynamicEthCallContractPresist();
-            final var providerEnum = ContractCallDynamicCallsTest.DynamicCallsContractFunctions.MINT_NFT;
+            final var providerEnum = DynamicCallsContractFunctions.MINT_NFT;
 
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
                     providerEnum,
