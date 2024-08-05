@@ -31,11 +31,11 @@ import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -43,10 +43,10 @@ import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
-public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
+@RequiredArgsConstructor
+abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
-    @Autowired
-    protected TestWeb3jService testWeb3jService;
+    protected final TestWeb3jService testWeb3jService;
 
     @BeforeEach
     void setup() {
