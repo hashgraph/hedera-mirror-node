@@ -311,7 +311,7 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
 
     @Getter
     @RequiredArgsConstructor
-    enum DynamicCallsContractFunctions implements ContractFunctionProviderEnum {
+    private enum DynamicCallsContractFunctions implements ContractFunctionProviderEnum {
         MINT_FUNGIBLE_TOKEN(
                 "mintTokenGetTotalSupplyAndBalanceOfTreasury",
                 new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0], TREASURY_ADDRESS},

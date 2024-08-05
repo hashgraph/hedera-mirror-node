@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.doAnswer;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -40,7 +41,6 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.service.ContractDebugServiceTest.DynamicCallsContractFunctions;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -260,6 +261,20 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                 return new TransactionIdParameter(
                         transaction.getPayerAccountId(), instant(transaction.getValidStartNs()));
             }
+        }
+
+        @Getter
+        @RequiredArgsConstructor
+        private enum DynamicCallsContractFunctions implements ContractFunctionProviderEnum {
+            MINT_NFT("mintTokenGetTotalSupplyAndBalanceOfTreasury", new Object[] {
+                NFT_ADDRESS,
+                0L,
+                new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()},
+                OWNER_ADDRESS
+            });
+
+            private final String name;
+            private final Object[] functionParameters;
         }
 
         @ParameterizedTest

@@ -34,9 +34,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.reactivex.Flowable;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -75,11 +73,11 @@ public class TestWeb3jService implements Web3jService {
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
     private final DomainBuilder domainBuilder;
-    private final Map<String, String> transactionResults = new ConcurrentHashMap<>();
     private final Web3j web3j;
 
     private Address sender = Address.fromHexString("");
     private boolean isEstimateGas = false;
+    private String transactionResult;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -142,7 +140,7 @@ public class TestWeb3jService implements Web3jService {
             res.setRawResponse(contractInstance.toHexString());
             res.setId(request.getId());
             res.setJsonrpc(request.getJsonrpc());
-            transactionResults.put(transactionHash, contractInstance.toHexString());
+            transactionResult = contractInstance.toHexString();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -169,7 +167,7 @@ public class TestWeb3jService implements Web3jService {
         res.setId(request.getId());
         res.setJsonrpc(request.getJsonrpc());
 
-        transactionResults.put(transactionHash, mirrorNodeResult);
+        transactionResult = mirrorNodeResult;
 
         return res;
     }
@@ -299,9 +297,9 @@ public class TestWeb3jService implements Web3jService {
         final var transactionReceipt = new TransactionReceipt();
         transactionReceipt.setTransactionHash(transactionHash);
         if (isEstimateGas) {
-            transactionReceipt.setGasUsed(transactionResults.get(transactionHash));
+            transactionReceipt.setGasUsed(transactionResult);
         } else {
-            transactionReceipt.setContractAddress(transactionResults.get(transactionHash));
+            transactionReceipt.setContractAddress(transactionResult);
         }
         ethTransactionReceipt.setResult(transactionReceipt);
 

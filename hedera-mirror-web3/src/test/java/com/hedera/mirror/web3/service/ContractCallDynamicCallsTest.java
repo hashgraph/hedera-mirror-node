@@ -19,29 +19,21 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.web3j.TestWeb3jService;
-import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.AccountAmount;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.NftTransfer;
@@ -49,36 +41,12 @@ import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TokenTransferList;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TransferList;
 import java.math.BigInteger;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.context.annotation.Import;
-import org.web3j.protocol.core.RemoteFunctionCall;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
-@Import(Web3jTestConfiguration.class)
-@SuppressWarnings("unchecked")
-@RequiredArgsConstructor
-@TestInstance(PER_CLASS)
-class ContractCallDynamicCallsTest extends Web3IntegrationTest {
-
-    private final TestWeb3jService testWeb3jService;
-
-    @BeforeEach
-    void setup() {
-        domainBuilder.recordFile().persist();
-    }
-
-    @AfterEach
-    void cleanup() {
-        testWeb3jService.setEstimateGas(false);
-    }
+class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(
@@ -761,22 +729,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
 
         // Then
         assertEquals(contractAlias.toHexString(), result);
-    }
-
-    private void verifyEthCallAndEstimateGas(
-            final RemoteFunctionCall<TransactionReceipt> functionCall, final DynamicEthCalls contract) {
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        testWeb3jService.setEstimateGas(true);
-        final AtomicLong estimateGasUsedResult = new AtomicLong();
-        // Verify ethCall
-        assertDoesNotThrow(
-                () -> estimateGasUsedResult.set(functionCall.send().getGasUsed().longValue()));
-
-        // Verify estimateGas
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
-                .isTrue();
     }
 
     private Token fungibleTokenPersist(final EntityId treasuryEntityId) {
