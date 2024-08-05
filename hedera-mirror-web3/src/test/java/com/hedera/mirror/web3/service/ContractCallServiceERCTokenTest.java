@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.isWithinExpectedGasRange;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -41,6 +42,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
+    public static final String REDIRECT_SUFFIX = "Redirect";
+    public static final String NON_STATIC_SUFFIX = "NonStatic";
+
     private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
         return Arrays.stream(ErcContractReadOnlyFunctions.values())
                 .flatMap(ercFunction -> Stream.of(Arguments.of(ercFunction, true), Arguments.of(ercFunction, false)));
@@ -55,9 +59,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                         blockNumbers.stream().map(blockNumber -> Arguments.of(ercFunction, true, blockNumber)),
                         blockNumbers.stream().map(blockNumber -> Arguments.of(ercFunction, false, blockNumber))));
     }
-
-    public static final String REDIRECT_SUFFIX = "Redirect";
-    public static final String NON_STATIC_SUFFIX = "NonStatic";
 
     @ParameterizedTest
     @MethodSource("ercContractFunctionArgumentsProvider")

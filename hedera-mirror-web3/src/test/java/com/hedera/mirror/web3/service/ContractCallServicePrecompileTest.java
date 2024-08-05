@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.isWithinExpectedGasRange;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -57,6 +56,7 @@ import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FungibleTok
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.NonFungibleTokenInfo;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenInfo;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -66,15 +66,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -85,28 +82,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.web3j.protocol.core.RemoteFunctionCall;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Contract;
 
 @RequiredArgsConstructor
 @Named
-class ContractCallServicePrecompileTest extends ContractCallTestSetup {
-
-    public static final String ESTIMATE_GAS_ERROR_MESSAGE =
-            "Expected gas usage to be within the expected range, but it was not. Estimate: %d, Actual: %d";
-    protected static final ToLongFunction<String> longValueOf =
-            value -> Bytes.fromHexString(value).toLong();
-    private static final String LEDGER_ID = "0x03";
-    private static final String EMPTY_UNTRIMMED_ADDRESS =
-            "0x0000000000000000000000000000000000000000000000000000000000000000";
-    private static final byte[] KEY_PROTO = new byte[] {
-        58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
-        77, -103, 47, -118, 107, -58, -85, -63, 55, -57
-    };
-    private static final ByteString SENDER_PUBLIC_KEY =
-            ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
-    private static final Address SENDER_ALIAS = Address.wrap(
-            Bytes.wrap(recoverAddressFromPubKey(SENDER_PUBLIC_KEY.substring(2).toByteArray())));
+class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest {
 
     @Autowired
     private final TestWeb3jService testWeb3jService;
@@ -126,11 +106,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES -> 10000 * 100_000_000L;
             default -> 0L;
         };
-    }
-
-    @BeforeEach
-    void setup() {
-        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
     }
 
     @Test
@@ -442,297 +417,150 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @CsvSource({"1", "4", "8", "16"})
-    void getTokenKeyWithContractAddress(final String keyType) throws Exception {
+    @CsvSource(
+            textBlock =
+                    """
+    FUNGIBLE_COMMON, ECDSA_SECPK256K1, ADMIN_KEY
+    FUNGIBLE_COMMON, ECDSA_SECPK256K1, KYC_KEY
+    FUNGIBLE_COMMON, ECDSA_SECPK256K1, FREEZE_KEY
+    FUNGIBLE_COMMON, ECDSA_SECPK256K1, WIPE_KEY
+    FUNGIBLE_COMMON, ECDSA_SECPK256K1, SUPPLY_KEY
+    FUNGIBLE_COMMON, ECDSA_SECPK256K1, FEE_SCHEDULE_KEY
+    FUNGIBLE_COMMON, ECDSA_SECPK256K1, PAUSE_KEY
+    FUNGIBLE_COMMON, ED25519, ADMIN_KEY
+    FUNGIBLE_COMMON, ED25519, FREEZE_KEY
+    FUNGIBLE_COMMON, ED25519, WIPE_KEY
+    FUNGIBLE_COMMON, ED25519, SUPPLY_KEY
+    FUNGIBLE_COMMON, ED25519, FEE_SCHEDULE_KEY
+    FUNGIBLE_COMMON, ED25519, PAUSE_KEY
+    FUNGIBLE_COMMON, CONTRACT_ID, ADMIN_KEY
+    FUNGIBLE_COMMON, CONTRACT_ID, FREEZE_KEY
+    FUNGIBLE_COMMON, CONTRACT_ID, WIPE_KEY
+    FUNGIBLE_COMMON, CONTRACT_ID, SUPPLY_KEY
+    FUNGIBLE_COMMON, CONTRACT_ID, FEE_SCHEDULE_KEY
+    FUNGIBLE_COMMON, CONTRACT_ID, PAUSE_KEY
+    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, ADMIN_KEY
+    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, FREEZE_KEY
+    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, WIPE_KEY
+    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, SUPPLY_KEY
+    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, FEE_SCHEDULE_KEY
+    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, PAUSE_KEY
+    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, ADMIN_KEY
+    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, KYC_KEY
+    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, FREEZE_KEY
+    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, WIPE_KEY
+    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, SUPPLY_KEY
+    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, FEE_SCHEDULE_KEY
+    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, PAUSE_KEY
+    NON_FUNGIBLE_UNIQUE, ED25519, ADMIN_KEY
+    NON_FUNGIBLE_UNIQUE, ED25519, FREEZE_KEY
+    NON_FUNGIBLE_UNIQUE, ED25519, WIPE_KEY
+    NON_FUNGIBLE_UNIQUE, ED25519, SUPPLY_KEY
+    NON_FUNGIBLE_UNIQUE, ED25519, FEE_SCHEDULE_KEY
+    NON_FUNGIBLE_UNIQUE, ED25519, PAUSE_KEY
+    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, ADMIN_KEY
+    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, FREEZE_KEY
+    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, WIPE_KEY
+    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, SUPPLY_KEY
+    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, FEE_SCHEDULE_KEY
+    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, PAUSE_KEY
+    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, ADMIN_KEY
+    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, FREEZE_KEY
+    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, WIPE_KEY
+    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, SUPPLY_KEY
+    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, FEE_SCHEDULE_KEY
+    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, PAUSE_KEY
+""")
+    void getTokenKey(final TokenTypeEnum tokenType, final KeyValueType keyValueType, final KeyType keyType)
+            throws Exception {
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final Key keyWithContractId = Key.newBuilder()
-                .setContractID(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
-                .build();
+        final var tokenEntity = getTokenWithKey(tokenType, keyValueType, keyType, contract);
+
+        final var result = contract.call_getTokenKeyPublic(
+                        getAddressFromEntity(tokenEntity), keyType.getKeyTypeNumeric())
+                .send();
+
+        final var expectedKey = getKeyValueForType(keyValueType, contract.getContractAddress());
+
+        assertThat(result).isEqualTo(expectedKey);
+
+        final var functionCall =
+                contract.send_getTokenKeyPublic(getAddressFromEntity(tokenEntity), keyType.getKeyTypeNumeric());
+        testEstimateGas(functionCall, contract);
+    }
+
+    private Entity getTokenWithKey(
+            final TokenTypeEnum tokenType,
+            final KeyValueType keyValueType,
+            final KeyType keyType,
+            final Contract contract) {
+        final Key key;
+        switch (keyValueType) {
+            case ECDSA_SECPK256K1:
+                key = KEY_WITH_ECDSA_TYPE;
+                break;
+            case ED25519:
+                key = KEY_WITH_ED_25519_TYPE;
+                break;
+            case CONTRACT_ID:
+                key = getKeyWithContractId(contract);
+                break;
+            case DELEGATABLE_CONTRACT_ID:
+                key = getKeyWithDelegatableContractId(contract);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid key type");
+        }
 
         final var tokenEntity = domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.TOKEN).key(keyWithContractId.toByteArray()))
+                .customize(e -> e.type(EntityType.TOKEN).key(key.toByteArray()))
                 .persist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .freezeKey(keyWithContractId.toByteArray())
-                        .supplyKey(keyWithContractId.toByteArray())
-                        .wipeKey(keyWithContractId.toByteArray()))
-                .persist();
+        final var tokenBuilder = domainBuilder.token().customize(t -> t.tokenId(tokenEntity.getId())
+                .type(tokenType));
 
-        final var result = contract.call_getTokenKeyPublic(
-                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
-                .send();
+        switch (keyType) {
+            case KeyType.ADMIN_KEY:
+                break;
+            case KeyType.KYC_KEY:
+                tokenBuilder.customize(t -> t.kycKey(key.toByteArray()));
+                break;
+            case KeyType.FREEZE_KEY:
+                tokenBuilder.customize(t -> t.freezeKey(key.toByteArray()));
+                break;
+            case KeyType.WIPE_KEY:
+                tokenBuilder.customize(t -> t.wipeKey(key.toByteArray()));
+                break;
+            case KeyType.SUPPLY_KEY:
+                tokenBuilder.customize(t -> t.supplyKey(key.toByteArray()));
+                break;
+            case KeyType.FEE_SCHEDULE_KEY:
+                tokenBuilder.customize(t -> t.feeScheduleKey(key.toByteArray()));
+                break;
+            case KeyType.PAUSE_KEY:
+                tokenBuilder.customize(t -> t.pauseKey(key.toByteArray()));
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid key type");
+        }
 
-        final var expectedKey = new KeyValue(
-                false, contract.getContractAddress(), new byte[0], new byte[0], Address.ZERO.toHexString());
-
-        assertThat(result).isEqualTo(expectedKey);
-
-        final var functionCall = contract.send_getTokenKeyPublic(
-                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
-        testEstimateGas(functionCall, contract);
+        tokenBuilder.persist();
+        return tokenEntity;
     }
 
-    @ParameterizedTest
-    @CsvSource({"1", "4", "8", "16"})
-    void getTokenKeyWithED25519(final String keyType) throws Exception {
-        final byte[] ed25519Key = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
-        final var keyWithEd25519 =
-                Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519Key)).build();
-
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.TOKEN).key(keyWithEd25519.toByteArray()))
-                .persist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .freezeKey(keyWithEd25519.toByteArray())
-                        .supplyKey(keyWithEd25519.toByteArray())
-                        .wipeKey(keyWithEd25519.toByteArray()))
-                .persist();
-
-        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getTokenKeyPublic(
-                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
-                .send();
-
-        final var expectedKey =
-                new KeyValue(false, Address.ZERO.toHexString(), ed25519Key, new byte[0], Address.ZERO.toHexString());
-
-        assertThat(result).isEqualTo(expectedKey);
-
-        final var functionCall = contract.send_getTokenKeyPublic(
-                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
-        testEstimateGas(functionCall, contract);
-    }
-
-    @ParameterizedTest
-    @CsvSource({"1", "4", "8", "16"})
-    void getTokenKeyWithECDSAKey(final String keyType) throws Exception {
-        final var ecdsaKey = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
-        final var keyWithECDSASecp256K1 = Key.newBuilder()
-                .setECDSASecp256K1(ByteString.copyFrom(ecdsaKey))
-                .build();
-
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.TOKEN).key(keyWithECDSASecp256K1.toByteArray()))
-                .persist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .freezeKey(keyWithECDSASecp256K1.toByteArray())
-                        .supplyKey(keyWithECDSASecp256K1.toByteArray())
-                        .wipeKey(keyWithECDSASecp256K1.toByteArray()))
-                .persist();
-
-        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getTokenKeyPublic(
-                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
-                .send();
-
-        final var expectedKey =
-                new KeyValue(false, Address.ZERO.toHexString(), new byte[0], ecdsaKey, Address.ZERO.toHexString());
-
-        assertThat(result).isEqualTo(expectedKey);
-
-        final var functionCall = contract.send_getTokenKeyPublic(
-                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
-        testEstimateGas(functionCall, contract);
-    }
-
-    @ParameterizedTest
-    @CsvSource({"1", "4", "8", "16"})
-    void getTokenKeyWithDelegatableContractAddress(final String keyType) throws Exception {
-        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final Key keyWithDelegatableContractId = Key.newBuilder()
-                .setDelegatableContractId(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
-                .build();
-
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.TOKEN).key(keyWithDelegatableContractId.toByteArray()))
-                .persist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .freezeKey(keyWithDelegatableContractId.toByteArray())
-                        .supplyKey(keyWithDelegatableContractId.toByteArray())
-                        .wipeKey(keyWithDelegatableContractId.toByteArray()))
-                .persist();
-
-        final var result = contract.call_getTokenKeyPublic(
-                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
-                .send();
-
-        final var expectedKey = new KeyValue(
-                false, Address.ZERO.toHexString(), new byte[0], new byte[0], contract.getContractAddress());
-
-        assertThat(result).isEqualTo(expectedKey);
-
-        final var functionCall = contract.send_getTokenKeyPublic(
-                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
-        testEstimateGas(functionCall, contract);
-    }
-
-    @ParameterizedTest
-    @CsvSource({"2", "32", "64"})
-    void getTokenNFTKeyWithContractAddress(final String keyType) throws Exception {
-        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final Key keyWithContractId = Key.newBuilder()
-                .setContractID(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
-                .build();
-
-        final var tokenEntity = persistTokenEntity();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        .kycKey(keyWithContractId.toByteArray())
-                        .feeScheduleKey(keyWithContractId.toByteArray())
-                        .pauseKey(keyWithContractId.toByteArray()))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
-
-        final var result = contract.call_getTokenKeyPublic(
-                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
-                .send();
-
-        final var expectedKey = new KeyValue(
-                false, contract.getContractAddress(), new byte[0], new byte[0], Address.ZERO.toHexString());
-
-        assertThat(result).isEqualTo(expectedKey);
-
-        final var functionCall = contract.send_getTokenKeyPublic(
-                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
-        testEstimateGas(functionCall, contract);
-    }
-
-    @ParameterizedTest
-    @CsvSource({"2", "32", "64"})
-    void getTokenNFTKeyWithED25519(final String keyType) throws Exception {
-        final byte[] ed25519Key = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
-        final var keyWithEd25519 =
-                Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519Key)).build();
-
-        final var tokenEntity = persistTokenEntity();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        .pauseKey(keyWithEd25519.toByteArray())
-                        .feeScheduleKey(keyWithEd25519.toByteArray())
-                        .kycKey(keyWithEd25519.toByteArray()))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
-
-        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getTokenKeyPublic(
-                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
-                .send();
-
-        final var expectedKey =
-                new KeyValue(false, Address.ZERO.toHexString(), ed25519Key, new byte[0], Address.ZERO.toHexString());
-
-        assertThat(result).isEqualTo(expectedKey);
-
-        final var functionCall = contract.send_getTokenKeyPublic(
-                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
-        testEstimateGas(functionCall, contract);
-    }
-
-    @ParameterizedTest
-    @CsvSource({"2", "32", "64"})
-    void getTokenNFTKeyWithECDSAKey(final String keyType) throws Exception {
-        final var ecdsaKey = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
-        final var keyWithECDSASecp256K1 = Key.newBuilder()
-                .setECDSASecp256K1(ByteString.copyFrom(ecdsaKey))
-                .build();
-
-        final var tokenEntity = persistTokenEntity();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        .kycKey(keyWithECDSASecp256K1.toByteArray())
-                        .feeScheduleKey(keyWithECDSASecp256K1.toByteArray())
-                        .pauseKey(keyWithECDSASecp256K1.toByteArray()))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
-
-        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getTokenKeyPublic(
-                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
-                .send();
-
-        final var expectedKey =
-                new KeyValue(false, Address.ZERO.toHexString(), new byte[0], ecdsaKey, Address.ZERO.toHexString());
-
-        assertThat(result).isEqualTo(expectedKey);
-
-        final var functionCall = contract.send_getTokenKeyPublic(
-                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
-        testEstimateGas(functionCall, contract);
-    }
-
-    @ParameterizedTest
-    @CsvSource({"2", "32", "64"})
-    void getTokenNFTKeyWithDelegatableContractAddress(final String keyType) throws Exception {
-        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final Key keyWithDelegatableContractId = Key.newBuilder()
-                .setDelegatableContractId(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
-                .build();
-
-        final var tokenEntity = persistTokenEntity();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        .kycKey(keyWithDelegatableContractId.toByteArray())
-                        .feeScheduleKey(keyWithDelegatableContractId.toByteArray())
-                        .pauseKey(keyWithDelegatableContractId.toByteArray()))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
-
-        final var result = contract.call_getTokenKeyPublic(
-                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
-                .send();
-
-        final var expectedKey = new KeyValue(
-                false, Address.ZERO.toHexString(), new byte[0], new byte[0], contract.getContractAddress());
-
-        assertThat(result).isEqualTo(expectedKey);
-
-        final var functionCall = contract.send_getTokenKeyPublic(
-                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
-        testEstimateGas(functionCall, contract);
+    private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
+        return switch (keyValueType) {
+            case CONTRACT_ID -> new KeyValue(
+                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+            case ED25519 -> new KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), ED25519_KEY, new byte[0], Address.ZERO.toHexString());
+            case ECDSA_SECPK256K1 -> new KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], ECDSA_KEY, Address.ZERO.toHexString());
+            case DELEGATABLE_CONTRACT_ID -> new KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
+            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
+        };
     }
 
     @Test
@@ -1369,23 +1197,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 getAddressFromEntityId(royaltyFee.getFallbackFee().getDenominatingTokenId()),
                 false,
                 getAddressFromEvmAddress(feeCollector.getEvmAddress()));
-    }
-
-    private void testEstimateGas(final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract)
-            throws Exception {
-        testWeb3jService.setEstimateGas(true);
-
-        functionCall.send();
-        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getOutput());
-
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        // Then
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
-
-        testWeb3jService.setEstimateGas(false);
     }
 
     @ParameterizedTest
