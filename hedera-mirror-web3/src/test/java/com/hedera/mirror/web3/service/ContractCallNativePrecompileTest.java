@@ -26,16 +26,16 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor
 class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
-    @Autowired
-    protected ContractExecutionService contractCallService;
+    private final ContractExecutionService contractCallService;
 
     @BeforeEach
     void setup() {
