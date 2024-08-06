@@ -246,7 +246,7 @@ public class ContractFeature extends BaseContractFeature {
         assertNotNull(mirrorAccountResponse.getAccount());
         assertEquals(amount, mirrorAccountResponse.getBalance().getBalance());
         // Hollow account indicated by not having a public key defined.
-        assertEquals(ACCOUNT_EMPTY_KEYLIST, mirrorAccountResponse.getKey().getKey());
+        assertThat(mirrorAccountResponse.getKey()).isNull();
     }
 
     @And("the mirror node REST API should indicate not found when using evm address to retrieve as a contract")
