@@ -56,7 +56,6 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
     private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");
     private static final List<Path> SELECTED_SPECS = List.of(
-            REST_BASE_PATH.resolve("nonexistent/test.json"),
             REST_BASE_PATH.resolve("accounts/alias-into-evm-address.json"),
             REST_BASE_PATH.resolve("blocks/no-records.json"),
             REST_BASE_PATH.resolve("accounts/specific-id.json")
@@ -115,9 +114,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
 
     private void setupDatabase(RestSpecNormalized normalizedRestSpec) {
         // TODO, with @TestFactory, no lifecycle methods, so need to clean DB explicitly
-        var setup = normalizedRestSpec.setup();
-        specDomainBuilder.addAccounts(setup.accounts());
-        specDomainBuilder.addTokenAccounts(setup.tokenAccounts());
+        specDomainBuilder.addSetupEntities(normalizedRestSpec.setup());
     }
 
     @SneakyThrows

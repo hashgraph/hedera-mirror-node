@@ -19,9 +19,12 @@ package com.hedera.mirror.restjava.spec.builder;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.restjava.repository.TokenAccountRepository;
+import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Named
 class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount.TokenAccountBuilder<?, ?>> {
@@ -36,6 +39,11 @@ class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount.TokenAccoun
     TokenAccountBuilder(TokenAccountRepository tokenAccountRepository) {
         super(METHOD_PARAMETER_CONVERTERS);
         this.tokenAccountRepository = tokenAccountRepository;
+    }
+
+    @Override
+    protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
+        return specSetup::tokenAccounts;
     }
 
     @Override

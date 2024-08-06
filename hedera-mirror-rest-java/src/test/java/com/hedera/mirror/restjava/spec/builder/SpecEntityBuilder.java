@@ -17,17 +17,7 @@
 package com.hedera.mirror.restjava.spec.builder;
 
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
-import jakarta.inject.Named;
-import java.util.List;
-import lombok.RequiredArgsConstructor;
 
-@Named
-@RequiredArgsConstructor
-public class SpecDomainBuilder {
-
-    private final List<SpecEntityBuilder> specEntityBuilders;
-
-    public void addSetupEntities(SpecSetup specSetup) {
-        specEntityBuilders.forEach(specEntityBuilder -> specEntityBuilder.customizeAndPersistEntities(specSetup));
-    }
+public interface SpecEntityBuilder {
+    void customizeAndPersistEntities(SpecSetup specSetup);
 }

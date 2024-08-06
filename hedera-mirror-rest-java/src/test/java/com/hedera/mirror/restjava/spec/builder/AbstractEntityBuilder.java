@@ -18,14 +18,17 @@ package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.base.CaseFormat;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.annotation.Resource;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
@@ -34,7 +37,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.springframework.core.convert.ConversionService;
 
 @CustomLog
-abstract class AbstractEntityBuilder<B> {
+abstract class AbstractEntityBuilder<B> implements SpecEntityBuilder {
 
     private static final Base32 BASE32 = new Base32();
     private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
@@ -80,6 +83,16 @@ abstract class AbstractEntityBuilder<B> {
         this.methodParameterConverters = methodParameterConverters;
         this.attributeNameMap = attributeNameMap;
     }
+
+    @Override
+    public void customizeAndPersistEntities(SpecSetup specSetup) {
+        var specEntities = getSpecEntitiesSupplier(specSetup).get();
+        if (specEntities != null) {
+            specEntities.forEach(this::customizeAndPersistEntity);
+        }
+    }
+
+    protected abstract Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup);
 
     protected abstract void customizeAndPersistEntity(Map<String, Object> entityAttributes);
 

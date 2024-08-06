@@ -21,9 +21,12 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.restjava.repository.EntityRepository;
+import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Named
 class AccountBuilder extends AbstractEntityBuilder<Entity.EntityBuilder<?, ?>> {
@@ -40,6 +43,11 @@ class AccountBuilder extends AbstractEntityBuilder<Entity.EntityBuilder<?, ?>> {
     AccountBuilder(EntityRepository entityRepository) {
         super(METHOD_PARAMETER_CONVERTERS);
         this.entityRepository = entityRepository;
+    }
+
+    @Override
+    protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
+        return specSetup::accounts;
     }
 
     @Override
