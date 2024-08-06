@@ -17,6 +17,8 @@
 package com.hedera.mirror.restjava.spec;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
@@ -24,14 +26,17 @@ import com.hedera.mirror.restjava.spec.builder.SpecDomainBuilder;
 import com.hedera.mirror.restjava.spec.model.RestSpec;
 import com.hedera.mirror.restjava.spec.model.RestSpecNormalized;
 import com.hedera.mirror.restjava.spec.config.SpecTestConfig;
+import com.hedera.mirror.restjava.spec.model.SpecTestNormalized;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.json.JSONException;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import lombok.SneakyThrows;
+
+import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.runner.RunWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -47,9 +52,11 @@ import org.testcontainers.containers.GenericContainer;
         properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class RestSpecTest extends RestJavaIntegrationTest {
 
+    private static final Consumer<RestSpecNormalized> NO_OP_FUNCTION = s -> {};
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
     private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");
     private static final List<Path> SELECTED_SPECS = List.of(
+            REST_BASE_PATH.resolve("nonexistent/test.json"),
             REST_BASE_PATH.resolve("accounts/alias-into-evm-address.json"),
             REST_BASE_PATH.resolve("blocks/no-records.json"),
             REST_BASE_PATH.resolve("accounts/specific-id.json")
@@ -75,33 +82,54 @@ public class RestSpecTest extends RestJavaIntegrationTest {
                 .build();
     }
 
-    @ParameterizedTest
-    @MethodSource("getSpecFilesToRun")
-    void runSpecTests(Path specFilePath) throws IOException, JSONException {
-        var spec = RestSpecNormalized.from(objectMapper.readValue(specFilePath.toFile(), RestSpec.class));
-        log.info("Running spec '{}'", spec.description());
-        setupDatabase(spec);
+    @TestFactory
+    Stream<DynamicContainer> generateTestsFromSpecs() {
+        var dynamicContainers = new ArrayList<DynamicContainer>();
+        for (var specFilePath : specsToTest()) {
+            RestSpecNormalized normalizedSpec;
+            try {
+                normalizedSpec = RestSpecNormalized.from(objectMapper.readValue(specFilePath.toFile(), RestSpec.class));
+            } catch (IOException e) {
+                dynamicContainers.add(dynamicContainer(REST_BASE_PATH.relativize(specFilePath).toString(),
+                        Stream.of(dynamicTest("Unable to parse spec file", ()-> {throw e;}))));
+                continue;
+            }
 
-        for (var specTest : spec.tests()) {
-            for (var url : specTest.urls()) {
-                var response = restClient.get()
-                        .uri(url)
-                        .retrieve()
-                        .toEntity(String.class);
-
-                assertThat(response.getStatusCode().value()).isEqualTo(specTest.responseStatus());
-                JSONAssert.assertEquals(specTest.responseJson(), response.getBody(), JSONCompareMode.LENIENT);
+            var normalizedSpecTests = normalizedSpec.tests();
+            for (var i = 0; i < normalizedSpecTests.size(); i++) {
+                var test = normalizedSpecTests.get(i);
+                Consumer<RestSpecNormalized> setupFunction = i == 0 ? this::setupDatabase : NO_OP_FUNCTION;
+                var testCases = test.urls().stream()
+                        .map(url -> dynamicTest(url, () -> testSpecUrl(setupFunction, url, test, normalizedSpec)));
+                dynamicContainers.add(dynamicContainer(
+                        "%s: '%s'".formatted(REST_BASE_PATH.relativize(specFilePath), normalizedSpec.description()),
+                        testCases));
             }
         }
+        return Stream.of(dynamicContainer("Dynamic test cases from spec files, base: %s".formatted(REST_BASE_PATH), dynamicContainers));
+    }
+
+    private List<Path> specsToTest() {
+        return SELECTED_SPECS;
     }
 
     private void setupDatabase(RestSpecNormalized normalizedRestSpec) {
+        // TODO, with @TestFactory, no lifecycle methods, so need to clean DB explicitly
         var setup = normalizedRestSpec.setup();
         specDomainBuilder.addAccounts(setup.accounts());
         specDomainBuilder.addTokenAccounts(setup.tokenAccounts());
     }
 
-    private static Stream<Arguments> getSpecFilesToRun() {
-        return SELECTED_SPECS.stream().map(Arguments::of);
+    @SneakyThrows
+    private void testSpecUrl(Consumer<RestSpecNormalized> setupFunction, String url, SpecTestNormalized specTest, RestSpecNormalized spec) {
+        setupFunction.accept(spec);
+
+        var response = restClient.get()
+                .uri(url)
+                .retrieve()
+                .toEntity(String.class);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(specTest.responseStatus());
+        JSONAssert.assertEquals(specTest.responseJson(), response.getBody(), JSONCompareMode.LENIENT);
     }
 }
