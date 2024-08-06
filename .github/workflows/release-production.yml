@@ -109,7 +109,7 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Publish helm chart
-        uses: stefanprodan/helm-gh-pages@0ad2bb377311d61ac04ad9eb6f252fb68e207260 # v1.7.0
+        uses: step-security/helm-gh-pages@6a390e89293c1ec8bc5120f6692f3b8a313a9a3d # v1.7.0
         with:
           target_dir: charts
           token: ${{ secrets.GITHUB_TOKEN }}
