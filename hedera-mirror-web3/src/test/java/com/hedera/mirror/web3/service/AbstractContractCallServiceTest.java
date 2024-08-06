@@ -86,6 +86,8 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
     @AfterEach
     void cleanup() {
         testWeb3jService.setEstimateGas(false);
+        testWeb3jService.setValue(0L);
+        testWeb3jService.setSender(Address.fromHexString(""));
     }
 
     @SuppressWarnings("try")
@@ -117,6 +119,26 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
                 .isTrue();
     }
 
+    protected void verifyEthCallAndEstimateGasWithValue(
+            final RemoteFunctionCall<TransactionReceipt> functionCall,
+            final Contract contract,
+            final Address payerAddress,
+            final long value) {
+        final var actualGasUsed =
+                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, payerAddress, value));
+
+        testWeb3jService.setEstimateGas(true);
+        final AtomicLong estimateGasUsedResult = new AtomicLong();
+        // Verify ethCall
+        assertDoesNotThrow(
+                () -> estimateGasUsedResult.set(functionCall.send().getGasUsed().longValue()));
+
+        // Verify estimateGas
+        assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
+                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
+                .isTrue();
+    }
+
     protected ContractExecutionParameters getContractExecutionParameters(
             final RemoteFunctionCall<?> functionCall, final Contract contract) {
         return ContractExecutionParameters.builder()
@@ -127,7 +149,7 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
                 .isEstimate(false)
                 .isStatic(false)
                 .receiver(Address.fromHexString(contract.getContractAddress()))
-                .sender(new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress()))))
+                .sender(new HederaEvmAccount(Address.ZERO))
                 .value(0L)
                 .build();
     }

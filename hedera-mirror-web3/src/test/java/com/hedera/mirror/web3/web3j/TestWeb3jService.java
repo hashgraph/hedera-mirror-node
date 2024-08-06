@@ -31,6 +31,7 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import io.reactivex.Flowable;
 import java.io.IOException;
 import java.util.List;
@@ -78,6 +79,7 @@ public class TestWeb3jService implements Web3jService {
     private boolean isEstimateGas = false;
     private String transactionResult;
     private String estimatedGas;
+    private long value = 0L;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -105,6 +107,10 @@ public class TestWeb3jService implements Web3jService {
 
     public void setEstimateGas(final boolean isEstimateGas) {
         this.isEstimateGas = isEstimateGas;
+    }
+
+    public void setValue(final long value) {
+        this.value = value;
     }
 
     @SneakyThrows(Exception.class)
@@ -197,6 +203,7 @@ public class TestWeb3jService implements Web3jService {
         ethCall.setId(request.getId());
         ethCall.setJsonrpc(request.getJsonrpc());
         ethCall.setResult(result);
+
         return ethCall;
     }
 
@@ -254,7 +261,7 @@ public class TestWeb3jService implements Web3jService {
             final Transaction transaction, final CallServiceParameters.CallType callType, final BlockType block) {
         return ContractExecutionParameters.builder()
                 .sender(new HederaEvmAccount(sender))
-                .value(transaction.getValue() != null ? Long.parseLong(transaction.getValue()) : 0L)
+                .value(value)
                 .receiver(Address.fromHexString(transaction.getTo()))
                 .callData(Bytes.fromHexString(transaction.getData()))
                 .gas(TRANSACTION_GAS_LIMIT)
@@ -294,7 +301,7 @@ public class TestWeb3jService implements Web3jService {
         final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
         final var entity = domainBuilder
                 .entity()
-                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId))
+                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId).key(domainBuilder.key(KeyCase.ED25519)))
                 .persist();
 
         domainBuilder
@@ -314,7 +321,7 @@ public class TestWeb3jService implements Web3jService {
         return ethGetTransactionCount;
     }
 
-    private EthGetTransactionReceipt getTransactionReceipt(Request request) {
+    private EthGetTransactionReceipt getTransactionReceipt(final Request request) {
         final var transactionHash = request.getParams().getFirst().toString();
         final var ethTransactionReceipt = new EthGetTransactionReceipt();
         final var transactionReceipt = new TransactionReceipt();
