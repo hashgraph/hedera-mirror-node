@@ -23,6 +23,7 @@ import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 import jakarta.inject.Named;
 import java.net.ConnectException;
 import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -100,7 +101,8 @@ public class ClusterHealthIndicator implements ReactiveHealthIndicator {
                     var status = Status.UNKNOWN;
                     // Connection issue can be caused by database being down, since the rest API service will become
                     // unavailable eventually
-                    if (ExceptionUtils.getRootCause(e) instanceof ConnectException) {
+                    var rootCause = ExceptionUtils.getRootCause(e);
+                    if (rootCause instanceof ConnectException || rootCause instanceof TimeoutException) {
                         status = Status.DOWN;
                     }
 

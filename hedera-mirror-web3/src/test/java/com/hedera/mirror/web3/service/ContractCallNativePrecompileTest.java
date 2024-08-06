@@ -16,22 +16,26 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ContractCallNativePrecompileTest extends ContractCallTestSetup {
+@RequiredArgsConstructor
+class ContractCallNativePrecompileTest extends Web3IntegrationTest {
+
+    private final ContractExecutionService contractCallService;
 
     @BeforeEach
     void setup() {
@@ -51,12 +55,11 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
 
         final var data = hash.concat(v).concat(r).concat(s);
 
-        final var serviceParameters =
-                serviceParametersForExecution(Bytes.fromHexString(data), Address.ECREC, ETH_CALL, 0L, BlockType.LATEST);
+        final var serviceParameters = serviceParametersForExecution(Bytes.fromHexString(data), Address.ECREC);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        assertGasUsedIsPositive(gasUsedBeforeExecution);
     }
 
     @Test
@@ -66,12 +69,11 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
         final var data = "0xFF";
         final var correctResult = "0xa8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89";
 
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.SHA256, ETH_CALL, 0L, BlockType.LATEST);
+        final var serviceParameters = serviceParametersForExecution(Bytes.fromHexString(data), Address.SHA256);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        assertGasUsedIsPositive(gasUsedBeforeExecution);
     }
 
     @Test
@@ -81,12 +83,11 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
         final var data = "0xFF";
         final var correctResult = "0x0000000000000000000000002c0c45d3ecab80fe060e5f1d7057cd2f8de5e557";
 
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.RIPEMD160, ETH_CALL, 0L, BlockType.LATEST);
+        final var serviceParameters = serviceParametersForExecution(Bytes.fromHexString(data), Address.RIPEMD160);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        assertGasUsedIsPositive(gasUsedBeforeExecution);
     }
 
     @Test
@@ -96,12 +97,11 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
         final var data = "0xFF";
         final var correctResult = "0xff";
 
-        final var serviceParameters =
-                serviceParametersForExecution(Bytes.fromHexString(data), Address.ID, ETH_CALL, 0L, BlockType.LATEST);
+        final var serviceParameters = serviceParametersForExecution(Bytes.fromHexString(data), Address.ID);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        assertGasUsedIsPositive(gasUsedBeforeExecution);
     }
 
     @Test
@@ -115,12 +115,11 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
         final var data = bsize.concat(esize).concat(msize).concat(b);
         final var correctResult = "0x08";
 
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.MODEXP, ETH_CALL, 0L, BlockType.LATEST);
+        final var serviceParameters = serviceParametersForExecution(Bytes.fromHexString(data), Address.MODEXP);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        assertGasUsedIsPositive(gasUsedBeforeExecution);
     }
 
     @Test
@@ -135,12 +134,11 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
         final var correctResult =
                 "0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd315ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4";
 
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.ALTBN128_ADD, ETH_CALL, 0L, BlockType.LATEST);
+        final var serviceParameters = serviceParametersForExecution(Bytes.fromHexString(data), Address.ALTBN128_ADD);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        assertGasUsedIsPositive(gasUsedBeforeExecution);
     }
 
     @Test
@@ -155,12 +153,11 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
         final var correctResult =
                 "0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd315ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4";
 
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.ALTBN128_MUL, ETH_CALL, 0L, BlockType.LATEST);
+        final var serviceParameters = serviceParametersForExecution(Bytes.fromHexString(data), Address.ALTBN128_MUL);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        assertGasUsedIsPositive(gasUsedBeforeExecution);
     }
 
     @Test
@@ -193,12 +190,12 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
                 .concat(y6);
         final var correctResult = "0x0000000000000000000000000000000000000000000000000000000000000001";
         System.out.println(data);
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.ALTBN128_PAIRING, ETH_CALL, 0L, BlockType.LATEST);
+        final var serviceParameters =
+                serviceParametersForExecution(Bytes.fromHexString(data), Address.ALTBN128_PAIRING);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        assertGasUsedIsPositive(gasUsedBeforeExecution);
     }
 
     @Test
@@ -217,12 +214,12 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
         final var correctResult =
                 "0xba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923";
 
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.BLAKE2B_F_COMPRESSION, ETH_CALL, 0L, BlockType.LATEST);
+        final var serviceParameters =
+                serviceParametersForExecution(Bytes.fromHexString(data), Address.BLAKE2B_F_COMPRESSION);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        assertGasUsedIsPositive(gasUsedBeforeExecution);
     }
 
     private double getGasUsedBeforeExecution(final CallType callType) {
@@ -238,50 +235,26 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
         return gasUsedBeforeExecution;
     }
 
-    @Override
-    protected ContractExecutionParameters serviceParametersForExecution(
-            final Bytes callData,
-            final Address contractAddress,
-            final CallType callType,
-            final long value,
-            final BlockType block) {
-        return serviceParametersForExecution(callData, contractAddress, callType, value, block, 15_000_000L);
-    }
-
-    @Override
-    protected ContractExecutionParameters serviceParametersForExecution(
-            final Bytes callData,
-            final Address contractAddress,
-            final CallType callType,
-            final long value,
-            final BlockType block,
-            final long gasLimit) {
-        HederaEvmAccount sender;
-        final Address senderAddress = toAddress(1043);
-        final Address senderAddressHistorical = toAddress(1014);
-
-        if (block != BlockType.LATEST) {
-            sender = new HederaEvmAccount(senderAddressHistorical);
-        } else {
-            sender = new HederaEvmAccount(senderAddress);
-        }
+    private ContractExecutionParameters serviceParametersForExecution(
+            final Bytes callData, final Address contractAddress) {
+        final HederaEvmAccount sender = new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress())));
 
         return ContractExecutionParameters.builder()
                 .sender(sender)
-                .value(value)
                 .receiver(contractAddress)
                 .callData(callData)
-                .gas(gasLimit)
+                .gas(TRANSACTION_GAS_LIMIT)
                 .isStatic(false)
-                .callType(callType)
-                .isEstimate(ETH_ESTIMATE_GAS == callType)
-                .block(block)
+                .isEstimate(false)
+                .callType(ETH_CALL)
+                .value(0L)
+                .block(BlockType.LATEST)
                 .build();
     }
 
-    private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {
+    private void assertGasUsedIsPositive(final double gasUsedBeforeExecution) {
         final var afterExecution = meterRegistry.find(GAS_USED_METRIC).counters().stream()
-                .filter(c -> callType.name().equals(c.getId().getTag("type")))
+                .filter(c -> CallType.ETH_CALL.name().equals(c.getId().getTag("type")))
                 .findFirst()
                 .get();
 

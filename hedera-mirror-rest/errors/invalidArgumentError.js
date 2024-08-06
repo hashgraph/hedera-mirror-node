@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+import RestError from './restError';
+
 const InvalidArgumentErrorMessageFormat = 'Invalid parameter: ';
 const invalidParamUsageMessageFormat = 'Invalid parameter usage: ';
 const ParameterExceedsMaxErrorMessageFormat = 'Parameter values count exceeds maximum number allowed: ';
 const unknownParamMessageFormat = 'Unknown query parameter: ';
 
-class InvalidArgumentError extends Error {
+class InvalidArgumentError extends RestError {
   static INVALID_ERROR_CODE = 'invalidArgument';
   static PARAM_COUNT_EXCEEDS_MAX_CODE = 'paramCountExceedsMax';
   static INVALID_PARAM_USAGE = 'invalidParamUsage';
@@ -27,7 +29,6 @@ class InvalidArgumentError extends Error {
 
   constructor(errorMessage) {
     super();
-
     this.message = errorMessage;
   }
 

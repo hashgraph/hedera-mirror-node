@@ -9,7 +9,6 @@ importer:
             record:
               entity:
                 persist:
-                  transactionHash: true
                   entityTransactions: false
                   topicMessageLookups: true
   env:

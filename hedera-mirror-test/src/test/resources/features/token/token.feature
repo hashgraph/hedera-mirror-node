@@ -16,19 +16,25 @@ Feature: HTS Base Coverage Feature
     When I associate ALICE with token
     Then the mirror node REST API should return the transaction
     Then the mirror node REST API should return the token relationship for token
-    And I set account freeze status to <freezeStatus>
+    And I set account freeze status to <freezeStatus> for ALICE
     Then the mirror node REST API should return the transaction
-    And I set account kyc status to <kycStatus>
+    And I set account kyc status to <kycStatus> for ALICE
     Then the mirror node REST API should return the transaction
     Then I transfer <amount> tokens to ALICE
     Then the mirror node REST API should return the transaction for token fund flow
     Then I update the token
     And the mirror node REST API should confirm token update
+    And I associate CAROL with token
+    And I set account kyc status to <kycStatus> for CAROL
+    Then the mirror node REST API should return the transaction
+    And I transfer <amount> tokens to CAROL
+    Then CAROL rejects the fungible token
+    Then the mirror node REST API should return the transaction CAROL returns <amount> fungible token to OPERATOR
     Then I burn <modifySupplyAmount> from the token
     And the mirror node REST API should return the transaction
     Then I mint <modifySupplyAmount> from the token
     And the mirror node REST API should return the transaction
-    Then I wipe <amount> from the token
+    Then I wipe <amount> from the token for ALICE
     And the mirror node REST API should return the transaction
     Then I pause the token
     And the mirror node REST API should return the transaction
@@ -36,7 +42,7 @@ Feature: HTS Base Coverage Feature
     Then I unpause the token
     And the mirror node REST API should return the transaction
     And the mirror node Token Info REST API should return pause status UNPAUSED
-    Then I dissociate the account from the token
+    Then I dissociate ALICE from the token
     And the mirror node REST API should return the transaction
     Then I delete the token
     And the mirror node REST API should return the transaction
@@ -45,7 +51,7 @@ Feature: HTS Base Coverage Feature
       | 2350   | 2            | 1         | 100                |
 
   @nft @critical @release
-  Scenario Outline: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Update Treasury, Delete
+  Scenario: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Update Treasury, Delete
     Given I successfully create a new nft with infinite supplyType
     Then the mirror node REST API should return the transaction
     And I ensure token has the correct properties
@@ -61,7 +67,7 @@ Feature: HTS Base Coverage Feature
     Then the mirror node REST API should return the token relationship for nft
     Then I mint a serial number from the token
     And the mirror node REST API should return the transaction for token serial number index 0 transaction flow
-     Then I transfer serial number index 0 to ALICE
+    Then I transfer serial number index 0 to ALICE
     And the mirror node REST API should return the transaction for token serial number index 0 full flow
     Given I update the metadata for serial number index 0
     Then the mirror node REST API should return the transaction for token serial number index 0 transaction flow
@@ -70,7 +76,13 @@ Feature: HTS Base Coverage Feature
     Given I update the metadata for serial number indices 0 and 1
     Then the mirror node REST API should return the transaction for token serial number index 0 transaction flow
     And the mirror node REST API should return the transaction for token serial number index 1 transaction flow
-    Then I wipe serial number index 0 from token
+    And I associate CAROL with token
+    And the mirror node REST API should return the transaction
+    Then the mirror node REST API should return the token relationship for nft
+    And I transfer serial number index 1 to CAROL
+    And CAROL rejects serial number index 1
+    Then the mirror node REST API should return the transaction CAROL returns serial number index 1 to OPERATOR
+    Then I wipe serial number index 0 from token for ALICE
     And the mirror node REST API should return the transaction for token serial number index 0 transaction flow
     Then I burn serial number index 1 from token
     And the mirror node REST API should return the transaction for token serial number index 1 transaction flow

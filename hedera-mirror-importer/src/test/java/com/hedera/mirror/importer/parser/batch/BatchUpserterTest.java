@@ -26,6 +26,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
@@ -47,6 +48,7 @@ import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.NodeRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -79,6 +81,7 @@ class BatchUpserterTest extends ImporterIntegrationTest {
     private final EntityRepository entityRepository;
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
+    private final NodeRepository nodeRepository;
     private final ScheduleRepository scheduleRepository;
     private final TokenRepository tokenRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
@@ -542,6 +545,49 @@ class BatchUpserterTest extends ImporterIntegrationTest {
     }
 
     @Test
+    void node() {
+        var node1 = domainBuilder.node().get();
+        var node2 = domainBuilder.node().get();
+        var node3 = domainBuilder.node().get();
+        var nodes = List.of(node1, node2, node3);
+        persist(batchPersister, nodes);
+        assertThat(nodeRepository.findAll()).containsExactlyInAnyOrderElementsOf(nodes);
+    }
+
+    @Test
+    void nodeInsertAndUpdate() {
+
+        var node1 = domainBuilder.node().get();
+        var node2 = domainBuilder.node().get();
+        var node3 = domainBuilder.node().get();
+        var node4 = domainBuilder.node().get();
+
+        // when
+        persist(batchPersister, List.of(node1, node2, node3, node4));
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactlyInAnyOrder(node1, node2, node3, node4);
+        assertThat(findHistory(Node.class)).isEmpty();
+
+        // update node 3 and 4
+        var node3Delete = deleteNode(node3);
+        var node4Delete = deleteNode(node4);
+        var node5 = domainBuilder.node().get();
+        var node6 = domainBuilder.node().get();
+
+        // when
+        persist(batchPersister, List.of(node3Delete, node4Delete, node5, node6));
+
+        // then
+        assertThat(nodeRepository.findAll())
+                .containsExactlyInAnyOrder(node1, node2, node3Delete, node4Delete, node5, node6);
+
+        node3.setTimestampUpper(node3Delete.getTimestampLower());
+        node4.setTimestampUpper(node4Delete.getTimestampLower());
+        assertThat(findHistory(Node.class)).containsExactlyInAnyOrder(node3, node4);
+    }
+
+    @Test
     void tokenAllowance() {
         TokenAllowance tokenAllowance1 = domainBuilder.tokenAllowance().get();
         TokenAllowance tokenAllowance2 = domainBuilder.tokenAllowance().get();
@@ -776,6 +822,13 @@ class BatchUpserterTest extends ImporterIntegrationTest {
                 .createdTimestamp(null)
                 .deleted(null)
                 .metadata(null)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+    }
+
+    private Node deleteNode(Node node) {
+        return node.toBuilder()
+                .deleted(true)
                 .timestampRange(Range.atLeast(domainBuilder.timestamp()))
                 .build();
     }

@@ -88,7 +88,7 @@ public class EntityProperties {
 
         private boolean trackNonce = true;
 
-        private boolean transactionHash = false;
+        private boolean transactionHash = true;
 
         /**
          * A set of transaction types to persist transaction hash for. If empty and transactionHash is true, transaction
