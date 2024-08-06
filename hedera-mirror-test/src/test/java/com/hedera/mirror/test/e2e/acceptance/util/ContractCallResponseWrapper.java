@@ -37,7 +37,8 @@ import org.apache.tuweni.bytes.Bytes;
 public class ContractCallResponseWrapper {
     private static final String EMPTY_RESULT = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-    @NonNull private final ContractCallResponse response;
+    @NonNull
+    private final ContractCallResponse response;
 
     public String getResult() {
         return response.getResult();
@@ -119,5 +120,10 @@ public class ContractCallResponseWrapper {
     @Override
     public int hashCode() {
         return Objects.hash(response);
+    }
+
+    @Override
+    public String toString() {
+        return response.getResult();
     }
 }
