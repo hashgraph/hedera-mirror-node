@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, large, ephemeral]
     timeout-minutes: 30
     steps:
       - name: Harden Runner
@@ -45,6 +45,7 @@ jobs:
 
       - name: Setup Kind
         run: |
+          [ $(uname -m) = x86_64  ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
           [ $(uname -m) = aarch64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-arm64
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
