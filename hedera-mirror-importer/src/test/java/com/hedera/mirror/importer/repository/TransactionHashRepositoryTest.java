@@ -22,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-// @EnabledIfV2
 class TransactionHashRepositoryTest extends AbstractRepositoryTest {
 
     private final TransactionHashRepository transactionHashRepository;
