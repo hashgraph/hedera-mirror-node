@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.service.ContractCallTestSetup.NEW_ECDSA_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestSetup.NEW_ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
@@ -29,7 +31,9 @@ import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
+import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -56,6 +60,8 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
     @AfterEach
     void cleanup() {
         testWeb3jService.setEstimateGas(false);
+        testWeb3jService.setValue(0L);
+        testWeb3jService.setSender(Address.fromHexString(""));
     }
 
     @SuppressWarnings("try")
@@ -87,6 +93,26 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
                 .isTrue();
     }
 
+    protected void verifyEthCallAndEstimateGasWithValue(
+            final RemoteFunctionCall<TransactionReceipt> functionCall,
+            final Contract contract,
+            final Address payerAddress,
+            final long value) {
+        final var actualGasUsed =
+                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, payerAddress, value));
+
+        testWeb3jService.setEstimateGas(true);
+        final AtomicLong estimateGasUsedResult = new AtomicLong();
+        // Verify ethCall
+        assertDoesNotThrow(
+                () -> estimateGasUsedResult.set(functionCall.send().getGasUsed().longValue()));
+
+        // Verify estimateGas
+        assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
+                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
+                .isTrue();
+    }
+
     protected ContractExecutionParameters getContractExecutionParameters(
             final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract) {
         return ContractExecutionParameters.builder()
@@ -97,8 +123,46 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
                 .isEstimate(false)
                 .isStatic(false)
                 .receiver(Address.fromHexString(contract.getContractAddress()))
-                .sender(new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress()))))
+                .sender(new HederaEvmAccount(Address.ZERO))
                 .value(0L)
                 .build();
+    }
+
+    protected ContractExecutionParameters getContractExecutionParameters(
+            final RemoteFunctionCall<TransactionReceipt> functionCall,
+            final Contract contract,
+            final Address payerAddress,
+            final long value) {
+        return ContractExecutionParameters.builder()
+                .block(BlockType.LATEST)
+                .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
+                .callType(CallType.ETH_CALL)
+                .gas(TRANSACTION_GAS_LIMIT)
+                .isEstimate(false)
+                .isStatic(false)
+                .receiver(Address.fromHexString(contract.getContractAddress()))
+                .sender(new HederaEvmAccount(payerAddress))
+                .value(value)
+                .build();
+    }
+
+    protected KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
+        return switch (keyValueType) {
+            case INHERIT_ACCOUNT_KEY -> new KeyValue(
+                    Boolean.TRUE, Address.ZERO.toHexString(), new byte[0], new byte[0], Address.ZERO.toHexString());
+            case CONTRACT_ID -> new KeyValue(
+                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+            case ED25519 -> new KeyValue(
+                    Boolean.FALSE,
+                    Address.ZERO.toHexString(),
+                    NEW_ED25519_KEY,
+                    new byte[0],
+                    Address.ZERO.toHexString());
+            case ECDSA_SECPK256K1 -> new KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], NEW_ECDSA_KEY, Address.ZERO.toHexString());
+            case DELEGATABLE_CONTRACT_ID -> new KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
+            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
+        };
     }
 }
