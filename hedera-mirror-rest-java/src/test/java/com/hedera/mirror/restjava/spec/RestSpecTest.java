@@ -127,6 +127,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
                 .toEntity(String.class);
 
         assertThat(response.getStatusCode().value()).isEqualTo(specTest.responseStatus());
+        // No assertions made on response headers in phase 1
         JSONAssert.assertEquals(specTest.responseJson(), response.getBody(), JSONCompareMode.LENIENT);
     }
 }

@@ -49,8 +49,6 @@ abstract class AbstractEntityBuilder<B> implements SpecEntityBuilder {
      */
     protected static final Function<Object, Object> BASE32_CONVERTER = value -> value == null ? null : BASE32.decode(value.toString());
 
-    protected static final Function<Object, Object> ENTITY_ID_CONVERTER = value -> value == null ? null
-            : value instanceof String valueStr ? EntityId.of(valueStr) : EntityId.of((Long)value);
 
     protected static final Function<Object, Object> ENTITY_ID_TO_LONG_CONVERTER = value -> value == null ? 0L
             : value instanceof String valueStr ? EntityId.of(valueStr).getId() : (long)value;

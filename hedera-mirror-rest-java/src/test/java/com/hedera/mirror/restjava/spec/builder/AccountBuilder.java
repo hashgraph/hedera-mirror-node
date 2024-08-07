@@ -34,7 +34,6 @@ class AccountBuilder extends AbstractEntityBuilder<Entity.EntityBuilder<?, ?>> {
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
             "alias", BASE32_CONVERTER,
             "evmAddress", HEX_OR_BASE64_CONVERTER,
-            "id", ENTITY_ID_CONVERTER,
             "key", HEX_OR_BASE64_CONVERTER
     );
 
