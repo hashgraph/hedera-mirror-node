@@ -1,16 +1,28 @@
 ---- ${flyway:timestamp} trigger to always run
 
-select create_distributed_table('${tempSchema}.contract_state_temp', 'contract_id', colocate_with => 'contract_state');
-select create_distributed_table('${tempSchema}.crypto_allowance_temp', 'owner', colocate_with => 'crypto_allowance');
-select create_distributed_table('${tempSchema}.custom_fee_temp', 'token_id', colocate_with => 'custom_fee');
-select create_distributed_table('${tempSchema}.entity_stake_temp', 'id', colocate_with => 'entity_stake');
-select create_distributed_table('${tempSchema}.entity_state_start', 'id', colocate_with => 'entity');
-select create_distributed_table('${tempSchema}.entity_temp', 'id', colocate_with => 'entity');
-select create_distributed_table('${tempSchema}.nft_allowance_temp', 'owner', colocate_with => 'nft_allowance');
-select create_distributed_table('${tempSchema}.nft_temp', 'token_id', colocate_with => 'nft');
-select create_distributed_table('${tempSchema}.schedule_temp', 'schedule_id', colocate_with => 'schedule');
-select create_distributed_table('${tempSchema}.token_account_temp', 'account_id', colocate_with => 'token_account');
-select create_distributed_table('${tempSchema}.token_allowance_temp', 'owner', colocate_with => 'token_allowance');
-select create_distributed_table('${tempSchema}.dissociate_token_transfer', 'token_id', colocate_with => 'nft');
-select create_distributed_table('${tempSchema}.token_temp', 'token_id', colocate_with => 'token');
-select create_distributed_table('${tempSchema}.topic_message_lookup_temp', 'topic_id', colocate_with => 'topic_message_lookup');
+create or replace procedure create_distributed_table_safe(name text, distribution_column text, colocate_table text) as
+$$
+begin
+  if not exists(select * from information_schema.tables where table_name = name and table_schema = '${tempSchema}') then
+    return;
+  end if;
+
+  execute format($sep$ select create_distributed_table('%s', '%s', colocate_with => '%s') $sep$,
+    '${tempSchema}.' || name, distribution_column, colocate_table);
+end;
+$$ language plpgsql;
+
+call create_distributed_table_safe('contract_state_temp', 'contract_id', 'contract_state');
+call create_distributed_table_safe('crypto_allowance_temp', 'owner', 'crypto_allowance');
+call create_distributed_table_safe('custom_fee_temp', 'token_id', 'custom_fee');
+call create_distributed_table_safe('entity_stake_temp', 'id', 'entity_stake');
+call create_distributed_table_safe('entity_state_start', 'id', 'entity');
+call create_distributed_table_safe('entity_temp', 'id', 'entity');
+call create_distributed_table_safe('nft_allowance_temp', 'owner', 'nft_allowance');
+call create_distributed_table_safe('nft_temp', 'token_id', 'nft');
+call create_distributed_table_safe('schedule_temp', 'schedule_id', 'schedule');
+call create_distributed_table_safe('token_account_temp', 'account_id', 'token_account');
+call create_distributed_table_safe('token_allowance_temp', 'owner', 'token_allowance');
+call create_distributed_table_safe('dissociate_token_transfer', 'token_id', 'nft');
+call create_distributed_table_safe('token_temp', 'token_id', 'token');
+call create_distributed_table_safe('topic_message_lookup_temp', 'topic_id', 'topic_message_lookup');

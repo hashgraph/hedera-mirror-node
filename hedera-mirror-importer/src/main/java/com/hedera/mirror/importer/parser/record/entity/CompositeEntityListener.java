@@ -28,6 +28,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
@@ -165,6 +166,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onNftAllowance(NftAllowance nftAllowance) throws ImporterException {
         onEach(EntityListener::onNftAllowance, nftAllowance);
+    }
+
+    @Override
+    public void onNode(Node node) throws ImporterException {
+        onEach(EntityListener::onNode, node);
     }
 
     @Override

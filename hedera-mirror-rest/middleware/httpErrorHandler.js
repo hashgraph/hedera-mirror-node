@@ -16,6 +16,7 @@
 
 import {httpStatusCodes, requestStartTime, StatusCode} from '../constants';
 import {HttpError} from 'http-errors';
+import RestError from '../errors/restError';
 
 const defaultStatusCode = httpStatusCodes.INTERNAL_ERROR;
 
@@ -57,6 +58,18 @@ const handleError = async (err, req, res, next) => {
   res.status(statusCode.code).json(errorMessageFormat(errorMessage));
 };
 
+const handleRejection = (reason, promise) => {
+  logger.warn(`Unhandled rejection at:${promise} reason: ${reason}`);
+};
+
+const handleUncaughtException = (err) => {
+  if (err instanceof RestError) {
+    logger.error('Unhandled exception:', err);
+  } else {
+    throw err;
+  }
+};
+
 const shouldReturnMessage = (statusCode) => {
   return statusCode.isClientError() || statusCode === httpStatusCodes.BAD_GATEWAY;
 };
@@ -89,4 +102,4 @@ const errorMessageFormat = (errorMessages) => {
   };
 };
 
-export {handleError};
+export {handleError, handleRejection, handleUncaughtException};

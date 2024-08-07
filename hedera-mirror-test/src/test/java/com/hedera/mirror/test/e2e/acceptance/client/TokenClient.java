@@ -37,6 +37,7 @@ import com.hedera.hashgraph.sdk.TokenGrantKycTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenMintTransaction;
 import com.hedera.hashgraph.sdk.TokenPauseTransaction;
+import com.hedera.hashgraph.sdk.TokenRejectTransaction;
 import com.hedera.hashgraph.sdk.TokenRevokeKycTransaction;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
@@ -109,7 +110,7 @@ public class TokenClient extends AbstractNetworkClient {
                         metadataKey,
                         metadata);
             } catch (Exception e) {
-                log.warn("Issue creating additional token: {}, operator: {}, ex: {}", tokenNameEnum, operator, e);
+                log.warn("Issue creating additional token: {}, operator: {}, ex:", tokenNameEnum, operator, e);
                 return null;
             }
         });
@@ -644,9 +645,28 @@ public class TokenClient extends AbstractNetworkClient {
                 .setCustomFees(customFees)
                 .setTokenId(tokenId)
                 .setTransactionMemo(getMemo("Update token fee schedule"));
-
         var response = executeTransactionAndRetrieveReceipt(transaction, KeyList.of(expandedAccountId.getPrivateKey()));
         log.info("Updated custom fees schedule for token {} via {}", tokenId, response.getTransactionId());
+        return response;
+    }
+
+    public NetworkTransactionResponse rejectFungibleToken(List<TokenId> tokenIds, ExpandedAccountId owner) {
+        var tokenRejectTransaction = new TokenRejectTransaction()
+                .setOwnerId(owner.getAccountId())
+                .setTokenIds(tokenIds)
+                .setTransactionMemo(getMemo("Reject Fungible token"));
+        var response = executeTransactionAndRetrieveReceipt(tokenRejectTransaction, KeyList.of(owner.getPrivateKey()));
+        log.info("Owner {} rejected fungible tokens {} via {}", owner, tokenIds, response.getTransactionId());
+        return response;
+    }
+
+    public NetworkTransactionResponse rejectNonFungibleToken(List<NftId> nftIds, ExpandedAccountId owner) {
+        var tokenRejectTransaction = new TokenRejectTransaction()
+                .setNftIds(nftIds)
+                .setOwnerId(owner.getAccountId())
+                .setTransactionMemo(getMemo("Reject NFT"));
+        var response = executeTransactionAndRetrieveReceipt(tokenRejectTransaction, KeyList.of(owner.getPrivateKey()));
+        log.info("Owner {} rejected NFT tokens {} via {}", owner, nftIds, response.getTransactionId());
         return response;
     }
 

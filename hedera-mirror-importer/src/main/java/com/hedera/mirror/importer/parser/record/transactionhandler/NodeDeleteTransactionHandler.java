@@ -16,9 +16,12 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
 
+    private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
     @Override
@@ -41,5 +45,17 @@ class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
         }
         transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
+        parseNode(recordItem);
+    }
+
+    private void parseNode(RecordItem recordItem) {
+        if (recordItem.isSuccessful()) {
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+            entityListener.onNode(Node.builder()
+                    .deleted(true)
+                    .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
+                    .timestampRange(Range.atLeast(consensusTimestamp))
+                    .build());
+        }
     }
 }

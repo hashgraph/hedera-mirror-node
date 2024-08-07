@@ -28,6 +28,7 @@ import com.hedera.mirror.monitor.subscribe.TestScenario;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 import java.net.ConnectException;
 import java.net.URI;
+import java.time.Duration;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -98,6 +100,22 @@ class ClusterHealthIndicatorTest {
         assertThat(clusterHealthIndicator.health().block())
                 .extracting(Health::getStatus)
                 .isEqualTo(Status.DOWN);
+    }
+
+    @SneakyThrows
+    @Test
+    void restNetworkStakeTimeoutException() {
+        when(transactionGenerator.scenarios()).thenReturn(Flux.just(publishScenario(1.0)));
+        when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscribeScenario(1.0)));
+        when(restApiClient.getNetworkStakeStatusCode())
+                .thenReturn(Mono.delay(Duration.ofSeconds(6L)).thenReturn(HttpStatusCode.valueOf(200)));
+
+        StepVerifier.withVirtualTime(() -> clusterHealthIndicator.health())
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectNextMatches(s -> s.getStatus() == Status.DOWN
+                        && ((String) s.getDetails().get("reason")).contains("within 5000ms"))
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
     }
 
     @Test

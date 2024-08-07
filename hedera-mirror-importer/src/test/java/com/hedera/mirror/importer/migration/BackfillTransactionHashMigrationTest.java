@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.common.domain.transaction.TransactionType.CONSENSUSSUBMITMESSAGE;
 import static com.hedera.mirror.common.domain.transaction.TransactionType.ETHEREUMTRANSACTION;
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -70,7 +71,6 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
     @BeforeEach
     void setup() {
         defaultTransactionHashTypes = entityProperties.getPersist().getTransactionHashTypes();
-        entityProperties.getPersist().setTransactionHash(true);
         migrationProperties = new MigrationProperties();
         migrationProperties = importerProperties.getMigration().get(MIGRATION_NAME);
         migrationProperties.getParams().put("startTimestamp", String.valueOf(DEFAULT_START_TIMESTAMP));
@@ -81,6 +81,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
 
     @AfterEach
     void teardown() {
+        entityProperties.getPersist().setTransactionHash(true);
         entityProperties.getPersist().setTransactionHashTypes(defaultTransactionHashTypes);
         migrationProperties.getParams().clear();
     }
@@ -124,6 +125,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
                 .filter(t -> persistTransactionHash)
                 .toList();
         entityProperties.getPersist().setTransactionHash(persistTransactionHash);
+        persistEthereumTransactionWithEmptyHash(DEFAULT_START_TIMESTAMP + 2);
 
         // when
         runMigration();
@@ -139,6 +141,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
         var expected = List.of(
                 persistTransaction(DEFAULT_START_TIMESTAMP),
                 persistTransaction(DEFAULT_START_TIMESTAMP + 1, CONSENSUSSUBMITMESSAGE));
+        persistEthereumTransactionWithEmptyHash(DEFAULT_START_TIMESTAMP + 2);
 
         // when
         runMigration();
@@ -219,6 +222,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
         // For auto (or the default, since it's just auto) strategy with existing data in the database, only ethereum
         // transaction info should be backfilled
         expected.addAll(persistEthereumTransaction(DEFAULT_START_TIMESTAMP + 1, SkipTransaction.NATIVE));
+        persistEthereumTransactionWithEmptyHash(DEFAULT_START_TIMESTAMP + 2);
 
         // when
         runMigration();
@@ -252,6 +256,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
         domainBuilder.transactionHash().persist();
         var expected = Lists.newArrayList(persistTransaction(DEFAULT_START_TIMESTAMP));
         expected.addAll(persistEthereumTransaction(DEFAULT_START_TIMESTAMP + 1, SkipTransaction.NOTHING));
+        persistEthereumTransactionWithEmptyHash(DEFAULT_START_TIMESTAMP + 2);
 
         // when
         runMigration();
@@ -288,6 +293,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
                 .persist()
                 .toTransactionHash();
         expected.addAll(persistEthereumTransaction(DEFAULT_START_TIMESTAMP + 1, SkipTransaction.NATIVE));
+        persistEthereumTransactionWithEmptyHash(DEFAULT_START_TIMESTAMP + 2);
 
         // when
         runMigration();
@@ -357,6 +363,13 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
         }
 
         return transactionHashList;
+    }
+
+    private void persistEthereumTransactionWithEmptyHash(long consensusTimestamp) {
+        domainBuilder
+                .ethereumTransaction(false)
+                .customize(t -> t.consensusTimestamp(consensusTimestamp).hash(EMPTY_BYTE_ARRAY))
+                .persist();
     }
 
     private TransactionHash persistTransaction(long consensusTimestamp) {
