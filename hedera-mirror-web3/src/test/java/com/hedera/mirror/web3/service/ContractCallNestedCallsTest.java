@@ -46,7 +46,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     private final long CREATE_TOKEN_VALUE = 3070 * 100_000_000L;
     private final String EXPECTED_RESULT_NEGATIVE_TESTS = "hardcodedResult";
 
-    public ContractCallNestedCallsTest(TestWeb3jService testWeb3jService) {
+    private ContractCallNestedCallsTest(TestWeb3jService testWeb3jService) {
         super(testWeb3jService);
     }
 
@@ -54,67 +54,97 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     @CsvSource(
             textBlock =
                     """
-                    FUNGIBLE_COMMON,    CONTRACT_ID,                ADMIN_KEY,
-                    FUNGIBLE_COMMON,    CONTRACT_ID,                KYC_KEY,
-                    FUNGIBLE_COMMON,    CONTRACT_ID,                FREEZE_KEY,
-                    FUNGIBLE_COMMON,    CONTRACT_ID,                WIPE_KEY,
-                    FUNGIBLE_COMMON,    CONTRACT_ID,                SUPPLY_KEY,
-                    FUNGIBLE_COMMON,    CONTRACT_ID,                FEE_SCHEDULE_KEY,
-                    FUNGIBLE_COMMON,    CONTRACT_ID,                PAUSE_KEY,
-                    FUNGIBLE_COMMON,    ED25519,                    ADMIN_KEY,
-                    FUNGIBLE_COMMON,    ED25519,                    KYC_KEY,
-                    FUNGIBLE_COMMON,    ED25519,                    FREEZE_KEY,
-                    FUNGIBLE_COMMON,    ED25519,                    WIPE_KEY,
-                    FUNGIBLE_COMMON,    ED25519,                    SUPPLY_KEY,
-                    FUNGIBLE_COMMON,    ED25519,                    FEE_SCHEDULE_KEY,
-                    FUNGIBLE_COMMON,    ED25519,                    PAUSE_KEY,
-                    FUNGIBLE_COMMON,    ECDSA_SECPK256K1,           ADMIN_KEY,
-                    FUNGIBLE_COMMON,    ECDSA_SECPK256K1,           KYC_KEY,
-                    FUNGIBLE_COMMON,    ECDSA_SECPK256K1,           FREEZE_KEY,
-                    FUNGIBLE_COMMON,    ECDSA_SECPK256K1,           WIPE_KEY,
-                    FUNGIBLE_COMMON,    ECDSA_SECPK256K1,           SUPPLY_KEY,
-                    FUNGIBLE_COMMON,    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
-                    FUNGIBLE_COMMON,    ECDSA_SECPK256K1,           PAUSE_KEY,
-                    FUNGIBLE_COMMON,    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
-                    FUNGIBLE_COMMON,    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
-                    FUNGIBLE_COMMON,    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
-                    FUNGIBLE_COMMON,    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
-                    FUNGIBLE_COMMON,    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
-                    FUNGIBLE_COMMON,    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
-                    FUNGIBLE_COMMON,    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    CONTRACT_ID,                ADMIN_KEY,
-                    NON_FUNGIBLE_UNIQUE,    CONTRACT_ID,                KYC_KEY,
-                    NON_FUNGIBLE_UNIQUE,    CONTRACT_ID,                FREEZE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    CONTRACT_ID,                WIPE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    CONTRACT_ID,                SUPPLY_KEY,
-                    NON_FUNGIBLE_UNIQUE,    CONTRACT_ID,                FEE_SCHEDULE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    CONTRACT_ID,                PAUSE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ED25519,                    ADMIN_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ED25519,                    KYC_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ED25519,                    FREEZE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ED25519,                    WIPE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ED25519,                    SUPPLY_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ED25519,                    FEE_SCHEDULE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ED25519,                    PAUSE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ECDSA_SECPK256K1,           ADMIN_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ECDSA_SECPK256K1,           KYC_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ECDSA_SECPK256K1,           FREEZE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ECDSA_SECPK256K1,           WIPE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ECDSA_SECPK256K1,           SUPPLY_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    ECDSA_SECPK256K1,           PAUSE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
-                    NON_FUNGIBLE_UNIQUE,    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
-                    NON_FUNGIBLE_UNIQUE,    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
-                    NON_FUNGIBLE_UNIQUE,    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
-                    NON_FUNGIBLE_UNIQUE,    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY
+                    CONTRACT_ID,                ADMIN_KEY,
+                    CONTRACT_ID,                KYC_KEY,
+                    CONTRACT_ID,                FREEZE_KEY,
+                    CONTRACT_ID,                WIPE_KEY,
+                    CONTRACT_ID,                SUPPLY_KEY,
+                    CONTRACT_ID,                FEE_SCHEDULE_KEY,
+                    CONTRACT_ID,                PAUSE_KEY,
+                    ED25519,                    ADMIN_KEY,
+                    ED25519,                    KYC_KEY,
+                    ED25519,                    FREEZE_KEY,
+                    ED25519,                    WIPE_KEY,
+                    ED25519,                    SUPPLY_KEY,
+                    ED25519,                    FEE_SCHEDULE_KEY,
+                    ED25519,                    PAUSE_KEY,
+                    ECDSA_SECPK256K1,           ADMIN_KEY,
+                    ECDSA_SECPK256K1,           KYC_KEY,
+                    ECDSA_SECPK256K1,           FREEZE_KEY,
+                    ECDSA_SECPK256K1,           WIPE_KEY,
+                    ECDSA_SECPK256K1,           SUPPLY_KEY,
+                    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
+                    ECDSA_SECPK256K1,           PAUSE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
+                    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
+                    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
+                    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY,
                     """)
-    void updateTokenKeysAndGetUpdatedTokenKey(
-            final TokenTypeEnum tokenType, final KeyValueType keyValueType, final KeyType keyType) throws Exception {
+    void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType)
+            throws Exception {
         // Given
-        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? fungibleTokenPersist() : nftPersist();
+        final var tokenEntityId = fungibleTokenPersist();
+        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+        final var contractAddress = contract.getContractAddress();
+
+        final var keyValue = getKeyValueForType(keyValueType, contractAddress);
+        final var tokenKey = new TokenKey(keyType.getKeyTypeNumeric(), keyValue);
+
+        // When
+        final var result = contract.call_updateTokenKeysAndGetUpdatedTokenKey(
+                        tokenAddress.toHexString(), List.of(tokenKey), keyType.getKeyTypeNumeric())
+                .send();
+
+        // Then
+        assertThat(result).isEqualTo(keyValue);
+
+        final var functionCall = contract.send_updateTokenKeysAndGetUpdatedTokenKey(
+                tokenAddress.toHexString(), List.of(tokenKey), keyType.getKeyTypeNumeric());
+
+        verifyEthCallAndEstimateGas(functionCall, contract);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                    CONTRACT_ID,                ADMIN_KEY,
+                    CONTRACT_ID,                KYC_KEY,
+                    CONTRACT_ID,                FREEZE_KEY,
+                    CONTRACT_ID,                WIPE_KEY,
+                    CONTRACT_ID,                SUPPLY_KEY,
+                    CONTRACT_ID,                FEE_SCHEDULE_KEY,
+                    CONTRACT_ID,                PAUSE_KEY,
+                    ED25519,                    ADMIN_KEY,
+                    ED25519,                    KYC_KEY,
+                    ED25519,                    FREEZE_KEY,
+                    ED25519,                    WIPE_KEY,
+                    ED25519,                    SUPPLY_KEY,
+                    ED25519,                    FEE_SCHEDULE_KEY,
+                    ED25519,                    PAUSE_KEY,
+                    ECDSA_SECPK256K1,           ADMIN_KEY,
+                    ECDSA_SECPK256K1,           KYC_KEY,
+                    ECDSA_SECPK256K1,           FREEZE_KEY,
+                    ECDSA_SECPK256K1,           WIPE_KEY,
+                    ECDSA_SECPK256K1,           SUPPLY_KEY,
+                    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
+                    ECDSA_SECPK256K1,           PAUSE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
+                    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
+                    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
+                    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY
+                    """)
+    void updateTokenKeysAndGetUpdatedTokenKeyForNFT(final KeyValueType keyValueType, final KeyType keyType)
+            throws Exception {
+        // Given
+        final var tokenEntityId = nftPersist();
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
@@ -277,18 +307,24 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     }
 
     @ParameterizedTest
-    @CsvSource(textBlock = """
-                true, true, true
-                false, false, false
+    @CsvSource(
+            textBlock =
+                    """
+                true, false, true, true
+                false, false, false, false
+                true, true, true, true
                 """)
     void createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
-            final boolean withKeys, final boolean defaultKycStatus, final boolean defaultFreezeStatus)
+            final boolean withKeys,
+            final boolean inheritKey,
+            final boolean defaultKycStatus,
+            final boolean defaultFreezeStatus)
             throws Exception {
         // Given
         final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo =
-                getHederaToken(TokenTypeEnum.FUNGIBLE_COMMON, withKeys, false, defaultFreezeStatus, treasuryEntity);
+        final var tokenInfo = getHederaToken(
+                TokenTypeEnum.FUNGIBLE_COMMON, withKeys, inheritKey, defaultFreezeStatus, treasuryEntity);
         tokenInfo.freezeDefault = defaultFreezeStatus;
         testWeb3jService.setValue(CREATE_TOKEN_VALUE);
 
@@ -301,34 +337,6 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
         // Then
         assertThat(result.component1()).isEqualTo(defaultKycStatus);
         assertThat(result.component2()).isEqualTo(defaultFreezeStatus);
-        assertThat(result.component3()).isEqualTo(Boolean.TRUE); // is a token
-
-        final var functionCall =
-                contract.send_createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
-                        tokenInfo, BigInteger.ONE, BigInteger.ONE, BigInteger.valueOf(CREATE_TOKEN_VALUE));
-
-        verifyEthCallAndEstimateGasWithValue(
-                functionCall, contract, toAddress(treasuryEntity.getId()), CREATE_TOKEN_VALUE);
-    }
-
-    @Test
-    void createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatusInheritKey() throws Exception {
-        // Given
-        final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
-        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(TokenTypeEnum.FUNGIBLE_COMMON, true, true, true, treasuryEntity);
-        tokenInfo.freezeDefault = true;
-        testWeb3jService.setValue(CREATE_TOKEN_VALUE);
-
-        // When
-        final var result =
-                contract.call_createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
-                                tokenInfo, BigInteger.ONE, BigInteger.ONE)
-                        .send();
-
-        // Then
-        assertThat(result.component1()).isEqualTo(true);
-        assertThat(result.component2()).isEqualTo(true);
         assertThat(result.component3()).isEqualTo(Boolean.TRUE); // is a token
 
         final var functionCall =
@@ -340,18 +348,24 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     }
 
     @ParameterizedTest
-    @CsvSource(textBlock = """
-                true, true, true
-                false, false, false
+    @CsvSource(
+            textBlock =
+                    """
+                true, false, true, true
+                false, false, false, false
+                true, true, true, true
                 """)
     void createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
-            final boolean withKeys, final boolean defaultKycStatus, final boolean defaultFreezeStatus)
+            final boolean withKeys,
+            final boolean inheritKey,
+            final boolean defaultKycStatus,
+            final boolean defaultFreezeStatus)
             throws Exception {
         // Given
         final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo =
-                getHederaToken(TokenTypeEnum.NON_FUNGIBLE_UNIQUE, withKeys, false, defaultFreezeStatus, treasuryEntity);
+        final var tokenInfo = getHederaToken(
+                TokenTypeEnum.NON_FUNGIBLE_UNIQUE, withKeys, inheritKey, defaultFreezeStatus, treasuryEntity);
         tokenInfo.freezeDefault = defaultFreezeStatus;
         testWeb3jService.setValue(CREATE_TOKEN_VALUE);
 
@@ -363,32 +377,6 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
         // Then
         assertThat(result.component1()).isEqualTo(defaultKycStatus);
         assertThat(result.component2()).isEqualTo(defaultFreezeStatus);
-        assertThat(result.component3()).isEqualTo(Boolean.TRUE); // is a token
-
-        final var functionCall = contract.send_createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
-                tokenInfo, BigInteger.valueOf(CREATE_TOKEN_VALUE));
-
-        verifyEthCallAndEstimateGasWithValue(
-                functionCall, contract, toAddress(treasuryEntity.getId()), CREATE_TOKEN_VALUE);
-    }
-
-    @Test
-    void createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatusInheritKey() throws Exception {
-        // Given
-        final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
-        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(TokenTypeEnum.NON_FUNGIBLE_UNIQUE, true, true, true, treasuryEntity);
-        tokenInfo.freezeDefault = true;
-        testWeb3jService.setValue(CREATE_TOKEN_VALUE);
-
-        // When
-        final var result = contract.call_createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
-                        tokenInfo)
-                .send();
-
-        // Then
-        assertThat(result.component1()).isEqualTo(true);
-        assertThat(result.component2()).isEqualTo(true);
         assertThat(result.component3()).isEqualTo(Boolean.TRUE); // is a token
 
         final var functionCall = contract.send_createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
