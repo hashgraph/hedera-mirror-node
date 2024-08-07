@@ -58,7 +58,7 @@ jobs:
 
       - name: Setup Solo Cluster
         run: ./solo.sh
-        working-directory: hedera-mirror-test/solo
+        working-directory: hedera-mirror-test
 
       - name: Show Container Log
         if: ${{ failure() }}
