@@ -42,6 +42,14 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Install Wget
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends wget
+
+      - name: Install Helm
+        uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4
+
       - name: Setup Kind
         uses: helm/kind-action@0025e74a8c7512023d06dc019c617aa3cf561fde # v1.10.0
         with:
