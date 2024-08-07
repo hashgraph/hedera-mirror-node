@@ -32,8 +32,8 @@ contract EthCall is HederaTokenService {
         return _owner.balance;
     }
 
-    // External view function that returns a storage field as a function result
-    function returnStorageData(string memory s) external view returns (string memory) {
+    // External pure function that returns a storage field as a function result
+    function returnStorageData() external pure returns (string memory) {
         return storageData;
     }
 
@@ -51,6 +51,7 @@ contract EthCall is HederaTokenService {
     function freezeToken(address _tokenAddress) external {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.freezeToken.selector, _tokenAddress, msg.sender));
+        require(success, "Freeze token failed");
     }
 
     function testRevert() external pure {
@@ -84,6 +85,8 @@ contract State {
     }
 
     function changeCallerState(string memory s) external returns (string memory) {
-        EthCall(msg.sender).writeToStorageSlot(string(abi.encodePacked(s, state)));
+        EthCall caller = EthCall(msg.sender);
+        caller.writeToStorageSlot(string(abi.encodePacked(s, state)));
+        return s;
     }
 }

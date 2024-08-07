@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,74 +16,34 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.mirror.web3.web3j.TestWeb3jService;
+import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
-import jakarta.annotation.Resource;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.function.ToLongFunction;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.context.annotation.Import;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Contract;
 
-public class AbstractContractCallServiceTest extends ContractCallTestSetup {
-
-    public static final long TRANSACTION_GAS_LIMIT = 15_000_000L;
-    public static final ToLongFunction<String> longValueOf =
-            value -> Bytes.fromHexString(value).toLong();
-    public static final String LEDGER_ID = "0x03";
-    public static final String EMPTY_UNTRIMMED_ADDRESS =
-            "0x0000000000000000000000000000000000000000000000000000000000000000";
-    public static final byte[] KEY_PROTO = new byte[] {
-        58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
-        77, -103, 47, -118, 107, -58, -85, -63, 55, -57
-    };
-    public static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
-    public static final Key KEY_WITH_ECDSA_TYPE =
-            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDSA_KEY)).build();
-    public static final byte[] ED25519_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
-    public static final Key KEY_WITH_ED_25519_TYPE =
-            Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
-    public static final ByteString SENDER_PUBLIC_KEY =
-            ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
-    public static final Address SENDER_ALIAS = Address.wrap(
-            Bytes.wrap(recoverAddressFromPubKey(SENDER_PUBLIC_KEY.substring(2).toByteArray())));
-
-    public static final double GAS_ESTIMATE_MULTIPLIER_LOWER_RANGE = 1.05;
-    public static final double GAS_ESTIMATE_MULTIPLIER_UPPER_RANGE = 1.2;
-
-    public static final String ESTIMATE_GAS_ERROR_MESSAGE =
-            "Expected gas usage to be within the expected range, but it was not. Estimate: %d, Actual: %d";
-
-    @Resource
-    protected TestWeb3jService testWeb3jService;
-
-    /**
-     * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
-     *
-     * @param estimatedGas The expected gas used from the initial call.
-     * @param actualGas   The actual gas used.
-     * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
-     */
-    public static boolean isWithinExpectedGasRange(final long estimatedGas, final long actualGas) {
-        return estimatedGas >= (actualGas * GAS_ESTIMATE_MULTIPLIER_LOWER_RANGE)
-                && estimatedGas <= (actualGas * GAS_ESTIMATE_MULTIPLIER_UPPER_RANGE);
-    }
+@Import(Web3jTestConfiguration.class)
+@SuppressWarnings("unchecked")
+abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -122,6 +82,22 @@ public class AbstractContractCallServiceTest extends ContractCallTestSetup {
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
             return result;
         });
+    }
+
+    protected void verifyEthCallAndEstimateGas(
+            final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract) {
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
+
+        testWeb3jService.setEstimateGas(true);
+        final AtomicLong estimateGasUsedResult = new AtomicLong();
+        // Verify ethCall
+        assertDoesNotThrow(
+                () -> estimateGasUsedResult.set(functionCall.send().getGasUsed().longValue()));
+
+        // Verify estimateGas
+        assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
+                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
+                .isTrue();
     }
 
     protected ContractExecutionParameters getContractExecutionParameters(

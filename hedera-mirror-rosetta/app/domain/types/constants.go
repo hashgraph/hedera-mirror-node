@@ -399,6 +399,9 @@ var TransactionTypes = map[int32]string{
 	55: "NODEUPDATE",
 	56: "NODEDELETE",
 	57: "TOKENREJECT",
+	58: "TOKENAIRDROP",
+	59: "TOKENCANCELAIRDROP",
+	60: "TOKENCLAIMAIRDROP",
 }
 
 var (

@@ -84,7 +84,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3.5.0
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4
 
       - name: Create and Switch to Release Branch
         run: |
@@ -113,7 +113,7 @@ jobs:
 
       - name: Create Release Notes
         if: ${{ steps.milestone.outputs.milestone_id != '' }}
-        uses: Decathlon/release-notes-generator-action@98423db7024696a339f3988ac8a2b051c5860741 # v3.1.6
+        uses: step-security/release-notes-generator-action@d7cdbb310d4aab8d98f273f4ae20fdd7cb055799 # v3.1.6
         env:
           FILENAME: ${{ env.RELEASE_NOTES_FILENAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -178,7 +178,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3.5.0
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4
 
       - name: Reset main to release branch
         run: |

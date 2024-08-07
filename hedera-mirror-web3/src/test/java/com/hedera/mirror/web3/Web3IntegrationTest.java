@@ -19,6 +19,7 @@ package com.hedera.mirror.web3;
 import com.hedera.mirror.common.config.CommonIntegrationTest;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -31,4 +32,7 @@ public abstract class Web3IntegrationTest extends CommonIntegrationTest {
 
     @Resource
     protected Store store;
+
+    @Resource
+    protected TestWeb3jService testWeb3jService;
 }

@@ -18,6 +18,11 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EMPTY_UNTRIMMED_ADDRESS;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ECDSA_TYPE;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ED_25519_TYPE;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.LEDGER_ID;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FIXED_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
@@ -45,7 +50,6 @@ import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.Expiry;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.HederaToken;
@@ -60,7 +64,6 @@ import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyV
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
-import jakarta.inject.Named;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -80,16 +83,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
-@RequiredArgsConstructor
-@Named
 class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest {
-
-    @Autowired
-    private final TestWeb3jService testWeb3jService;
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));

@@ -26,6 +26,7 @@ import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
@@ -55,22 +56,30 @@ import org.springframework.web.client.RestClient;
 @RequiredArgsConstructor
 public class StartupProbe {
 
+    private static final Duration WAIT = Duration.ofSeconds(30L);
+
     private final AcceptanceTestProperties acceptanceTestProperties;
     private final RestClient.Builder restClient;
 
-    public void validateEnvironment(Client client) {
+    public TransactionReceipt validateEnvironment(Client client) {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
         var stopwatch = Stopwatch.createStarted();
 
         if (startupTimeout.equals(Duration.ZERO)) {
             log.warn("Startup probe disabled");
-            return;
+            return null;
         }
+
+        // Adjust these lower to recover faster since all nodes might be down during a reset. Restore at the end.
+        var maxNodeBackoff = client.getNodeMaxBackoff();
+        client.setNodeMaxBackoff(WAIT);
+        client.setMaxNodeReadmitTime(WAIT);
 
         log.info("Creating a topic to confirm node connectivity");
         var transactionId = executeTransaction(client, stopwatch, () -> new TopicCreateTransaction()).transactionId;
         var receiptQuery = new TransactionReceiptQuery().setTransactionId(transactionId);
-        var topicId = executeQuery(client, stopwatch, () -> receiptQuery).topicId;
+        var receipt = executeQuery(client, stopwatch, () -> receiptQuery);
+        var topicId = receipt.topicId;
         log.info("Created topic {} successfully", topicId);
 
         callRestEndpoint(stopwatch, transactionId);
@@ -82,7 +91,11 @@ public class StartupProbe {
             submitMessage(client, stopwatch, topicId);
         } while (System.currentTimeMillis() - startTime > 10_000);
 
+        client.setNodeMaxBackoff(maxNodeBackoff);
+        client.setMaxNodeReadmitTime(maxNodeBackoff);
+
         log.info("Startup probe successful");
+        return receipt;
     }
 
     @SneakyThrows
@@ -130,14 +143,14 @@ public class StartupProbe {
             Client client, Stopwatch stopwatch, Supplier<Transaction<?>> transaction) {
         var retry = retryOperations(stopwatch);
         return retry.execute(
-                r -> transaction.get().setMaxAttempts(Integer.MAX_VALUE).execute(client, Duration.ofSeconds(30L)));
+                r -> transaction.get().setMaxAttempts(Integer.MAX_VALUE).execute(client, WAIT));
     }
 
     @SneakyThrows
     private <T> T executeQuery(Client client, Stopwatch stopwatch, Supplier<Query<T, ?>> transaction) {
         var retry = retryOperations(stopwatch);
         return retry.execute(
-                r -> transaction.get().setMaxAttempts(Integer.MAX_VALUE).execute(client, Duration.ofSeconds(30L)));
+                r -> transaction.get().setMaxAttempts(Integer.MAX_VALUE).execute(client, WAIT));
     }
 
     private void callRestEndpoint(Stopwatch stopwatch, TransactionId transactionId) {
@@ -172,7 +185,8 @@ public class StartupProbe {
                 .withListener(new RetryListener() {
                     @Override
                     public <T, E extends Throwable> void onError(RetryContext r, RetryCallback<T, E> c, Throwable t) {
-                        log.warn("Retry attempt #{} with error: {}", r.getRetryCount(), t.getMessage());
+                        log.warn(
+                                "Retry attempt #{} with error: {} {}", r.getRetryCount(), t.getClass(), t.getMessage());
                     }
                 })
                 .build();
