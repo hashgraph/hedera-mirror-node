@@ -31,5 +31,5 @@ export {
   InvalidClauseError,
   InvalidConfigError,
   NotFoundError,
-  RestError,
+  RestError
 };

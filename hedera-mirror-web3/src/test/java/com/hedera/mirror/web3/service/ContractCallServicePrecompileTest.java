@@ -1392,7 +1392,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         contract.send_createFungibleTokenWithInheritKeysExternal(BigInteger.valueOf(10000 * 100_000_000L))
                 .send();
 
-        final var result = testWeb3jService.getOutput();
+        final var result = testWeb3jService.getTransactionResult();
         assertThat(result).isNotEqualTo(EMPTY_UNTRIMMED_ADDRESS);
     }
 

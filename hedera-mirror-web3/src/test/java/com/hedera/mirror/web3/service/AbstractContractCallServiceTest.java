@@ -120,7 +120,7 @@ abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
         testWeb3jService.setEstimateGas(true);
 
         functionCall.send();
-        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getOutput());
+        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getTransactionResult());
 
         final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 

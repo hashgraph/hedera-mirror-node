@@ -77,7 +77,6 @@ public class TestWeb3jService implements Web3jService {
     private final DomainBuilder domainBuilder;
     private final Web3j web3j;
     private Address sender = Address.fromHexString("");
-    private String output;
     private boolean isEstimateGas = false;
     private String transactionResult;
 
@@ -97,8 +96,8 @@ public class TestWeb3jService implements Web3jService {
         this.sender = Address.fromHexString(sender);
     }
 
-    public String getOutput() {
-        return output;
+    public String getTransactionResult() {
+        return transactionResult;
     }
 
     public void setEstimateGas(final boolean isEstimateGas) {
@@ -174,7 +173,6 @@ public class TestWeb3jService implements Web3jService {
         res.setJsonrpc(request.getJsonrpc());
 
         transactionResult = mirrorNodeResult;
-        output = mirrorNodeResult;
         return res;
     }
 
@@ -190,7 +188,6 @@ public class TestWeb3jService implements Web3jService {
                 TRANSACTION_GAS_LIMIT,
                 sender);
         final var result = contractExecutionService.processCall(serviceParameters);
-        output = result;
 
         final var ethCall = new EthCall();
         ethCall.setId(request.getId());
@@ -278,7 +275,7 @@ public class TestWeb3jService implements Web3jService {
         final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
         final var entity = domainBuilder
                 .entity()
-                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId).key(null))
+                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId))
                 .persist();
 
         domainBuilder
