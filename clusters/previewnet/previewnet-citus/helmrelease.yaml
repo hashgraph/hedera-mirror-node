@@ -19,7 +19,12 @@ spec:
     - name: mirror
       namespace: common
   driftDetection:
-    mode: warn
+    ignore:
+    - paths:
+      - /spec/scripts
+      target:
+        kind: SGScript
+    mode: enabled
   install:
     crds: CreateReplace
   interval: 90s
