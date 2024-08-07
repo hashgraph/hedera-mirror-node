@@ -18,7 +18,7 @@ spec:
     - name: mirror
       namespace: common
   driftDetection:
-    mode: warn
+    mode: enabled
   install:
     crds: CreateReplace
   interval: 90s
