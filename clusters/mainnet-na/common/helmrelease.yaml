@@ -33,6 +33,9 @@ spec:
         structuredConfig:
           ruler:
             external_url: https://mirrornode.grafana.net
+      singleBinary:
+        persistence:
+          size: 350Gi
     prometheus:
       prometheus:
         defaultRules:
