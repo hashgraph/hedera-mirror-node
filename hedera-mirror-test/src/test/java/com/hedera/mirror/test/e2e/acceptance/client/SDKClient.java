@@ -34,6 +34,8 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 import jakarta.inject.Named;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -189,9 +191,11 @@ public class SDKClient implements Cleanable {
 
                 // Convert USD balance property to hbars using exchange rate from probe
                 double exchangeRate = getExchangeRate(receipt);
-                var exchangeRateUsd = BigDecimal.valueOf(exchangeRate).divide(BigDecimal.valueOf(100));
-                var balance =
-                        Hbar.from(acceptanceTestProperties.getOperatorBalance().divide(exchangeRateUsd));
+                var exchangeRateUsd =
+                        BigDecimal.valueOf(exchangeRate).divide(BigDecimal.valueOf(100), MathContext.DECIMAL128);
+                var balance = Hbar.from(acceptanceTestProperties
+                        .getOperatorBalance()
+                        .divide(exchangeRateUsd, 8, RoundingMode.HALF_EVEN));
 
                 var accountId = new AccountCreateTransaction()
                         .setAlias(alias)
