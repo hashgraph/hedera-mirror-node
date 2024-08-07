@@ -18,7 +18,6 @@ package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.restjava.repository.TokenAccountRepository;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
@@ -27,18 +26,15 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
-class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount.TokenAccountBuilder<?, ?>> {
+class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>> {
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
             "accountId", ENTITY_ID_TO_LONG_CONVERTER,
             "tokenId", ENTITY_ID_TO_LONG_CONVERTER
     );
 
-    private final TokenAccountRepository tokenAccountRepository;
-
-    TokenAccountBuilder(TokenAccountRepository tokenAccountRepository) {
+    TokenAccountBuilder() {
         super(METHOD_PARAMETER_CONVERTERS);
-        this.tokenAccountRepository = tokenAccountRepository;
     }
 
     @Override
@@ -47,7 +43,7 @@ class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount.TokenAccoun
     }
 
     @Override
-    protected void customizeAndPersistEntity(Map<String, Object> account) {
+    protected TokenAccount customizeEntity(Map<String, Object> account) {
         var builder = TokenAccount.builder();
         // Set defaults
         builder
@@ -69,6 +65,6 @@ class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount.TokenAccoun
             entity = builder.build();
         }
 
-        tokenAccountRepository.save(entity);
+        return entity;
     }
 }

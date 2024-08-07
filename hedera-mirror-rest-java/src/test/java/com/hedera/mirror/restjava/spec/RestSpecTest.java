@@ -31,8 +31,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
+import javax.sql.DataSource;
 import lombok.SneakyThrows;
 
 import org.junit.jupiter.api.DynamicContainer;
@@ -40,7 +40,10 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.runner.RunWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.Resource;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestClient;
 import org.testcontainers.containers.GenericContainer;
@@ -52,7 +55,6 @@ import org.testcontainers.containers.GenericContainer;
         properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class RestSpecTest extends RestJavaIntegrationTest {
 
-    private static final Consumer<RestSpecNormalized> NO_OP_FUNCTION = s -> {};
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
     private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");
     private static final List<Path> SELECTED_SPECS = List.of(
@@ -61,14 +63,22 @@ public class RestSpecTest extends RestJavaIntegrationTest {
             REST_BASE_PATH.resolve("accounts/specific-id.json")
     );
 
+    private final ResourceDatabasePopulator databaseCleaner;
+    private final DataSource dataSource;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
     private final SpecDomainBuilder specDomainBuilder;
 
     RestSpecTest(
+            @Value("classpath:cleanup.sql")
+            Resource cleanupSqlResource,
+            DataSource dataSource,
             GenericContainer<?> jsRestApi,
             ObjectMapper objectMapper,
-            SpecDomainBuilder specDomainBuilder) {
+            SpecDomainBuilder specDomainBuilder) throws IOException {
+
+        this.databaseCleaner = new ResourceDatabasePopulator(cleanupSqlResource);
+        this.dataSource = dataSource;
         this.objectMapper = objectMapper;
         this.specDomainBuilder = specDomainBuilder;
 
@@ -97,12 +107,12 @@ public class RestSpecTest extends RestJavaIntegrationTest {
             var normalizedSpecTests = normalizedSpec.tests();
             for (var i = 0; i < normalizedSpecTests.size(); i++) {
                 var test = normalizedSpecTests.get(i);
-                Consumer<RestSpecNormalized> setupFunction = i == 0 ? this::setupDatabase : NO_OP_FUNCTION;
                 var testCases = test.urls().stream()
-                        .map(url -> dynamicTest(url, () -> testSpecUrl(setupFunction, url, test, normalizedSpec)));
+                        .map(url -> dynamicTest(url, () -> testSpecUrl(url, test, normalizedSpec)));
+
                 dynamicContainers.add(dynamicContainer(
                         "%s: '%s'".formatted(REST_BASE_PATH.relativize(specFilePath), normalizedSpec.description()),
-                        testCases));
+                        Stream.concat(Stream.of(dynamicTest("Setup database", () -> setupDatabase(normalizedSpec))), testCases)));
             }
         }
         return Stream.of(dynamicContainer("Dynamic test cases from spec files, base: %s".formatted(REST_BASE_PATH), dynamicContainers));
@@ -113,13 +123,17 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     }
 
     private void setupDatabase(RestSpecNormalized normalizedRestSpec) {
-        // TODO, with @TestFactory, no lifecycle methods, so need to clean DB explicitly
+        /*
+         * JUnit 5 dynamic tests do not enjoy the benefit of lifecycle methods (e.g. @BeforeEach etc.), so
+         * the DB needs to first be cleaned explicitly prior to creating the spec file defined entities.
+         */
+        databaseCleaner.execute(dataSource);
+
         specDomainBuilder.addSetupEntities(normalizedRestSpec.setup());
     }
 
     @SneakyThrows
-    private void testSpecUrl(Consumer<RestSpecNormalized> setupFunction, String url, SpecTestNormalized specTest, RestSpecNormalized spec) {
-        setupFunction.accept(spec);
+    private void testSpecUrl(String url, SpecTestNormalized specTest, RestSpecNormalized spec) {
 
         var response = restClient.get()
                 .uri(url)

@@ -18,9 +18,7 @@ package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.restjava.repository.EntityRepository;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
@@ -29,7 +27,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
-class AccountBuilder extends AbstractEntityBuilder<Entity.EntityBuilder<?, ?>> {
+class AccountBuilder extends AbstractEntityBuilder<Entity, Entity.EntityBuilder<?, ?>> {
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
             "alias", BASE32_CONVERTER,
@@ -37,11 +35,8 @@ class AccountBuilder extends AbstractEntityBuilder<Entity.EntityBuilder<?, ?>> {
             "key", HEX_OR_BASE64_CONVERTER
     );
 
-    private final EntityRepository entityRepository;
-
-    AccountBuilder(EntityRepository entityRepository) {
+    AccountBuilder() {
         super(METHOD_PARAMETER_CONVERTERS);
-        this.entityRepository = entityRepository;
     }
 
     @Override
@@ -50,7 +45,7 @@ class AccountBuilder extends AbstractEntityBuilder<Entity.EntityBuilder<?, ?>> {
     }
 
     @Override
-    protected void customizeAndPersistEntity(Map<String, Object> account) {
+    protected Entity customizeEntity(Map<String, Object> account) {
         var builder = Entity.builder();
         // Set defaults
         builder
@@ -75,10 +70,10 @@ class AccountBuilder extends AbstractEntityBuilder<Entity.EntityBuilder<?, ?>> {
         // Check and finalize
         var entity = builder.build();
         if (entity.getId() == null) {
-            builder.id(EntityId.of(entity.getShard(), entity.getRealm(), entity.getNum()).getId());
+            builder.id(entity.toEntityId().getId());
             entity = builder.build();
         }
 
-        entityRepository.save(entity);
+        return entity;
     }
 }

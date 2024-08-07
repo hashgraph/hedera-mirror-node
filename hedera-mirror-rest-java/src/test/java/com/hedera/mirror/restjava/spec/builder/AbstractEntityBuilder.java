@@ -20,6 +20,7 @@ import com.google.common.base.CaseFormat;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.annotation.Resource;
+import jakarta.persistence.EntityManager;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -35,9 +36,11 @@ import lombok.CustomLog;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.util.CollectionUtils;
 
 @CustomLog
-abstract class AbstractEntityBuilder<B> implements SpecEntityBuilder {
+abstract class AbstractEntityBuilder<T, B> implements SpecEntityBuilder {
 
     private static final Base32 BASE32 = new Base32();
     private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
@@ -48,7 +51,6 @@ abstract class AbstractEntityBuilder<B> implements SpecEntityBuilder {
      * Common handy spec attribute value converter functions to be used by subclasses.
      */
     protected static final Function<Object, Object> BASE32_CONVERTER = value -> value == null ? null : BASE32.decode(value.toString());
-
 
     protected static final Function<Object, Object> ENTITY_ID_TO_LONG_CONVERTER = value -> value == null ? 0L
             : value instanceof String valueStr ? EntityId.of(valueStr).getId() : (long)value;
@@ -61,6 +63,12 @@ abstract class AbstractEntityBuilder<B> implements SpecEntityBuilder {
         }
         return value;
     };
+
+    @Resource
+    private EntityManager entityManager;
+
+    @Resource
+    private TransactionOperations transactionOperations;
 
     @Resource
     protected ConversionService conversionService;
@@ -85,14 +93,14 @@ abstract class AbstractEntityBuilder<B> implements SpecEntityBuilder {
     @Override
     public void customizeAndPersistEntities(SpecSetup specSetup) {
         var specEntities = getSpecEntitiesSupplier(specSetup).get();
-        if (specEntities != null) {
-            specEntities.forEach(this::customizeAndPersistEntity);
+        if (!CollectionUtils.isEmpty(specEntities)) {
+            specEntities.forEach(specEntity -> transactionOperations.executeWithoutResult(t -> entityManager.persist(customizeEntity(specEntity))));
         }
     }
 
     protected abstract Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup);
 
-    protected abstract void customizeAndPersistEntity(Map<String, Object> entityAttributes);
+    protected abstract T customizeEntity(Map<String, Object> entityAttributes);
 
     protected void customizeWithSpec(B builder, Map<String, Object> customizations) {
         var builderClass = builder.getClass();
