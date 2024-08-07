@@ -64,6 +64,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
             from %%s
             where length(hash) > 0 and consensus_timestamp >= :startTimestamp and consensus_timestamp < :endTimestamp;
             """;
+    // Copying data between distributed tables without co-location can be very slow with citus, thus use a temp table
     private static final String CREATE_TEMP_TABLE_SQL =
             """
             create temp table transaction_hash_backfill_temp on commit drop as table transaction_hash limit 0;
@@ -176,6 +177,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
                 .filter(p -> {
                     long fromInclusive = p.getTimestampRange().lowerEndpoint();
                     long toExclusive = p.getTimestampRange().upperEndpoint();
+                    // Only include a partition when it overlaps with [start, end)
                     return context.startTimestamp < toExclusive && context.endTimestamp > fromInclusive;
                 })
                 .toList()

@@ -10,3 +10,5 @@ create table if not exists transaction_hash
 comment on table transaction_hash is 'Network transaction hash to consensus timestamp mapping';
 
 select create_distributed_table('transaction_hash', 'distribution_id',  shard_count := ${hashShardCount});
+
+create index transaction_hash__hash on transaction_hash using hash (substring(hash from 1 for 32));
