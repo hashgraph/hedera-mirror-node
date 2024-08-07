@@ -27,8 +27,10 @@ import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
+import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -80,6 +82,10 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
             insert into transaction_hash
             select * from transaction_hash_backfill_temp;
             """;
+    private static final Map<Boolean, MigrationVersion> MINIMUM_VERSION = Map.of(
+            // false for v1, and true for v2
+            Boolean.FALSE, MigrationVersion.fromVersion("1.99.1"),
+            Boolean.TRUE, MigrationVersion.fromVersion("2.4.1"));
     private static final String START_TIMESTAMP_KEY = "startTimestamp";
     private static final String STRATEGY_KEY = "strategy";
     private static final String TABLE_HAS_DATA_SQL = "select exists(select * from %s limit 1)";
@@ -156,6 +162,11 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     @Override
     public String getDescription() {
         return "Backfill transaction hash to consensus timestamp mapping";
+    }
+
+    @Override
+    protected MigrationVersion getMinimumVersion() {
+        return MINIMUM_VERSION.get(v2);
     }
 
     private int backfillFromTable(MigrationContext context, String sqlTemplate, String tableName) {
