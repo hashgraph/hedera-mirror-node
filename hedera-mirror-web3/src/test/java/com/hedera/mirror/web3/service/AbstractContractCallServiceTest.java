@@ -16,7 +16,12 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.*;
+import static com.hedera.mirror.web3.service.ContractCallTestSetup.NEW_ECDSA_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestSetup.NEW_ED25519_KEY;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -28,11 +33,13 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.AfterEach;
@@ -44,6 +51,7 @@ import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
+@RequiredArgsConstructor
 abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     @Resource
@@ -171,5 +179,25 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
         public BigInteger getKeyTypeNumeric() {
             return keyTypeNumeric;
         }
+    }
+
+    protected KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
+        return switch (keyValueType) {
+            case INHERIT_ACCOUNT_KEY -> new KeyValue(
+                    Boolean.TRUE, Address.ZERO.toHexString(), new byte[0], new byte[0], Address.ZERO.toHexString());
+            case CONTRACT_ID -> new KeyValue(
+                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+            case ED25519 -> new KeyValue(
+                    Boolean.FALSE,
+                    Address.ZERO.toHexString(),
+                    NEW_ED25519_KEY,
+                    new byte[0],
+                    Address.ZERO.toHexString());
+            case ECDSA_SECPK256K1 -> new KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], NEW_ECDSA_KEY, Address.ZERO.toHexString());
+            case DELEGATABLE_CONTRACT_ID -> new KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
+            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
+        };
     }
 }
