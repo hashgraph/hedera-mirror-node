@@ -105,8 +105,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
             }
 
             var normalizedSpecTests = normalizedSpec.tests();
-            for (var i = 0; i < normalizedSpecTests.size(); i++) {
-                var test = normalizedSpecTests.get(i);
+            for (var test : normalizedSpecTests) {
                 var testCases = test.urls().stream()
                         .map(url -> dynamicTest(url, () -> testSpecUrl(url, test, normalizedSpec)));
 
