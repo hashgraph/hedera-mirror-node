@@ -2,7 +2,7 @@
 
 # Define Solidity versions and output directories
 SOLC_VERSIONS=("0.8.7")
-CONTRACT_PATH="src/test/solidity_historical/EthCallHistorical.sol"
+CONTRACT_PATH="src/test/solidity_historical/EvmCodesHistorical.sol"
 OUTPUT_DIRS=("build/generated/sources/web3j/test/java")
 
 brew install jq
@@ -22,8 +22,8 @@ for i in "${!SOLC_VERSIONS[@]}"; do
 
   # Generate Java files using web3j
   web3j generate solidity \
-    -b build/temp_contracts/EthCallHistorical.bin \
-    -a build/temp_contracts/EthCallHistorical.abi \
+    -b build/temp_contracts/EvmCodesHistorical.bin \
+    -a build/temp_contracts/EvmCodesHistorical.abi \
     -o "${OUTPUT_DIRS[$i]}" \
     -p com.hedera.mirror.web3.web3j.generated
 
