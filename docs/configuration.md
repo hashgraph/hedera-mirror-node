@@ -236,7 +236,7 @@ transactionBody.memo.length() > 10 && transactionBody.memo.startsWith("MyApp")
 One objective is to provide sufficient access to support powerful expressions while limiting
 the [SpEL injection](https://0xn3va.gitbook.io/cheat-sheets/framework/spring/spel-injection) attack surface.
 Keep in mind though, transaction filter configuration properties are set by mirror node operators, so intentionally
-injecting oneself should be be a rare occurrence.
+injecting oneself should be a rare occurrence.
 
 Another important goal is to not expose too many mirror node implementation details, which may change in future
 releases, possibly breaking filter expressions that functioned properly in the past.
