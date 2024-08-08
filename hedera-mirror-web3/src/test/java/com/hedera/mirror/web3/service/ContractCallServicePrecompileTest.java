@@ -92,7 +92,6 @@ import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
 @Import(TestWeb3jService.Web3jTestConfiguration.class)
-// @RequiredArgsConstructor
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Resource
