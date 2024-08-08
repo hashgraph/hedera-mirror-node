@@ -26,10 +26,12 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.tuweni.bytes.Bytes;
@@ -44,6 +46,9 @@ import org.web3j.tx.Contract;
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
 abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
+
+    @Resource
+    protected TestWeb3jService testWeb3jService;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -101,7 +106,7 @@ abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
     }
 
     protected ContractExecutionParameters getContractExecutionParameters(
-            final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract) {
+            final RemoteFunctionCall<?> functionCall, final Contract contract) {
         return ContractExecutionParameters.builder()
                 .block(BlockType.LATEST)
                 .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
@@ -115,12 +120,8 @@ abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
                 .build();
     }
 
-    protected void testEstimateGas(final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract)
-            throws Exception {
-        testWeb3jService.setEstimateGas(true);
-
-        functionCall.send();
-        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getTransactionResult());
+    protected void testEstimateGas(final RemoteFunctionCall<?> functionCall, final Contract contract) {
+        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getEstimatedGas());
 
         final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
@@ -128,22 +129,20 @@ abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
                 .isTrue();
-
-        testWeb3jService.setEstimateGas(false);
     }
 
     public enum KeyType {
-        ADMIN_KEY(BigInteger.valueOf(1)),
-        KYC_KEY(BigInteger.valueOf(2)),
-        FREEZE_KEY(BigInteger.valueOf(4)),
-        WIPE_KEY(BigInteger.valueOf(8)),
-        SUPPLY_KEY(BigInteger.valueOf(16)),
-        FEE_SCHEDULE_KEY(BigInteger.valueOf(32)),
-        PAUSE_KEY(BigInteger.valueOf(64));
+        ADMIN_KEY(1),
+        KYC_KEY(2),
+        FREEZE_KEY(4),
+        WIPE_KEY(8),
+        SUPPLY_KEY(16),
+        FEE_SCHEDULE_KEY(32),
+        PAUSE_KEY(64);
         final BigInteger keyTypeNumeric;
 
-        KeyType(BigInteger keyTypeNumeric) {
-            this.keyTypeNumeric = keyTypeNumeric;
+        KeyType(Integer keyTypeNumeric) {
+            this.keyTypeNumeric = BigInteger.valueOf(keyTypeNumeric);
         }
 
         public BigInteger getKeyTypeNumeric() {

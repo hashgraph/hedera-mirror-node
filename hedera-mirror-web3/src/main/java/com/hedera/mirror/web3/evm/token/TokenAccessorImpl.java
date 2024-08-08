@@ -22,6 +22,7 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -256,7 +257,8 @@ public class TokenAccessorImpl implements TokenAccessor {
                 token.getName(),
                 token.getMemo(),
                 token.getTreasury().getAlias() != ByteString.EMPTY
-                        ? Address.wrap(Bytes.wrap(token.getTreasury().getAlias().toByteArray()))
+                        ? Address.wrap(Bytes.wrap(
+                                DomainUtils.toBytes(token.getTreasury().getAlias())))
                         : token.getTreasury().getAccountAddress(),
                 token.getTotalSupply(),
                 token.getMaxSupply(),
@@ -272,8 +274,8 @@ public class TokenAccessorImpl implements TokenAccessor {
         if (token.getAutoRenewAccount() != null) {
             evmTokenInfo.setAutoRenewAccount(
                     token.getAutoRenewAccount().getAlias() != ByteString.EMPTY
-                            ? Address.wrap(Bytes.wrap(
-                                    token.getAutoRenewAccount().getAlias().toByteArray()))
+                            ? Address.wrap(Bytes.wrap(DomainUtils.toBytes(
+                                    token.getAutoRenewAccount().getAlias())))
                             : token.getAutoRenewAccount().getAccountAddress());
         }
 

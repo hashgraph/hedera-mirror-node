@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -150,7 +151,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(autoRenewAccountId))
                 .map(autoRenewAccount -> new Account(
                         autoRenewAccount.getEvmAddress() != null
-                                ? ByteString.copyFrom(autoRenewAccount.getEvmAddress())
+                                ? DomainUtils.fromBytes(autoRenewAccount.getEvmAddress())
                                 : ByteString.EMPTY,
                         autoRenewAccount.getId(),
                         new Id(autoRenewAccount.getShard(), autoRenewAccount.getRealm(), autoRenewAccount.getNum()),
@@ -166,7 +167,9 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId()))
                 .map(entity -> new Account(
-                        entity.getEvmAddress() != null ? ByteString.copyFrom(entity.getEvmAddress()) : ByteString.EMPTY,
+                        entity.getEvmAddress() != null
+                                ? DomainUtils.fromBytes(entity.getEvmAddress())
+                                : ByteString.EMPTY,
                         entity.getId(),
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                         entity.getBalance() != null ? entity.getBalance() : 0L))
