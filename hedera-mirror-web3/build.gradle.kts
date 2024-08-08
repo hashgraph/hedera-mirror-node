@@ -86,7 +86,7 @@ val openZeppelinVersion = "4.9.3"
 val openZeppelinUrl =
     "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/v${openZeppelinVersion}.zip"
 val zipFile = layout.buildDirectory.file("openzeppelin.zip")
-val outputDir = layout.buildDirectory.dir("openzeppelin")
+val outputDir = layout.buildDirectory.dir("../src/test/solidity_historical/openzeppelin")
 
 tasks.register("downloadOpenZeppelinContracts") {
     doFirst { outputDir.get().asFile.mkdirs() }
@@ -110,19 +110,20 @@ tasks.register<Copy>("extractOpenZeppelinContracts") {
     }
 }
 
-tasks.register<Exec>("listOutputDirContents") {
-    dependsOn("extractOpenZeppelinContracts") // Ensure this runs after extraction
-    commandLine("sh", "-c", "ls -R ${outputDir.get().asFile.absolutePath}")
-}
+// tasks.register<Exec>("listOutputDirContents") {
+//    dependsOn("extractOpenZeppelinContracts") // Ensure this runs after extraction
+//    commandLine("sh", "-c", "ls -R ${outputDir.get().asFile.absolutePath}")
+// }
 
-tasks.register("prepareForGenerateWrappers") { dependsOn("extractOpenZeppelinContracts") }
+// tasks.register("prepareForGenerateWrappers") { dependsOn("extractOpenZeppelinContracts") }
 
-tasks.named("assemble") { dependsOn("prepareForGenerateWrappers") }
+// tasks.named("assemble") { dependsOn("prepareForGenerateWrappers") }
 
-sourceSets { test { solidity { version = "0.8.18" } } }
+sourceSets { test { solidity { version = "0.8.24" } } }
 
 web3j {
     generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
+    excludedContracts = listOf("EthCallHistorical", "DynamicEthCallsHistorical")
     useNativeJavaTypes = true
     generateBoth = true
 }
@@ -130,6 +131,16 @@ web3j {
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
 tasks.processTestResources {
-    dependsOn(tasks.named("extractOpenZeppelinContracts"))
+    //    dependsOn(tasks.named("extractOpenZeppelinContracts"))
     dependsOn(tasks.named("generateTestContractWrappers"))
+}
+
+// Task to compile Solidity contracts and generate Java files
+tasks.register<Exec>("compileHistoricalSolidityContracts") {
+    dependsOn(tasks.named("extractOpenZeppelinContracts")) // Ensure this runs after extraction
+    // Define the path to your shell script
+    val scriptPath = file("compile_solidity.sh").absolutePath
+    // Ensure the script is executable
+    doFirst { file(scriptPath).setExecutable(true) }
+    commandLine("bash", scriptPath)
 }

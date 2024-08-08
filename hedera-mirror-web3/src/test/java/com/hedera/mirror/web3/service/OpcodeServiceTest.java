@@ -356,7 +356,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             contractEntityId = nestedEthCallsContractPersist();
 
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    ContractCallNestedCallsTest.NestedEthCallContractFunctions.CREATE_FUNGIBLE_TOKEN_NO_KEYS,
+                    NestedEthCallContractFunctions.CREATE_FUNGIBLE_TOKEN_NO_KEYS,
                     TransactionType.ETHEREUMTRANSACTION,
                     NESTED_ETH_CALLS_CONTRACT_ADDRESS,
                     NESTED_CALLS_ABI_PATH,
@@ -446,5 +446,18 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             }
             return toAddress(entity.toEntityId());
         }
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    enum NestedEthCallContractFunctions implements ContractFunctionProviderEnum {
+        CREATE_FUNGIBLE_TOKEN_NO_KEYS(
+                "createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
+                new Object[] {FUNGIBLE_TOKEN, 10L, 10},
+                new Object[] {false, false, true});
+
+        private final String name;
+        private final Object[] functionParameters;
+        private final Object[] expectedResultFields;
     }
 }
