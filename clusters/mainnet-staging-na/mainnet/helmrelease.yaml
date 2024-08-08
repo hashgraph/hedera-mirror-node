@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.111.0-rc2'
+      version: '0.111.0-rc3'
   dependsOn:
     - name: mirror
       namespace: common
@@ -40,7 +40,6 @@ spec:
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
-        HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TRANSACTIONHASH: "true"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
@@ -95,6 +94,8 @@ spec:
             test:
               acceptance:
                 network: MAINNET
+                feature:
+                  rejectToken: false
       cucumberTags: "@critical"
       enabled: true
     web3:

@@ -62,6 +62,8 @@ spec:
             test:
               acceptance:
                 network: OTHER
+                feature:
+                  rejectToken: false
       enabled: true
     web3:
       env:
