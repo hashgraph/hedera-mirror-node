@@ -24,6 +24,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncoded;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractExecutionService;
@@ -35,6 +36,7 @@ import io.reactivex.Flowable;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -78,6 +80,12 @@ public class TestWeb3jService implements Web3jService {
     private Address sender = Address.fromHexString("");
     private boolean isEstimateGas = false;
     private String transactionResult;
+
+    @Setter
+    private BlockType blockType = BlockType.LATEST;
+
+    @Setter
+    private Range historicalRange;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -157,7 +165,7 @@ public class TestWeb3jService implements Web3jService {
                 rawTransaction.getValue().longValue() >= 0
                         ? rawTransaction.getValue().longValue()
                         : DEFAULT_TRANSACTION_VALUE,
-                BlockType.LATEST,
+                blockType,
                 TRANSACTION_GAS_LIMIT,
                 sender);
 
@@ -180,7 +188,7 @@ public class TestWeb3jService implements Web3jService {
                 Address.fromHexString(transaction.getTo()),
                 isEstimateGas ? ETH_ESTIMATE_GAS : ETH_CALL,
                 transaction.getValue() != null ? Long.parseLong(transaction.getValue()) : 0L,
-                BlockType.LATEST,
+                blockType,
                 TRANSACTION_GAS_LIMIT,
                 sender);
         final var result = contractExecutionService.processCall(serviceParameters);
@@ -262,7 +270,12 @@ public class TestWeb3jService implements Web3jService {
     public Address deployInternal(String binary) {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
-        contractPersist(binary, id);
+
+        if (blockType != BlockType.LATEST) {
+            historicalContractPersist(binary, id, contractAddress);
+        } else {
+            contractPersist(binary, id);
+        }
 
         return contractAddress;
     }
@@ -272,6 +285,28 @@ public class TestWeb3jService implements Web3jService {
         final var entity = domainBuilder
                 .entity()
                 .customize(e -> e.type(CONTRACT).id(entityId).num(entityId))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(entity.getId()).runtimeBytecode(contractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(entity.getId()))
+                .persist();
+    }
+
+    private void historicalContractPersist(String binary, long entityId, final Address contractAddress) {
+        final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
+        final var entity = domainBuilder
+                .entity()
+                .customize(e -> e.type(CONTRACT)
+                        .id(entityId)
+                        .num(entityId)
+                        .evmAddress(contractAddress.toArray())
+                        .timestampRange(historicalRange))
                 .persist();
 
         domainBuilder
