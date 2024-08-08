@@ -36,5 +36,7 @@ public class FeatureProperties {
     @Max(5_000_000)
     private long maxContractFunctionGas = 3_000_000;
 
+    private boolean rejectToken = true;
+
     private boolean sidecars = false;
 }
