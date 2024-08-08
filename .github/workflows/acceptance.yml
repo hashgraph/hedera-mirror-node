@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   solo:
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Harden Runner
@@ -57,8 +57,18 @@ jobs:
           version: v0.23.0
 
       - name: Setup Solo Cluster
-        run: ./solo.sh
-        working-directory: hedera-mirror-test
+        run: |
+          SOLO_CLUSTER=solo-mirror-acceptance
+          SOLO_NAMESPACE=solo
+          kind create cluster -n $SOLO_CLUSTER;
+          npm i -g @hashgraph/solo@0.27.0;
+          solo init -n $SOLO_NAMESPACE -i node0;
+          solo cluster setup
+          solo network deploy
+          solo node keys --gossip-keys --tls-keys --key-format pem
+          solo node setup
+          solo node start
+          solo mirror-node deploy
 
       - name: Show Container Log
         if: ${{ failure() }}
