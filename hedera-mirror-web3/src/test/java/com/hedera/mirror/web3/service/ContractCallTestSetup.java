@@ -1297,67 +1297,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    // Custom fees and rates persist
-    protected void customFeePersist(final FeeCase feeCase) {
-        final var collectorAccountId = entityIdFromEvmAddress(SENDER_ADDRESS);
-        final var tokenEntityId = entityIdFromEvmAddress(FUNGIBLE_TOKEN_ADDRESS);
-        switch (feeCase) {
-            case ROYALTY_FEE -> {
-                final var royaltyFee = RoyaltyFee.builder()
-                        .collectorAccountId(collectorAccountId)
-                        .denominator(10L)
-                        .fallbackFee(FallbackFee.builder()
-                                .amount(100L)
-                                .denominatingTokenId(tokenEntityId)
-                                .build())
-                        .numerator(20L)
-                        .build();
-                domainBuilder
-                        .customFee()
-                        .customize(f -> f.royaltyFees(List.of(royaltyFee))
-                                .fixedFees(List.of())
-                                .fractionalFees(List.of())
-                                .tokenId(tokenEntityId.getId()))
-                        .persist();
-            }
-            case FRACTIONAL_FEE -> {
-                final var fractionalFee = FractionalFee.builder()
-                        .collectorAccountId(collectorAccountId)
-                        .denominator(10L)
-                        .minimumAmount(1L)
-                        .maximumAmount(1000L)
-                        .netOfTransfers(true)
-                        .numerator(100L)
-                        .build();
-                domainBuilder
-                        .customFee()
-                        .customize(f -> f.fractionalFees(List.of(fractionalFee))
-                                .fixedFees(List.of())
-                                .royaltyFees(List.of())
-                                .tokenId(tokenEntityId.getId()))
-                        .persist();
-            }
-            case FIXED_FEE -> {
-                final var fixedFee = FixedFee.builder()
-                        .amount(100L)
-                        .collectorAccountId(collectorAccountId)
-                        .denominatingTokenId(tokenEntityId)
-                        .build();
-                domainBuilder
-                        .customFee()
-                        .customize(f -> f.fixedFees(List.of(fixedFee))
-                                .fractionalFees(List.of())
-                                .royaltyFees(List.of())
-                                .tokenId(tokenEntityId.getId()))
-                        .persist();
-            }
-            default -> domainBuilder
-                    .customFee()
-                    .customize(f -> f.tokenId(tokenEntityId.getId()))
-                    .persist();
-        }
-    }
-
     protected void customFeePersistHistorical(final FeeCase feeCase, final Range<Long> historicalBlock) {
         final var collectorAccountId = entityIdFromEvmAddress(SENDER_ADDRESS_HISTORICAL);
         final var tokenEntityId = entityIdFromEvmAddress(FUNGIBLE_TOKEN_ADDRESS_HISTORICAL);

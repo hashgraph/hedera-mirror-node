@@ -79,6 +79,7 @@ public class TestWeb3jService implements Web3jService {
     private Address sender = Address.fromHexString("");
     private boolean isEstimateGas = false;
     private String transactionResult;
+    private long entityId;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -102,6 +103,10 @@ public class TestWeb3jService implements Web3jService {
 
     public void setEstimateGas(final boolean isEstimateGas) {
         this.isEstimateGas = isEstimateGas;
+    }
+
+    public long getEntityId() {
+        return entityId;
     }
 
     @SneakyThrows(Exception.class)
@@ -287,6 +292,8 @@ public class TestWeb3jService implements Web3jService {
                 .contractState()
                 .customize(c -> c.contractId(entity.getId()))
                 .persist();
+
+        this.entityId = entityId;
     }
 
     private EthGetTransactionCount ethGetTransactionCount() {

@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.FastHex;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -156,11 +157,25 @@ public class FunctionEncodeDecoder {
                 .toHexString();
     }
 
+    public String encodedResultFor(final org.web3j.abi.datatypes.Function function, final Object... results) {
+        final var tupleType = TupleType.parse(function.getOutputParameters().toString());
+
+        return Bytes.wrap(tupleType
+                        .encode(encodeTupleParameters(tupleType.toString(), results))
+                        .array())
+                .toHexString();
+    }
+
     public Tuple decodeResult(final String functionName, final Path contractPath, final String response) {
         final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
 
         final Function function = Function.fromJson(jsonFunction);
         return function.decodeReturn(FastHex.decode(response.replace("0x", "")));
+    }
+
+    public Tuple decodeResult(final org.web3j.abi.datatypes.Function function, final String response) {
+        final var tupleType = TupleType.parse(function.getOutputParameters().toString());
+        return tupleType.decode(response.getBytes());
     }
 
     private Tuple encodeTupleParameters(final String tupleSig, final Object... parameters) {

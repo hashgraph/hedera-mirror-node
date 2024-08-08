@@ -21,11 +21,18 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.ToLongFunction;
 import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.Utils;
+import org.web3j.abi.datatypes.DynamicArray;
+import org.web3j.abi.datatypes.Type;
+import org.web3j.abi.datatypes.generated.Int256;
+import org.web3j.abi.datatypes.generated.Int64;
 
 @UtilityClass
 public class ContractCallTestUtil {
@@ -61,6 +68,15 @@ public class ContractCallTestUtil {
     public static final byte[] ED25519_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
     public static final Key KEY_WITH_ED_25519_TYPE =
             Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
+    public static final ByteString META = ByteString.copyFromUtf8("meta");
+    public static final List<TypeReference<Type>> CREATE_TOKEN_FUNCTION_OUTPUT_PARAMETERS = Utils.convert(
+            Arrays.asList(new TypeReference<Int256>() {}, new TypeReference<org.web3j.abi.datatypes.Address>() {}));
+    public static final List<TypeReference<Type>> MINT_TOKEN_OUTOUT_PARAMETERS = Utils.convert(Arrays.asList(
+            new TypeReference<Int256>() {},
+            new TypeReference<Int64>() {},
+            new TypeReference<DynamicArray<Int64>>() {}));
+    public static final List<TypeReference<Type>> BURN_TOKEN_OUTOUT_PARAMETERS =
+            Utils.convert(Arrays.asList(new TypeReference<Int256>() {}, new TypeReference<Int64>() {}));
 
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
