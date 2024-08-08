@@ -49,7 +49,7 @@ contract EthCall is HederaTokenService {
 
     // External function that freezes a given token for the message sender
     function freezeToken(address _tokenAddress) external {
-        (bool success, ) = precompileAddress.call(
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.freezeToken.selector, _tokenAddress, msg.sender));
         require(success, "Freeze token failed");
     }

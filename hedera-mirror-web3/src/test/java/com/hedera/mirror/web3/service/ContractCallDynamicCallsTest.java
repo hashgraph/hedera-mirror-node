@@ -34,7 +34,6 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.AccountAmount;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.NftTransfer;
@@ -48,10 +47,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
-
-    private ContractCallDynamicCallsTest(TestWeb3jService testWeb3jService) {
-        super(testWeb3jService);
-    }
 
     @ParameterizedTest
     @CsvSource(
