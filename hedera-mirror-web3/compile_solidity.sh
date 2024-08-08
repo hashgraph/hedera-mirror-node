@@ -3,7 +3,7 @@
 # Define Solidity versions and output directories
 SOLC_VERSIONS=("0.8.7")
 CONTRACT_PATH="src/test/solidity_historical/EthCallHistorical.sol"
-OUTPUT_DIRS=("build/generated/0_8_7")
+OUTPUT_DIRS=("build/generated/sources/web3j/test/java")
 
 brew install jq
 curl -L get.web3j.io | sh && source ~/.web3j/source.sh
@@ -29,7 +29,3 @@ for i in "${!SOLC_VERSIONS[@]}"; do
 done
 
 rm -rf build/temp_contracts
-
-npm install @openzeppelin/contracts
-solc-select install 0.8.24
-solc-select use 0.8.24
