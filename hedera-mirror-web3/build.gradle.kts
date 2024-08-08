@@ -1,4 +1,23 @@
 /*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.net.HttpURLConnection
+import java.net.URI
+
+/*
  * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +39,7 @@ plugins {
     id("openapi-conventions")
     id("spring-conventions")
     id("org.web3j")
+    id("org.web3j.solidity")
 }
 
 dependencies {
@@ -61,14 +81,67 @@ tasks.compileTestJava {
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
+// Task to download OpenZeppelin contracts
+val openZeppelinVersion = "4.9.3"
+val openZeppelinUrl =
+    "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/v${openZeppelinVersion}.zip"
+val zipFile = layout.buildDirectory.file("openzeppelin.zip")
+val outputDir = layout.buildDirectory.dir("../src/test/solidity_historical/openzeppelin")
+
+tasks.register("downloadOpenZeppelinContracts") {
+    doFirst { outputDir.get().asFile.mkdirs() }
+    doLast {
+        val uri = URI(openZeppelinUrl)
+        val url = uri.toURL()
+        val connection = url.openConnection() as HttpURLConnection
+        connection.inputStream.use { input ->
+            zipFile.get().asFile.outputStream().use { output -> input.copyTo(output) }
+        }
+    }
+}
+
+tasks.register<Copy>("extractOpenZeppelinContracts") {
+    dependsOn("downloadOpenZeppelinContracts")
+    from(zipTree(zipFile.get().asFile))
+    into(outputDir)
+    include("openzeppelin-contracts-${openZeppelinVersion}/contracts/**/*.sol")
+    eachFile {
+        path = path.replaceFirst("openzeppelin-contracts-${openZeppelinVersion}/contracts", "")
+    }
+}
+
+// tasks.register<Exec>("listOutputDirContents") {
+//    dependsOn("extractOpenZeppelinContracts") // Ensure this runs after extraction
+//    commandLine("sh", "-c", "ls -R ${outputDir.get().asFile.absolutePath}")
+// }
+
+// tasks.register("prepareForGenerateWrappers") { dependsOn("extractOpenZeppelinContracts") }
+
+// tasks.named("assemble") { dependsOn("prepareForGenerateWrappers") }
+
 sourceSets { test { solidity { version = "0.8.24" } } }
 
 web3j {
     generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
+    excludedContracts = listOf("EthCallHistorical", "DynamicEthCallsHistorical")
     useNativeJavaTypes = true
     generateBoth = true
 }
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
-tasks.processTestResources { dependsOn(tasks.named("generateTestContractWrappers")) }
+tasks.processTestResources {
+    // dependsOn(tasks.named("compileHistoricalSolidityContracts"))
+    dependsOn(tasks.named("generateTestContractWrappers"))
+    dependsOn(tasks.named("compileHistoricalSolidityContracts"))
+}
+
+// Task to compile Solidity contracts and generate Java files
+tasks.register<Exec>("compileHistoricalSolidityContracts") {
+    dependsOn(tasks.named("extractOpenZeppelinContracts")) // Ensure this runs after extraction
+    // Define the path to your shell script
+    val scriptPath = file("compile_solidity.sh").absolutePath
+    // Ensure the script is executable
+    doFirst { file(scriptPath).setExecutable(true) }
+    commandLine("bash", scriptPath)
+}
