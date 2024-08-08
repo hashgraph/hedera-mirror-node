@@ -16,12 +16,11 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -45,7 +44,7 @@ import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
-abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
+abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     @Resource
     protected TestWeb3jService testWeb3jService;
@@ -64,6 +63,19 @@ abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
         return Key.newBuilder()
                 .setContractID(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
                 .build();
+    }
+
+    protected void testEstimateGas(final RemoteFunctionCall<?> functionCall, final Contract contract) {
+        // Given
+        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getEstimatedGas());
+
+        // When
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
+
+        // Then
+        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
+                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
+                .isTrue();
     }
 
     @BeforeEach
@@ -118,17 +130,6 @@ abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
                 .sender(new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress()))))
                 .value(0L)
                 .build();
-    }
-
-    protected void testEstimateGas(final RemoteFunctionCall<?> functionCall, final Contract contract) {
-        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getEstimatedGas());
-
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        // Then
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
     }
 
     public enum KeyType {

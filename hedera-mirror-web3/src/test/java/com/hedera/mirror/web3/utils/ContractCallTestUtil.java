@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.function.ToLongFunction;
 import lombok.experimental.UtilityClass;
@@ -40,9 +39,6 @@ public class ContractCallTestUtil {
             ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
     public static final Address SENDER_ALIAS = Address.wrap(
             Bytes.wrap(recoverAddressFromPubKey(SENDER_PUBLIC_KEY.substring(2).toByteArray())));
-    public static final BigInteger INITIAL_SUPPLY = BigInteger.valueOf(10L);
-    public static final BigInteger DECIMALS = BigInteger.valueOf(10L);
-    public static final BigInteger VALUE = BigInteger.valueOf(10000L * 100_000_000L);
 
     public static final double GAS_ESTIMATE_MULTIPLIER_LOWER_RANGE = 1.05;
     public static final double GAS_ESTIMATE_MULTIPLIER_UPPER_RANGE = 1.2;
