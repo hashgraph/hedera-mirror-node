@@ -14,16 +14,16 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.111.0-rc2'
+      version: '0.111.0-rc3'
   dependsOn:
     - name: mirror
       namespace: common
   driftDetection:
     ignore:
-    - paths:
-      - /spec/scripts
-      target:
-        kind: SGScript
+      - paths:
+          - /spec/scripts
+        target:
+          kind: SGScript
     mode: enabled
   install:
     crds: CreateReplace
