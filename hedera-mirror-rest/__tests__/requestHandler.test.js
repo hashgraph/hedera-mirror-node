@@ -51,4 +51,15 @@ describe('qs tests', () => {
       'token.id': ['2', '8', 'gt:4', 'gte:6', '10'],
     });
   });
+
+  test('requestQueryParser for single lowercased query param values', () => {
+    const val = requestQueryParser('order=ASC&result=SUCCESS');
+    expect(val.order).toStrictEqual('asc');
+    expect(val.result).toStrictEqual('success');
+  });
+
+  test('requestQueryParser for multiple lowercased query param keys and values', () => {
+    const val = requestQueryParser('order=ASC&ORder=ASC');
+    expect(val.order).toStrictEqual(['asc', 'asc']);
+  });
 });
