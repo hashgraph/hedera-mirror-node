@@ -1,14 +1,8 @@
-drop table if exists transaction_hash;
+drop index if exists transaction_hash__hash;
 
-create table if not exists transaction_hash
-(
-    consensus_timestamp bigint   not null,
-    distribution_id     smallint not null,
-    hash                bytea    not null,
-    payer_account_id    bigint   not null
-);
-comment on table transaction_hash is 'Network transaction hash to consensus timestamp mapping';
+alter table if exists transaction_hash add column if not exists distribution_id smallint;
+update transaction_hash
+set distribution_id = ('x' || encode(substring(hash from 1 for 2), 'hex'))::bit(32)::int >> 16;
 
-select create_distributed_table('transaction_hash', 'distribution_id',  shard_count := ${hashShardCount});
-
-create index transaction_hash__hash on transaction_hash using hash (substring(hash from 1 for 32));
+select alter_distributed_table('transaction_hash', distribution_column := 'distribution_id');
+create index if  not exists transaction_hash__hash on transaction_hash using hash (substring(hash from 1 for 32));
