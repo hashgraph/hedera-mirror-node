@@ -39,6 +39,7 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,7 @@ import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.AbiTypes;
 import org.web3j.abi.datatypes.Type;
 
+@RequiredArgsConstructor
 class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
     private static final String EMPTY_BLOCK_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
@@ -58,10 +60,6 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
     @SpyBean
     private ContractExecutionService contractExecutionService;
-
-    ContractCallEvmCodesTest(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
-    }
 
     @Test
     void chainId() throws Exception {

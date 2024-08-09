@@ -16,23 +16,24 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,7 +48,10 @@ import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
-abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
+abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
+
+    @Resource
+    protected TestWeb3jService testWeb3jService;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -63,6 +67,19 @@ abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
         return Key.newBuilder()
                 .setContractID(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
                 .build();
+    }
+
+    protected void testEstimateGas(final RemoteFunctionCall<?> functionCall, final Contract contract) {
+        // Given
+        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getEstimatedGas());
+
+        // When
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
+
+        // Then
+        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
+                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
+                .isTrue();
     }
 
     @BeforeEach
@@ -191,7 +208,7 @@ abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
     }
 
     protected ContractExecutionParameters getContractExecutionParameters(
-            final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract) {
+            final RemoteFunctionCall<?> functionCall, final Contract contract) {
 
         final var senderAccount = new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress())));
 
@@ -270,17 +287,17 @@ abstract class AbstractContractCallServiceTest extends ContractCallTestSetup {
     }
 
     public enum KeyType {
-        ADMIN_KEY(BigInteger.valueOf(1)),
-        KYC_KEY(BigInteger.valueOf(2)),
-        FREEZE_KEY(BigInteger.valueOf(4)),
-        WIPE_KEY(BigInteger.valueOf(8)),
-        SUPPLY_KEY(BigInteger.valueOf(16)),
-        FEE_SCHEDULE_KEY(BigInteger.valueOf(32)),
-        PAUSE_KEY(BigInteger.valueOf(64));
+        ADMIN_KEY(1),
+        KYC_KEY(2),
+        FREEZE_KEY(4),
+        WIPE_KEY(8),
+        SUPPLY_KEY(16),
+        FEE_SCHEDULE_KEY(32),
+        PAUSE_KEY(64);
         final BigInteger keyTypeNumeric;
 
-        KeyType(BigInteger keyTypeNumeric) {
-            this.keyTypeNumeric = keyTypeNumeric;
+        KeyType(Integer keyTypeNumeric) {
+            this.keyTypeNumeric = BigInteger.valueOf(keyTypeNumeric);
         }
 
         public BigInteger getKeyTypeNumeric() {

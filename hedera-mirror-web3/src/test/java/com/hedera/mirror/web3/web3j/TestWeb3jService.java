@@ -32,7 +32,6 @@ import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.reactivex.Flowable;
-import jakarta.inject.Named;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -66,7 +65,6 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Numeric;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-@Named
 public class TestWeb3jService implements Web3jService {
     private static final long DEFAULT_TRANSACTION_VALUE = 10L;
     private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
@@ -79,6 +77,7 @@ public class TestWeb3jService implements Web3jService {
     private Address sender = Address.fromHexString("");
     private boolean isEstimateGas = false;
     private String transactionResult;
+    private String estimatedGas;
     private long entityId;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
@@ -99,6 +98,10 @@ public class TestWeb3jService implements Web3jService {
 
     public String getTransactionResult() {
         return transactionResult;
+    }
+
+    public String getEstimatedGas() {
+        return estimatedGas;
     }
 
     public void setEstimateGas(final boolean isEstimateGas) {
@@ -177,22 +180,23 @@ public class TestWeb3jService implements Web3jService {
         res.setId(request.getId());
         res.setJsonrpc(request.getJsonrpc());
 
-        transactionResult = mirrorNodeResult;
+        transactionResult = estimatedGas = mirrorNodeResult;
         return res;
     }
 
     private EthCall ethCall(List<Transaction> reqParams, Request request) {
         var transaction = reqParams.get(0);
 
-        final var serviceParameters = serviceParametersForExecutionSingle(
-                Bytes.fromHexString(transaction.getData()),
-                Address.fromHexString(transaction.getTo()),
-                isEstimateGas ? ETH_ESTIMATE_GAS : ETH_CALL,
-                transaction.getValue() != null ? Long.parseLong(transaction.getValue()) : 0L,
-                BlockType.LATEST,
-                TRANSACTION_GAS_LIMIT,
-                sender);
-        final var result = contractExecutionService.processCall(serviceParameters);
+        // First get the transaction result
+        final var serviceParametersForCall =
+                serviceParametersForExecutionSingle(transaction, ETH_CALL, BlockType.LATEST);
+        final var result = contractExecutionService.processCall(serviceParametersForCall);
+        transactionResult = result;
+
+        // Then get the estimated gas
+        final var serviceParametersForEstimate =
+                serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, BlockType.LATEST);
+        estimatedGas = contractExecutionService.processCall(serviceParametersForEstimate);
 
         final var ethCall = new EthCall();
         ethCall.setId(request.getId());
@@ -244,6 +248,21 @@ public class TestWeb3jService implements Web3jService {
                 .receiver(contractAddress)
                 .callData(callData)
                 .gas(gasLimit)
+                .isStatic(false)
+                .callType(callType)
+                .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(block)
+                .build();
+    }
+
+    protected ContractExecutionParameters serviceParametersForExecutionSingle(
+            final Transaction transaction, final CallServiceParameters.CallType callType, final BlockType block) {
+        return ContractExecutionParameters.builder()
+                .sender(new HederaEvmAccount(sender))
+                .value(transaction.getValue() != null ? Long.parseLong(transaction.getValue()) : 0L)
+                .receiver(Address.fromHexString(transaction.getTo()))
+                .callData(Bytes.fromHexString(transaction.getData()))
+                .gas(TRANSACTION_GAS_LIMIT)
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
