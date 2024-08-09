@@ -63,6 +63,10 @@ The Java monitor needs to be updated for any new or modified HAPI transactions t
 - [ ] `rosetta-cli` validation configuration
 - [ ] BDD Test
 
+## GraphQL API
+
+- [ ] Transaction type
+
 ## Test
 
 Acceptance and performance tests should be updated whenever there's an API change.

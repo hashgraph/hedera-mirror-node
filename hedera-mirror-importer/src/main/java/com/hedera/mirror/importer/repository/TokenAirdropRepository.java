@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-description = "Hedera Mirror Node Check State Proof"
+package com.hedera.mirror.importer.repository;
 
-plugins { id("javascript-conventions") }
+import com.hedera.mirror.common.domain.token.AbstractTokenAirdrop;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
+import org.springframework.data.repository.CrudRepository;
 
-node { version = "20.15.1" }
-
-// This project imports code from the parent project
-tasks.npmInstall { dependsOn(":rest:npmInstall") }
+public interface TokenAirdropRepository extends CrudRepository<TokenAirdrop, AbstractTokenAirdrop.Id> {}

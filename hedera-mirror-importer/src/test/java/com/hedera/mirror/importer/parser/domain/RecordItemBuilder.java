@@ -96,6 +96,9 @@ import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
+import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
+import com.hederahashgraph.api.proto.java.PendingAirdropValue;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
@@ -113,10 +116,13 @@ import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.hederahashgraph.api.proto.java.TokenAirdropTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCancelAirdropTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenClaimAirdropTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -789,6 +795,62 @@ public class RecordItemBuilder {
     public Builder<SystemUndeleteTransactionBody.Builder> systemUndelete() {
         var builder = SystemUndeleteTransactionBody.newBuilder().setFileID(fileId());
         return new Builder<>(TransactionType.SYSTEMUNDELETE, builder);
+    }
+
+    public Builder<TokenAirdropTransactionBody.Builder> tokenAirdrop() {
+        var fungibleTokenId = tokenId();
+        var nftTokenId = tokenId();
+
+        // Airdrops that transfer to the account and do not go into the pending airdrop list
+        var tokenTransferList = TokenTransferList.newBuilder()
+                .setToken(fungibleTokenId)
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(accountId())
+                        .setAmount(-100)
+                        .build())
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(accountId())
+                        .setAmount(100)
+                        .build());
+        var nftTransferList = TokenTransferList.newBuilder()
+                .setToken(nftTokenId)
+                .addNftTransfers(NftTransfer.newBuilder()
+                        .setSerialNumber(1L)
+                        .setReceiverAccountID(accountId())
+                        .build());
+
+        var fungiblePendingAirdropId = PendingAirdropId.newBuilder()
+                .setSenderId(accountId())
+                .setReceiverId(accountId())
+                .setFungibleTokenType(fungibleTokenId);
+        var fungiblePendingAirdrop = PendingAirdropRecord.newBuilder()
+                .setPendingAirdropId(fungiblePendingAirdropId)
+                .setPendingAirdropValue(
+                        PendingAirdropValue.newBuilder().setAmount(1000L).build());
+        var nftPendingAirdropId = PendingAirdropId.newBuilder()
+                .setSenderId(accountId())
+                .setReceiverId(accountId())
+                .setNonFungibleToken(NftID.newBuilder()
+                        .setTokenID(nftTokenId)
+                        .setSerialNumber(1L)
+                        .build());
+        var nftPendingAirdrop = PendingAirdropRecord.newBuilder().setPendingAirdropId(nftPendingAirdropId);
+
+        return new Builder<>(TransactionType.TOKENAIRDROP, TokenAirdropTransactionBody.newBuilder())
+                .record(r -> r.addTokenTransferLists(tokenTransferList)
+                        .addTokenTransferLists(nftTransferList)
+                        .addNewPendingAirdrops(fungiblePendingAirdrop)
+                        .addNewPendingAirdrops(nftPendingAirdrop));
+    }
+
+    public Builder<TokenCancelAirdropTransactionBody.Builder> tokenCancelAirdrop(PendingAirdropId pendingAirdropId) {
+        var transactionBody = TokenCancelAirdropTransactionBody.newBuilder().addPendingAirdrops(pendingAirdropId);
+        return new Builder<>(TransactionType.TOKENCANCELAIRDROP, transactionBody);
+    }
+
+    public Builder<TokenClaimAirdropTransactionBody.Builder> tokenClaimAirdrop(PendingAirdropId pendingAirdropId) {
+        var transactionBody = TokenClaimAirdropTransactionBody.newBuilder().addPendingAirdrops(pendingAirdropId);
+        return new Builder<>(TransactionType.TOKENCLAIMAIRDROP, transactionBody);
     }
 
     public Builder<TokenAssociateTransactionBody.Builder> tokenAssociate() {

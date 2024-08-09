@@ -57,12 +57,14 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
     @BeforeEach
     void setup() {
         entityProperties.getPersist().setEntityTransactions(true);
+        entityProperties.getPersist().setTokenAirdrops(true);
     }
 
     @AfterEach
     void teardown() {
         entityProperties.getPersist().setEntityTransactions(false);
         entityProperties.getPersist().setItemizedTransfers(true);
+        entityProperties.getPersist().setTokenAirdrops(false);
     }
 
     @ParameterizedTest(name = "{0}")

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-description = "Hedera Mirror Node Check State Proof"
+package com.hedera.mirror.common.domain.token;
 
-plugins { id("javascript-conventions") }
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-node { version = "20.15.1" }
+@Getter
+@RequiredArgsConstructor
+public enum TokenAirdropStateEnum {
+    CANCELLED(0),
+    CLAIMED(1),
+    PENDING(2);
 
-// This project imports code from the parent project
-tasks.npmInstall { dependsOn(":rest:npmInstall") }
+    private final int id;
+}
