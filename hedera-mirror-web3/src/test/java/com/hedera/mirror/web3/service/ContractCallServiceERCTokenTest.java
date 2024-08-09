@@ -41,11 +41,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
-    private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
-        return Arrays.stream(ErcContractReadOnlyFunctions.values())
-                .flatMap(ercFunction -> Stream.of(Arguments.of(ercFunction, true), Arguments.of(ercFunction, false)));
-    }
-
     private static Stream<Arguments> ercContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<BlockType> blockNumbers =
                 List.of(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)), BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
