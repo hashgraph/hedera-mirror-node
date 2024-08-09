@@ -89,7 +89,10 @@ val zipFile = layout.buildDirectory.file("openzeppelin.zip")
 val outputDir = layout.buildDirectory.dir("../src/test/solidity_historical/openzeppelin")
 
 tasks.register("downloadOpenZeppelinContracts") {
-    doFirst { outputDir.get().asFile.mkdirs() }
+    doFirst {
+        layout.buildDirectory.get().asFile.mkdirs()
+        outputDir.get().asFile.mkdirs()
+    }
     doLast {
         val uri = URI(openZeppelinUrl)
         val url = uri.toURL()
@@ -131,13 +134,13 @@ web3j {
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
 tasks.processTestResources {
-    // dependsOn(tasks.named("compileHistoricalSolidityContracts"))
     dependsOn(tasks.named("generateTestContractWrappers"))
     dependsOn(tasks.named("compileHistoricalSolidityContracts"))
 }
 
 // Task to compile Solidity contracts and generate Java files
 tasks.register<Exec>("compileHistoricalSolidityContracts") {
+    dependsOn(tasks.named("downloadOpenZeppelinContracts"))
     dependsOn(tasks.named("extractOpenZeppelinContracts")) // Ensure this runs after extraction
     // Define the path to your shell script
     val scriptPath = file("compile_solidity.sh").absolutePath
@@ -145,3 +148,5 @@ tasks.register<Exec>("compileHistoricalSolidityContracts") {
     doFirst { file(scriptPath).setExecutable(true) }
     commandLine("bash", scriptPath)
 }
+
+tasks.named("assemble") { dependsOn(tasks.named("processTestResources")) }
