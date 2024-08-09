@@ -924,6 +924,7 @@ const addTransaction = async (transaction) => {
 
 const addTransactionHash = async (transactionHash) => {
   transactionHash.hash = valueToBuffer(transactionHash.hash);
+  transactionHash.distribution_id = transactionHash.hash.readInt16BE();
   transactionHash.payer_account_id = EntityId.parse(transactionHash.payer_account_id).getEncodedId();
   await insertDomainObject('transaction_hash', Object.keys(transactionHash), transactionHash);
 };

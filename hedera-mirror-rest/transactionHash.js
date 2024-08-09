@@ -25,7 +25,8 @@ const orderClause = `order by ${TransactionHash.CONSENSUS_TIMESTAMP}`;
 const transactionHashQuery = `
   select *
   from ${TransactionHash.tableName}
-  where substring(${TransactionHash.HASH} from 1 for ${ETH_HASH_LENGTH}) = $1`;
+  where substring(${TransactionHash.HASH} from 1 for ${ETH_HASH_LENGTH}) = $1
+    and ${TransactionHash.DISTRIBUTION_ID} = $2`;
 
 const transactionHashShardedQuery = `select * from get_transaction_info_by_hash($1) where true`;
 
@@ -40,12 +41,20 @@ const transactionHashShardedQuery = `select * from get_transaction_info_by_hash(
 const getTransactionHash = async (hash, {order = orderFilterValues.ASC, timestampFilters = []} = {}) => {
   const normalized = normalizeTransactionHash(hash);
   const params = [normalized];
+  const useCustomShardedQuery = await transactionHashShardedQueryEnabled();
+  let mainQuery = useCustomShardedQuery ? transactionHashShardedQuery : transactionHashQuery;
+
+  if (!useCustomShardedQuery) {
+    // The distribution id is a short of the first 2 bytes of the hash in big-endian. It's only for citus so the query
+    // gets pushed to the correct shard
+    params.push(hash.readInt16BE());
+  }
+
   const timestampConditions = [];
   for (const filter of timestampFilters) {
     timestampConditions.push(`${TransactionHash.CONSENSUS_TIMESTAMP} ${filter.operator} $${params.push(filter.value)}`);
   }
 
-  const mainQuery = (await transactionHashShardedQueryEnabled()) ? transactionHashShardedQuery : transactionHashQuery;
   const query = `${mainQuery}
     ${timestampConditions.length !== 0 ? `and ${timestampConditions.join(' and ')}` : ''}
     ${orderClause} ${order}

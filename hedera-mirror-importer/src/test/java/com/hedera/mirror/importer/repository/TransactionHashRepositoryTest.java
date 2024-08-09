@@ -18,12 +18,10 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.EnabledIfV2;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-@EnabledIfV2
 class TransactionHashRepositoryTest extends AbstractRepositoryTest {
 
     private final TransactionHashRepository transactionHashRepository;
@@ -33,7 +31,6 @@ class TransactionHashRepositoryTest extends AbstractRepositoryTest {
         var transactionHash = domainBuilder.transactionHash().get();
         transactionHashRepository.save(transactionHash);
         assertThat(transactionHashRepository.findById(transactionHash.getHash()))
-                .get()
-                .isEqualTo(transactionHash);
+                .contains(transactionHash);
     }
 }

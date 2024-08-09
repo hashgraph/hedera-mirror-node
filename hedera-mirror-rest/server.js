@@ -51,7 +51,7 @@ import {
 
 // routes
 import {AccountRoutes, BlockRoutes, ContractRoutes, NetworkRoutes} from './routes';
-import {handleRejection, handleUncaughtException} from "./middleware/httpErrorHandler.js";
+import {handleRejection, handleUncaughtException} from './middleware/httpErrorHandler';
 
 // use a dummy port for jest unit tests
 const port = isTestEnv() ? 3000 : config.port;

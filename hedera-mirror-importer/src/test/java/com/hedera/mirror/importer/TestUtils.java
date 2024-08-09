@@ -183,8 +183,10 @@ public class TestUtils {
     }
 
     public void insertIntoTransactionHash(JdbcTemplate jdbcTemplate, TransactionHash hash) {
-        var sql = "INSERT INTO transaction_hash(consensus_timestamp,hash,payer_account_id) VALUES (?,?,?)";
-        jdbcTemplate.update(sql, hash.getConsensusTimestamp(), hash.getHash(), hash.getPayerAccountId());
+        var sql =
+                "INSERT INTO transaction_hash(consensus_timestamp,distribution_id,hash,payer_account_id) VALUES (?,?,?,?)";
+        jdbcTemplate.update(
+                sql, hash.getConsensusTimestamp(), hash.getDistributionId(), hash.getHash(), hash.getPayerAccountId());
     }
 
     public static long plus(long timestamp, Duration delta) {
