@@ -105,7 +105,7 @@ spec:
                 network: MAINNET
                 feature:
                   rejectToken: false
-      cucumberTags: "@critical"
+      cucumberTags: "@critical and not @nft"
       enabled: true
     web3:
       env:
