@@ -74,8 +74,8 @@
     {
       "urls": [
         "/api/v1/transactions?timestamp=1565779209.711927001&account.id=0.0.9&type=credit&result=success&order=asc",
-        "/api/v1/transactions?timestamp=1565779209.711927001&account.id=0.0.9&type=credit&result=SUCCESS&order=ASC",
-        "/api/v1/transactions?timestamp=1565779209.711927001&account.id=0.0.9&type=credit&result=SucCess&order=AsC"
+        "/api/v1/transactions?timestamp=1565779209.711927001&account.id=0.0.9&type=credit&result=SUCCESS&order=ASC&result=SUCCESS&order=ASC",
+        "/api/v1/transactions?timestamp=1565779209.711927001&account.id=0.0.9&type=credit&result=SucCess&order=AsC&Result=SUCCESS&oRder=ASC"
       ],
       "responseStatus": 200,
       "responseJson": {

@@ -35,7 +35,7 @@ const requestLogger = async (req, res, next) => {
 };
 
 /**
- * Manage request query params to support case insensitive keys
+ * Manage request query params to support case insensitive keys and some values (queryCanonicalizationMap above).
  * Express default query parser uses qs, other option is querystring, both are case sensitive
  * Parse using default qs logic and use to populate a new map in which all keys are lowercased
  * @param queryString
@@ -62,8 +62,7 @@ const requestQueryParser = (queryString) => {
   const caseInsensitiveQueryString = {};
   for (const [key, value] of Object.entries(parsedQueryString)) {
     const lowerKey = key.toLowerCase();
-    const canonicalizationFunc = queryCanonicalizationMap[lowerKey];
-    const canonicalValue = canonicalizationFunc ? canonicalizationFunc(value) : value;
+    const canonicalValue = canonicalizeValue(lowerKey, value);
     if (lowerKey in caseInsensitiveQueryString) {
       // handle repeated values, merge into an array
       caseInsensitiveQueryString[lowerKey] = merge(caseInsensitiveQueryString[lowerKey], canonicalValue);
@@ -73,6 +72,15 @@ const requestQueryParser = (queryString) => {
   }
 
   return caseInsensitiveQueryString;
+};
+
+const canonicalizeValue = (key, value) => {
+  const canonicalizationFunc = queryCanonicalizationMap[key];
+  if (canonicalizationFunc === undefined) {
+    return value;
+  }
+
+  return Array.isArray(value) ? value.map((v) => canonicalizationFunc(v)) : canonicalizationFunc(value);
 };
 
 export {requestLogger, requestQueryParser};
