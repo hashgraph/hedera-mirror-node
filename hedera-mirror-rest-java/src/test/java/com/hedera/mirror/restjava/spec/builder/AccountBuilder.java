@@ -46,9 +46,8 @@ class AccountBuilder extends AbstractEntityBuilder<Entity, Entity.EntityBuilder<
 
     @Override
     protected Entity customizeEntity(Map<String, Object> account) {
-        var builder = Entity.builder();
         // Set defaults
-        builder
+        var builder = Entity.builder()
                 .declineReward(Boolean.FALSE)
                 .deleted(Boolean.FALSE)
                 .maxAutomaticTokenAssociations(0)

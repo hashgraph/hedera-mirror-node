@@ -24,7 +24,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 public class EntityIdFromStringConverterTest {
 
     @ParameterizedTest(name = "Convert String to EntityId")
-    @CsvSource({"1.2.3, 1.2.3", "0.0.100, 0.0.100"})
+    @CsvSource({"1.2.3, 1.2.3", "0.0.1001, 0.0.1001"})
     void testConverter(String source, String expected) {
         EntityIdFromStringConverter converter = new EntityIdFromStringConverter();
         assertThat(converter.convert(source).toString()).isEqualTo(expected);

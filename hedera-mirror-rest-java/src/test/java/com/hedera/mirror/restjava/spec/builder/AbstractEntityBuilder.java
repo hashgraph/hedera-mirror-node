@@ -44,7 +44,6 @@ abstract class AbstractEntityBuilder<T, B> implements SpecEntityBuilder {
 
     private static final Base32 BASE32 = new Base32();
     private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
-    private static final Object IGNORE_ATTRIBUTE_SIGNAL = new Object();
     private static final Map<Class<?>, Map<String, Method>> methodCache = new ConcurrentHashMap<>();
 
     /*
@@ -114,9 +113,7 @@ abstract class AbstractEntityBuilder<T, B> implements SpecEntityBuilder {
                 try {
                     var expectedParameterType = method.getParameterTypes()[0];
                     var mappedBuilderParameter = mapBuilderParameter(methodName, expectedParameterType, customization.getValue());
-                    if (mappedBuilderParameter != IGNORE_ATTRIBUTE_SIGNAL) {
-                        method.invoke(builder, mappedBuilderParameter);
-                    }
+                    method.invoke(builder, mappedBuilderParameter);
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     log.warn("Failed to invoke method '{}' for attribute override '{}' for {}",
                             methodName, customization.getKey(), builderClass.getName(), e);

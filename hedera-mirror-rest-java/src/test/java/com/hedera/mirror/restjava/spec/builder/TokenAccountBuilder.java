@@ -44,9 +44,8 @@ class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount, TokenAccou
 
     @Override
     protected TokenAccount customizeEntity(Map<String, Object> account) {
-        var builder = TokenAccount.builder();
         // Set defaults
-        builder
+        var builder = TokenAccount.builder()
                 .accountId(0L)
                 .associated(Boolean.TRUE)
                 .automaticAssociation(Boolean.FALSE)
