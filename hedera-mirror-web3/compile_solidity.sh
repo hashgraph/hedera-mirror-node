@@ -44,7 +44,7 @@ for i in "${!SOLC_VERSIONS[@]}"; do
   solc --base-path . --allow-paths node_modules --abi --bin --overwrite -o build/temp_contracts "${CONTRACT_PATH}"
 
   # Generate Java files using web3j
-  web3j generate solidity \
+  $HOME/.web3j/web3j generate solidity \
     -b build/temp_contracts/EvmCodesHistorical.bin \
     -a build/temp_contracts/EvmCodesHistorical.abi \
     -o "${OUTPUT_DIRS[$i]}" \
