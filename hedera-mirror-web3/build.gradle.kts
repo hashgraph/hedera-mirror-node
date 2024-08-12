@@ -74,11 +74,6 @@ tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
 tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 
-tasks.compileTestJava {
-    options.compilerArgs.add("--enable-preview")
-    options.compilerArgs.removeIf { it == "-Werror" }
-}
-
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
 // Task to download OpenZeppelin contracts
@@ -113,15 +108,6 @@ tasks.register<Copy>("extractOpenZeppelinContracts") {
     }
 }
 
-// tasks.register<Exec>("listOutputDirContents") {
-//    dependsOn("extractOpenZeppelinContracts") // Ensure this runs after extraction
-//    commandLine("sh", "-c", "ls -R ${outputDir.get().asFile.absolutePath}")
-// }
-
-// tasks.register("prepareForGenerateWrappers") { dependsOn("extractOpenZeppelinContracts") }
-
-// tasks.named("assemble") { dependsOn("prepareForGenerateWrappers") }
-
 sourceSets { test { solidity { version = "0.8.24" } } }
 
 web3j {
@@ -141,7 +127,8 @@ tasks.processTestResources {
 // Task to compile Solidity contracts and generate Java files
 tasks.register<Exec>("compileHistoricalSolidityContracts") {
     dependsOn(tasks.named("downloadOpenZeppelinContracts"))
-    dependsOn(tasks.named("extractOpenZeppelinContracts")) // Ensure this runs after extraction
+    dependsOn(tasks.named("extractOpenZeppelinContracts"))
+    dependsOn(tasks.named("compileTestSolidity"))
     // Define the path to your shell script
     val scriptPath = file("compile_solidity.sh").absolutePath
     // Ensure the script is executable
@@ -150,3 +137,9 @@ tasks.register<Exec>("compileHistoricalSolidityContracts") {
 }
 
 tasks.named("assemble") { dependsOn(tasks.named("processTestResources")) }
+
+tasks.compileTestJava {
+    options.compilerArgs.add("--enable-preview")
+    options.compilerArgs.removeIf { it == "-Werror" }
+    dependsOn(tasks.named("compileHistoricalSolidityContracts"))
+}
