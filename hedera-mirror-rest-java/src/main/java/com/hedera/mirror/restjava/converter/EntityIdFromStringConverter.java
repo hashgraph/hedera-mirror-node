@@ -27,9 +27,6 @@ import org.springframework.util.StringUtils;
 public class EntityIdFromStringConverter implements Converter<String, EntityId> {
     @Override
     public EntityId convert(String source) {
-        if (StringUtils.hasText(source)) {
-            return EntityId.of(source);
-        }
-        return null;
+        return StringUtils.hasText(source) ? EntityId.of(source) : null;
     }
 }

@@ -26,9 +26,6 @@ import org.springframework.core.convert.converter.Converter;
 public class EntityIdFromLongConverter implements Converter<Long, EntityId> {
     @Override
     public EntityId convert(Long entityId) {
-        if (entityId != null) {
-            return EntityId.of(entityId);
-        }
-        return null;
+        return entityId != null ? EntityId.of(entityId) : null;
     }
 }
