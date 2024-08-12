@@ -17,28 +17,24 @@
 package com.hedera.mirror.restjava.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.mirror.common.exception.InvalidEntityException;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullSource;
 
 class EntityIdFromLongConverterTest {
 
-    @ParameterizedTest(name = "Convert Long to EntityId")
+    @ParameterizedTest(name = "Convert {0} to EntityId")
     @CsvSource({"0, 0.0.0", "1, 0.0.1", "1001, 0.0.1001"})
     void testConverter(Long source, String expected) {
         var converter = new EntityIdFromLongConverter();
         assertThat(converter.convert(source)).hasToString(expected);
     }
 
-    @Test
-    void testInvalidSource() {
+    @ParameterizedTest(name = "Convert {0} to EntityId")
+    @NullSource
+    void testNullSource(Long source) {
         var converter = new EntityIdFromLongConverter();
-        assertThatThrownBy(() -> converter.convert(null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> converter.convert(-10L))
-                .isInstanceOf(InvalidEntityException.class);
+        assertThat(converter.convert(source)).isNull();
     }
 }

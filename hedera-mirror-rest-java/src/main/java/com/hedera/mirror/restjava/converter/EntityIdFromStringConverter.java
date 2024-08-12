@@ -20,12 +20,16 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.inject.Named;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.util.StringUtils;
 
 @Named
 @ConfigurationPropertiesBinding
 public class EntityIdFromStringConverter implements Converter<String, EntityId> {
     @Override
     public EntityId convert(String source) {
-        return EntityId.of(source);
+        if (StringUtils.hasText(source)) {
+            return EntityId.of(source);
+        }
+        return null;
     }
 }
