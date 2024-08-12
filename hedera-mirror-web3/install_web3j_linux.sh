@@ -38,6 +38,7 @@ install_web3j() {
     curl -# -L -o "$HOME/.web3j/web3j-cli-shadow-${web3j_version}.tar" "https://github.com/bilyana-gospodinova/web3j-cli/releases/download/${web3j_version}/web3j-cli-shadow-${web3j_version}.tar"
     echo "Installing Web3j..."
     tar -xf "$HOME/.web3j/web3j-cli-shadow-${web3j_version}.tar" -C "$HOME/.web3j"
+    ls "$HOME/.web3j/web3j-cli-shadow-${web3j_version}/bin/web3j"
     echo "export PATH=\$PATH:$HOME/.web3j" >"$HOME/.web3j/source.sh"
     chmod +x "$HOME/.web3j/source.sh"
     echo "Removing downloaded archive..."
@@ -102,6 +103,7 @@ clean_up() {
 completed() {
   cd "$HOME/.web3j"
   ln -sf "web3j-cli-shadow-$web3j_version/bin/web3j" web3j
+  ls -l "$HOME/.web3j"
   printf '\n'
   printf "$GREEN"
   echo "Web3j was successfully installed."
