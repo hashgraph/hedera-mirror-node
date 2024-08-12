@@ -5,15 +5,32 @@ SOLC_VERSIONS=("0.8.7")
 CONTRACT_PATH="src/test/solidity_historical/EvmCodesHistorical.sol"
 OUTPUT_DIRS=("build/generated/sources/web3j/test/java")
 
-brew install jq
-brew install solc-select
+#brew install jq
+#brew install solc-select
+
+chmod +x ./install_solc_select.sh
+./install_solc_select.sh
 
 # Uncomment this line when we have an official release ->
 #curl -L get.web3j.io | sh && source ~/.web3j/source.sh
 
 # Remove the following 2 lines when we have an official release ->
-chmod +x ./install_web3j.sh
-./install_web3j.sh
+# Detect the operating system
+OS=$(uname)
+
+case $OS in
+    "Linux")
+        chmod +x ./install_web3j_linux.sh
+        ./install_web3j_linux.sh
+        ;;
+    "Darwin")
+        chmod +x ./install_web3j_mac.sh
+        ./install_web3j_mac.sh
+        ;;
+    *)
+        echo "Unsupported OS: $OS"
+        ;;
+esac
 
 # Loop over Solidity versions
 for i in "${!SOLC_VERSIONS[@]}"; do
