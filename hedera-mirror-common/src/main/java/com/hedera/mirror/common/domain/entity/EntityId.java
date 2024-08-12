@@ -131,6 +131,10 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
                 .filter(n -> n >= 0)
                 .toList();
 
+        if (parts.size() == 1) {
+            return of(0, 0, parts.get(0));
+        }
+
         if (parts.size() != 3) {
             throw new IllegalArgumentException("Invalid entity ID: " + entityId);
         }

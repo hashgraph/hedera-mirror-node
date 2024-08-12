@@ -222,6 +222,39 @@ class AllowancesControllerTest extends ControllerTest {
         }
 
         @Test
+        void allRangeConditionsNumericQueryParameters() {
+            // Given
+            var entity = domainBuilder.entity().persist();
+            var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
+            var allowance2 = nftAllowance(a -> a.owner(allowance1.getOwner()));
+            var uriParams =
+                    "?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=1&order=desc"
+                            .formatted(
+                                    allowance1.getSpender(),
+                                    allowance2.getSpender(),
+                                    allowance1.getTokenId(),
+                                    allowance2.getTokenId() + 1);
+            var next =
+                    "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=1&order=desc"
+                            .formatted(
+                                    allowance1.getOwner(),
+                                    allowance1.getSpender(),
+                                    EntityId.of(allowance2.getSpender()),
+                                    allowance1.getTokenId(),
+                                    EntityId.of(allowance2.getTokenId()));
+
+            // When
+            var result = restClient
+                    .get()
+                    .uri(uriParams, allowance1.getOwner())
+                    .retrieve()
+                    .body(NftAllowancesResponse.class);
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance2), next));
+        }
+
+        @Test
         void noOperators() {
             // Given
             var entity = domainBuilder.entity().persist();
