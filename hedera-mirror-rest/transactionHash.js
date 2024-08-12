@@ -21,14 +21,8 @@ import {TransactionHash} from './model';
 const {default: defaultLimit} = getResponseLimit();
 
 const limitClause = `limit ${defaultLimit}`;
+const mainQuery = `select * from get_transaction_info_by_hash($1)`;
 const orderClause = `order by ${TransactionHash.CONSENSUS_TIMESTAMP}`;
-const transactionHashQuery = `
-  select *
-  from ${TransactionHash.tableName}
-  where substring(${TransactionHash.HASH} from 1 for ${ETH_HASH_LENGTH}) = $1
-    and ${TransactionHash.DISTRIBUTION_ID} = $2`;
-
-const transactionHashShardedQuery = `select * from get_transaction_info_by_hash($1) where true`;
 
 /**
  * Get the transaction hash rows by the hash. Note if the hash is more than 32 bytes, it's queried by the 32-byte prefix
@@ -41,14 +35,6 @@ const transactionHashShardedQuery = `select * from get_transaction_info_by_hash(
 const getTransactionHash = async (hash, {order = orderFilterValues.ASC, timestampFilters = []} = {}) => {
   const normalized = normalizeTransactionHash(hash);
   const params = [normalized];
-  const useCustomShardedQuery = await transactionHashShardedQueryEnabled();
-  let mainQuery = useCustomShardedQuery ? transactionHashShardedQuery : transactionHashQuery;
-
-  if (!useCustomShardedQuery) {
-    // The distribution id is a short of the first 2 bytes of the hash in big-endian. It's only for citus so the query
-    // gets pushed to the correct shard
-    params.push(hash.readInt16BE());
-  }
 
   const timestampConditions = [];
   for (const filter of timestampFilters) {
@@ -56,7 +42,7 @@ const getTransactionHash = async (hash, {order = orderFilterValues.ASC, timestam
   }
 
   const query = `${mainQuery}
-    ${timestampConditions.length !== 0 ? `and ${timestampConditions.join(' and ')}` : ''}
+    ${timestampConditions.length !== 0 ? `where ${timestampConditions.join(' and ')}` : ''}
     ${orderClause} ${order}
     ${limitClause}`;
 
@@ -72,21 +58,5 @@ const transactionHashRegex = /^([\dA-Za-z+\-\/_]{64}|(0x)?[\dA-Fa-f]{96})$/;
 const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
 
 const normalizeTransactionHash = (hash) => (hash.length > ETH_HASH_LENGTH ? hash.subarray(0, ETH_HASH_LENGTH) : hash);
-
-const transactionHashShardedQueryEnabled = (() => {
-  let result = undefined;
-  return () =>
-    (async () => {
-      if (result !== undefined) {
-        return result;
-      }
-
-      const {rows} = await pool.queryQuietly(`select count(*) > 0 as enabled
-                                              from pg_proc
-                                              where proname = 'get_transaction_info_by_hash'`);
-      result = rows[0].enabled;
-      return result;
-    })();
-})();
 
 export {getTransactionHash, isValidTransactionHash};

@@ -44,6 +44,17 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Named
 public class BackfillTransactionHashMigration extends RepeatableMigration {
 
+    private static final String BACKFILL_ETHEREUM_TRANSACTION_HASH_SQL =
+            """
+            insert into %s (consensus_timestamp, distribution_id, hash, payer_account_id)
+            select
+              consensus_timestamp,
+              ('x' || encode(substring(hash from 1 for 2), 'hex'))::bit(32)::int >> 16,
+              hash,
+              payer_account_id
+            from %%s
+            where length(hash) > 0 and consensus_timestamp >= :startTimestamp and consensus_timestamp < :endTimestamp;
+            """;
     private static final String BACKFILL_TRANSACTION_HASH_SQL =
             """
             insert into %s (consensus_timestamp, distribution_id, hash, payer_account_id)
@@ -54,17 +65,6 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
               payer_account_id
             from %%s
             where consensus_timestamp >= :startTimestamp and consensus_timestamp < :endTimestamp %s;
-            """;
-    private static final String BACKFILL_ETHERUM_TRANSACTION_HASH_SQL =
-            """
-            insert into %s (consensus_timestamp, distribution_id, hash, payer_account_id)
-            select
-              consensus_timestamp,
-              ('x' || encode(substring(hash from 1 for 2), 'hex'))::bit(32)::int >> 16,
-              hash,
-              payer_account_id
-            from %%s
-            where length(hash) > 0 and consensus_timestamp >= :startTimestamp and consensus_timestamp < :endTimestamp;
             """;
     // Copying data between distributed tables without co-location can be very slow with citus, thus use a temp table
     private static final String CREATE_TEMP_TABLE_SQL =
@@ -237,7 +237,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
                                 .map(Object::toString)
                                 .collect(joining(",")));
         String backfillEthereumTransactionHashSql = ethereumTransactionIncluded
-                ? String.format(BACKFILL_ETHERUM_TRANSACTION_HASH_SQL, destinationTableName)
+                ? String.format(BACKFILL_ETHEREUM_TRANSACTION_HASH_SQL, destinationTableName)
                 : StringUtils.EMPTY;
         String backfillTransactionHashSql =
                 String.format(BACKFILL_TRANSACTION_HASH_SQL, destinationTableName, transactionTypesCondition);
