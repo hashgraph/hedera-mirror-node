@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+set -euo pipefail
 
 tag_name=$(curl --silent "https://api.github.com/repos/bilyana-gospodinova/web3j-cli/releases/latest" | jq -r .tag_name)
 web3j_version=$(echo $tag_name | sed 's/v//')

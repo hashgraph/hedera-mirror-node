@@ -1,9 +1,10 @@
 #!/bin/bash
+set -euo pipefail
 
 # Define Solidity versions and output directories
 SOLC_VERSIONS=("0.8.7")
-CONTRACT_PATH="src/test/solidity_historical/EvmCodesHistorical.sol"
-OUTPUT_DIRS=("build/generated/sources/web3j/test/java")
+CONTRACT_PATH="./src/test/solidity_historical/EvmCodesHistorical.sol"
+OUTPUT_DIRS=("./build/generated/sources/web3j/test/java")
 
 #brew install jq
 #brew install solc-select
@@ -52,5 +53,11 @@ for i in "${!SOLC_VERSIONS[@]}"; do
     -B
 
 done
+
+echo "The java directory: "
+ls -l ./build/generated/sources/web3j/test/java
+
+echo "The generated file:"
+cat ./build/generated/sources/web3j/test/java/com/hedera/mirror/web3/web3j/generated/EvmCodesHistorical.java
 
 rm -rf build/temp_contracts

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Function to install pip3 and solc-select on Ubuntu/Debian
 install_on_debian() {
@@ -19,8 +20,7 @@ install_on_macos() {
         echo "Homebrew not found, installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
-    brew install python3
-    pip3 install solc-select
+    brew install solc-select
 }
 
 # Detect the operating system
