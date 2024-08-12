@@ -115,7 +115,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -131,7 +131,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -161,7 +161,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -177,25 +177,25 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @Getter
     @RequiredArgsConstructor
     public enum ErcContractReadOnlyFunctions implements ContractFunctionProviderEnum {
-        GET_APPROVED_EMPTY_SPENDER("getApproved", new Object[]{NFT_ADDRESS, 2L}, new Address[]{Address.ZERO}),
+        GET_APPROVED_EMPTY_SPENDER("getApproved", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
         IS_APPROVE_FOR_ALL(
-                "isApprovedForAll", new Address[]{NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Boolean[]{true}),
+                "isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Boolean[] {true}),
         IS_APPROVE_FOR_ALL_WITH_ALIAS(
-                "isApprovedForAll", new Address[]{NFT_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS}, new Boolean[]{true}),
+                "isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS}, new Boolean[] {true}),
         ALLOWANCE_OF(
-                "allowance", new Address[]{FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Long[]{13L}),
+                "allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Long[] {13L}),
         ALLOWANCE_OF_WITH_ALIAS(
-                "allowance", new Address[]{FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS}, new Long[]{13L}),
-        GET_APPROVED("getApproved", new Object[]{NFT_ADDRESS, 1L}, new Address[]{SPENDER_ALIAS}),
-        ERC_DECIMALS("decimals", new Address[]{FUNGIBLE_TOKEN_ADDRESS}, new Integer[]{12}),
-        TOTAL_SUPPLY("totalSupply", new Address[]{FUNGIBLE_TOKEN_ADDRESS}, new Long[]{12345L}),
-        ERC_SYMBOL("symbol", new Address[]{FUNGIBLE_TOKEN_ADDRESS}, new String[]{"HBAR"}),
-        BALANCE_OF("balanceOf", new Address[]{FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Long[]{12L}),
-        BALANCE_OF_WITH_ALIAS("balanceOf", new Address[]{FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Long[]{12L}),
-        ERC_NAME("name", new Address[]{FUNGIBLE_TOKEN_ADDRESS}, new String[]{"Hbars"}),
-        OWNER_OF("getOwnerOf", new Object[]{NFT_ADDRESS, 1L}, new Address[]{OWNER_ADDRESS}),
-        EMPTY_OWNER_OF("getOwnerOf", new Object[]{NFT_ADDRESS, 2L}, new Address[]{Address.ZERO}),
-        TOKEN_URI("tokenURI", new Object[]{NFT_ADDRESS, 1L}, new String[]{"NFT_METADATA_URI"});
+                "allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS}, new Long[] {13L}),
+        GET_APPROVED("getApproved", new Object[] {NFT_ADDRESS, 1L}, new Address[] {SPENDER_ALIAS}),
+        ERC_DECIMALS("decimals", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Integer[] {12}),
+        TOTAL_SUPPLY("totalSupply", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Long[] {12345L}),
+        ERC_SYMBOL("symbol", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"HBAR"}),
+        BALANCE_OF("balanceOf", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Long[] {12L}),
+        BALANCE_OF_WITH_ALIAS("balanceOf", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Long[] {12L}),
+        ERC_NAME("name", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"Hbars"}),
+        OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 1L}, new Address[] {OWNER_ADDRESS}),
+        EMPTY_OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
+        TOKEN_URI("tokenURI", new Object[] {NFT_ADDRESS, 1L}, new String[] {"NFT_METADATA_URI"});
 
         private final String name;
         private final Object[] functionParameters;
@@ -210,9 +210,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @RequiredArgsConstructor
     public enum ErcContractReadOnlyFunctionsNegative implements ContractFunctionProviderEnum {
         // Negative scenarios - expected to throw an exception
-        ERC_DECIMALS_NEGATIVE("decimals", new Address[]{NFT_ADDRESS}),
-        OWNER_OF_NEGATIVE("getOwnerOf", new Object[]{FUNGIBLE_TOKEN_ADDRESS, 1L}),
-        TOKEN_URI_NEGATIVE("tokenURI", new Object[]{FUNGIBLE_TOKEN_ADDRESS, 1L});
+        ERC_DECIMALS_NEGATIVE("decimals", new Address[] {NFT_ADDRESS}),
+        OWNER_OF_NEGATIVE("getOwnerOf", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 1L}),
+        TOKEN_URI_NEGATIVE("tokenURI", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 1L});
 
         private final String name;
         private final Object[] functionParameters;
@@ -222,40 +222,40 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @RequiredArgsConstructor
     public enum ErcContractReadOnlyFunctionsHistorical implements ContractFunctionProviderEnum {
         GET_APPROVED_EMPTY_SPENDER(
-                "getApproved", new Object[]{NFT_ADDRESS_HISTORICAL, 2L}, new Address[]{Address.ZERO}),
+                "getApproved", new Object[] {NFT_ADDRESS_HISTORICAL, 2L}, new Address[] {Address.ZERO}),
         IS_APPROVE_FOR_ALL(
                 "isApprovedForAll",
-                new Address[]{NFT_ADDRESS_HISTORICAL, SENDER_ADDRESS_HISTORICAL, SPENDER_ADDRESS_HISTORICAL},
-                new Boolean[]{true}),
+                new Address[] {NFT_ADDRESS_HISTORICAL, SENDER_ADDRESS_HISTORICAL, SPENDER_ADDRESS_HISTORICAL},
+                new Boolean[] {true}),
         IS_APPROVE_FOR_ALL_WITH_ALIAS(
                 "isApprovedForAll",
-                new Address[]{NFT_ADDRESS_HISTORICAL, SENDER_ALIAS_HISTORICAL, SPENDER_ALIAS_HISTORICAL},
-                new Boolean[]{true}),
+                new Address[] {NFT_ADDRESS_HISTORICAL, SENDER_ALIAS_HISTORICAL, SPENDER_ALIAS_HISTORICAL},
+                new Boolean[] {true}),
         ALLOWANCE_OF(
                 "allowance",
-                new Address[]{FUNGIBLE_TOKEN_ADDRESS_HISTORICAL, SENDER_ADDRESS_HISTORICAL, SPENDER_ADDRESS_HISTORICAL
+                new Address[] {FUNGIBLE_TOKEN_ADDRESS_HISTORICAL, SENDER_ADDRESS_HISTORICAL, SPENDER_ADDRESS_HISTORICAL
                 },
-                new Long[]{13L}),
+                new Long[] {13L}),
         ALLOWANCE_OF_WITH_ALIAS(
                 "allowance",
-                new Address[]{FUNGIBLE_TOKEN_ADDRESS_HISTORICAL, SENDER_ALIAS_HISTORICAL, SPENDER_ALIAS_HISTORICAL},
-                new Long[]{13L}),
+                new Address[] {FUNGIBLE_TOKEN_ADDRESS_HISTORICAL, SENDER_ALIAS_HISTORICAL, SPENDER_ALIAS_HISTORICAL},
+                new Long[] {13L}),
         GET_APPROVED(
-                "getApproved", new Object[]{NFT_ADDRESS_HISTORICAL, 1L}, new Address[]{SPENDER_ALIAS_HISTORICAL}),
-        ERC_DECIMALS("decimals", new Address[]{FUNGIBLE_TOKEN_ADDRESS_HISTORICAL}, new Integer[]{12}),
-        TOTAL_SUPPLY("totalSupply", new Address[]{FUNGIBLE_TOKEN_ADDRESS_HISTORICAL}, new Long[]{12345L}),
-        ERC_SYMBOL("symbol", new Address[]{FUNGIBLE_TOKEN_ADDRESS_HISTORICAL}, new String[]{"HBAR"}),
+                "getApproved", new Object[] {NFT_ADDRESS_HISTORICAL, 1L}, new Address[] {SPENDER_ALIAS_HISTORICAL}),
+        ERC_DECIMALS("decimals", new Address[] {FUNGIBLE_TOKEN_ADDRESS_HISTORICAL}, new Integer[] {12}),
+        TOTAL_SUPPLY("totalSupply", new Address[] {FUNGIBLE_TOKEN_ADDRESS_HISTORICAL}, new Long[] {12345L}),
+        ERC_SYMBOL("symbol", new Address[] {FUNGIBLE_TOKEN_ADDRESS_HISTORICAL}, new String[] {"HBAR"}),
         BALANCE_OF(
                 "balanceOf",
-                new Address[]{FUNGIBLE_TOKEN_ADDRESS_HISTORICAL, SENDER_ADDRESS_HISTORICAL},
-                new Long[]{12L}),
+                new Address[] {FUNGIBLE_TOKEN_ADDRESS_HISTORICAL, SENDER_ADDRESS_HISTORICAL},
+                new Long[] {12L}),
         BALANCE_OF_WITH_ALIAS(
-                "balanceOf", new Address[]{FUNGIBLE_TOKEN_ADDRESS_HISTORICAL, SENDER_ALIAS_HISTORICAL}, new Long[]{12L
-        }),
-        ERC_NAME("name", new Address[]{FUNGIBLE_TOKEN_ADDRESS_HISTORICAL}, new String[]{"Hbars"}),
-        OWNER_OF("getOwnerOf", new Object[]{NFT_ADDRESS_HISTORICAL, 1L}, new Address[]{OWNER_ADDRESS_HISTORICAL}),
-        EMPTY_OWNER_OF("getOwnerOf", new Object[]{NFT_ADDRESS_HISTORICAL, 2L}, new Address[]{Address.ZERO}),
-        TOKEN_URI("tokenURI", new Object[]{NFT_ADDRESS_HISTORICAL, 1L}, new String[]{"NFT_METADATA_URI"});
+                "balanceOf", new Address[] {FUNGIBLE_TOKEN_ADDRESS_HISTORICAL, SENDER_ALIAS_HISTORICAL}, new Long[] {12L
+                }),
+        ERC_NAME("name", new Address[] {FUNGIBLE_TOKEN_ADDRESS_HISTORICAL}, new String[] {"Hbars"}),
+        OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS_HISTORICAL, 1L}, new Address[] {OWNER_ADDRESS_HISTORICAL}),
+        EMPTY_OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS_HISTORICAL, 2L}, new Address[] {Address.ZERO}),
+        TOKEN_URI("tokenURI", new Object[] {NFT_ADDRESS_HISTORICAL, 1L}, new String[] {"NFT_METADATA_URI"});
 
         private final String name;
         private final Object[] functionParameters;
@@ -269,20 +269,20 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @Getter
     @RequiredArgsConstructor
     public enum ErcContractModificationFunctions implements ContractFunctionProviderEnum {
-        APPROVE("approve", new Object[]{FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
-        DELETE_ALLOWANCE_NFT("approve", new Object[]{NFT_ADDRESS, Address.ZERO, 1L}),
-        APPROVE_NFT("approve", new Object[]{NFT_ADDRESS, SPENDER_ADDRESS, 1L}),
-        APPROVE_WITH_ALIAS("approve", new Object[]{FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 2L}),
-        TRANSFER("transfer", new Object[]{TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM("transferFrom", new Object[]{TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
+        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
+        DELETE_ALLOWANCE_NFT("approve", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
+        APPROVE_NFT("approve", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, 1L}),
+        APPROVE_WITH_ALIAS("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 2L}),
+        TRANSFER("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
+        TRANSFER_FROM("transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
         TRANSFER_FROM_TO_HOLLOW_ACCOUNT(
-                "transferFrom", new Object[]{TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, HOLLOW_ACCOUNT_ALIAS, 1L}),
-        TRANSFER_FROM_NFT("transferFromNFT", new Object[]{NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
-        TRANSFER_WITH_ALIAS("transfer", new Object[]{TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
+                "transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, HOLLOW_ACCOUNT_ALIAS, 1L}),
+        TRANSFER_FROM_NFT("transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
+        TRANSFER_WITH_ALIAS("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
         TRANSFER_FROM_WITH_ALIAS(
-                "transferFrom", new Object[]{TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
+                "transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
         TRANSFER_FROM_NFT_WITH_ALIAS(
-                "transferFromNFT", new Object[]{NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L});
+                "transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L});
 
         private final String name;
         private final Object[] functionParameters;
