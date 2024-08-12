@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 
 class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractCallServiceTest {
 
-    public ContractCallServiceERCTokenReadOnlyFunctionsTest(TestWeb3jService testWeb3jService) {
+    private ContractCallServiceERCTokenReadOnlyFunctionsTest(TestWeb3jService testWeb3jService) {
         super(testWeb3jService);
     }
 
@@ -593,40 +593,24 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
 
     @Test
     void ethCallGetOwnerOfStaticEmptyOwner() throws Exception {
-        final var tokenEntity = persistTokenEntity();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
-        final var tokenAddress = getAddressFromEntity(tokenEntity);
+        final var tokenEntity = nftPersist();
+        final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
-        final var result =
-                contract.call_getOwnerOf(tokenAddress, BigInteger.valueOf(1)).send();
-        final var functionCall = contract.send_getOwnerOf(tokenAddress, BigInteger.valueOf(1));
+        final var result = contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(1))
+                .send();
+        final var functionCall = contract.send_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(1));
         assertThat(result).isEqualTo(Address.ZERO.toHexString());
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
     void ethCallGetOwnerOfStaticEmptyOwnerNonStatic() throws Exception {
-        final var tokenEntity = persistTokenEntity();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
-        final var tokenAddress = getAddressFromEntity(tokenEntity);
+        final var tokenEntity = nftPersist();
+        final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
-        final var result = contract.call_getOwnerOfNonStatic(tokenAddress, BigInteger.valueOf(1))
+        final var result = contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1))
                 .send();
-        final var functionCall = contract.send_getOwnerOfNonStatic(tokenAddress, BigInteger.valueOf(1));
+        final var functionCall = contract.send_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1));
         assertThat(result).isEqualTo(Address.ZERO.toHexString());
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
@@ -745,6 +729,20 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
     }
+
+    private Token nftPersist() {
+        final var tokenEntity = persistTokenEntity();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+        return token;
+    }
+    ;
 
     private Token nftPersist(final EntityId treasuryEntityId) {
         return nftPersist(treasuryEntityId, treasuryEntityId);
