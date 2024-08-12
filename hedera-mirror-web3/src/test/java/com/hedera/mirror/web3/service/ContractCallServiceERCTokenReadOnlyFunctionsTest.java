@@ -742,7 +742,6 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 .persist();
         return token;
     }
-    ;
 
     private Token nftPersist(final EntityId treasuryEntityId) {
         return nftPersist(treasuryEntityId, treasuryEntityId);
