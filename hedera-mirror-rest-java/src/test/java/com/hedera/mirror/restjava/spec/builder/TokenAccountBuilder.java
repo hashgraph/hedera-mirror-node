@@ -43,9 +43,8 @@ class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount, TokenAccou
     }
 
     @Override
-    protected TokenAccount customizeEntity(Map<String, Object> account) {
-        // Set defaults
-        var builder = TokenAccount.builder()
+    protected TokenAccount.TokenAccountBuilder<?, ?> getEntityBuilder() {
+        return TokenAccount.builder()
                 .accountId(0L)
                 .associated(Boolean.TRUE)
                 .automaticAssociation(Boolean.FALSE)
@@ -53,17 +52,15 @@ class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount, TokenAccou
                 .balanceTimestamp(0L)
                 .createdTimestamp(0L)
                 .tokenId(0L);
+    }
 
-        // Customize with spec setup definitions
-        customizeWithSpec(builder, account);
-
-        // Check and finalize
+    @Override
+    protected TokenAccount getFinalEntity(TokenAccount.TokenAccountBuilder<?, ?> builder, Map<String, Object> account) {
         var entity = builder.build();
         if (entity.getTimestampRange() == null) {
             builder.timestampRange(Range.atLeast(entity.getCreatedTimestamp()));
             entity = builder.build();
         }
-
         return entity;
     }
 }

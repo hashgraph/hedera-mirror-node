@@ -75,7 +75,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
             DataSource dataSource,
             GenericContainer<?> jsRestApi,
             ObjectMapper objectMapper,
-            SpecDomainBuilder specDomainBuilder) throws IOException {
+            SpecDomainBuilder specDomainBuilder) {
 
         this.databaseCleaner = new ResourceDatabasePopulator(cleanupSqlResource);
         this.dataSource = dataSource;
@@ -128,7 +128,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
          */
         databaseCleaner.execute(dataSource);
 
-        specDomainBuilder.addSetupEntities(normalizedRestSpec.setup());
+        specDomainBuilder.customizeAndPersistEntities(normalizedRestSpec.setup());
     }
 
     @SneakyThrows

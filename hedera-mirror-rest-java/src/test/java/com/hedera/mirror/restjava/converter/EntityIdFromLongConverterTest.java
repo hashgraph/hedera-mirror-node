@@ -21,12 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class EntityIdFromLongConverterTest {
+class EntityIdFromLongConverterTest {
 
     @ParameterizedTest(name = "Convert Long to EntityId")
     @CsvSource({"1, 0.0.1", "100, 0.0.100"})
     void testConverter(Long source, String expected) {
         EntityIdFromLongConverter converter = new EntityIdFromLongConverter();
-        assertThat(converter.convert(source).toString()).isEqualTo(expected);
+        assertThat(converter.convert(source)).hasToString(expected);
     }
 }

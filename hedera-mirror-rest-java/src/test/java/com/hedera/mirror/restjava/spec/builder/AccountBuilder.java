@@ -45,9 +45,8 @@ class AccountBuilder extends AbstractEntityBuilder<Entity, Entity.EntityBuilder<
     }
 
     @Override
-    protected Entity customizeEntity(Map<String, Object> account) {
-        // Set defaults
-        var builder = Entity.builder()
+    protected Entity.EntityBuilder<?, ?> getEntityBuilder() {
+        return Entity.builder()
                 .declineReward(Boolean.FALSE)
                 .deleted(Boolean.FALSE)
                 .maxAutomaticTokenAssociations(0)
@@ -62,17 +61,15 @@ class AccountBuilder extends AbstractEntityBuilder<Entity, Entity.EntityBuilder<
                 .stakePeriodStart(-1L)
                 .timestampRange(Range.atLeast(0L))
                 .type(EntityType.ACCOUNT);
+    }
 
-        // Customize with spec setup definitions
-        customizeWithSpec(builder, account);
-
-        // Check and finalize
+    @Override
+    protected Entity getFinalEntity(Entity.EntityBuilder<?, ?> builder, Map<String, Object> account) {
         var entity = builder.build();
         if (entity.getId() == null) {
             builder.id(entity.toEntityId().getId());
             entity = builder.build();
         }
-
         return entity;
     }
 }

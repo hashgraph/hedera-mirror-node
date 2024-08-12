@@ -40,7 +40,7 @@ import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.CollectionUtils;
 
 @CustomLog
-abstract class AbstractEntityBuilder<T, B> implements SpecEntityBuilder {
+abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
 
     private static final Base32 BASE32 = new Base32();
     private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
@@ -89,19 +89,44 @@ abstract class AbstractEntityBuilder<T, B> implements SpecEntityBuilder {
         this.attributeNameMap = attributeNameMap;
     }
 
+    /**
+     * Return the required entity builder instance configured with all initial default values which may be
+     * overridden based on further customization using the spec JSON setup.
+     *
+     * @return entity builder
+     */
+    protected abstract B getEntityBuilder();
+
+    /**
+     * Perform any post customization processing required and produce a final DB entity to be persisted.
+     *
+     * @param builder entity builder
+     * @param entityAttributes spec setup attributes
+     * @return
+     */
+    protected abstract T getFinalEntity(B builder, Map<String, Object> entityAttributes);
+
+    /**
+     * Return the supplier function used to return the relevant attributes from the spec JSON setup object.
+     *
+     * @param specSetup spec setup attributes
+     * @return
+     */
+    protected abstract Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup);
+
     @Override
     public void customizeAndPersistEntities(SpecSetup specSetup) {
         var specEntities = getSpecEntitiesSupplier(specSetup).get();
         if (!CollectionUtils.isEmpty(specEntities)) {
-            specEntities.forEach(specEntity -> transactionOperations.executeWithoutResult(t -> entityManager.persist(customizeEntity(specEntity))));
+            specEntities.forEach(specEntity -> transactionOperations.executeWithoutResult(t -> {
+                var entityBuilder = getEntityBuilder();
+                customizeWithSpec(entityBuilder, specEntity);
+                entityManager.persist(getFinalEntity(entityBuilder, specEntity));
+            }));
         }
     }
 
-    protected abstract Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup);
-
-    protected abstract T customizeEntity(Map<String, Object> entityAttributes);
-
-    protected void customizeWithSpec(B builder, Map<String, Object> customizations) {
+    private void customizeWithSpec(B builder, Map<String, Object> customizations) {
         var builderClass = builder.getClass();
         var builderMethods = methodCache.computeIfAbsent(builderClass, clazz -> Arrays.stream(
                 clazz.getMethods()).collect(Collectors.toMap(Method::getName, Function.identity(), (v1, v2) -> v2)));
