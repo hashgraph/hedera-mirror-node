@@ -87,7 +87,7 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
     })
     void testSystemContractCodeHashPreVersion38(String input) {
         final var contract = testWeb3jService.deploy(EvmCodesHistorical::deploy);
-        assertThatThrownBy(() -> contract.getCodeHash(input).send())
+        assertThatThrownBy(() -> contract.call_getCodeHash(input).send())
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .satisfies(ex -> assertEquals(ex.getMessage(), INVALID_SOLIDITY_ADDRESS.name()));
     }
