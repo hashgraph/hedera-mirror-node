@@ -7,8 +7,8 @@ installed_flag=0
 installed_version=""
 
 check_if_installed() {
-  if [ -x "$(command -v web3j)" ] >/dev/null 2>&1; then
-    printf 'An Web3j installation exists on your system.\n'
+  if command -v web3j >/dev/null 2>&1; then
+    printf 'A Web3j installation exists on your system.\n'
     installed_flag=1
   fi
 }
