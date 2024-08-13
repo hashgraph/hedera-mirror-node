@@ -52,9 +52,13 @@ import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
+import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.AccountAmount;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.Expiry;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.HederaToken;
+import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.NftTransfer;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.TokenKey;
+import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.TokenTransferList;
+import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.TransferList;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FixedFee;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FungibleTokenInfo;
@@ -66,6 +70,7 @@ import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyV
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import com.swirlds.base.time.Time;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
@@ -104,17 +109,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         return Arrays.stream(ContractReadFunctionsHistorical.values()).flatMap(htsFunction -> blockNumbers.stream()
                 .map(blockNumber -> Arguments.of(htsFunction, blockNumber)));
-    }
-
-    private static long getValue(SupportedContractModificationFunctions contractFunc) {
-        return switch (contractFunc) {
-                //            case CREATE_FUNGIBLE_TOKEN
-                //                    CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
-                //                    CREATE_NON_FUNGIBLE_TOKEN,
-                //                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES
-                //                    -> 10000 * 100_000_000L;
-            default -> 0L;
-        };
     }
 
     @BeforeEach
@@ -197,7 +191,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @Test
     void isKycGranted() throws Exception {
         // Given
-        final var sender = persistAccountEntity();
         final var account = persistAccountEntity();
         final var tokenEntity = persistFungibleToken();
         domainBuilder
@@ -254,7 +247,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @Test
     void isKycGrantedForNFT() throws Exception {
         // Given
-        final var sender = persistAccountEntity();
         final var account = persistAccountEntity();
         final var tokenEntity = persistNft();
         domainBuilder
@@ -281,7 +273,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         // Given
         final Address senderAlias = Address.wrap(Bytes.wrap(
                 recoverAddressFromPubKey(SENDER_PUBLIC_KEY.substring(2).toByteArray())));
-        final var sender = persistAccountEntity();
 
         final var account = domainBuilder
                 .entity()
@@ -312,7 +303,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @Test
     void isTokenAddress() throws Exception {
         // Given
-        final var sender = persistAccountEntity();
         final var tokenEntity = persistFungibleToken();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
@@ -330,7 +320,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void isTokenAddressNFT() throws Exception {
         // Given
         final var tokenEntity = persistNft();
-        final var sender = persistAccountEntity();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
@@ -346,8 +335,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @Test
     void getDefaultKycToken() throws Exception {
         // Given
-        final var sender = persistAccountEntity();
-        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
@@ -371,7 +358,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void getDefaultKycNFT() throws Exception {
         // Given
         final var tokenEntity = persistTokenEntity();
-        final var sender = persistAccountEntity();
 
         domainBuilder
                 .token()
@@ -718,7 +704,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var owner = persistAccountEntity();
         final var spender = persistAccountEntity();
         final var tokenEntity = persistFungibleToken();
-        final var sender = persistAccountEntity();
 
         domainBuilder
                 .tokenAllowance()
@@ -1056,25 +1041,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         }
     }
 
-    @ParameterizedTest
-    @EnumSource(SupportedContractModificationFunctions.class)
-    void evmPrecompileSupportedModificationTokenFunctionsTestEstimateGas(
-            final SupportedContractModificationFunctions contractFunc) {
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-        final long value = getValue(contractFunc);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, value, BlockType.LATEST);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
-                .isTrue();
-    }
-
-    //    @Test
+    @Test
     void transferFrom() throws Exception {
+        // Given
         final var owner = persistAccountEntity();
         final var spender = persistAccountEntity();
         final var recipient = persistAccountEntity();
@@ -1086,15 +1055,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .customize(t -> t.tokenId(tokenEntity.getId())
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .treasuryAccountId(owner.toEntityId()))
-                .persist();
-
-        domainBuilder
-                .tokenAllowance()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .spender(spender.getId())
-                        .amount(10L)
-                        .payerAccountId(owner.toEntityId())
-                        .owner(owner.getId()))
                 .persist();
 
         domainBuilder
@@ -1124,42 +1084,30 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         domainBuilder
                 .tokenAllowance()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .spender(contractId)
+                        .spender(testWeb3jService.getEntityId())
                         .amount(10L)
-                        .payerAccountId(owner.toEntityId())
-                        .owner(owner.getId()))
+                        .owner(spender.getId()))
                 .persist();
-        final var functionCall = contract.send_transferFrom(
+
+        // When
+        final var functionCall = contract.call_transferFrom(
                 getAddressFromEntity(tokenEntity),
                 getAliasFromEntity(spender),
                 getAliasFromEntity(recipient),
                 BigInteger.ONE);
+        functionCall.send();
 
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @ParameterizedTest
     @CsvSource("1, 0")
     void approve(final BigInteger allowance) throws Exception {
-        final var owner = persistAccountEntity();
-        final var sender = persistAccountEntity();
+        // Given
         final var spender = persistAccountEntity();
         final var tokenEntity = persistFungibleToken();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(owner.getId())
-                        .balance(10L)
-                        .associated(true))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .balance(10L)
-                        .associated(true))
-                .persist();
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
@@ -1176,17 +1124,20 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         ta.tokenId(tokenEntity.getId()).accountId(contractId).associated(true))
                 .persist();
 
+        // When
         final var functionCall = contract.call_approveExternal(
                 getAddressFromEntity(tokenEntity), getAddressFromEntity(spender), allowance);
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @ParameterizedTest
     @CsvSource("true, false")
     void approveNFT(final Boolean approve) throws Exception {
+        // Given
         final var owner = persistAccountEntity();
-        final var sender = persistAccountEntity();
         final var spender = persistAccountEntity();
 
         final var tokenEntity =
@@ -1195,11 +1146,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
                 .persist();
-        //        domainBuilder
-        //                .nft()
-        //                .customize(n ->
-        // n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(sender.toEntityId()))
-        //                .persist();
 
         domainBuilder
                 .tokenAccount()
@@ -1209,12 +1155,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .associated(true))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
                         .accountId(spender.getId())
                         .associated(true))
                 .persist();
@@ -1235,18 +1175,21 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         .accountId(EntityIdUtils.entityIdFromId(new Id(0, 0, contractId))))
                 .persist();
 
+        // When
         final var functionCall = contract.call_approveNFTExternal(
                 getAddressFromEntity(tokenEntity),
                 approve ? getAddressFromEntity(spender) : Address.ZERO.toHexString(),
                 BigInteger.ONE);
 
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void setApprovalForAll() throws Exception {
-        final var sender = persistAccountEntity();
+        // Given
         final var spender = persistAccountEntity();
 
         final var tokenEntity =
@@ -1259,12 +1202,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .associated(true))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
                         .accountId(spender.getId())
                         .associated(true))
                 .persist();
@@ -1285,16 +1222,19 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         .accountId(EntityIdUtils.entityIdFromId(new Id(0, 0, contractId))))
                 .persist();
 
+        // When
         final var functionCall = contract.call_setApprovalForAllExternal(
                 getAddressFromEntity(tokenEntity), getAddressFromEntity(spender), Boolean.TRUE);
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @ParameterizedTest
     @CsvSource("true, false")
     void associateToken(final Boolean single) throws Exception {
-        final var sender = persistAccountEntity();
+        // Given
         final var notAssociatedAccount = persistAccountEntity();
 
         final var tokenEntity =
@@ -1304,22 +1244,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .associated(true))
-                .persist();
-
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(contractId).associated(true))
-                .persist();
-
+        // When
         final var functionCall = single
                 ? contract.call_associateTokenExternal(
                         getAddressFromEntity(notAssociatedAccount), getAddressFromEntity(tokenEntity))
@@ -1327,13 +1254,14 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         getAddressFromEntity(notAssociatedAccount), List.of(getAddressFromEntity(tokenEntity)));
 
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void associateTokenHRC() throws Exception {
-        final var sender = persistAccountEntity();
-
+        // Given
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
         domainBuilder
@@ -1341,24 +1269,20 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .associated(true))
-                .persist();
-
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        // When
         final var functionCall = contract.call_associateWithRedirect(getAddressFromEntity(tokenEntity));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @ParameterizedTest
     @CsvSource("true, false")
     void dissociateToken(final Boolean single) throws Exception {
-        final var sender = persistAccountEntity();
+        // Given
         final var associatedAccount = persistAccountEntity();
 
         final var tokenEntity =
@@ -1371,13 +1295,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .associated(true))
-                .persist();
-
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
                         .accountId(associatedAccount.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .associated(true))
@@ -1385,26 +1302,21 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(contractId).associated(true))
-                .persist();
-
+        // When
         final var functionCall = single
                 ? contract.call_dissociateTokenExternal(
                         getAddressFromEntity(associatedAccount), getAddressFromEntity(tokenEntity))
                 : contract.call_dissociateTokensExternal(
                         getAddressFromEntity(associatedAccount), List.of(getAddressFromEntity(tokenEntity)));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void dissociateTokenHRC() throws Exception {
-        final var sender = persistAccountEntity();
-
+        // Given
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
         domainBuilder
@@ -1412,13 +1324,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .associated(true))
-                .persist();
-
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var contractId = testWeb3jService.getEntityId();
@@ -1430,84 +1335,50 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         .associated(true))
                 .persist();
 
+        // When
         final var functionCall = contract.call_dissociateWithRedirect(getAddressFromEntity(tokenEntity));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void mintFungibleToken() throws Exception {
-        final var sender = persistAccountEntity();
-
+        // Given
         final var tokenEntity = persistTokenEntity();
         final var token = domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(sender.toEntityId()))
-                .persist();
-
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
         final var totalSupply = token.getTotalSupply();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_mintTokenExternal(
                 getAddressFromEntity(tokenEntity), BigInteger.valueOf(30), new ArrayList<>());
 
         final var result = functionCall.send();
         assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply + 30L));
 
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void mintNFT() throws Exception {
-        final var sender = persistAccountEntity();
-
+        // Given
         final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        .treasuryAccountId(sender.toEntityId()))
-                .persist();
-
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
                 .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_mintTokenExternal(
                 getAddressFromEntity(tokenEntity), BigInteger.ZERO, List.of(META.toByteArray()));
 
@@ -1515,42 +1386,24 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         assertThat(result.component3().get(0)).isEqualTo(BigInteger.ONE);
 
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void burnFungibleToken() throws Exception {
-        final var sender = persistAccountEntity();
-
+        // Given
         final var tokenEntity = persistTokenEntity();
         final var token = domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(sender.toEntityId()))
-                .persist();
-
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
         final var totalSupply = token.getTotalSupply();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_burnTokenExternal(
                 getAddressFromEntity(tokenEntity), BigInteger.valueOf(4), new ArrayList<>());
 
@@ -1558,73 +1411,48 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply - 4L));
 
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void burnNFT() throws Exception {
-        final var sender = persistAccountEntity();
-
+        // Given
         final var tokenEntity = persistTokenEntity();
         final var token = domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        .treasuryAccountId(sender.toEntityId()))
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
                 .persist();
         final var totalSupply = token.getTotalSupply();
 
         domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-        domainBuilder
                 .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(sender.toEntityId()))
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
                 .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
-
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
 
         final var functionCall = contract.call_burnTokenExternal(
                 getAddressFromEntity(tokenEntity), BigInteger.ZERO, List.of(BigInteger.ONE));
 
         final var result = functionCall.send();
+
+        // When
         assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply - 1));
 
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void wipeFungibleToken() throws Exception {
-        final var sender = persistAccountEntity();
+        // Given
         final var owner = persistAccountEntity();
 
         final var tokenEntity = persistTokenEntity();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(sender.toEntityId()))
-                .persist();
-
         domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
         domainBuilder
@@ -1638,32 +1466,24 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_wipeTokenAccountExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(owner), BigInteger.valueOf(4));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void wipeNFT() throws Exception {
-        final var sender = persistAccountEntity();
+        // Given
         final var owner = persistAccountEntity();
 
         final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        .treasuryAccountId(sender.toEntityId()))
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
                 .persist();
 
         domainBuilder
@@ -1680,40 +1500,24 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_wipeTokenAccountNFTExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(owner), List.of(BigInteger.ONE));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void grantTokenKyc() throws Exception {
-        final var sender = persistAccountEntity();
+        // Given
         final var accountWithoutGrant = persistAccountEntity();
 
         final var tokenEntity = persistTokenEntity();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(sender.toEntityId()))
-                .persist();
-
         domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
         domainBuilder
@@ -1726,40 +1530,24 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_grantTokenKycExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(accountWithoutGrant));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void revokeTokenKyc() throws Exception {
-        final var sender = persistAccountEntity();
+        // Given
         final var accountWithGrant = persistAccountEntity();
 
         final var tokenEntity = persistTokenEntity();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(sender.toEntityId()))
-                .persist();
-
         domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
         domainBuilder
@@ -1773,71 +1561,40 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_revokeTokenKycExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(accountWithGrant));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void deleteToken() throws Exception {
-        final var sender = persistAccountEntity();
-
+        // Given
         final var tokenEntity = persistTokenEntity();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(sender.toEntityId()))
-                .persist();
-
         domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_deleteTokenExternal(getAddressFromEntity(tokenEntity));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void freezeToken() throws Exception {
-        final var sender = persistAccountEntity();
+        // Given
         final var accountWithoutFreeze = persistAccountEntity();
 
         final var tokenEntity = persistFungibleToken();
-
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
 
         domainBuilder
                 .tokenAccount()
@@ -1850,35 +1607,21 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_freezeTokenExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(accountWithoutFreeze));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void unfreezeToken() throws Exception {
-        final var sender = persistAccountEntity();
+        // Given
         final var accountWithFreeze = persistAccountEntity();
 
         final var tokenEntity = persistFungibleToken();
-
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
 
         domainBuilder
                 .tokenAccount()
@@ -1892,64 +1635,41 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_unfreezeTokenExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(accountWithFreeze));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void pauseToken() throws Exception {
-        final var sender = persistAccountEntity();
-
+        // Given
         final var tokenEntity = persistTokenEntity();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(sender.toEntityId()))
-                .persist();
-
         domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
-        //        testWeb3jService.setSender(getAddressFromEntity(sender));
+        // When
         final var functionCall = contract.call_pauseTokenExternal(getAddressFromEntity(tokenEntity));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void unpauseToken() throws Exception {
+        // Given
         final var sender = persistAccountEntity();
 
         final var tokenEntity = persistTokenEntity();
-        final var token = domainBuilder
+        domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
@@ -1967,22 +1687,17 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-
+        // When
         final var functionCall = contract.call_unpauseTokenExternal(getAddressFromEntity(tokenEntity));
         functionCall.send();
+
+        // Then
         testEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
     void createFungibleToken() throws Exception {
+        // Given
         var initialSupply = BigInteger.valueOf(10L);
         var decimals = BigInteger.valueOf(10L);
         var value = BigInteger.valueOf(10000L * 100_000_000L);
@@ -1991,52 +1706,29 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var token = populateHederaToken(contract.getContractAddress(), TokenTypeEnum.FUNGIBLE_COMMON);
+        final var treasuryAccount = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).evmAddress(null))
+                .persist();
+        final var token = populateHederaToken(
+                contract.getContractAddress(), TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount.toEntityId());
+
+        // When
         final var functionCall = contract.send_createFungibleTokenExternal(token, initialSupply, decimals, value);
 
         functionCall.send();
         final var decodedResult = DefaultFunctionReturnDecoder.decode(
                 testWeb3jService.getTransactionResult(), CREATE_TOKEN_FUNCTION_OUTPUT_PARAMETERS);
 
+        // Then
         assertThat(decodedResult.get(1).getValue()).isNotEqualTo(Address.ZERO);
 
         testEstimateGasForSend(functionCall, contract, sender, value.longValueExact());
     }
 
-    private HederaToken populateHederaToken(final String contractAddres, final TokenTypeEnum tokenType) {
-        final var autoRenewAccount = persistAccountEntity();
-        final var tresuryAccount = persistAccountEntity();
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
-                .persist();
-        final var token = domainBuilder
-                .token()
-                .customize(t ->
-                        t.tokenId(tokenEntity.getId()).type(tokenType).treasuryAccountId(tresuryAccount.toEntityId()))
-                .persist();
-
-        final var supplyKey = new ModificationPrecompileTestContract.KeyValue(
-                Boolean.FALSE, contractAddres, new byte[0], new byte[0], Address.ZERO.toHexString());
-        final var keys = new ArrayList<TokenKey>();
-        keys.add(new TokenKey(AbstractContractCallServiceTest.KeyType.SUPPLY_KEY.getKeyTypeNumeric(), supplyKey));
-        return new HederaToken(
-                token.getName(),
-                token.getSymbol(),
-                getAliasFromEntity(tresuryAccount),
-                tokenEntity.getMemo(),
-                true,
-                BigInteger.valueOf(10_000L),
-                false,
-                keys,
-                new Expiry(
-                        BigInteger.valueOf(Time.getCurrent().currentTimeMillis() + 1_000_000_000),
-                        getAliasFromEntity(autoRenewAccount),
-                        BigInteger.valueOf(8_000_000)));
-    }
-
     @Test
     void createFungibleTokenWithCustomFees() throws Exception {
+        // Given
         var initialSupply = BigInteger.valueOf(10L);
         var decimals = BigInteger.valueOf(10L);
         var value = BigInteger.valueOf(10000L * 100_000_000L);
@@ -2047,7 +1739,12 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var token = populateHederaToken(contract.getContractAddress(), TokenTypeEnum.FUNGIBLE_COMMON);
+        final var treasuryAccount = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).evmAddress(null))
+                .persist();
+        final var token = populateHederaToken(
+                contract.getContractAddress(), TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount.toEntityId());
 
         final var fixedFee = new ModificationPrecompileTestContract.FixedFee(
                 BigInteger.valueOf(100L),
@@ -2062,6 +1759,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 BigInteger.valueOf(1000L),
                 false,
                 getAliasFromEntity(feeCollector));
+
+        // When
         final var functionCall = contract.send_createFungibleTokenWithCustomFeesExternal(
                 token, initialSupply, decimals, List.of(fixedFee), List.of(fractionalFee), value);
 
@@ -2069,6 +1768,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var decodedResult = DefaultFunctionReturnDecoder.decode(
                 testWeb3jService.getTransactionResult(), CREATE_TOKEN_FUNCTION_OUTPUT_PARAMETERS);
 
+        // Then
         assertThat(decodedResult.get(1).getValue()).isNotEqualTo(Address.ZERO);
 
         testEstimateGasForSend(functionCall, contract, sender, value.longValueExact());
@@ -2076,19 +1776,28 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void createNonFungibleToken() throws Exception {
+        // Given
         var value = BigInteger.valueOf(10000L * 100_000_000L);
 
         final var sender = persistAccountEntity();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var token = populateHederaToken(contract.getContractAddress(), TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        final var treasuryAccount = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).evmAddress(null))
+                .persist();
+        final var token = populateHederaToken(
+                contract.getContractAddress(), TokenTypeEnum.NON_FUNGIBLE_UNIQUE, treasuryAccount.toEntityId());
+
+        // When
         final var functionCall = contract.send_createNonFungibleTokenExternal(token, value);
 
         functionCall.send();
         final var decodedResult = DefaultFunctionReturnDecoder.decode(
                 testWeb3jService.getTransactionResult(), CREATE_TOKEN_FUNCTION_OUTPUT_PARAMETERS);
 
+        // Then
         assertThat(decodedResult.get(1).getValue()).isNotEqualTo(Address.ZERO);
 
         testEstimateGasForSend(functionCall, contract, sender, value.longValueExact());
@@ -2096,6 +1805,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void createNonFungibleTokenWithCustomFees() throws Exception {
+        // Given
         var value = BigInteger.valueOf(10000L * 100_000_000L);
 
         final var sender = persistAccountEntity();
@@ -2104,7 +1814,12 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var token = populateHederaToken(contract.getContractAddress(), TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        final var treasuryAccount = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).evmAddress(null))
+                .persist();
+        final var token = populateHederaToken(
+                contract.getContractAddress(), TokenTypeEnum.NON_FUNGIBLE_UNIQUE, treasuryAccount.toEntityId());
 
         final var fixedFee = new ModificationPrecompileTestContract.FixedFee(
                 BigInteger.valueOf(100L),
@@ -2119,6 +1834,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 getAddressFromEntity(tokenForDenomination),
                 false,
                 getAliasFromEntity(feeCollector));
+
+        // When
         final var functionCall = contract.send_createNonFungibleTokenWithCustomFeesExternal(
                 token, List.of(fixedFee), List.of(royaltyFee), value);
 
@@ -2126,6 +1843,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var decodedResult = DefaultFunctionReturnDecoder.decode(
                 testWeb3jService.getTransactionResult(), CREATE_TOKEN_FUNCTION_OUTPUT_PARAMETERS);
 
+        // Then
         assertThat(decodedResult.get(1).getValue()).isNotEqualTo(Address.ZERO);
 
         testEstimateGasForSend(functionCall, contract, sender, value.longValueExact());
@@ -2413,8 +2131,384 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
-    private void testEstimateGas(final RemoteFunctionCall<?> functionCall, final Contract contract, final Long value)
-            throws Exception {
+    @ParameterizedTest
+    @CsvSource({"single", "multiple"})
+    void transferToken(final String type) throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        final var tokenEntity = persistFungibleToken();
+        final var sender = persistAccountEntity();
+        final var receiver = persistAccountEntity();
+        final var payer = persistAccountEntity();
+
+        domainBuilder
+                .tokenAccount()
+                .customize(ta ->
+                        ta.tokenId(tokenEntity.getId()).accountId(payer.getId()).kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(sender.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(receiver.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+
+        // When
+        testWeb3jService.setSender(getAliasFromEntity(payer));
+        final var functionCall = "single".equals(type)
+                ? contract.call_transferTokenExternal(
+                        getAddressFromEntity(tokenEntity),
+                        getAliasFromEntity(sender),
+                        getAliasFromEntity(receiver),
+                        BigInteger.valueOf(1L))
+                : contract.call_transferTokensExternal(
+                        getAddressFromEntity(tokenEntity),
+                        List.of(getAliasFromEntity(sender), getAliasFromEntity(receiver)),
+                        List.of(BigInteger.ONE, BigInteger.valueOf(-1L)));
+        functionCall.send();
+
+        // Then
+        testEstimateGas(functionCall, contract, 0L);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"single", "multiple"})
+    void transferNft(final String type) throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        final var sender = persistAccountEntity();
+        final var tokenEntity = persistTokenEntity();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(sender.toEntityId()))
+                .persist();
+        final var receiver = persistAccountEntity();
+        final var payer = persistAccountEntity();
+
+        domainBuilder
+                .tokenAccount()
+                .customize(ta ->
+                        ta.tokenId(tokenEntity.getId()).accountId(payer.getId()).kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(sender.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(receiver.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+
+        // When
+        testWeb3jService.setSender(getAliasFromEntity(payer));
+        final var functionCall = "single".equals(type)
+                ? contract.call_transferNFTExternal(
+                        getAddressFromEntity(tokenEntity),
+                        getAliasFromEntity(sender),
+                        getAliasFromEntity(receiver),
+                        BigInteger.ONE)
+                : contract.call_transferNFTsExternal(
+                        getAddressFromEntity(tokenEntity),
+                        List.of(getAliasFromEntity(sender)),
+                        List.of(getAliasFromEntity(receiver)),
+                        List.of(BigInteger.ONE));
+        functionCall.send();
+
+        // Then
+        testEstimateGas(functionCall, contract, 0L);
+    }
+
+    @Test
+    void cryptoTransferHbars() throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        final var sender = persistAccountEntity();
+        final var receiver = persistAccountEntity();
+        final var payer = persistAccountEntity();
+
+        // When
+        testWeb3jService.setSender(getAliasFromEntity(payer));
+        final var transferList = new TransferList(List.of(
+                new AccountAmount(getAliasFromEntity(sender), BigInteger.valueOf(-5L), false),
+                new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(5L), false)));
+
+        final var functionCall = contract.call_cryptoTransferExternal(transferList, new ArrayList<>());
+        functionCall.send();
+
+        // Then
+        testEstimateGas(functionCall, contract, 0L);
+    }
+
+    @Test
+    void cryptoTransferToken() throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        final var sender = persistAccountEntity();
+        final var tokenEntity = persistFungibleToken();
+        final var receiver = persistAccountEntity();
+        final var payer = persistAccountEntity();
+
+        domainBuilder
+                .tokenAccount()
+                .customize(ta ->
+                        ta.tokenId(tokenEntity.getId()).accountId(payer.getId()).kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(sender.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(receiver.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+
+        // When
+        testWeb3jService.setSender(getAliasFromEntity(payer));
+        final var tokenTransferList = new TokenTransferList(
+                getAddressFromEntity(tokenEntity),
+                List.of(
+                        new AccountAmount(getAliasFromEntity(sender), BigInteger.valueOf(5L), false),
+                        new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(-5L), false)),
+                new ArrayList<>());
+
+        final var functionCall =
+                contract.call_cryptoTransferExternal(new TransferList(new ArrayList<>()), List.of(tokenTransferList));
+        functionCall.send();
+
+        // Then
+        testEstimateGas(functionCall, contract, 0L);
+    }
+
+    @Test
+    void cryptoTransferHbarsAndToken() throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        final var sender = persistAccountEntity();
+        final var tokenEntity = persistFungibleToken();
+        final var receiver = persistAccountEntity();
+        final var payer = persistAccountEntity();
+
+        domainBuilder
+                .tokenAccount()
+                .customize(ta ->
+                        ta.tokenId(tokenEntity.getId()).accountId(payer.getId()).kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(sender.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(receiver.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+
+        // When
+        testWeb3jService.setSender(getAliasFromEntity(payer));
+        final var transferList = new TransferList(List.of(
+                new AccountAmount(getAliasFromEntity(sender), BigInteger.valueOf(-5L), false),
+                new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(5L), false)));
+
+        final var tokenTransferList = new TokenTransferList(
+                getAddressFromEntity(tokenEntity),
+                List.of(
+                        new AccountAmount(getAliasFromEntity(sender), BigInteger.valueOf(5L), false),
+                        new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(-5L), false)),
+                new ArrayList<>());
+
+        final var functionCall = contract.call_cryptoTransferExternal(transferList, List.of(tokenTransferList));
+        functionCall.send();
+
+        // Then
+        testEstimateGas(functionCall, contract, 0L);
+    }
+
+    @Test
+    void cryptoTransferNft() throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        final var sender = persistAccountEntity();
+        final var tokenEntity = persistTokenEntity();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(sender.toEntityId()))
+                .persist();
+        final var receiver = persistAccountEntity();
+        final var payer = persistAccountEntity();
+
+        domainBuilder
+                .tokenAccount()
+                .customize(ta ->
+                        ta.tokenId(tokenEntity.getId()).accountId(payer.getId()).kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(sender.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(receiver.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+
+        // When
+        testWeb3jService.setSender(getAliasFromEntity(payer));
+        final var tokenTransferList = new TokenTransferList(
+                getAddressFromEntity(tokenEntity),
+                new ArrayList<>(),
+                List.of(new NftTransfer(
+                        getAliasFromEntity(sender), getAliasFromEntity(receiver), BigInteger.ONE, false)));
+
+        final var functionCall =
+                contract.call_cryptoTransferExternal(new TransferList(new ArrayList<>()), List.of(tokenTransferList));
+        functionCall.send();
+
+        // Then
+        testEstimateGas(functionCall, contract, 0L);
+    }
+
+    @Test
+    void updateTokenInfo() throws Exception {
+        // Given
+        final var autoRenewAccount = persistAccountEntity();
+        final var treasuryAccountId = persistAccountEntity();
+        final var tokenToUpdateEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .persist();
+        final var tokenToUpdate = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenToUpdateEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasuryAccountId.toEntityId()))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+
+        final var token = populateHederaToken(
+                contract.getContractAddress(), TokenTypeEnum.FUNGIBLE_COMMON, tokenToUpdate.getTreasuryAccountId());
+
+        // When
+        final var functionCall =
+                contract.call_updateTokenInfoExternal(getAddressFromEntity(tokenToUpdateEntity), token);
+
+        functionCall.send();
+
+        // Then
+        testEstimateGas(functionCall, contract, 0L);
+    }
+
+    @Test
+    void updateTokenExpiry() throws Exception {
+        // Given
+        final var autoRenewAccount = persistAccountEntity();
+        final var treasuryAccountId = persistAccountEntity();
+        final var tokenToUpdateEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenToUpdateEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasuryAccountId.toEntityId()))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+
+        final var tokenExpiry = new Expiry(
+                BigInteger.valueOf(Time.getCurrent().currentTimeMillis() + 1_000_000_000),
+                getAliasFromEntity(autoRenewAccount),
+                BigInteger.valueOf(8_000_000));
+
+        // When
+        final var functionCall =
+                contract.call_updateTokenExpiryInfoExternal(getAddressFromEntity(tokenToUpdateEntity), tokenExpiry);
+
+        functionCall.send();
+
+        // Then
+        testEstimateGas(functionCall, contract, 0L);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        """
+        FUNGIBLE_COMMON, ED25519
+        FUNGIBLE_COMMON, ECDSA_SECPK256K1
+        FUNGIBLE_COMMON, CONTRACT_ID
+        FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID
+        NON_FUNGIBLE_UNIQUE, ED25519
+        NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1
+        NON_FUNGIBLE_UNIQUE, CONTRACT_ID
+        NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID
+        """
+    })
+    void updateTokenKey(final TokenTypeEnum tokenTypeEnum, final KeyValueType keyValueType) throws Exception {
+        // Given
+        final var allCasesKeyType = 0b1111111;
+        final var autoRenewAccount = persistAccountEntity();
+        final var treasuryAccountId = persistAccountEntity();
+        final var tokenEntityToUpdate = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntityToUpdate.getId())
+                        .type(
+                                TokenTypeEnum.FUNGIBLE_COMMON.equals(tokenTypeEnum)
+                                        ? TokenTypeEnum.FUNGIBLE_COMMON
+                                        : TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .treasuryAccountId(treasuryAccountId.toEntityId()))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+
+        final var tokenKeys = new ArrayList<TokenKey>();
+        tokenKeys.add(new TokenKey(
+                BigInteger.valueOf(allCasesKeyType),
+                getKeyValueForTypeModificationContract(keyValueType, contract.getContractAddress())));
+
+        // When
+        final var functionCall =
+                contract.call_updateTokenKeysExternal(getAddressFromEntity(tokenEntityToUpdate), tokenKeys);
+
+        functionCall.send();
+
+        // Then
+        testEstimateGas(functionCall, contract, 0L);
+    }
+
+    private void testEstimateGas(final RemoteFunctionCall<?> functionCall, final Contract contract, final Long value) {
         // Given
         final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getEstimatedGas());
 
@@ -2445,6 +2539,37 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .isTrue();
     }
 
+    private HederaToken populateHederaToken(
+            final String contractAddres, final TokenTypeEnum tokenType, final EntityId treasuryAccountId) {
+        final var autoRenewAccount = persistAccountEntity();
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(tokenType).treasuryAccountId(treasuryAccountId))
+                .persist();
+
+        final var supplyKey = new ModificationPrecompileTestContract.KeyValue(
+                Boolean.FALSE, contractAddres, new byte[0], new byte[0], Address.ZERO.toHexString());
+        final var keys = new ArrayList<TokenKey>();
+        keys.add(new TokenKey(AbstractContractCallServiceTest.KeyType.SUPPLY_KEY.getKeyTypeNumeric(), supplyKey));
+        return new HederaToken(
+                token.getName(),
+                token.getSymbol(),
+                getAddressFromEntityId(treasuryAccountId),
+                tokenEntity.getMemo(),
+                true,
+                BigInteger.valueOf(10_000L),
+                false,
+                keys,
+                new Expiry(
+                        BigInteger.valueOf(Time.getCurrent().currentTimeMillis() + 1_000_000_000),
+                        getAliasFromEntity(autoRenewAccount),
+                        BigInteger.valueOf(8_000_000)));
+    }
+
     private ContractExecutionParameters getContractExecutionParameters(
             final RemoteFunctionCall<?> functionCall, final Contract contract, final Long value) {
         return ContractExecutionParameters.builder()
@@ -2455,7 +2580,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .isEstimate(false)
                 .isStatic(false)
                 .receiver(Address.fromHexString(contract.getContractAddress()))
-                .sender(new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress()))))
+                //                .sender(new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress()))))
+                .sender(new HederaEvmAccount(testWeb3jService.getSender()))
                 .value(value)
                 .build();
     }
@@ -2543,6 +2669,24 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             case ECDSA_SECPK256K1 -> new KeyValue(
                     Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], ECDSA_KEY, Address.ZERO.toHexString());
             case DELEGATABLE_CONTRACT_ID -> new KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
+            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
+        };
+    }
+
+    private ModificationPrecompileTestContract.KeyValue getKeyValueForTypeModificationContract(
+            final KeyValueType keyValueType, String contractAddress) {
+        final var ed25519Key =
+                Bytes.wrap(domainBuilder.key(KeyCase.ED25519)).slice(2).toArray();
+
+        return switch (keyValueType) {
+            case CONTRACT_ID -> new ModificationPrecompileTestContract.KeyValue(
+                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+            case ED25519 -> new ModificationPrecompileTestContract.KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), ed25519Key, new byte[0], Address.ZERO.toHexString());
+            case ECDSA_SECPK256K1 -> new ModificationPrecompileTestContract.KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], ECDSA_KEY, Address.ZERO.toHexString());
+            case DELEGATABLE_CONTRACT_ID -> new ModificationPrecompileTestContract.KeyValue(
                     Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
             default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
         };
@@ -3003,155 +3147,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResultFields;
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    enum SupportedContractModificationFunctions implements ContractFunctionProviderEnum {
-        //        TRANSFER_FROM(
-        //                "transferFromExternal",
-        //                new Object[] {TRANSFRER_FROM_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
-        //                new Object[] {}),
-        //        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {FUNGIBLE_TOKEN, 10L, 10}, new
-        // Object[] {
-        //            SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS
-        //        }),
-        //        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
-        //                "createFungibleTokenWithCustomFeesExternal",
-        //                new Object[] {FUNGIBLE_TOKEN, 10L, 10, FIXED_FEE_WRAPPER, FRACTIONAL_FEE_WRAPPER},
-        //                new Object[] {SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS}),
-        //        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {NON_FUNGIBLE_TOKEN}, new
-        // Object[] {
-        //            SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS
-        //        }),
-        //        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
-        //                "createNonFungibleTokenWithCustomFeesExternal",
-        //                new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER},
-        //                new Object[] {SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS}),
-        TRANSFER_TOKEN_WITH(
-                "transferTokenExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L},
-                new Object[] {}),
-        TRANSFER_TOKENS(
-                "transferTokensExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, new Address[] {OWNER_ADDRESS, SPENDER_ALIAS}, new long[] {1L, -1L}
-                },
-                new Object[] {}),
-        TRANSFER_TOKENS_WITH_ALIAS(
-                "transferTokensExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ALIAS, SENDER_ALIAS}, new long[] {1L, -1L}
-                },
-                new Object[] {}),
-        CRYPTO_TRANSFER_TOKENS(
-                "cryptoTransferExternal",
-                new Object[] {
-                    new Object[] {}, new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false}
-                },
-                new Object[] {}),
-        CRYPTO_TRANSFER_TOKENS_WITH_ALIAS(
-                "cryptoTransferExternal",
-                new Object[] {
-                    new Object[] {}, new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L, false}
-                },
-                new Object[] {}),
-        CRYPTO_TRANSFER_HBARS_AND_TOKENS(
-                "cryptoTransferExternal",
-                new Object[] {
-                    new Object[] {SENDER_ALIAS, OWNER_ADDRESS, 5L},
-                    new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false}
-                },
-                new Object[] {}),
-        CRYPTO_TRANSFER_HBARS(
-                "cryptoTransferExternal",
-                new Object[] {
-                    new Object[] {SENDER_ALIAS, OWNER_ADDRESS, 5L},
-                    new Object[] {}
-                },
-                new Object[] {}),
-        CRYPTO_TRANSFER_NFT(
-                "cryptoTransferExternal",
-                new Object[] {
-                    new Object[] {}, new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L, true}
-                },
-                new Object[] {}),
-        TRANSFER_NFT_TOKENS(
-                "transferNFTsExternal",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ALIAS}, new long[] {1}
-                },
-                new Object[] {}),
-        TRANSFER_NFT_TOKEN(
-                "transferNFTExternal",
-                new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L},
-                new Object[] {}),
-        TRANSFER_FROM_NFT(
-                "transferFromNFTExternal",
-                new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L},
-                new Object[] {}),
-        UPDATE_TOKEN_INFO(
-                "updateTokenInfoExternal",
-                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN2},
-                new Object[] {}),
-        UPDATE_TOKEN_EXPIRY(
-                "updateTokenExpiryInfoExternal",
-                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, TOKEN_EXPIRY_WRAPPER},
-                new Object[] {}),
-        UPDATE_TOKEN_KEYS_CONTRACT_ADDRESS(
-                "updateTokenKeysExternal",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            АLL_CASES_KEY_TYPE,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    }
-                },
-                new Object[] {}),
-        UPDATE_TOKEN_KEYS_DELEGATABLE_CONTRACT_ID(
-                "updateTokenKeysExternal",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            АLL_CASES_KEY_TYPE,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    }
-                },
-                new Object[] {}),
-        UPDATE_TOKEN_KEYS_ED25519(
-                "updateTokenKeysExternal",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            АLL_CASES_KEY_TYPE,
-                            new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
-                        }
-                    }
-                },
-                new Object[] {}),
-        UPDATE_TOKEN_KEYS_ECDSA(
-                "updateTokenKeysExternal",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            АLL_CASES_KEY_TYPE,
-                            new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}
-                        }
-                    }
-                },
-                new Object[] {});
-
-        private final String name;
-        private final Object[] functionParameters;
-        private final Object[] expectedResult;
     }
 
     @Getter

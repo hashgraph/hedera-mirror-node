@@ -88,6 +88,10 @@ public class TestWeb3jService implements Web3jService {
         this.web3j = Web3j.build(this);
     }
 
+    public Address getSender() {
+        return sender;
+    }
+
     public void setSender(Address sender) {
         this.sender = sender;
     }

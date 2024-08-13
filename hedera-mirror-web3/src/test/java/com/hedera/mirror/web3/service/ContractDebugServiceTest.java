@@ -107,7 +107,7 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ContractCallServicePrecompileTest.SupportedContractModificationFunctions.class)
+    @EnumSource(SupportedContractModificationFunctions.class)
     void evmPrecompileSupportedModificationTokenFunctions(final ContractFunctionProviderEnum function) {
         setUpModificationContractEntities();
         final var params = serviceParametersForDebug(
@@ -483,5 +483,213 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final String expectedErrorMessage;
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    enum SupportedContractModificationFunctions implements ContractFunctionProviderEnum {
+        TRANSFER_FROM(
+                "transferFromExternal",
+                new Object[] {TRANSFRER_FROM_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
+                new Object[] {}),
+        APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 1L}, new Object[] {}),
+        DELETE_ALLOWANCE(
+                "approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}, new Object[] {}),
+        DELETE_ALLOWANCE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}, new Object[] {}),
+        APPROVE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, 1L}, new Object[] {}),
+        SET_APPROVAL_FOR_ALL(
+                "setApprovalForAllExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, true}, new Object[] {}),
+        ASSOCIATE_TOKEN(
+                "associateTokenExternal", new Object[] {SPENDER_ALIAS, FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        ASSOCIATE_TOKENS(
+                "associateTokensExternal",
+                new Object[] {SPENDER_ALIAS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}},
+                new Object[] {}),
+        HRC_ASSOCIATE_REDIRECT(
+                "associateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED}, new Object[] {}),
+        MINT_TOKEN(
+                "mintTokenExternal",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]},
+                new Object[] {SUCCESS_RESULT, 12445L, new long[0]}),
+        MINT_NFT_TOKEN(
+                "mintTokenExternal",
+                new Object[] {
+                    NFT_ADDRESS,
+                    0L,
+                    new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
+                },
+                new Object[] {SUCCESS_RESULT, 1_000_000_000L + 1, new long[] {1L}}),
+        DISSOCIATE_TOKEN(
+                "dissociateTokenExternal", new Object[] {SPENDER_ALIAS, TREASURY_TOKEN_ADDRESS}, new Object[] {}),
+        DISSOCIATE_TOKENS(
+                "dissociateTokensExternal",
+                new Object[] {SPENDER_ALIAS, new Address[] {TREASURY_TOKEN_ADDRESS}},
+                new Object[] {}),
+        HRC_DISSOCIATE_REDIRECT("dissociateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        BURN_TOKEN(
+                "burnTokenExternal",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]},
+                new Object[] {SUCCESS_RESULT, 12345L - 1}),
+        BURN_NFT_TOKEN("burnTokenExternal", new Object[] {NFT_ADDRESS, 0L, new long[] {1}}, new Object[] {
+            SUCCESS_RESULT, 1_000_000_000L - 1
+        }),
+        WIPE_TOKEN(
+                "wipeTokenAccountExternal",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 1L},
+                new Object[] {}),
+        WIPE_NFT_TOKEN(
+                "wipeTokenAccountNFTExternal",
+                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, SENDER_ALIAS, new long[] {1}},
+                new Object[] {}),
+        REVOKE_TOKEN_KYC(
+                "revokeTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Object[] {}),
+        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Object[] {}),
+        DELETE_TOKEN("deleteTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        FREEZE_TOKEN(
+                "freezeTokenExternal",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS},
+                new Object[] {}),
+        UNFREEZE_TOKEN(
+                "unfreezeTokenExternal", new Object[] {FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS}, new Object[] {}),
+        PAUSE_TOKEN("pauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {FUNGIBLE_TOKEN, 10L, 10}, new Object[] {
+            SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS
+        }),
+        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
+                "createFungibleTokenWithCustomFeesExternal",
+                new Object[] {FUNGIBLE_TOKEN, 10L, 10, FIXED_FEE_WRAPPER, FRACTIONAL_FEE_WRAPPER},
+                new Object[] {SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS}),
+        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {NON_FUNGIBLE_TOKEN}, new Object[] {
+            SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS
+        }),
+        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
+                "createNonFungibleTokenWithCustomFeesExternal",
+                new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER},
+                new Object[] {SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS}),
+        TRANSFER_TOKEN_WITH(
+                "transferTokenExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L},
+                new Object[] {}),
+        TRANSFER_TOKENS(
+                "transferTokensExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, new Address[] {OWNER_ADDRESS, SPENDER_ALIAS}, new long[] {1L, -1L}
+                },
+                new Object[] {}),
+        TRANSFER_TOKENS_WITH_ALIAS(
+                "transferTokensExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ALIAS, SENDER_ALIAS}, new long[] {1L, -1L}
+                },
+                new Object[] {}),
+        CRYPTO_TRANSFER_TOKENS(
+                "cryptoTransferExternal",
+                new Object[] {
+                    new Object[] {}, new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false}
+                },
+                new Object[] {}),
+        CRYPTO_TRANSFER_TOKENS_WITH_ALIAS(
+                "cryptoTransferExternal",
+                new Object[] {
+                    new Object[] {}, new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L, false}
+                },
+                new Object[] {}),
+        CRYPTO_TRANSFER_HBARS_AND_TOKENS(
+                "cryptoTransferExternal",
+                new Object[] {
+                    new Object[] {SENDER_ALIAS, OWNER_ADDRESS, 5L},
+                    new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false}
+                },
+                new Object[] {}),
+        CRYPTO_TRANSFER_HBARS(
+                "cryptoTransferExternal",
+                new Object[] {
+                    new Object[] {SENDER_ALIAS, OWNER_ADDRESS, 5L},
+                    new Object[] {}
+                },
+                new Object[] {}),
+        CRYPTO_TRANSFER_NFT(
+                "cryptoTransferExternal",
+                new Object[] {
+                    new Object[] {}, new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L, true}
+                },
+                new Object[] {}),
+        TRANSFER_NFT_TOKENS(
+                "transferNFTsExternal",
+                new Object[] {
+                    NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ALIAS}, new long[] {1}
+                },
+                new Object[] {}),
+        TRANSFER_NFT_TOKEN(
+                "transferNFTExternal",
+                new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L},
+                new Object[] {}),
+        TRANSFER_FROM_NFT(
+                "transferFromNFTExternal",
+                new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L},
+                new Object[] {}),
+        UPDATE_TOKEN_INFO(
+                "updateTokenInfoExternal",
+                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN2},
+                new Object[] {}),
+        UPDATE_TOKEN_EXPIRY(
+                "updateTokenExpiryInfoExternal",
+                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, TOKEN_EXPIRY_WRAPPER},
+                new Object[] {}),
+        UPDATE_TOKEN_KEYS_CONTRACT_ADDRESS(
+                "updateTokenKeysExternal",
+                new Object[] {
+                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                    new Object[] {
+                        new Object[] {
+                            АLL_CASES_KEY_TYPE,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
+                        }
+                    }
+                },
+                new Object[] {}),
+        UPDATE_TOKEN_KEYS_DELEGATABLE_CONTRACT_ID(
+                "updateTokenKeysExternal",
+                new Object[] {
+                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                    new Object[] {
+                        new Object[] {
+                            АLL_CASES_KEY_TYPE,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
+                        }
+                    }
+                },
+                new Object[] {}),
+        UPDATE_TOKEN_KEYS_ED25519(
+                "updateTokenKeysExternal",
+                new Object[] {
+                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                    new Object[] {
+                        new Object[] {
+                            АLL_CASES_KEY_TYPE,
+                            new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
+                        }
+                    }
+                },
+                new Object[] {}),
+        UPDATE_TOKEN_KEYS_ECDSA(
+                "updateTokenKeysExternal",
+                new Object[] {
+                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                    new Object[] {
+                        new Object[] {
+                            АLL_CASES_KEY_TYPE,
+                            new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}
+                        }
+                    }
+                },
+                new Object[] {});
+
+        private final String name;
+        private final Object[] functionParameters;
+        private final Object[] expectedResult;
     }
 }
