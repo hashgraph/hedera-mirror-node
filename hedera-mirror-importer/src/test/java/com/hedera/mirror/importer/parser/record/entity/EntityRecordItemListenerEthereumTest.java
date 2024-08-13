@@ -16,6 +16,10 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
+import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.RAW_TX_TYPE_1;
+import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.RAW_TX_TYPE_1_CALL_DATA;
+import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.RAW_TX_TYPE_1_CALL_DATA_OFFLOADED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -33,10 +37,12 @@ import com.hedera.mirror.importer.parser.record.ethereum.LegacyEthereumTransacti
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TransactionRecord.Builder;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -186,6 +192,42 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertEthereumTransaction(recordItem, null, SIGNER_NONCE));
+    }
+
+    @Test
+    void ethereumTransactionEip2950EmptyHash() {
+        // given
+        var recordItem = recordItemBuilder
+                .ethereumTransaction(true)
+                .record(Builder::clearEthereumHash)
+                .transactionBody(b -> b.setEthereumData(ByteString.copyFrom(RAW_TX_TYPE_1_CALL_DATA_OFFLOADED)))
+                .build();
+        var body = recordItem.getTransactionBody().getEthereumTransaction();
+        var fileId = EntityId.of(body.getCallData());
+        domainBuilder
+                .fileData()
+                .customize(f -> f.consensusTimestamp(recordItem.getConsensusTimestamp() - 10)
+                        .entityId(fileId)
+                        .fileData(RAW_TX_TYPE_1_CALL_DATA.getBytes()))
+                .persist();
+        var expectedHash = new Keccak.Digest256().digest(RAW_TX_TYPE_1);
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        softly.assertThat(transactionRepository.count()).isOne();
+        softly.assertThat(contractRepository.count()).isZero();
+        softly.assertThat(entityRepository.count()).isZero();
+        softly.assertThat(contractResultRepository.count()).isOne();
+        softly.assertThat(cryptoTransferRepository.count()).isEqualTo(4);
+        softly.assertThat(ethereumTransactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(fileId, EthereumTransaction::getCallDataId)
+                .returns(EMPTY_BYTE_ARRAY, EthereumTransaction::getCallData)
+                .returns(RAW_TX_TYPE_1_CALL_DATA_OFFLOADED, EthereumTransaction::getData)
+                .returns(expectedHash, EthereumTransaction::getHash)
+                .returns(body.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance);
     }
 
     @Test

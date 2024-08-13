@@ -24,7 +24,7 @@ import java.math.BigInteger;
 
 @Named
 public class LegacyEthereumTransactionParser implements EthereumTransactionParser {
-    private static final int LEGACY_TYPE_BYTE = 0;
+    public static final int LEGACY_TYPE_BYTE = 0;
     private static final int LEGACY_TYPE_RLP_ITEM_COUNT = 9;
     private static final String TRANSACTION_TYPE_NAME = "Legacy";
 

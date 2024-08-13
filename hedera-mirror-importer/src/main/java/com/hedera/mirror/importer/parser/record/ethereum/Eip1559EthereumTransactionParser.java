@@ -58,6 +58,7 @@ public class Eip1559EthereumTransactionParser implements EthereumTransactionPars
                 .gasLimit(rlpItems.get(4).asLong())
                 .toAddress(rlpItems.get(5).data())
                 .value(rlpItems.get(6).asBigInt().toByteArray())
+                //                .value(rlpItems.get(6).data())
                 .callData(rlpItems.get(7).data())
                 .accessList(rlpItems.get(8).data())
                 .recoveryId((int) rlpItems.get(9).asByte())
