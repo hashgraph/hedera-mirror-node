@@ -19,97 +19,99 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 
-import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
-import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.mirror.web3.web3j.generated.TestAddressThis;
+import com.hedera.mirror.web3.web3j.generated.TestNestedAddressThis;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import jakarta.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 
-class ContractCallAddressThisTest extends ContractCallTestSetup {
+class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
 
-    @BeforeEach
-    void beforeAll() {
-        addressThisContractPersist();
+    @Resource
+    protected ContractExecutionService contractCallService;
+
+    @SpyBean
+    private ContractExecutionService contractExecutionService;
+
+    @AfterEach
+    void cleanup() {
+        testWeb3jService.setEstimateGas(false);
+        testWeb3jService.setCustomDeploy(false);
+        testWeb3jService.cleanupContractRuntime();
     }
 
     @Test
     void deployAddressThisContract() {
-        final var serviceParameters = serviceParametersForAddressThis(
-                Bytes.wrap(functionEncodeDecoder.getContractBytes(ADDRESS_THIS_CONTRACT_INIT_BYTES_PATH)));
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
+        final var contract = testWeb3jService.deploy(TestAddressThis::deploy);
+        final var serviceParamaters = testWeb3jService.serviceParametersForTopLevelContractCreate(
+                contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.fromHexString(""));
+        final long actualGas = 57764L;
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
                 .isTrue();
     }
 
     @Test
     void addressThisFromFunction() {
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor("testAddressThis", ADDRESS_THIS_CONTRACT_ABI_PATH);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, ADDRESS_THIS_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
-                .isTrue();
+        final var contract = testWeb3jService.deploy(TestAddressThis::deploy);
+        final var functionCall = contract.send_testAddressThisFunction();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
-    void addressThisEthCallWithoutEvmAlias() {
-        final var addressThisContractAddressWithout0x =
-                ADDRESS_THIS_CONTRACT_ADDRESS.toString().substring(2);
-        final var successfulResponse = "0x" + StringUtils.leftPad(addressThisContractAddressWithout0x, 64, '0');
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor("getAddressThis", ADDRESS_THIS_CONTRACT_ABI_PATH);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, ADDRESS_THIS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+    void addressThisEthCallWithoutEvmAlias() throws Exception {
+        // Given
+        testWeb3jService.setCustomDeploy(true);
+        final var contract = testWeb3jService.deploy(TestAddressThis::deploy);
+        addressThisContractPersist(
+                testWeb3jService.getContractRuntime(), Address.fromHexString(contract.getContractAddress()));
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        final List<Bytes> capturedOutputs = new ArrayList<>();
+        doAnswer(invocation -> {
+            HederaEvmTransactionProcessingResult result =
+                    (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+            capturedOutputs.add(result.getOutput()); // Capture the result
+            return result;
+        })
+                .when(contractExecutionService)
+                .callContract(any(), any());
+
+        // When
+        final var result = contract.call_getAddressThis().send();
+
+        // Then
+        final var successfulResponse = "0x" + StringUtils.leftPad(result.substring(2), 64, '0');
+        assertThat(successfulResponse).isEqualTo(capturedOutputs.getFirst().toHexString());
     }
 
     @Test
     void deployNestedAddressThisContract() {
-        final var serviceParameters = serviceParametersForAddressThis(
-                Bytes.wrap(functionEncodeDecoder.getContractBytes(NESTED_ADDRESS_THIS_CONTRACT_BYTES_PATH)));
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
+        final var contract = testWeb3jService.deploy(TestNestedAddressThis::deploy);
+        final var serviceParamaters = testWeb3jService.serviceParametersForTopLevelContractCreate(
+                contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.fromHexString(""));
+        final long actualGas = 95401L;
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
                 .isTrue();
     }
 
-    private ContractExecutionParameters serviceParametersForAddressThis(final Bytes callData) {
-        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
-        return ContractExecutionParameters.builder()
-                .sender(sender)
-                .value(0L)
-                .receiver(Address.ZERO)
-                .callData(callData)
-                .callType(ETH_ESTIMATE_GAS)
-                .block(BlockType.LATEST)
-                .gas(15_000_000L)
-                .isStatic(false)
-                .isEstimate(true)
-                .build();
-    }
-
-    private void addressThisContractPersist() {
-        final var addressThisContractBytes = functionEncodeDecoder.getContractBytes(ADDRESS_THIS_CONTRACT_BYTES_PATH);
-        final var addressThisContractEntityId = entityIdFromEvmAddress(ADDRESS_THIS_CONTRACT_ADDRESS);
+    private void addressThisContractPersist(byte[] runtimeBytecode, Address contractAddress) {
+        final var addressThisContractEntityId = entityIdFromEvmAddress(contractAddress);
         final var addressThisEvmAddress = toEvmAddress(addressThisContractEntityId);
-
         domainBuilder
                 .entity()
                 .customize(e -> e.id(addressThisContractEntityId.getId())
@@ -118,12 +120,10 @@ class ContractCallAddressThisTest extends ContractCallTestSetup {
                         .type(CONTRACT)
                         .balance(1500L))
                 .persist();
-
         domainBuilder
                 .contract()
-                .customize(c -> c.id(addressThisContractEntityId.getId()).runtimeBytecode(addressThisContractBytes))
+                .customize(c -> c.id(addressThisContractEntityId.getId()).runtimeBytecode(runtimeBytecode))
                 .persist();
-
         domainBuilder
                 .contractState()
                 .customize(c -> c.contractId(addressThisContractEntityId.getId())
@@ -132,10 +132,6 @@ class ContractCallAddressThisTest extends ContractCallTestSetup {
                         .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
                                 .toArrayUnsafe()))
                 .persist();
-
-        domainBuilder
-                .recordFile()
-                .customize(f -> f.bytes(addressThisContractBytes))
-                .persist();
+        domainBuilder.recordFile().customize(f -> f.bytes(runtimeBytecode)).persist();
     }
 }

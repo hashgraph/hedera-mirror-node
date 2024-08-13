@@ -79,6 +79,8 @@ public class TestWeb3jService implements Web3jService {
     private boolean isEstimateGas = false;
     private String transactionResult;
     private String estimatedGas;
+    private byte[] contractRuntime;
+    private boolean customDeploy = false;
     private long value = 0L;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
@@ -111,6 +113,18 @@ public class TestWeb3jService implements Web3jService {
 
     public void setValue(final long value) {
         this.value = value;
+    }
+
+    public byte[] getContractRuntime() {
+        return contractRuntime;
+    }
+
+    public void setCustomDeploy(boolean customDeploy) {
+        this.customDeploy = customDeploy;
+    }
+
+    public void cleanupContractRuntime() {
+        contractRuntime = null;
     }
 
     @SneakyThrows(Exception.class)
@@ -147,7 +161,9 @@ public class TestWeb3jService implements Web3jService {
         final var res = new EthSendTransaction();
         var serviceParameters = serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
         final var mirrorNodeResult = contractExecutionService.processCall(serviceParameters);
-
+        if (customDeploy) {
+            contractRuntime = Hex.decode(mirrorNodeResult.substring(2));
+        }
         try {
             final var contractInstance = this.deployInternal(mirrorNodeResult);
             res.setResult(transactionHash);
@@ -272,7 +288,7 @@ public class TestWeb3jService implements Web3jService {
                 .build();
     }
 
-    protected ContractExecutionParameters serviceParametersForTopLevelContractCreate(
+    public ContractExecutionParameters serviceParametersForTopLevelContractCreate(
             final String contractInitCode, final CallServiceParameters.CallType callType, final Address senderAddress) {
         final var senderEvmAccount = new HederaEvmAccount(senderAddress);
 
@@ -292,6 +308,9 @@ public class TestWeb3jService implements Web3jService {
     public Address deployInternal(String binary) {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
+        if (customDeploy) {
+            return contractAddress;
+        }
         contractPersist(binary, id);
 
         return contractAddress;
