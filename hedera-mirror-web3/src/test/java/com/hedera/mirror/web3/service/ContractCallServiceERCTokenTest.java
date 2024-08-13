@@ -46,11 +46,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     public static final String REDIRECT_SUFFIX = "Redirect";
     public static final String NON_STATIC_SUFFIX = "NonStatic";
 
-    private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
-        return Arrays.stream(ErcContractReadOnlyFunctions.values())
-                .flatMap(ercFunction -> Stream.of(Arguments.of(ercFunction, true), Arguments.of(ercFunction, false)));
-    }
-
     private static Stream<Arguments> ercContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<BlockType> blockNumbers =
                 List.of(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)), BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
@@ -59,21 +54,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 .flatMap(ercFunction -> Stream.concat(
                         blockNumbers.stream().map(blockNumber -> Arguments.of(ercFunction, true, blockNumber)),
                         blockNumbers.stream().map(blockNumber -> Arguments.of(ercFunction, false, blockNumber))));
-    }
-
-    @ParameterizedTest
-    @MethodSource("ercContractFunctionArgumentsProvider")
-    void ercReadOnlyPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction, final boolean isStatic) {
-        final var functionName = ercFunction.getName(isStatic);
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor(functionName, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
-
-        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
-
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
@@ -124,23 +104,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(BlockNumberNotFoundException.class);
         }
-    }
-
-    @ParameterizedTest
-    @MethodSource("ercContractFunctionArgumentsProvider")
-    void supportedErcReadOnlyPrecompileOperationsTest(
-            final ErcContractReadOnlyFunctions ercFunction, final boolean isStatic) {
-        final var functionName = ercFunction.getName(isStatic);
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor(functionName, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
-                .isTrue();
     }
 
     @ParameterizedTest

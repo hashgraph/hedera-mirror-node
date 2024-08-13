@@ -16,7 +16,10 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.*;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -81,6 +84,8 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
     @BeforeEach
     void setup() {
         domainBuilder.recordFile().persist();
+        testWeb3jService.setValue(0L);
+        testWeb3jService.setSender(Address.fromHexString(""));
     }
 
     @AfterEach
@@ -117,8 +122,36 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
                 .isTrue();
     }
 
+    protected void verifyEthCallAndEstimateGasWithValue(
+            final RemoteFunctionCall<TransactionReceipt> functionCall,
+            final Contract contract,
+            final Address payerAddress,
+            final long value) {
+        final var actualGasUsed =
+                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, payerAddress, value));
+
+        testWeb3jService.setEstimateGas(true);
+        final AtomicLong estimateGasUsedResult = new AtomicLong();
+        // Verify ethCall
+        assertDoesNotThrow(
+                () -> estimateGasUsedResult.set(functionCall.send().getGasUsed().longValue()));
+
+        // Verify estimateGas
+        assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
+                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
+                .isTrue();
+    }
+
     protected ContractExecutionParameters getContractExecutionParameters(
             final RemoteFunctionCall<?> functionCall, final Contract contract) {
+        return getContractExecutionParameters(functionCall, contract, Address.ZERO, 0L);
+    }
+
+    protected ContractExecutionParameters getContractExecutionParameters(
+            final RemoteFunctionCall<?> functionCall,
+            final Contract contract,
+            final Address payerAddress,
+            final long value) {
         return ContractExecutionParameters.builder()
                 .block(BlockType.LATEST)
                 .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
@@ -127,8 +160,8 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
                 .isEstimate(false)
                 .isStatic(false)
                 .receiver(Address.fromHexString(contract.getContractAddress()))
-                .sender(new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress()))))
-                .value(0L)
+                .sender(new HederaEvmAccount(payerAddress))
+                .value(value)
                 .build();
     }
 

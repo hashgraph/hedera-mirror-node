@@ -30,6 +30,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import java.math.BigInteger;
 import java.util.Comparator;
@@ -120,7 +121,7 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ContractCallNestedCallsTest.NestedEthCallContractFunctionsNegativeCases.class)
+    @EnumSource(NestedEthCallContractFunctionsNegativeCases.class)
     void failedNestedCallWithHardcodedResult(final ContractFunctionProviderEnum function) {
         nestedEthCallsContractPersist();
         final var params = serviceParametersForDebug(
@@ -483,5 +484,53 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final String expectedErrorMessage;
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    private enum NestedEthCallContractFunctionsNegativeCases implements ContractFunctionProviderEnum {
+        GET_TOKEN_INFO_HISTORICAL(
+                "nestedGetTokenInfoAndHardcodedResult",
+                new Object[] {NFT_ADDRESS_HISTORICAL},
+                new Object[] {"hardcodedResult"},
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1))),
+        GET_TOKEN_INFO(
+                "nestedGetTokenInfoAndHardcodedResult",
+                new Object[] {Address.ZERO},
+                new Object[] {"hardcodedResult"},
+                BlockType.LATEST),
+        HTS_GET_APPROVED_HISTORICAL(
+                "nestedHtsGetApprovedAndHardcodedResult",
+                new Object[] {NFT_ADDRESS_HISTORICAL, 1L},
+                new Object[] {"hardcodedResult"},
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1))),
+        HTS_GET_APPROVED(
+                "nestedHtsGetApprovedAndHardcodedResult",
+                new Object[] {Address.ZERO, 1L},
+                new Object[] {"hardcodedResult"},
+                BlockType.LATEST),
+        MINT_TOKEN_HISTORICAL(
+                "nestedMintTokenAndHardcodedResult",
+                new Object[] {
+                    NFT_ADDRESS_HISTORICAL,
+                    0L,
+                    new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
+                },
+                new Object[] {"hardcodedResult"},
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1))),
+        MINT_TOKEN(
+                "nestedMintTokenAndHardcodedResult",
+                new Object[] {
+                    Address.ZERO,
+                    0L,
+                    new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
+                },
+                new Object[] {"hardcodedResult"},
+                BlockType.LATEST);
+
+        private final String name;
+        private final Object[] functionParameters;
+        private final Object[] expectedResultFields;
+        private final BlockType block;
     }
 }
