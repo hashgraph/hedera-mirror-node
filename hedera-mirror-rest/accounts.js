@@ -269,16 +269,16 @@ const getAccountQuery = (
   includeBalance = true,
   isHistorical = false
 ) => {
-  // Convert MySQL style value placeholder ? to PostgreSQL style $1, $2, .... The query fragments are ordered in the
-  // same order as their params
+  // Keep track of Postgres positional param index when converting MySQL style value placeholder ? to Postgres style
+  // $1, $2, .... The query fragments are ordered in the same order as their params
   let paramIndex = 1;
-  [tokenBalanceQuery, entityBalanceQuery, entityAccountQuery, pubKeyQuery, accountBalanceQuery, limitAndOrderQuery]
-    .filter((query) => !!query.query)
-    .forEach((query) => {
-      query.query = query.query.replace(/\?/g, (s) => `$${paramIndex++}`);
-    });
 
   if (!includeBalance) {
+    [entityAccountQuery, pubKeyQuery, limitAndOrderQuery]
+      .filter((query) => !!query.query)
+      .forEach((query) => {
+        query.query = query.query.replace(/\?/g, (s) => `$${paramIndex++}`);
+      });
     const entityCondition = [`e.type in ('ACCOUNT', 'CONTRACT')`, entityAccountQuery.query, pubKeyQuery.query]
       .filter((x) => !!x)
       .join(' and ');
@@ -293,6 +293,12 @@ const getAccountQuery = (
       params: utils.mergeParams(entityAccountQuery.params, pubKeyQuery.params, limitAndOrderQuery.params),
     };
   }
+
+  [tokenBalanceQuery, entityBalanceQuery, entityAccountQuery, pubKeyQuery, accountBalanceQuery, limitAndOrderQuery]
+    .filter((query) => !!query.query)
+    .forEach((query) => {
+      query.query = query.query.replace(/\?/g, (s) => `$${paramIndex++}`);
+    });
 
   return getEntityBalanceQuery(
     entityBalanceQuery,
