@@ -47,10 +47,6 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
 
     private Entity senderHistorical;
 
-    private Range<Long> timestampRangeAfterEvm34Block;
-
-    private Range<Long> timestampRangeEvm38Block;
-
     protected static RecordFile recordFileBeforeEvm34;
 
     protected static RecordFile recordFileAfterEvm34;
@@ -87,9 +83,7 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
         contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(EVM_V_34_BLOCK)));
         assertThatThrownBy(() -> contract.call_getCodeHash(input).send())
                 .isInstanceOf(MirrorEvmTransactionException.class)
-                .satisfies(ex -> assertEquals(
-                        INVALID_TRANSACTION.name(),
-                        ex.getMessage())); // TODO: check if this is the correct expected message
+                .satisfies(ex -> assertEquals(INVALID_TRANSACTION.name(), ex.getMessage()));
     }
 
     private void setupTestWeb3jServiceState(TestWeb3jServiceState state) {
@@ -131,12 +125,6 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
                 .recordFile()
                 .customize(f -> f.index(EVM_V_46_BLOCK))
                 .persist();
-
-        timestampRangeAfterEvm34Block =
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd());
-
-        timestampRangeEvm38Block =
-                Range.closedOpen(recordFileEvm38.getConsensusStart(), recordFileEvm38.getConsensusEnd());
     }
 
     private void senderPersistHistorical() {

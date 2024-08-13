@@ -84,6 +84,8 @@ val zipFile = layout.buildDirectory.file("openzeppelin.zip")
 val outputDir = layout.buildDirectory.dir("../src/test/solidity_historical/openzeppelin")
 
 tasks.register("downloadOpenZeppelinContracts") {
+    description = "Downloads the configured version of the Openzeppelin dependencies"
+    group = "historical"
     doFirst {
         layout.buildDirectory.get().asFile.mkdirs()
         outputDir.get().asFile.mkdirs()
@@ -99,6 +101,8 @@ tasks.register("downloadOpenZeppelinContracts") {
 }
 
 tasks.register<Copy>("extractOpenZeppelinContracts") {
+    description = "Extracts the Openzeppelin dependencies into the configured output folder"
+    group = "historical"
     dependsOn("downloadOpenZeppelinContracts")
     from(zipTree(zipFile.get().asFile))
     into(outputDir)
@@ -127,6 +131,8 @@ tasks.processTestResources {
 
 // Task to compile Solidity contracts and generate Java files
 tasks.register<Exec>("compileHistoricalSolidityContracts") {
+    description = "Compiles the historical solidity contracts to java files using web3j-cli"
+    group = "historical"
     mustRunAfter(tasks.named("generateTestContractWrappers"))
     dependsOn(tasks.named("downloadOpenZeppelinContracts"))
     dependsOn(tasks.named("extractOpenZeppelinContracts"))

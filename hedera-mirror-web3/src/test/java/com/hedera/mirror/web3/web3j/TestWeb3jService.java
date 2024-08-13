@@ -124,6 +124,10 @@ public class TestWeb3jService implements Web3jService {
         this.historicalRange = historicalRange;
     }
 
+    public Range getHistoricalRange() {
+        return historicalRange;
+    }
+
     @SneakyThrows(Exception.class)
     public <T extends Contract> T deploy(Deployer<T> deployer) {
         return deployer.deploy(web3j, credentials, contractGasProvider).send();
