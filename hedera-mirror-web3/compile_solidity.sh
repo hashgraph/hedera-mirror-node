@@ -54,4 +54,7 @@ for i in "${!SOLC_VERSIONS[@]}"; do
 
 done
 
+echo "Get info for problematic file:"
+file ./build/generated/sources/web3j/test/java/com/hedera/mirror/web3/web3j/generated/EvmCodesHistorical.java
+
 rm -rf build/temp_contracts

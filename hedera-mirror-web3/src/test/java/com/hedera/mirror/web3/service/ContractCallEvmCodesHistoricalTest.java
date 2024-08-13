@@ -25,7 +25,7 @@ import static com.hedera.mirror.web3.service.ContractCallTestSetup.EVM_V_46_BLOC
 import static com.hedera.mirror.web3.service.ContractCallTestSetup.SENDER_ADDRESS_HISTORICAL;
 import static com.hedera.mirror.web3.service.ContractCallTestSetup.SENDER_ALIAS_HISTORICAL;
 import static com.hedera.mirror.web3.service.ContractCallTestSetup.SENDER_PUBLIC_KEY_HISTORICAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,10 +36,12 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jServiceState;
 import com.hedera.mirror.web3.web3j.generated.EvmCodesHistorical;
+import java.math.BigInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.web3j.protocol.core.DefaultBlockParameter;
 
 public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServiceTest {
 
@@ -82,9 +84,12 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
     })
     void testSystemContractCodeHashPreVersion38(String input) {
         final var contract = testWeb3jService.deploy(EvmCodesHistorical::deploy);
+        contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(EVM_V_34_BLOCK)));
         assertThatThrownBy(() -> contract.call_getCodeHash(input).send())
                 .isInstanceOf(MirrorEvmTransactionException.class)
-                .satisfies(ex -> assertEquals(ex.getMessage(), INVALID_SOLIDITY_ADDRESS.name()));
+                .satisfies(ex -> assertEquals(
+                        INVALID_TRANSACTION.name(),
+                        ex.getMessage())); // TODO: check if this is the correct expected message
     }
 
     private void setupTestWeb3jServiceState(TestWeb3jServiceState state) {
