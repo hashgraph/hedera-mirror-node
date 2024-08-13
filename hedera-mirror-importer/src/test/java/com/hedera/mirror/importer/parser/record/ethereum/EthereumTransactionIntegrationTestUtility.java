@@ -19,9 +19,8 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.io.FileUtils;
@@ -35,32 +34,19 @@ public class EthereumTransactionIntegrationTestUtility {
     // - no call data offloading for legacy, type 1, and type 2
     // - call data offloaded for legacy and type 2
     // - call data inline with call data id in transaction body for legacy
-    @Getter(lazy = true, value = AccessLevel.PRIVATE)
-    private static final String ethereumTransactionJson = readEthereumTransactionJson();
-
-    @Getter(lazy = true, value = AccessLevel.PRIVATE)
-    private static final String fileDataSql = readFileDataSql();
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @SneakyThrows
     public static List<EthereumTransaction> loadEthereumTransactions() {
-        return objectMapper.readValue(getEthereumTransactionJson(), new TypeReference<>() {});
-    }
-
-    public static void populateFileData(JdbcOperations jdbcOperations) {
-        jdbcOperations.update(getFileDataSql());
-    }
-
-    @SneakyThrows
-    private static String readEthereumTransactionJson() {
         var file = ResourceUtils.getFile("classpath:data/ethereumTransaction/ethereum_transaction.json");
-        return FileUtils.readFileToString(file, "UTF-8");
+        return objectMapper.readValue(
+                FileUtils.readFileToString(file, StandardCharsets.UTF_8), new TypeReference<>() {});
     }
 
     @SneakyThrows
-    private static String readFileDataSql() {
+    public static void populateFileData(JdbcOperations jdbcOperations) {
         var file = ResourceUtils.getFile("classpath:data/ethereumTransaction/file_data.sql");
-        return FileUtils.readFileToString(file, "UTF-8");
+        jdbcOperations.update(FileUtils.readFileToString(file, StandardCharsets.UTF_8));
     }
 }

@@ -65,6 +65,7 @@ class EthereumTransactionHashServiceImpl implements EthereumTransactionHashServi
     }
 
     @Override
+    @SuppressWarnings("java:S6880")
     public byte[] getHash(@NotNull EthereumTransaction ethereumTransaction) {
         var callDataId = ethereumTransaction.getCallDataId();
         // Note if callData is not empty, callDataId should be ignored, and directly calculate the hash over the saved
