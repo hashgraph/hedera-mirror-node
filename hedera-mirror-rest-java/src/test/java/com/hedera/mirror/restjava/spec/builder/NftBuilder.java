@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.restjava.spec.builder;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityType;
+import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
@@ -25,18 +27,31 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 @Named
-class AccountBuilder extends EntityBuilder {
+class NftBuilder extends AbstractEntityBuilder<Nft.NftBuilder<?, ?>> {
 
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
-        return specSetup::accounts;
+        return specSetup::nfts;
     }
 
     @Override
-    protected Entity.EntityBuilder<?, ?> getEntityBuilder() {
-        return super.getEntityBuilder()
-                .maxAutomaticTokenAssociations(0)
-                .publicKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f")
-                .type(EntityType.ACCOUNT);
+    protected Nft.NftBuilder<?, ?> getEntityBuilder() {
+        return Nft.builder()
+                .accountId(EntityId.EMPTY)
+                .createdTimestamp(0L)
+                .deleted(Boolean.FALSE)
+                .metadata(DomainUtils.EMPTY_BYTE_ARRAY)
+                .serialNumber(0L)
+                .tokenId(0L);
+    }
+
+    @Override
+    protected List<Object> getFinalEntities(Nft.NftBuilder<?, ?> builder, Map<String, Object> account) {
+        var entity = builder.build();
+        if (entity.getTimestampRange() == null) {
+            builder.timestampRange(Range.atLeast(entity.getCreatedTimestamp()));
+        }
+
+        return List.of(builder.build());
     }
 }

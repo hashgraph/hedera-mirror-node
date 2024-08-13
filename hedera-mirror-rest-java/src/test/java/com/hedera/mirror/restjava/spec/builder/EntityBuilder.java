@@ -17,7 +17,7 @@
 package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
@@ -26,39 +26,43 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
-class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount.TokenAccountBuilder<?, ?>> {
+class EntityBuilder extends AbstractEntityBuilder<Entity.EntityBuilder<?, ?>> {
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
-            "accountId", ENTITY_ID_TO_LONG_CONVERTER,
-            "tokenId", ENTITY_ID_TO_LONG_CONVERTER);
+            "alias", BASE32_CONVERTER,
+            "evmAddress", HEX_OR_BASE64_CONVERTER,
+            "key", HEX_OR_BASE64_CONVERTER);
 
-    TokenAccountBuilder() {
+    EntityBuilder() {
         super(METHOD_PARAMETER_CONVERTERS);
     }
 
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
-        return specSetup::tokenAccounts;
+        return specSetup::entities;
     }
 
     @Override
-    protected TokenAccount.TokenAccountBuilder<?, ?> getEntityBuilder() {
-        return TokenAccount.builder()
-                .accountId(0L)
-                .associated(Boolean.TRUE)
-                .automaticAssociation(Boolean.FALSE)
-                .balance(0L)
-                .balanceTimestamp(0L)
-                .createdTimestamp(0L)
-                .tokenId(0L);
+    protected Entity.EntityBuilder<?, ?> getEntityBuilder() {
+        return Entity.builder()
+                .declineReward(Boolean.FALSE)
+                .deleted(Boolean.FALSE)
+                .num(0L)
+                .memo("entity memo")
+                .num(0L)
+                .realm(0L)
+                .receiverSigRequired(Boolean.FALSE)
+                .shard(0L)
+                .stakedNodeId(-1L)
+                .stakePeriodStart(-1L)
+                .timestampRange(Range.atLeast(0L));
     }
 
     @Override
-    protected List<Object> getFinalEntities(
-            TokenAccount.TokenAccountBuilder<?, ?> builder, Map<String, Object> account) {
+    protected List<Object> getFinalEntities(Entity.EntityBuilder<?, ?> builder, Map<String, Object> account) {
         var entity = builder.build();
-        if (entity.getTimestampRange() == null) {
-            builder.timestampRange(Range.atLeast(entity.getCreatedTimestamp()));
+        if (entity.getId() == null) {
+            builder.id(entity.toEntityId().getId());
             entity = builder.build();
         }
         return List.of(entity);

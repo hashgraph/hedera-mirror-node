@@ -40,7 +40,7 @@ import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.CollectionUtils;
 
 @CustomLog
-abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
+abstract class AbstractEntityBuilder<B> implements SpecDomainBuilder {
 
     private static final Base32 BASE32 = new Base32();
     private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
@@ -49,15 +49,18 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
     /*
      * Common handy spec attribute value converter functions to be used by subclasses.
      */
-    protected static final Function<Object, Object> BASE32_CONVERTER = value -> value == null ? null : BASE32.decode(value.toString());
+    protected static final Function<Object, Object> BASE32_CONVERTER =
+            value -> value == null ? null : BASE32.decode(value.toString());
 
-    protected static final Function<Object, Object> ENTITY_ID_TO_LONG_CONVERTER = value -> value == null ? 0L
-            : value instanceof String valueStr ? EntityId.of(valueStr).getId() : (long)value;
+    protected static final Function<Object, Object> ENTITY_ID_TO_LONG_CONVERTER = value -> value == null
+            ? 0L
+            : value instanceof String valueStr ? EntityId.of(valueStr).getId() : (long) value;
 
     protected static final Function<Object, Object> HEX_OR_BASE64_CONVERTER = value -> {
         if (value instanceof String valueStr) {
             return HEX_STRING_PATTERN.matcher(valueStr).matches()
-                    ? Bytes.fromHexString(valueStr.startsWith("0x") ? valueStr : "0x" + valueStr).toArray()
+                    ? Bytes.fromHexString(valueStr.startsWith("0x") ? valueStr : "0x" + valueStr)
+                            .toArray()
                     : Base64.getDecoder().decode(valueStr);
         }
         return value;
@@ -77,14 +80,16 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
     // Map a builder method by name to a specific attribute value converter function
     protected final Map<String, Function<Object, Object>> methodParameterConverters;
 
-    protected AbstractEntityBuilder(
-            Map<String, Function<Object, Object>> methodParameterConverters) {
+    protected AbstractEntityBuilder() {
+        this(Map.of());
+    }
+
+    protected AbstractEntityBuilder(Map<String, Function<Object, Object>> methodParameterConverters) {
         this(methodParameterConverters, Map.of());
     }
 
     protected AbstractEntityBuilder(
-            Map<String, Function<Object, Object>> methodParameterConverters,
-            Map<String, String> attributeNameMap) {
+            Map<String, Function<Object, Object>> methodParameterConverters, Map<String, String> attributeNameMap) {
         this.methodParameterConverters = methodParameterConverters;
         this.attributeNameMap = attributeNameMap;
     }
@@ -102,9 +107,9 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
      *
      * @param builder entity builder
      * @param entityAttributes spec setup attributes
-     * @return
+     * @return entities to be persisted
      */
-    protected abstract T getFinalEntity(B builder, Map<String, Object> entityAttributes);
+    protected abstract List<Object> getFinalEntities(B builder, Map<String, Object> entityAttributes);
 
     /**
      * Return the supplier function used to return the relevant attributes from the spec JSON setup object.
@@ -121,15 +126,16 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
             specEntities.forEach(specEntity -> transactionOperations.executeWithoutResult(t -> {
                 var entityBuilder = getEntityBuilder();
                 customizeWithSpec(entityBuilder, specEntity);
-                entityManager.persist(getFinalEntity(entityBuilder, specEntity));
+                var entities = getFinalEntities(entityBuilder, specEntity);
+                entities.forEach(entity -> entityManager.persist(entity));
             }));
         }
     }
 
     private void customizeWithSpec(B builder, Map<String, Object> customizations) {
         var builderClass = builder.getClass();
-        var builderMethods = methodCache.computeIfAbsent(builderClass, clazz -> Arrays.stream(
-                clazz.getMethods()).collect(Collectors.toMap(Method::getName, Function.identity(), (v1, v2) -> v2)));
+        var builderMethods = methodCache.computeIfAbsent(builderClass, clazz -> Arrays.stream(clazz.getMethods())
+                .collect(Collectors.toMap(Method::getName, Function.identity(), (v1, v2) -> v2)));
 
         for (var customization : customizations.entrySet()) {
             var methodName = methodName(customization.getKey());
@@ -137,14 +143,18 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
             if (method != null) {
                 try {
                     var expectedParameterType = method.getParameterTypes()[0];
-                    var mappedBuilderParameter = mapBuilderParameter(methodName, expectedParameterType, customization.getValue());
+                    var mappedBuilderParameter =
+                            mapBuilderParameter(methodName, expectedParameterType, customization.getValue());
                     method.invoke(builder, mappedBuilderParameter);
                 } catch (IllegalAccessException | InvocationTargetException e) {
-                    log.warn("Failed to invoke method '{}' for attribute override '{}' for {}",
-                            methodName, customization.getKey(), builderClass.getName(), e);
+                    log.warn(
+                            "Failed to invoke method '{}' for attribute override '{}' for {}",
+                            methodName,
+                            customization.getKey(),
+                            builderClass.getName(),
+                            e);
                 }
-            }
-            else {
+            } else {
                 log.warn("Unknown attribute override '{}' for {}", customization.getKey(), builderClass.getName());
             }
         }
