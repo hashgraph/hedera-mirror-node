@@ -21,40 +21,44 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.parser.domain.RecordFileBuilder;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.test.performance.PerformanceProperties;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.EnabledIf;
 
-@ActiveProfiles("performance")
 @CustomLog
+@EnabledIf(expression = "${hedera.mirror.importer.test.performance.parser.enabled}", loadContext = true)
 @RequiredArgsConstructor
 @Tag("performance")
 class RecordFileParserPerformanceTest extends ImporterIntegrationTest {
 
-    private final ParserPerformanceProperties performanceProperties;
+    private final PerformanceProperties performanceProperties;
     private final RecordFileParser recordFileParser;
     private final RecordFileBuilder recordFileBuilder;
     private final RecordFileRepository recordFileRepository;
 
+    @BeforeEach
+    void setup() {
+        recordFileParser.clear();
+    }
+
     @Test
     void scenarios() {
-        if (!performanceProperties.isEnabled()) {
-            log.info("All scenarios disabled");
-            return;
-        }
+        var properties = performanceProperties.getParser();
+        var previous = recordFileRepository.findLatest().orElse(null);
+        var scenarios = performanceProperties.getScenarios().getOrDefault(properties.getScenario(), List.of());
 
-        RecordFile previous = recordFileRepository.findLatest().orElse(null);
-
-        for (var scenario : performanceProperties.getScenarios()) {
+        for (var scenario : scenarios) {
             if (!scenario.isEnabled()) {
                 log.info("Scenario {} is disabled", scenario.getDescription());
                 continue;
@@ -65,7 +69,7 @@ class RecordFileParserPerformanceTest extends ImporterIntegrationTest {
             long duration = scenario.getDuration().toMillis();
             long startTime = System.currentTimeMillis();
             long endTime = startTime;
-            var stats = new DescriptiveStatistics();
+            var stats = new SummaryStatistics();
             var stopwatch = Stopwatch.createStarted();
             var builder = recordFileBuilder.recordFile();
 
@@ -99,7 +103,7 @@ class RecordFileParserPerformanceTest extends ImporterIntegrationTest {
                     stopwatch,
                     stats.getN(),
                     mean);
-            assertThat(Duration.ofMillis(mean)).isLessThanOrEqualTo(scenario.getLatency());
+            assertThat(Duration.ofMillis(mean)).isLessThanOrEqualTo(properties.getLatency());
         }
     }
 }
