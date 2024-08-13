@@ -16,11 +16,19 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.KeyType;
 import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.getKeyWithContractId;
 import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.getKeyWithDelegatableContractId;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.*;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EMPTY_UNTRIMMED_ADDRESS;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ECDSA_TYPE;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ED_25519_TYPE;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.LEDGER_ID;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FIXED_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
@@ -510,10 +518,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, FEE_SCHEDULE_KEY
     NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, PAUSE_KEY
 """)
-    void getTokenKey(
-            final TokenTypeEnum tokenType,
-            final KeyValueType keyValueType,
-            final AbstractContractCallServiceTest.KeyType keyType)
+    void getTokenKey(final TokenTypeEnum tokenType, final KeyValueType keyValueType, final KeyType keyType)
             throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
@@ -1393,7 +1398,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     private Entity getTokenWithKey(
             final TokenTypeEnum tokenType,
             final KeyValueType keyValueType,
-            final AbstractContractCallServiceTest.KeyType keyType,
+            final KeyType keyType,
             final Contract contract) {
         final Key key;
         switch (keyValueType) {
@@ -1421,24 +1426,24 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .type(tokenType));
 
         switch (keyType) {
-            case AbstractContractCallServiceTest.KeyType.ADMIN_KEY:
+            case ADMIN_KEY:
                 break;
-            case AbstractContractCallServiceTest.KeyType.KYC_KEY:
+            case KYC_KEY:
                 tokenBuilder.customize(t -> t.kycKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.FREEZE_KEY:
+            case FREEZE_KEY:
                 tokenBuilder.customize(t -> t.freezeKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.WIPE_KEY:
+            case WIPE_KEY:
                 tokenBuilder.customize(t -> t.wipeKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.SUPPLY_KEY:
+            case SUPPLY_KEY:
                 tokenBuilder.customize(t -> t.supplyKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.FEE_SCHEDULE_KEY:
+            case FEE_SCHEDULE_KEY:
                 tokenBuilder.customize(t -> t.feeScheduleKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.PAUSE_KEY:
+            case PAUSE_KEY:
                 tokenBuilder.customize(t -> t.pauseKey(key.toByteArray()));
                 break;
             default:

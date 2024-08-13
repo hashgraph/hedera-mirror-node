@@ -62,6 +62,15 @@ public class ContractCallTestUtil {
     public static final Key KEY_WITH_ED_25519_TYPE =
             Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
 
+    public static final byte[] NEW_ECDSA_KEY = new byte[] {
+        2, 64, 59, -126, 81, -22, 0, 35, 67, -70, 110, 96, 109, 2, -8, 111, -112, -100, -87, -85, 66, 36, 37, -97, 19,
+        68, -87, -110, -13, -115, 74, 86, 90
+    };
+
+    public static final byte[] NEW_ED25519_KEY = new byte[] {
+        -128, -61, -12, 63, 3, -45, 108, 34, 61, -2, -83, -48, -118, 20, 84, 85, 85, 67, -125, 46, 49, 26, 17, -116, 27,
+        25, 38, -95, 50, 77, 40, -38
+    };
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *
