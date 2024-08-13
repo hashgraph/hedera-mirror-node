@@ -30,19 +30,16 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.generated.ERCTestContract;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import java.math.BigInteger;
+import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
+@RequiredArgsConstructor
 class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractCallServiceTest {
-
-    private ContractCallServiceERCTokenReadOnlyFunctionsTest(TestWeb3jService testWeb3jService) {
-        super(testWeb3jService);
-    }
 
     @Test
     void ethCallGetApprovedEmptySpenderStatic() throws Exception {
