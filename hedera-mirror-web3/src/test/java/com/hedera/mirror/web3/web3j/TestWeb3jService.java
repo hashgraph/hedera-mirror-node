@@ -24,6 +24,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncoded;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractExecutionService;
@@ -80,6 +81,8 @@ public class TestWeb3jService implements Web3jService {
     private String transactionResult;
     private String estimatedGas;
     private long value = 0L;
+    private BlockType blockType = BlockType.LATEST;
+    private Range historicalRange;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -111,6 +114,14 @@ public class TestWeb3jService implements Web3jService {
 
     public void setValue(final long value) {
         this.value = value;
+    }
+
+    public void setBlockType(BlockType blockType) {
+        this.blockType = blockType;
+    }
+
+    public void setHistoricalRange(Range historicalRange) {
+        this.historicalRange = historicalRange;
     }
 
     @SneakyThrows(Exception.class)
@@ -171,7 +182,7 @@ public class TestWeb3jService implements Web3jService {
                 rawTransaction.getValue().longValue() >= 0
                         ? rawTransaction.getValue().longValue()
                         : DEFAULT_TRANSACTION_VALUE,
-                BlockType.LATEST,
+                blockType,
                 TRANSACTION_GAS_LIMIT,
                 sender);
 
@@ -189,14 +200,13 @@ public class TestWeb3jService implements Web3jService {
         var transaction = reqParams.get(0);
 
         // First get the transaction result
-        final var serviceParametersForCall =
-                serviceParametersForExecutionSingle(transaction, ETH_CALL, BlockType.LATEST);
+        final var serviceParametersForCall = serviceParametersForExecutionSingle(transaction, ETH_CALL, blockType);
         final var result = contractExecutionService.processCall(serviceParametersForCall);
         transactionResult = result;
 
         // Then get the estimated gas
         final var serviceParametersForEstimate =
-                serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, BlockType.LATEST);
+                serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, blockType);
         estimatedGas = contractExecutionService.processCall(serviceParametersForEstimate);
 
         final var ethCall = new EthCall();
@@ -285,7 +295,7 @@ public class TestWeb3jService implements Web3jService {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
-                .block(BlockType.LATEST)
+                .block(blockType)
                 .build();
     }
 

@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+set -euo pipefail
+
 tag_name=$(curl --silent "https://api.github.com/repos/bilyana-gospodinova/web3j-cli/releases/latest" | jq -r .tag_name)
 web3j_version=$(echo $tag_name | sed 's/v//')
 installed_flag=0
@@ -128,13 +130,6 @@ source_web3j() {
   fi
 }
 
-check_if_web3j_homebrew() {
-  if (command -v brew && ! (brew info web3j 2>&1 | grep -e "Not installed\|No available formula") >/dev/null 2>&1); then
-    echo "Looks like Web3j is installed with Homebrew. Please use Homebrew to update. Exiting."
-    exit 0
-  fi
-}
-
 clean_up() {
   if [ -d "$HOME/.web3j" ]; then
     rm -f "$HOME/.web3j/source.sh"
@@ -176,7 +171,6 @@ main() {
   check_java_version
   check_if_installed
   if [ $installed_flag -eq 1 ]; then
-    check_if_web3j_homebrew
     check_version
     clean_up
     install_web3j
