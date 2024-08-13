@@ -62,7 +62,7 @@ jobs:
           SOLO_NAMESPACE=solo
           kind create cluster -n $SOLO_CLUSTER;
           npm i -g @hashgraph/solo@0.27.0;
-          solo init -n $SOLO_NAMESPACE -i node0;
+          solo init -n $SOLO_NAMESPACE -i node0,node1,node2;
           solo cluster setup
           solo network deploy
           solo node keys --gossip-keys --tls-keys --key-format pem
