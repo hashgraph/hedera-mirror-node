@@ -54,13 +54,4 @@ for i in "${!SOLC_VERSIONS[@]}"; do
 
 done
 
-echo "The java directory: "
-ls -l ./build/generated/sources/web3j/test/java/com/hedera/mirror/web3/web3j/generated
-
-echo "The generated file:"
-cat ./build/generated/sources/web3j/test/java/com/hedera/mirror/web3/web3j/generated/EvmCodesHistorical.java
-
-echo "Verify of the locations are the same"
-ls -l /runner/_work/hedera-mirror-node/hedera-mirror-node/hedera-mirror-web3/build/generated/sources/web3j/test/java/com/hedera/mirror/web3/web3j/generated/
-
 rm -rf build/temp_contracts

@@ -34,7 +34,6 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jServiceState;
 import com.hedera.mirror.web3.web3j.generated.EvmCodesHistorical;
 import org.junit.jupiter.api.AfterEach;
@@ -57,10 +56,6 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
     protected static RecordFile recordFileEvm38;
 
     protected static RecordFile recordFileEvm46;
-
-    ContractCallEvmCodesHistoricalTest(TestWeb3jService testWeb3jService) {
-        super(testWeb3jService);
-    }
 
     @BeforeEach
     void beforeAll() {
