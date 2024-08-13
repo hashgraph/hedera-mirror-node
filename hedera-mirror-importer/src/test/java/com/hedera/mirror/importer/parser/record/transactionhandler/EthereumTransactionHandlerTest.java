@@ -53,7 +53,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.math.BigInteger;
 import java.util.Map;
 import java.util.stream.Stream;
-import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -64,7 +63,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.springframework.data.util.Version;
 
-@CustomLog
 class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private static final ByteString ETHEREUM_HASH = DomainUtils.fromBytes(nextBytes(32));
@@ -72,10 +70,10 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     private static final Version HAPI_VERSION_0_46_0 = new Version(0, 46, 0);
 
     @Mock(strictness = LENIENT)
-    protected EthereumTransactionParser ethereumTransactionParser;
+    private EthereumTransactionHashService ethereumTransactionHashService;
 
     @Mock(strictness = LENIENT)
-    private EthereumTransactionHashService ethereumTransactionHashService;
+    protected EthereumTransactionParser ethereumTransactionParser;
 
     @AfterEach
     void cleanup() {
