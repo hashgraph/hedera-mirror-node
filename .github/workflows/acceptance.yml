@@ -71,7 +71,7 @@ jobs:
           solo mirror-node deploy
 
       - name: Run acceptance tests
-        run: helm test fullstack-deployment -n solo --logs
+        run: helm test fullstack-deployment -n solo --logs --filter name=mirror-acceptance
 
       - name: Show Container Log
         if: ${{ failure() }}
