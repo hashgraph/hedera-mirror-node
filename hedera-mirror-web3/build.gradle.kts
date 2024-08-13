@@ -112,7 +112,8 @@ sourceSets { test { solidity { version = "0.8.24" } } }
 
 web3j {
     generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
-    excludedContracts = listOf("EthCallHistorical", "DynamicEthCallsHistorical")
+    excludedContracts =
+        listOf("DynamicEthCallsHistorical", "EthCallHistorical", "EvmCodesHistorical")
     useNativeJavaTypes = true
     generateBoth = true
 }
@@ -126,7 +127,7 @@ tasks.processTestResources {
 
 // Task to compile Solidity contracts and generate Java files
 tasks.register<Exec>("compileHistoricalSolidityContracts") {
-    mustRunAfter(tasks.named("compileJava"))
+    mustRunAfter(tasks.named("generateTestContractWrappers"))
     dependsOn(tasks.named("downloadOpenZeppelinContracts"))
     dependsOn(tasks.named("extractOpenZeppelinContracts"))
     dependsOn(tasks.named("compileTestSolidity"))
