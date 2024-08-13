@@ -64,7 +64,7 @@ public class PerformanceProperties {
 
         @DurationMin(millis = 1)
         @NotNull
-        private Duration latency = Duration.ofMillis(1500L);
+        private Duration latency = Duration.ofSeconds(2L);
 
         @NotBlank
         private String scenario;

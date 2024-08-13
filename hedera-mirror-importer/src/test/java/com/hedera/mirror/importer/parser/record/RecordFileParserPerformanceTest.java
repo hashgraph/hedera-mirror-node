@@ -103,7 +103,9 @@ class RecordFileParserPerformanceTest extends ImporterIntegrationTest {
                     stopwatch,
                     stats.getN(),
                     mean);
-            assertThat(Duration.ofMillis(mean)).isLessThanOrEqualTo(properties.getLatency());
+            assertThat(Duration.ofMillis(mean))
+                    .as("Scenario {} had a latency of {} ms", scenario.getDescription(), mean)
+                    .isLessThanOrEqualTo(properties.getLatency());
         }
     }
 }
