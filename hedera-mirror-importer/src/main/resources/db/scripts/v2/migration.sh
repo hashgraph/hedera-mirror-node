@@ -302,7 +302,14 @@ migrateTable() {
 }
 
 insertRepeatableMigrations() {
-  local migrationsSql="select description, type, script, checksum, installed_by, installed_on, execution_time, success from flyway_schema_history where version is null and upper(type)='JDBC' and script not ilike '%TopicMessageLookupMigration%' and success order by installed_rank asc;"
+  local migrationsSql="select description, type, script, checksum, installed_by, installed_on, execution_time, success
+  from flyway_schema_history
+  where version is null and
+    upper(type)='JDBC' and
+    script not ilike '%BackfillTransactionHashMigration%' and
+    script not ilike '%TopicMessageLookupMigration%' and
+    success
+    order by installed_rank asc;"
   local currentRank=$(queryTarget "select max(installed_rank) from flyway_schema_history;")
   local migrations="$(PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q --csv -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}" -c "${migrationsSql}")"
   local rows=()
@@ -334,6 +341,22 @@ insertRepeatableMigrations() {
   local insertSql="\\copy flyway_schema_history(installed_rank, description, type, script, checksum, installed_by, installed_on, execution_time, success) from program 'cat ${sqlTemp}' with csv delimiter ',';"
   IFS=$'\n'; echo "${rows[*]}" > "${sqlTemp}"
   queryTarget "${insertSql}"
+}
+
+removeRepeatableMigrations() {
+  local sql="with last as (
+    select installed_rank as rank
+    from flyway_schema_history
+    where version is null and
+      upper(type)='JDBC' and
+      script ilike '%BackfillTransactionHashMigration%'
+    order by installed_rank desc
+    limit 1
+  )
+  delete from flyway_schema_history
+  using last
+  where installed_rank = rank and success;"
+  queryTarget "${sql}"
 }
 
 # Export the functions so they can be invoked via parallel xargs
@@ -435,6 +458,9 @@ echo "${tablesArray[*]}" | tr " " "\n" |ASYNC_TABLES=$ASYNC_TABLES xargs -n 1 -P
 
 log "inserting repeatable migrations"
 insertRepeatableMigrations
+
+log "removing repeatable migrations"
+removeRepeatableMigrations
 
 log "migration completed in $SECONDS seconds."
 popd || die "Couldn't change directory back to ${SCRIPTS_DIR}"

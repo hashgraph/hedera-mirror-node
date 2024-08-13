@@ -18,6 +18,7 @@ class TransactionHash {
   static tableAlias = 'th';
   static tableName = 'transaction_hash';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
+  static DISTRIBUTION_ID = 'distribution_id';
   static HASH = 'hash';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
 
