@@ -25,6 +25,7 @@ import (
 )
 
 const maxCode = int32(337)
+const maxTransactionType = int32(60)
 
 func TestGetTransactionResult(t *testing.T) {
 	for code, expected := range services.ResponseCodeEnum_name {
@@ -48,15 +49,20 @@ func TestGetTransactionResultGeneralError(t *testing.T) {
 	}
 }
 
-func TestTransactionTypesUpToDate(t *testing.T) {
+func TestTransactionTypes(t *testing.T) {
 	sdkTransactionTypes := getSdkTransactionTypes()
-	for protoId, name := range sdkTransactionTypes {
-		assert.Equal(t, name, TransactionTypes[protoId], "Expected %s for proto id %d", name, protoId)
+	for protoId, expected := range sdkTransactionTypes {
+		if protoId > maxTransactionType {
+			expected = "UNKNOWN"
+		}
+		actual := GetTransactionType(protoId)
+		assert.Equal(t, expected, actual, "Expected %s for proto id %d", expected, protoId)
 	}
 }
 
 func TestUnknownTransactionType(t *testing.T) {
-	assert.Equal(t, "UNKNOWN", TransactionTypes[0])
+	assert.Equal(t, "UNKNOWN", GetTransactionType(0))
+	assert.Equal(t, "UNKNOWN", GetTransactionType(maxTransactionType+1))
 }
 
 func getSdkTransactionTypes() map[int32]string {

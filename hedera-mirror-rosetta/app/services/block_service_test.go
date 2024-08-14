@@ -100,7 +100,7 @@ func expectedTransaction(accountId types.AccountId, entityId *domain.EntityId, h
 		Operations: []*rTypes.Operation{
 			{
 				OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-				Type:                types.TransactionTypes[14],
+				Type:                types.GetTransactionType(14),
 				Status:              &statusSuccess,
 				Account:             accountId.ToRosetta(),
 				Amount:              hbarAmount.ToRosetta(),
@@ -124,7 +124,7 @@ func makeTransaction(entityId *domain.EntityId, hash string) *types.Transaction 
 				AccountId: account,
 				Amount:    &hbarAmount,
 				Status:    statusSuccess,
-				Type:      types.TransactionTypes[14],
+				Type:      types.GetTransactionType(14),
 			},
 		},
 	}

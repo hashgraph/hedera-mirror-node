@@ -19,8 +19,9 @@ package types
 import "github.com/coinbase/rosetta-sdk-go/types"
 
 const (
-	generalErrorStatus = "GENERAL_ERROR"
-	MetadataKeyMemo    = "memo"
+	generalErrorStatus     = "GENERAL_ERROR"
+	MetadataKeyMemo        = "memo"
+	unknownTransactionType = "UNKNOWN"
 
 	OperationTypeCryptoCreateAccount = "CRYPTOCREATEACCOUNT"
 	OperationTypeCryptoTransfer      = "CRYPTOTRANSFER"
@@ -347,8 +348,8 @@ var transactionResults = map[int32]string{
 	337: "TOKEN_HAS_NO_ADMIN_KEY",
 }
 
-var TransactionTypes = map[int32]string{
-	0:  "UNKNOWN",
+var transactionTypes = map[int32]string{
+	0:  unknownTransactionType,
 	7:  "CONTRACTCALL",
 	8:  "CONTRACTCREATEINSTANCE",
 	9:  "CONTRACTUPDATEINSTANCE",
@@ -442,4 +443,17 @@ func GetTransactionResult(code int32) string {
 
 func GetTransactionResults() map[int32]string {
 	return transactionResults
+}
+
+func GetTransactionType(code int32) string {
+	transactionType, ok := transactionTypes[code]
+	if !ok {
+		// If transactionType does not exist, map it to UNKNOWN
+		transactionType = unknownTransactionType
+	}
+	return transactionType
+}
+
+func GetTransactionTypes() map[int32]string {
+	return transactionTypes
 }
