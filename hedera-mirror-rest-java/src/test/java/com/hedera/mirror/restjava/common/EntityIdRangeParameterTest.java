@@ -49,7 +49,6 @@ class EntityIdRangeParameterTest {
                 "-1.-1.-1",
                 "-1",
                 "0.0.-1",
-                "100000.000000001",
                 "eq:0.0.1:someinvalidstring",
                 "BLAH:0.0.1",
                 "0.0.1:someinvalidstring"

@@ -73,7 +73,7 @@ class EntityIdTest {
         assertThatThrownBy(() -> EntityId.of(-1)).isInstanceOf(InvalidEntityException.class);
     }
 
-    @CsvSource({"null", ".", "0..1", "0.0", "0.0.0.1", "-1.-2.-3", "0.0.9223372036854775808", "foo.bar.baz"})
+    @CsvSource({"null", ".", "0..1", "0", "0.0", "0.0.0.1", "-1.-2.-3", "0.0.9223372036854775808", "foo.bar.baz"})
     @DisplayName("Convert String to EntityId and fail")
     @ParameterizedTest(name = "with {0}")
     void ofStringNegative(String string) {
@@ -84,8 +84,6 @@ class EntityIdTest {
     @Test
     void ofStringPositive() {
         assertThat(EntityId.of("0.0.1")).isEqualTo(EntityId.of(0, 0, 1));
-        assertThat(EntityId.of("1")).isEqualTo(EntityId.of(0, 0, 1));
         assertThat(EntityId.of("0.0.0")).isEqualTo(EntityId.EMPTY);
-        assertThat(EntityId.of("0")).isEqualTo(EntityId.EMPTY);
     }
 }

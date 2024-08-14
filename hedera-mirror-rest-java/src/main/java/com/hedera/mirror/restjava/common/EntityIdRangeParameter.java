@@ -16,7 +16,12 @@
 
 package com.hedera.mirror.restjava.common;
 
+import static com.hedera.mirror.restjava.common.EntityIdParameter.DEFAULT_SHARD;
+
+import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 public record EntityIdRangeParameter(RangeOperator operator, EntityId value) implements RangeParameter<EntityId> {
@@ -30,10 +35,32 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
 
         var splitVal = entityIdRangeParam.split(":");
         return switch (splitVal.length) {
-            case 1 -> new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(splitVal[0]));
-            case 2 -> new EntityIdRangeParameter(RangeOperator.of(splitVal[0]), EntityId.of(splitVal[1]));
+            case 1 -> new EntityIdRangeParameter(RangeOperator.EQ, getEntityId(splitVal[0]));
+            case 2 -> new EntityIdRangeParameter(RangeOperator.of(splitVal[0]), getEntityId(splitVal[1]));
             default -> throw new IllegalArgumentException(
                     "Invalid range operator %s. Should have format rangeOperator:Id".formatted(entityIdRangeParam));
+        };
+    }
+
+    private static EntityId getEntityId(String entityId) {
+
+        List<Long> parts = Splitter.on('.')
+                .omitEmptyStrings()
+                .trimResults()
+                .splitToStream(Objects.requireNonNullElse(entityId, ""))
+                .map(Long::valueOf)
+                .filter(n -> n >= 0)
+                .toList();
+
+        if (parts.size() != StringUtils.countMatches(entityId, ".") + 1) {
+            throw new IllegalArgumentException("Invalid entity ID: " + entityId);
+        }
+
+        return switch (parts.size()) {
+            case 1 -> EntityId.of(DEFAULT_SHARD, 0, parts.get(0));
+            case 2 -> EntityId.of(DEFAULT_SHARD, parts.get(0), parts.get(1));
+            case 3 -> EntityId.of(parts.get(0), parts.get(1), parts.get(2));
+            default -> throw new IllegalArgumentException("Invalid entity ID: " + entityId);
         };
     }
 

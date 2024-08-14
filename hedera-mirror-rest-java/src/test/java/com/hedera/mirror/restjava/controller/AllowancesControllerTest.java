@@ -232,7 +232,7 @@ class AllowancesControllerTest extends ControllerTest {
                             .formatted(
                                     allowance1.getSpender(),
                                     allowance2.getSpender(),
-                                    allowance1.getTokenId(),
+                                    "0." + allowance1.getTokenId(),
                                     allowance2.getTokenId() + 1);
             var next =
                     "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=1&order=desc"
@@ -240,7 +240,7 @@ class AllowancesControllerTest extends ControllerTest {
                                     allowance1.getOwner(),
                                     allowance1.getSpender(),
                                     EntityId.of(allowance2.getSpender()),
-                                    allowance1.getTokenId(),
+                                    "0." + allowance1.getTokenId(),
                                     EntityId.of(allowance2.getTokenId()));
 
             // When
