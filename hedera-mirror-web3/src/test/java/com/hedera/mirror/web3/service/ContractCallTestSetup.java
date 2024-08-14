@@ -179,10 +179,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY = toAddress(1067);
     protected static final Address NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY = toAddress(1071);
 
-    protected static final byte[] KEY_PROTO = new byte[]{
-            58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111,
-            -1,
-            77, -103, 47, -118, 107, -58, -85, -63, 55, -57
+    protected static final byte[] KEY_PROTO = new byte[] {
+        58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
+        77, -103, 47, -118, 107, -58, -85, -63, 55, -57
     };
     protected static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
     protected static Key keyWithECDSASecp256K1 =
@@ -198,18 +197,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     // 6th bit: pauseKey
     // 7th bit: ignored
     protected static final int АLL_CASES_KEY_TYPE = 0b1111111;
-    protected static final byte[] NEW_ECDSA_KEY = new byte[]{
-            2, 64, 59, -126, 81, -22, 0, 35, 67, -70, 110, 96, 109, 2, -8, 111, -112, -100, -87, -85, 66, 36, 37, -97,
-            19,
-            68, -87, -110, -13, -115, 74, 86, 90
+    protected static final byte[] NEW_ECDSA_KEY = new byte[] {
+        2, 64, 59, -126, 81, -22, 0, 35, 67, -70, 110, 96, 109, 2, -8, 111, -112, -100, -87, -85, 66, 36, 37, -97, 19,
+        68, -87, -110, -13, -115, 74, 86, 90
     };
     protected static final byte[] ED25519_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
     protected static Key keyWithEd25519 =
             Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
-    protected static final byte[] NEW_ED25519_KEY = new byte[]{
-            -128, -61, -12, 63, 3, -45, 108, 34, 61, -2, -83, -48, -118, 20, 84, 85, 85, 67, -125, 46, 49, 26, 17, -116,
-            27,
-            25, 38, -95, 50, 77, 40, -38
+    protected static final byte[] NEW_ED25519_KEY = new byte[] {
+        -128, -61, -12, 63, 3, -45, 108, 34, 61, -2, -83, -48, -118, 20, 84, 85, 85, 67, -125, 46, 49, 26, 17, -116, 27,
+        25, 38, -95, 50, 77, 40, -38
     };
 
     // Token Wrappers
@@ -370,8 +367,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         new KeyValueWrapper(
                                 false,
                                 contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
-                                new byte[]{},
-                                new byte[]{},
+                                new byte[] {},
+                                new byte[] {},
                                 null))),
                 new TokenExpiryWrapper(
                         9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 8_000_000L));
@@ -411,8 +408,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         new KeyValueWrapper(
                                 false,
                                 contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
-                                new byte[]{},
-                                new byte[]{},
+                                new byte[] {},
+                                new byte[] {},
                                 null))),
                 new TokenExpiryWrapper(
                         9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 8_000_000L));
@@ -473,8 +470,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var keyValue = new KeyValueWrapper(
                 false,
                 contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
-                new byte[]{},
-                new byte[]{},
+                new byte[] {},
+                new byte[] {},
                 null);
         return new TokenCreateWrapper(
                 false,
@@ -532,8 +529,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var keyValue = new KeyValueWrapper(
                 false,
                 contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
-                new byte[]{},
-                new byte[]{},
+                new byte[] {},
+                new byte[] {},
                 null);
         return new TokenCreateWrapper(
                 false,
@@ -555,8 +552,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var keyValue = new KeyValueWrapper(
                 false,
                 contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
-                new byte[]{},
-                new byte[]{},
+                new byte[] {},
+                new byte[] {},
                 null);
         return new TokenCreateWrapper(
                 false,
@@ -613,7 +610,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 10_000_000L,
                 true,
                 List.of(new TokenKeyWrapper(
-                        0b1111111, new KeyValueWrapper(true, null, new byte[]{}, new byte[]{}, null))),
+                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
                 new TokenExpiryWrapper(
                         9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 8_000_000L));
     }
@@ -658,7 +655,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 0L,
                 true,
                 List.of(new TokenKeyWrapper(
-                        0b1111111, new KeyValueWrapper(true, null, new byte[]{}, new byte[]{}, null))),
+                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
                 new TokenExpiryWrapper(
                         9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 8_000_000L));
     }

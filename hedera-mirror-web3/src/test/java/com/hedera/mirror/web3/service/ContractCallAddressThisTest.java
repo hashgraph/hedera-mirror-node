@@ -26,6 +26,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 
+import com.hedera.mirror.web3.web3j.TestWeb3jServiceCustomDeploy;
 import com.hedera.mirror.web3.web3j.generated.TestAddressThis;
 import com.hedera.mirror.web3.web3j.generated.TestNestedAddressThis;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -40,6 +41,8 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 
 class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
+    @Resource
+    protected TestWeb3jServiceCustomDeploy testWeb3jServiceCustomDeploy;
 
     @Resource
     protected ContractExecutionService contractCallService;
@@ -50,8 +53,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
     @AfterEach
     void cleanup() {
         testWeb3jService.setEstimateGas(false);
-        testWeb3jService.setCustomDeploy(false);
-        testWeb3jService.cleanupContractRuntime();
+        testWeb3jServiceCustomDeploy.cleanupContractRuntime();
     }
 
     @Test
@@ -61,7 +63,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
                 contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.fromHexString(""));
         final long actualGas = 57764L;
         assertThat(isWithinExpectedGasRange(
-                longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
                 .isTrue();
     }
 
@@ -75,18 +77,17 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
     @Test
     void addressThisEthCallWithoutEvmAlias() throws Exception {
         // Given
-        testWeb3jService.setCustomDeploy(true);
-        final var contract = testWeb3jService.deploy(TestAddressThis::deploy);
+        final var contract = testWeb3jServiceCustomDeploy.deploy(TestAddressThis::deploy);
         addressThisContractPersist(
-                testWeb3jService.getContractRuntime(), Address.fromHexString(contract.getContractAddress()));
-
+                testWeb3jServiceCustomDeploy.getContractRuntime(),
+                Address.fromHexString(contract.getContractAddress()));
         final List<Bytes> capturedOutputs = new ArrayList<>();
         doAnswer(invocation -> {
-            HederaEvmTransactionProcessingResult result =
-                    (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
-            capturedOutputs.add(result.getOutput()); // Capture the result
-            return result;
-        })
+                    HederaEvmTransactionProcessingResult result =
+                            (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                    capturedOutputs.add(result.getOutput()); // Capture the result
+                    return result;
+                })
                 .when(contractExecutionService)
                 .callContract(any(), any());
 
@@ -105,7 +106,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
                 contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.fromHexString(""));
         final long actualGas = 95401L;
         assertThat(isWithinExpectedGasRange(
-                longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
                 .isTrue();
     }
 

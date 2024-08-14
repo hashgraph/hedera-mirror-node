@@ -69,18 +69,15 @@ import org.web3j.utils.Numeric;
 public class TestWeb3jService implements Web3jService {
     private static final long DEFAULT_TRANSACTION_VALUE = 10L;
     private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
-
-    private final ContractExecutionService contractExecutionService;
+    protected final DomainBuilder domainBuilder;
+    protected final ContractExecutionService contractExecutionService;
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
-    private final DomainBuilder domainBuilder;
     private final Web3j web3j;
-    private Address sender = Address.fromHexString("");
+    protected Address sender = Address.fromHexString("");
+    protected String transactionResult;
     private boolean isEstimateGas = false;
-    private String transactionResult;
     private String estimatedGas;
-    private byte[] contractRuntime;
-    private boolean customDeploy = false;
     private long value = 0L;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
@@ -115,18 +112,6 @@ public class TestWeb3jService implements Web3jService {
         this.value = value;
     }
 
-    public byte[] getContractRuntime() {
-        return contractRuntime;
-    }
-
-    public void setCustomDeploy(boolean customDeploy) {
-        this.customDeploy = customDeploy;
-    }
-
-    public void cleanupContractRuntime() {
-        contractRuntime = null;
-    }
-
     @SneakyThrows(Exception.class)
     public <T extends Contract> T deploy(Deployer<T> deployer) {
         return deployer.deploy(web3j, credentials, contractGasProvider).send();
@@ -144,28 +129,13 @@ public class TestWeb3jService implements Web3jService {
         };
     }
 
-    private EthSendTransaction call(List<?> params, Request request) {
-        var rawTransaction = TransactionDecoder.decode(params.get(0).toString());
-        var transactionHash = generateTransactionHashHexEncoded(rawTransaction, credentials);
-        final var to = rawTransaction.getTo();
-
-        if (to.equals(HEX_PREFIX)) {
-            return sendTopLevelContractCreate(rawTransaction, transactionHash, request);
-        }
-
-        return sendEthCall(rawTransaction, transactionHash, request);
-    }
-
-    private EthSendTransaction sendTopLevelContractCreate(
+    protected EthSendTransaction sendTopLevelContractCreate(
             RawTransaction rawTransaction, String transactionHash, Request request) {
         final var res = new EthSendTransaction();
         var serviceParameters = serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
         final var mirrorNodeResult = contractExecutionService.processCall(serviceParameters);
-        if (customDeploy) {
-            contractRuntime = Hex.decode(mirrorNodeResult.substring(2));
-        }
         try {
-            final var contractInstance = this.deployInternal(mirrorNodeResult);
+            final var contractInstance = deployInternal(mirrorNodeResult);
             res.setResult(transactionHash);
             res.setRawResponse(contractInstance.toHexString());
             res.setId(request.getId());
@@ -176,6 +146,18 @@ public class TestWeb3jService implements Web3jService {
         }
 
         return res;
+    }
+
+    private EthSendTransaction call(List<?> params, Request request) {
+        var rawTransaction = TransactionDecoder.decode(params.get(0).toString());
+        var transactionHash = generateTransactionHashHexEncoded(rawTransaction, credentials);
+        final var to = rawTransaction.getTo();
+
+        if (to.equals(HEX_PREFIX)) {
+            return sendTopLevelContractCreate(rawTransaction, transactionHash, request);
+        }
+
+        return sendEthCall(rawTransaction, transactionHash, request);
     }
 
     private EthSendTransaction sendEthCall(RawTransaction rawTransaction, String transactionHash, Request request) {
@@ -308,11 +290,7 @@ public class TestWeb3jService implements Web3jService {
     public Address deployInternal(String binary) {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
-        if (customDeploy) {
-            return contractAddress;
-        }
         contractPersist(binary, id);
-
         return contractAddress;
     }
 
@@ -366,6 +344,12 @@ public class TestWeb3jService implements Web3jService {
         TestWeb3jService testWeb3jService(
                 ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
             return new TestWeb3jService(contractExecutionService, domainBuilder);
+        }
+
+        @Bean
+        TestWeb3jServiceCustomDeploy testWeb3jServiceCustomDeploy(
+                ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
+            return new TestWeb3jServiceCustomDeploy(contractExecutionService, domainBuilder);
         }
     }
 }
