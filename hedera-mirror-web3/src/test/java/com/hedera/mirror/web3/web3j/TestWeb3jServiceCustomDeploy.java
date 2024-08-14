@@ -74,19 +74,13 @@ public class TestWeb3jServiceCustomDeploy extends TestWeb3jService {
         super.close();
     }
 
+    @Override
     public Address deployInternal(String binary) {
         final var id = domainBuilder.id();
         return toAddress(EntityId.of(id));
     }
 
-    public void cleanupContractRuntime() {
-        contractRuntime = null;
-    }
-
-    public byte[] getContractRuntime() {
-        return contractRuntime;
-    }
-
+    @Override
     protected EthSendTransaction sendTopLevelContractCreate(
             RawTransaction rawTransaction, String transactionHash, Request request) {
         final var res = new EthSendTransaction();
@@ -105,5 +99,13 @@ public class TestWeb3jServiceCustomDeploy extends TestWeb3jService {
         }
 
         return res;
+    }
+
+    public void cleanupContractRuntime() {
+        contractRuntime = null;
+    }
+
+    public byte[] getContractRuntime() {
+        return contractRuntime;
     }
 }
