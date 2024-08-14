@@ -16,16 +16,18 @@
 
 package com.hedera.mirror.importer.migration;
 
+import static com.hedera.mirror.common.domain.transaction.TransactionType.ETHEREUMTRANSACTION;
+
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionHashService;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import jakarta.inject.Named;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Data;
 import org.apache.commons.lang3.ArrayUtils;
@@ -105,8 +107,6 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
         var found = new AtomicInteger();
         var patched = new AtomicInteger();
         var stopwatch = Stopwatch.createStarted();
-        boolean shouldPersistTransactionHash =
-                entityProperties.getPersist().shouldPersistTransactionHash(TransactionType.ETHEREUMTRANSACTION);
 
         transactionOperations.executeWithoutResult(s -> {
             long consensusTimestamp = -1;
@@ -128,30 +128,7 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
                         .filter(t -> ArrayUtils.isNotEmpty(t.getHash()))
                         .toList();
                 patched.addAndGet(patchedTransactions.size());
-
-                if (patchedTransactions.isEmpty()) {
-                    continue;
-                }
-
-                jdbcTemplate.batchUpdate(
-                        UPDATE_CONTRACT_RESULT_SQL, patchedTransactions, patchedTransactions.size(), PSS);
-
-                jdbcTemplate.batchUpdate(
-                        UPDATE_CONTRACT_TRANSACTION_HASH_SQL, patchedTransactions, patchedTransactions.size(), PSS);
-
-                jdbcTemplate.batchUpdate(
-                        UPDATE_ETHEREUM_HASH_SQL, patchedTransactions, patchedTransactions.size(), PSS);
-
-                if (shouldPersistTransactionHash) {
-                    var transactionHashes = patchedTransactions.stream()
-                            .map(t -> TransactionHash.builder()
-                                    .consensusTimestamp(t.getConsensusTimestamp())
-                                    .hash(t.getHash())
-                                    .payerAccountId(t.getPayerAccountId())
-                                    .build())
-                            .toList();
-                    transactionHashRepository.saveAll(transactionHashes);
-                }
+                backfillTables(patchedTransactions);
             }
         });
 
@@ -162,6 +139,30 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
     protected MigrationVersion getMinimumVersion() {
         // Version in which transaction_hash.distribution_id is added
         return MigrationVersion.fromVersion("1.99.1");
+    }
+
+    private void backfillTables(List<MigrationEthereumTransaction> patchedTransactions) {
+        if (patchedTransactions.isEmpty()) {
+            return;
+        }
+
+        jdbcTemplate.batchUpdate(UPDATE_CONTRACT_RESULT_SQL, patchedTransactions, patchedTransactions.size(), PSS);
+
+        jdbcTemplate.batchUpdate(
+                UPDATE_CONTRACT_TRANSACTION_HASH_SQL, patchedTransactions, patchedTransactions.size(), PSS);
+
+        jdbcTemplate.batchUpdate(UPDATE_ETHEREUM_HASH_SQL, patchedTransactions, patchedTransactions.size(), PSS);
+
+        if (entityProperties.getPersist().shouldPersistTransactionHash(ETHEREUMTRANSACTION)) {
+            var transactionHashes = patchedTransactions.stream()
+                    .map(t -> TransactionHash.builder()
+                            .consensusTimestamp(t.getConsensusTimestamp())
+                            .hash(t.getHash())
+                            .payerAccountId(t.getPayerAccountId())
+                            .build())
+                    .toList();
+            transactionHashRepository.saveAll(transactionHashes);
+        }
     }
 
     @Data
