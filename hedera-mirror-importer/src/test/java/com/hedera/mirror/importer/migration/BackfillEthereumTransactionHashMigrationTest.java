@@ -52,8 +52,8 @@ class BackfillEthereumTransactionHashMigrationTest extends ImporterIntegrationTe
     private final ContractTransactionHashRepository contractTransactionHashRepository;
     private final EthereumTransactionRepository ethereumTransactionRepository;
     private final EntityProperties entityProperties;
-    private final TransactionHashRepository transactionHashRepository;
     private final BackfillEthereumTransactionHashMigration migration;
+    private final TransactionHashRepository transactionHashRepository;
 
     @Test
     void empty() {

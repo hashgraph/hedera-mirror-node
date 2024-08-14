@@ -62,11 +62,17 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
             set transaction_hash = ?
             where consensus_timestamp = ?
             """;
+    // Workaround for citus as changing the value of distribution column contract_transaction_hash.hash is not allowed
     private static final String UPDATE_CONTRACT_TRANSACTION_HASH_SQL =
             """
-            update contract_transaction_hash
-            set hash = ?
-            where consensus_timestamp = ? and hash = ''::bytea
+            with deleted as (
+              delete from contract_transaction_hash
+              where consensus_timestamp = ? and hash = ''::bytea
+              returning *
+            )
+            insert into contract_transaction_hash (consensus_timestamp, entity_id, hash, payer_account_id, transaction_result)
+            select consensus_timestamp, entity_id, ?, payer_account_id, transaction_result
+            from deleted
             """;
     private static final String UPDATE_ETHEREUM_HASH_SQL =
             """
@@ -149,7 +155,13 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
         jdbcTemplate.batchUpdate(UPDATE_CONTRACT_RESULT_SQL, patchedTransactions, patchedTransactions.size(), PSS);
 
         jdbcTemplate.batchUpdate(
-                UPDATE_CONTRACT_TRANSACTION_HASH_SQL, patchedTransactions, patchedTransactions.size(), PSS);
+                UPDATE_CONTRACT_TRANSACTION_HASH_SQL,
+                patchedTransactions,
+                patchedTransactions.size(),
+                (ps, transaction) -> {
+                    ps.setLong(1, transaction.getConsensusTimestamp());
+                    ps.setBytes(2, transaction.getHash());
+                });
 
         jdbcTemplate.batchUpdate(UPDATE_ETHEREUM_HASH_SQL, patchedTransactions, patchedTransactions.size(), PSS);
 
