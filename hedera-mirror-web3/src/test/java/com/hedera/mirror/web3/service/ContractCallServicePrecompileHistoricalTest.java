@@ -42,7 +42,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class ContractCallServicePrecompileHistoricalTest extends ContractCallTestSetup {
+class ContractCallServicePrecompileHistoricalTest extends ContractCallTestSetup {
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
 
@@ -75,6 +75,9 @@ public class ContractCallServicePrecompileHistoricalTest extends ContractCallTes
                     ROYALTY_FEE,
                     Range.closedOpen(
                             recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
+            default -> {
+                // Do nothing
+            }
         }
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.expectedResultFields);
@@ -89,6 +92,9 @@ public class ContractCallServicePrecompileHistoricalTest extends ContractCallTes
                     assertThat(contractCallService.processCall(serviceParameters))
                             .isEqualTo(String.valueOf(Bytes32.ZERO));
                     return;
+                }
+                default -> {
+                    // Do nothing
                 }
             }
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
