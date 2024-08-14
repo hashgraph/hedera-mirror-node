@@ -33,6 +33,7 @@ import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -118,6 +119,28 @@ class BackfillEthereumTransactionHashMigrationTest extends ImporterIntegrationTe
         }
     }
 
+    @Test
+    void migrateWithMissingCallDataFile() {
+        // given
+        var ethereumTransaction = domainBuilder
+                .ethereumTransaction(false)
+                .customize(t -> t.data(RAW_TX_TYPE_1_CALL_DATA_OFFLOADED).hash(EMPTY_BYTE_ARRAY))
+                .persist();
+        var expectedContractResults = persistContractResults(Collections.emptyMap());
+        var expectedContractTransactionHashes = persistContractTransactionHashes(Collections.emptyMap());
+
+        // when
+        runMigration();
+
+        // then
+        softly.assertThat(contractResultRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedContractResults);
+        softly.assertThat(contractTransactionHashRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedContractTransactionHashes);
+        softly.assertThat(ethereumTransactionRepository.findAll()).containsExactly(ethereumTransaction);
+        softly.assertThat(transactionHashRepository.findAll()).isEmpty();
+    }
+
     private List<ContractResult> persistContractResults(Map<Long, byte[]> expected) {
         return Lists.newArrayList(ethereumTransactionRepository.findAll()).stream()
                 .map(e -> {
@@ -130,7 +153,8 @@ class BackfillEthereumTransactionHashMigrationTest extends ImporterIntegrationTe
                                     .payerAccountId(e.getPayerAccountId()))
                             .persist();
                     // Set hash to the expected value
-                    contractResult.setTransactionHash(expected.get(e.getConsensusTimestamp()));
+                    contractResult.setTransactionHash(
+                            expected.getOrDefault(e.getConsensusTimestamp(), EMPTY_BYTE_ARRAY));
                     return contractResult;
                 })
                 .toList();
@@ -148,7 +172,7 @@ class BackfillEthereumTransactionHashMigrationTest extends ImporterIntegrationTe
                                     .payerAccountId(e.getPayerAccountId().getId()))
                             .persist();
                     // Set hash to the expected value
-                    contractTransactionHash.setHash(expected.get(e.getConsensusTimestamp()));
+                    contractTransactionHash.setHash(expected.getOrDefault(e.getConsensusTimestamp(), EMPTY_BYTE_ARRAY));
                     return contractTransactionHash;
                 })
                 .toList();
