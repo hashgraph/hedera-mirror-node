@@ -18,8 +18,12 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionHashService;
+import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import jakarta.inject.Named;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,21 +33,38 @@ import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ParameterizedPreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.transaction.support.TransactionOperations;
 
 @Named
 public class BackfillEthereumTransactionHashMigration extends RepeatableMigration {
 
+    private static final ParameterizedPreparedStatementSetter<MigrationEthereumTransaction> PSS = (ps, transaction) -> {
+        ps.setBytes(1, transaction.getHash());
+        ps.setLong(2, transaction.getConsensusTimestamp());
+    };
     private static final RowMapper<MigrationEthereumTransaction> ROW_MAPPER =
             new DataClassRowMapper<>(MigrationEthereumTransaction.class);
     private static final String SELECT_ETHEREUM_TRANSACTION_SQL =
             """
-            select call_data_id, consensus_timestamp, data, hash
+            select call_data_id, consensus_timestamp, data, hash, payer_account_id
             from ethereum_transaction
-            where length(hash) = 0 and consensus_timestamp > ?
+            where hash = ''::bytea and consensus_timestamp > ?
             order by consensus_timestamp
             limit 200
+            """;
+    private static final String UPDATE_CONTRACT_RESULT_SQL =
+            """
+            update contract_result
+            set transaction_hash = ?
+            where consensus_timestamp = ?
+            """;
+    private static final String UPDATE_CONTRACT_TRANSACTION_HASH_SQL =
+            """
+            update contract_transaction_hash
+            set hash = ?
+            where consensus_timestamp = ? and hash = ''::bytea
             """;
     private static final String UPDATE_ETHEREUM_HASH_SQL =
             """
@@ -52,19 +73,25 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
             where consensus_timestamp = ?
             """;
 
+    private final EntityProperties entityProperties;
     private final EthereumTransactionHashService ethereumTransactionHashService;
     private final JdbcTemplate jdbcTemplate;
+    private final TransactionHashRepository transactionHashRepository;
     private final TransactionOperations transactionOperations;
 
     @Lazy
     public BackfillEthereumTransactionHashMigration(
+            EntityProperties entityProperties,
             EthereumTransactionHashService ethereumTransactionHashService,
             ImporterProperties importerProperties,
             JdbcTemplate jdbcTemplate,
+            TransactionHashRepository transactionHashRepository,
             TransactionOperations transactionOperations) {
         super(importerProperties.getMigration());
+        this.entityProperties = entityProperties;
         this.ethereumTransactionHashService = ethereumTransactionHashService;
         this.jdbcTemplate = jdbcTemplate;
+        this.transactionHashRepository = transactionHashRepository;
         this.transactionOperations = transactionOperations;
     }
 
@@ -78,6 +105,8 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
         var found = new AtomicInteger();
         var patched = new AtomicInteger();
         var stopwatch = Stopwatch.createStarted();
+        boolean shouldPersistTransactionHash =
+                entityProperties.getPersist().shouldPersistTransactionHash(TransactionType.ETHEREUMTRANSACTION);
 
         transactionOperations.executeWithoutResult(s -> {
             long consensusTimestamp = -1;
@@ -100,15 +129,28 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
                         .toList();
                 patched.addAndGet(patchedTransactions.size());
 
-                if (!patchedTransactions.isEmpty()) {
-                    jdbcTemplate.batchUpdate(
-                            UPDATE_ETHEREUM_HASH_SQL,
-                            patchedTransactions,
-                            patchedTransactions.size(),
-                            (ps, transaction) -> {
-                                ps.setBytes(1, transaction.getHash());
-                                ps.setLong(2, transaction.getConsensusTimestamp());
-                            });
+                if (patchedTransactions.isEmpty()) {
+                    continue;
+                }
+
+                jdbcTemplate.batchUpdate(
+                        UPDATE_CONTRACT_RESULT_SQL, patchedTransactions, patchedTransactions.size(), PSS);
+
+                jdbcTemplate.batchUpdate(
+                        UPDATE_CONTRACT_TRANSACTION_HASH_SQL, patchedTransactions, patchedTransactions.size(), PSS);
+
+                jdbcTemplate.batchUpdate(
+                        UPDATE_ETHEREUM_HASH_SQL, patchedTransactions, patchedTransactions.size(), PSS);
+
+                if (shouldPersistTransactionHash) {
+                    var transactionHashes = patchedTransactions.stream()
+                            .map(t -> TransactionHash.builder()
+                                    .consensusTimestamp(t.getConsensusTimestamp())
+                                    .hash(t.getHash())
+                                    .payerAccountId(t.getPayerAccountId())
+                                    .build())
+                            .toList();
+                    transactionHashRepository.saveAll(transactionHashes);
                 }
             }
         });
@@ -118,7 +160,8 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.59.0");
+        // Version in which transaction_hash.distribution_id is added
+        return MigrationVersion.fromVersion("1.99.1");
     }
 
     @Data
@@ -127,5 +170,6 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
         private long consensusTimestamp;
         private byte[] data;
         private byte[] hash;
+        private long payerAccountId;
     }
 }

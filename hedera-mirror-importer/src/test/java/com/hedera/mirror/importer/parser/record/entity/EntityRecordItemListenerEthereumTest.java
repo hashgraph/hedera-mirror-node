@@ -28,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -210,24 +212,35 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                         .entityId(fileId)
                         .fileData(RAW_TX_TYPE_1_CALL_DATA.getBytes()))
                 .persist();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
         var expectedHash = new Keccak.Digest256().digest(RAW_TX_TYPE_1);
 
         // when
         parseRecordItemAndCommit(recordItem);
 
-        softly.assertThat(transactionRepository.count()).isOne();
         softly.assertThat(contractRepository.count()).isZero();
-        softly.assertThat(entityRepository.count()).isZero();
-        softly.assertThat(contractResultRepository.count()).isOne();
+        softly.assertThat(contractResultRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
+                .returns(expectedHash, ContractResult::getTransactionHash);
+        softly.assertThat(contractTransactionHashRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(consensusTimestamp, ContractTransactionHash::getConsensusTimestamp)
+                .returns(expectedHash, ContractTransactionHash::getHash);
         softly.assertThat(cryptoTransferRepository.count()).isEqualTo(4);
+        softly.assertThat(entityRepository.count()).isZero();
         softly.assertThat(ethereumTransactionRepository.findAll())
                 .hasSize(1)
                 .first()
+                .returns(consensusTimestamp, EthereumTransaction::getConsensusTimestamp)
                 .returns(fileId, EthereumTransaction::getCallDataId)
                 .returns(EMPTY_BYTE_ARRAY, EthereumTransaction::getCallData)
                 .returns(RAW_TX_TYPE_1_CALL_DATA_OFFLOADED, EthereumTransaction::getData)
                 .returns(expectedHash, EthereumTransaction::getHash)
                 .returns(body.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance);
+        softly.assertThat(transactionRepository.count()).isOne();
     }
 
     @Test

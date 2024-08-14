@@ -42,6 +42,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
+import com.hedera.mirror.importer.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.CustomFeeRepository;
 import com.hedera.mirror.importer.repository.EntityHistoryRepository;
@@ -112,6 +113,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
 
     @Resource
     protected ContractResultRepository contractResultRepository;
+
+    @Resource
+    protected ContractTransactionHashRepository contractTransactionHashRepository;
 
     @Resource
     protected CryptoTransferRepository cryptoTransferRepository;
