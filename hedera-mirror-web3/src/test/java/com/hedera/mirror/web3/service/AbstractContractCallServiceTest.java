@@ -20,7 +20,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.*;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -28,6 +27,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -39,7 +39,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -57,6 +56,9 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
     @Resource
     protected TestWeb3jService testWeb3jService;
 
+    @Resource
+    protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
 
@@ -72,19 +74,6 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
                 .setContractID(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
                 .build();
     }
-    //
-    //    protected void testEstimateGas(final RemoteFunctionCall<?> functionCall, final Contract contract) {
-    //        // Given
-    //        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getEstimatedGas());
-    //
-    //        // When
-    //        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-    //
-    //        // Then
-    //        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-    //                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-    //                .isTrue();
-    //    }
 
     @BeforeEach
     void setup() {
@@ -111,25 +100,6 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
             return result;
         });
     }
-
-    //    protected void verifyEthCallAndEstimateGas(
-    //            final RemoteFunctionCall<TransactionReceipt> functionCall,
-    //            final Contract contract,
-    //            final Optional<Entity> sender) {
-    //        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract,
-    // sender));
-    //
-    //        testWeb3jService.setEstimateGas(true);
-    //        final AtomicLong estimateGasUsedResult = new AtomicLong();
-    //        // Verify ethCall
-    //        assertDoesNotThrow(
-    //                () -> estimateGasUsedResult.set(functionCall.send().getGasUsed().longValue()));
-    //
-    //        // Verify estimateGas
-    //        assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
-    //                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
-    //                .isTrue();
-    //    }
 
     protected void verifyEthCallAndEstimateGas(
             final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract) {
@@ -167,21 +137,6 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
                 .isTrue();
     }
 
-    //    protected ContractExecutionParameters getContractExecutionParameters(
-    //            final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract) {
-    //        return ContractExecutionParameters.builder()
-    //                .block(BlockType.LATEST)
-    //                .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
-    //                .callType(CallType.ETH_CALL)
-    //                .gas(TRANSACTION_GAS_LIMIT)
-    //                .isEstimate(false)
-    //                .isStatic(false)
-    //                .receiver(Address.fromHexString(contract.getContractAddress()))
-    //                .sender(new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress()))))
-    //                .value(0L)
-    //                .build();
-    //    }
-
     protected ContractExecutionParameters getContractExecutionParameters(
             final RemoteFunctionCall<?> functionCall, final Contract contract) {
         return getContractExecutionParameters(functionCall, contract, Address.ZERO, 0L);
@@ -205,36 +160,6 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
                 .build();
     }
 
-    //    protected ContractExecutionParameters getContractExecutionParameters(
-    //            final RemoteFunctionCall<TransactionReceipt> functionCall,
-    //            final Contract contract,
-    //            final Optional<Entity> sender,
-    //            final long value) {
-    //        Address address;
-    //        final var senderEntity = sender.orElseGet(this::persistAccountEntity);
-    //        final var evmAddress = senderEntity.getEvmAddress();
-    //        if (new byte[20] == evmAddress) {
-    //            address = Address.wrap(
-    //                    Bytes.wrap(sender.orElseGet(this::persistAccountEntity).getEvmAddress()));
-    //        } else {
-    //            address = Address.fromHexString(getAddressFromEntity(senderEntity));
-    //        }
-    //
-    //        final var senderAccount = new HederaEvmAccount(address);
-    //
-    //        return ContractExecutionParameters.builder()
-    //                .block(BlockType.LATEST)
-    //                .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
-    //                .callType(CallType.ETH_CALL)
-    //                .gas(TRANSACTION_GAS_LIMIT)
-    //                .isEstimate(false)
-    //                .isStatic(false)
-    //                .receiver(Address.fromHexString(contract.getContractAddress()))
-    //                .sender(senderAccount)
-    //                .value(value)
-    //                .build();
-    //    }
-
     protected Entity persistAccountEntity() {
         return domainBuilder
                 .entity()
@@ -242,118 +167,13 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
                 .persist();
     }
 
-    protected ContractExecutionParameters getContractExecutionParameters(
-            final RemoteFunctionCall<TransactionReceipt> functionCall,
-            final Contract contract,
-            final Optional<Entity> sender) {
-
-        Address address;
-        final var senderEntity = sender.orElseGet(this::persistAccountEntity);
-        final var evmAddress = senderEntity.getEvmAddress();
-        if (new byte[20] == evmAddress) {
-            address = Address.wrap(
-                    Bytes.wrap(sender.orElseGet(this::persistAccountEntity).getEvmAddress()));
-        } else {
-            address = Address.fromHexString(getAddressFromEntity(senderEntity));
-        }
-
-        final var senderAccount = new HederaEvmAccount(address);
-
-        return ContractExecutionParameters.builder()
-                .block(BlockType.LATEST)
-                .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
-                .callType(CallType.ETH_CALL)
-                .gas(TRANSACTION_GAS_LIMIT)
-                .isEstimate(false)
-                .isStatic(false)
-                .receiver(Address.fromHexString(contract.getContractAddress()))
-                .sender(senderAccount)
-                .value(0L)
-                .build();
-    }
-
-    //    protected ContractExecutionParameters getContractExecutionParameters(
-    //            final RemoteFunctionCall<?> functionCall, final Contract contract) {
-    //
-    //        final var senderAccount = new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress())));
-    //
-    //        return ContractExecutionParameters.builder()
-    //                .block(BlockType.LATEST)
-    //                .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
-    //                .callType(CallType.ETH_CALL)
-    //                .gas(TRANSACTION_GAS_LIMIT)
-    //                .isEstimate(false)
-    //                .isStatic(false)
-    //                .receiver(Address.fromHexString(contract.getContractAddress()))
-    //                .sender(senderAccount)
-    //                .value(0L)
-    //                .build();
-    //    }
-
-    //    protected void testEstimateGas(
-    //            final RemoteFunctionCall<TransactionReceipt> functionCall,
-    //            final Contract contract,
-    //            final Optional<Entity> sender,
-    //            final long value)
-    //            throws Exception {
-    //        testWeb3jService.setEstimateGas(true);
-    //
-    //        functionCall.send();
-    //        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getTransactionResult());
-    //
-    //        final var actualGasUsed =
-    //                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, sender, value));
-    //
-    //        // Then
-    //        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-    //                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-    //                .isTrue();
-    //    }
-
-    //    protected String getAddressFromEntity(Entity entity) {
-    //        final var evmAddress = entity.getEvmAddress();
-    //        if (new byte[20].equals(evmAddress)) {
-    //            return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getId()));
-    //        } else {
-    //            return Address.fromHexString(Bytes.wrap(entity.getEvmAddress()).toHexString())
-    //                    .toHexString();
-    //            //            address = Address.fromHexString(getAddressFromEntity(senderEntity));
-    //        }
-    //
-    //        //        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(),
-    // entity.getId()));
-    //    }
-
     protected String getAddressFromEntity(Entity entity) {
-        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getId()));
+        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
     }
 
     protected String getAliasFromEntity(Entity entity) {
-        final var evmAddress = entity.getEvmAddress();
-        if (new byte[20].equals(evmAddress)) {
-            return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getId()));
-        } else {
-            return Address.fromHexString(Bytes.wrap(entity.getEvmAddress()).toHexString())
-                    .toHexString();
-        }
-    }
-
-    protected void testEstimateGas(
-            final RemoteFunctionCall<TransactionReceipt> functionCall,
-            final Contract contract,
-            final Optional<Entity> sender)
-            throws Exception {
-        testWeb3jService.setEstimateGas(true);
-
-        functionCall.send();
-        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getTransactionResult());
-
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, sender));
-
-        // Then
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        return Address.fromHexString(Bytes.wrap(entity.getEvmAddress()).toHexString())
+                .toHexString();
     }
 
     public enum KeyType {

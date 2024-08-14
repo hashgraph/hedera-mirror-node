@@ -49,7 +49,6 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.AccountAmount;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.Expiry;
@@ -71,42 +70,21 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import com.swirlds.base.time.Time;
-import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.springframework.context.annotation.Import;
 import org.web3j.abi.DefaultFunctionReturnDecoder;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
-@Import(TestWeb3jService.Web3jTestConfiguration.class)
-class ContractCallServicePrecompileTest extends ContractCallTestSetup {
-
-    @Resource
-    private TestWeb3jService testWeb3jService;
-
-    @BeforeEach
-    void setup() {
-        domainBuilder.recordFile().persist();
-        final var sender = persistAccountEntity();
-        testWeb3jService.setSender(getAliasFromEntity(sender));
-    }
-
-    @AfterEach
-    void cleanup() {
-        testWeb3jService.setEstimateGas(false);
-        testWeb3jService.setSender("");
-    }
+class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest {
 
     @Test
     void isTokenFrozen() throws Exception {
@@ -2554,23 +2532,14 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             final KeyValueType keyValueType,
             final AbstractContractCallServiceTest.KeyType keyType,
             final Contract contract) {
-        final Key key;
-        switch (keyValueType) {
-            case ECDSA_SECPK256K1:
-                key = KEY_WITH_ECDSA_TYPE;
-                break;
-            case ED25519:
-                key = KEY_WITH_ED_25519_TYPE;
-                break;
-            case CONTRACT_ID:
-                key = getKeyWithContractId(contract);
-                break;
-            case DELEGATABLE_CONTRACT_ID:
-                key = getKeyWithDelegatableContractId(contract);
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid key type");
-        }
+        final Key key =
+                switch (keyValueType) {
+                    case ECDSA_SECPK256K1 -> KEY_WITH_ECDSA_TYPE;
+                    case ED25519 -> KEY_WITH_ED_25519_TYPE;
+                    case CONTRACT_ID -> getKeyWithContractId(contract);
+                    case DELEGATABLE_CONTRACT_ID -> getKeyWithDelegatableContractId(contract);
+                    default -> throw new IllegalArgumentException("Invalid key type");
+                };
 
         final var tokenEntity = domainBuilder
                 .entity()
@@ -2638,13 +2607,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
             default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
         };
-    }
-
-    private Entity persistAccountEntity() {
-        return domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).balance(1_000_000_000_000L))
-                .persist();
     }
 
     private Entity persistTokenEntity() {
@@ -2751,15 +2713,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         return expectedTokenKeys;
     }
 
-    private String getAliasFromEntity(Entity entity) {
-        return Address.fromHexString(Bytes.wrap(entity.getEvmAddress()).toHexString())
-                .toHexString();
-    }
-
-    private String getAddressFromEntity(Entity entity) {
-        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
-    }
-
     private String getAddressFromEntityId(EntityId entity) {
         return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
     }
@@ -2809,7 +2762,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 keys,
                 new Expiry(
                         BigInteger.valueOf(tokenEntity.getEffectiveExpiration()),
-                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId.longValue())),
+                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId)),
                         BigInteger.valueOf(tokenEntity.getEffectiveExpiration())));
     }
 
@@ -2830,7 +2783,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 keys,
                 new Expiry(
                         BigInteger.valueOf(entity.getEffectiveExpiration()),
-                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId.longValue())),
+                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId)),
                         BigInteger.valueOf(entity.getEffectiveExpiration())));
     }
 
