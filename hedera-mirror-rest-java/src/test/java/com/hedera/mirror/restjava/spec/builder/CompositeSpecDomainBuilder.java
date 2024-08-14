@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.restjava.spec.builder;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.hedera.mirror.restjava.spec.model.SpecSetup;
+import jakarta.inject.Named;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Primary;
 
+@Named
+@Primary
 @RequiredArgsConstructor
-class TransactionHashRepositoryTest extends AbstractRepositoryTest {
+public class CompositeSpecDomainBuilder implements SpecDomainBuilder {
 
-    private final TransactionHashRepository transactionHashRepository;
+    private final List<SpecDomainBuilder> specDomainBuilders;
 
-    @Test
-    void save() {
-        var transactionHash = domainBuilder.transactionHash().get();
-        transactionHashRepository.save(transactionHash);
-        assertThat(transactionHashRepository.findById(transactionHash.getHash()))
-                .contains(transactionHash);
+    @Override
+    public void customizeAndPersistEntities(SpecSetup specSetup) {
+        specDomainBuilders.forEach(specEntityBuilder -> specEntityBuilder.customizeAndPersistEntities(specSetup));
     }
 }

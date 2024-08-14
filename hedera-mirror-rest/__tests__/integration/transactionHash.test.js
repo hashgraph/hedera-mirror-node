@@ -15,6 +15,7 @@
  */
 
 import crypto from 'crypto';
+import _ from 'lodash';
 
 import {ETH_HASH_LENGTH} from "../../constants";
 import {getTransactionHash} from "../../transactionHash";
@@ -37,6 +38,8 @@ describe('getTransactionHash', () => {
   beforeEach(async () => {
     await integrationDomainOps.loadTransactionHashes(transactionHashes);
   });
+
+  const omitDistributionId = (arr) => arr.map((elem) => _.omit(elem, ['distribution_id']));
 
   describe('simple', () =>  {
     const specs = [
@@ -64,7 +67,7 @@ describe('getTransactionHash', () => {
     ];
 
     test.each(specs)('$name', async ({hash, options, expected}) => {
-      await expect(getTransactionHash(hash, options)).resolves.toEqual(expected);
+      await expect(getTransactionHash(hash, options)).resolves.toMatchObject(omitDistributionId(expected));
     });
   });
 
@@ -103,7 +106,7 @@ describe('getTransactionHash', () => {
     ];
 
     test.each(specs)('$name', async ({hash, timestampFilters, expected}) => {
-      await expect(getTransactionHash(hash, {timestampFilters})).resolves.toEqual(expected);
+      await expect(getTransactionHash(hash, {timestampFilters})).resolves.toEqual(omitDistributionId(expected));
     });
   });
 });
