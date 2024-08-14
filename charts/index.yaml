@@ -2,6 +2,101 @@ apiVersion: v1
 entries:
   hedera-mirror:
   - apiVersion: v2
+    appVersion: 0.111.0-rc4
+    created: "2024-08-14T18:05:10.348783856Z"
+    dependencies:
+    - alias: grpc
+      condition: grpc.enabled
+      name: hedera-mirror-grpc
+      repository: file://../hedera-mirror-grpc
+      tags:
+      - api
+      - java
+      version: '>=0.18.0-0'
+    - alias: graphql
+      condition: graphql.enabled
+      name: hedera-mirror-graphql
+      repository: file://../hedera-mirror-graphql
+      tags:
+      - api
+      - java
+      version: '>=0.18.0-0'
+    - alias: importer
+      condition: importer.enabled
+      name: hedera-mirror-importer
+      repository: file://../hedera-mirror-importer
+      tags:
+      - java
+      version: '>=0.18.0-0'
+    - alias: monitor
+      condition: monitor.enabled
+      name: hedera-mirror-monitor
+      repository: file://../hedera-mirror-monitor
+      tags:
+      - java
+      version: '>=0.18.0-0'
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: postgresql-ha
+      repository: https://charts.bitnami.com/bitnami
+      version: 14.0.0
+    - condition: redis.enabled
+      name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 19.0.2
+    - alias: rest
+      condition: rest.enabled
+      name: hedera-mirror-rest
+      repository: file://../hedera-mirror-rest
+      tags:
+      - api
+      - javascript
+      version: '>=0.18.0-0'
+    - alias: restjava
+      condition: restjava.enabled
+      name: hedera-mirror-rest-java
+      repository: file://../hedera-mirror-rest-java
+      tags:
+      - api
+      - java
+      version: '>=0.18.0-0'
+    - alias: rosetta
+      condition: rosetta.enabled
+      name: hedera-mirror-rosetta
+      repository: file://../hedera-mirror-rosetta
+      tags:
+      - api
+      - go
+      version: '>=0.18.0-0'
+    - alias: web3
+      condition: web3.enabled
+      name: hedera-mirror-web3
+      repository: file://../hedera-mirror-web3
+      tags:
+      - api
+      - java
+      version: '>=0.18.0-0'
+    description: Hedera Mirror Node mirrors data from Hedera nodes and serves it via
+      an API
+    digest: b2a89bbf020a1ce963f66cabde47939245706ce2a40c36bfeedd0cbb52c5bd92
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    keywords:
+    - blockchain
+    - dlt
+    - hedera
+    - hashgraph
+    - mirror
+    maintainers:
+    - email: mirrornode@hedera.com
+      name: Hedera Mirror Node Team
+    name: hedera-mirror
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-0.111.0-rc4.tgz
+    version: 0.111.0-rc4
+  - apiVersion: v2
     appVersion: 0.111.0-rc3
     created: "2024-08-08T16:03:22.715404027Z"
     dependencies:
@@ -28433,6 +28528,55 @@ entries:
     version: 0.4.0
   hedera-mirror-common:
   - apiVersion: v2
+    appVersion: 0.111.0-rc4
+    created: "2024-08-14T18:05:10.48143224Z"
+    dependencies:
+    - condition: loki.enabled
+      name: loki
+      repository: https://grafana.github.io/helm-charts
+      version: 5.47.2
+    - condition: prometheus-adapter.enabled
+      name: prometheus-adapter
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 4.9.1
+    - alias: prometheus
+      condition: prometheus.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 57.2.0
+    - condition: promtail.enabled
+      name: promtail
+      repository: https://grafana.github.io/helm-charts
+      version: 6.15.5
+    - alias: stackgres
+      condition: stackgres.enabled
+      name: stackgres-operator
+      repository: https://stackgres.io/downloads/stackgres-k8s/stackgres/helm/
+      version: 1.9.0
+    - condition: traefik.enabled
+      name: traefik
+      repository: https://helm.traefik.io/traefik
+      version: 26.1.0
+    - alias: zfs
+      condition: zfs.enabled
+      name: openebs
+      repository: https://openebs.github.io/openebs
+      version: 4.0.1
+    description: Hedera Mirror Node common components installed globally for use across
+      namespaces
+    digest: 6c78e45181602231d940bb6f8d5475823ab15c89a85aa8556c185917bc362677
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    maintainers:
+    - email: mirrornode@hedera.com
+      name: Hedera Mirror Node Team
+    name: hedera-mirror-common
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-common-0.111.0-rc4.tgz
+    version: 0.111.0-rc4
+  - apiVersion: v2
     appVersion: 0.111.0-rc3
     created: "2024-08-08T16:03:22.827197092Z"
     dependencies:
@@ -44426,6 +44570,22 @@ entries:
     version: 0.4.0
   hedera-mirror-graphql:
   - apiVersion: v2
+    appVersion: 0.111.0-rc4
+    created: "2024-08-14T18:05:10.483735598Z"
+    description: GraphQL API for the Hedera Mirror Node
+    digest: 4e525ac1951f7231abd700a45edb4db78abf1c1f9ebf41261b2e2981e6d57847
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    maintainers:
+    - email: mirrornode@hedera.com
+      name: Hedera Mirror Node Team
+    name: hedera-mirror-graphql
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-graphql-0.111.0-rc4.tgz
+    version: 0.111.0-rc4
+  - apiVersion: v2
     appVersion: 0.111.0-rc3
     created: "2024-08-08T16:03:22.829326995Z"
     description: GraphQL API for the Hedera Mirror Node
@@ -46474,6 +46634,22 @@ entries:
     - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-graphql-0.76.0-rc1.tgz
     version: 0.76.0-rc1
   hedera-mirror-grpc:
+  - apiVersion: v2
+    appVersion: 0.111.0-rc4
+    created: "2024-08-14T18:05:10.485704126Z"
+    description: GRPC API for the Hedera Mirror Node
+    digest: 3c5e600726da81a2b6250a69b8b451be65eb591972692395451e6fc9e2ca7b07
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    maintainers:
+    - email: mirrornode@hedera.com
+      name: Hedera Mirror Node Team
+    name: hedera-mirror-grpc
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-grpc-0.111.0-rc4.tgz
+    version: 0.111.0-rc4
   - apiVersion: v2
     appVersion: 0.111.0-rc3
     created: "2024-08-08T16:03:22.831538919Z"
@@ -52877,6 +53053,23 @@ entries:
     - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-grpc-0.4.0.tgz
     version: 0.4.0
   hedera-mirror-importer:
+  - apiVersion: v2
+    appVersion: 0.111.0-rc4
+    created: "2024-08-14T18:05:10.488294752Z"
+    description: Hedera Mirror Importer downloads and validates file streams from
+      the cloud and imports them into the database
+    digest: 0bb543ed7279b555d894b1c6f4f5f8cbdfdd37192e39a41af9765d971aa5c3bd
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    maintainers:
+    - email: mirrornode@hedera.com
+      name: Hedera Mirror Node Team
+    name: hedera-mirror-importer
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-importer-0.111.0-rc4.tgz
+    version: 0.111.0-rc4
   - apiVersion: v2
     appVersion: 0.111.0-rc3
     created: "2024-08-08T16:03:22.834385121Z"
@@ -59659,6 +59852,22 @@ entries:
     version: 0.4.0
   hedera-mirror-monitor:
   - apiVersion: v2
+    appVersion: 0.111.0-rc4
+    created: "2024-08-14T18:05:10.490069974Z"
+    description: End to End Monitor for the Hedera Mirror Node
+    digest: fffdcb4bda970f14b89e5b35ea3f9b7ddffa1fcc7e71b9ee5b49da8195b4dd6a
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    maintainers:
+    - email: mirrornode@hedera.com
+      name: Hedera Mirror Node Team
+    name: hedera-mirror-monitor
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-monitor-0.111.0-rc4.tgz
+    version: 0.111.0-rc4
+  - apiVersion: v2
     appVersion: 0.111.0-rc3
     created: "2024-08-08T16:03:22.836323018Z"
     description: End to End Monitor for the Hedera Mirror Node
@@ -65791,6 +66000,22 @@ entries:
     - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-monitor-0.10.0-rc1.tgz
     version: 0.10.0-rc1
   hedera-mirror-rest:
+  - apiVersion: v2
+    appVersion: 0.111.0-rc4
+    created: "2024-08-14T18:05:10.491779699Z"
+    description: REST API for the Hedera Mirror Node
+    digest: fac94fd975f2d6cc8ab06f7bfca3c255108451e53637136c15144fc1b7f6725c
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    maintainers:
+    - email: mirrornode@hedera.com
+      name: Hedera Mirror Node Team
+    name: hedera-mirror-rest
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-rest-0.111.0-rc4.tgz
+    version: 0.111.0-rc4
   - apiVersion: v2
     appVersion: 0.111.0-rc3
     created: "2024-08-08T16:03:22.838259343Z"
@@ -72195,6 +72420,22 @@ entries:
     version: 0.4.0
   hedera-mirror-rest-java:
   - apiVersion: v2
+    appVersion: 0.111.0-rc4
+    created: "2024-08-14T18:05:10.493619872Z"
+    description: Java REST API for the Hedera Mirror Node
+    digest: 331652330263186d0af4a51c193d8317c7a70b82f00454c13788d43619293465
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    maintainers:
+    - email: mirrornode@hedera.com
+      name: Hedera Mirror Node Team
+    name: hedera-mirror-rest-java
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-rest-java-0.111.0-rc4.tgz
+    version: 0.111.0-rc4
+  - apiVersion: v2
     appVersion: 0.111.0-rc3
     created: "2024-08-08T16:03:22.840273534Z"
     description: Java REST API for the Hedera Mirror Node
@@ -73139,6 +73380,22 @@ entries:
     - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-rest-java-0.94.0-rc1.tgz
     version: 0.94.0-rc1
   hedera-mirror-rosetta:
+  - apiVersion: v2
+    appVersion: 0.111.0-rc4
+    created: "2024-08-14T18:05:10.495240575Z"
+    description: Rosetta API for the Hedera Mirror Node
+    digest: fe5d405d4e2b10a516f10cbcdd8b106d1f898d3edd9446ff479a27596fb17b33
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    maintainers:
+    - email: mirrornode@hedera.com
+      name: Hedera Mirror Node Team
+    name: hedera-mirror-rosetta
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-rosetta-0.111.0-rc4.tgz
+    version: 0.111.0-rc4
   - apiVersion: v2
     appVersion: 0.111.0-rc3
     created: "2024-08-08T16:03:22.842055715Z"
@@ -77905,6 +78162,22 @@ entries:
     version: 0.28.0-rc1
   hedera-mirror-web3:
   - apiVersion: v2
+    appVersion: 0.111.0-rc4
+    created: "2024-08-14T18:05:10.497070016Z"
+    description: Web3 API for the Hedera Mirror Node
+    digest: 77dedffc7c5c2caeb58ba2a50c1134cdd793fbda418f847cb19032d0a6a17a42
+    home: https://github.com/hashgraph/hedera-mirror-node
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    maintainers:
+    - email: mirrornode@hedera.com
+      name: Hedera Mirror Node Team
+    name: hedera-mirror-web3
+    sources:
+    - https://github.com/hashgraph/hedera-mirror-node
+    urls:
+    - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-web3-0.111.0-rc4.tgz
+    version: 0.111.0-rc4
+  - apiVersion: v2
     appVersion: 0.111.0-rc3
     created: "2024-08-08T16:03:22.844065845Z"
     description: Web3 API for the Hedera Mirror Node
@@ -82056,4 +82329,4 @@ entries:
     urls:
     - https://hashgraph.github.io/hedera-mirror-node/charts/hedera-mirror-web3-0.35.0-rc1.tgz
     version: 0.35.0-rc1
-generated: "2024-08-08T16:03:22.68248773Z"
+generated: "2024-08-14T18:05:10.301547472Z"
