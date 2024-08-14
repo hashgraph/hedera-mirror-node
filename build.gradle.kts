@@ -30,7 +30,7 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.65.1")
+    set("grpcVersion", "1.66.0")
     // Override jooq version since the official gradle plugin is on in 3.19.x, remove if not needed
     // with the next springboot release
     set("jooq.version", "3.19.6")
@@ -87,7 +87,7 @@ dependencies {
         api("net.devh:grpc-spring-boot-starter:3.1.0.RELEASE")
         api("net.java.dev.jna:jna:5.14.0")
         api("org.apache.commons:commons-collections4:4.4")
-        api("org.apache.commons:commons-compress:1.26.1")
+        api("org.apache.commons:commons-compress:1.27.0")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:$tuweniVersion")
         api("org.apache.tuweni:tuweni-units:$tuweniVersion")
@@ -104,7 +104,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.3")
         api("org.testcontainers:junit-jupiter:1.20.1")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.26.29")
+        api("software.amazon.awssdk:bom:2.27.2")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
         api("org.web3j:core:4.12.0")
     }

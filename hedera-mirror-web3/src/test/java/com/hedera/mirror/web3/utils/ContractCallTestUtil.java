@@ -29,10 +29,8 @@ import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.Utils;
-import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.Int256;
-import org.web3j.abi.datatypes.generated.Int64;
 
 @UtilityClass
 public class ContractCallTestUtil {
@@ -68,16 +66,19 @@ public class ContractCallTestUtil {
     public static final byte[] ED25519_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
     public static final Key KEY_WITH_ED_25519_TYPE =
             Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
-    public static final ByteString META = ByteString.copyFromUtf8("meta");
+
+    public static final byte[] NEW_ECDSA_KEY = new byte[] {
+        2, 64, 59, -126, 81, -22, 0, 35, 67, -70, 110, 96, 109, 2, -8, 111, -112, -100, -87, -85, 66, 36, 37, -97, 19,
+        68, -87, -110, -13, -115, 74, 86, 90
+    };
+
+    public static final byte[] NEW_ED25519_KEY = new byte[] {
+        -128, -61, -12, 63, 3, -45, 108, 34, 61, -2, -83, -48, -118, 20, 84, 85, 85, 67, -125, 46, 49, 26, 17, -116, 27,
+        25, 38, -95, 50, 77, 40, -38
+    };
+
     public static final List<TypeReference<Type>> CREATE_TOKEN_FUNCTION_OUTPUT_PARAMETERS = Utils.convert(
             Arrays.asList(new TypeReference<Int256>() {}, new TypeReference<org.web3j.abi.datatypes.Address>() {}));
-    public static final List<TypeReference<Type>> MINT_TOKEN_OUTOUT_PARAMETERS = Utils.convert(Arrays.asList(
-            new TypeReference<Int256>() {},
-            new TypeReference<Int64>() {},
-            new TypeReference<DynamicArray<Int64>>() {}));
-    public static final List<TypeReference<Type>> BURN_TOKEN_OUTOUT_PARAMETERS =
-            Utils.convert(Arrays.asList(new TypeReference<Int256>() {}, new TypeReference<Int64>() {}));
-
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *
