@@ -686,10 +686,6 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 .toEntityId();
     }
 
-    //    private String getAddressFromEntity(Entity entity) {
-    //        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getId()));
-    //    }
-
     private EntityId accountPersist() {
         return domainBuilder
                 .entity()
