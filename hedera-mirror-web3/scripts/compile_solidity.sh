@@ -15,13 +15,9 @@ chmod +x ./scripts/install_solc_select.sh
 OS=$(uname)
 
 case $OS in
-    "Linux")
-        chmod +x ./scripts/install_web3j_linux.sh
-        ./scripts/install_web3j_linux.sh
-        ;;
-    "Darwin")
-        chmod +x ./scripts/install_web3j_mac.sh
-        ./scripts/install_web3j_mac.sh
+    "Linux"|"Darwin")
+        chmod +x ./scripts/install_web3j.sh
+        ./scripts/install_web3j.sh
         ;;
     *)
         echo "Unsupported OS: $OS"
