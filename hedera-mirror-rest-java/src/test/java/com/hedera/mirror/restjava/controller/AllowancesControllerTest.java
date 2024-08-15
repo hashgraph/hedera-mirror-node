@@ -27,6 +27,8 @@ import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient.RequestHeadersSpec;
@@ -188,59 +191,27 @@ class AllowancesControllerTest extends ControllerTest {
             assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1), next));
         }
 
-        @Test
-        void allRangeConditions() {
+        @ParameterizedTest
+        @EnumSource(EntityIdType.class)
+        void allRangeConditions(EntityIdType type) {
             // Given
             var entity = domainBuilder.entity().persist();
             var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
             var allowance2 = nftAllowance(a -> a.owner(allowance1.getOwner()));
+            var spender1 = type.idExtractor.apply(EntityId.of(allowance1.getSpender()));
+            var spender2 = type.idExtractor.apply(EntityId.of(allowance2.getSpender()));
+            var token1 = type.idExtractor.apply(EntityId.of(allowance1.getTokenId()));
+            var token2 = type.idExtractor.apply(EntityId.of(allowance2.getTokenId() + 1));
             var uriParams =
                     "?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=1&order=desc"
-                            .formatted(
-                                    EntityId.of(allowance1.getSpender()),
-                                    EntityId.of(allowance2.getSpender()),
-                                    EntityId.of(allowance1.getTokenId()),
-                                    EntityId.of(allowance2.getTokenId() + 1));
+                            .formatted(spender1, spender2, token1, token2);
             var next =
                     "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=1&order=desc"
                             .formatted(
                                     allowance1.getOwner(),
-                                    EntityId.of(allowance1.getSpender()),
+                                    spender1,
                                     EntityId.of(allowance2.getSpender()),
-                                    EntityId.of(allowance1.getTokenId()),
-                                    EntityId.of(allowance2.getTokenId()));
-
-            // When
-            var result = restClient
-                    .get()
-                    .uri(uriParams, allowance1.getOwner())
-                    .retrieve()
-                    .body(NftAllowancesResponse.class);
-
-            // Then
-            assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance2), next));
-        }
-
-        @Test
-        void allRangeConditionsNumericQueryParameters() {
-            // Given
-            var entity = domainBuilder.entity().persist();
-            var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
-            var allowance2 = nftAllowance(a -> a.owner(allowance1.getOwner()));
-            var uriParams =
-                    "?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=1&order=desc"
-                            .formatted(
-                                    allowance1.getSpender(),
-                                    allowance2.getSpender(),
-                                    "0." + allowance1.getTokenId(),
-                                    allowance2.getTokenId() + 1);
-            var next =
-                    "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=1&order=desc"
-                            .formatted(
-                                    allowance1.getOwner(),
-                                    allowance1.getSpender(),
-                                    EntityId.of(allowance2.getSpender()),
-                                    "0." + allowance1.getTokenId(),
+                                    token1,
                                     EntityId.of(allowance2.getTokenId()));
 
             // When
@@ -492,6 +463,16 @@ class AllowancesControllerTest extends ControllerTest {
             return new NftAllowancesResponse()
                     .allowances(mapper.map(nftAllowances))
                     .links(new Links().next(next));
+        }
+
+        @Getter
+        @RequiredArgsConstructor
+        private enum EntityIdType {
+            NUM(e -> "" + e.getNum()),
+            REALM_NUM(e -> e.getRealm() + "." + e.getNum()),
+            SHARD_REALM_NUM(e -> e.toString());
+
+            private final Function<EntityId, String> idExtractor;
         }
     }
 }

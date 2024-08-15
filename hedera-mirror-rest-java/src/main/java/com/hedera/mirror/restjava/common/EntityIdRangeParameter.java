@@ -45,8 +45,6 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
     private static EntityId getEntityId(String entityId) {
 
         List<Long> parts = Splitter.on('.')
-                .omitEmptyStrings()
-                .trimResults()
                 .splitToStream(Objects.requireNonNullElse(entityId, ""))
                 .map(Long::valueOf)
                 .filter(n -> n >= 0)
