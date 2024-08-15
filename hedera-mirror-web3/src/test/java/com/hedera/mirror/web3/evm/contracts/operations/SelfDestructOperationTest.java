@@ -57,10 +57,10 @@ class SelfDestructOperationTest extends AbstractContractCallServiceTest {
         final var systemAccountAddress = toAddress(700);
         final var contract = testWeb3jService.deployWithValue(SelfDestructContract::deploy, BigInteger.valueOf(1000));
 
-        MirrorEvmTransactionException exception =
-                assertThrows(MirrorEvmTransactionException.class, () -> contract.send_destructContract(
-                                systemAccountAddress.toUnprefixedHexString())
-                        .send());
+        MirrorEvmTransactionException exception = assertThrows(MirrorEvmTransactionException.class, () -> {
+            var functionCall = contract.send_destructContract(systemAccountAddress.toUnprefixedHexString());
+            functionCall.send();
+        });
         assertThat(exception.getMessage()).isEqualTo(INVALID_SOLIDITY_ADDRESS.name());
     }
 }
