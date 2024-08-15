@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
@@ -120,6 +121,17 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
                 .isTrue();
+    }
+
+    protected <T extends Exception> void verifyEstimateGasRevertExecution(
+            final RemoteFunctionCall<TransactionReceipt> functionCall,
+            final String exceptionMessage, Class<T> exceptionClass) {
+
+        testWeb3jService.setEstimateGas(true);
+        // Verify estimate reverts with proper message
+        assertThatThrownBy(functionCall::send)
+                .isInstanceOf(exceptionClass)
+                .hasMessage(exceptionMessage);
     }
 
     protected void verifyEthCallAndEstimateGasWithValue(
