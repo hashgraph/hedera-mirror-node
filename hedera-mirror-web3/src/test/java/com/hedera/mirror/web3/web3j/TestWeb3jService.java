@@ -37,6 +37,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -76,12 +78,17 @@ public class TestWeb3jService implements Web3jService {
     private final Credentials credentials;
     private final DomainBuilder domainBuilder;
     private final Web3j web3j;
+
+    @Setter
     private Address sender = Address.fromHexString("");
     private boolean isEstimateGas = false;
     private String transactionResult;
     private String estimatedGas;
     private long value = 0L;
     private BlockType blockType = BlockType.LATEST;
+
+    @Getter
+    private long entityId;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -323,6 +330,7 @@ public class TestWeb3jService implements Web3jService {
                 .contractState()
                 .customize(c -> c.contractId(entity.getId()))
                 .persist();
+        this.entityId = entityId;
     }
 
     private EthGetTransactionCount ethGetTransactionCount() {
