@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -164,6 +166,27 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).balance(1_000_000_000_000L))
+                .persist();
+    }
+
+    protected void persistAssociation(final Entity token, final Entity account) {
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(token.getId())
+                        .accountId(account.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true))
+                .persist();
+    }
+
+    protected void persistAssociation(final Entity token, final Long accountId) {
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(token.getId())
+                        .accountId(accountId)
+                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true))
                 .persist();
     }
 

@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.getKeyWithContractId;
-import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.getKeyWithDelegatableContractId;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.*;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EMPTY_UNTRIMMED_ADDRESS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
@@ -100,7 +98,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
                         .accountId(account.getId())
-                        .freezeStatus(TokenFreezeStatusEnum.FROZEN))
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                        .associated(true))
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
@@ -112,7 +112,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -134,7 +134,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
                         .accountId(account.getId())
-                        .freezeStatus(TokenFreezeStatusEnum.FROZEN))
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                        .associated(true))
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
@@ -146,7 +148,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -154,12 +156,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var account = persistAccountEntity();
         final var tokenEntity = persistFungibleToken();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
+        persistAssociation(tokenEntity, account);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
@@ -170,7 +167,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -186,12 +183,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         .evmAddress(senderAlias.toArray()))
                 .persist();
         final var tokenEntity = persistFungibleToken();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
+        persistAssociation(tokenEntity, account);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
@@ -202,7 +194,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -210,12 +202,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var account = persistAccountEntity();
         final var tokenEntity = persistNft();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
+        persistAssociation(tokenEntity, account);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
@@ -226,7 +213,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -242,12 +229,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         .evmAddress(senderAlias.toArray()))
                 .persist();
         final var tokenEntity = persistNft();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
+        persistAssociation(tokenEntity, account);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
@@ -258,7 +240,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -274,7 +256,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -290,7 +272,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -313,7 +295,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -339,7 +321,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -355,7 +337,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isEqualTo(BigInteger.ZERO);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -371,7 +353,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isEqualTo(BigInteger.ONE);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -393,7 +375,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -419,7 +401,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isTrue();
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @ParameterizedTest
@@ -496,7 +478,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isEqualTo(expectedKey);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -534,7 +516,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send().component1().getFirst()).isEqualTo(expectedFee);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -576,7 +558,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send().component2().getFirst()).isEqualTo(expectedFee);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -620,7 +602,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send().component3().getFirst()).isEqualTo(expectedFee);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -656,7 +638,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isEqualTo(expectedExpiry);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -685,7 +667,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isEqualTo(BigInteger.valueOf(amountGranted));
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -712,7 +694,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isEqualTo(Boolean.TRUE);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -778,7 +760,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isEqualTo(expectedFungibleTokenInfo);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -855,7 +837,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isEqualTo(expectedNonFungibleTokenInfo);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @ParameterizedTest
@@ -922,7 +904,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(functionCall.send()).isEqualTo(expectedTokenInfo);
 
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -941,29 +923,13 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         .treasuryAccountId(owner.toEntityId()))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(spender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(recipient.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, spender);
+        persistAssociation(tokenEntity, recipient);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(contractId).associated(true))
-                .persist();
+        persistAssociation(tokenEntity, contractId);
 
         domainBuilder
                 .tokenAllowance()
@@ -979,10 +945,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 getAliasFromEntity(spender),
                 getAliasFromEntity(recipient),
                 BigInteger.ONE);
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @ParameterizedTest
@@ -992,29 +957,19 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var spender = persistAccountEntity();
         final var tokenEntity = persistFungibleToken();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(spender.getId())
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, spender);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(contractId).associated(true))
-                .persist();
+        persistAssociation(tokenEntity, contractId);
 
         // When
         final var functionCall = contract.call_approveExternal(
                 getAddressFromEntity(tokenEntity), getAddressFromEntity(spender), allowance);
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @ParameterizedTest
@@ -1031,26 +986,13 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(owner.getId()).associated(true))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(spender.getId())
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, owner);
+        persistAssociation(tokenEntity, spender);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(contractId).associated(true))
-                .persist();
+        persistAssociation(tokenEntity, contractId);
 
         domainBuilder
                 .nft()
@@ -1065,10 +1007,8 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 approve ? getAddressFromEntity(spender) : Address.ZERO.toHexString(),
                 BigInteger.ONE);
 
-        functionCall.send();
-
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1083,21 +1023,12 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(spender.getId())
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, spender);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(contractId).associated(true))
-                .persist();
+        persistAssociation(tokenEntity, contractId);
 
         domainBuilder
                 .nft()
@@ -1109,10 +1040,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // When
         final var functionCall = contract.call_setApprovalForAllExternal(
                 getAddressFromEntity(tokenEntity), getAddressFromEntity(spender), Boolean.TRUE);
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @ParameterizedTest
@@ -1137,10 +1067,8 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 : contract.call_associateTokensExternal(
                         getAddressFromEntity(notAssociatedAccount), List.of(getAddressFromEntity(tokenEntity)));
 
-        functionCall.send();
-
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1157,10 +1085,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // When
         final var functionCall = contract.call_associateWithRedirect(getAddressFromEntity(tokenEntity));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @ParameterizedTest
@@ -1176,13 +1103,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(associatedAccount.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, associatedAccount);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -1192,10 +1113,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         getAddressFromEntity(associatedAccount), getAddressFromEntity(tokenEntity))
                 : contract.call_dissociateTokensExternal(
                         getAddressFromEntity(associatedAccount), List.of(getAddressFromEntity(tokenEntity)));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1211,20 +1131,13 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var contractId = testWeb3jService.getEntityId();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(contractId)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, contractId);
 
         // When
         final var functionCall = contract.call_dissociateWithRedirect(getAddressFromEntity(tokenEntity));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1238,13 +1151,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .treasuryAccountId(treasury.toEntityId()))
                 .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(treasury.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, treasury);
 
         final var totalSupply = token.getTotalSupply();
 
@@ -1258,7 +1165,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply + 30L));
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1272,13 +1179,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .treasuryAccountId(treasury.toEntityId()))
                 .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(treasury.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, treasury);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -1291,7 +1192,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         assertThat(result.component3().getFirst()).isEqualTo(BigInteger.ONE);
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1305,13 +1206,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .treasuryAccountId(treasury.toEntityId()))
                 .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(treasury.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, treasury);
 
         final var totalSupply = token.getTotalSupply();
 
@@ -1325,7 +1220,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply - 4L));
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1339,14 +1234,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .treasuryAccountId(treasury.toEntityId()))
                 .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
-                        .accountId(treasury.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, treasury);
         final var totalSupply = token.getTotalSupply();
 
         domainBuilder
@@ -1365,7 +1253,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply - 1));
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1379,24 +1267,16 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(owner.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true)
-                        .balance(100L))
-                .persist();
+        persistAssociation(tokenEntity, owner);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
         final var functionCall = contract.call_wipeTokenAccountExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(owner), BigInteger.valueOf(4));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1410,13 +1290,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(owner.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, owner);
         domainBuilder
                 .nft()
                 .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(owner.toEntityId()))
@@ -1427,10 +1301,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // When
         final var functionCall = contract.call_wipeTokenAccountNFTExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(owner), List.of(BigInteger.ONE));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1444,23 +1317,16 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(accountWithoutGrant.getId())
-                        .associated(true)
-                        .balance(100L))
-                .persist();
+        persistAssociation(tokenEntity, accountWithoutGrant);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
         final var functionCall = contract.call_grantTokenKycExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(accountWithoutGrant));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1474,24 +1340,16 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(accountWithGrant.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true)
-                        .balance(100L))
-                .persist();
+        persistAssociation(tokenEntity, accountWithGrant);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
         final var functionCall = contract.call_revokeTokenKycExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(accountWithGrant));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1507,37 +1365,26 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // When
         final var functionCall = contract.call_deleteTokenExternal(getAddressFromEntity(tokenEntity));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
     void freezeToken() throws Exception {
         // Given
         final var accountWithoutFreeze = persistAccountEntity();
-
         final var tokenEntity = persistFungibleToken();
-
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(accountWithoutFreeze.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true)
-                        .balance(100L))
-                .persist();
+        persistAssociation(tokenEntity, accountWithoutFreeze);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
         final var functionCall = contract.call_freezeTokenExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(accountWithoutFreeze));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1562,10 +1409,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // When
         final var functionCall = contract.call_unfreezeTokenExternal(
                 getAddressFromEntity(tokenEntity), getAliasFromEntity(accountWithFreeze));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1581,10 +1427,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // When
         final var functionCall = contract.call_pauseTokenExternal(getAddressFromEntity(tokenEntity));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1601,22 +1446,15 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         .pauseStatus(TokenPauseStatusEnum.PAUSED))
                 .persist();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+        persistAssociation(tokenEntity, sender);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
         final var functionCall = contract.call_unpauseTokenExternal(getAddressFromEntity(tokenEntity));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -1625,8 +1463,6 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         var initialSupply = BigInteger.valueOf(10L);
         var decimals = BigInteger.valueOf(10L);
         var value = BigInteger.valueOf(10000L * 100_000_000L);
-
-        final var sender = persistAccountEntity();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -1647,7 +1483,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(decodedResult.get(1).getValue()).isNotEqualTo(Address.ZERO);
 
-        testEstimateGasForSend(functionCall, contract, sender, value.longValueExact());
+        verifyEthCallAndEstimateGas(functionCall, contract, value.longValueExact());
     }
 
     @Test
@@ -1657,7 +1493,6 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         var decimals = BigInteger.valueOf(10L);
         var value = BigInteger.valueOf(10000L * 100_000_000L);
 
-        final var sender = persistAccountEntity();
         final var tokenForDenomination = persistFungibleToken();
         final var feeCollector = persistAccountEntity();
 
@@ -1695,15 +1530,13 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(decodedResult.get(1).getValue()).isNotEqualTo(Address.ZERO);
 
-        testEstimateGasForSend(functionCall, contract, sender, value.longValueExact());
+        verifyEthCallAndEstimateGas(functionCall, contract, value.longValueExact());
     }
 
     @Test
     void createNonFungibleToken() throws Exception {
         // Given
         var value = BigInteger.valueOf(10000L * 100_000_000L);
-
-        final var sender = persistAccountEntity();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -1724,7 +1557,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(decodedResult.get(1).getValue()).isNotEqualTo(Address.ZERO);
 
-        testEstimateGasForSend(functionCall, contract, sender, value.longValueExact());
+        verifyEthCallAndEstimateGas(functionCall, contract, value.longValueExact());
     }
 
     @Test
@@ -1732,7 +1565,6 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         var value = BigInteger.valueOf(10000L * 100_000_000L);
 
-        final var sender = persistAccountEntity();
         final var tokenForDenomination = persistFungibleToken();
         final var feeCollector = persistAccountEntity();
 
@@ -1770,7 +1602,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(decodedResult.get(1).getValue()).isNotEqualTo(Address.ZERO);
 
-        testEstimateGasForSend(functionCall, contract, sender, value.longValueExact());
+        verifyEthCallAndEstimateGas(functionCall, contract, value.longValueExact());
     }
 
     @Test
@@ -1779,13 +1611,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var sponsor = persistAccountEntity();
         final var receiver = persistAccountEntity();
         final var token = persistFungibleToken();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(token.getId())
-                        .accountId(sponsor.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+        persistAssociation(token, sponsor);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -1796,10 +1622,8 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 getAliasFromEntity(receiver),
                 BigInteger.valueOf(10L));
 
-        functionCall.send();
-
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, 0L);
     }
 
     @Test
@@ -1868,7 +1692,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var result = testWeb3jService.getTransactionResult();
         assertThat(result).isNotEqualTo(EMPTY_UNTRIMMED_ADDRESS);
 
-        testEstimateGasForSend(functionCall, contract, sender, value.longValueExact());
+        verifyEthCallAndEstimateGas(functionCall, contract, value.longValueExact());
     }
 
     @Test
@@ -1876,12 +1700,14 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        final var tokenToCreate = convertTokenEntityToHederaToken(domainBuilder
+                .token()
+                .customize(t -> t.metadata(new byte[mirrorNodeEvmProperties.getMaxMemoUtf8Bytes() + 1]))
+                .get());
+
         // When
         final var function = contract.send_createFungibleTokenExternal(
-                convertTokenEntityToHederaToken(domainBuilder
-                        .token()
-                        .customize(t -> t.metadata(new byte[mirrorNodeEvmProperties.getMaxMemoUtf8Bytes() + 1]))
-                        .get()),
+                tokenToCreate,
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10000L * 100_000_000L));
@@ -1895,14 +1721,15 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        final var tokenToCreate = convertTokenEntityToHederaToken(domainBuilder
+                .token()
+                .customize(t -> t.name(new String(
+                        new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1], StandardCharsets.UTF_8)))
+                .get());
+
         // When
         final var function = contract.send_createFungibleTokenExternal(
-                convertTokenEntityToHederaToken(domainBuilder
-                        .token()
-                        .customize(t -> t.name(new String(
-                                new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1],
-                                StandardCharsets.UTF_8)))
-                        .get()),
+                tokenToCreate,
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10000L * 100_000_000L));
@@ -1916,14 +1743,15 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        final var tokenToCreate = convertTokenEntityToHederaToken(domainBuilder
+                .token()
+                .customize(t -> t.symbol(new String(
+                        new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1], StandardCharsets.UTF_8)))
+                .get());
+
         // When
         final var function = contract.send_createFungibleTokenExternal(
-                convertTokenEntityToHederaToken(domainBuilder
-                        .token()
-                        .customize(t -> t.symbol(new String(
-                                new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1],
-                                StandardCharsets.UTF_8)))
-                        .get()),
+                tokenToCreate,
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10000L * 100_000_000L));
@@ -1937,10 +1765,12 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        final var tokenToCreate = convertTokenEntityToHederaToken(
+                domainBuilder.token().customize(t -> t.decimals(-1)).get());
+
         // When
         final var function = contract.send_createFungibleTokenExternal(
-                convertTokenEntityToHederaToken(
-                        domainBuilder.token().customize(t -> t.decimals(-1)).get()),
+                tokenToCreate,
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10000L * 100_000_000L));
@@ -1954,12 +1784,12 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        final var tokenToCreate = convertTokenEntityToHederaToken(
+                domainBuilder.token().customize(t -> t.initialSupply(-1L)).get());
+
         // When
         final var function = contract.send_createFungibleTokenExternal(
-                convertTokenEntityToHederaToken(domainBuilder
-                        .token()
-                        .customize(t -> t.initialSupply(-1L))
-                        .get()),
+                tokenToCreate,
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10000L * 100_000_000L));
@@ -1973,12 +1803,14 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        final var tokenToCreate = convertTokenEntityToHederaToken(domainBuilder
+                .token()
+                .customize(t -> t.initialSupply(10_000_001L))
+                .get());
+
         // When
         final var function = contract.send_createFungibleTokenExternal(
-                convertTokenEntityToHederaToken(domainBuilder
-                        .token()
-                        .customize(t -> t.initialSupply(10_000_001L))
-                        .get()),
+                tokenToCreate,
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(10000L * 100_000_000L));
@@ -1992,13 +1824,12 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        final var tokenToCreate = convertTokenEntityToHederaToken(
+                domainBuilder.token().customize(t -> t.supplyKey(new byte[0])).get());
+
         // When
-        final var function = contract.send_createNonFungibleTokenExternal(
-                convertTokenEntityToHederaToken(domainBuilder
-                        .token()
-                        .customize(t -> t.supplyKey(new byte[0]))
-                        .get()),
-                BigInteger.valueOf(10000L * 100_000_000L));
+        final var function =
+                contract.send_createNonFungibleTokenExternal(tokenToCreate, BigInteger.valueOf(10000L * 100_000_000L));
 
         // Then
         assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
@@ -2009,13 +1840,12 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        final var tokenToCreate = convertTokenEntityToHederaToken(
+                domainBuilder.token().customize(t -> t.treasuryAccountId(null)).get());
+
         // When
-        final var function = contract.send_createNonFungibleTokenExternal(
-                convertTokenEntityToHederaToken(domainBuilder
-                        .token()
-                        .customize(t -> t.treasuryAccountId(null))
-                        .get()),
-                BigInteger.valueOf(10000L * 100_000_000L));
+        final var function =
+                contract.send_createNonFungibleTokenExternal(tokenToCreate, BigInteger.valueOf(10000L * 100_000_000L));
 
         // Then
         assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
@@ -2026,13 +1856,14 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        final var tokenToCreate = convertTokenEntityToHederaToken(domainBuilder
+                .token()
+                .customize(t -> t.freezeDefault(true).freezeKey(new byte[0]))
+                .get());
+
         // When
-        final var function = contract.send_createNonFungibleTokenExternal(
-                convertTokenEntityToHederaToken(domainBuilder
-                        .token()
-                        .customize(t -> t.freezeDefault(true).freezeKey(new byte[0]))
-                        .get()),
-                BigInteger.valueOf(10000L * 100_000_000L));
+        final var function =
+                contract.send_createNonFungibleTokenExternal(tokenToCreate, BigInteger.valueOf(10000L * 100_000_000L));
 
         // Then
         assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
@@ -2043,15 +1874,13 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        final var tokenToCreate = convertTokenEntityToHederaToken(
+                domainBuilder.token().get(),
+                domainBuilder.entity().customize(e -> e.autoRenewPeriod(10L)).get());
+
         // When
-        final var function = contract.send_createNonFungibleTokenExternal(
-                convertTokenEntityToHederaToken(
-                        domainBuilder.token().get(),
-                        domainBuilder
-                                .entity()
-                                .customize(e -> e.autoRenewPeriod(10L))
-                                .get()),
-                BigInteger.valueOf(10000L * 100_000_000L));
+        final var function =
+                contract.send_createNonFungibleTokenExternal(tokenToCreate, BigInteger.valueOf(10000L * 100_000_000L));
 
         // Then
         assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
@@ -2067,23 +1896,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var receiver = persistAccountEntity();
         final var payer = persistAccountEntity();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(payer.getId()).kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(receiver.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
+        persistAssociation(tokenEntity, payer);
+        persistAssociation(tokenEntity, sender);
+        persistAssociation(tokenEntity, receiver);
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
@@ -2097,10 +1912,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         getAddressFromEntity(tokenEntity),
                         List.of(getAliasFromEntity(sender), getAliasFromEntity(receiver)),
                         List.of(BigInteger.ONE, BigInteger.valueOf(-1L)));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @ParameterizedTest
@@ -2121,23 +1935,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var receiver = persistAccountEntity();
         final var payer = persistAccountEntity();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(payer.getId()).kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(receiver.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
+        persistAssociation(tokenEntity, payer);
+        persistAssociation(tokenEntity, sender);
+        persistAssociation(tokenEntity, receiver);
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
@@ -2152,10 +1952,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         List.of(getAliasFromEntity(sender)),
                         List.of(getAliasFromEntity(receiver)),
                         List.of(BigInteger.ONE));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -2173,10 +1972,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(5L), false)));
 
         final var functionCall = contract.call_cryptoTransferExternal(transferList, new ArrayList<>());
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -2188,23 +1986,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var receiver = persistAccountEntity();
         final var payer = persistAccountEntity();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(payer.getId()).kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(receiver.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
+        persistAssociation(tokenEntity, payer);
+        persistAssociation(tokenEntity, sender);
+        persistAssociation(tokenEntity, receiver);
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
@@ -2217,10 +2001,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         final var functionCall =
                 contract.call_cryptoTransferExternal(new TransferList(new ArrayList<>()), List.of(tokenTransferList));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -2232,23 +2015,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var receiver = persistAccountEntity();
         final var payer = persistAccountEntity();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(payer.getId()).kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(receiver.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
+        persistAssociation(tokenEntity, payer);
+        persistAssociation(tokenEntity, sender);
+        persistAssociation(tokenEntity, receiver);
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
@@ -2264,10 +2033,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 new ArrayList<>());
 
         final var functionCall = contract.call_cryptoTransferExternal(transferList, List.of(tokenTransferList));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -2287,23 +2055,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var receiver = persistAccountEntity();
         final var payer = persistAccountEntity();
 
-        domainBuilder
-                .tokenAccount()
-                .customize(ta ->
-                        ta.tokenId(tokenEntity.getId()).accountId(payer.getId()).kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(sender.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(receiver.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED))
-                .persist();
+        persistAssociation(tokenEntity, payer);
+        persistAssociation(tokenEntity, sender);
+        persistAssociation(tokenEntity, receiver);
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
@@ -2315,10 +2069,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         final var functionCall =
                 contract.call_cryptoTransferExternal(new TransferList(new ArrayList<>()), List.of(tokenTransferList));
-        functionCall.send();
 
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -2346,10 +2099,8 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var functionCall =
                 contract.call_updateTokenInfoExternal(getAddressFromEntity(tokenToUpdateEntity), token);
 
-        functionCall.send();
-
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @Test
@@ -2379,10 +2130,8 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var functionCall =
                 contract.call_updateTokenExpiryInfoExternal(getAddressFromEntity(tokenToUpdateEntity), tokenExpiry);
 
-        functionCall.send();
-
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
     @ParameterizedTest
@@ -2428,14 +2177,16 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var functionCall =
                 contract.call_updateTokenKeysExternal(getAddressFromEntity(tokenEntityToUpdate), tokenKeys);
 
-        functionCall.send();
-
         // Then
-        testEstimateGas(functionCall, contract, 0L);
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
-    private void testEstimateGas(final RemoteFunctionCall<?> functionCall, final Contract contract, final Long value) {
+    private void verifyEthCallAndEstimateGas(
+            final RemoteFunctionCall<?> functionCall, final Contract contract, final Long value) throws Exception {
         // Given
+        testWeb3jService.setEstimateGas(true);
+        functionCall.send();
+
         final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getEstimatedGas());
 
         // When
@@ -2445,28 +2196,11 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
                 .isTrue();
-    }
-
-    private void testEstimateGasForSend(
-            final RemoteFunctionCall<?> functionCall, final Contract contract, final Entity sender, final Long value)
-            throws Exception {
-        // Given
-        testWeb3jService.setEstimateGas(true);
-        functionCall.send();
-        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getEstimatedGas());
-
-        // When
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, sender, value));
-
-        // Then
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        testWeb3jService.setEstimateGas(false);
     }
 
     private HederaToken populateHederaToken(
-            final String contractAddres, final TokenTypeEnum tokenType, final EntityId treasuryAccountId) {
+            final String contractAddress, final TokenTypeEnum tokenType, final EntityId treasuryAccountId) {
         final var autoRenewAccount = persistAccountEntity();
         final var tokenEntity = domainBuilder
                 .entity()
@@ -2478,7 +2212,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .persist();
 
         final var supplyKey = new ModificationPrecompileTestContract.KeyValue(
-                Boolean.FALSE, contractAddres, new byte[0], new byte[0], Address.ZERO.toHexString());
+                Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
         final var keys = new ArrayList<TokenKey>();
         keys.add(new TokenKey(AbstractContractCallServiceTest.KeyType.SUPPLY_KEY.getKeyTypeNumeric(), supplyKey));
         return new HederaToken(
@@ -2506,23 +2240,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .isEstimate(false)
                 .isStatic(false)
                 .receiver(Address.fromHexString(contract.getContractAddress()))
-                //                .sender(new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress()))))
                 .sender(new HederaEvmAccount(testWeb3jService.getSender()))
-                .value(value)
-                .build();
-    }
-
-    private ContractExecutionParameters getContractExecutionParameters(
-            final RemoteFunctionCall<?> functionCall, final Contract contract, final Entity sender, final Long value) {
-        return ContractExecutionParameters.builder()
-                .block(BlockType.LATEST)
-                .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
-                .callType(CallServiceParameters.CallType.ETH_CALL)
-                .gas(TRANSACTION_GAS_LIMIT)
-                .isEstimate(false)
-                .isStatic(false)
-                .receiver(Address.fromHexString(contract.getContractAddress()))
-                .sender(new HederaEvmAccount(Address.fromHexString(getAliasFromEntity(sender))))
                 .value(value)
                 .build();
     }

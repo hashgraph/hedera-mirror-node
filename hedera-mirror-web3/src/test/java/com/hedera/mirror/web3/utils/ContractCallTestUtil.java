@@ -50,6 +50,7 @@ public class ContractCallTestUtil {
 
     public static final String ESTIMATE_GAS_ERROR_MESSAGE =
             "Expected gas usage to be within the expected range, but it was not. Estimate: %d, Actual: %d";
+    public static final Long ZERO_VALUE = 0L;
 
     public static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
