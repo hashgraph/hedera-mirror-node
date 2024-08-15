@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
+import java.net.HttpURLConnection
+import java.net.URI
+
 description = "Hedera Mirror Node Web3"
 
 plugins {
     id("openapi-conventions")
-    id("spring-conventions")
     id("org.web3j")
+    id("org.web3j.solidity")
+    id("spring-conventions")
 }
 
 dependencies {
@@ -50,25 +54,118 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
 }
 
+web3j {
+    excludedContracts =
+        listOf("DynamicEthCallsHistorical", "EthCallHistorical", "EvmCodesHistorical")
+    generateBoth = true
+    generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
+    useNativeJavaTypes = true
+}
+
+sourceSets { test { solidity { version = "0.8.24" } } }
+
 tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
 tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 
+tasks.test { jvmArgs = listOf("--enable-preview") }
+
+val web3jDir = rootDir.resolve(".gradle").resolve("web3j")
+val web3jVersion = "1.6.0"
+val web3jName = "web3j-cli-shadow-${web3jVersion}.tar"
+val web3jFile = web3jDir.resolve(web3jName)
+
+val downloadWeb3j =
+    tasks.register("downloadWeb3j") {
+        val url =
+            "https://github.com/bilyana-gospodinova/web3j-cli/releases/download/${web3jVersion}/${web3jName}"
+        description = "Download Web3j CLI"
+        group = "historical"
+        doLast {
+            web3jDir.mkdirs()
+            val connection = URI(url).toURL().openConnection() as HttpURLConnection
+            connection.inputStream.use { input ->
+                web3jFile.outputStream().use { output -> input.copyTo(output) }
+            }
+        }
+        onlyIf { !web3jFile.exists() }
+    }
+
+val extractWeb3j =
+    tasks.register<Copy>("extractWeb3j") {
+        description = "Extracts the Web3j CLI"
+        group = "historical"
+        dependsOn(downloadWeb3j)
+        from(tarTree(web3jFile))
+        into(web3jDir)
+        eachFile { path = path.replaceFirst("web3j-cli-shadow-${web3jVersion}", "") }
+    }
+
+// Tasks to download OpenZeppelin contracts
+val openZeppelinVersion = "4.9.3"
+val openZeppelinFile = layout.buildDirectory.file("openzeppelin.zip").get().asFile
+val openZeppelinDir =
+    layout.projectDirectory.asFile
+        .resolve("src")
+        .resolve("test")
+        .resolve("solidity_historical")
+        .resolve("openzeppelin")
+
+val downloadOpenZeppelin =
+    tasks.register("downloadOpenZeppelin") {
+        description = "Download OpenZeppelin contracts"
+        group = "historical"
+        doLast {
+            openZeppelinDir.mkdirs()
+            val openZeppelinUrl =
+                "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/v${openZeppelinVersion}.zip"
+            val connection = URI(openZeppelinUrl).toURL().openConnection() as HttpURLConnection
+            connection.inputStream.use { input ->
+                openZeppelinFile.outputStream().use { output -> input.copyTo(output) }
+            }
+        }
+        onlyIf { !openZeppelinFile.exists() }
+    }
+
+val extractOpenZeppelin =
+    tasks.register<Copy>("extractContracts") {
+        description = "Extracts the OpenZeppelin dependencies into the configured output folder"
+        group = "historical"
+        dependsOn(downloadOpenZeppelin)
+        from(zipTree(openZeppelinFile))
+        into(openZeppelinDir)
+        include("openzeppelin-contracts-${openZeppelinVersion}/contracts/**/*.sol")
+        eachFile {
+            path = path.replaceFirst("openzeppelin-contracts-${openZeppelinVersion}/contracts", "")
+        }
+    }
+
+// Task to compile Solidity contracts and generate Java files
+val compileHistoricalSolidityContracts =
+    tasks.register<Exec>("compileHistoricalSolidityContracts") {
+        description = "Compiles the historical solidity contracts to java files using web3j-cli"
+        group = "historical"
+        mustRunAfter(tasks.named("generateTestContractWrappers"))
+        dependsOn(extractWeb3j)
+        dependsOn(extractOpenZeppelin)
+        dependsOn(tasks.named("compileTestSolidity"))
+        val scriptPath = file("./src/main/resources/scripts/compile_solidity.sh").absolutePath
+        doFirst { file(scriptPath).setExecutable(true) }
+        commandLine("bash", scriptPath)
+    }
+
+tasks.assemble { dependsOn(tasks.processTestResources) }
+
 tasks.compileTestJava {
     options.compilerArgs.add("--enable-preview")
     options.compilerArgs.removeIf { it == "-Werror" }
-}
-
-tasks.test { jvmArgs = listOf("--enable-preview") }
-
-sourceSets { test { solidity { version = "0.8.24" } } }
-
-web3j {
-    generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
-    useNativeJavaTypes = true
-    generateBoth = true
+    dependsOn(compileHistoricalSolidityContracts)
+    doFirst { file("args").writeText(options.compilerArgs.toString()) }
 }
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
-tasks.processTestResources { dependsOn(tasks.named("generateTestContractWrappers")) }
+tasks.processTestResources {
+    dependsOn(tasks.named("generateTestContractWrappers"))
+    dependsOn(compileHistoricalSolidityContracts)
+}

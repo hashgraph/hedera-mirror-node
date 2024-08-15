@@ -353,9 +353,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/InternalCaller/InternalCaller.json")
     protected Path INTERNAL_CALLER_CONTRACT_ABI_PATH;
 
-    @Value("classpath:contracts/SelfDestructContract/SelfDestructContract.bin")
-    protected Path SELF_DESTRUCT_CONTRACT_BYTES_PATH;
-
     private static TokenCreateWrapper getFungibleTokenWithKeys() {
         return new TokenCreateWrapper(
                 true,

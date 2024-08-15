@@ -60,7 +60,7 @@ class AccountBalanceFileParserPerformanceTest extends ImporterIntegrationTest {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(2)
     void parse() {
         accountBalanceFiles.forEach(balanceFileParser::parse);
         assertThat(accountBalanceFileRepository.count()).isEqualTo(accountBalanceFiles.size());

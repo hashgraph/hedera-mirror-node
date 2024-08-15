@@ -34,6 +34,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import io.reactivex.Flowable;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
@@ -96,6 +97,8 @@ public class TestWeb3jService implements Web3jService {
     @Setter
     private long value = 0L;
 
+    private BlockType blockType = BlockType.LATEST;
+
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
         this.contractGasProvider = new DefaultGasProvider();
@@ -116,9 +119,22 @@ public class TestWeb3jService implements Web3jService {
         this.isEstimateGas = isEstimateGas;
     }
 
+    public void setValue(final long value) {
+        this.value = value;
+    }
+
+    public void setBlockType(BlockType blockType) {
+        this.blockType = blockType;
+    }
+
     @SneakyThrows(Exception.class)
     public <T extends Contract> T deploy(Deployer<T> deployer) {
         return deployer.deploy(web3j, credentials, contractGasProvider).send();
+    }
+
+    @SneakyThrows(Exception.class)
+    public <T extends Contract> T deployWithValue(DeployerWithValue<T> deployer, BigInteger value) {
+        return deployer.deploy(web3j, credentials, contractGasProvider, value).send();
     }
 
     @Override
@@ -174,7 +190,7 @@ public class TestWeb3jService implements Web3jService {
                 rawTransaction.getValue().longValue() >= 0
                         ? rawTransaction.getValue().longValue()
                         : DEFAULT_TRANSACTION_VALUE,
-                BlockType.LATEST,
+                blockType,
                 TRANSACTION_GAS_LIMIT,
                 sender);
 
@@ -192,14 +208,13 @@ public class TestWeb3jService implements Web3jService {
         var transaction = reqParams.getFirst();
 
         // First get the transaction result
-        final var serviceParametersForCall =
-                serviceParametersForExecutionSingle(transaction, ETH_CALL, BlockType.LATEST);
+        final var serviceParametersForCall = serviceParametersForExecutionSingle(transaction, ETH_CALL, blockType);
         final var result = contractExecutionService.processCall(serviceParametersForCall);
         transactionResult = result;
 
         // Then get the estimated gas
         final var serviceParametersForEstimate =
-                serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, BlockType.LATEST);
+                serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, blockType);
         estimatedGas = contractExecutionService.processCall(serviceParametersForEstimate);
 
         final var ethCall = new EthCall();
@@ -288,7 +303,7 @@ public class TestWeb3jService implements Web3jService {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
-                .block(BlockType.LATEST)
+                .block(blockType)
                 .build();
     }
 
@@ -343,6 +358,11 @@ public class TestWeb3jService implements Web3jService {
 
     public interface Deployer<T extends Contract> {
         RemoteCall<T> deploy(Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider);
+    }
+
+    public interface DeployerWithValue<T extends Contract> {
+        RemoteCall<T> deploy(
+                Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider, BigInteger value);
     }
 
     @TestConfiguration(proxyBeanMethods = false)
