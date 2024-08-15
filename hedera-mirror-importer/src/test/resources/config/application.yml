@@ -19,8 +19,21 @@ hedera:
           entity:
             redis:
               enabled: true
-          performance:
-            scenarios:
+          pubsub:
+            topicName: testTopic
+          retry:
+            maxAttempts: 2
+      startDate: 1970-01-01T00:00:00Z
+      test:
+        performance:
+          downloader:
+            enabled: true
+            scenario: simple
+          parser:
+            enabled: true
+            scenario: simple
+          scenarios:
+            canonical:
               - description: 1/3 Crypto/HCS/HTS and 21 HSCS
                 duration: 150m
                 transactions:
@@ -69,11 +82,19 @@ hedera:
                   - tps: 3500
                     subType: TOKEN_TRANSFER
                     type: CRYPTOTRANSFER
-          pubsub:
-            topicName: testTopic
-          retry:
-            maxAttempts: 2
-      startDate: 1970-01-01T00:00:00Z
+            simple:
+              - description: 1/3 Crypto/HCS/HTS and 21 HSCS
+                duration: 10s
+                transactions:
+                  - tps: 3500
+                    type: CONSENSUSSUBMITMESSAGE
+                  - tps: 3500
+                    type: CRYPTOTRANSFER
+                  - tps: 3500
+                    subType: TOKEN_TRANSFER
+                    type: CRYPTOTRANSFER
+                  - tps: 21
+                    type: CONTRACTCALL
 spring:
   flyway:
     placeholders:
@@ -87,18 +108,3 @@ spring:
   test:
     database:
       replace: NONE
----
-hedera:
-  mirror:
-    importer:
-      parser:
-        record:
-          performance:
-            transactions:
-              - entities: 1
-                tps: 1
-                type: CRYPTOTRANSFER
-spring:
-  config:
-    activate:
-      on-profile: performance
