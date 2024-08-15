@@ -125,13 +125,12 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     protected <T extends Exception> void verifyEstimateGasRevertExecution(
             final RemoteFunctionCall<TransactionReceipt> functionCall,
-            final String exceptionMessage, Class<T> exceptionClass) {
+            final String exceptionMessage,
+            Class<T> exceptionClass) {
 
         testWeb3jService.setEstimateGas(true);
         // Verify estimate reverts with proper message
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(exceptionClass)
-                .hasMessage(exceptionMessage);
+        assertThatThrownBy(functionCall::send).isInstanceOf(exceptionClass).hasMessage(exceptionMessage);
     }
 
     protected void verifyEthCallAndEstimateGasWithValue(

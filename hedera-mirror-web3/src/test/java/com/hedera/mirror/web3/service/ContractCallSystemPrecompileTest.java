@@ -32,7 +32,8 @@ class ContractCallSystemPrecompileTest extends AbstractContractCallServiceTest {
     @Test
     void exchangeRatePrecompileTinycentsToTinybarsTestEthCall() throws Exception {
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
-        final var result = contract.call_tinycentsToTinybars(BigInteger.valueOf(100L)).send();
+        final var result =
+                contract.call_tinycentsToTinybars(BigInteger.valueOf(100L)).send();
         final var functionCall = contract.send_tinycentsToTinybars(BigInteger.valueOf(100L), BigInteger.ZERO);
         assertThat(result).isEqualTo(BigInteger.valueOf(8L));
         verifyEthCallAndEstimateGas(functionCall, contract);
@@ -41,7 +42,8 @@ class ContractCallSystemPrecompileTest extends AbstractContractCallServiceTest {
     @Test
     void exchangeRatePrecompileTinybarsToTinycentsTestEthCall() throws Exception {
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
-        final var result = contract.call_tinybarsToTinycents(BigInteger.valueOf(100L)).send();
+        final var result =
+                contract.call_tinybarsToTinycents(BigInteger.valueOf(100L)).send();
         final var functionCall = contract.send_tinybarsToTinycents(BigInteger.valueOf(100L), BigInteger.ZERO);
         assertThat(result).isEqualTo(BigInteger.valueOf(1200L));
         verifyEthCallAndEstimateGas(functionCall, contract);
@@ -80,8 +82,8 @@ class ContractCallSystemPrecompileTest extends AbstractContractCallServiceTest {
     void pseudoRandomGeneratorPrecompileFunctionsTestEthEstimateGasWithValueRevertExecution() {
         final var contract = testWeb3jService.deploy(PrngSystemContract::deploy);
         final var functionCall = contract.send_getPseudorandomSeed(BigInteger.valueOf(100));
-        verifyEstimateGasRevertExecution(functionCall, CONTRACT_REVERT_EXECUTED.name(),
-                MirrorEvmTransactionException.class);
+        verifyEstimateGasRevertExecution(
+                functionCall, CONTRACT_REVERT_EXECUTED.name(), MirrorEvmTransactionException.class);
     }
 
     @Test
