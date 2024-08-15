@@ -47,7 +47,7 @@ import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
-abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
+public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     @Resource
     protected TestWeb3jService testWeb3jService;

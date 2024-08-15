@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.evm.contracts.operations;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -25,35 +24,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.ContractCallTestSetup;
-import com.hedera.mirror.web3.service.ContractExecutionService;
-import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
-import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
-import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import java.nio.file.Path;
+import com.hedera.mirror.web3.service.AbstractContractCallServiceTest;
+import com.hedera.mirror.web3.web3j.generated.SelfDestructContract;
+import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
+import org.testcontainers.shaded.org.bouncycastle.util.encoders.Hex;
 
 @RequiredArgsConstructor
-class SelfDestructOperationTest extends ContractCallTestSetup {
-
-    private final ContractExecutionService contractCallService;
-
-    private final FunctionEncodeDecoder functionEncodeDecoder;
-
-    @Value("classpath:contracts/SelfDestructContract/SelfDestructContract.bin")
-    private Path selfDestructContractPath;
+class SelfDestructOperationTest extends AbstractContractCallServiceTest {
 
     @Test
-    void testSuccessfulExecute() {
-        final var senderAddress = toAddress(1043);
+    void testSuccessfulExecute() throws Exception {
         final var senderPublicKey = ByteString.copyFrom(
                 Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
         final var senderAlias = Address.wrap(
@@ -62,62 +47,21 @@ class SelfDestructOperationTest extends ContractCallTestSetup {
                 .entity()
                 .customize(e -> e.evmAddress(senderAlias.toArray()))
                 .persist();
-        final var contractAddress = toAddress(selfDestructContractPersist());
-        final var destroyContractInput = "0x9a0313ab000000000000000000000000" + senderAlias.toUnprefixedHexString();
-        final var serviceParameters = serviceParametersForExecution()
-                .sender(new HederaEvmAccount(senderAddress))
-                .callData(Bytes.fromHexString(destroyContractInput))
-                .receiver(contractAddress)
-                .build();
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+        final var contract = testWeb3jService.deployWithValue(SelfDestructContract::deploy, BigInteger.valueOf(1000));
+        final var result = contract.send_destructContract(senderAlias.toUnprefixedHexString())
+                .send();
+        assertThat(result.getContractAddress()).isEqualTo("0x");
     }
 
     @Test
     void testExecuteWithInvalidOwner() {
-        final var contractAddress = toAddress(selfDestructContractPersist());
-        final var senderAddress = toAddress(1043);
         final var systemAccountAddress = toAddress(700);
-        final var destroyContractInput =
-                "0x9a0313ab000000000000000000000000" + systemAccountAddress.toUnprefixedHexString();
-        final var serviceParameters = serviceParametersForExecution()
-                .sender(new HederaEvmAccount(senderAddress))
-                .receiver(contractAddress)
-                .callData(Bytes.fromHexString(destroyContractInput))
-                .build();
-
+        final var contract = testWeb3jService.deployWithValue(SelfDestructContract::deploy, BigInteger.valueOf(1000));
         assertEquals(
                 INVALID_SOLIDITY_ADDRESS.name(),
-                assertThrows(
-                                MirrorEvmTransactionException.class,
-                                () -> contractCallService.processCall(serviceParameters))
+                assertThrows(MirrorEvmTransactionException.class, () -> contract.send_destructContract(
+                                        systemAccountAddress.toUnprefixedHexString())
+                                .send())
                         .getMessage());
-    }
-
-    private EntityId selfDestructContractPersist() {
-        final var selfDestructContractBytes = functionEncodeDecoder.getContractBytes(selfDestructContractPath);
-        final var selfDestructContractEntity = domainBuilder.entity().persist();
-
-        domainBuilder
-                .contract()
-                .customize(c -> c.id(selfDestructContractEntity.toEntityId().getId())
-                        .runtimeBytecode(selfDestructContractBytes))
-                .persist();
-
-        domainBuilder
-                .recordFile()
-                .customize(f -> f.bytes(selfDestructContractBytes))
-                .persist();
-
-        return selfDestructContractEntity.toEntityId();
-    }
-
-    private ContractExecutionParameters.ContractExecutionParametersBuilder serviceParametersForExecution() {
-        return ContractExecutionParameters.builder()
-                .value(0L)
-                .gas(15_000_000L)
-                .isStatic(false)
-                .callType(ETH_CALL)
-                .isEstimate(false)
-                .block(BlockType.LATEST);
     }
 }
