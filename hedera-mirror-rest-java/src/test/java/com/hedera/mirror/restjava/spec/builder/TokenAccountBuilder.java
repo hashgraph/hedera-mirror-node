@@ -26,7 +26,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
-class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount.TokenAccountBuilder<?, ?>> {
+class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>> {
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
             "accountId", ENTITY_ID_TO_LONG_CONVERTER,
@@ -54,13 +54,12 @@ class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount.TokenAccoun
     }
 
     @Override
-    protected List<Object> getFinalEntities(
-            TokenAccount.TokenAccountBuilder<?, ?> builder, Map<String, Object> account) {
+    protected TokenAccount getFinalEntity(TokenAccount.TokenAccountBuilder<?, ?> builder, Map<String, Object> account) {
         var entity = builder.build();
         if (entity.getTimestampRange() == null) {
             builder.timestampRange(Range.atLeast(entity.getCreatedTimestamp()));
             entity = builder.build();
         }
-        return List.of(entity);
+        return entity;
     }
 }

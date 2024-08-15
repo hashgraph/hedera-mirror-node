@@ -23,14 +23,12 @@ import java.util.Map;
 
 public record RestSpec(
         String description,
-        String extendedDescription,
+        List<String> extendedDescription,
         String matrix,
         Map<String, String> responseHeaders,
-        @JsonDeserialize(using = JsonAsStringDeserializer.class)
-        String responseJson,
+        @JsonDeserialize(using = JsonAsStringDeserializer.class) String responseJson,
         int responseStatus,
         SpecSetup setup,
         List<SpecTest> tests,
         String url,
-        List<String> urls) {
-}
+        List<String> urls) {}

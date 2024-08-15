@@ -16,42 +16,34 @@
 
 package com.hedera.mirror.restjava.spec.builder;
 
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
 @Named
-class NftBuilder extends AbstractEntityBuilder<Nft.NftBuilder<?, ?>> {
+class TopicMessageBuilder extends AbstractEntityBuilder<TopicMessage, TopicMessage.TopicMessageBuilder> {
 
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
-        return specSetup::nfts;
+        return specSetup::topicMessages;
     }
 
     @Override
-    protected Nft.NftBuilder<?, ?> getEntityBuilder() {
-        return Nft.builder()
-                .accountId(EntityId.EMPTY)
-                .createdTimestamp(0L)
-                .deleted(Boolean.FALSE)
-                .metadata(DomainUtils.EMPTY_BYTE_ARRAY)
-                .serialNumber(0L)
-                .tokenId(0L);
+    protected TopicMessage.TopicMessageBuilder getEntityBuilder() {
+        return TopicMessage.builder()
+                .message("message".getBytes(StandardCharsets.UTF_8))
+                .payerAccountId(EntityId.of(3L))
+                .runningHash("running_hash".getBytes(StandardCharsets.UTF_8))
+                .runningHashVersion(2);
     }
 
     @Override
-    protected List<Object> getFinalEntities(Nft.NftBuilder<?, ?> builder, Map<String, Object> account) {
-        var entity = builder.build();
-        if (entity.getTimestampRange() == null) {
-            builder.timestampRange(Range.atLeast(entity.getCreatedTimestamp()));
-        }
-
-        return List.of(builder.build());
+    protected TopicMessage getFinalEntity(TopicMessage.TopicMessageBuilder builder, Map<String, Object> account) {
+        return builder.build();
     }
 }

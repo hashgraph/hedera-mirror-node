@@ -16,16 +16,16 @@
 
 package com.hedera.mirror.restjava.spec;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.spec.builder.SpecDomainBuilder;
+import com.hedera.mirror.restjava.spec.config.SpecTestConfig;
 import com.hedera.mirror.restjava.spec.model.RestSpec;
 import com.hedera.mirror.restjava.spec.model.RestSpecNormalized;
-import com.hedera.mirror.restjava.spec.config.SpecTestConfig;
 import com.hedera.mirror.restjava.spec.model.SpecTestNormalized;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.stream.Stream;
 import javax.sql.DataSource;
 import lombok.SneakyThrows;
-
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.runner.RunWith;
@@ -43,6 +42,7 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestClient;
@@ -58,10 +58,35 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
     private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");
     private static final List<Path> SELECTED_SPECS = List.of(
-            REST_BASE_PATH.resolve("accounts/alias-into-evm-address.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/alias-not-found.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/no-params.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/all-params.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/all-params.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/empty.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/no-params.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/specific-spender-id.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/spender-id-range-token-id-upper.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/rewards/no-params.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/rewards/no-rewards.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/rewards/specific-timestamp.json"),
+            REST_BASE_PATH.resolve("accounts/specific-id.json"),
             REST_BASE_PATH.resolve("blocks/no-records.json"),
-            REST_BASE_PATH.resolve("accounts/specific-id.json")
-    );
+            REST_BASE_PATH.resolve("blocks/timestamp-param.json"),
+            REST_BASE_PATH.resolve("blocks/all-params-together.json"),
+            REST_BASE_PATH.resolve("blocks/limit-param.json"),
+            REST_BASE_PATH.resolve("blocks/no-records.json"),
+            REST_BASE_PATH.resolve("blocks/{id}/hash-64.json"),
+            REST_BASE_PATH.resolve("blocks/{id}/hash-96.json"),
+            REST_BASE_PATH.resolve("network/exchangerate/no-params.json"),
+            REST_BASE_PATH.resolve("network/exchangerate/timestamp-upper-bound.json"),
+            REST_BASE_PATH.resolve("network/fees/no-params.json"),
+            REST_BASE_PATH.resolve("network/fees/order.json"),
+            REST_BASE_PATH.resolve("network/fees/timestamp-not-found.json"),
+            REST_BASE_PATH.resolve("network/stake/no-params.json"),
+            REST_BASE_PATH.resolve("topics/{id}/messages/all-params.json"),
+            REST_BASE_PATH.resolve("topics/{id}/messages/encoding.json"),
+            REST_BASE_PATH.resolve("topics/{id}/messages/no-params.json"),
+            REST_BASE_PATH.resolve("topics/{id}/messages/order.json"));
 
     private final ResourceDatabasePopulator databaseCleaner;
     private final DataSource dataSource;
@@ -70,8 +95,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     private final SpecDomainBuilder specDomainBuilder;
 
     RestSpecTest(
-            @Value("classpath:cleanup.sql")
-            Resource cleanupSqlResource,
+            @Value("classpath:cleanup.sql") Resource cleanupSqlResource,
             DataSource dataSource,
             GenericContainer<?> jsRestApi,
             ObjectMapper objectMapper,
@@ -82,7 +106,8 @@ public class RestSpecTest extends RestJavaIntegrationTest {
         this.objectMapper = objectMapper;
         this.specDomainBuilder = specDomainBuilder;
 
-        var baseJsRestApiUrl = "http://%s:%d".formatted(jsRestApi.getHost(), jsRestApi.getMappedPort(JS_REST_API_CONTAINER_PORT));
+        var baseJsRestApiUrl =
+                "http://%s:%d".formatted(jsRestApi.getHost(), jsRestApi.getMappedPort(JS_REST_API_CONTAINER_PORT));
         this.restClient = RestClient.builder()
                 .baseUrl(baseJsRestApiUrl)
                 .defaultHeader("Accept", "application/json")
@@ -99,22 +124,28 @@ public class RestSpecTest extends RestJavaIntegrationTest {
             try {
                 normalizedSpec = RestSpecNormalized.from(objectMapper.readValue(specFilePath.toFile(), RestSpec.class));
             } catch (IOException e) {
-                dynamicContainers.add(dynamicContainer(REST_BASE_PATH.relativize(specFilePath).toString(),
-                        Stream.of(dynamicTest("Unable to parse spec file", ()-> {throw e;}))));
+                dynamicContainers.add(dynamicContainer(
+                        REST_BASE_PATH.relativize(specFilePath).toString(),
+                        Stream.of(dynamicTest("Unable to parse spec file", () -> {
+                            throw e;
+                        }))));
                 continue;
             }
 
             var normalizedSpecTests = normalizedSpec.tests();
             for (var test : normalizedSpecTests) {
-                var testCases = test.urls().stream()
-                        .map(url -> dynamicTest(url, () -> testSpecUrl(url, test, normalizedSpec)));
+                var testCases =
+                        test.urls().stream().map(url -> dynamicTest(url, () -> testSpecUrl(url, test, normalizedSpec)));
 
                 dynamicContainers.add(dynamicContainer(
                         "%s: '%s'".formatted(REST_BASE_PATH.relativize(specFilePath), normalizedSpec.description()),
-                        Stream.concat(Stream.of(dynamicTest("Setup database", () -> setupDatabase(normalizedSpec))), testCases)));
+                        Stream.concat(
+                                Stream.of(dynamicTest("Setup database", () -> setupDatabase(normalizedSpec))),
+                                testCases)));
             }
         }
-        return Stream.of(dynamicContainer("Dynamic test cases from spec files, base: %s".formatted(REST_BASE_PATH), dynamicContainers));
+        return Stream.of(dynamicContainer(
+                "Dynamic test cases from spec files, base: %s".formatted(REST_BASE_PATH), dynamicContainers));
     }
 
     private List<Path> specsToTest() {
@@ -134,13 +165,26 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     @SneakyThrows
     private void testSpecUrl(String url, SpecTestNormalized specTest, RestSpecNormalized spec) {
 
-        var response = restClient.get()
+        var response = restClient
+                .get()
                 .uri(url)
                 .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, (req, res) -> {
+                    // Override default handling of 4xx errors, and proceed to evaluate the response.
+                })
                 .toEntity(String.class);
 
         assertThat(response.getStatusCode().value()).isEqualTo(specTest.responseStatus());
-        // No assertions made on response headers in phase 1
         JSONAssert.assertEquals(specTest.responseJson(), response.getBody(), JSONCompareMode.LENIENT);
+
+        /*
+         * Ensure response headers defined in the spec file are present in the API response.
+         */
+        if (specTest.responseHeaders() != null) {
+            var apiResponseHeaders = response.getHeaders();
+            for (var specHeaderEntry : specTest.responseHeaders().entrySet()) {
+                assertThat(specHeaderEntry.getValue()).isEqualTo(apiResponseHeaders.getFirst(specHeaderEntry.getKey()));
+            }
+        }
     }
 }

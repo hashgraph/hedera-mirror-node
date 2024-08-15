@@ -40,7 +40,7 @@ import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.CollectionUtils;
 
 @CustomLog
-abstract class AbstractEntityBuilder<B> implements SpecDomainBuilder {
+abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
 
     private static final Base32 BASE32 = new Base32();
     private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
@@ -107,9 +107,9 @@ abstract class AbstractEntityBuilder<B> implements SpecDomainBuilder {
      *
      * @param builder entity builder
      * @param entityAttributes spec setup attributes
-     * @return entities to be persisted
+     * @return entity to be persisted
      */
-    protected abstract List<Object> getFinalEntities(B builder, Map<String, Object> entityAttributes);
+    protected abstract T getFinalEntity(B builder, Map<String, Object> entityAttributes);
 
     /**
      * Return the supplier function used to return the relevant attributes from the spec JSON setup object.
@@ -126,8 +126,7 @@ abstract class AbstractEntityBuilder<B> implements SpecDomainBuilder {
             specEntities.forEach(specEntity -> transactionOperations.executeWithoutResult(t -> {
                 var entityBuilder = getEntityBuilder();
                 customizeWithSpec(entityBuilder, specEntity);
-                var entities = getFinalEntities(entityBuilder, specEntity);
-                entities.forEach(entity -> entityManager.persist(entity));
+                entityManager.persist(getFinalEntity(entityBuilder, specEntity));
             }));
         }
     }
