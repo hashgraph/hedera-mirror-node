@@ -56,11 +56,9 @@ class SelfDestructOperationTest extends AbstractContractCallServiceTest {
     void testExecuteWithInvalidOwner() {
         final var systemAccountAddress = toAddress(700);
         final var contract = testWeb3jService.deployWithValue(SelfDestructContract::deploy, BigInteger.valueOf(1000));
+        final var functionCall = contract.send_destructContract(systemAccountAddress.toUnprefixedHexString());
 
-        MirrorEvmTransactionException exception = assertThrows(MirrorEvmTransactionException.class, () -> {
-            var functionCall = contract.send_destructContract(systemAccountAddress.toUnprefixedHexString());
-            functionCall.send();
-        });
+        MirrorEvmTransactionException exception = assertThrows(MirrorEvmTransactionException.class, functionCall::send);
         assertThat(exception.getMessage()).isEqualTo(INVALID_SOLIDITY_ADDRESS.name());
     }
 }
