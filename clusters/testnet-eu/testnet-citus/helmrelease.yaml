@@ -83,12 +83,6 @@ spec:
         persistentVolume:
           size: 900Gi
     test:
-      config:
-        hedera:
-          mirror:
-            test:
-              acceptance:
-                operatorBalance: 200000000000
       cucumberTags: "@acceptance and not @equivalence and not @historical and not @estimateprecompile"
       enabled: false
     web3:
