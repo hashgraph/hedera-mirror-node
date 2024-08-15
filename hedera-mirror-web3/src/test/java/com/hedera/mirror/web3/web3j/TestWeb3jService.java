@@ -24,7 +24,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncoded;
 
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractExecutionService;
@@ -82,7 +81,6 @@ public class TestWeb3jService implements Web3jService {
     private String estimatedGas;
     private long value = 0L;
     private BlockType blockType = BlockType.LATEST;
-    private Range historicalRange;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -118,14 +116,6 @@ public class TestWeb3jService implements Web3jService {
 
     public void setBlockType(BlockType blockType) {
         this.blockType = blockType;
-    }
-
-    public void setHistoricalRange(Range historicalRange) {
-        this.historicalRange = historicalRange;
-    }
-
-    public Range getHistoricalRange() {
-        return historicalRange;
     }
 
     @SneakyThrows(Exception.class)

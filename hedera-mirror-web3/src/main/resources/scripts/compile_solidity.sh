@@ -6,8 +6,8 @@ OUTPUT_DIR="./build/generated/sources/web3j/test/java"
 SOLC_VERSIONS=("0.8.7")
 TEMP_DIR="build/temp_contracts"
 
-chmod +x ./scripts/install_solc_select.sh
-./scripts/install_solc_select.sh
+chmod +x ./src/main/resources/scripts/install_solc_select.sh
+./src/main/resources/scripts/install_solc_select.sh
 rm -rf "${TEMP_DIR}"
 
 # Detect the operating system

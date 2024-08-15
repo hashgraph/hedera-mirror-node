@@ -149,7 +149,7 @@ val compileHistoricalSolidityContracts =
         dependsOn(extractWeb3j)
         dependsOn(extractOpenZeppelin)
         dependsOn(tasks.named("compileTestSolidity"))
-        val scriptPath = file("./scripts/compile_solidity.sh").absolutePath
+        val scriptPath = file("./src/main/resources/scripts/compile_solidity.sh").absolutePath
         doFirst { file(scriptPath).setExecutable(true) }
         commandLine("bash", scriptPath)
     }
