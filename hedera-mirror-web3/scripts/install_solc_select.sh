@@ -16,7 +16,7 @@ install_on_fedora() {
 
 # Function to install pip3 and solc-select on macOS
 install_on_macos() {
-    if ! command -v brew &> /dev/null; then
+    if (! brew &> /dev/null); then
         echo "Homebrew not found, installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
@@ -25,7 +25,7 @@ install_on_macos() {
 
 # Function to check if solc-select is installed
 check_solc_select_installed() {
-    if command -v solc-select >/dev/null 2>&1; then
+    if (solc-select >/dev/null 2>&1); then
         echo "solc-select is already installed."
         return 0
     else
@@ -39,10 +39,10 @@ install_solc_select() {
    case $OS in
        "Linux")
            # Detect the Linux distribution
-           if [ -f /etc/debian_version ]; then
+           if [[ -f /etc/debian_version ]]; then
                echo "Detected Debian-based Linux distribution."
                install_on_debian
-           elif [ -f /etc/fedora-release ]; then
+           elif [[ -f /etc/fedora-release ]]; then
                echo "Detected Fedora-based Linux distribution."
                install_on_fedora
            else
@@ -55,6 +55,7 @@ install_solc_select() {
            ;;
        *)
            echo "Unsupported OS: $OS"
+           exit 1
            ;;
    esac
 }
@@ -62,6 +63,6 @@ install_solc_select() {
 # Detect the operating system
 OS=$(uname)
 
-if ! check_solc_select_installed; then
+if (! check_solc_select_installed); then
     install_solc_select
 fi

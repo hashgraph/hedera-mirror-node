@@ -2,25 +2,23 @@
 set -euo pipefail
 
 # Define Solidity versions and output directories
+OUTPUT_DIR="./build/generated/sources/web3j/test/java"
 SOLC_VERSIONS=("0.8.7")
-OUTPUT_DIR=("./build/generated/sources/web3j/test/java")
+TEMP_DIR="build/temp_contracts"
 
 chmod +x ./scripts/install_solc_select.sh
 ./scripts/install_solc_select.sh
-
-# Uncomment this line when we have an official release ->
-#curl -L get.web3j.io | sh && source ~/.web3j/source.sh
+rm -rf "${TEMP_DIR}"
 
 # Detect the operating system
 OS=$(uname)
 
 case $OS in
     "Linux"|"Darwin")
-        chmod +x ./scripts/install_web3j.sh
-        ./scripts/install_web3j.sh
         ;;
     *)
         echo "Unsupported OS: $OS"
+        exit 1
         ;;
 esac
 
@@ -37,16 +35,14 @@ for i in "${!SOLC_VERSIONS[@]}"; do
     contract_name=$(basename "$contract_path" .sol)
 
     # Compile Solidity contract
-    solc --base-path . --allow-paths node_modules --abi --bin --overwrite -o build/temp_contracts "$contract_path"
+    solc --base-path . --allow-paths node_modules --abi --bin --overwrite -o ${TEMP_DIR} "$contract_path"
 
     # Generate Java files using web3j
-    $HOME/.web3j/web3j generate solidity \
-      -b "build/temp_contracts/${contract_name}.bin" \
-      -a "build/temp_contracts/${contract_name}.abi" \
+    ../.gradle/web3j/bin/web3j generate solidity \
+      -b "${TEMP_DIR}/${contract_name}.bin" \
+      -a "${TEMP_DIR}/${contract_name}.abi" \
       -o "$OUTPUT_DIR" \
       -p "com.hedera.mirror.web3.web3j.generated" \
       -B
   done
 done
-
-rm -rf build/temp_contracts
