@@ -34,6 +34,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import io.reactivex.Flowable;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.SneakyThrows;
@@ -121,6 +122,11 @@ public class TestWeb3jService implements Web3jService {
     @SneakyThrows(Exception.class)
     public <T extends Contract> T deploy(Deployer<T> deployer) {
         return deployer.deploy(web3j, credentials, contractGasProvider).send();
+    }
+
+    @SneakyThrows(Exception.class)
+    public <T extends Contract> T deployWithValue(DeployerWithValue<T> deployer, BigInteger value) {
+        return deployer.deploy(web3j, credentials, contractGasProvider, value).send();
     }
 
     @Override
@@ -342,6 +348,11 @@ public class TestWeb3jService implements Web3jService {
 
     public interface Deployer<T extends Contract> {
         RemoteCall<T> deploy(Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider);
+    }
+
+    public interface DeployerWithValue<T extends Contract> {
+        RemoteCall<T> deploy(
+                Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider, BigInteger value);
     }
 
     @TestConfiguration(proxyBeanMethods = false)
