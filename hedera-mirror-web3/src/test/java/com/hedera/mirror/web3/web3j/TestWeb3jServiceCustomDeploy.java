@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.web3j;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -27,12 +26,10 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
-import org.web3j.crypto.RawTransaction;
 import org.web3j.protocol.core.BatchRequest;
 import org.web3j.protocol.core.BatchResponse;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.Response;
-import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.websocket.events.Notification;
 
 public class TestWeb3jServiceCustomDeploy extends TestWeb3jService {
@@ -76,29 +73,9 @@ public class TestWeb3jServiceCustomDeploy extends TestWeb3jService {
 
     @Override
     public Address deployInternal(String binary) {
+        contractRuntime = Hex.decode(binary.substring(2));
         final var id = domainBuilder.id();
         return toAddress(EntityId.of(id));
-    }
-
-    @Override
-    protected EthSendTransaction sendTopLevelContractCreate(
-            RawTransaction rawTransaction, String transactionHash, Request request) {
-        final var res = new EthSendTransaction();
-        var serviceParameters = serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
-        final var mirrorNodeResult = contractExecutionService.processCall(serviceParameters);
-        contractRuntime = Hex.decode(mirrorNodeResult.substring(2));
-        try {
-            final var contractInstance = deployInternal(mirrorNodeResult);
-            res.setResult(transactionHash);
-            res.setRawResponse(contractInstance.toHexString());
-            res.setId(request.getId());
-            res.setJsonrpc(request.getJsonrpc());
-            transactionResult = contractInstance.toHexString();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return res;
     }
 
     public void cleanupContractRuntime() {
