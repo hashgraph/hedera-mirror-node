@@ -149,7 +149,7 @@ public class TestWeb3jService implements Web3jService {
     }
 
     private EthSendTransaction call(List<?> params, Request request) {
-        var rawTransaction = TransactionDecoder.decode(params.get(0).toString());
+        var rawTransaction = TransactionDecoder.decode(params.getFirst().toString());
         var transactionHash = generateTransactionHashHexEncoded(rawTransaction, credentials);
         final var to = rawTransaction.getTo();
 

@@ -59,11 +59,11 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
     @Test
     void deployAddressThisContract() {
         final var contract = testWeb3jService.deploy(TestAddressThis::deploy);
-        final var serviceParamaters = testWeb3jService.serviceParametersForTopLevelContractCreate(
-                contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.fromHexString(""));
+        final var serviceParameters = testWeb3jService.serviceParametersForTopLevelContractCreate(
+                contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.ZERO);
         final long actualGas = 57764L;
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), actualGas))
                 .isTrue();
     }
 
@@ -103,7 +103,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
     void deployNestedAddressThisContract() {
         final var contract = testWeb3jService.deploy(TestNestedAddressThis::deploy);
         final var serviceParamaters = testWeb3jService.serviceParametersForTopLevelContractCreate(
-                contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.fromHexString(""));
+                contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.ZERO);
         final long actualGas = 95401L;
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
@@ -124,14 +124,6 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
         domainBuilder
                 .contract()
                 .customize(c -> c.id(addressThisContractEntityId.getId()).runtimeBytecode(runtimeBytecode))
-                .persist();
-        domainBuilder
-                .contractState()
-                .customize(c -> c.contractId(addressThisContractEntityId.getId())
-                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
-                                .toArrayUnsafe())
-                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
-                                .toArrayUnsafe()))
                 .persist();
         domainBuilder.recordFile().customize(f -> f.bytes(runtimeBytecode)).persist();
     }
