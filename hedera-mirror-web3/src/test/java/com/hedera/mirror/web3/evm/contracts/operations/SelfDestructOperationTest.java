@@ -16,11 +16,10 @@
 
 package com.hedera.mirror.web3.evm.contracts.operations;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.protobuf.ByteString;
@@ -57,11 +56,11 @@ class SelfDestructOperationTest extends AbstractContractCallServiceTest {
     void testExecuteWithInvalidOwner() {
         final var systemAccountAddress = toAddress(700);
         final var contract = testWeb3jService.deployWithValue(SelfDestructContract::deploy, BigInteger.valueOf(1000));
-        assertEquals(
-                INVALID_SOLIDITY_ADDRESS.name(),
+
+        MirrorEvmTransactionException exception =
                 assertThrows(MirrorEvmTransactionException.class, () -> contract.send_destructContract(
-                                        systemAccountAddress.toUnprefixedHexString())
-                                .send())
-                        .getMessage());
+                                systemAccountAddress.toUnprefixedHexString())
+                        .send());
+        assertThat(exception.getMessage()).isEqualTo(INVALID_SOLIDITY_ADDRESS.name());
     }
 }
