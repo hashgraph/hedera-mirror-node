@@ -31,8 +31,10 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import io.reactivex.Flowable;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.SneakyThrows;
@@ -74,10 +76,12 @@ public class TestWeb3jService implements Web3jService {
     private final Credentials credentials;
     private final DomainBuilder domainBuilder;
     private final Web3j web3j;
-
     private Address sender = Address.fromHexString("");
     private boolean isEstimateGas = false;
     private String transactionResult;
+    private String estimatedGas;
+    private long value = 0L;
+    private BlockType blockType = BlockType.LATEST;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -95,13 +99,34 @@ public class TestWeb3jService implements Web3jService {
         this.sender = Address.fromHexString(sender);
     }
 
+    public String getTransactionResult() {
+        return transactionResult;
+    }
+
+    public String getEstimatedGas() {
+        return estimatedGas;
+    }
+
     public void setEstimateGas(final boolean isEstimateGas) {
         this.isEstimateGas = isEstimateGas;
+    }
+
+    public void setValue(final long value) {
+        this.value = value;
+    }
+
+    public void setBlockType(BlockType blockType) {
+        this.blockType = blockType;
     }
 
     @SneakyThrows(Exception.class)
     public <T extends Contract> T deploy(Deployer<T> deployer) {
         return deployer.deploy(web3j, credentials, contractGasProvider).send();
+    }
+
+    @SneakyThrows(Exception.class)
+    public <T extends Contract> T deployWithValue(DeployerWithValue<T> deployer, BigInteger value) {
+        return deployer.deploy(web3j, credentials, contractGasProvider, value).send();
     }
 
     @Override
@@ -157,7 +182,7 @@ public class TestWeb3jService implements Web3jService {
                 rawTransaction.getValue().longValue() >= 0
                         ? rawTransaction.getValue().longValue()
                         : DEFAULT_TRANSACTION_VALUE,
-                BlockType.LATEST,
+                blockType,
                 TRANSACTION_GAS_LIMIT,
                 sender);
 
@@ -168,27 +193,27 @@ public class TestWeb3jService implements Web3jService {
         res.setJsonrpc(request.getJsonrpc());
 
         transactionResult = mirrorNodeResult;
-
         return res;
     }
 
     private EthCall ethCall(List<Transaction> reqParams, Request request) {
         var transaction = reqParams.get(0);
 
-        final var serviceParameters = serviceParametersForExecutionSingle(
-                Bytes.fromHexString(transaction.getData()),
-                Address.fromHexString(transaction.getTo()),
-                isEstimateGas ? ETH_ESTIMATE_GAS : ETH_CALL,
-                transaction.getValue() != null ? Long.parseLong(transaction.getValue()) : 0L,
-                BlockType.LATEST,
-                TRANSACTION_GAS_LIMIT,
-                sender);
-        final var result = contractExecutionService.processCall(serviceParameters);
+        // First get the transaction result
+        final var serviceParametersForCall = serviceParametersForExecutionSingle(transaction, ETH_CALL, blockType);
+        final var result = contractExecutionService.processCall(serviceParametersForCall);
+        transactionResult = result;
+
+        // Then get the estimated gas
+        final var serviceParametersForEstimate =
+                serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, blockType);
+        estimatedGas = contractExecutionService.processCall(serviceParametersForEstimate);
 
         final var ethCall = new EthCall();
         ethCall.setId(request.getId());
         ethCall.setJsonrpc(request.getJsonrpc());
         ethCall.setResult(result);
+
         return ethCall;
     }
 
@@ -242,6 +267,21 @@ public class TestWeb3jService implements Web3jService {
                 .build();
     }
 
+    protected ContractExecutionParameters serviceParametersForExecutionSingle(
+            final Transaction transaction, final CallServiceParameters.CallType callType, final BlockType block) {
+        return ContractExecutionParameters.builder()
+                .sender(new HederaEvmAccount(sender))
+                .value(value)
+                .receiver(Address.fromHexString(transaction.getTo()))
+                .callData(Bytes.fromHexString(transaction.getData()))
+                .gas(TRANSACTION_GAS_LIMIT)
+                .isStatic(false)
+                .callType(callType)
+                .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(block)
+                .build();
+    }
+
     protected ContractExecutionParameters serviceParametersForTopLevelContractCreate(
             final String contractInitCode, final CallServiceParameters.CallType callType, final Address senderAddress) {
         final var senderEvmAccount = new HederaEvmAccount(senderAddress);
@@ -255,7 +295,7 @@ public class TestWeb3jService implements Web3jService {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
-                .block(BlockType.LATEST)
+                .block(blockType)
                 .build();
     }
 
@@ -271,7 +311,7 @@ public class TestWeb3jService implements Web3jService {
         final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
         final var entity = domainBuilder
                 .entity()
-                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId))
+                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId).key(domainBuilder.key(KeyCase.ED25519)))
                 .persist();
 
         domainBuilder
@@ -291,7 +331,7 @@ public class TestWeb3jService implements Web3jService {
         return ethGetTransactionCount;
     }
 
-    private EthGetTransactionReceipt getTransactionReceipt(Request request) {
+    private EthGetTransactionReceipt getTransactionReceipt(final Request request) {
         final var transactionHash = request.getParams().getFirst().toString();
         final var ethTransactionReceipt = new EthGetTransactionReceipt();
         final var transactionReceipt = new TransactionReceipt();
@@ -308,6 +348,11 @@ public class TestWeb3jService implements Web3jService {
 
     public interface Deployer<T extends Contract> {
         RemoteCall<T> deploy(Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider);
+    }
+
+    public interface DeployerWithValue<T extends Contract> {
+        RemoteCall<T> deploy(
+                Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider, BigInteger value);
     }
 
     @TestConfiguration(proxyBeanMethods = false)

@@ -24,15 +24,18 @@ import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
-import com.hedera.hashgraph.sdk.EvmAddress;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.TopicDeleteTransaction;
+import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.config.SdkProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 import jakarta.inject.Named;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -61,6 +64,7 @@ public class SDKClient implements Cleanable {
     private final AcceptanceTestProperties acceptanceTestProperties;
     private final SdkProperties sdkProperties;
     private final MirrorNodeClient mirrorNodeClient;
+    private final TopicId topicId;
 
     @Getter
     private final ExpandedAccountId expandedOperatorAccountId;
@@ -81,9 +85,10 @@ public class SDKClient implements Cleanable {
                 .setMaxAttempts(sdkProperties.getMaxAttempts())
                 .setMaxNodeReadmitTime(Duration.ofSeconds(60L))
                 .setMaxNodesPerTransaction(sdkProperties.getMaxNodesPerTransaction());
-        startupProbe.validateEnvironment(client);
+        var receipt = startupProbe.validateEnvironment(client);
+        this.topicId = receipt != null ? receipt.topicId : null;
         validateClient();
-        expandedOperatorAccountId = getOperatorAccount();
+        expandedOperatorAccountId = getOperatorAccount(receipt);
         this.client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
         validateNetworkMap = this.client.getNetwork();
     }
@@ -97,6 +102,19 @@ public class SDKClient implements Cleanable {
     public void clean() {
         var createdAccountId = expandedOperatorAccountId.getAccountId();
         var operatorId = defaultOperator.getAccountId();
+
+        if (topicId != null) {
+            try {
+                var response = new TopicDeleteTransaction()
+                        .setTopicId(topicId)
+                        .freezeWith(client)
+                        .sign(defaultOperator.getPrivateKey())
+                        .execute(client);
+                log.info("Deleted startup probe topic {} via {}", topicId, response.transactionId);
+            } catch (Exception e) {
+                log.warn("Unable to delete startup probe topic {}", topicId, e);
+            }
+        }
 
         if (!operatorId.equals(createdAccountId)) {
             try {
@@ -152,20 +170,37 @@ public class SDKClient implements Cleanable {
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
     }
 
-    private ExpandedAccountId getOperatorAccount() {
+    private double getExchangeRate(TransactionReceipt receipt) {
+        if (receipt == null || receipt.exchangeRate == null) {
+            var currentRate = mirrorNodeClient.getExchangeRates().getCurrentRate();
+            int cents = currentRate.getCentEquivalent();
+            int hbars = currentRate.getHbarEquivalent();
+            return (double) cents / (double) hbars;
+        } else {
+            return receipt.exchangeRate.exchangeRateInCents;
+        }
+    }
+
+    private ExpandedAccountId getOperatorAccount(TransactionReceipt receipt) {
         try {
             if (acceptanceTestProperties.isCreateOperatorAccount()) {
                 // Use the same operator key in case we need to later manually update/delete any created entities.
-                PrivateKey privateKey = defaultOperator.getPrivateKey();
-                PublicKey publicKey = privateKey.getPublicKey();
-                EvmAddress alias = null;
-                if (privateKey.isECDSA()) {
-                    alias = publicKey.toEvmAddress();
-                }
+                var privateKey = defaultOperator.getPrivateKey();
+                var publicKey = privateKey.getPublicKey();
+                var alias = privateKey.isECDSA() ? publicKey.toEvmAddress() : null;
+
+                // Convert USD balance property to hbars using exchange rate from probe
+                double exchangeRate = getExchangeRate(receipt);
+                var exchangeRateUsd =
+                        BigDecimal.valueOf(exchangeRate).divide(BigDecimal.valueOf(100), MathContext.DECIMAL128);
+                var balance = Hbar.from(acceptanceTestProperties
+                        .getOperatorBalance()
+                        .divide(exchangeRateUsd, 8, RoundingMode.HALF_EVEN));
+
                 var accountId = new AccountCreateTransaction()
-                        .setInitialBalance(Hbar.fromTinybars(acceptanceTestProperties.getOperatorBalance()))
-                        .setKey(publicKey)
                         .setAlias(alias)
+                        .setInitialBalance(balance)
+                        .setKey(publicKey)
                         .execute(client)
                         .getReceipt(client)
                         .accountId;

@@ -25,7 +25,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
-import com.hedera.mirror.importer.parser.record.ParserPerformanceProperties.SubType;
+import com.hedera.mirror.importer.test.performance.PerformanceProperties.SubType;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -89,12 +89,13 @@ public class RecordFileBuilder {
             var consensusEnd = recordItems.get(recordItems.size() - 1).getConsensusTimestamp();
             var consensusStart = recordItems.get(0).getConsensusTimestamp();
             Instant instant = Instant.ofEpochSecond(0, consensusStart);
-            String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
+            String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant) + ".gz";
 
             recordFile.customize(r -> {
                 r.consensusEnd(consensusEnd)
                         .consensusStart(consensusStart)
                         .count((long) recordItems.size())
+                        .index(0L)
                         .name(filename);
                 if (previous != null) {
                     r.index(previous.getIndex() + 1).previousHash(previous.getHash());

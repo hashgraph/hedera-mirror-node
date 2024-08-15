@@ -175,6 +175,9 @@ public class AddressBookServiceImpl implements AddressBookService {
         }
 
         addressBook.getEntries().forEach(e -> {
+            if (StringUtils.isNotBlank(importerProperties.getNodePublicKey())) {
+                e.setPublicKey(importerProperties.getNodePublicKey());
+            }
             var nodeStake = nodeStakes.get(e.getNodeId());
             nodes.add(new ConsensusNodeWrapper(e, nodeStake, nodeCount, totalStake.get()));
         });
