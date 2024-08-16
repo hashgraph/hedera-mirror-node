@@ -27,6 +27,6 @@ import org.springframework.util.StringUtils;
 public class ByteArrayFromStringConverter implements Converter<String, byte[]> {
     @Override
     public byte[] convert(String source) {
-        return StringUtils.hasText(source) ? source.getBytes(StandardCharsets.UTF_8) : null;
+        return StringUtils.hasLength(source) ? source.getBytes(StandardCharsets.UTF_8) : null;
     }
 }

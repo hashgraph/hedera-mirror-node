@@ -45,6 +45,9 @@ class ByteArrayFromStringConverterTest {
         return Stream.of(
                 Arguments.of("0", new byte[] {0x30}),
                 Arguments.of("01", new byte[] {0x30, 0x31}),
-                Arguments.of("hashgraph", "hashgraph".getBytes(StandardCharsets.UTF_8)));
+                Arguments.of("hashgraph", "hashgraph".getBytes(StandardCharsets.UTF_8)),
+                Arguments.of("", null),
+                Arguments.of(" ", new byte[] {0x20}),
+                Arguments.of("\t\n", new byte[] {0x09, 0x0a}));
     }
 }
