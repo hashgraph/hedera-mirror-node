@@ -94,6 +94,21 @@ Feature: HTS Base Coverage Feature
     Then I delete the token
     And the mirror node REST API should return the transaction for token serial number index 1 transaction flow
 
+  @nft @critical @release
+  Scenario: Validate NFT Metadata Flow
+    Given I successfully create a new nft with infinite supplyType
+    Then the mirror node REST API should return the transaction
+    And I ensure token has the correct properties
+    And I ensure token has the expected metadata and key
+    Then I mint a serial number from the token
+    When I associate ALICE with token
+    When I associate BOB with token
+    Then I transfer serial number index 0 to ALICE
+    Given ALICE approves OPERATOR to serial number index 0 of the NFT
+    Given I update the metadata for serial number index 0
+
+
+
   @customfees
   Scenario Outline: Validate Base Token Flow with Custom Fees Schedule - Create, Associate, Fund, Transfer
     Given I successfully create a new token with custom fees schedule

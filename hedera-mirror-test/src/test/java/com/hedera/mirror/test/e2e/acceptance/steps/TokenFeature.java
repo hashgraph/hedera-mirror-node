@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
@@ -175,6 +176,20 @@ public class TokenFeature extends AbstractFeature {
     public void setNonFungibleTokenAllowance(AccountClient.AccountNameEnum accountName) {
         var spenderAccountId = accountClient.getAccount(accountName).getAccountId();
         networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, spenderAccountId);
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
+    }
+
+    @Given("{account} approves OPERATOR to serial number index {int} of the NFT")
+    public void setNonFungibleTokenAllowance(AccountClient.AccountNameEnum accountName, int index) {
+        var spender = tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId();
+        var ownerAccountId = accountClient.getAccount(accountName).getAccountId();
+        var serial = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
+        var transaction = new AccountAllowanceApproveTransaction()
+                .approveTokenNftAllowance(tokenId.nft(serial), ownerAccountId, spender);
+
+        networkTransactionResponse = accountClient.executeTransactionAndRetrieveReceipt(transaction);
+
         assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
         assertThat(networkTransactionResponse.getReceipt()).isNotNull();
     }
