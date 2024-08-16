@@ -50,7 +50,7 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
             new DataClassRowMapper<>(MigrationEthereumTransaction.class);
     private static final String SELECT_ETHEREUM_TRANSACTION_SQL =
             """
-            select call_data_id, consensus_timestamp, data, hash, payer_account_id
+            select call_data, call_data_id, consensus_timestamp, data, hash, payer_account_id
             from ethereum_transaction
             where hash = ''::bytea and consensus_timestamp > ?
             order by consensus_timestamp
