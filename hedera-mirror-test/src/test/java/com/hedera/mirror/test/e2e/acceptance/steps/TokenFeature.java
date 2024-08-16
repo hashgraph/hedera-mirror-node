@@ -30,6 +30,7 @@ import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
+import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -182,13 +183,14 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("{account} approves OPERATOR to serial number index {int} of the NFT")
     public void setNonFungibleTokenAllowance(AccountClient.AccountNameEnum accountName, int index) {
-        var spender = tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId();
-        var ownerAccountId = accountClient.getAccount(accountName).getAccountId();
+        var spender = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        var owner = accountClient.getAccount(accountName);
         var serial = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
         var transaction = new AccountAllowanceApproveTransaction()
-                .approveTokenNftAllowance(tokenId.nft(serial), ownerAccountId, spender);
+                .approveTokenNftAllowance(tokenId.nft(serial), owner.getAccountId(), spender.getAccountId());
 
-        networkTransactionResponse = accountClient.executeTransactionAndRetrieveReceipt(transaction);
+        networkTransactionResponse = accountClient.executeTransactionAndRetrieveReceipt(
+                transaction, KeyList.of(owner.getPrivateKey()), spender);
 
         assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
         assertThat(networkTransactionResponse.getReceipt()).isNotNull();
