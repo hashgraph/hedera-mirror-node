@@ -77,7 +77,6 @@ public class TestWeb3jService implements Web3jService {
     private final Credentials credentials;
     private final DomainBuilder domainBuilder;
     private final Web3j web3j;
-
     private Address sender = Address.fromHexString("");
     private boolean isEstimateGas = false;
     private String transactionResult;
