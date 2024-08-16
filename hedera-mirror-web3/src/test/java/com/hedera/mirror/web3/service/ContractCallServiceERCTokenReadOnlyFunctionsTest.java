@@ -716,7 +716,6 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
-
     @Test
     void ethCallIsApprovedForAllWithAliasRedirect() throws Exception {
         final var spender = spenderEntityPersistWithAlias();
@@ -738,7 +737,6 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 toAddress(spender).toHexString());
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
-
 
     @Test
     void ethCallAllowanceRedirect() throws Exception {
@@ -762,7 +760,6 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 toAddress(spender).toHexString());
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
-
 
     @Test
     void ethCallAllowanceWithAliasRedirect() throws Exception {
@@ -874,7 +871,8 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
-        final var functionCall = contract.send_balanceOfRedirect(tokenAddress.toHexString(), SENDER_ALIAS.toHexString());
+        final var functionCall =
+                contract.send_balanceOfRedirect(tokenAddress.toHexString(), SENDER_ALIAS.toHexString());
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
