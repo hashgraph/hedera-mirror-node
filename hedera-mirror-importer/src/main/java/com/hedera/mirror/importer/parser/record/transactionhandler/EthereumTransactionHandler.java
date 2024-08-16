@@ -26,7 +26,6 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionHashService;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -40,7 +39,6 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
-    private final EthereumTransactionHashService ethereumTransactionHashService;
     private final EthereumTransactionParser ethereumTransactionParser;
 
     /**
@@ -90,9 +88,13 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
             ethereumTransaction.setMaxGasAllowance(body.getMaxGasAllowance());
             ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
 
-            // Make sure the hash is calculated before gas fields are converted
             if (ArrayUtils.isEmpty(ethereumTransaction.getHash())) {
-                ethereumTransaction.setHash(ethereumTransactionHashService.getHash(ethereumTransaction));
+                var hash = ethereumTransactionParser.getHash(
+                        ethereumTransaction.getCallData(),
+                        ethereumTransaction.getCallDataId(),
+                        ethereumTransaction.getConsensusTimestamp(),
+                        ethereumTransaction.getData());
+                ethereumTransaction.setHash(hash);
             }
 
             // EVM logic uses weibar for gas values, convert transaction body gas values to tinybars

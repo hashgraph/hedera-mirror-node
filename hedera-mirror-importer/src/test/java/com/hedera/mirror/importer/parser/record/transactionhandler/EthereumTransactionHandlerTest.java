@@ -23,13 +23,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -42,7 +42,6 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionHashService;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
@@ -70,9 +69,6 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     private static final Version HAPI_VERSION_0_46_0 = new Version(0, 46, 0);
 
     @Mock(strictness = LENIENT)
-    private EthereumTransactionHashService ethereumTransactionHashService;
-
-    @Mock(strictness = LENIENT)
     protected EthereumTransactionParser ethereumTransactionParser;
 
     @AfterEach
@@ -85,8 +81,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         doReturn(domainBuilder.ethereumTransaction(true).get())
                 .when(ethereumTransactionParser)
                 .decode(any());
-        return new EthereumTransactionHandler(
-                entityListener, entityProperties, ethereumTransactionHashService, ethereumTransactionParser);
+        return new EthereumTransactionHandler(entityListener, entityProperties, ethereumTransactionParser);
     }
 
     @Override
@@ -183,8 +178,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         && e.getEthereumNonce() == expectedNonce));
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
-
-        verifyNoInteractions(ethereumTransactionHashService);
+        verify(ethereumTransactionParser, never()).getHash(any(), any(), anyLong(), any());
     }
 
     @Test
@@ -197,7 +191,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
         byte[] hash = domainBuilder.bytes(32);
-        doReturn(hash).when(ethereumTransactionHashService).getHash(ethereumTransaction);
+        doReturn(hash).when(ethereumTransactionParser).getHash(any(), any(), anyLong(), any());
 
         var recordItem = recordItemBuilder
                 .ethereumTransaction(false)
@@ -235,7 +229,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
 
-        verify(ethereumTransactionHashService).getHash(ethereumTransaction);
+        verify(ethereumTransactionParser).getHash(any(), any(), anyLong(), any());
     }
 
     @Test

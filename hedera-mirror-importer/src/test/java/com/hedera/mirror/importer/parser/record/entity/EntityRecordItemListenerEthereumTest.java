@@ -17,9 +17,9 @@
 package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
-import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.RAW_TX_TYPE_1;
-import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.RAW_TX_TYPE_1_CALL_DATA;
-import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.RAW_TX_TYPE_1_CALL_DATA_OFFLOADED;
+import static com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionTestUtility.RAW_TX_TYPE_1;
+import static com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionTestUtility.RAW_TX_TYPE_1_CALL_DATA;
+import static com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionTestUtility.RAW_TX_TYPE_1_CALL_DATA_OFFLOADED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;

@@ -17,9 +17,9 @@
 package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
-import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.RAW_TX_TYPE_1_CALL_DATA_OFFLOADED;
-import static com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionIntegrationTestUtility.loadEthereumTransactions;
-import static com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionIntegrationTestUtility.populateFileData;
+import static com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionTestUtility.RAW_TX_TYPE_1_CALL_DATA_OFFLOADED;
+import static com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionTestUtility.loadEthereumTransactions;
+import static com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionTestUtility.populateFileData;
 
 import com.google.common.collect.Lists;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,6 +56,11 @@ class BackfillEthereumTransactionHashMigrationTest extends ImporterIntegrationTe
     private final EntityProperties entityProperties;
     private final BackfillEthereumTransactionHashMigration migration;
     private final TransactionHashRepository transactionHashRepository;
+
+    @AfterEach
+    void teardown() {
+        entityProperties.getPersist().setTransactionHash(true);
+    }
 
     @Test
     void empty() {

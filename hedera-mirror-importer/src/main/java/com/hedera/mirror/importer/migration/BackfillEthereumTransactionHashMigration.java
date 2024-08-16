@@ -23,7 +23,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionHashService;
+import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import jakarta.inject.Named;
 import java.io.IOException;
@@ -82,7 +82,7 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
             """;
 
     private final EntityProperties entityProperties;
-    private final EthereumTransactionHashService ethereumTransactionHashService;
+    private final EthereumTransactionParser ethereumTransactionParser;
     private final JdbcTemplate jdbcTemplate;
     private final TransactionHashRepository transactionHashRepository;
     private final TransactionOperations transactionOperations;
@@ -90,14 +90,14 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
     @Lazy
     public BackfillEthereumTransactionHashMigration(
             EntityProperties entityProperties,
-            EthereumTransactionHashService ethereumTransactionHashService,
+            EthereumTransactionParser ethereumTransactionParser,
             ImporterProperties importerProperties,
             JdbcTemplate jdbcTemplate,
             TransactionHashRepository transactionHashRepository,
             TransactionOperations transactionOperations) {
         super(importerProperties.getMigration());
         this.entityProperties = entityProperties;
-        this.ethereumTransactionHashService = ethereumTransactionHashService;
+        this.ethereumTransactionParser = ethereumTransactionParser;
         this.jdbcTemplate = jdbcTemplate;
         this.transactionHashRepository = transactionHashRepository;
         this.transactionOperations = transactionOperations;
@@ -127,8 +127,8 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
                 var patchedTransactions = transactions.stream()
                         .map(t -> {
                             var callDataId = t.getCallDataId() == null ? null : EntityId.of(t.getCallDataId());
-                            t.setHash(ethereumTransactionHashService.getHash(
-                                    callDataId, t.getConsensusTimestamp(), t.getData()));
+                            t.setHash(ethereumTransactionParser.getHash(
+                                    t.getCallData(), callDataId, t.getConsensusTimestamp(), t.getData()));
                             return t;
                         })
                         .filter(t -> ArrayUtils.isNotEmpty(t.getHash()))
@@ -179,6 +179,7 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
 
     @Data
     private static class MigrationEthereumTransaction {
+        private byte[] callData;
         private Long callDataId;
         private long consensusTimestamp;
         private byte[] data;
