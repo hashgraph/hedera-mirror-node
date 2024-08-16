@@ -32,7 +32,7 @@ import org.springframework.util.CollectionUtils;
  */
 public record RestSpecNormalized(
         String description,
-        String extendedDescription,
+        List<String> extendedDescription,
         String matrix,
         SpecSetup setup,
         List<SpecTestNormalized> tests) {
@@ -46,11 +46,14 @@ public record RestSpecNormalized(
     public static RestSpecNormalized from(RestSpec restSpec) {
         List<SpecTestNormalized> normalizedTests;
         if (CollectionUtils.isEmpty(restSpec.tests())) {
-            var specTest = new SpecTest(restSpec.responseHeaders(), restSpec.responseJson(), restSpec.responseStatus(),
-                    restSpec.url(), restSpec.urls());
+            var specTest = new SpecTest(
+                    restSpec.responseHeaders(),
+                    restSpec.responseJson(),
+                    restSpec.responseStatus(),
+                    restSpec.url(),
+                    restSpec.urls());
             normalizedTests = List.of(SpecTestNormalized.from(specTest));
-        }
-        else {
+        } else {
             normalizedTests = SpecTestNormalized.allFrom(restSpec.tests());
         }
         return new RestSpecNormalized(

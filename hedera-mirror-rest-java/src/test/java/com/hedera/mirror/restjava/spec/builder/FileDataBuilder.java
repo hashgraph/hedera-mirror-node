@@ -16,27 +16,36 @@
 
 package com.hedera.mirror.restjava.spec.builder;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
-class AccountBuilder extends EntityBuilder {
+class FileDataBuilder extends AbstractEntityBuilder<FileData, FileData.FileDataBuilder> {
 
-    @Override
-    protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
-        return specSetup::accounts;
+    private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS =
+            Map.of("fileData", HEX_OR_BASE64_CONVERTER);
+
+    FileDataBuilder() {
+        super(METHOD_PARAMETER_CONVERTERS);
     }
 
     @Override
-    protected Entity.EntityBuilder<?, ?> getEntityBuilder() {
-        return super.getEntityBuilder()
-                .maxAutomaticTokenAssociations(0)
-                .publicKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f")
-                .type(EntityType.ACCOUNT);
+    protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
+        return specSetup::fileData;
+    }
+
+    @Override
+    protected FileData.FileDataBuilder getEntityBuilder() {
+        return FileData.builder().transactionType(17);
+    }
+
+    @Override
+    protected FileData getFinalEntity(FileData.FileDataBuilder builder, Map<String, Object> account) {
+        return builder.build();
     }
 }
