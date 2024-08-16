@@ -38,6 +38,11 @@ func (b *TransactionBuilder) EntityId(encodedId int64) *TransactionBuilder {
 	return b
 }
 
+func (b *TransactionBuilder) ItemizedTransfer(itemizedTransfer domain.ItemizedTransferSlice) *TransactionBuilder {
+	b.transaction.ItemizedTransfer = itemizedTransfer
+	return b
+}
+
 func (b *TransactionBuilder) Result(result int16) *TransactionBuilder {
 	b.transaction.Result = result
 	return b
