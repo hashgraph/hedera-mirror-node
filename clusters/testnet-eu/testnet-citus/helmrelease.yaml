@@ -79,6 +79,9 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
     stackgres:
+      coordinator:
+        config:
+          citus.max_cached_conns_per_worker: "6"
       worker:
         persistentVolume:
           size: 900Gi
