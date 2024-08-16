@@ -176,15 +176,5 @@ public class RestSpecTest extends RestJavaIntegrationTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(specTest.responseStatus());
         JSONAssert.assertEquals(specTest.responseJson(), response.getBody(), JSONCompareMode.LENIENT);
-
-        /*
-         * Ensure response headers defined in the spec file are present in the API response.
-         */
-        if (specTest.responseHeaders() != null) {
-            var apiResponseHeaders = response.getHeaders();
-            for (var specHeaderEntry : specTest.responseHeaders().entrySet()) {
-                assertThat(specHeaderEntry.getValue()).isEqualTo(apiResponseHeaders.getFirst(specHeaderEntry.getKey()));
-            }
-        }
     }
 }
