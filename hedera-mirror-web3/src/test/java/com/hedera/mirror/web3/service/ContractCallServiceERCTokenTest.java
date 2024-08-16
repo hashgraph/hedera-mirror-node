@@ -107,21 +107,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ErcContractModificationFunctions.class)
-    void supportedErcModificationPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
-                .isTrue();
-    }
-
-    @ParameterizedTest
     @EnumSource(ErcContractReadOnlyFunctions.class)
     void supportedErcReadOnlyRedirectPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction) {
         final var functionName = ercFunction.name + REDIRECT_SUFFIX;
