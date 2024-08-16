@@ -118,11 +118,11 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
             long consensusTimestamp = -1;
             for (; ; ) {
                 var transactions = jdbcTemplate.query(SELECT_ETHEREUM_TRANSACTION_SQL, ROW_MAPPER, consensusTimestamp);
-                found.addAndGet(transactions.size());
                 if (transactions.isEmpty()) {
                     break;
                 }
 
+                found.addAndGet(transactions.size());
                 consensusTimestamp = transactions.getLast().getConsensusTimestamp();
                 var patchedTransactions = transactions.stream()
                         .map(t -> {
