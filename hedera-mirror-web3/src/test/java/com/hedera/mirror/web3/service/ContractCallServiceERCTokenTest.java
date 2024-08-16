@@ -136,22 +136,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
-    @ParameterizedTest
-    @EnumSource(ErcContractModificationFunctions.class)
-    void supportedErcModificationsRedirectPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
-        final var functionName = ercFunction.name + "Redirect";
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
-                .isTrue();
-    }
-
     @Test
     void delegateTransferDoesNotExecuteAndReturnEmpty() {
         final var functionHash = functionEncodeDecoder.functionHashFor(
@@ -251,27 +235,5 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         public String getName(final boolean isStatic) {
             return isStatic ? name : name + NON_STATIC_SUFFIX;
         }
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    public enum ErcContractModificationFunctions implements ContractFunctionProviderEnum {
-        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
-        DELETE_ALLOWANCE_NFT("approve", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
-        APPROVE_NFT("approve", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, 1L}),
-        APPROVE_WITH_ALIAS("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 2L}),
-        TRANSFER("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM("transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM_TO_HOLLOW_ACCOUNT(
-                "transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, HOLLOW_ACCOUNT_ALIAS, 1L}),
-        TRANSFER_FROM_NFT("transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
-        TRANSFER_WITH_ALIAS("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM_WITH_ALIAS(
-                "transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM_NFT_WITH_ALIAS(
-                "transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L});
-
-        private final String name;
-        private final Object[] functionParameters;
     }
 }
