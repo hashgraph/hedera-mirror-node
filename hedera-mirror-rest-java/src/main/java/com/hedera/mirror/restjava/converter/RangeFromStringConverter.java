@@ -26,11 +26,12 @@ import org.springframework.util.StringUtils;
 
 @Named
 @ConfigurationPropertiesBinding
+@SuppressWarnings("java:S5842") // Upper and lower bounds in regex may be empty and must still match.
 public class RangeFromStringConverter implements Converter<String, Range<Long>> {
     private static final String LOWER_CLOSED = "[";
     private static final String UPPER_CLOSED = "]";
 
-    private static final String RANGE_REGEX = "^([\\[(])?(\\d*)?,(\\d*)?(]|\\))$";
+    private static final String RANGE_REGEX = "^([\\[(])?(\\d*)?,(\\d*)?([])])$";
     private static final Pattern RANGE_PATTERN = Pattern.compile(RANGE_REGEX);
 
     @Override
