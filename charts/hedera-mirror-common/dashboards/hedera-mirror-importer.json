@@ -5815,9 +5815,9 @@
         },
         "definition": "label_values(hedera_mirror_parse_duration_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}, type)",
         "hide": 2,
-        "includeAll": true,
+        "includeAll": false,
         "label": "Stream",
-        "multi": false,
+        "multi": true,
         "name": "stream",
         "options": [],
         "query": {

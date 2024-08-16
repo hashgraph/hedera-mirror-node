@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Map;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
@@ -47,6 +48,7 @@ public class ImporterProperties {
     @NotNull
     private Path dataPath = Paths.get(".", "data");
 
+    @EqualsAndHashCode.Exclude
     @Getter(lazy = true)
     private final Path streamPath = dataPath.resolve(STREAMS);
 
@@ -62,6 +64,8 @@ public class ImporterProperties {
 
     @NotBlank
     private String network = HederaNetwork.DEMO;
+
+    private String nodePublicKey;
 
     @Min(0)
     private long shard = 0L;
