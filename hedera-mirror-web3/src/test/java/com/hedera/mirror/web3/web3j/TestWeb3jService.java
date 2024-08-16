@@ -38,7 +38,6 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
