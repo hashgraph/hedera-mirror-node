@@ -29,10 +29,14 @@ import org.apache.commons.lang3.StringUtils;
 @Value
 @NoArgsConstructor
 public class GenericErrorResponse {
-    List<ErrorMessage> messages = new ArrayList<>();
+    private final List<ErrorMessage> messages = new ArrayList<>();
 
     public GenericErrorResponse(String message) {
-        messages.add(new ErrorMessage(message, StringUtils.EMPTY, StringUtils.EMPTY));
+        this(message, StringUtils.EMPTY, StringUtils.EMPTY);
+    }
+
+    public GenericErrorResponse(String message, String detail) {
+        this(message, detail, StringUtils.EMPTY);
     }
 
     public GenericErrorResponse(String message, String detailedMessage, String data) {
@@ -40,8 +44,8 @@ public class GenericErrorResponse {
         messages.add(errorMessage);
     }
 
-    public GenericErrorResponse(List<String> errorMessages) {
-        errorMessages.forEach(m -> messages.add(new ErrorMessage(m, StringUtils.EMPTY, StringUtils.EMPTY)));
+    public GenericErrorResponse(List<ErrorMessage> errorMessages) {
+        this.messages.addAll(errorMessages);
     }
 
     @Value
