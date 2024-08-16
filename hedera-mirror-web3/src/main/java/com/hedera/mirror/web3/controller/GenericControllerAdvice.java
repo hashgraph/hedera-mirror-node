@@ -21,6 +21,7 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
+import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidInputException;
@@ -86,7 +87,7 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler
     private ResponseEntity<?> mirrorEvmTransactionError(final MirrorEvmTransactionException e, WebRequest request) {
         log.warn("Mirror EVM transaction error: {}, detail: {}, data: {}", e.getMessage(), e.getDetail(), e.getData());
-        request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, e, WebRequest.SCOPE_REQUEST);
+        request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, e, SCOPE_REQUEST);
         return new ResponseEntity<>(new GenericErrorResponse(e.getMessage(), e.getDetail(), e.getData()), BAD_REQUEST);
     }
 
@@ -106,14 +107,16 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     }
 
     @Nullable
+    @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         var messages = ex.getAllErrors().stream().map(this::formatErrorMessage).toList();
-        request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, WebRequest.SCOPE_REQUEST);
+        request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, SCOPE_REQUEST);
         return new ResponseEntity<>(new GenericErrorResponse(messages), headers, status);
     }
 
     @Nullable
+    @Override
     protected ResponseEntity<Object> handleTypeMismatch(
             TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         final var cause = ex.getRootCause() instanceof Exception rc ? rc : ex;
@@ -121,12 +124,13 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     }
 
     @Nullable
+    @Override
     protected ResponseEntity<Object> handleExceptionInternal(
             Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         var message = statusCode instanceof HttpStatus hs ? hs.getReasonPhrase() : statusCode.toString();
         var detail = !statusCode.is5xxServerError() ? ex.getMessage() : StringUtils.EMPTY; // Don't leak server errors
         var genericErrorResponse = new GenericErrorResponse(message, detail, StringUtils.EMPTY);
-        request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, WebRequest.SCOPE_REQUEST);
+        request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, SCOPE_REQUEST);
         return new ResponseEntity<>(genericErrorResponse, headers, statusCode);
     }
 

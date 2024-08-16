@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.WebUtils;
@@ -71,22 +72,21 @@ class LoggingFilter extends OncePerRequestFilter {
 
         long elapsed = System.currentTimeMillis() - startTime;
         var content = getContent(request);
-        var cause = e != null ? e : request.getAttribute(ERROR_EXCEPTION_ATTRIBUTE) instanceof Exception ex ? ex : null;
-        var message = cause != null ? cause.getMessage() : SUCCESS;
+        var message = getMessage(request, e);
         int status = response.getStatus();
         var params =
                 new Object[] {request.getRemoteAddr(), request.getMethod(), uri, elapsed, status, message, content};
 
         if (actuator) {
             log.debug(LOG_FORMAT, params);
-        } else if (cause != null) {
+        } else if (status != HttpStatus.OK.value()) {
             log.warn(LOG_FORMAT, params);
         } else {
             log.info(LOG_FORMAT, params);
         }
     }
 
-    protected String getContent(HttpServletRequest request) {
+    private String getContent(HttpServletRequest request) {
         var wrapper = WebUtils.getNativeRequest(request, ContentCachingRequestWrapper.class);
 
         if (wrapper != null) {
@@ -94,5 +94,17 @@ class LoggingFilter extends OncePerRequestFilter {
         }
 
         return "";
+    }
+
+    private String getMessage(HttpServletRequest request, Exception e) {
+        if (e != null) {
+            return e.getMessage();
+        }
+
+        if (request.getAttribute(ERROR_EXCEPTION_ATTRIBUTE) instanceof Exception ex) {
+            return ex.getMessage();
+        }
+
+        return SUCCESS;
     }
 }
