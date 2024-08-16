@@ -90,7 +90,7 @@ abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     @AfterEach
     void cleanup() {
-        testWeb3jService.setEstimateGas(false);
+        testWeb3jService.reset();
     }
 
     @SuppressWarnings("try")

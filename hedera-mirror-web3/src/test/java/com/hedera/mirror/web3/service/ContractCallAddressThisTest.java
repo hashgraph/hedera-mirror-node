@@ -26,7 +26,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 
-import com.hedera.mirror.web3.web3j.TestWeb3jServiceCustomDeploy;
 import com.hedera.mirror.web3.web3j.generated.TestAddressThis;
 import com.hedera.mirror.web3.web3j.generated.TestNestedAddressThis;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -35,26 +34,17 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 
 class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
-    @Resource
-    protected TestWeb3jServiceCustomDeploy testWeb3jServiceCustomDeploy;
 
     @Resource
     protected ContractExecutionService contractCallService;
 
     @SpyBean
     private ContractExecutionService contractExecutionService;
-
-    @AfterEach
-    void cleanup() {
-        testWeb3jService.setEstimateGas(false);
-        testWeb3jServiceCustomDeploy.cleanupContractRuntime();
-    }
 
     @Test
     void deployAddressThisContract() {
@@ -77,10 +67,9 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
     @Test
     void addressThisEthCallWithoutEvmAlias() throws Exception {
         // Given
-        final var contract = testWeb3jServiceCustomDeploy.deploy(TestAddressThis::deploy);
+        final var contract = testWeb3jService.deployWithoutPersist(TestAddressThis::deploy);
         addressThisContractPersist(
-                testWeb3jServiceCustomDeploy.getContractRuntime(),
-                Address.fromHexString(contract.getContractAddress()));
+                testWeb3jService.getContractRuntime(), Address.fromHexString(contract.getContractAddress()));
         final List<Bytes> capturedOutputs = new ArrayList<>();
         doAnswer(invocation -> {
                     HederaEvmTransactionProcessingResult result =

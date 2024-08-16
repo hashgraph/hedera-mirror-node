@@ -79,6 +79,8 @@ public class TestWeb3jService implements Web3jService {
     private boolean isEstimateGas = false;
     private String estimatedGas;
     private long value = 0L;
+    private boolean persistContract = true;
+    private byte[] contractRuntime;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -112,8 +114,24 @@ public class TestWeb3jService implements Web3jService {
         this.value = value;
     }
 
+    public byte[] getContractRuntime() {
+        return contractRuntime;
+    }
+
+    public void reset() {
+        this.isEstimateGas = false;
+        this.contractRuntime = null;
+        this.persistContract = true;
+    }
+
     @SneakyThrows(Exception.class)
     public <T extends Contract> T deploy(Deployer<T> deployer) {
+        return deployer.deploy(web3j, credentials, contractGasProvider).send();
+    }
+
+    @SneakyThrows(Exception.class)
+    public <T extends Contract> T deployWithoutPersist(Deployer<T> deployer) {
+        persistContract = false;
         return deployer.deploy(web3j, credentials, contractGasProvider).send();
     }
 
@@ -135,7 +153,7 @@ public class TestWeb3jService implements Web3jService {
         var serviceParameters = serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
         final var mirrorNodeResult = contractExecutionService.processCall(serviceParameters);
         try {
-            final var contractInstance = deployInternal(mirrorNodeResult);
+            final var contractInstance = deployInternal(mirrorNodeResult, persistContract);
             res.setResult(transactionHash);
             res.setRawResponse(contractInstance.toHexString());
             res.setId(request.getId());
@@ -287,10 +305,14 @@ public class TestWeb3jService implements Web3jService {
                 .build();
     }
 
-    public Address deployInternal(String binary) {
+    public Address deployInternal(String binary, boolean persistContract) {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
-        contractPersist(binary, id);
+        if (persistContract) {
+            contractPersist(binary, id);
+        } else {
+            contractRuntime = Hex.decode(binary.replace(HEX_PREFIX, ""));
+        }
         return contractAddress;
     }
 
@@ -344,12 +366,6 @@ public class TestWeb3jService implements Web3jService {
         TestWeb3jService testWeb3jService(
                 ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
             return new TestWeb3jService(contractExecutionService, domainBuilder);
-        }
-
-        @Bean
-        TestWeb3jServiceCustomDeploy testWeb3jServiceCustomDeploy(
-                ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
-            return new TestWeb3jServiceCustomDeploy(contractExecutionService, domainBuilder);
         }
     }
 }
