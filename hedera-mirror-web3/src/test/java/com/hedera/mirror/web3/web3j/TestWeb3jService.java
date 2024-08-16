@@ -71,7 +71,7 @@ public class TestWeb3jService implements Web3jService {
     private static final long DEFAULT_TRANSACTION_VALUE = 10L;
     private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
     protected final DomainBuilder domainBuilder;
-    protected final ContractExecutionService contractExecutionService;
+    private final ContractExecutionService contractExecutionService;
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
     private final Web3j web3j;
