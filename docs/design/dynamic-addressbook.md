@@ -103,8 +103,8 @@ Response:
   "nodes": [
     {
       "admin_key": {
-        "_type": "ProtobufEncoded",
-        "key": 10101
+        "_type": "ED25519",
+        "key": "AAAAC3NzaC1lZDI1NTE5AAAAIGpjh408HMAa1uE60DFrUs0GcgRflP1Hc3iLJlesVfCb"
       },
       "description": "address book 1",
       "file_id": "0.0.102",
