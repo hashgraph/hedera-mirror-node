@@ -17,17 +17,21 @@
 package com.hedera.mirror.importer.parser.record.ethereum;
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import jakarta.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.context.annotation.Primary;
 
+@CustomLog
 @Named
 @Primary
 @RequiredArgsConstructor
 public class CompositeEthereumTransactionParser implements EthereumTransactionParser {
+
     private final LegacyEthereumTransactionParser legacyEthereumTransactionParser;
     private final Eip2930EthereumTransactionParser eip2930EthereumTransactionParser;
     private final Eip1559EthereumTransactionParser eip1559EthereumTransactionParser;
@@ -36,6 +40,17 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
     public EthereumTransaction decode(byte[] transactionBytes) {
         var ethereumTransactionParser = getEthereumTransactionParser(transactionBytes);
         return ethereumTransactionParser.decode(transactionBytes);
+    }
+
+    @Override
+    public byte[] getHash(byte[] callData, EntityId callDataId, long consensusTimestamp, byte[] transactionBytes) {
+        try {
+            var parser = getEthereumTransactionParser(transactionBytes);
+            return parser.getHash(callData, callDataId, consensusTimestamp, transactionBytes);
+        } catch (Exception e) {
+            log.warn("Failed to calculate hash for ethereum transaction at {}", consensusTimestamp, e);
+            return ArrayUtils.EMPTY_BYTE_ARRAY;
+        }
     }
 
     private EthereumTransactionParser getEthereumTransactionParser(byte[] transactionBytes) {
