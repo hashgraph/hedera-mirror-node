@@ -34,7 +34,7 @@ extra.apply {
     // Override jooq version since the official gradle plugin is on in 3.19.x, remove if not needed
     // with the next springboot release
     set("jooq.version", "3.19.6")
-    set("mapStructVersion", "1.5.5.Final")
+    set("mapStructVersion", "1.6.0")
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
