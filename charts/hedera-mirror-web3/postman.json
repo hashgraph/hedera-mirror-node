@@ -21,7 +21,7 @@
                   "                                      pm.expect(response).to.not.have.key('result');",
                   "                                      let result = \"\";",
                   "                                      response._status.messages.forEach(msg => {",
-                  "                                      result += msg.message;})",
+                  "                                      result += msg.detail;})",
                   "                                     pm.expect(result)",
                   "                                        .to.contain(\"to field invalid hexadecimal string\")",
                   "                                         .and.contain(\"from field invalid hexadecimal string\")",
