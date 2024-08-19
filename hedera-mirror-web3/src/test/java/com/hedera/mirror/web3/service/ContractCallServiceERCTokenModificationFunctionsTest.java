@@ -121,10 +121,9 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void approveFungibleTokenWithAlias() {
-        final var spenderPublicKey =
-                ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-        final var spenderAlias = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKey.substring(2).toByteArray())));
+        final var spenderPublicKeyString = "3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310";
+        final var spenderPublicKey = publicKeyFromString(spenderPublicKeyString);
+        final var spenderAlias = generateAlias(spenderPublicKey);
 
         final var token = fungibleTokenPersist();
         final var amountGranted = 13L;
@@ -142,10 +141,9 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void approveNFTWithAlias() {
-        final var spenderPublicKey =
-                ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-        final var spenderAlias = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKey.substring(2).toByteArray())));
+        final var spenderPublicKeyString = "3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310";
+        final var spenderPublicKey = publicKeyFromString(spenderPublicKeyString);
+        final var spenderAlias = generateAlias(spenderPublicKey);
         final var treasuryEntityId = accountPersist();
         spenderEntityPersistWithAlias(spenderAlias, spenderPublicKey);
         final var serialNo = 1L;
@@ -286,10 +284,9 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void transferFromNFT() {
-        final var senderPublicKey =
-                ByteString.fromHex("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
-        final var senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+        final var senderPublicKeyString = "3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d";
+        final var senderPublicKey = publicKeyFromString(senderPublicKeyString);
+        final var senderAlias = generateAlias(senderPublicKey);
         final var treasury = senderEntityPersistWithAlias(senderAlias, senderPublicKey);
         final var spender = accountPersist();
         final var recipient = accountPersist();
@@ -334,14 +331,12 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void transferWithAlias() {
-        final var spenderPublicKey =
-                ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-        final var spenderAlias = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKey.substring(2).toByteArray())));
-        final var senderPublicKey =
-                ByteString.fromHex("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
-        final var senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+        final var spenderPublicKeyString = "3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310";
+        final var spenderPublicKey = publicKeyFromString(spenderPublicKeyString);
+        final var spenderAlias = generateAlias(spenderPublicKey);
+        final var senderPublicKeyString = "3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d";
+        final var senderPublicKey = publicKeyFromString(senderPublicKeyString);
+        final var senderAlias = generateAlias(senderPublicKey);
         final var recipient = spenderEntityPersistWithAlias(spenderAlias, spenderPublicKey);
         final var treasury = senderEntityPersistWithAlias(senderAlias, senderPublicKey);
         final var tokenEntity = fungibleTokenPersist(treasury);
@@ -363,15 +358,13 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void transferFromWithAlias() {
-        final var spenderPublicKey =
-                ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-        final var spenderAlias = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKey.substring(2).toByteArray())));
+        final var spenderPublicKeyString = "3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310";
+        final var spenderPublicKey = publicKeyFromString(spenderPublicKeyString);
+        final var spenderAlias = generateAlias(spenderPublicKey);
         final var treasury = accountPersist();
-        final var senderPublicKey =
-                ByteString.fromHex("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
-        final var senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+        final var senderPublicKeyString = "3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d";
+        final var senderPublicKey = publicKeyFromString(senderPublicKeyString);
+        final var senderAlias = generateAlias(senderPublicKey);
         final var spender = senderEntityPersistWithAlias(senderAlias, senderPublicKey);
         final var recipient = spenderEntityPersistWithAlias(spenderAlias, spenderPublicKey);
         final var tokenEntityId = fungibleTokenPersist(treasury);
@@ -408,14 +401,12 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void transferFromNFTWithAlias() {
-        final var spenderPublicKey =
-                ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-        final var spenderAlias = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKey.substring(2).toByteArray())));
-        final var senderPublicKey =
-                ByteString.fromHex("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
-        final var senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+        final var spenderPublicKeyString = "3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310";
+        final var spenderPublicKey = publicKeyFromString(spenderPublicKeyString);
+        final var spenderAlias = generateAlias(spenderPublicKey);
+        final var senderPublicKeyString = "3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d";
+        final var senderPublicKey = publicKeyFromString(senderPublicKeyString);
+        final var senderAlias = generateAlias(senderPublicKey);
         final var treasury = accountPersist();
         final var spender = senderEntityPersistWithAlias(senderAlias, senderPublicKey);
         final var recipient = spenderEntityPersistWithAlias(spenderAlias, spenderPublicKey);
@@ -543,10 +534,9 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void approveFungibleTokenWithAliasRedirect() {
-        final var spenderPublicKey =
-                ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-        final var spenderAlias = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKey.substring(2).toByteArray())));
+        final var spenderPublicKeyString = "3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310";
+        final var spenderPublicKey = publicKeyFromString(spenderPublicKeyString);
+        final var spenderAlias = generateAlias(spenderPublicKey);
         final var spender = spenderEntityPersistWithAlias(spenderAlias, spenderPublicKey);
         final var token = fungibleTokenPersist();
         final var amountGranted = 13L;
@@ -566,10 +556,9 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void approveNFTWithAliasRedirect() {
-        final var spenderPublicKey =
-                ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-        final var spenderAlias = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKey.substring(2).toByteArray())));
+        final var spenderPublicKeyString = "3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310";
+        final var spenderPublicKey = publicKeyFromString(spenderPublicKeyString);
+        final var spenderAlias = generateAlias(spenderPublicKey);
         final var treasuryEntityId = accountPersist();
         final var serialNo = 1L;
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
@@ -710,10 +699,9 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void transferFromNFTRedirect() {
-        final var senderPublicKey =
-                ByteString.fromHex("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
-        final var senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+        final var senderPublicKeyString = "3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d";
+        final var senderPublicKey = publicKeyFromString(senderPublicKeyString);
+        final var senderAlias = generateAlias(senderPublicKey);
         final var treasury = senderEntityPersistWithAlias(senderAlias, senderPublicKey);
         final var spender = accountPersist();
         final var recipient = accountPersist();
@@ -758,14 +746,12 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void transferWithAliasRedirect() {
-        final var spenderPublicKey =
-                ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-        final var spenderAlias = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKey.substring(2).toByteArray())));
-        final var senderPublicKey =
-                ByteString.fromHex("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
-        final var senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+        final var spenderPublicKeyString = "3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310";
+        final var spenderPublicKey = publicKeyFromString(spenderPublicKeyString);
+        final var spenderAlias = generateAlias(spenderPublicKey);
+        final var senderPublicKeyString = "3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d";
+        final var senderPublicKey = publicKeyFromString(senderPublicKeyString);
+        final var senderAlias = generateAlias(senderPublicKey);
         final var recipient = spenderEntityPersistWithAlias(spenderAlias, spenderPublicKey);
         final var treasury = senderEntityPersistWithAlias(senderAlias, senderPublicKey);
         final var tokenEntity = fungibleTokenPersist(treasury);
@@ -787,14 +773,12 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void transferFromWithAliasRedirect() {
-        final var spenderPublicKey =
-                ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-        final var spenderAlias = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKey.substring(2).toByteArray())));
-        final var senderPublicKey =
-                ByteString.fromHex("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
-        final var senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+        final var spenderPublicKeyString = "3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310";
+        final var spenderPublicKey = publicKeyFromString(spenderPublicKeyString);
+        final var spenderAlias = generateAlias(spenderPublicKey);
+        final var senderPublicKeyString = "3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d";
+        final var senderPublicKey = publicKeyFromString(senderPublicKeyString);
+        final var senderAlias = generateAlias(senderPublicKey);
         final var treasury = accountPersist();
         final var spender = senderEntityPersistWithAlias(senderAlias, senderPublicKey);
         final var recipient = spenderEntityPersistWithAlias(spenderAlias, spenderPublicKey);
@@ -832,14 +816,12 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
     @Test
     void transferFromNFTWithAliasRedirect() {
-        final var spenderPublicKey =
-                ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-        final var spenderAlias = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKey.substring(2).toByteArray())));
-        final var senderPublicKey =
-                ByteString.fromHex("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
-        final var senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+        final var spenderPublicKeyString = "3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310";
+        final var spenderPublicKey = publicKeyFromString(spenderPublicKeyString);
+        final var spenderAlias = generateAlias(spenderPublicKey);
+        final var senderPublicKeyString = "3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d";
+        final var senderPublicKey = publicKeyFromString(senderPublicKeyString);
+        final var senderAlias = generateAlias(senderPublicKey);
         final var treasury = accountPersist();
         final var spender = senderEntityPersistWithAlias(senderAlias, senderPublicKey);
         final var recipient = spenderEntityPersistWithAlias(spenderAlias, spenderPublicKey);
@@ -959,6 +941,15 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .associated(true))
                 .persist();
+    }
+
+    protected Address generateAlias(final ByteString publicKey) {
+        return Address.wrap(
+                Bytes.wrap(recoverAddressFromPubKey(publicKey.substring(2).toByteArray())));
+    }
+
+    protected ByteString publicKeyFromString(final String publicKeyString) {
+        return ByteString.fromHex(publicKeyString);
     }
 
     protected void tokenAssociateContractPersist(EntityId tokenEntity, long contractId) {
