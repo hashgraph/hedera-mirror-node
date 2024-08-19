@@ -25,8 +25,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 
-/** A CachingStateFrame that answers reads by getting entities from some other source - a database! - and
- * disallows all local updates/deletes. */
+/**
+ * A CachingStateFrame that answers reads by getting entities from some other source - a database! - and disallows all
+ * local updates/deletes.
+ */
 public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
 
     @NonNull
@@ -62,23 +64,23 @@ public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
             @NonNull final UpdatableReferenceCache<K> cache,
             @NonNull final K key,
             @NonNull final Object value) {
-        throw new UnsupportedOperationException("Cannot add/update a value in a database-backed StateFrame");
+        throw new UnsupportedOperationException("Cannot set a value in a read only database");
     }
 
     @Override
     public void deleteValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-        throw new UnsupportedOperationException("Cannot delete a value in a database-backed StateFrame");
+        throw new UnsupportedOperationException("Cannot delete a value in a read only database");
     }
 
     @Override
     public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
-        throw new UnsupportedOperationException("Cannot commit to a database-backed StateFrame (oddly enough)");
+        throw new UnsupportedOperationException("Cannot commit to a read only database");
     }
 
     @Override
     public void commit() {
-        throw new UnsupportedOperationException("Cannot commit to a database-backed StateFrame (oddly enough)");
+        throw new UnsupportedOperationException("Cannot commit to a read only database");
     }
 
     /** Signals that a type error occurred with the _value_ type */

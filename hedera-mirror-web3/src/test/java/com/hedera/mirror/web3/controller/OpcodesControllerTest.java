@@ -25,6 +25,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -395,14 +398,15 @@ class OpcodesControllerTest {
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isNotFound())
-                .andExpect(responseBody(new GenericErrorResponse("Contract result not found: " + id)));
+                .andExpect(responseBody(
+                        new GenericErrorResponse(NOT_FOUND.getReasonPhrase(), "Contract result not found: " + id)));
     }
 
     @ParameterizedTest
     @EnumSource(TransactionProviderEnum.class)
     void callWithTransactionNotFoundExceptionTest(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
+        final var message = NOT_FOUND.getReasonPhrase();
         final GenericErrorResponse expectedError =
                 switch (transactionIdOrHash) {
                     case TransactionHashParameter parameter -> {
@@ -410,14 +414,14 @@ class OpcodesControllerTest {
                         when(contractTransactionHashRepository.findByHash(
                                         parameter.hash().toArray()))
                                 .thenReturn(Optional.empty());
-                        yield new GenericErrorResponse("Contract transaction hash not found: " + parameter);
+                        yield new GenericErrorResponse(message, "Contract transaction hash not found: " + parameter);
                     }
                     case TransactionIdParameter parameter -> {
                         reset(transactionRepository);
                         when(transactionRepository.findByPayerAccountIdAndValidStartNs(
                                         parameter.payerAccountId(), convertToNanosMax(parameter.validStart())))
                                 .thenReturn(Optional.empty());
-                        yield new GenericErrorResponse("Transaction not found: " + parameter);
+                        yield new GenericErrorResponse(message, "Transaction not found: " + parameter);
                     }
                 };
 
@@ -435,10 +439,12 @@ class OpcodesControllerTest {
         if (transactionIdOrHash instanceof TransactionIdParameter id && id.payerAccountId() == null) {
             mockMvc.perform(opcodesRequest(transactionIdOrHash))
                     .andExpect(status().isBadRequest())
-                    .andExpect(responseBody(new GenericErrorResponse("Unsupported ID format: 'null-%d-%d'"
-                            .formatted(
-                                    id.validStart().getEpochSecond(),
-                                    id.validStart().getNano()))));
+                    .andExpect(responseBody(new GenericErrorResponse(
+                            BAD_REQUEST.getReasonPhrase(),
+                            "Unsupported ID format: 'null-%d-%d'"
+                                    .formatted(
+                                            id.validStart().getEpochSecond(),
+                                            id.validStart().getNano()))));
             return;
         }
 
@@ -513,7 +519,8 @@ class OpcodesControllerTest {
         when(rateLimitBucket.tryConsume(1)).thenReturn(false);
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isTooManyRequests())
-                .andExpect(responseBody(new GenericErrorResponse("Rate limit exceeded.")));
+                .andExpect(responseBody(
+                        new GenericErrorResponse(TOO_MANY_REQUESTS.getReasonPhrase(), "Rate limit exceeded.")));
     }
 
     /*

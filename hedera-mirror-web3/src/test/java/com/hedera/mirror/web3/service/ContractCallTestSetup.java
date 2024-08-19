@@ -341,12 +341,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/TestContractAddress/TestAddressThisInit.bin")
     protected Path ADDRESS_THIS_CONTRACT_INIT_BYTES_PATH;
 
-    @Value("classpath:contracts/TestContractAddress/TestAddressThis.json")
-    protected Path ADDRESS_THIS_CONTRACT_ABI_PATH;
-
-    @Value("classpath:contracts/TestContractAddress/TestNestedAddressThis.bin")
-    protected Path NESTED_ADDRESS_THIS_CONTRACT_BYTES_PATH;
-
     @Value("classpath:contracts/InternalCaller/InternalCaller.bin")
     protected Path INTERNAL_CALLER_CONTRACT_BYTES_PATH;
 

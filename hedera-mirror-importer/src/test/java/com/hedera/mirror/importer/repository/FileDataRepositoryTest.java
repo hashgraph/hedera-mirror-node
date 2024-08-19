@@ -16,13 +16,16 @@
 
 package com.hedera.mirror.importer.repository;
 
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.google.common.primitives.Bytes;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class FileDataRepositoryTest extends AbstractRepositoryTest {
@@ -45,7 +48,7 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
         fileDataList.add(fileData(7, 123, TransactionType.FILEAPPEND.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
-        Assertions.assertThat(fileDataRepository.findFilesInRange(
+        assertThat(fileDataRepository.findFilesInRange(
                         2, 7, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()))
                 .isNotNull()
                 .hasSize(3)
@@ -68,10 +71,8 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
 
         List<Integer> transactionTypes =
                 List.of(TransactionType.FILECREATE.getProtoId(), TransactionType.FILEUPDATE.getProtoId());
-        Assertions.assertThat(fileDataRepository.findLatestMatchingFile(5, ADDRESS_BOOK_102.getId(), transactionTypes))
-                .get()
-                .isNotNull()
-                .isEqualTo(fileData);
+        assertThat(fileDataRepository.findLatestMatchingFile(5, ADDRESS_BOOK_102.getId(), transactionTypes))
+                .contains(fileData);
     }
 
     @Test
@@ -87,7 +88,7 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
         fileDataList.add(fileData(8, ADDRESS_BOOK_102.getId(), TransactionType.FILEUPDATE.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
-        Assertions.assertThat(fileDataRepository.findAddressBooksBetween(2, 5, 10))
+        assertThat(fileDataRepository.findAddressBooksBetween(2, 5, 10))
                 .isNotNull()
                 .hasSize(2)
                 .extracting(FileData::getConsensusTimestamp)
@@ -107,11 +108,64 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
         fileDataList.add(fileData(8, ADDRESS_BOOK_102.getId(), TransactionType.FILEUPDATE.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
-        Assertions.assertThat(fileDataRepository.findAddressBooksBetween(2, 10, 5))
+        assertThat(fileDataRepository.findAddressBooksBetween(2, 10, 5))
                 .isNotNull()
                 .hasSize(5)
                 .extracting(FileData::getConsensusTimestamp)
                 .containsSequence(3L, 4L, 5L, 6L, 7L);
+    }
+
+    @Test
+    void getFileAtTimestamp() {
+        softly.assertThat(fileDataRepository.getFileAtTimestamp(1101, domainBuilder.timestamp()))
+                .isEmpty();
+
+        // Create
+        var create = domainBuilder.fileData().persist();
+        long entityId = create.getEntityId().getId();
+        var expected = FileData.builder()
+                .consensusTimestamp(create.getConsensusTimestamp())
+                .entityId(create.getEntityId())
+                .fileData(create.getFileData())
+                .transactionType(null)
+                .build();
+        softly.assertThat(fileDataRepository.getFileAtTimestamp(entityId, create.getConsensusTimestamp()))
+                .contains(expected);
+        softly.assertThat(fileDataRepository.getFileAtTimestamp(entityId, create.getConsensusTimestamp() - 1))
+                .isEmpty();
+
+        // Append
+        var append = domainBuilder
+                .fileData()
+                .customize(
+                        f -> f.entityId(create.getEntityId()).transactionType(TransactionType.FILEAPPEND.getProtoId()))
+                .persist();
+        expected.setFileData(Bytes.concat(create.getFileData(), append.getFileData()));
+        softly.assertThat(fileDataRepository.getFileAtTimestamp(entityId, append.getConsensusTimestamp()))
+                .contains(expected);
+
+        // Update without changing content
+        var update = domainBuilder
+                .fileData()
+                .customize(f -> f.entityId(create.getEntityId())
+                        .fileData(EMPTY_BYTE_ARRAY)
+                        .transactionType(TransactionType.FILEUPDATE.getProtoId()))
+                .persist();
+        softly.assertThat(fileDataRepository.getFileAtTimestamp(entityId, update.getConsensusTimestamp()))
+                .contains(expected);
+
+        // Update, change content
+        var updateContent = domainBuilder
+                .fileData()
+                .customize(
+                        f -> f.entityId(create.getEntityId()).transactionType(TransactionType.FILEUPDATE.getProtoId()))
+                .persist();
+        softly.assertThat(fileDataRepository.getFileAtTimestamp(entityId, updateContent.getConsensusTimestamp() - 1))
+                .contains(expected);
+        expected.setConsensusTimestamp(updateContent.getConsensusTimestamp());
+        expected.setFileData(updateContent.getFileData());
+        softly.assertThat(fileDataRepository.getFileAtTimestamp(entityId, updateContent.getConsensusTimestamp()))
+                .contains(expected);
     }
 
     private FileData fileData(long consensusTimestamp, long fileId, int transactionType) {

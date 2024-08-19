@@ -30,8 +30,7 @@ class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount, TokenAccou
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
             "accountId", ENTITY_ID_TO_LONG_CONVERTER,
-            "tokenId", ENTITY_ID_TO_LONG_CONVERTER
-    );
+            "tokenId", ENTITY_ID_TO_LONG_CONVERTER);
 
     TokenAccountBuilder() {
         super(METHOD_PARAMETER_CONVERTERS);

@@ -160,7 +160,6 @@ tasks.compileTestJava {
     options.compilerArgs.add("--enable-preview")
     options.compilerArgs.removeIf { it == "-Werror" }
     dependsOn(compileHistoricalSolidityContracts)
-    doFirst { file("args").writeText(options.compilerArgs.toString()) }
 }
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }

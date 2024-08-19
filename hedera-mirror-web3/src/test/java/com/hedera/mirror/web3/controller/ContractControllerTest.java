@@ -22,6 +22,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -135,7 +138,8 @@ class ContractControllerTest {
         request.setGas(gas);
         contractCall(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse(errorString))));
+                .andExpect(content()
+                        .string(convert(new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), errorString))));
     }
 
     @Test
@@ -201,7 +205,21 @@ class ContractControllerTest {
 
         contractCall(request)
                 .andExpect(status().isNotFound())
-                .andExpect(content().string(convert(new GenericErrorResponse(exceptionMessage))));
+                .andExpect(content()
+                        .string(convert(new GenericErrorResponse(NOT_FOUND.getReasonPhrase(), exceptionMessage))));
+    }
+
+    @Test
+    void notFound() throws Exception {
+        final var request = request();
+        mockMvc.perform(post("/invalid")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(convert(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(content()
+                        .string(convert(
+                                new GenericErrorResponse(NOT_FOUND.getReasonPhrase(), "No static resource invalid."))));
     }
 
     @EmptySource
@@ -222,7 +240,8 @@ class ContractControllerTest {
         request.setFrom(from);
         contractCall(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse(errorString))));
+                .andExpect(content()
+                        .string(convert(new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), errorString))));
     }
 
     @Test
@@ -232,7 +251,7 @@ class ContractControllerTest {
         request.setValue(-1L);
         contractCall(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse(error))));
+                .andExpect(content().string(convert(new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), error))));
     }
 
     @Test
@@ -245,7 +264,7 @@ class ContractControllerTest {
         request.setEstimate(true);
         contractCall(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse(error))));
+                .andExpect(content().string(convert(new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), error))));
     }
 
     @Test
@@ -261,7 +280,7 @@ class ContractControllerTest {
 
         contractCall(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse(error))));
+                .andExpect(content().string(convert(new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), error))));
     }
 
     @Test
@@ -274,7 +293,7 @@ class ContractControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content()
                         .string(convert(new GenericErrorResponse(
-                                "Unable to parse JSON",
+                                "Bad Request",
                                 "JSON parse error: Unexpected character ('f' (code 102)): was expecting double-quote to start field name",
                                 StringUtils.EMPTY))));
     }
@@ -289,9 +308,8 @@ class ContractControllerTest {
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(content()
                         .string(convert(new GenericErrorResponse(
-                                "Unsupported Media Type",
-                                "Content-Type 'text/plain;charset=UTF-8' is not supported",
-                                StringUtils.EMPTY))));
+                                UNSUPPORTED_MEDIA_TYPE.getReasonPhrase(),
+                                "Content-Type 'text/plain;charset=UTF-8' is not supported"))));
     }
 
     @Test
@@ -321,7 +339,7 @@ class ContractControllerTest {
         given(service.processCall(any())).willThrow(new InvalidParametersException(error));
         contractCall(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse(error))));
+                .andExpect(content().string(convert(new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), error))));
     }
 
     @Test
@@ -332,7 +350,8 @@ class ContractControllerTest {
 
         contractCall(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse(errorString))));
+                .andExpect(content()
+                        .string(convert(new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), errorString))));
     }
 
     @Test
@@ -343,7 +362,8 @@ class ContractControllerTest {
 
         contractCall(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse(errorString))));
+                .andExpect(content()
+                        .string(convert(new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), errorString))));
     }
 
     @NullAndEmptySource
@@ -372,7 +392,9 @@ class ContractControllerTest {
 
         contractCall(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse("Unknown block number"))));
+                .andExpect(content()
+                        .string(convert(
+                                new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), "Unknown block number"))));
     }
 
     @Test
@@ -382,7 +404,9 @@ class ContractControllerTest {
 
         contractCall(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse("Unknown block number"))));
+                .andExpect(content()
+                        .string(convert(
+                                new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), "Unknown block number"))));
     }
 
     @Test

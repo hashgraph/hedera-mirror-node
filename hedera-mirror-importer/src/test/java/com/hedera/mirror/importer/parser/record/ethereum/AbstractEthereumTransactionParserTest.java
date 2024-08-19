@@ -16,18 +16,15 @@
 
 package com.hedera.mirror.importer.parser.record.ethereum;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import jakarta.annotation.Resource;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
-abstract class AbstractEthereumTransactionParserTest {
-    protected static EthereumTransactionParser ethereumTransactionParser;
+@RequiredArgsConstructor
+abstract class AbstractEthereumTransactionParserTest extends ImporterIntegrationTest {
 
-    @Resource
-    protected final DomainBuilder domainBuilder = new DomainBuilder();
+    protected final EthereumTransactionParser ethereumTransactionParser;
 
     protected abstract byte[] getTransactionBytes();
 
@@ -36,9 +33,6 @@ abstract class AbstractEthereumTransactionParserTest {
     @Test
     void decode() {
         var ethereumTransaction = ethereumTransactionParser.decode(getTransactionBytes());
-        assertThat(ethereumTransaction).isNotNull().satisfies(t -> assertThat(t.getChainId())
-                .isNotEmpty());
-
         validateEthereumTransaction(ethereumTransaction);
     }
 }

@@ -19,6 +19,7 @@ package persistence
 import (
 	"encoding/hex"
 	"testing"
+	"time"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -432,6 +433,81 @@ func (suite *transactionRepositorySuite) TestFindBetweenDbConnectionError() {
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
 	assert.Nil(suite.T(), actual)
+}
+
+func (suite *transactionRepositorySuite) TestFindBetweenUnknownTransactionType() {
+	// given
+	payer := firstEntityId.EncodedId
+	transaction := tdomain.NewTransactionBuilder(dbClient, payer, time.Now().UnixNano()).
+		ItemizedTransfer(domain.ItemizedTransferSlice{
+			{
+				Amount:   -20,
+				EntityId: firstEntityId,
+			},
+			{
+				Amount:   20,
+				EntityId: secondEntityId,
+			},
+		}).
+		Type(32767).
+		Persist()
+	// add crypto transfers
+	consensusTimestamp := transaction.ConsensusTimestamp
+	tdomain.NewCryptoTransferBuilder(dbClient).Amount(-40).EntityId(payer).Timestamp(consensusTimestamp).Persist()
+	tdomain.NewCryptoTransferBuilder(dbClient).Amount(15).EntityId(3).Timestamp(consensusTimestamp).Persist()
+	tdomain.NewCryptoTransferBuilder(dbClient).Amount(5).EntityId(feeCollectorEntityId.EncodedId).Timestamp(consensusTimestamp).Persist()
+	tdomain.NewCryptoTransferBuilder(dbClient).Amount(20).EntityId(secondEntityId.EncodedId).Timestamp(consensusTimestamp).Persist()
+
+	expected := []*types.Transaction{
+		{
+			Hash: tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
+			Memo: []byte{},
+			Operations: types.OperationSlice{
+				{
+					AccountId: firstAccountId,
+					Amount:    &types.HbarAmount{Value: -20},
+					Type:      "UNKNOWN",
+					Status:    resultSuccess,
+				},
+				{
+					AccountId: secondAccountId,
+					Amount:    &types.HbarAmount{Value: 20},
+					Index:     1,
+					Type:      "UNKNOWN",
+					Status:    resultSuccess,
+				},
+				{
+					AccountId: types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(3)),
+					Amount:    &types.HbarAmount{Value: 15},
+					Index:     2,
+					Type:      types.OperationTypeFee,
+					Status:    resultSuccess,
+				},
+				{
+					AccountId: feeCollectorAccountId,
+					Amount:    &types.HbarAmount{Value: 5},
+					Index:     3,
+					Type:      types.OperationTypeFee,
+					Status:    resultSuccess,
+				},
+				{
+					AccountId: firstAccountId,
+					Amount:    &types.HbarAmount{Value: -20},
+					Index:     4,
+					Type:      types.OperationTypeFee,
+					Status:    resultSuccess,
+				},
+			},
+		},
+	}
+	t := NewTransactionRepository(dbClient)
+
+	// when
+	actual, err := t.FindBetween(defaultContext, consensusTimestamp, consensusTimestamp)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.ElementsMatch(suite.T(), expected, actual)
 }
 
 func (suite *transactionRepositorySuite) TestFindByHashInBlock() {
