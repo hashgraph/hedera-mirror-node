@@ -16,21 +16,19 @@
 
 package com.hedera.mirror.web3.controller;
 
-import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
-import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidInputException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
-import java.util.Optional;
+import com.hedera.mirror.web3.viewmodel.GenericErrorResponse.ErrorMessage;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -39,20 +37,28 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.dao.QueryTimeoutException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConversionException;
-import org.springframework.validation.BindException;
-import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.lang.Nullable;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.server.ServerWebInputException;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.util.WebUtils;
 
 @ControllerAdvice
 @CustomLog
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class GenericControllerAdvice {
+class GenericControllerAdvice extends ResponseEntityExceptionHandler {
 
     @Bean
     @SuppressWarnings("java:S5122") // Make sure that enabling CORS is safe here.
@@ -65,90 +71,76 @@ class GenericControllerAdvice {
         };
     }
 
-    /**
-     * Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence
-     * of a precompile for gas estimation.
-     **/
     @ExceptionHandler
-    private ResponseEntity<?> unsupportedOpResponse(final UnsupportedOperationException e) {
-        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), NOT_IMPLEMENTED);
+    private ResponseEntity<?> defaultExceptionHandler(final Exception e, WebRequest request) {
+        log.error("Generic error: ", e);
+        var headers = e instanceof ErrorResponse er ? er.getHeaders() : null;
+        return handleExceptionInternal(e, null, headers, INTERNAL_SERVER_ERROR, request);
+    }
+
+    @ExceptionHandler({HttpMessageConversionException.class, IllegalArgumentException.class, InvalidInputException.class
+    })
+    private ResponseEntity<?> badRequest(final Exception e, final WebRequest request) {
+        return handleExceptionInternal(e, null, null, BAD_REQUEST, request);
     }
 
     @ExceptionHandler
-    private ResponseEntity<?> rateLimitError(final RateLimitException e) {
-        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), TOO_MANY_REQUESTS);
-    }
-
-    @ExceptionHandler
-    private ResponseEntity<?> validationError(final BindException e) {
-        final var errors = extractValidationError(e);
-        log.warn("Validation error: {}", errors);
-        return new ResponseEntity<>(new GenericErrorResponse(errors), BAD_REQUEST);
-    }
-
-    @ExceptionHandler
-    private ResponseEntity<?> invalidInputError(final InvalidInputException e) {
-        log.warn("Input validation error: {}", e.getMessage());
-        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), BAD_REQUEST);
-    }
-
-    @ExceptionHandler
-    private ResponseEntity<?> illegalArgumentError(final IllegalArgumentException e) {
-        log.warn("Invalid argument error: {}", e.getMessage());
-        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), BAD_REQUEST);
-    }
-
-    @ExceptionHandler
-    private ResponseEntity<?> typeMismatchError(final TypeMismatchException e) {
-        final var message = Optional.ofNullable(e.getRootCause()).orElse(e).getMessage();
-        log.warn("Type mismatch error for expected type {}: {}", e.getRequiredType(), message);
-        return new ResponseEntity<>(new GenericErrorResponse(message), BAD_REQUEST);
-    }
-
-    @ExceptionHandler
-    private ResponseEntity<?> mirrorEvmTransactionError(final MirrorEvmTransactionException e) {
+    private ResponseEntity<?> mirrorEvmTransactionError(final MirrorEvmTransactionException e, WebRequest request) {
         log.warn("Mirror EVM transaction error: {}, detail: {}, data: {}", e.getMessage(), e.getDetail(), e.getData());
+        request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, e, SCOPE_REQUEST);
         return new ResponseEntity<>(new GenericErrorResponse(e.getMessage(), e.getDetail(), e.getData()), BAD_REQUEST);
     }
 
     @ExceptionHandler
-    private ResponseEntity<?> httpMessageConversionError(final HttpMessageConversionException e) {
-        log.warn("Transaction body parsing error: {}", e.getMessage());
-        return new ResponseEntity<>(
-                new GenericErrorResponse("Unable to parse JSON", e.getMessage(), StringUtils.EMPTY), BAD_REQUEST);
+    private ResponseEntity<?> notFoundException(final EntityNotFoundException e, final WebRequest request) {
+        return handleExceptionInternal(e, null, null, NOT_FOUND, request);
     }
 
     @ExceptionHandler
-    private ResponseEntity<?> serverWebInputError(final ServerWebInputException e) {
-        log.warn("Transaction body parsing error: {}, reason: {}", e.getMessage(), e.getReason());
-        return new ResponseEntity<>(
-                new GenericErrorResponse(e.getReason(), e.getMessage(), StringUtils.EMPTY), BAD_REQUEST);
+    private ResponseEntity<?> queryTimeoutException(final QueryTimeoutException e, WebRequest request) {
+        return handleExceptionInternal(e, null, null, SERVICE_UNAVAILABLE, request);
     }
 
     @ExceptionHandler
-    private ResponseEntity<?> notFoundError(final EntityNotFoundException e) {
-        log.warn("Not found: {}", e.getMessage());
-        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), NOT_FOUND);
+    private ResponseEntity<?> rateLimitException(final RateLimitException e, final WebRequest request) {
+        return handleExceptionInternal(e, null, null, TOO_MANY_REQUESTS, request);
     }
 
-    @ExceptionHandler
-    private ResponseEntity<?> unsupportedMediaTypeError(final HttpMediaTypeNotSupportedException e) {
-        log.warn("Unsupported media type error: {}", e.getMessage());
-        return new ResponseEntity<>(
-                new GenericErrorResponse(UNSUPPORTED_MEDIA_TYPE.getReasonPhrase(), e.getMessage(), StringUtils.EMPTY),
-                UNSUPPORTED_MEDIA_TYPE);
+    @Nullable
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        var messages = ex.getAllErrors().stream().map(this::formatErrorMessage).toList();
+        request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, SCOPE_REQUEST);
+        return new ResponseEntity<>(new GenericErrorResponse(messages), headers, status);
     }
 
-    @ExceptionHandler
-    private ResponseEntity<?> queryTimeoutError(final QueryTimeoutException ignored) {
-        return new ResponseEntity<>(
-                new GenericErrorResponse(SERVICE_UNAVAILABLE.getReasonPhrase()), SERVICE_UNAVAILABLE);
+    @Nullable
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+            TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        final var cause = ex.getRootCause() instanceof Exception rc ? rc : ex;
+        return handleExceptionInternal(cause, null, headers, status, request);
     }
 
-    @ExceptionHandler
-    private ResponseEntity<?> genericError(final Exception e) {
-        log.error("Generic error: ", e);
-        return new ResponseEntity<>(
-                new GenericErrorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase()), INTERNAL_SERVER_ERROR);
+    @Nullable
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(
+            Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+        var message = statusCode instanceof HttpStatus hs ? hs.getReasonPhrase() : statusCode.toString();
+        var detail = !statusCode.is5xxServerError() ? ex.getMessage() : StringUtils.EMPTY; // Don't leak server errors
+        var genericErrorResponse = new GenericErrorResponse(message, detail, StringUtils.EMPTY);
+        request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, SCOPE_REQUEST);
+        return new ResponseEntity<>(genericErrorResponse, headers, statusCode);
+    }
+
+    private ErrorMessage formatErrorMessage(ObjectError error) {
+        var detail = error.getDefaultMessage();
+
+        if (error instanceof FieldError fieldError) {
+            detail = fieldError.getField() + " field " + fieldError.getDefaultMessage();
+        }
+
+        return new ErrorMessage(BAD_REQUEST.getReasonPhrase(), detail, StringUtils.EMPTY);
     }
 }
