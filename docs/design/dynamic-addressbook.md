@@ -102,7 +102,10 @@ Response:
 {
   "nodes": [
     {
-      "admin_key": "0x565fd764f0957fa170a676210c9bdbddf3bc9519702cf927fa6767a40463b96f",
+      "admin_key": {
+        "_type": "ProtobufEncoded",
+        "key": 10101
+      },
       "description": "address book 1",
       "file_id": "0.0.102",
       "max_stake": 50000,
