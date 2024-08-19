@@ -104,7 +104,7 @@ Response:
     {
       "admin_key": {
         "_type": "ED25519",
-        "key": "AAAAC3NzaC1lZDI1NTE5AAAAIGpjh408HMAa1uE60DFrUs0GcgRflP1Hc3iLJlesVfCb"
+        "key": "1E9D38B5274152A78DFF1A86FA464CEADC1F4238CA2C17060C3C507349424A34"
       },
       "description": "address book 1",
       "file_id": "0.0.102",
