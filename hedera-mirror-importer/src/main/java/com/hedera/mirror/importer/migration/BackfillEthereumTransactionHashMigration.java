@@ -22,12 +22,13 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
-import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import jakarta.inject.Named;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Data;
 import org.apache.commons.lang3.ArrayUtils;
@@ -37,11 +38,18 @@ import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ParameterizedPreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Named
 public class BackfillEthereumTransactionHashMigration extends RepeatableMigration {
 
+    private static final String INSERT_TRANSACTION_HASH_SQL =
+            """
+            insert into transaction_hash (consensus_timestamp, distribution_id, hash, payer_account_id)
+            values (?, ?, ?, ?)
+            """;
     private static final ParameterizedPreparedStatementSetter<MigrationEthereumTransaction> PSS = (ps, transaction) -> {
         ps.setBytes(1, transaction.getHash());
         ps.setLong(2, transaction.getConsensusTimestamp());
@@ -84,23 +92,17 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
     private final EntityProperties entityProperties;
     private final EthereumTransactionParser ethereumTransactionParser;
     private final JdbcTemplate jdbcTemplate;
-    private final TransactionHashRepository transactionHashRepository;
-    private final TransactionOperations transactionOperations;
 
     @Lazy
     public BackfillEthereumTransactionHashMigration(
             EntityProperties entityProperties,
             EthereumTransactionParser ethereumTransactionParser,
             ImporterProperties importerProperties,
-            JdbcTemplate jdbcTemplate,
-            TransactionHashRepository transactionHashRepository,
-            TransactionOperations transactionOperations) {
+            @Owner JdbcTemplate jdbcTemplate) {
         super(importerProperties.getMigration());
         this.entityProperties = entityProperties;
         this.ethereumTransactionParser = ethereumTransactionParser;
         this.jdbcTemplate = jdbcTemplate;
-        this.transactionHashRepository = transactionHashRepository;
-        this.transactionOperations = transactionOperations;
     }
 
     @Override
@@ -114,7 +116,7 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
         var patched = new AtomicInteger();
         var stopwatch = Stopwatch.createStarted();
 
-        transactionOperations.executeWithoutResult(s -> {
+        getTransactionOperations().executeWithoutResult(s -> {
             long consensusTimestamp = -1;
             for (; ; ) {
                 var transactions = jdbcTemplate.query(SELECT_ETHEREUM_TRANSACTION_SQL, ROW_MAPPER, consensusTimestamp);
@@ -173,8 +175,19 @@ public class BackfillEthereumTransactionHashMigration extends RepeatableMigratio
                             .payerAccountId(t.getPayerAccountId())
                             .build())
                     .toList();
-            transactionHashRepository.saveAll(transactionHashes);
+            jdbcTemplate.batchUpdate(
+                    INSERT_TRANSACTION_HASH_SQL, transactionHashes, transactionHashes.size(), (ps, transactionHash) -> {
+                        ps.setLong(1, transactionHash.getConsensusTimestamp());
+                        ps.setShort(2, transactionHash.getDistributionId());
+                        ps.setBytes(3, transactionHash.getHash());
+                        ps.setLong(4, transactionHash.getPayerAccountId());
+                    });
         }
+    }
+
+    private TransactionOperations getTransactionOperations() {
+        var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
+        return new TransactionTemplate(transactionManager);
     }
 
     @Data
