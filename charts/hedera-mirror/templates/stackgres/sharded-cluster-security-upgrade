@@ -1,0 +1,12 @@
+{{- if .Values.stackgres.securityUpgrade -}}
+apiVersion: stackgres.io/v1
+kind: SGShardedDbOps
+metadata:
+  name: security-upgrade-{{ include "hedera-mirror.stackgres" . }}
+spec:
+  sgShardedCluster: {{ include "hedera-mirror.stackgres" . }}
+  op: securityUpgrade
+  maxRetries: 1
+  securityUpgrade:
+    mode: InPlace
+{{- end -}}

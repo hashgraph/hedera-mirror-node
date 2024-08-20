@@ -73,9 +73,9 @@ fullnameOverride: ""
 
 global:
   hostname: ""
-  image: {}
+  image: { }
   namespaceOverride: ""
-  podAnnotations: {}
+  podAnnotations: { }
   useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
 
 graphql:
@@ -109,7 +109,7 @@ importer:
     - secretRef:
         name: "{{ .Release.Name }}-redis"
 
-labels: {}
+labels: { }
 
 monitor:
   enabled: true
@@ -327,6 +327,7 @@ stackgres:
         pool_mode: session
   podAntiAffinity: true
   postgresVersion: 16
+  securityUpgrade: false
   worker:
     config:
       autovacuum_max_workers: "2"
@@ -345,7 +346,7 @@ stackgres:
       work_mem: "32MB"
     enableMetricsExporter: false
     instances: 1
-    overrides: []  # Override shard(s) configuration
+    overrides: [ ]  # Override shard(s) configuration
     replicasPerInstance: 1
     resources:
       cpu: 100m
@@ -372,7 +373,7 @@ test:
               baseUrl: "http://{{ .Release.Name }}-web3"
   cucumberTags: "@acceptance"
   enabled: false
-  env: {}
+  env: { }
   args:
     - -Dcucumber.ansi-colors.disabled=true
     - -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}
