@@ -411,22 +411,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertGasLimit(serviceParameters);
     }
 
-    @ParameterizedTest
-    @EnumSource(EVM46ValidationInternalCalls.class)
-    void testEVM46ValidationInternalCalls(final EVM46ValidationInternalCalls evm46ValidationCalls) {
-        final var functionHash = !evm46ValidationCalls.function.isEmpty()
-                ? functionEncodeDecoder.functionHashFor(
-                        evm46ValidationCalls.function,
-                        INTERNAL_CALLER_CONTRACT_ABI_PATH,
-                        evm46ValidationCalls.functionParams)
-                : Bytes.EMPTY;
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, INTERNAL_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
-
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
-        assertGasLimit(serviceParameters);
-    }
-
     @Test
     void nonExistingFunctionCall() {
         final var serviceParameters = serviceParametersForExecution(
@@ -856,28 +840,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         private final String name;
         private final Address contractAddress;
-        private final String function;
-        private final Object[] functionParams;
-        private final String data;
-    }
-
-    @RequiredArgsConstructor
-    private enum EVM46ValidationInternalCalls {
-        CALL_TO_INTERNAL_NON_EXISTING_CONTRACT(
-                "callToInternalNonExistingContract", "callNonExisting", new Object[] {toAddress(123456789)}, "0x"),
-        CALL_TO_INTERNAL_NON_EXISTING_FUNCTION(
-                "callToInternalNonExistingContract", "callNonExisting", new Object[] {ERC_CONTRACT_ADDRESS}, "0x"),
-        CALL_TO_INTERNAL_WITH_VALUE_TO_NON_EXISTING_FUNCTION(
-                "callToInternalWithValueToNonExistingContract",
-                "callWithValueTo",
-                new Object[] {ERC_CONTRACT_ADDRESS},
-                "0x"),
-        SEND_TO_INTERNAL_NON_EXISTING_ACCOUNT(
-                "sendToInternalNonExistingContract", "sendTo", new Object[] {toAddress(123456789)}, "0x"),
-        TRANSFER_TO_INTERNAL_NON_EXISTING_ACCOUNT(
-                "transferToInternalNonExistingContract", "transferTo", new Object[] {toAddress(123456789)}, "0x");
-
-        private final String name;
         private final String function;
         private final Object[] functionParams;
         private final String data;

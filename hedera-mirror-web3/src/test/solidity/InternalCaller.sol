@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 contract InternalCaller {
-    constructor() payable {}
+    constructor() {}
 
-    function callNonExisting(address _addr) external {
-        _addr.call(abi.encodeWithSignature("nonExisting()"));
+    function callNonExisting(address _addr) external returns (bool success, bytes memory result) {
+        (success, result) = _addr.call(abi.encodeWithSignature("nonExisting()"));
     }
 
     function staticCallNonExisting(address _addr) external {
@@ -35,16 +35,16 @@ contract InternalCaller {
         _addr.call(abi.encodeWithSignature("revertWithoutRevertReason()"));
     }
 
-    function sendTo(address payable _addr) external {
-        _addr.send(1);
+    function sendTo(address payable _addr) external returns (bool success) {
+        success = _addr.send(1);
     }
 
     function transferTo(address payable _addr) external {
         _addr.transfer(1);
     }
 
-    function callWithValueTo(address _addr) external {
-        _addr.call{value: 1}("");
+    function callWithValueTo(address _addr) external returns (bool success, bytes memory result) {
+        (success, result) = _addr.call{value: 1}("");
     }
 
     function selfdestruct(address payable _addr) external {
