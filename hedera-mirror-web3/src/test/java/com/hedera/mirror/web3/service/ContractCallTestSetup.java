@@ -327,12 +327,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/TestContractAddress/TestAddressThisInit.bin")
     protected Path ADDRESS_THIS_CONTRACT_INIT_BYTES_PATH;
 
-    @Value("classpath:contracts/InternalCaller/InternalCaller.bin")
-    protected Path INTERNAL_CALLER_CONTRACT_BYTES_PATH;
-
-    @Value("classpath:contracts/InternalCaller/InternalCaller.json")
-    protected Path INTERNAL_CALLER_CONTRACT_ABI_PATH;
-
     private static TokenCreateWrapper getFungibleTokenWithKeys() {
         return new TokenCreateWrapper(
                 true,
@@ -687,7 +681,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         stateContractPersist();
         precompileContractPersist();
         systemExchangeRateContractPersist();
-        internalCallerContractPersist();
         pseudoRandomNumberGeneratorContractPersist();
         final var modificationContract = modificationContractPersist();
         modificationWithoutKeyContractPersist();
@@ -2263,44 +2256,5 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(f -> f.bytes(exchangeRateContractBytes))
                 .persist();
         return exchangeRateContractEntityId;
-    }
-
-    private EntityId internalCallerContractPersist() {
-        final var internalCallerContractBytes =
-                functionEncodeDecoder.getContractBytes(INTERNAL_CALLER_CONTRACT_BYTES_PATH);
-        final var internalCallerContractEntityId = entityIdFromEvmAddress(INTERNAL_CALLS_CONTRACT_ADDRESS);
-        final var internalCallerContractEvmAddress = toEvmAddress(internalCallerContractEntityId);
-
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(internalCallerContractEntityId.getId())
-                        .num(internalCallerContractEntityId.getNum())
-                        .evmAddress(internalCallerContractEvmAddress)
-                        .type(CONTRACT)
-                        .balance(1500L)
-                        .timestampRange(Range.closedOpen(
-                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
-                .persist();
-
-        domainBuilder
-                .contract()
-                .customize(
-                        c -> c.id(internalCallerContractEntityId.getId()).runtimeBytecode(internalCallerContractBytes))
-                .persist();
-
-        domainBuilder
-                .contractState()
-                .customize(c -> c.contractId(internalCallerContractEntityId.getId())
-                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
-                                .toArrayUnsafe())
-                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
-                                .toArrayUnsafe()))
-                .persist();
-
-        domainBuilder
-                .recordFile()
-                .customize(f -> f.bytes(internalCallerContractBytes))
-                .persist();
-        return internalCallerContractEntityId;
     }
 }
