@@ -34,7 +34,7 @@ extra.apply {
     // Override jooq version since the official gradle plugin is on in 3.19.x, remove if not needed
     // with the next springboot release
     set("jooq.version", "3.19.6")
-    set("mapStructVersion", "1.5.5.Final")
+    set("mapStructVersion", "1.6.0")
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
@@ -59,8 +59,8 @@ dependencies {
         api("com.github.vertical-blank:sql-formatter:2.0.5")
         api("org.bouncycastle:bcprov-jdk18on:1.78.1")
         api("com.bucket4j:bucket4j-core:8.10.1")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:5.5.0")
-        api("com.google.guava:guava:33.2.1-jre")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:5.5.1")
+        api("com.google.guava:guava:33.3.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.7")
         api("com.graphql-java:graphql-java-extended-scalars:22.0")
@@ -78,7 +78,7 @@ dependencies {
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-63:3.8.2")
-        api("io.projectreactor:reactor-core-micrometer:1.1.8")
+        api("io.projectreactor:reactor-core-micrometer:1.1.9")
         api("io.swagger:swagger-annotations:1.6.14")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
@@ -104,7 +104,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.3")
         api("org.testcontainers:junit-jupiter:1.20.1")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.27.2")
+        api("software.amazon.awssdk:bom:2.27.7")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
         api("org.web3j:core:4.12.0")
     }

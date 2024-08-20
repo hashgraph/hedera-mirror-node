@@ -89,6 +89,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     void cleanup() {
         testWeb3jService.setEstimateGas(false);
         testWeb3jService.setSender(Address.ZERO);
+        testWeb3jService.reset();
     }
 
     @SuppressWarnings("try")

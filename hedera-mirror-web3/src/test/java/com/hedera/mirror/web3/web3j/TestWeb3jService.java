@@ -72,11 +72,10 @@ import org.web3j.utils.Numeric;
 public class TestWeb3jService implements Web3jService {
     private static final long DEFAULT_TRANSACTION_VALUE = 10L;
     private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
-
+    private final DomainBuilder domainBuilder;
     private final ContractExecutionService contractExecutionService;
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
-    private final DomainBuilder domainBuilder;
     private final Web3j web3j;
 
     @Getter
@@ -97,6 +96,8 @@ public class TestWeb3jService implements Web3jService {
     @Setter
     private long value = 0L;
 
+    private boolean persistContract = true;
+    private byte[] contractRuntime;
     private BlockType blockType = BlockType.LATEST;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
@@ -127,8 +128,24 @@ public class TestWeb3jService implements Web3jService {
         this.blockType = blockType;
     }
 
+    public byte[] getContractRuntime() {
+        return contractRuntime;
+    }
+
+    public void reset() {
+        this.isEstimateGas = false;
+        this.contractRuntime = null;
+        this.persistContract = true;
+    }
+
     @SneakyThrows(Exception.class)
     public <T extends Contract> T deploy(Deployer<T> deployer) {
+        return deployer.deploy(web3j, credentials, contractGasProvider).send();
+    }
+
+    @SneakyThrows(Exception.class)
+    public <T extends Contract> T deployWithoutPersist(Deployer<T> deployer) {
+        persistContract = false;
         return deployer.deploy(web3j, credentials, contractGasProvider).send();
     }
 
@@ -166,9 +183,8 @@ public class TestWeb3jService implements Web3jService {
         final var res = new EthSendTransaction();
         var serviceParameters = serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
         final var mirrorNodeResult = contractExecutionService.processCall(serviceParameters);
-
         try {
-            final var contractInstance = this.deployInternal(mirrorNodeResult);
+            final var contractInstance = deployInternal(mirrorNodeResult, persistContract);
             res.setResult(transactionHash);
             res.setRawResponse(contractInstance.toHexString());
             res.setId(request.getId());
@@ -290,7 +306,7 @@ public class TestWeb3jService implements Web3jService {
                 .build();
     }
 
-    protected ContractExecutionParameters serviceParametersForTopLevelContractCreate(
+    public ContractExecutionParameters serviceParametersForTopLevelContractCreate(
             final String contractInitCode, final CallServiceParameters.CallType callType, final Address senderAddress) {
         final var senderEvmAccount = new HederaEvmAccount(senderAddress);
 
@@ -307,11 +323,14 @@ public class TestWeb3jService implements Web3jService {
                 .build();
     }
 
-    public Address deployInternal(String binary) {
+    public Address deployInternal(String binary, boolean persistContract) {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
-        contractPersist(binary, id);
-
+        if (persistContract) {
+            contractPersist(binary, id);
+        } else {
+            contractRuntime = Hex.decode(binary.replace(HEX_PREFIX, ""));
+        }
         return contractAddress;
     }
 

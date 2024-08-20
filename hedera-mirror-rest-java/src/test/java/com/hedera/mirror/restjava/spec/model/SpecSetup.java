@@ -27,9 +27,13 @@ public record SpecSetup(
         List<Map<String, Object>> cryptoAllowances,
         @JsonProperty("cryptotransfers") List<Map<String, Object>> cryptoTransfers,
         List<Map<String, Object>> entities,
+        @JsonProperty("filedata") List<Map<String, Object>> fileData,
+        @JsonProperty("networkstakes") List<Map<String, Object>> networkStakes,
         List<Map<String, Object>> nfts,
+        List<Map<String, Object>> recordFiles,
         List<Map<String, Object>> stakingRewardTransfers,
         @JsonProperty("tokenaccounts") List<Map<String, Object>> tokenAccounts,
+        List<Map<String, Object>> tokenAllowances,
         List<Map<String, Object>> tokens,
         @JsonProperty("topicmessages") List<Map<String, Object>> topicMessages,
         List<Map<String, Object>> transactions) {}

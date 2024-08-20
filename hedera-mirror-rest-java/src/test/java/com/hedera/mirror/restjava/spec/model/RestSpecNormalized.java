@@ -32,7 +32,7 @@ import org.springframework.util.CollectionUtils;
  */
 public record RestSpecNormalized(
         String description,
-        String extendedDescription,
+        List<String> extendedDescription,
         String matrix,
         SpecSetup setup,
         List<SpecTestNormalized> tests) {

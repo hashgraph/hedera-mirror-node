@@ -80,6 +80,10 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
     // Map a builder method by name to a specific attribute value converter function
     protected final Map<String, Function<Object, Object>> methodParameterConverters;
 
+    protected AbstractEntityBuilder() {
+        this(Map.of());
+    }
+
     protected AbstractEntityBuilder(Map<String, Function<Object, Object>> methodParameterConverters) {
         this(methodParameterConverters, Map.of());
     }
@@ -103,7 +107,7 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
      *
      * @param builder entity builder
      * @param entityAttributes spec setup attributes
-     * @return
+     * @return entity to be persisted
      */
     protected abstract T getFinalEntity(B builder, Map<String, Object> entityAttributes);
 

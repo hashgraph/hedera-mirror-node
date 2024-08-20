@@ -136,6 +136,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void blake2BFPrecompileContract() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         List<byte[]> result = contract.call_blake2().send();
@@ -211,6 +212,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
         assertThat(result).isEqualTo(expectedResult);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void testNonSystemContractEthCallCodeHash() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);

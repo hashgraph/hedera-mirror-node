@@ -102,7 +102,10 @@ Response:
 {
   "nodes": [
     {
-      "admin_key": "0x565fd764f0957fa170a676210c9bdbddf3bc9519702cf927fa6767a40463b96f",
+      "admin_key": {
+        "_type": "ED25519",
+        "key": "308201a2300d06092a864886f70d01010105000382018f003082018a028100e0"
+      },
       "description": "address book 1",
       "file_id": "0.0.102",
       "max_stake": 50000,
