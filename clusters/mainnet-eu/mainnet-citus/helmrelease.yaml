@@ -40,6 +40,7 @@ spec:
       ingress:
         enabled: false
     importer:
+      enabled: false
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
@@ -88,7 +89,7 @@ spec:
               acceptance:
                 network: MAINNET
       cucumberTags: "@critical"
-      enabled: true
+      enabled: false
     web3:
       ingress:
         enabled: false
