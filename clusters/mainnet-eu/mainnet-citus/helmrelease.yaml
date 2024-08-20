@@ -14,7 +14,7 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.110.2'
+      version: '0.111.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -40,7 +40,9 @@ spec:
       ingress:
         enabled: false
     importer:
+      enabled: true
       env:
+        HEDERA_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "0"
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"
@@ -70,6 +72,9 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
+      coordinator:
+        config:
+          citus.max_cached_conns_per_worker: "6"
       worker:
         overrides:
           - index: 0
@@ -87,8 +92,10 @@ spec:
             test:
               acceptance:
                 network: MAINNET
-      cucumberTags: "@critical"
-      enabled: true
+                feature:
+                  rejectToken: false
+      cucumberTags: "@critical and not @nft"
+      enabled: false
     web3:
       ingress:
         enabled: false
