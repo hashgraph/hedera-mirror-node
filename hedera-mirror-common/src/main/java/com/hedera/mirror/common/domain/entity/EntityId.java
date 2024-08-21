@@ -43,6 +43,8 @@ import lombok.Value;
 public final class EntityId implements Serializable, Comparable<EntityId> {
 
     public static final EntityId EMPTY = new EntityId(0L);
+    // comment this. Special usage.
+    public static final EntityId UNSET = new EntityId();
 
     static final int NUM_BITS = 32;
     static final int REALM_BITS = 16;
@@ -75,6 +77,11 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
         }
 
         this.id = id;
+    }
+
+    // Used only to construct constant UNSET above
+    private EntityId() {
+        this.id = -1L;
     }
 
     /**

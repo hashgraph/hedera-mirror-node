@@ -34,6 +34,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
+import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.AbstractNft.Id;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -3338,6 +3339,87 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .build();
         assertThat(nftRepository.findAll()).containsExactly(expected);
         assertThat(findHistory(Nft.class)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void tokenCreateNftCollectionAssociateAllowanceUpdateMetadata(boolean singleRecordFile) {
+        // given
+        createAndAssociateToken(
+                TOKEN_ID,
+                NON_FUNGIBLE_UNIQUE,
+                SYMBOL,
+                CREATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
+                PAYER2,
+                false,
+                false,
+                false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
+                0);
+
+        // mint
+        long mintTimestamp = CREATE_TIMESTAMP + 20;
+        var metadata = recordItemBuilder.bytes(16);
+        var mintRecordItem = recordItemBuilder
+                .tokenMint()
+                .transactionBody(b -> b.clear().setToken(TOKEN_ID).addMetadata(metadata))
+                .receipt(r -> r.clearSerialNumbers().addSerialNumbers(1).setNewTotalSupply(1))
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(mintTimestamp))
+                        .addTokenTransferLists(TokenTransferList.newBuilder()
+                                .setToken(TOKEN_ID)
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        .setReceiverAccountID(PAYER)
+                                        .setSerialNumber(1))))
+                .build();
+
+        // approve allowance
+        var approveAllowanceTimestamp = mintTimestamp + 20;
+        var approveAllowanceRecordItem = recordItemBuilder
+                .cryptoApproveAllowance()
+                .transactionBody(b -> b.clear()
+                        .addNftAllowances(NftAllowance.newBuilder()
+                                .addSerialNumbers(1)
+                                .setSpender(PAYER2)
+                                .setDelegatingSpender(PAYER3)
+                                .setTokenId(TOKEN_ID)))
+                .transactionBodyWrapper(w -> w.setTransactionID(Utility.getTransactionId(PAYER)))
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(approveAllowanceTimestamp)))
+                .build();
+
+        var updateNftMetadataTimestamp = approveAllowanceTimestamp + 20L;
+        var updateNftMetadataRecordItem = recordItemBuilder
+                .tokenUpdateNfts()
+                .transactionBody(b -> b.clearSerialNumbers().setToken(TOKEN_ID).addSerialNumbers(1L))
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateNftMetadataTimestamp)))
+                .build();
+
+        var recordItems = List.of(mintRecordItem, approveAllowanceRecordItem, updateNftMetadataRecordItem);
+
+        // when
+        if (singleRecordFile) {
+            parseRecordItemsAndCommit(recordItems);
+        } else {
+            recordItems.forEach(this::parseRecordItemAndCommit);
+        }
+
+        // then
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(1L, Token::getTotalSupply);
+
+        assertThat(nftRepository.findById(new AbstractNft.Id(1L, DOMAIN_TOKEN_ID.getId())))
+                .get()
+                .returns(mintTimestamp, Nft::getCreatedTimestamp)
+                .returns(EntityId.of(PAYER3), Nft::getDelegatingSpender)
+                .returns(EntityId.of(PAYER2), Nft::getSpender);
     }
 
     @Test
