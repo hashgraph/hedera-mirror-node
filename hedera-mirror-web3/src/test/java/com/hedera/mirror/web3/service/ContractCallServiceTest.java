@@ -102,6 +102,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     @Autowired
     private ContractExecutionService contractExecutionService;
 
+    @Override
     @BeforeEach
     void setup() {
         // reset gas metrics
