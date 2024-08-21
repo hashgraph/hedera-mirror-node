@@ -38,7 +38,7 @@ spec:
       hostname: "*.mirrornode.hedera.com"
     grpc:
       ingress:
-        enabled: true
+        enabled: false
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "0"
@@ -59,8 +59,14 @@ spec:
         MonitorSubscribeLatency:
           enabled: false
     rest:
+      config:
+          hedera:
+          mirror:
+            rest:
+              query:
+                topicMessageLookup: true
       ingress:
-        enabled: true
+        enabled: false
       env:
         HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
         HEDERA_MIRROR_REST_STATEPROOF_STREAMS_NETWORK: MAINNET
@@ -97,6 +103,6 @@ spec:
       enabled: true
     web3:
       ingress:
-        enabled: true
+        enabled: false
       env:
         HEDERA_MIRROR_WEB3_EVM_NETWORK: MAINNET
