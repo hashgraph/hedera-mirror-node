@@ -91,7 +91,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address PRECOMPILE_TEST_CONTRACT_ADDRESS = toAddress(1256);
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(1257);
     protected static final Address ERC_CONTRACT_ADDRESS = toAddress(1258);
-    protected static final Address ETH_CALL_CONTRACT_ADDRESS = toAddress(1260);
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(1261);
     protected static final Address NESTED_ETH_CALLS_CONTRACT_ADDRESS = toAddress(1262);
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(1263);
@@ -140,7 +139,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address SYSTEM_ACCOUNT_ADDRESS = toAddress(700);
 
     // Token addresses
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY = toAddress(1042);
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY_HISTORICAL = toAddress(1077);
     protected static final Address RECEIVER_ADDRESS = toAddress(1045);
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(1046);
@@ -154,22 +152,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(1050);
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(1051);
     protected static final Address UNPAUSED_FUNGIBLE_TOKEN_ADDRESS = toAddress(1052);
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS = toAddress(1053);
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS_HISTORICAL = toAddress(1073);
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(1054);
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY_HISTORICAL = toAddress(1069);
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(1055);
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY_HISTORICAL = toAddress(1070);
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID = toAddress(1056);
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID_HISTORICAL =
             toAddress(1072);
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(1057);
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY_HISTORICAL = toAddress(1074);
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(1058);
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY_HISTORICAL = toAddress(1075);
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID = toAddress(1059);
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID_HISTORICAL = toAddress(1076);
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS = toAddress(1060);
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS_HISTORICAL = toAddress(1068);
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED = toAddress(1061);
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY = toAddress(1067);
@@ -302,13 +292,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/PrngSystemContract/PrngSystemContract.json")
     protected Path PRNG_PRECOMPILE_ABI_PATH;
 
-    // The contract sources `EthCall.sol` are in test/resources
-    @Value("classpath:contracts/EthCall/EthCall.bin")
-    protected Path ETH_CALL_CONTRACT_BYTES_PATH;
-
-    @Value("classpath:contracts/EthCall/EthCallInit.bin")
-    protected Path ETH_CALL_INIT_CONTRACT_BYTES_PATH;
-
     @Value("classpath:contracts/EthCall/State.bin")
     protected Path STATE_CONTRACT_BYTES_PATH;
 
@@ -320,12 +303,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     @Value("classpath:contracts/NestedCallsTestContract/NestedCallsTestContract.json")
     protected Path NESTED_CALLS_ABI_PATH;
-
-    @Value("classpath:contracts/TestContractAddress/TestAddressThis.bin")
-    protected Path ADDRESS_THIS_CONTRACT_BYTES_PATH;
-
-    @Value("classpath:contracts/TestContractAddress/TestAddressThisInit.bin")
-    protected Path ADDRESS_THIS_CONTRACT_INIT_BYTES_PATH;
 
     private static TokenCreateWrapper getFungibleTokenWithKeys() {
         return new TokenCreateWrapper(
@@ -677,7 +654,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         genesisBlockPersist();
         historicalBlocksPersist();
         historicalDataPersist();
-        ethCallContractPersist();
         stateContractPersist();
         precompileContractPersist();
         systemExchangeRateContractPersist();
@@ -698,14 +674,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var treasuryEntityId = treasureEntityPersist();
         autoRenewAccountPersist();
 
-        fungibleTokenPersist(
-                ownerEntityId,
-                KEY_PROTO,
-                FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                1000000000000L,
-                TokenPauseStatusEnum.PAUSED,
-                false);
         fungibleTokenPersist(
                 senderEntityId,
                 KEY_PROTO,
@@ -770,38 +738,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 9999999999999L,
                 TokenPauseStatusEnum.UNPAUSED,
                 false);
-        final var tokenGetKeyContractAddressEntityId = fungibleTokenPersist(
-                senderEntityId,
-                keyWithContractId.toByteArray(),
-                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                9999999999999L,
-                TokenPauseStatusEnum.PAUSED,
-                false);
-        final var tokenGetKeyEcdsaEntityId = fungibleTokenPersist(
-                senderEntityId,
-                keyWithECDSASecp256K1.toByteArray(),
-                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                9999999999999L,
-                TokenPauseStatusEnum.PAUSED,
-                false);
-        final var tokenGetKeyEd25519EntityId = fungibleTokenPersist(
-                senderEntityId,
-                keyWithEd25519.toByteArray(),
-                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                9999999999999L,
-                TokenPauseStatusEnum.PAUSED,
-                false);
-        final var tokenGetKeyDelegatableContractIdEntityId = fungibleTokenPersist(
-                senderEntityId,
-                keyWithDelegatableContractId.toByteArray(),
-                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                9999999999999L,
-                TokenPauseStatusEnum.PAUSED,
-                false);
 
         final var nftEntityId = nftPersist(
                 NFT_ADDRESS,
@@ -830,42 +766,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 KEY_PROTO,
                 TokenPauseStatusEnum.UNPAUSED,
                 false);
-        final var nftEntityId4 = nftPersist(
-                NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                ownerEntityId,
-                spenderEntityId,
-                ownerEntityId,
-                keyWithContractId.toByteArray(),
-                TokenPauseStatusEnum.PAUSED,
-                true);
-        final var nftEntityId5 = nftPersist(
-                NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                ownerEntityId,
-                spenderEntityId,
-                ownerEntityId,
-                keyWithEd25519.toByteArray(),
-                TokenPauseStatusEnum.PAUSED,
-                true);
-        final var nftEntityId6 = nftPersist(
-                NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                ownerEntityId,
-                spenderEntityId,
-                ownerEntityId,
-                keyWithECDSASecp256K1.toByteArray(),
-                TokenPauseStatusEnum.PAUSED,
-                true);
-        final var nftEntityId7 = nftPersist(
-                NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                ownerEntityId,
-                spenderEntityId,
-                ownerEntityId,
-                keyWithDelegatableContractId.toByteArray(),
-                TokenPauseStatusEnum.PAUSED,
-                true);
         final var nftEntityId8 = nftPersistWithoutKycKey(
                 NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
@@ -903,7 +803,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(nestedContractId, nftEntityId8, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, transferFromTokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(senderEntityId, tokenGetKeyContractAddressEntityId, TokenFreezeStatusEnum.UNFROZEN);
 
         tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -1908,37 +1807,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .recordFile()
                 .customize(f -> f.bytes(evmCodesContractBytes))
                 .persist();
-    }
-
-    private void ethCallContractPersist() {
-        final var ethCallContractBytes = functionEncodeDecoder.getContractBytes(ETH_CALL_CONTRACT_BYTES_PATH);
-        final var ethCallContractEntityId = entityIdFromEvmAddress(ETH_CALL_CONTRACT_ADDRESS);
-        final var ethCallContractEvmAddress = toEvmAddress(ethCallContractEntityId);
-
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(ethCallContractEntityId.getId())
-                        .num(ethCallContractEntityId.getNum())
-                        .evmAddress(ethCallContractEvmAddress)
-                        .type(CONTRACT)
-                        .balance(1500L))
-                .persist();
-
-        domainBuilder
-                .contract()
-                .customize(c -> c.id(ethCallContractEntityId.getId()).runtimeBytecode(ethCallContractBytes))
-                .persist();
-
-        domainBuilder
-                .contractState()
-                .customize(c -> c.contractId(ethCallContractEntityId.getId())
-                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
-                                .toArrayUnsafe())
-                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
-                                .toArrayUnsafe()))
-                .persist();
-
-        domainBuilder.recordFile().customize(f -> f.bytes(ethCallContractBytes)).persist();
     }
 
     private void stateContractPersist() {
