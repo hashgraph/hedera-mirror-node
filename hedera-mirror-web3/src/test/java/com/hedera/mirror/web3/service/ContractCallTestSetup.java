@@ -91,13 +91,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address PRECOMPILE_TEST_CONTRACT_ADDRESS = toAddress(1256);
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(1257);
     protected static final Address ERC_CONTRACT_ADDRESS = toAddress(1258);
-    protected static final Address STATE_CONTRACT_ADDRESS = toAddress(1261);
     protected static final Address NESTED_ETH_CALLS_CONTRACT_ADDRESS = toAddress(1262);
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(1263);
     protected static final Address EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS = toAddress(1264);
     protected static final Address REDIRECT_CONTRACT_ADDRESS = toAddress(1265);
     protected static final Address PRNG_CONTRACT_ADDRESS = toAddress(1266);
-    protected static final Address INTERNAL_CALLS_CONTRACT_ADDRESS = toAddress(1270);
     protected static final Address MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS = toAddress(1279);
 
     // Account addresses
@@ -291,9 +289,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     @Value("classpath:contracts/PrngSystemContract/PrngSystemContract.json")
     protected Path PRNG_PRECOMPILE_ABI_PATH;
-
-    @Value("classpath:contracts/EthCall/State.bin")
-    protected Path STATE_CONTRACT_BYTES_PATH;
 
     @Value("classpath:contracts/EvmCodes/EvmCodes.bin")
     protected Path EVM_CODES_BYTES_PATH;
@@ -617,26 +612,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .build();
     }
 
-    protected ContractExecutionParameters serviceParametersForTopLevelContractCreate(
-            final Path contractInitCodePath, final CallType callType, final Address senderAddress) {
-        final var sender = new HederaEvmAccount(senderAddress);
-        // in the end, this persist will be removed because every test
-        // will be responsible to persist its own needed data
-        persistEntities();
-
-        final var callData = Bytes.wrap(functionEncodeDecoder.getContractBytes(contractInitCodePath));
-        return ContractExecutionParameters.builder()
-                .sender(sender)
-                .callData(callData)
-                .receiver(Address.ZERO)
-                .gas(15_000_000L)
-                .isStatic(false)
-                .callType(callType)
-                .isEstimate(ETH_ESTIMATE_GAS == callType)
-                .block(BlockType.LATEST)
-                .build();
-    }
-
     @SuppressWarnings("try")
     protected long gasUsedAfterExecution(final ContractExecutionParameters serviceParameters) {
         return ContractCallContext.run(ctx -> {
@@ -654,7 +629,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         genesisBlockPersist();
         historicalBlocksPersist();
         historicalDataPersist();
-        stateContractPersist();
         precompileContractPersist();
         systemExchangeRateContractPersist();
         pseudoRandomNumberGeneratorContractPersist();
@@ -1806,26 +1780,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .recordFile()
                 .customize(f -> f.bytes(evmCodesContractBytes))
-                .persist();
-    }
-
-    private void stateContractPersist() {
-        final var stateContractId = entityIdFromEvmAddress(STATE_CONTRACT_ADDRESS);
-        final var stateContractAddress = toEvmAddress(stateContractId);
-        final var stateContractBytes = functionEncodeDecoder.getContractBytes(STATE_CONTRACT_BYTES_PATH);
-
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(stateContractId.getId())
-                        .num(stateContractId.getNum())
-                        .evmAddress(stateContractAddress)
-                        .type(CONTRACT)
-                        .balance(1500L))
-                .persist();
-
-        domainBuilder
-                .contract()
-                .customize(c -> c.id(stateContractId.getId()).runtimeBytecode(stateContractBytes))
                 .persist();
     }
 

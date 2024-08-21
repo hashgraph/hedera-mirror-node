@@ -24,7 +24,6 @@ import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.web3.web3j.generated.InternalCaller;
-import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +33,7 @@ public class InternalCallsTest extends AbstractContractCallServiceTest {
 
     @Test
     void callToNonExistingContract() throws Exception {
-        final var contract = testWeb3jService.deployWithValue(InternalCaller::deploy, BigInteger.valueOf(1000));
+        final var contract = testWeb3jService.deploy(InternalCaller::deploy);
         meterRegistry.clear();
         final var result = contract.call_callNonExisting(NON_EXISTING_ADDRESS).send();
 
@@ -44,7 +43,7 @@ public class InternalCallsTest extends AbstractContractCallServiceTest {
 
     @Test
     void callToNonExistingFunction() throws Exception {
-        final var contract = testWeb3jService.deployWithValue(InternalCaller::deploy, BigInteger.valueOf(1000));
+        final var contract = testWeb3jService.deploy(InternalCaller::deploy);
         meterRegistry.clear();
         final var result =
                 contract.call_callNonExisting(contract.getContractAddress()).send();
@@ -55,7 +54,7 @@ public class InternalCallsTest extends AbstractContractCallServiceTest {
 
     @Test
     void callToNonExistingFunctionWithValue() throws Exception {
-        final var contract = testWeb3jService.deployWithValue(InternalCaller::deploy, BigInteger.valueOf(1000));
+        final var contract = testWeb3jService.deploy(InternalCaller::deploy);
         meterRegistry.clear();
         final var result =
                 contract.call_callWithValueTo(contract.getContractAddress()).send();
@@ -66,19 +65,17 @@ public class InternalCallsTest extends AbstractContractCallServiceTest {
 
     @Test
     void sendToNonExistingAccount() throws Exception {
-        final var contract = testWeb3jService.deployWithValue(InternalCaller::deploy, BigInteger.valueOf(1000));
+        final var contract = testWeb3jService.deploy(InternalCaller::deploy);
         meterRegistry.clear();
         final var result = contract.call_sendTo(NON_EXISTING_ADDRESS).send();
 
         assertThat(result).isEqualTo(Boolean.TRUE);
-        //        assertThat(testWeb3jService.getTransactionResult()).isEqualTo(HEX_PREFIX); - the old validation but it
-        // is not working
         assertGasLimit(TRANSACTION_GAS_LIMIT);
     }
 
     @Test
     void transferToNonExistingAccount() throws Exception {
-        final var contract = testWeb3jService.deployWithValue(InternalCaller::deploy, BigInteger.valueOf(1000));
+        final var contract = testWeb3jService.deploy(InternalCaller::deploy);
         meterRegistry.clear();
         contract.send_transferTo(NON_EXISTING_ADDRESS).send();
 
