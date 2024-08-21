@@ -14,6 +14,9 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: mainnet
+    - kind: HelmRelease
+      name: '*'
+      namespace: mainnet-citus
     - kind: Kustomization
       name: '*'
       namespace: flux-system
