@@ -65,4 +65,8 @@ spec:
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-na"} } }'
+    zfs:
+      enabled: true
+      init:
+        diskPrefix: mainnet-na
 
