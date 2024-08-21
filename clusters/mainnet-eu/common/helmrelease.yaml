@@ -41,11 +41,6 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: mainnet-eu
-          resources:
-            limits:
-              memory: 2750Mi
-            requests:
-              memory: 1Gi
           remoteWrite:
             - basicAuth:
                 password:
@@ -63,6 +58,9 @@ spec:
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
+          resources:
+            limits:
+              memory: 6Gi
     stackgres:
       enabled: true
     traefik:
