@@ -60,7 +60,7 @@ spec:
           enabled: false
     rest:
       config:
-          hedera:
+        hedera:
           mirror:
             rest:
               query:
