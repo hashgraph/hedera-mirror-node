@@ -103,6 +103,9 @@ spec:
         enabled: true
     stackgres:
       enabled: true
+      operator:
+        image: gcr.io/mirrornode/stackgres-operator
+        tag: 1.9.0
     traefik:
       resources:
         limits:
