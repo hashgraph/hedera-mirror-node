@@ -77,12 +77,7 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
-      coordinator:
-        config:
-          citus.max_cached_conns_per_worker: "6"
-        enableMetricsExporter: false
       worker:
-        enableMetricsExporter: false
         overrides:
           - index: 0
             pods:
