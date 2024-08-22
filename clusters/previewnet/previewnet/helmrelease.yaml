@@ -19,6 +19,9 @@ spec:
       namespace: common
   driftDetection:
     mode: enabled
+    ignore:
+      - paths:
+        - /spec/replicas
   install:
     crds: CreateReplace
   interval: 90s
