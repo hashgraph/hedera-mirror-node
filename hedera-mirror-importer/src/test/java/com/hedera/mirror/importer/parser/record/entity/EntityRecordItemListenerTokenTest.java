@@ -3361,7 +3361,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 0);
 
         // mint
-        long mintTimestamp = CREATE_TIMESTAMP + 20;
+        long mintTimestamp = CREATE_TIMESTAMP + 20L;
         var metadata = recordItemBuilder.bytes(16);
         var mintRecordItem = recordItemBuilder
                 .tokenMint()
@@ -3376,7 +3376,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .build();
 
         // approve allowance
-        var approveAllowanceTimestamp = mintTimestamp + 20;
+        var approveAllowanceTimestamp = mintTimestamp + 20L;
         var approveAllowanceRecordItem = recordItemBuilder
                 .cryptoApproveAllowance()
                 .transactionBody(b -> b.clear()

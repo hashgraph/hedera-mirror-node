@@ -43,7 +43,13 @@ import lombok.Value;
 public final class EntityId implements Serializable, Comparable<EntityId> {
 
     public static final EntityId EMPTY = new EntityId(0L);
-    // comment this. Special usage.
+
+    /*
+     * Indicates a domain entity ID is not being set (to null or non-null) in the current operation and that
+     * the existing DB column value is to be preserved. This is reflected as the value of -1 that can be
+     * referenced within the @UpsertColumn syntax. See the AbstractNft delegatingSpender and spender
+     * fields as examples. In this case, this sentinel value is set in TokenUpdateNftsTransactionHandler.
+     */
     public static final EntityId UNSET = new EntityId();
 
     static final int NUM_BITS = 32;
