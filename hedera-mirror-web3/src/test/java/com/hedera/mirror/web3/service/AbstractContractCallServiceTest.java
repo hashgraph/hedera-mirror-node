@@ -69,11 +69,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     @BeforeEach
-    void setup() {
+    final void setup() {
         domainBuilder.recordFile().persist();
-        testWeb3jService.setValue(0L);
-        testWeb3jService.setSender(Address.fromHexString(""));
-        testWeb3jService.setBlockType(BlockType.LATEST);
     }
 
     @AfterEach

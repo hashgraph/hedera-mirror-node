@@ -59,13 +59,13 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import io.github.bucket4j.Bucket;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -99,26 +99,21 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     @Autowired
     private ThrottleProperties throttleProperties;
 
-    @Autowired
+    @Resource
     private ContractExecutionService contractExecutionService;
-
-    @Override
-    @BeforeEach
-    void setup() {
-        // reset gas metrics
-        super.setup();
-        meterRegistry.clear();
-    }
 
     @Test
     void callWithoutDataToAddressWithNoBytecodeReturnsEmptyResult() {
+        // Given
         final var receiverEntity = accountPersist();
         final var receiverAddress = getAddressFromEntity(receiverEntity);
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
         final var serviceParameters = getContractExecutionParameters(Bytes.EMPTY, receiverAddress);
 
+        // When
         final var result = contractExecutionService.processCall(serviceParameters);
 
+        // Then
         assertThat(result).isEqualTo(HEX_PREFIX);
         assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -126,12 +121,15 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void pureCall() throws Exception {
+        // Given
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear(); // Clear it as the contract deploy increases the gas limit metric
 
+        // When
         final var result = contract.call_multiplySimpleNumbers().send();
 
+        // Then
         assertThat(result).isEqualTo(BigInteger.valueOf(4L));
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -140,6 +138,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     @ParameterizedTest
     @MethodSource("provideBlockTypes")
     void pureCallWithBlock(BlockType blockType) throws Exception {
+        // Given
         domainBuilder
                 .recordFile()
                 .customize(recordFileBuilder -> recordFileBuilder.index(blockType.number()))
@@ -150,6 +149,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var functionCall = contract.call_multiplySimpleNumbers();
         meterRegistry.clear(); // Clear it as the contract deploy increases the gas limit metric
 
+        // When
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
             contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockType.number())));
             testWeb3jService.setBlockType(blockType);
@@ -159,6 +159,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
             assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
         }
 
+        // Then
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
     }
 
@@ -167,6 +168,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     void pureCallWithCustomBlock(BlockType blockType, String expectedResponse, boolean checkGas) throws Exception {
         // we need entities present before the block timestamp of the custom block because we won't find them
         // when searching against the custom block timestamp
+        // Given
         domainBuilder
                 .recordFile()
                 .customize(recordFileBuilder -> recordFileBuilder.index(blockType.number()))
@@ -181,8 +183,10 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
             contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockType.number())));
             testWeb3jService.setBlockType(blockType);
+            // Then
             assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
         } else {
+            // Then
             assertThat(functionCall.send()).isEqualTo(new BigInteger(expectedResponse.substring(2), 16));
 
             if (checkGas) {
@@ -195,6 +199,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void pureCallWithOutOfRangeCustomBlockThrowsException() {
+        // Given
         final var invalidBlock = BlockType.of("0x2540BE3FF");
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var functionCall = contract.call_multiplySimpleNumbers();
@@ -202,28 +207,37 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(invalidBlock.number())));
         testWeb3jService.setBlockType(invalidBlock);
 
+        // Then
         assertThatThrownBy(functionCall::send).isInstanceOf(BlockNumberOutOfRangeException.class);
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
     }
 
     @Test
     void estimateGasForPureCall() {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
+
+        // When
         final var functionCall = contract.send_multiplySimpleNumbers();
 
+        // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
     void estimateGasWithoutReceiver() {
+        // Given
         final var serviceParametersEthCall =
                 getContractExecutionParameters(Bytes.fromHexString(HEX_PREFIX), Address.ZERO, ETH_CALL);
         final var actualGasUsed = gasUsedAfterExecution(serviceParametersEthCall);
         final var serviceParametersEstimateGas =
                 getContractExecutionParameters(Bytes.fromHexString(HEX_PREFIX), Address.ZERO, ETH_ESTIMATE_GAS);
-        final var estimatedGasUsed =
-                longValueOf.applyAsLong(contractExecutionService.processCall(serviceParametersEstimateGas));
 
+        // When
+        final var result = contractExecutionService.processCall(serviceParametersEstimateGas);
+        final var estimatedGasUsed = longValueOf.applyAsLong(result);
+
+        // Then
         assertThat(isWithinExpectedGasRange(estimatedGasUsed, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimatedGasUsed, actualGasUsed)
                 .isTrue();
@@ -231,12 +245,15 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void viewCall() throws Exception {
+        // Given
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
 
+        // When
         final var result = contract.call_returnStorageData().send();
 
+        // Then
         assertThat(result).isEqualTo("test");
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -244,14 +261,19 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void estimateGasForViewCall() {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
+
+        // When
         final var functionCall = contract.send_returnStorageData();
 
+        // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
     void transferFunds() {
+        // Given
         final var senderEntity = accountPersist();
         final var receiverEntity = accountPersist();
         final var senderAddress = getAddressFromEntity(senderEntity);
@@ -259,23 +281,26 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
         final var serviceParameters = getContractExecutionParameters(Bytes.EMPTY, receiverAddress, senderAddress, 7L);
 
+        // Then
         assertDoesNotThrow(() -> contractExecutionService.processCall(serviceParameters));
-
         assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
     @Test
     void balanceCallToNonSystemAccount() throws Exception {
+        // Given
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
         final var accountEntity = accountPersist();
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
 
+        // When
         final var result = contract.call_getAccountBalance(
                         getAddressFromEntity(accountEntity).toHexString())
                 .send();
 
+        // Then
         assertThat(result).isEqualTo(BigInteger.valueOf(accountEntity.getBalance()));
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -283,6 +308,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void balanceCallToSystemAccountReturnsZero() throws Exception {
+        // Given
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
         final var systemAccountEntity = systemAccountPersist();
         final var systemAccountAddress = EntityIdUtils.asHexedEvmAddress(
@@ -290,8 +316,10 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
 
+        // When
         final var result = contract.call_getAccountBalance(systemAccountAddress).send();
 
+        // Then
         assertThat(result).isEqualTo(BigInteger.ZERO);
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -299,6 +327,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void balanceCallToSystemAccountViaAliasReturnsBalance() throws Exception {
+        // Given
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
         final var systemAccountEntity = systemAccountPersist();
         final var systemAccountAddress =
@@ -306,8 +335,10 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
 
+        // When
         final var result = contract.call_getAccountBalance(systemAccountAddress).send();
 
+        // Then
         assertThat(result).isEqualTo(BigInteger.valueOf(systemAccountEntity.getBalance()));
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -315,31 +346,43 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void balanceCallToContractReturnsBalance() throws Exception {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
+
+        // When
         final var result =
                 contract.call_getAccountBalance(contract.getContractAddress()).send();
 
+        // Then
         assertThat(result.longValue()).isNotZero();
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
     }
 
     @Test
     void estimateGasForBalanceCallToContract() {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
+
+        // When
         final var functionCall = contract.send_getAccountBalance(contract.getContractAddress());
 
+        // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
         assertGasLimit(ETH_ESTIMATE_GAS, TRANSACTION_GAS_LIMIT);
     }
 
     @Test
     void testRevertDetailMessage() {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
+
+        // When
         final var functionCall = contract.send_testRevert();
 
+        // Then
         assertThatThrownBy(functionCall::send)
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name())
@@ -357,21 +400,27 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
         @Test
         void callToNonExistingContract() {
+            // Given
             final var serviceParameters = getContractExecutionParameters(Bytes.EMPTY, NON_EXISTING_ADDRESS);
 
+            // When
             final var result = contractExecutionService.processCall(serviceParameters);
 
+            // Then
             assertThat(result).isEqualTo(HEX_PREFIX);
             assertGasLimit(serviceParameters);
         }
 
         @Test
         void transferToNonExistingContract() {
+            // Given
             final var serviceParameters =
                     getContractExecutionParametersWithValue(Bytes.EMPTY, NON_EXISTING_ADDRESS, 1L);
 
+            // When
             final var result = contractExecutionService.processCall(serviceParameters);
 
+            // Then
             assertThat(result).isEqualTo(HEX_PREFIX);
             assertGasLimit(serviceParameters);
         }
@@ -379,17 +428,23 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void nonExistingFunctionCallWithFallback() {
+        // Given
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
         meterRegistry.clear();
         final var serviceParameters = getContractExecutionParameters(
                 Bytes.fromHexString("0x12345678"), Address.fromHexString(contract.getContractAddress()));
 
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(HEX_PREFIX);
+        // When
+        final var result = contractExecutionService.processCall(serviceParameters);
+
+        // Then
+        assertThat(result).isEqualTo(HEX_PREFIX);
         assertGasLimit(serviceParameters);
     }
 
     @Test
     void invalidFunctionSig() {
+        // Given
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ERROR);
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
@@ -398,6 +453,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var serviceParameters = getContractExecutionParameters(
                 Bytes.fromHexString(wrongFunctionSignature), Address.fromHexString(contract.getContractAddress()));
 
+        // Then
         assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name())
@@ -409,10 +465,12 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void transferNegative() {
+        // Given
         final var receiverEntity = accountPersist();
         final var receiverAddress = getAddressFromEntity(receiverEntity);
         final var serviceParameters = getContractExecutionParametersWithValue(Bytes.EMPTY, receiverAddress, -5L);
 
+        // Then
         assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
         assertGasLimit(serviceParameters);
@@ -420,6 +478,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void transferExceedsBalance() {
+        // Given
         final var receiverEntity = accountPersist();
         final var receiverAddress = getAddressFromEntity(receiverEntity);
         final var senderEntity = accountPersist();
@@ -427,6 +486,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var serviceParameters = getContractExecutionParametersWithValue(
                 Bytes.EMPTY, senderAddress, receiverAddress, senderEntity.getBalance() + 5L);
 
+        // Then
         assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
         assertGasLimit(serviceParameters);
@@ -434,19 +494,24 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void transferThruContract() throws Exception {
+        // Given
         final var receiverEntity = accountPersist();
         final var receiverAddress = getAddressFromEntity(receiverEntity);
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
+
+        // When
         contract.send_transferHbarsToAddress(receiverAddress.toHexString(), BigInteger.TEN)
                 .send();
 
+        // Then
         assertThat(testWeb3jService.getTransactionResult()).isEqualTo(HEX_PREFIX);
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
     }
 
     @Test
     void hollowAccountCreationWorks() {
+        // Given
         final var value = 10L;
         final var hollowAccountAlias = domainBuilder.evmAddress();
         final var senderEntity = accountPersist();
@@ -454,38 +519,53 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         testWeb3jService.setSender(senderAddress);
 
+        // When
         final var functionCall = contract.send_transferHbarsToAddress(
                 Bytes.wrap(hollowAccountAlias).toHexString(), BigInteger.valueOf(value));
 
+        // Then
         verifyEthCallAndEstimateGasWithValue(functionCall, contract, senderAddress, value);
     }
 
     @Test
     void estimateGasForStateChangeCall() {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
+
+        // When
         final var functionCall = contract.send_writeToStorageSlot("test2", BigInteger.ZERO);
 
+        // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
     void estimateGasForCreate2ContractDeploy() {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
+
+        // When
         final var functionCall = contract.send_deployViaCreate2();
 
+        // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
     void estimateGasForDirectCreateContractDeploy() {
+        // Given
         final var senderEntity = accountPersist();
         final var senderAddress = getAddressFromEntity(senderEntity);
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var serviceParameters = testWeb3jService.serviceParametersForTopLevelContractCreate(
                 contract.getContractBinary(), ETH_ESTIMATE_GAS, senderAddress);
         final var actualGas = 183552L;
-        final var estimatedGas = longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters));
 
+        // When
+        final var result = contractExecutionService.processCall(serviceParameters);
+        final var estimatedGas = longValueOf.applyAsLong(result);
+
+        // Then
         assertThat(isWithinExpectedGasRange(estimatedGas, actualGas))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimatedGas, actualGas)
                 .isTrue();
@@ -493,12 +573,17 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void estimateGasForDirectCreateContractDeployWithMissingSender() {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var serviceParameters = testWeb3jService.serviceParametersForTopLevelContractCreate(
                 contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.ZERO);
         final var actualGas = 183552L;
-        final var estimatedGas = longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters));
 
+        // When
+        final var result = contractExecutionService.processCall(serviceParameters);
+        final var estimatedGas = longValueOf.applyAsLong(result);
+
+        // Then
         assertThat(isWithinExpectedGasRange(estimatedGas, actualGas))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimatedGas, actualGas)
                 .isTrue();
@@ -506,13 +591,16 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void ethCallForContractDeploy() {
+        // Given
         final var contract = testWeb3jService.deployWithoutPersist(EthCall::deploy);
         meterRegistry.clear();
         final var serviceParameters = testWeb3jService.serviceParametersForTopLevelContractCreate(
                 contract.getContractBinary(), ETH_CALL, Address.ZERO);
 
+        // When
         final var result = contractExecutionService.processCall(serviceParameters);
 
+        // Then
         assertGasLimit(serviceParameters);
         assertThat(result)
                 .isEqualTo(Bytes.wrap(testWeb3jService.getContractRuntime()).toHexString());
@@ -520,22 +608,30 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void nestedContractStateChangesWork() throws Exception {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var stateContract = testWeb3jService.deploy(State::deploy);
         meterRegistry.clear();
+
+        // When
         final var result = contract.call_nestedCall("testState", stateContract.getContractAddress())
                 .send();
 
+        // Then
         assertThat(result).isEqualTo("testState");
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
     }
 
     @Test
     void contractCreationWork() throws Exception {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
+
+        // When
         final var result = contract.call_deployContract("state").send();
 
+        // Then
         // "state" is set in the State contract and the State contract updates the state of the parent to the
         // concatenation of the string "state" twice, resulting in this value
         assertThat(result).isEqualTo("statestate");
@@ -544,26 +640,32 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Test
     void stateChangeWorksWithDynamicEthCall() throws Exception {
+        // Given
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
-
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
         final var newState = "newState";
-        final var result = contract.call_writeToStorageSlot(newState).send();
-        assertThat(result).isEqualTo(newState);
 
+        // When
+        final var result = contract.call_writeToStorageSlot(newState).send();
+
+        // Then
+        assertThat(result).isEqualTo(newState);
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
     @Test
     void ercPrecompileCallForEstimateGas() {
+        // Given
         final var token = tokenPersist();
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
 
+        // When
         final var result = contract.send_getTokenName(toAddress(token.getId()).toHexString());
 
+        // Then
         verifyEthCallAndEstimateGas(result, contract);
     }
 
@@ -573,6 +675,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
             names = {"ETH_CALL", "ETH_ESTIMATE_GAS"},
             mode = INCLUDE)
     void ercPrecompileExceptionalHaltReturnsExpectedGasToBucket(final CallType callType) {
+        // Given
         final var token = tokenPersist();
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
         final var functionCall = contract.send_approve(
@@ -591,11 +694,14 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 throttleProperties,
                 gasLimitBucket);
 
+        // When
         try {
             contractCallServiceWithMockedGasLimitBucket.processCall(serviceParameters);
         } catch (MirrorEvmTransactionException e) {
             // Ignore as this is not what we want to verify here.
         }
+
+        // Then
         verify(gasLimitBucket).addTokens(expectedUsedGasByThrottle);
         verify(gasLimitBucket, times(1)).addTokens(anyLong());
     }
@@ -603,6 +709,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     @ParameterizedTest
     @MethodSource("ercPrecompileCallTypeArgumentsProvider")
     void ercPrecompileContractRevertReturnsExpectedGasToBucket(final CallType callType, final long gasLimit) {
+        // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var functionCall = contract.call_getTokenName(Address.ZERO.toHexString());
 
@@ -620,11 +727,14 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 throttleProperties,
                 gasLimitBucket);
 
+        // When
         try {
             contractCallServiceWithMockedGasLimitBucket.processCall(serviceParameters);
         } catch (MirrorEvmTransactionException e) {
             // Ignore as this is not what we want to verify here.
         }
+
+        // Then
         verify(gasLimitBucket).addTokens(expectedUsedGasByThrottle);
         verify(gasLimitBucket, times(1)).addTokens(anyLong());
     }
@@ -632,6 +742,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     @ParameterizedTest
     @MethodSource("ercPrecompileCallTypeArgumentsProvider")
     void ercPrecompileSuccessReturnsExpectedGasToBucket(final CallType callType, final long gasLimit) {
+        // Given
         final var token = tokenPersist();
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
         final var functionCall = contract.call_name(toAddress(token.getId()).toHexString());
@@ -650,11 +761,14 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 throttleProperties,
                 gasLimitBucket);
 
+        // When
         try {
             contractCallServiceWithMockedGasLimitBucket.processCall(serviceParameters);
         } catch (MirrorEvmTransactionException e) {
             // Ignore as this is not what we want to verify here.
         }
+
+        // Then
         verify(gasLimitBucket).addTokens(expectedUsedGasByThrottle);
         verify(gasLimitBucket, times(1)).addTokens(anyLong());
     }
@@ -666,9 +780,11 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         "0000000000000000000000000000000000000169"
     })
     void callSystemPrecompileWithEmptyData(final String addressHex) {
+        // Given
         final var address = Address.fromHexString(addressHex);
         final var serviceParameters = getContractExecutionParameters(Bytes.EMPTY, address);
 
+        // Then
         assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
