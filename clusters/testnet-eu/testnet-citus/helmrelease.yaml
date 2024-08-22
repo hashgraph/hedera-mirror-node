@@ -82,7 +82,9 @@ spec:
       coordinator:
         config:
           citus.max_cached_conns_per_worker: "6"
+        enableMetricsExporter: false
       worker:
+        enableMetricsExporter: false
         persistentVolume:
           size: 900Gi
     test:
