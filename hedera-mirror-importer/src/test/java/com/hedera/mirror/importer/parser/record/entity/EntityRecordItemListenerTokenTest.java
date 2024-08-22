@@ -3428,19 +3428,18 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(EntityId.of(PAYER2), Nft::getSpender);
 
         var nftHistory = findHistory(Nft.class);
-        assertThat(nftHistory).hasSize(2);
-
-        // First history row written when allowance created, pre-allowance spender columns are null.
         assertThat(nftHistory)
-                .element(0)
-                .hasFieldOrPropertyWithValue("delegatingSpender", null)
-                .hasFieldOrPropertyWithValue("spender", null);
-
-        // Second history row written when NFT metadata was updated. Allowance set spender columns must be indicated.
-        assertThat(nftHistory)
-                .element(1)
-                .hasFieldOrPropertyWithValue("delegatingSpender", EntityId.of(PAYER3))
-                .hasFieldOrPropertyWithValue("spender", EntityId.of(PAYER2));
+                .hasSize(2)
+                .satisfiesExactly(
+                        // First history row written when allowance created, pre-allowance spender columns are null.
+                        n -> assertThat(n)
+                                .returns(null, Nft::getDelegatingSpender)
+                                .returns(null, Nft::getSpender),
+                        // Second history row written when NFT metadata was updated. Allowance set spender columns must
+                        // be indicated.
+                        n -> assertThat(n)
+                                .returns(EntityId.of(PAYER3), Nft::getDelegatingSpender)
+                                .returns(EntityId.of(PAYER2), Nft::getSpender));
     }
 
     @Test
