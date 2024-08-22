@@ -64,6 +64,8 @@ class TokenUpdateNftsTransactionHandler extends AbstractTransactionHandler {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
         var nftBuilder = Nft.builder()
                 .metadata(toBytes(transactionBody.getMetadata().getValue()))
+                .delegatingSpender(EntityId.UNSET)
+                .spender(EntityId.UNSET)
                 .timestampRange(Range.atLeast(consensusTimestamp))
                 .tokenId(tokenId.getId());
 
