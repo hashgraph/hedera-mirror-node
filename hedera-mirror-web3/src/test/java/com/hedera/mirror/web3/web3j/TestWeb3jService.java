@@ -37,7 +37,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -84,9 +83,6 @@ public class TestWeb3jService implements Web3jService {
     private boolean persistContract = true;
     private byte[] contractRuntime;
     private BlockType blockType = BlockType.LATEST;
-
-    @Getter
-    private long entityId;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -346,7 +342,6 @@ public class TestWeb3jService implements Web3jService {
                 .contractState()
                 .customize(c -> c.contractId(entity.getId()))
                 .persist();
-        this.entityId = entityId;
     }
 
     private EthGetTransactionCount ethGetTransactionCount() {
