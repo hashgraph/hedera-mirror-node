@@ -44,6 +44,14 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
 
     public static final EntityId EMPTY = new EntityId(0L);
 
+    /*
+     * Indicates a domain entity ID is not being set (to null or non-null) in the current operation and that
+     * the existing DB column value is to be preserved. This is reflected as the value of -1 that can be
+     * referenced within the @UpsertColumn syntax. See the AbstractNft delegatingSpender and spender
+     * fields as examples. In this case, this sentinel value is set in TokenUpdateNftsTransactionHandler.
+     */
+    public static final EntityId UNSET = new EntityId();
+
     static final int NUM_BITS = 32;
     static final int REALM_BITS = 16;
     static final int SHARD_BITS = 15;
@@ -75,6 +83,11 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
         }
 
         this.id = id;
+    }
+
+    // Used only to construct constant UNSET above
+    private EntityId() {
+        this.id = -1L;
     }
 
     /**

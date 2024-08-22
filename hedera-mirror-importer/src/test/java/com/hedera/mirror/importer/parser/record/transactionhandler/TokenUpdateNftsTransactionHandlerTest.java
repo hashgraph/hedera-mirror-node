@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -84,6 +85,8 @@ class TokenUpdateNftsTransactionHandlerTest extends AbstractTransactionHandlerTe
                     .isNotNull()
                     .returns(expectedMetadata, Nft::getMetadata)
                     .returns(expectedSerialNumbers.get(i), AbstractNft::getSerialNumber)
+                    .returns(EntityId.UNSET, Nft::getDelegatingSpender)
+                    .returns(EntityId.UNSET, Nft::getSpender)
                     .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Nft::getTimestampRange)
                     .returns(transaction.getEntityId().getId(), AbstractNft::getTokenId);
         }
