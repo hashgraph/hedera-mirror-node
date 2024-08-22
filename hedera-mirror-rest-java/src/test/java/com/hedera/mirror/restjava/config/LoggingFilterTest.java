@@ -29,6 +29,7 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.filter.ForwardedHeaderFilter;
+import org.springframework.web.util.WebUtils;
 
 @ExtendWith(OutputCaptureExtension.class)
 class LoggingFilterTest {
@@ -45,7 +46,7 @@ class LoggingFilterTest {
 
         loggingFilter.doFilter(request, response, chain);
 
-        assertLog(output, "INFO", "\\w+ GET / in \\d+ ms: 200");
+        assertLog(output, "INFO", "\\w+ GET / in \\d+ ms: 200 Success");
     }
 
     @Test
@@ -86,7 +87,21 @@ class LoggingFilterTest {
             throw exception;
         });
 
-        assertLog(output, "WARN", "\\w+ GET / in \\d+ ms: " + exception.getMessage());
+        assertLog(output, "WARN", "\\w+ GET / in \\d+ ms: 500 " + exception.getMessage());
+    }
+
+    @Test
+    @SneakyThrows
+    void filterOnErrorAttribute(CapturedOutput output) {
+        var request = new MockHttpServletRequest("GET", "/");
+        var exception = new IllegalArgumentException("error");
+        request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, exception);
+
+        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+
+        loggingFilter.doFilter(request, response, (req, res) -> {});
+
+        assertLog(output, "WARN", "\\w+ GET / in \\d+ ms: 500 " + exception.getMessage());
     }
 
     private void assertLog(CapturedOutput logOutput, String level, String pattern) {
