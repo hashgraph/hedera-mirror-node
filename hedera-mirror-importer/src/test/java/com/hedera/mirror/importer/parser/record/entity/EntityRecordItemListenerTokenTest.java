@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.Streams;
+import com.google.protobuf.BytesValue;
 import com.google.protobuf.StringValue;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -3390,9 +3391,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .build();
 
         var updateNftMetadataTimestamp = approveAllowanceTimestamp + 20L;
+        var newMetadata = BytesValue.of(recordItemBuilder.bytes(16));
         var updateNftMetadataRecordItem = recordItemBuilder
                 .tokenUpdateNfts()
-                .transactionBody(b -> b.clearSerialNumbers().setToken(TOKEN_ID).addSerialNumbers(1L))
+                .transactionBody(b -> b.clearSerialNumbers()
+                        .setToken(TOKEN_ID)
+                        .addSerialNumbers(1L)
+                        .setMetadata(newMetadata))
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateNftMetadataTimestamp)))
                 .build();
 
@@ -3418,8 +3423,24 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(nftRepository.findById(new AbstractNft.Id(1L, DOMAIN_TOKEN_ID.getId())))
                 .get()
                 .returns(mintTimestamp, Nft::getCreatedTimestamp)
+                .returns(DomainUtils.toBytes(newMetadata.getValue()), Nft::getMetadata)
                 .returns(EntityId.of(PAYER3), Nft::getDelegatingSpender)
                 .returns(EntityId.of(PAYER2), Nft::getSpender);
+
+        var nftHistory = findHistory(Nft.class);
+        assertThat(nftHistory).hasSize(2);
+
+        // First history row written when allowance created, pre-allowance spender columns are null.
+        assertThat(nftHistory)
+                .element(0)
+                .hasFieldOrPropertyWithValue("delegatingSpender", null)
+                .hasFieldOrPropertyWithValue("spender", null);
+
+        // Second history row written when NFT metadata was updated. Allowance set spender columns must be indicated.
+        assertThat(nftHistory)
+                .element(1)
+                .hasFieldOrPropertyWithValue("delegatingSpender", EntityId.of(PAYER3))
+                .hasFieldOrPropertyWithValue("spender", EntityId.of(PAYER2));
     }
 
     @Test
