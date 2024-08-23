@@ -134,6 +134,7 @@ public class TestWeb3jService implements Web3jService {
         this.isEstimateGas = false;
         this.contractRuntime = null;
         this.persistContract = true;
+        this.value = 0L;
         this.sender = Address.fromHexString("");
         this.blockType = BlockType.LATEST;
         this.historicalRange = null;
@@ -343,7 +344,11 @@ public class TestWeb3jService implements Web3jService {
         final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
         final var entity = domainBuilder
                 .entity()
-                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId).key(domainBuilder.key(KeyCase.ED25519)))
+                .customize(e -> e.type(CONTRACT)
+                        .id(entityId)
+                        .num(entityId)
+                        .key(domainBuilder.key(KeyCase.ED25519))
+                        .balance(3000L))
                 .persist();
 
         domainBuilder
