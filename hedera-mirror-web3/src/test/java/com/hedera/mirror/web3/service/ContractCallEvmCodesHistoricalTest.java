@@ -29,11 +29,16 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.web3j.TestWeb3jServiceState;
 import com.hedera.mirror.web3.web3j.generated.EvmCodesHistorical;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallHistoricalServiceTest {
+    private static final Address SENDER_ADDRESS = toAddress(1014);
+    private static final byte[] PUBLIC_KEY_HISTORICAL = ByteString.copyFrom(
+                    Hex.decode("3a2102930a39a381a68d90afc8e8c82935bd93f89800e88ec29a18e8cc13d51947c6c8"))
+            .toByteArray();
 
     @BeforeEach
     void beforeAll() {
@@ -60,19 +65,16 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallHist
     }
 
     private void senderPersistHistorical() {
-        final var senderAddress = toAddress(1014);
-        final var senderEntityId = entityIdFromEvmAddress(senderAddress);
-        final var publicKeyHistorical = ByteString.copyFrom(
-                Hex.decode("3a2102930a39a381a68d90afc8e8c82935bd93f89800e88ec29a18e8cc13d51947c6c8"));
+        final var senderEntityId = entityIdFromEvmAddress(SENDER_ADDRESS);
 
         final var senderHistorical = domainBuilder
                 .entity()
                 .customize(e -> e.id(senderEntityId.getId())
                         .num(senderEntityId.getNum())
-                        .evmAddress(senderAddress.toArray())
+                        .evmAddress(SENDER_ADDRESS.toArray())
                         .type(ACCOUNT)
                         .deleted(false)
-                        .alias(publicKeyHistorical.toByteArray())
+                        .alias(PUBLIC_KEY_HISTORICAL)
                         .balance(10000 * 100_000_000L)
                         .createdTimestamp(recordFileAfterEvm34.getConsensusStart())
                         .timestampRange(closedOpen(
