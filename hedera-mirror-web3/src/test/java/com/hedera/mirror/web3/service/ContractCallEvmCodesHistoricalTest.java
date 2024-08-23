@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.service;
 
 import static com.google.common.collect.Range.closedOpen;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -34,24 +33,21 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.EvmCodesHistorical;
 import java.math.BigInteger;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServiceTest {
-
-    private static final Address SENDER_ADDRESS = toAddress(1014);
     private static final byte[] PUBLIC_KEY_HISTORICAL = ByteString.copyFrom(
                     Hex.decode("3a2102930a39a381a68d90afc8e8c82935bd93f89800e88ec29a18e8cc13d51947c6c8"))
             .toByteArray();
     private static final long EVM_V_34_BLOCK = 50L;
-    private static final String EMPTY_BLOCK_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
+    private RecordFile recordFileAfterEvm34;
 
     @BeforeEach
-    void beforeAll() {
-        final var recordFileAfterEvm34 = domainBuilder
+    void beforeEach() {
+        recordFileAfterEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK))
                 .persist();
@@ -87,21 +83,18 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
     }
 
     @Test
-    void getLatestBlockHashIsNotEmpty() throws Exception {
+    void getLatestBlockHashReturnsCorrectValue() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodesHistorical::deploy);
         var result = contract.call_getLatestBlockHash().send();
-        var expectedResult = ByteString.fromHex((EMPTY_BLOCK_HASH)).toByteArray();
-        assertThat(result).isNotEqualTo(expectedResult);
+        var expectedResult = ByteString.fromHex(recordFileAfterEvm34.getHash().substring(0, 64))
+                .toByteArray();
+        assertThat(result).isEqualTo(expectedResult);
     }
 
     private void senderPersistHistorical(RecordFile recordFileHistorical) {
-        final var senderEntityId = entityIdFromEvmAddress(SENDER_ADDRESS);
         final var senderHistorical = domainBuilder
                 .entity()
-                .customize(e -> e.id(senderEntityId.getId())
-                        .num(senderEntityId.getNum())
-                        .evmAddress(SENDER_ADDRESS.toArray())
-                        .type(ACCOUNT)
+                .customize(e -> e.type(ACCOUNT)
                         .deleted(false)
                         .alias(PUBLIC_KEY_HISTORICAL)
                         .balance(10000 * 100_000_000L)
