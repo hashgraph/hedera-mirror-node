@@ -47,7 +47,7 @@ public abstract class AbstractNft implements History {
     @Column(updatable = false)
     private Long createdTimestamp;
 
-    @UpsertColumn(coalesce = "{0}")
+    @UpsertColumn(coalesce = "case when delegating_spender < 0 then e_{0} else {0} end")
     private EntityId delegatingSpender;
 
     private Boolean deleted;
@@ -58,7 +58,7 @@ public abstract class AbstractNft implements History {
     @jakarta.persistence.Id
     private long serialNumber;
 
-    @UpsertColumn(coalesce = "{0}")
+    @UpsertColumn(coalesce = "case when spender < 0 then e_{0} else {0} end")
     private EntityId spender;
 
     @jakarta.persistence.Id

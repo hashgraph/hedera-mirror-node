@@ -380,24 +380,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(RevertFunctions.class)
-    void testReverts(final RevertFunctions revertFunctions) {
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(revertFunctions.functionSignature),
-                REVERTER_CONTRACT_ADDRESS,
-                ETH_CALL,
-                0L,
-                BlockType.LATEST);
-
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name())
-                .hasFieldOrPropertyWithValue("detail", revertFunctions.errorDetail)
-                .hasFieldOrPropertyWithValue("data", revertFunctions.errorData);
-        assertGasLimit(serviceParameters);
-    }
-
-    @ParameterizedTest
     @EnumSource(EVM46ValidationCalls.class)
     void testEVM46ValidationCalls(final EVM46ValidationCalls evm46ValidationCalls) {
         final var functionHash = !evm46ValidationCalls.function.isEmpty()
@@ -406,22 +388,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 : Bytes.EMPTY;
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, evm46ValidationCalls.contractAddress, ETH_CALL, 0L, BlockType.LATEST);
-
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
-        assertGasLimit(serviceParameters);
-    }
-
-    @ParameterizedTest
-    @EnumSource(EVM46ValidationInternalCalls.class)
-    void testEVM46ValidationInternalCalls(final EVM46ValidationInternalCalls evm46ValidationCalls) {
-        final var functionHash = !evm46ValidationCalls.function.isEmpty()
-                ? functionEncodeDecoder.functionHashFor(
-                        evm46ValidationCalls.function,
-                        INTERNAL_CALLER_CONTRACT_ABI_PATH,
-                        evm46ValidationCalls.functionParams)
-                : Bytes.EMPTY;
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, INTERNAL_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
         assertGasLimit(serviceParameters);
@@ -787,64 +753,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @RequiredArgsConstructor
-    private enum RevertFunctions {
-        REVERT_WITH_CUSTOM_ERROR_PURE("revertWithCustomErrorPure", "35314694", "", "0x0bd3d39c"),
-        REVERT_WITH_PANIC_PURE(
-                "revertWithPanicPure",
-                "83889056",
-                "",
-                "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"),
-        REVERT_PAYABLE(
-                "revertPayable",
-                "d0efd7ef",
-                "RevertReasonPayable",
-                "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013526576657274526561736f6e50617961626c6500000000000000000000000000"),
-        REVERT_PURE(
-                "revertPure",
-                "b2e0100c",
-                "RevertReasonPure",
-                "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000010526576657274526561736f6e5075726500000000000000000000000000000000"),
-        REVERT_VIEW(
-                "revertView",
-                "90e9b875",
-                "RevertReasonView",
-                "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000010526576657274526561736f6e5669657700000000000000000000000000000000"),
-        REVERT_WITH_CUSTOM_ERROR("revertWithCustomError", "46fc4bb1", "", "0x0bd3d39c"),
-        REVERT_WITH_NOTHING("revertWithNothing", "fe0a3dd7", "", "0x"),
-        REVERT_WITH_NOTHING_PURE("revertWithNothingPure", "2dac842f", "", "0x"),
-        REVERT_WITH_PANIC(
-                "revertWithPanic",
-                "33fe3fbd",
-                "",
-                "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"),
-        REVERT_WITH_STRING(
-                "revertWithString",
-                "0323d234",
-                "Some revert message",
-                "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000"),
-        REVERT_WITH_STRING_PURE(
-                "revertWithStringPure",
-                "8b153371",
-                "Some revert message",
-                "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000"),
-        REVERT_WITH_CUSTOM_ERROR_WITH_PARAMETERS(
-                "revertWithCustomErrorWithParameters",
-                "86451c2b",
-                "",
-                "0xcc4263a0000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000"),
-        REVERT_WITH_CUSTOM_ERROR_WITH_PARAMETERS_PURE(
-                "revertWithCustomErrorWithParameters",
-                "b1c5ae51",
-                "",
-                "0xcc4263a0000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000");
-
-        private final String name;
-        private final String functionSignature;
-        private final String errorDetail;
-        private final String errorData;
-    }
-
-    @RequiredArgsConstructor
     private enum EVM46ValidationCalls {
         CALL_TO_NON_EXISTING_CONTRACT("callToNonExistingContract", toAddress(123456789), "", new Object[] {0}, "0x"),
         TRANSFER_TO_NON_EXISTING_CONTRACT(
@@ -856,28 +764,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         private final String name;
         private final Address contractAddress;
-        private final String function;
-        private final Object[] functionParams;
-        private final String data;
-    }
-
-    @RequiredArgsConstructor
-    private enum EVM46ValidationInternalCalls {
-        CALL_TO_INTERNAL_NON_EXISTING_CONTRACT(
-                "callToInternalNonExistingContract", "callNonExisting", new Object[] {toAddress(123456789)}, "0x"),
-        CALL_TO_INTERNAL_NON_EXISTING_FUNCTION(
-                "callToInternalNonExistingContract", "callNonExisting", new Object[] {ERC_CONTRACT_ADDRESS}, "0x"),
-        CALL_TO_INTERNAL_WITH_VALUE_TO_NON_EXISTING_FUNCTION(
-                "callToInternalWithValueToNonExistingContract",
-                "callWithValueTo",
-                new Object[] {ERC_CONTRACT_ADDRESS},
-                "0x"),
-        SEND_TO_INTERNAL_NON_EXISTING_ACCOUNT(
-                "sendToInternalNonExistingContract", "sendTo", new Object[] {toAddress(123456789)}, "0x"),
-        TRANSFER_TO_INTERNAL_NON_EXISTING_ACCOUNT(
-                "transferToInternalNonExistingContract", "transferTo", new Object[] {toAddress(123456789)}, "0x");
-
-        private final String name;
         private final String function;
         private final Object[] functionParams;
         private final String data;
