@@ -186,7 +186,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
                         .kycKey(new byte[0]))
                 .persist();
 
-        tokenAssociateAccountPersist(owner, entityIdFromEvmAddress(toAddress(token.getId())));
+        tokenAssociateAccountPersist(owner, token.toEntityId());
 
         final var hollowAccount = domainBuilder
                 .entity()
@@ -197,22 +197,10 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(token.getId())
-                        .accountId(contractEntityId.getId())
-                        .associated(true))
-                .persist();
+        tokenAssociateAccountPersist(contractEntityId, token.toEntityId());
 
         final var amount = 10L;
-        domainBuilder
-                .tokenAllowance()
-                .customize(ta -> ta.tokenId(token.getId())
-                        .spender(contractEntityId.getId())
-                        .amount(amount)
-                        .owner(owner.getId()))
-                .persist();
+        fungibleTokenAllowancePersist(contractEntityId, owner, token.toEntityId(), amount);
 
         final var functionCall = contract.send_transferFrom(
                 toAddress(token.getId()).toHexString(),
