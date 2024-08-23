@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.service;
 import static com.google.common.collect.Range.closedOpen;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_34_BLOCK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -38,7 +39,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServiceTest {
-    private static final long EVM_V_34_BLOCK = 50L;
     private RecordFile recordFileAfterEvm34;
 
     @BeforeEach
