@@ -31,7 +31,6 @@ import org.hyperledger.besu.datatypes.Address;
 public class ContractCallTestUtil {
 
     public static final long TRANSACTION_GAS_LIMIT = 15_000_000L;
-    public static final long EVM_V_34_BLOCK = 50L;
     public static final ByteString SPENDER_PUBLIC_KEY =
             ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
     public static final Address SPENDER_ALIAS = Address.wrap(
@@ -72,6 +71,9 @@ public class ContractCallTestUtil {
         -128, -61, -12, 63, 3, -45, 108, 34, 61, -2, -83, -48, -118, 20, 84, 85, 85, 67, -125, 46, 49, 26, 17, -116, 27,
         25, 38, -95, 50, 77, 40, -38
     };
+
+    public static final long EVM_V_34_BLOCK = 50L;
+
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *
