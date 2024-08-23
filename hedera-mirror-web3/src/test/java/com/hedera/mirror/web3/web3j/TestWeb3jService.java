@@ -24,6 +24,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncoded;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractExecutionService;
@@ -83,6 +84,7 @@ public class TestWeb3jService implements Web3jService {
     private boolean persistContract = true;
     private byte[] contractRuntime;
     private BlockType blockType = BlockType.LATEST;
+    private Range historicalRange;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -120,6 +122,10 @@ public class TestWeb3jService implements Web3jService {
         this.blockType = blockType;
     }
 
+    public void setHistoricalRange(Range historicalRange) {
+        this.historicalRange = historicalRange;
+    }
+
     public byte[] getContractRuntime() {
         return contractRuntime;
     }
@@ -128,6 +134,9 @@ public class TestWeb3jService implements Web3jService {
         this.isEstimateGas = false;
         this.contractRuntime = null;
         this.persistContract = true;
+        this.sender = Address.fromHexString("");
+        this.blockType = BlockType.LATEST;
+        this.historicalRange = null;
     }
 
     @SneakyThrows(Exception.class)
@@ -319,7 +328,11 @@ public class TestWeb3jService implements Web3jService {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
         if (persistContract) {
-            contractPersist(binary, id);
+            if (blockType != BlockType.LATEST) {
+                historicalContractPersist(binary, id, contractAddress);
+            } else {
+                contractPersist(binary, id);
+            }
         } else {
             contractRuntime = Hex.decode(binary.replace(HEX_PREFIX, ""));
         }
@@ -331,6 +344,28 @@ public class TestWeb3jService implements Web3jService {
         final var entity = domainBuilder
                 .entity()
                 .customize(e -> e.type(CONTRACT).id(entityId).num(entityId).key(domainBuilder.key(KeyCase.ED25519)))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(entity.getId()).runtimeBytecode(contractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(entity.getId()))
+                .persist();
+    }
+
+    private void historicalContractPersist(String binary, long entityId, final Address contractAddress) {
+        final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
+        final var entity = domainBuilder
+                .entity()
+                .customize(e -> e.type(CONTRACT)
+                        .id(entityId)
+                        .num(entityId)
+                        .evmAddress(contractAddress.toArray())
+                        .timestampRange(historicalRange))
                 .persist();
 
         domainBuilder
