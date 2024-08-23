@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.service;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jServiceState;
@@ -26,8 +25,6 @@ public class AbstractContractCallHistoricalServiceTest extends AbstractContractC
     protected static final long EVM_V_34_BLOCK = 50L;
     protected static final long EVM_V_38_BLOCK = 100L;
     protected static final long EVM_V_46_BLOCK = 150L;
-
-    protected Entity senderHistorical;
 
     protected Range<Long> timestampRangeAfterEvm34Block;
 
@@ -85,7 +82,7 @@ public class AbstractContractCallHistoricalServiceTest extends AbstractContractC
             }
             case LATEST -> {
                 testWeb3jService.setBlockType(BlockType.LATEST);
-                // // create Historical range
+                // create Historical range
                 testWeb3jService.setHistoricalRange(null);
             }
         }

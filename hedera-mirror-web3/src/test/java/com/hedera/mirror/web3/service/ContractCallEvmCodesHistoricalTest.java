@@ -65,7 +65,7 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallHist
         final var publicKeyHistorical = ByteString.copyFrom(
                 Hex.decode("3a2102930a39a381a68d90afc8e8c82935bd93f89800e88ec29a18e8cc13d51947c6c8"));
 
-        this.senderHistorical = domainBuilder
+        final var senderHistorical = domainBuilder
                 .entity()
                 .customize(e -> e.id(senderEntityId.getId())
                         .num(senderEntityId.getNum())
