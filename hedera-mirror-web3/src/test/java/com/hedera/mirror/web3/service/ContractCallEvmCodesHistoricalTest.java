@@ -21,30 +21,43 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.web3j.TestWeb3jServiceState;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.EvmCodesHistorical;
+import java.math.BigInteger;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallHistoricalServiceTest {
+public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServiceTest {
+
     private static final Address SENDER_ADDRESS = toAddress(1014);
     private static final byte[] PUBLIC_KEY_HISTORICAL = ByteString.copyFrom(
                     Hex.decode("3a2102930a39a381a68d90afc8e8c82935bd93f89800e88ec29a18e8cc13d51947c6c8"))
             .toByteArray();
+    private static final long EVM_V_34_BLOCK = 50L;
 
     @BeforeEach
     void beforeAll() {
-        historicalBlocksPersist();
-        setupTestWeb3jServiceState(TestWeb3jServiceState.AFTER_EVM_34_BLOCK);
-        senderPersistHistorical();
+        final var recordFileAfterEvm34 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_34_BLOCK))
+                .persist();
+        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
+        testWeb3jService.setHistoricalRange(
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+        senderPersistHistorical(recordFileAfterEvm34);
     }
 
     @ParameterizedTest
@@ -64,9 +77,16 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallHist
                 .satisfies(ex -> assertEquals(ex.getMessage(), INVALID_SOLIDITY_ADDRESS.name()));
     }
 
-    private void senderPersistHistorical() {
-        final var senderEntityId = entityIdFromEvmAddress(SENDER_ADDRESS);
+    @Test
+    void testBlockPrevrandao() throws Exception {
+        final var contract = testWeb3jService.deploy(EvmCodesHistorical::deploy);
+        final var result = contract.call_getBlockPrevrandao().send();
+        assertThat(result).isNotNull();
+        assertTrue(result.compareTo(BigInteger.ZERO) > 0);
+    }
 
+    private void senderPersistHistorical(RecordFile recordFileHistorical) {
+        final var senderEntityId = entityIdFromEvmAddress(SENDER_ADDRESS);
         final var senderHistorical = domainBuilder
                 .entity()
                 .customize(e -> e.id(senderEntityId.getId())
@@ -76,9 +96,9 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallHist
                         .deleted(false)
                         .alias(PUBLIC_KEY_HISTORICAL)
                         .balance(10000 * 100_000_000L)
-                        .createdTimestamp(recordFileAfterEvm34.getConsensusStart())
+                        .createdTimestamp(recordFileHistorical.getConsensusStart())
                         .timestampRange(closedOpen(
-                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                                recordFileHistorical.getConsensusStart(), recordFileHistorical.getConsensusEnd())))
                 .persist();
 
         testWeb3jService.setSender(toAddress(senderHistorical.toEntityId()).toHexString());

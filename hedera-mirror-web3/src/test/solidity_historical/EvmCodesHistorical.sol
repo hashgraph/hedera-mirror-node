@@ -14,4 +14,8 @@ contract EvmCodesHistorical {
         }
         return codehash;
     }
+
+    function getBlockPrevrandao() external view returns (uint256) {
+        return block.difficulty;
+    }
 }
