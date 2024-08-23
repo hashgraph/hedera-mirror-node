@@ -32,16 +32,12 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.EvmCodesHistorical;
 import java.math.BigInteger;
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServiceTest {
-    private static final byte[] PUBLIC_KEY_HISTORICAL = ByteString.copyFrom(
-                    Hex.decode("3a2102930a39a381a68d90afc8e8c82935bd93f89800e88ec29a18e8cc13d51947c6c8"))
-            .toByteArray();
     private static final long EVM_V_34_BLOCK = 50L;
     private RecordFile recordFileAfterEvm34;
 
@@ -76,20 +72,30 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
 
     @Test
     void testBlockPrevrandao() throws Exception {
+        // Given
         final var contract = testWeb3jService.deploy(EvmCodesHistorical::deploy);
+
+        // When
         final var result = contract.call_getBlockPrevrandao().send();
+
+        // Then
         assertThat(result).isNotNull();
         assertTrue(result.compareTo(BigInteger.ZERO) > 0);
     }
 
     @Test
     void getLatestBlockHashReturnsCorrectValue() throws Exception {
+        // Given
         domainBuilder
                 .recordFile()
                 .customize(f -> f.index(recordFileAfterEvm34.getIndex() + 1))
                 .persist();
         final var contract = testWeb3jService.deploy(EvmCodesHistorical::deploy);
+
+        // When
         var result = contract.call_getLatestBlockHash().send();
+
+        // Then
         var expectedResult = ByteString.fromHex(recordFileAfterEvm34.getHash().substring(0, 64))
                 .toByteArray();
         assertThat(result).isEqualTo(expectedResult);
@@ -100,7 +106,6 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
                 .entity()
                 .customize(e -> e.type(ACCOUNT)
                         .deleted(false)
-                        .alias(PUBLIC_KEY_HISTORICAL)
                         .balance(10000 * 100_000_000L)
                         .createdTimestamp(recordFileHistorical.getConsensusStart())
                         .timestampRange(closedOpen(
