@@ -84,6 +84,10 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
 
     @Test
     void getLatestBlockHashReturnsCorrectValue() throws Exception {
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.index(recordFileAfterEvm34.getIndex() + 1))
+                .persist();
         final var contract = testWeb3jService.deploy(EvmCodesHistorical::deploy);
         var result = contract.call_getLatestBlockHash().send();
         var expectedResult = ByteString.fromHex(recordFileAfterEvm34.getHash().substring(0, 64))
