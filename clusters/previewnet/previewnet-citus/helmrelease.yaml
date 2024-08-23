@@ -21,6 +21,8 @@ spec:
   driftDetection:
     ignore:
       - paths:
+          - /spec/replicas
+      - paths:
           - /spec/scripts
         target:
           kind: SGScript
