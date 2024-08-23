@@ -18,4 +18,8 @@ contract EvmCodesHistorical {
     function getBlockPrevrandao() external view returns (uint256) {
         return block.difficulty;
     }
+
+    function getLatestBlockHash() public view returns (bytes32) {
+        return blockhash(block.number);
+    }
 }

@@ -47,6 +47,7 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
                     Hex.decode("3a2102930a39a381a68d90afc8e8c82935bd93f89800e88ec29a18e8cc13d51947c6c8"))
             .toByteArray();
     private static final long EVM_V_34_BLOCK = 50L;
+    private static final String EMPTY_BLOCK_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 
     @BeforeEach
     void beforeAll() {
@@ -83,6 +84,14 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
         final var result = contract.call_getBlockPrevrandao().send();
         assertThat(result).isNotNull();
         assertTrue(result.compareTo(BigInteger.ZERO) > 0);
+    }
+
+    @Test
+    void getLatestBlockHashIsNotEmpty() throws Exception {
+        final var contract = testWeb3jService.deploy(EvmCodesHistorical::deploy);
+        var result = contract.call_getLatestBlockHash().send();
+        var expectedResult = ByteString.fromHex((EMPTY_BLOCK_HASH)).toByteArray();
+        assertThat(result).isNotEqualTo(expectedResult);
     }
 
     private void senderPersistHistorical(RecordFile recordFileHistorical) {
