@@ -86,13 +86,13 @@ const getOpenApiMap = () => {
   const openApiPaths = openApiObject.paths;
   const map = new Map();
   Object.keys(openApiPaths).forEach((path) => {
-    map.set(path, getOpenApiParameters(path, openApiPaths, openApiObject));
+    map.set(path, getOpenApiParameters(path, openApiObject));
   });
   return map;
 };
 
-const getOpenApiParameters = (path, openApiPaths, openApiObject) => {
-  const pathObject = openApiPaths[path];
+const getOpenApiParameters = (path, openApiObject) => {
+  const pathObject = openApiObject.paths[path];
   if (pathObject === undefined) {
     return {};
   }
