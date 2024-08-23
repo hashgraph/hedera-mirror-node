@@ -23,6 +23,7 @@ import swaggerUi from 'swagger-ui-express';
 
 // files
 import config from '../config';
+import {filterKeys} from '../constants.js';
 
 let v1OpenApiDocument;
 let v1OpenApiFile;
@@ -80,6 +81,50 @@ const getV1OpenApiObject = () => {
   return v1OpenApiDocument;
 };
 
+const getOpenApiMap = () => {
+  const openApiObject = getV1OpenApiObject();
+  const openApiPaths = openApiObject.paths;
+  const map = new Map();
+  Object.keys(openApiPaths).forEach((path) => {
+    map.set(path, getOpenApiParameters(path, openApiPaths, openApiObject));
+  });
+  return map;
+};
+
+const getOpenApiParameters = (path, openApiPaths, openApiObject) => {
+  const pathObject = openApiPaths[path];
+  if (pathObject === undefined) {
+    return {};
+  }
+
+  const parameters = pathObject.get?.parameters;
+  if (parameters === undefined) {
+    return {};
+  }
+
+  return parameters.map((parameter) => {
+    // Each open api parameter is prefixed by #/components/parameters/, which is 24 characters long
+    const openApiParameter = parameter.$ref?.substring(24);
+    const defaultValue = openApiObject.components.parameters[openApiParameter]?.schema.default;
+    const queryParameter = openApiParameterToQueryParameter(openApiParameter);
+    return {queryParameter, defaultValue};
+  });
+};
+
+const openApiParameterToQueryParameter = (openApiParameter) => {
+  // Todo: Better way of handling this without going through each filter value?
+  switch (openApiParameter) {
+    case 'balanceQueryParam':
+      return filterKeys.BALANCE;
+    case 'limitQueryParam':
+      return filterKeys.LIMIT;
+    case 'orderQueryParam':
+      return filterKeys.ORDER;
+    default:
+      return openApiParameter;
+  }
+};
+
 const serveSpec = (req, res) => res.type('text/yaml').send(getV1OpenApiFile());
 
 /**
@@ -113,4 +158,4 @@ const openApiValidator = (app) => {
   );
 };
 
-export {getV1OpenApiObject, openApiValidator, serveSwaggerDocs};
+export {getV1OpenApiObject, getOpenApiMap, openApiValidator, serveSwaggerDocs};

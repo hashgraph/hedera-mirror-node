@@ -19,6 +19,9 @@ import qs from 'qs';
 
 import {httpStatusCodes, requestIdLabel, requestStartTime} from '../constants';
 import {lowerCaseQueryValue, randomString} from '../utils';
+import {getOpenApiMap} from './openapiHandler.js';
+
+const openApiMap = getOpenApiMap();
 
 const queryCanonicalizationMap = {
   order: lowerCaseQueryValue,
@@ -83,4 +86,26 @@ const canonicalizeValue = (key, value) => {
   return Array.isArray(value) ? value.map((v) => canonicalizationFunc(v)) : canonicalizationFunc(value);
 };
 
-export {requestLogger, requestQueryParser};
+const normalizeRequestQueryParams = (req) => {
+  const path = req.path;
+  const query = req.query;
+  const openApiPathMap = openApiMap.get(path);
+
+  const normalizedParams = [];
+  for (const paramDefault of openApiPathMap) {
+    const openApiQueryParam = query[paramDefault.queryParameter];
+    const passedValue = query[paramDefault.queryParameter];
+    if (openApiQueryParam === undefined && passedValue === undefined && paramDefault.defaultValue !== undefined) {
+      normalizedParams.push(paramDefault.queryParameter + '=' + paramDefault.defaultValue);
+    }
+
+    // To do handle query parameters not in openApiMap
+  }
+
+  // Example passed in:
+  // /api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:-2&account.publickey=abcdef&timestamp=-1.2&order=any&balance=1&token.id=0.0.45678
+  const normalizedString = normalizedParams.sort().join('&');
+  return normalizedString;
+};
+
+export {normalizeRequestQueryParams, requestLogger, requestQueryParser};
