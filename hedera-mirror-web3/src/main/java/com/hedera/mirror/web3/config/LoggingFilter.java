@@ -79,7 +79,7 @@ class LoggingFilter extends OncePerRequestFilter {
 
         if (actuator) {
             log.debug(LOG_FORMAT, params);
-        } else if (status != HttpStatus.OK.value()) {
+        } else if (status >= HttpStatus.INTERNAL_SERVER_ERROR.value()) {
             log.warn(LOG_FORMAT, params);
         } else {
             log.info(LOG_FORMAT, params);
