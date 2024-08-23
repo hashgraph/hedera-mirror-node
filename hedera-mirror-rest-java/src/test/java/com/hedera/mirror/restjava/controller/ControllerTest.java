@@ -70,7 +70,7 @@ abstract class ControllerTest extends RestJavaIntegrationTest {
                 .defaultHeader("Origin", "http://example.com");
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "java:S6103"})
     protected final void validateError(
             ThrowableAssert.ThrowingCallable callable,
             Class<? extends HttpClientErrorException> clazz,

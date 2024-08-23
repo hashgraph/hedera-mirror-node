@@ -121,18 +121,19 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(
             Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
-        Error errorResponse = null;
 
-        if (ex instanceof Errors errors) {
-            errorResponse = errorResponse(errors.getAllErrors());
-        } else if (ex instanceof MethodValidationResult errors) {
-            errorResponse = errorResponse(errors.getAllErrors());
-        } else {
-            var message = statusCode instanceof HttpStatus hs ? hs.getReasonPhrase() : statusCode.toString();
-            var detail = body instanceof ProblemDetail pb ? pb.getDetail() : ex.getMessage();
-            var nonSensitiveDetail = !statusCode.is5xxServerError() ? detail : StringUtils.EMPTY;
-            errorResponse = errorResponse(message, nonSensitiveDetail);
-        }
+        Error errorResponse =
+                switch (ex) {
+                    case Errors errors -> errorResponse(errors.getAllErrors());
+                    case MethodValidationResult errors -> errorResponse(errors.getAllErrors());
+                    default -> {
+                        var message =
+                                statusCode instanceof HttpStatus hs ? hs.getReasonPhrase() : statusCode.toString();
+                        var detail = body instanceof ProblemDetail pb ? pb.getDetail() : ex.getMessage();
+                        var nonSensitiveDetail = !statusCode.is5xxServerError() ? detail : StringUtils.EMPTY;
+                        yield errorResponse(message, nonSensitiveDetail);
+                    }
+                };
 
         request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, SCOPE_REQUEST);
         return new ResponseEntity<>(errorResponse, headers, statusCode);
@@ -149,8 +150,7 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
         errorMessage.setDetail(detail);
         errorMessage.setMessage(message);
         var errorStatus = new ErrorStatus().addMessagesItem(errorMessage);
-        var error = new Error().status(errorStatus);
-        return error;
+        return new Error().status(errorStatus);
     }
 
     private ErrorStatusMessagesInner formatErrorMessage(MessageSourceResolvable error) {
