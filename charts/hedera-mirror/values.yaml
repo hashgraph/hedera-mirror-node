@@ -333,7 +333,7 @@ stackgres:
     config:
       autovacuum_max_workers: "2"
       checkpoint_timeout: "1800"
-      citus.node_conninfo: "sslmode=disable" # Disable SSL to work around https://github.com/hashgraph/hedera-mirror-node/issues/9143
+      citus.node_conninfo: "sslmode=disable"  # Disable SSL to work around https://github.com/hashgraph/hedera-mirror-node/issues/9143
       full_page_writes: "false"  # Not required for ZFS and Enabling this causes hash indexes to have spikes in write performance.
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
