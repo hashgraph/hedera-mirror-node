@@ -24,7 +24,7 @@ spec:
           - /spec/scripts
         target:
           kind: SGScript
-    mode: enabled
+    mode: warn
   install:
     crds: CreateReplace
   interval: 90s
