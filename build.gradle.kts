@@ -87,7 +87,7 @@ dependencies {
         api("net.devh:grpc-spring-boot-starter:3.1.0.RELEASE")
         api("net.java.dev.jna:jna:5.14.0")
         api("org.apache.commons:commons-collections4:4.4")
-        api("org.apache.commons:commons-compress:1.27.0")
+        api("org.apache.commons:commons-compress:1.27.1")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:$tuweniVersion")
         api("org.apache.tuweni:tuweni-units:$tuweniVersion")
