@@ -7,12 +7,12 @@ loaded to current cluster.
 
 ## Execution
 
-After successful upgrade of the Stackgres Helm chart, we need to perform the following steps to ensure the security of
-the cluster:
+After successful deployment of the upgraded Stackgres Helm chart, we need to perform the following steps:
 
 1. Determine the namespace and name of each sharded cluster and generate the yaml file below for each instance.
    `kubectl get sgshardedclusters -A -o json | jq '.items[].metadata|"name: \(.name) namespace: \(.namespace)"'`
-2. Create a file containing the below yaml with <namespace> and <nameOfShardedCluster> replaced with the correct values
+2. Create a file containing the below yaml with `<namespace>` and `<nameOfShardedCluster>` replaced with the correct
+   values
    from step 1 and execute the command
    `kubectl apply -f <filename> -n <namespace>`
 3. Verify that the clusters are annotated with the correct Stackgres version.
