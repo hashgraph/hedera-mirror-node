@@ -73,6 +73,8 @@ public class ContractCallTestUtil {
         25, 38, -95, 50, 77, 40, -38
     };
 
+    public static final long EVM_V_34_BLOCK = 50L;
+
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *

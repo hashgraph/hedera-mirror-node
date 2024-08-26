@@ -18,11 +18,13 @@ package com.hedera.mirror.restjava.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 import com.hedera.mirror.rest.model.Error;
 import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.RestJavaProperties;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ThrowableAssert;
@@ -34,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -47,11 +50,10 @@ import org.springframework.web.client.RestClient.RequestHeadersUriSpec;
 abstract class ControllerTest extends RestJavaIntegrationTest {
 
     private static final String BASE_PATH = "/api/v1/";
+    protected RestClient.Builder restClientBuilder;
 
     @Autowired
     private RestJavaProperties properties;
-
-    protected RestClient.Builder restClientBuilder;
 
     private String baseUrl;
 
@@ -68,22 +70,27 @@ abstract class ControllerTest extends RestJavaIntegrationTest {
                 .defaultHeader("Origin", "http://example.com");
     }
 
+    @SuppressWarnings({"unchecked", "java:S6103"})
     protected final void validateError(
             ThrowableAssert.ThrowingCallable callable,
             Class<? extends HttpClientErrorException> clazz,
-            String message) {
+            String... detail) {
+        AtomicReference<HttpClientErrorException> e = new AtomicReference<>();
         assertThatThrownBy(callable)
                 .isInstanceOf(clazz)
                 .asInstanceOf(InstanceOfAssertFactories.type(clazz))
-                .extracting(r -> r.getResponseBodyAs(Error.class)
-                        .getStatus()
-                        .getMessages()
-                        .get(0))
-                .returns(null, ErrorStatusMessagesInner::getData)
-                .returns(null, ErrorStatusMessagesInner::getDetail)
-                .extracting(ErrorStatusMessagesInner::getMessage)
-                .asInstanceOf(InstanceOfAssertFactories.STRING)
-                .containsIgnoringCase(message);
+                .satisfies(r -> e.set(r))
+                .extracting(
+                        r -> r.getResponseBodyAs(Error.class).getStatus().getMessages(),
+                        list(ErrorStatusMessagesInner.class))
+                .hasSize(detail.length)
+                .allSatisfy(error -> assertThat(error.getData()).isNull())
+                .allSatisfy(error -> assertThat(error.getMessage())
+                        .isEqualTo(HttpStatus.resolve(e.get().getStatusCode().value())
+                                .getReasonPhrase()))
+                .extracting(ErrorStatusMessagesInner::getDetail)
+                .asInstanceOf(InstanceOfAssertFactories.list(String.class))
+                .contains(detail);
     }
 
     protected abstract class EndpointTest {
@@ -131,7 +138,10 @@ abstract class ControllerTest extends RestJavaIntegrationTest {
                     () -> defaultRequest(restClient.post()).retrieve().toBodilessEntity();
 
             // Then
-            validateError(callable, HttpClientErrorException.MethodNotAllowed.class, "Method Not Allowed");
+            validateError(
+                    callable,
+                    HttpClientErrorException.MethodNotAllowed.class,
+                    "Request method 'POST' is not supported");
         }
     }
 }

@@ -78,11 +78,9 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     @BeforeEach
-    void setup() {
+    final void setup() {
         domainBuilder.recordFile().persist();
         testWeb3jService.reset();
-        testWeb3jService.setValue(0L);
-        testWeb3jService.setSender(Address.ZERO.toHexString());
     }
 
     @AfterEach
@@ -155,21 +153,30 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     protected ContractExecutionParameters getContractExecutionParameters(
-            final RemoteFunctionCall<?> functionCall,
-            final Contract contract,
-            final Address payerAddress,
-            final long value) {
+            final Bytes data, final Address receiver, final Address payerAddress, final long value) {
         return ContractExecutionParameters.builder()
                 .block(BlockType.LATEST)
-                .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
+                .callData(data)
                 .callType(CallType.ETH_CALL)
                 .gas(TRANSACTION_GAS_LIMIT)
                 .isEstimate(false)
                 .isStatic(false)
-                .receiver(Address.fromHexString(contract.getContractAddress()))
+                .receiver(receiver)
                 .sender(new HederaEvmAccount(payerAddress))
                 .value(value)
                 .build();
+    }
+
+    protected ContractExecutionParameters getContractExecutionParameters(
+            final RemoteFunctionCall<?> functionCall,
+            final Contract contract,
+            final Address payerAddress,
+            final long value) {
+        return getContractExecutionParameters(
+                Bytes.fromHexString(functionCall.encodeFunctionCall()),
+                Address.fromHexString(contract.getContractAddress()),
+                payerAddress,
+                value);
     }
 
     protected Entity persistAccountEntity() {

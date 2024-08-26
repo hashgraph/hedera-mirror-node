@@ -24,6 +24,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncoded;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractExecutionService;
@@ -69,6 +70,8 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Numeric;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
+@Getter
+@Setter
 public class TestWeb3jService implements Web3jService {
     private static final long DEFAULT_TRANSACTION_VALUE = 10L;
     private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
@@ -77,27 +80,16 @@ public class TestWeb3jService implements Web3jService {
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
     private final Web3j web3j;
-    private final BlockType blockType = BlockType.LATEST;
 
-    @Getter
-    @Setter
     private Address sender = Address.fromHexString("");
-
     private boolean isEstimateGas = false;
-
-    @Getter
     private String transactionResult;
-
-    @Getter
     private String estimatedGas;
-
-    @Setter
     private long value = 0L;
-
     private boolean persistContract = true;
-
-    @Getter
     private byte[] contractRuntime;
+    private BlockType blockType = BlockType.LATEST;
+    private Range historicalRange;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -120,6 +112,10 @@ public class TestWeb3jService implements Web3jService {
         this.contractRuntime = null;
         this.persistContract = true;
         this.sender = Address.ZERO;
+        this.value = 0L;
+        this.sender = Address.fromHexString("");
+        this.blockType = BlockType.LATEST;
+        this.historicalRange = null;
     }
 
     @SneakyThrows(Exception.class)
@@ -311,7 +307,11 @@ public class TestWeb3jService implements Web3jService {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
         if (persistContract) {
-            contractPersist(binary, id);
+            if (blockType != BlockType.LATEST) {
+                historicalContractPersist(binary, id, contractAddress);
+            } else {
+                contractPersist(binary, id);
+            }
         } else {
             contractRuntime = Hex.decode(binary.replace(HEX_PREFIX, ""));
         }
@@ -322,7 +322,33 @@ public class TestWeb3jService implements Web3jService {
         final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
         final var entity = domainBuilder
                 .entity()
-                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId).key(domainBuilder.key(KeyCase.ED25519)))
+                .customize(e -> e.type(CONTRACT)
+                        .id(entityId)
+                        .num(entityId)
+                        .key(domainBuilder.key(KeyCase.ED25519))
+                        .balance(3000L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(entity.getId()).runtimeBytecode(contractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(entity.getId()))
+                .persist();
+    }
+
+    private void historicalContractPersist(String binary, long entityId, final Address contractAddress) {
+        final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
+        final var entity = domainBuilder
+                .entity()
+                .customize(e -> e.type(CONTRACT)
+                        .id(entityId)
+                        .num(entityId)
+                        .evmAddress(contractAddress.toArray())
+                        .timestampRange(historicalRange))
                 .persist();
 
         domainBuilder
