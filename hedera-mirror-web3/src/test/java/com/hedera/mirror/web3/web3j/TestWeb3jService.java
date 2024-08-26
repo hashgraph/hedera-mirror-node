@@ -230,10 +230,13 @@ public class TestWeb3jService implements Web3jService {
         final var result = contractExecutionService.processCall(serviceParametersForCall);
         transactionResult = result;
 
-        // Then get the estimated gas
-        final var serviceParametersForEstimate =
-                serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, blockType);
-        estimatedGas = contractExecutionService.processCall(serviceParametersForEstimate);
+        // estimate gas is not supported for historical blocks so we ignore the estimate gas logic in historical context
+        if (!isHistoricalContext()) {
+            // Then get the estimated gas
+            final var serviceParametersForEstimate =
+                    serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, blockType);
+            estimatedGas = contractExecutionService.processCall(serviceParametersForEstimate);
+        }
 
         final var ethCall = new EthCall();
         ethCall.setId(request.getId());
@@ -403,6 +406,10 @@ public class TestWeb3jService implements Web3jService {
         ethTransactionReceipt.setResult(transactionReceipt);
 
         return ethTransactionReceipt;
+    }
+
+    private boolean isHistoricalContext() {
+        return historicalRange != null;
     }
 
     public interface Deployer<T extends Contract> {
