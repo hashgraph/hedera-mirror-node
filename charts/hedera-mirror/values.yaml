@@ -278,7 +278,7 @@ stackgres:
       autovacuum_max_workers: "2"
       checkpoint_timeout: "1800"
       citus.executor_slow_start_interval: "20ms"
-      citus.max_cached_conns_per_worker: "1"
+      citus.max_cached_conns_per_worker: "6"
       citus.max_shared_pool_size: "850"
       full_page_writes: "true"  # Required for replication to work in recovery scenarios
       log_checkpoints: "true"
