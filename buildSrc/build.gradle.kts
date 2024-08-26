@@ -51,7 +51,7 @@ dependencies {
     implementation("org.openapitools:openapi-generator-gradle-plugin:7.7.0")
     implementation("org.owasp:dependency-check-gradle:10.0.3")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.1.0.4882")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.2")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.3")
     implementation("org.testcontainers:postgresql:1.20.1")
     implementation("com.github.kselveliev:web3j-gradle-plugin:4.12.0")
 }
