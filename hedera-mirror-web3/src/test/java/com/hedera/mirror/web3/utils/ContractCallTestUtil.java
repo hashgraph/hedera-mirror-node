@@ -21,16 +21,11 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.ToLongFunction;
 import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
-import org.web3j.abi.TypeReference;
-import org.web3j.abi.Utils;
-import org.web3j.abi.datatypes.Type;
-import org.web3j.abi.datatypes.generated.Int256;
 
 @UtilityClass
 public class ContractCallTestUtil {
@@ -78,8 +73,6 @@ public class ContractCallTestUtil {
         25, 38, -95, 50, 77, 40, -38
     };
 
-    public static final List<TypeReference<Type>> CREATE_TOKEN_FUNCTION_OUTPUT_PARAMETERS = Utils.convert(
-            Arrays.asList(new TypeReference<Int256>() {}, new TypeReference<org.web3j.abi.datatypes.Address>() {}));
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *

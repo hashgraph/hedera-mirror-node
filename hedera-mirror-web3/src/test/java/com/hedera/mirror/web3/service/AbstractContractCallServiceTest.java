@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.*;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
@@ -81,14 +80,13 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     @BeforeEach
     void setup() {
         domainBuilder.recordFile().persist();
+        testWeb3jService.reset();
         testWeb3jService.setValue(0L);
-        testWeb3jService.setSender(Address.fromHexString(""));
+        testWeb3jService.setSender(Address.ZERO.toHexString());
     }
 
     @AfterEach
     void cleanup() {
-        testWeb3jService.setEstimateGas(false);
-        testWeb3jService.setSender(Address.ZERO);
         testWeb3jService.reset();
     }
 
@@ -207,8 +205,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     protected String getAliasFromEntity(Entity entity) {
-        return Address.fromHexString(Bytes.wrap(entity.getEvmAddress()).toHexString())
-                .toHexString();
+        return Bytes.wrap(entity.getEvmAddress()).toHexString();
     }
 
     public enum KeyType {

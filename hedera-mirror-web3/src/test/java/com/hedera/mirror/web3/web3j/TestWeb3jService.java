@@ -77,6 +77,7 @@ public class TestWeb3jService implements Web3jService {
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
     private final Web3j web3j;
+    private final BlockType blockType = BlockType.LATEST;
 
     @Getter
     @Setter
@@ -90,15 +91,13 @@ public class TestWeb3jService implements Web3jService {
     @Getter
     private String estimatedGas;
 
-    @Getter
-    private long entityId;
-
     @Setter
     private long value = 0L;
 
     private boolean persistContract = true;
+
+    @Getter
     private byte[] contractRuntime;
-    private BlockType blockType = BlockType.LATEST;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -112,30 +111,15 @@ public class TestWeb3jService implements Web3jService {
         this.sender = Address.fromHexString(sender);
     }
 
-    public void setSender(Address sender) {
-        this.sender = sender;
-    }
-
     public void setEstimateGas(final boolean isEstimateGas) {
         this.isEstimateGas = isEstimateGas;
-    }
-
-    public void setValue(final long value) {
-        this.value = value;
-    }
-
-    public void setBlockType(BlockType blockType) {
-        this.blockType = blockType;
-    }
-
-    public byte[] getContractRuntime() {
-        return contractRuntime;
     }
 
     public void reset() {
         this.isEstimateGas = false;
         this.contractRuntime = null;
         this.persistContract = true;
+        this.sender = Address.ZERO;
     }
 
     @SneakyThrows(Exception.class)
@@ -350,8 +334,6 @@ public class TestWeb3jService implements Web3jService {
                 .contractState()
                 .customize(c -> c.contractId(entity.getId()))
                 .persist();
-
-        this.entityId = entityId;
     }
 
     private EthGetTransactionCount ethGetTransactionCount() {
