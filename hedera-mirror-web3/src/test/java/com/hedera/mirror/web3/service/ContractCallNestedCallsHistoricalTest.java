@@ -80,8 +80,8 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceT
         final var contract = testWeb3jService.deploy(NestedCallsHistorical::deploy);
 
         // When
-        final var result = contract.call_nestedGetTokenInfoAndHardcodedResult(tokenAddress.toHexString())
-                .send();
+        final var result =
+                contract.call_nestedGetTokenInfo(tokenAddress.toHexString()).send();
         // Then
         assertThat(result).isNotNull();
         assertThat(result.token).isNotNull();
@@ -111,8 +111,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceT
         final var contract = testWeb3jService.deploy(NestedCallsHistorical::deploy);
 
         // When
-        final var result = contract.call_nestedHtsGetApprovedAndHardcodedResult(
-                        tokenAddress.toHexString(), BigInteger.ONE)
+        final var result = contract.call_nestedHtsGetApproved(tokenAddress.toHexString(), BigInteger.ONE)
                 .send();
 
         // Then
@@ -155,7 +154,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceT
         final var contract = testWeb3jService.deploy(NestedCallsHistorical::deploy);
 
         // When
-        final var result = contract.call_nestedMintTokenAndHardcodedResult(
+        final var result = contract.call_nestedMintToken(
                         tokenAddress.toHexString(),
                         BigInteger.ZERO,
                         Collections.singletonList(
