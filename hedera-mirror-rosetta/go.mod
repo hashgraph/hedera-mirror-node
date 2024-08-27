@@ -10,7 +10,7 @@ require (
 	github.com/ethereum/go-ethereum v1.14.8
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20240704081952-395063202d11
-	github.com/hashgraph/hedera-sdk-go/v2 v2.43.0
+	github.com/hashgraph/hedera-sdk-go/v2 v2.44.0
 	github.com/hellofresh/health-go/v4 v4.7.0
 	github.com/jackc/pgtype v1.14.3
 	github.com/lib/pq v1.10.9
@@ -18,7 +18,7 @@ require (
 	github.com/onrik/gorm-logrus v0.5.0
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.20.0
+	github.com/prometheus/client_golang v1.20.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
@@ -125,11 +125,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.26.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.25.0 // indirect
+	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/grpc v1.65.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

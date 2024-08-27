@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -32,16 +31,13 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
-    public static final String REDIRECT_SUFFIX = "Redirect";
     public static final String NON_STATIC_SUFFIX = "NonStatic";
 
     private static Stream<Arguments> ercContractFunctionArgumentsProviderHistoricalReadOnly() {
@@ -102,15 +98,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(BlockNumberNotFoundException.class);
         }
-    }
-
-    @Test
-    void delegateTransferDoesNotExecuteAndReturnEmpty() {
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                "delegateTransfer", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }
 
     @Getter

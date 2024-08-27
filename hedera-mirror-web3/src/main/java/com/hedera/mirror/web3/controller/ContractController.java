@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.controller;
 
+import static com.hedera.mirror.web3.config.ThrottleConfiguration.GAS_LIMIT_BUCKET;
+import static com.hedera.mirror.web3.config.ThrottleConfiguration.RATE_LIMIT_BUCKET;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 
@@ -33,6 +35,7 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,8 +48,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 class ContractController {
     private final ContractExecutionService contractExecutionService;
+
+    @Qualifier(RATE_LIMIT_BUCKET)
     private final Bucket rateLimitBucket;
+
+    @Qualifier(GAS_LIMIT_BUCKET)
     private final Bucket gasLimitBucket;
+
     private final MirrorNodeEvmProperties evmProperties;
 
     @PostMapping(value = "/call")
