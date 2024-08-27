@@ -2,11 +2,11 @@ name: Charts
 
 on:
   pull_request:
-    branches: [main, release/**]
-    paths: [charts/**]
+    branches: [ main, release/** ]
+    paths: [ charts/** ]
   push:
-    branches: [main, release/**]
-    tags: [v*]
+    branches: [ main, release/** ]
+    tags: [ v* ]
 
 permissions:
   contents: read
@@ -17,7 +17,7 @@ defaults:
 
 jobs:
   lint:
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
@@ -42,7 +42,7 @@ jobs:
         run: ct lint --config .github/ct.yaml --all
 
   install:
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
@@ -85,7 +85,7 @@ jobs:
       - name: Install Stackgres
         run: |
           helm repo add stackgres https://stackgres.io/downloads/stackgres-k8s/stackgres/helm
-          helm install stackgres stackgres/stackgres-operator --version 1.9.0 --create-namespace -n stackgres
+          helm install stackgres stackgres/stackgres-operator --version 1.11.0 --create-namespace -n stackgres
 
       - name: Install ct
         uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
