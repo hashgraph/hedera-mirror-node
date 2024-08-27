@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.controller;
 
+import static com.hedera.mirror.web3.config.ThrottleConfiguration.RATE_LIMIT_BUCKET;
+
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
@@ -24,6 +26,7 @@ import com.hedera.mirror.web3.service.OpcodeService;
 import io.github.bucket4j.Bucket;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,23 +42,25 @@ import org.springframework.web.bind.annotation.RestController;
 class OpcodesController {
 
     private final OpcodeService opcodeService;
+
+    @Qualifier(RATE_LIMIT_BUCKET)
     private final Bucket rateLimitBucket;
 
     /**
      * <p>
-     *     Returns a result containing detailed information for the transaction execution,
-     *     including all values from the {@code stack}, {@code memory} and {@code storage}
-     *     and the entire trace of opcodes that were executed during the replay.
+     * Returns a result containing detailed information for the transaction execution, including all values from the
+     * {@code stack}, {@code memory} and {@code storage} and the entire trace of opcodes that were executed during the
+     * replay.
      * </p>
      * <p>
-     *     Note that to provide the output, the transaction needs to be re-executed on the EVM,
-     *     which may take a significant amount of time to complete if stack and memory information is requested.
+     * Note that to provide the output, the transaction needs to be re-executed on the EVM, which may take a significant
+     * amount of time to complete if stack and memory information is requested.
      * </p>
      *
      * @param transactionIdOrHash The transaction ID or hash
-     * @param stack Include stack information
-     * @param memory Include memory information
-     * @param storage Include storage information
+     * @param stack               Include stack information
+     * @param memory              Include memory information
+     * @param storage             Include storage information
      * @return {@link OpcodesResponse} containing the result of the transaction execution
      */
     @GetMapping(value = "/{transactionIdOrHash}/opcodes")

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.spec;
 
+import static com.hedera.mirror.restjava.spec.config.SpecTestConfig.REST_API;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.runner.RunWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
@@ -97,10 +99,9 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     RestSpecTest(
             @Value("classpath:cleanup.sql") Resource cleanupSqlResource,
             DataSource dataSource,
-            GenericContainer<?> jsRestApi,
+            @Qualifier(REST_API) GenericContainer<?> jsRestApi,
             ObjectMapper objectMapper,
             SpecDomainBuilder specDomainBuilder) {
-
         this.databaseCleaner = new ResourceDatabasePopulator(cleanupSqlResource);
         this.dataSource = dataSource;
         this.objectMapper = objectMapper;
