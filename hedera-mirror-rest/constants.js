@@ -103,6 +103,8 @@ const requestIdLabel = 'requestId';
 const requestPathLabel = 'requestPath';
 const requestStartTime = 'requestStartTime';
 const responseContentType = 'responseContentType';
+const responseBodyLabel = 'responseBody';
+const responseCacheKeyLabel = 'responseCacheKey';
 const responseDataLabel = 'responseData';
 
 const orderFilterValues = {
@@ -250,6 +252,8 @@ export {
   requestIdLabel,
   requestPathLabel,
   requestStartTime,
+  responseBodyLabel,
+  responseCacheKeyLabel,
   responseContentType,
   responseDataLabel,
   tokenTypeFilter,

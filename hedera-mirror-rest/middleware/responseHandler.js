@@ -15,7 +15,13 @@
  */
 
 import config from '../config';
-import {requestPathLabel, requestStartTime, responseContentType, responseDataLabel} from '../constants';
+import {
+  requestPathLabel,
+  requestStartTime,
+  responseBodyLabel,
+  responseContentType,
+  responseDataLabel,
+} from '../constants';
 import {NotFoundError} from '../errors';
 import {JSONStringify} from '../utils';
 
@@ -50,16 +56,15 @@ const responseHandler = async (req, res, next) => {
       res.set(LINK_NEXT_HEADER, linkNextHeaderValue(linksNext));
     }
 
-    if (contentType === APPLICATION_JSON) {
-      res.send(JSONStringify(responseData));
-    } else {
-      res.send(responseData);
-    }
+    res.locals[responseBodyLabel] = contentType === APPLICATION_JSON ? JSONStringify(responseData) : responseData;
+    res.send(res.locals[responseBodyLabel]);
 
     const startTime = res.locals[requestStartTime];
     const elapsed = startTime ? Date.now() - startTime : 0;
     logger.info(`${req.ip} ${req.method} ${req.originalUrl} in ${elapsed} ms: ${code}`);
   }
+
+  next();
 };
 
 export default responseHandler;

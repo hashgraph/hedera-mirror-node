@@ -73,6 +73,23 @@ export class Cache {
     return this.redis.flushall();
   }
 
+  async getSingle(key) {
+    if (key === undefined || !this.ready) {
+      return undefined;
+    }
+
+    const value = this.redis.get(key);
+    return value === undefined ? value : JSONParse(value);
+  }
+
+  async setSingle(key, value, expiry) {
+    if (key === undefined || !this.ready) {
+      return undefined;
+    }
+
+    return this.redis.setex(key, expiry, JSONStringify(value));
+  }
+
   async get(keys, loader, keyMapper = (k) => (k ? k.toString() : k)) {
     if (_.isEmpty(keys)) {
       return [];

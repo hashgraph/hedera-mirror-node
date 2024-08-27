@@ -45,6 +45,8 @@ import {
   recordIpAndEndpoint,
   requestLogger,
   requestQueryParser,
+  responseCacheCheckHandler,
+  responseCacheUpdateHandler,
   responseHandler,
   serveSwaggerDocs,
 } from './middleware';
@@ -125,6 +127,9 @@ if (config.metrics.enabled) {
   app.use(metricsHandler());
 }
 
+// Check for cached response
+app.use(responseCacheCheckHandler);
+
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
 app.getAsync(`${apiPrefix}/accounts/:${constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS}`, accounts.getOneAccount);
@@ -178,6 +183,7 @@ if (config.metrics.ipMetrics) {
 
 // response data handling middleware
 app.useAsync(responseHandler);
+app.useAsync(responseCacheUpdateHandler);
 
 // response error handling middleware
 app.useAsync(handleError);
