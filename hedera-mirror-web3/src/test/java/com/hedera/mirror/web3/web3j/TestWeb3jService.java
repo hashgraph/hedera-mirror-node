@@ -38,6 +38,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -68,6 +70,8 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Numeric;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
+@Getter
+@Setter
 public class TestWeb3jService implements Web3jService {
     private static final long DEFAULT_TRANSACTION_VALUE = 10L;
     private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
@@ -76,9 +80,10 @@ public class TestWeb3jService implements Web3jService {
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
     private final Web3j web3j;
+
     private Address sender = Address.fromHexString("");
-    private String transactionResult;
     private boolean isEstimateGas = false;
+    private String transactionResult;
     private String estimatedGas;
     private long value = 0L;
     private boolean persistContract = true;
@@ -94,46 +99,19 @@ public class TestWeb3jService implements Web3jService {
         this.web3j = Web3j.build(this);
     }
 
-    public void setSender(Address sender) {
-        this.sender = sender;
-    }
-
     public void setSender(String sender) {
         this.sender = Address.fromHexString(sender);
-    }
-
-    public String getTransactionResult() {
-        return transactionResult;
-    }
-
-    public String getEstimatedGas() {
-        return estimatedGas;
     }
 
     public void setEstimateGas(final boolean isEstimateGas) {
         this.isEstimateGas = isEstimateGas;
     }
 
-    public void setValue(final long value) {
-        this.value = value;
-    }
-
-    public void setBlockType(BlockType blockType) {
-        this.blockType = blockType;
-    }
-
-    public void setHistoricalRange(Range historicalRange) {
-        this.historicalRange = historicalRange;
-    }
-
-    public byte[] getContractRuntime() {
-        return contractRuntime;
-    }
-
     public void reset() {
         this.isEstimateGas = false;
         this.contractRuntime = null;
         this.persistContract = true;
+        this.sender = Address.ZERO;
         this.value = 0L;
         this.sender = Address.fromHexString("");
         this.blockType = BlockType.LATEST;
@@ -168,6 +146,18 @@ public class TestWeb3jService implements Web3jService {
         };
     }
 
+    private EthSendTransaction call(List<?> params, Request request) {
+        var rawTransaction = TransactionDecoder.decode(params.getFirst().toString());
+        var transactionHash = generateTransactionHashHexEncoded(rawTransaction, credentials);
+        final var to = rawTransaction.getTo();
+
+        if (to.equals(HEX_PREFIX)) {
+            return sendTopLevelContractCreate(rawTransaction, transactionHash, request);
+        }
+
+        return sendEthCall(rawTransaction, transactionHash, request);
+    }
+
     private EthSendTransaction sendTopLevelContractCreate(
             RawTransaction rawTransaction, String transactionHash, Request request) {
         final var res = new EthSendTransaction();
@@ -185,18 +175,6 @@ public class TestWeb3jService implements Web3jService {
         }
 
         return res;
-    }
-
-    private EthSendTransaction call(List<?> params, Request request) {
-        var rawTransaction = TransactionDecoder.decode(params.getFirst().toString());
-        var transactionHash = generateTransactionHashHexEncoded(rawTransaction, credentials);
-        final var to = rawTransaction.getTo();
-
-        if (to.equals(HEX_PREFIX)) {
-            return sendTopLevelContractCreate(rawTransaction, transactionHash, request);
-        }
-
-        return sendEthCall(rawTransaction, transactionHash, request);
     }
 
     private EthSendTransaction sendEthCall(RawTransaction rawTransaction, String transactionHash, Request request) {
@@ -218,12 +196,12 @@ public class TestWeb3jService implements Web3jService {
         res.setId(request.getId());
         res.setJsonrpc(request.getJsonrpc());
 
-        transactionResult = mirrorNodeResult;
+        transactionResult = estimatedGas = mirrorNodeResult;
         return res;
     }
 
     private EthCall ethCall(List<Transaction> reqParams, Request request) {
-        var transaction = reqParams.get(0);
+        var transaction = reqParams.getFirst();
 
         // First get the transaction result
         final var serviceParametersForCall = serviceParametersForExecutionSingle(transaction, ETH_CALL, blockType);

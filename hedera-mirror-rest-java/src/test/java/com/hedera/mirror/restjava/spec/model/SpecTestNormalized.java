@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.mirror.restjava.spec.model;
 
 import java.util.List;
@@ -30,10 +31,7 @@ import org.springframework.util.CollectionUtils;
  * @param urls the API URL(s) to be invoked
  */
 public record SpecTestNormalized(
-        Map<String, String> responseHeaders,
-        String responseJson,
-        int responseStatus,
-        List<String> urls) {
+        Map<String, String> responseHeaders, String responseJson, int responseStatus, List<String> urls) {
 
     public SpecTestNormalized {
         if (CollectionUtils.isEmpty(urls)) {
@@ -42,7 +40,11 @@ public record SpecTestNormalized(
     }
 
     static SpecTestNormalized from(SpecTest specTest) {
-        return new SpecTestNormalized(specTest.responseHeaders(), specTest.responseJson(), specTest.responseStatus(), specTest.getNormalizedUrls());
+        return new SpecTestNormalized(
+                specTest.responseHeaders(),
+                specTest.responseJson(),
+                specTest.responseStatus(),
+                specTest.getNormalizedUrls());
     }
 
     static List<SpecTestNormalized> allFrom(List<SpecTest> specTests) {

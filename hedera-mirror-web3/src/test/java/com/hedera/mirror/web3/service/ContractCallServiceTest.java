@@ -102,11 +102,37 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     @Resource
     private ContractExecutionService contractExecutionService;
 
+    private static Stream<BlockType> provideBlockTypes() {
+        return Stream.of(
+                BlockType.EARLIEST,
+                BlockType.of("safe"),
+                BlockType.of("pending"),
+                BlockType.of("finalized"),
+                BlockType.LATEST);
+    }
+
+    private static Stream<Arguments> provideCustomBlockTypes() {
+        return Stream.of(
+                Arguments.of(BlockType.of("0x1"), "0x", false),
+                Arguments.of(
+                        BlockType.of("0x100"),
+                        "0x0000000000000000000000000000000000000000000000000000000000000004",
+                        true));
+    }
+
+    private static Stream<Arguments> ercPrecompileCallTypeArgumentsProvider() {
+        List<Long> gasLimits = List.of(15_000_000L, 30_000L);
+
+        return Arrays.stream(CallType.values())
+                .filter(callType -> !callType.equals(ERROR))
+                .flatMap(callType -> gasLimits.stream().map(gasLimit -> Arguments.of(callType, gasLimit)));
+    }
+
     @Test
     void callWithoutDataToAddressWithNoBytecodeReturnsEmptyResult() {
         // Given
         final var receiverEntity = accountPersist();
-        final var receiverAddress = getAddressFromEntity(receiverEntity);
+        final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
         final var serviceParameters = getContractExecutionParameters(Bytes.EMPTY, receiverAddress);
 
@@ -276,8 +302,8 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         // Given
         final var senderEntity = accountPersist();
         final var receiverEntity = accountPersist();
-        final var senderAddress = getAddressFromEntity(senderEntity);
-        final var receiverAddress = getAddressFromEntity(receiverEntity);
+        final var senderAddress = getAliasAddressFromEntity(senderEntity);
+        final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
         final var serviceParameters = getContractExecutionParameters(Bytes.EMPTY, receiverAddress, senderAddress, 7L);
 
@@ -297,7 +323,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
         // When
         final var result = contract.call_getAccountBalance(
-                        getAddressFromEntity(accountEntity).toHexString())
+                        getAliasAddressFromEntity(accountEntity).toHexString())
                 .send();
 
         // Then
@@ -393,39 +419,6 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
     }
 
-    @Nested
-    class EVM46Validation {
-
-        private static final Address NON_EXISTING_ADDRESS = toAddress(123456789);
-
-        @Test
-        void callToNonExistingContract() {
-            // Given
-            final var serviceParameters = getContractExecutionParameters(Bytes.EMPTY, NON_EXISTING_ADDRESS);
-
-            // When
-            final var result = contractExecutionService.processCall(serviceParameters);
-
-            // Then
-            assertThat(result).isEqualTo(HEX_PREFIX);
-            assertGasLimit(serviceParameters);
-        }
-
-        @Test
-        void transferToNonExistingContract() {
-            // Given
-            final var serviceParameters =
-                    getContractExecutionParametersWithValue(Bytes.EMPTY, NON_EXISTING_ADDRESS, 1L);
-
-            // When
-            final var result = contractExecutionService.processCall(serviceParameters);
-
-            // Then
-            assertThat(result).isEqualTo(HEX_PREFIX);
-            assertGasLimit(serviceParameters);
-        }
-    }
-
     @Test
     void nonExistingFunctionCallWithFallback() {
         // Given
@@ -467,7 +460,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     void transferNegative() {
         // Given
         final var receiverEntity = accountPersist();
-        final var receiverAddress = getAddressFromEntity(receiverEntity);
+        final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
         final var serviceParameters = getContractExecutionParametersWithValue(Bytes.EMPTY, receiverAddress, -5L);
 
         // Then
@@ -480,9 +473,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     void transferExceedsBalance() {
         // Given
         final var receiverEntity = accountPersist();
-        final var receiverAddress = getAddressFromEntity(receiverEntity);
+        final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
         final var senderEntity = accountPersist();
-        final var senderAddress = getAddressFromEntity(senderEntity);
+        final var senderAddress = getAliasAddressFromEntity(senderEntity);
         final var serviceParameters = getContractExecutionParametersWithValue(
                 Bytes.EMPTY, senderAddress, receiverAddress, senderEntity.getBalance() + 5L);
 
@@ -496,7 +489,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     void transferThruContract() throws Exception {
         // Given
         final var receiverEntity = accountPersist();
-        final var receiverAddress = getAddressFromEntity(receiverEntity);
+        final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
 
@@ -515,9 +508,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var value = 10L;
         final var hollowAccountAlias = domainBuilder.evmAddress();
         final var senderEntity = accountPersist();
-        final var senderAddress = getAddressFromEntity(senderEntity);
+        final var senderAddress = getAliasAddressFromEntity(senderEntity);
         final var contract = testWeb3jService.deploy(EthCall::deploy);
-        testWeb3jService.setSender(senderAddress);
+        testWeb3jService.setSender(senderAddress.toHexString());
 
         // When
         final var functionCall = contract.send_transferHbarsToAddress(
@@ -555,7 +548,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     void estimateGasForDirectCreateContractDeploy() {
         // Given
         final var senderEntity = accountPersist();
-        final var senderAddress = getAddressFromEntity(senderEntity);
+        final var senderAddress = getAliasAddressFromEntity(senderEntity);
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var serviceParameters = testWeb3jService.serviceParametersForTopLevelContractCreate(
                 contract.getContractBinary(), ETH_ESTIMATE_GAS, senderAddress);
@@ -918,33 +911,40 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         return tokenEntity;
     }
 
-    private Address getAddressFromEntity(final Entity entity) {
+    protected Address getAliasAddressFromEntity(final Entity entity) {
         return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
     }
 
-    private static Stream<BlockType> provideBlockTypes() {
-        return Stream.of(
-                BlockType.EARLIEST,
-                BlockType.of("safe"),
-                BlockType.of("pending"),
-                BlockType.of("finalized"),
-                BlockType.LATEST);
-    }
+    @Nested
+    class EVM46Validation {
 
-    private static Stream<Arguments> provideCustomBlockTypes() {
-        return Stream.of(
-                Arguments.of(BlockType.of("0x1"), "0x", false),
-                Arguments.of(
-                        BlockType.of("0x100"),
-                        "0x0000000000000000000000000000000000000000000000000000000000000004",
-                        true));
-    }
+        private static final Address NON_EXISTING_ADDRESS = toAddress(123456789);
 
-    private static Stream<Arguments> ercPrecompileCallTypeArgumentsProvider() {
-        List<Long> gasLimits = List.of(15_000_000L, 30_000L);
+        @Test
+        void callToNonExistingContract() {
+            // Given
+            final var serviceParameters = getContractExecutionParameters(Bytes.EMPTY, NON_EXISTING_ADDRESS);
 
-        return Arrays.stream(CallType.values())
-                .filter(callType -> !callType.equals(ERROR))
-                .flatMap(callType -> gasLimits.stream().map(gasLimit -> Arguments.of(callType, gasLimit)));
+            // When
+            final var result = contractExecutionService.processCall(serviceParameters);
+
+            // Then
+            assertThat(result).isEqualTo(HEX_PREFIX);
+            assertGasLimit(serviceParameters);
+        }
+
+        @Test
+        void transferToNonExistingContract() {
+            // Given
+            final var serviceParameters =
+                    getContractExecutionParametersWithValue(Bytes.EMPTY, NON_EXISTING_ADDRESS, 1L);
+
+            // When
+            final var result = contractExecutionService.processCall(serviceParameters);
+
+            // Then
+            assertThat(result).isEqualTo(HEX_PREFIX);
+            assertGasLimit(serviceParameters);
+        }
     }
 }

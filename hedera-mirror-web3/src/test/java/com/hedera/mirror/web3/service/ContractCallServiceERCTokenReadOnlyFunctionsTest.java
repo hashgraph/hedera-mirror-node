@@ -32,8 +32,6 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.web3j.generated.ERCTestContract;
 import com.hedera.mirror.web3.web3j.generated.RedirectTestContract;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityIdUtils;
 import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
@@ -952,10 +950,6 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 .customize(e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()))
                 .persist()
                 .toEntityId();
-    }
-
-    private String getAddressFromEntity(Entity entity) {
-        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getId()));
     }
 
     private EntityId accountPersist() {
