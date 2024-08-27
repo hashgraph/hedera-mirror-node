@@ -18,17 +18,15 @@ import {Cache} from '../cache';
 import CachedApiResponse from '../model/cachedApiResponse.js';
 import {requestStartTime, responseCacheKeyLabel} from '../constants.js';
 
+const CACHE_CONTROL_HEADER_NAME = 'cache-control';
 const cache = new Cache();
 
+// Response middleware that checks for and returns cached response.
 const responseCacheCheckHandler = async (req, res, next) => {
   const responseCacheKey = req.path; // Call Edwin's function here
   const cachedResponse = await cache.getSingle(responseCacheKey);
 
-  if (cachedResponse === undefined) {
-    logger.debug(`Cache miss: ${responseCacheKey}`);
-    res.locals[responseCacheKeyLabel] = responseCacheKey;
-    next();
-  } else {
+  if (cachedResponse) {
     logger.debug(`Cache hit: ${responseCacheKey}`);
     // TODO adjust cache-control header and decrement time it's been locally cached.
     res.set(cachedResponse.headers);
@@ -38,23 +36,36 @@ const responseCacheCheckHandler = async (req, res, next) => {
     const startTime = res.locals[requestStartTime];
     const elapsed = startTime ? Date.now() - startTime : 0;
     logger.info(`Cached - ${req.ip} ${req.method} ${req.originalUrl} in ${elapsed} ms: ${code}`);
+  } else {
+    logger.debug(`Cache miss: ${responseCacheKey}`);
+    res.locals[responseCacheKeyLabel] = responseCacheKey;
+    next();
   }
 };
 
 // Response middleware that caches the completed response.
-// Next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const responseCacheUpdateHandler = async (req, res, next) => {
   const responseCacheKey = res.locals[responseCacheKeyLabel];
-  if (responseCacheKey === undefined) {
-    return; // Response is not to be cached
+  if (responseCacheKey) {
+    const cacheControlHeader = res.getHeaders()[CACHE_CONTROL_HEADER_NAME];
+    const expiry = getCacheControlExpiry(cacheControlHeader);
+    if (expiry) {
+      const cachedResponse = new CachedApiResponse(res);
+      cache.setSingle(responseCacheKey, cachedResponse, expiry);
+    }
   }
 
-  const cachedResponse = new CachedApiResponse(res);
-  const headers = res.getHeaders();
-  const cacheControlHeader = headers['cache-control'];
-  // Grok header value to set expiry below.
+  next();
+};
 
-  cache.setSingle(responseCacheKey, cachedResponse, 300);
+const getCacheControlExpiry = (headerValue) => {
+  if (headerValue) {
+    const maxAge = headerValue.match(/^.*max-age=(\d+)/);
+    if (maxAge && maxAge.length === 2) {
+      return parseInt(maxAge[1], 10);
+    }
+  }
+  return undefined;
 };
 
 export {responseCacheCheckHandler, responseCacheUpdateHandler};
