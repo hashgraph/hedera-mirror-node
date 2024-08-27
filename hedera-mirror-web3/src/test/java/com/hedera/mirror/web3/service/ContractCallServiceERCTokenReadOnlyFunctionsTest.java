@@ -940,58 +940,75 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
-    // NEGATIVE TESTS BELOW
     @Test
     void decimalsNegative() {
+        // Given
         final var tokenEntity = nftPersist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
+        // When
         final var functionCall = contract.send_decimals(tokenAddress.toHexString());
+        // Then
         assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
     void ownerOfNegative() {
+        // Given
         final var tokenEntity = fungibleTokenPersist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
+        // When
         final var functionCall = contract.send_getOwnerOf(tokenAddress.toHexString(), BigInteger.ONE);
+        // Then
         assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
     void tokenURINegative() {
+        // Given
         final var tokenEntity = fungibleTokenPersist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
+        // When
         final var functionCall = contract.send_tokenURI(tokenAddress.toHexString(), BigInteger.ONE);
+        // Then
         assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
     void decimalsNegativeRedirect() {
+        // Given
         final var tokenEntity = nftPersist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
+        // When
         final var functionCall = contract.send_decimalsRedirect(tokenAddress.toHexString());
+        // Then
         assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
     void ownerOfNegativeRedirect() {
+        // Given
         final var tokenEntity = fungibleTokenPersist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
+        // When
         final var functionCall = contract.send_getOwnerOfRedirect(tokenAddress.toHexString(), BigInteger.ONE);
+        // Then
         assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
     void tokenURINegativeRedirect() {
+        // Given
         final var tokenEntity = fungibleTokenPersist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
+        // When
         final var functionCall = contract.send_tokenURIRedirect(tokenAddress.toHexString(), BigInteger.ONE);
+        // Then
         assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
