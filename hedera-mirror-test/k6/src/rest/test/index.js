@@ -52,6 +52,7 @@ import * as networkFees from './networkFees.js';
 import * as networkNodes from './networkNodes.js';
 import * as networkStake from './networkStake.js';
 import * as networkSupply from './networkSupply.js';
+import * as networkSupplyTimestamp from './networkSupplyTimestamp.js';
 import * as rampUp from './rampUp.js';
 import * as schedules from './schedules.js';
 import * as schedulesAccount from './schedulesAccount.js';
@@ -114,6 +115,7 @@ const tests = {
   networkNodes,
   networkStake,
   networkSupply,
+  networkSupplyTimestamp,
   rampUp,
   schedules,
   schedulesAccount,

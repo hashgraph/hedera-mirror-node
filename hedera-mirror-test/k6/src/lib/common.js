@@ -106,7 +106,7 @@ const defaultFilters = {
 function getFilter(suite, exclude) {
   const key = `${suite.toUpperCase()}_TEST_${exclude ? 'EXCLUDE' : 'INCLUDE'}`;
   const value = __ENV[key];
-  return value ? new RegExp(value) : defaultFilters[exclude];
+  return value ? new RegExp(value, 'i') : defaultFilters[exclude];
 }
 
 function filterTests(tests, suite) {
@@ -117,8 +117,10 @@ function filterTests(tests, suite) {
   const exclude = getFilter(suite, true);
   const include = getFilter(suite, false);
   const filtered = Object.keys(tests).filter((name) => {
-    const normalized = name.toLowerCase();
-    return !exclude.test(normalized) && include.test(normalized);
+    if (name === 'rampUp') {
+      return true;
+    }
+    return !exclude.test(name) && include.test(name);
   });
   return Object.fromEntries(filtered.map((name) => [name, tests[name]]));
 }
