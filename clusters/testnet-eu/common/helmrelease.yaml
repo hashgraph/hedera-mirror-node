@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.111.1'
+      version: '0.112.0'
   driftDetection:
     mode: enabled
     ignore:
