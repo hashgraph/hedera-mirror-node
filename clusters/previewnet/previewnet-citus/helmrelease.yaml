@@ -68,10 +68,6 @@ spec:
     restjava:
       ingress:
         enabled: false # disable ingress so as to utilize the manually managed IngressRoute
-    stackgres:
-      coordinator:
-        config:
-          citus.max_cached_conns_per_worker: "6"
     test:
       enabled: true
     web3:
