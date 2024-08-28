@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.111.1'
+      version: '0.112.0'
   driftDetection:
     mode: enabled
     ignore:
@@ -60,6 +60,10 @@ spec:
               memory: 6Gi
     stackgres:
       enabled: true
+      operator:
+        image:
+          name: gcr.io/mirrornode/stackgres-operator
+          tag: '1.9.0'
     traefik:
       service:
         annotations:
