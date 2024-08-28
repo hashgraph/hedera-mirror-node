@@ -23,8 +23,13 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
+import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.OPTIONS;
+import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.gasComparator;
+import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.toHumanReadableMessage;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.doAnswer;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -32,29 +37,67 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.convert.BytesDecoder;
+import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.service.model.ContractDebugParameters;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.AccountAmount;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.NftTransfer;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TokenTransferList;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TransferList;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import java.math.BigInteger;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.web3j.tx.Contract;
 
+@RequiredArgsConstructor
 class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
+
+    private final ContractDebugService contractDebugService;
+    @Captor
+    private ArgumentCaptor<ContractDebugParameters> paramsCaptor;
+
+    @Captor
+    private ArgumentCaptor<Long> gasCaptor;
+
+    private HederaEvmTransactionProcessingResult resultCaptor;
+    private ContractCallContext contextCaptor;
+
+    @BeforeEach
+    void setUpArgumentCaptors() {
+        doAnswer(invocation -> {
+            final var transactionProcessingResult =
+                    (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+            resultCaptor = transactionProcessingResult;
+            contextCaptor = ContractCallContext.get();
+            return transactionProcessingResult;
+        })
+                .when(processor)
+                .execute(paramsCaptor.capture(), gasCaptor.capture());
+    }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        100,
-                NON_FUNGIBLE_UNIQUE,    0,      NftMetadata
-                """)
+                            FUNGIBLE_COMMON,        100,
+                            NON_FUNGIBLE_UNIQUE,    0,      NftMetadata
+                            """)
     void mintTokenGetTotalSupplyAndBalanceOfTreasury(
             final TokenTypeEnum tokenType, final long amount, final String metadata) {
         // Given
@@ -79,15 +122,16 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        1,    0
-                NON_FUNGIBLE_UNIQUE,    0,    1
-                """)
+                            FUNGIBLE_COMMON,        1,    0
+                            NON_FUNGIBLE_UNIQUE,    0,    1
+                            """)
     void burnTokenGetTotalSupplyAndBalanceOfTreasury(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
@@ -112,15 +156,16 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        1,    0
-                NON_FUNGIBLE_UNIQUE,    0,    1
-                """)
+                            FUNGIBLE_COMMON,        1,    0
+                            NON_FUNGIBLE_UNIQUE,    0,    1
+                            """)
     void wipeTokenGetTotalSupplyAndBalanceOfTreasury(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
@@ -147,13 +192,14 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON,
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON,
+            NON_FUNGIBLE_UNIQUE
+            """)
     void pauseTokenGetPauseStatusUnpauseGetPauseStatus(final TokenTypeEnum tokenType) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -173,13 +219,14 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON,
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON,
+            NON_FUNGIBLE_UNIQUE
+            """)
     void freezeTokenGetPauseStatusUnpauseGetPauseStatus(final TokenTypeEnum tokenType) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -200,6 +247,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -220,6 +268,11 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
                 BigInteger.ZERO,
                 BigInteger.ONE);
 
+        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .expectedErrorMessage("Failed to associate tokens")
+                .build();
+
         // Then
         assertThatThrownBy(functionCall::send)
                 .isInstanceOf(MirrorEvmTransactionException.class)
@@ -227,15 +280,17 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
                     MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
                     assertEquals("Failed to associate tokens", exception.getDetail());
                 });
+
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
+                            FUNGIBLE_COMMON,        1,      0
+                            NON_FUNGIBLE_UNIQUE,    0,      1
+                            """)
     void associateTokenTransfer(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -261,15 +316,16 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
                 BigInteger.valueOf(serialNumber));
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        1,      0,  IERC20: failed to transfer
-                NON_FUNGIBLE_UNIQUE,    0,      1,  IERC721: failed to transfer
-                """)
+                            FUNGIBLE_COMMON,        1,      0,  IERC20: failed to transfer
+                            NON_FUNGIBLE_UNIQUE,    0,      1,  IERC721: failed to transfer
+                            """)
     void associateTokenDissociateFailTransferEthCall(
             final TokenTypeEnum tokenType,
             final long amount,
@@ -297,6 +353,11 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
                 BigInteger.valueOf(amount),
                 BigInteger.valueOf(serialNumber));
 
+        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .expectedErrorMessage(expectedErrorMessage)
+                .build();
+
         // Then
         assertThatThrownBy(functionCall::send)
                 .isInstanceOf(MirrorEvmTransactionException.class)
@@ -304,15 +365,17 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
                     MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
                     assertEquals(expectedErrorMessage, exception.getDetail());
                 });
+
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
+                            FUNGIBLE_COMMON,        1,      0
+                            NON_FUNGIBLE_UNIQUE,    0,      1
+                            """)
     void approveTokenGetAllowance(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -348,15 +411,16 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
+                            FUNGIBLE_COMMON,        1,      0
+                            NON_FUNGIBLE_UNIQUE,    0,      1
+                            """)
     void approveTokenTransferFromGetAllowanceGetBalance(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
@@ -391,15 +455,16 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
+                            FUNGIBLE_COMMON,        1,      0
+                            NON_FUNGIBLE_UNIQUE,    0,      1
+                            """)
     void approveTokenTransferGetAllowanceGetBalance(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
@@ -428,15 +493,16 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
+                            FUNGIBLE_COMMON,        1,      0
+                            NON_FUNGIBLE_UNIQUE,    0,      1
+                            """)
     void approveTokenCryptoTransferGetAllowanceGetBalance(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
@@ -481,6 +547,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -506,6 +573,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -537,15 +605,16 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        1,      0,      false
-                NON_FUNGIBLE_UNIQUE,    0,      1,      true
-                """)
+                            FUNGIBLE_COMMON,        1,      0,      false
+                            NON_FUNGIBLE_UNIQUE,    0,      1,      true
+                            """)
     void cryptoTransferFromGetAllowanceGetBalance(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber, final boolean approvalForAll) {
         // Given
@@ -591,6 +660,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -614,15 +684,16 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
+                            FUNGIBLE_COMMON,        1,      0
+                            NON_FUNGIBLE_UNIQUE,    0,      1
+                            """)
     void transferFromGetAllowanceGetBalance(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -651,13 +722,14 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void grantKycRevokeKyc(final TokenTypeEnum tokenType) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -679,6 +751,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -691,6 +764,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -706,10 +780,12 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
         });
 
         // When
-        final String result = contract.call_getAddressThis().send();
+        final var functionCall = contract.call_getAddressThis();
+        final String result = functionCall.send();
 
         // Then
         assertEquals(contractAlias.toHexString(), result);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -725,10 +801,12 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
         });
 
         // When
-        final String result = contract.call_getAddressThis().send();
+        final var functionCall = contract.call_getAddressThis();
+        final String result = functionCall.send();
 
         // Then
         assertEquals(contractAlias.toHexString(), result);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     private Token fungibleTokenPersist(final EntityId treasuryEntityId) {
@@ -832,5 +910,87 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
                         .payerAccountId(ownerEntityId)
                         .approvedForAll(true))
                 .persist();
+    }
+
+    private void verifyOpcodeTracerCall(final String callData, final ContractFunctionProviderRecord functionProvider) {
+        final var callDataBytes = Bytes.fromHexString(callData);
+        final var debugParameters = ContractDebugParameters.builder()
+                .block(functionProvider.block())
+                .callData(callDataBytes)
+                .consensusTimestamp(domainBuilder.timestamp())
+                .gas(15_000_000L)
+                .receiver(functionProvider.contractAddress())
+                .sender(new HederaEvmAccount(functionProvider.sender()))
+                .value(functionProvider.value())
+                .build();
+
+        if (functionProvider.expectedErrorMessage() != null) {
+            verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);
+        } else {
+            verifySuccessfulOpcodeTracerCall(debugParameters);
+        }
+        assertThat(paramsCaptor.getValue()).isEqualTo(debugParameters);
+        assertThat(gasCaptor.getValue()).isEqualTo(debugParameters.getGas());
+    }
+
+    private void verifyOpcodeTracerCall(final String callData, final Contract contract) {
+        ContractFunctionProviderRecord functionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .build();
+
+        final var callDataBytes = Bytes.fromHexString(callData);
+        final var debugParameters = ContractDebugParameters.builder()
+                .block(functionProvider.block())
+                .callData(callDataBytes)
+                .consensusTimestamp(domainBuilder.timestamp())
+                .gas(15_000_000L)
+                .receiver(functionProvider.contractAddress())
+                .sender(new HederaEvmAccount(functionProvider.sender()))
+                .value(functionProvider.value())
+                .build();
+
+        if (functionProvider.expectedErrorMessage() != null) {
+            verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);
+        } else {
+            verifySuccessfulOpcodeTracerCall(debugParameters);
+        }
+        assertThat(paramsCaptor.getValue()).isEqualTo(debugParameters);
+        assertThat(gasCaptor.getValue()).isEqualTo(debugParameters.getGas());
+    }
+
+    @SneakyThrows
+    private void verifyThrowingOpcodeTracerCall(
+            final ContractDebugParameters params, final ContractFunctionProviderRecord function) {
+        final var actual = contractDebugService.processOpcodeCall(params, OPTIONS);
+        assertThat(actual.transactionProcessingResult().isSuccessful()).isFalse();
+        assertThat(actual.transactionProcessingResult().getOutput()).isEqualTo(Bytes.EMPTY);
+        assertThat(actual.transactionProcessingResult())
+                .satisfiesAnyOf(
+                        result -> assertThat(result.getRevertReason())
+                                .isPresent()
+                                .map(BytesDecoder::maybeDecodeSolidityErrorStringToReadableMessage)
+                                .hasValue(function.expectedErrorMessage()),
+                        result -> assertThat(result.getHaltReason())
+                                .isPresent()
+                                .map(ExceptionalHaltReason::getDescription)
+                                .hasValue(function.expectedErrorMessage()));
+        assertThat(actual.opcodes().size()).isNotZero();
+        assertThat(toHumanReadableMessage(actual.opcodes().getLast().reason()))
+                .isEqualTo(function.expectedErrorMessage());
+    }
+
+    private void verifySuccessfulOpcodeTracerCall(final ContractDebugParameters params) {
+        final var actual = contractDebugService.processOpcodeCall(params, OPTIONS);
+        final var expected = new OpcodesProcessingResult(resultCaptor, contextCaptor.getOpcodes());
+        // Compare transaction processing result
+        assertThat(actual.transactionProcessingResult())
+                .usingRecursiveComparison()
+                .ignoringFields("logs")
+                .isEqualTo(expected.transactionProcessingResult());
+        // Compare opcodes with gas tolerance
+        assertThat(actual.opcodes())
+                .usingRecursiveComparison()
+                .withComparatorForFields(gasComparator(), "gas")
+                .isEqualTo(expected.opcodes());
     }
 }
