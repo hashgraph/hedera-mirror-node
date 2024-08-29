@@ -100,9 +100,21 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var functionCall = contract.call_callMissingPrecompile();
 
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(PrecompileNotSupportedException.class)
-                .hasMessage("Precompile is not supported");
+        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+    }
+
+    // Temporary test until we start supporting this precompile
+    @Test
+    void hrcIsAssociatedFails() {
+        // Given
+        final var token = persistFungibleToken();
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        // When
+        final var functionCall = contract.call_hrcIsAssociated(getAddressFromEntity(token));
+
+        // Then
+        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
     }
 
     @Test

@@ -19,6 +19,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.getRedirectTarget;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -204,7 +205,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
                     input, ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater())::unaliased, precompileContext);
         } catch (final NoSuchElementException e) {
             // We will end up here if the precompileLookup does not match any precompile to the function selector
-            throw new PrecompileNotSupportedException("Precompile is not supported");
+            throw new PrecompileNotSupportedException(StringUtils.EMPTY);
         } catch (final InvalidTransactionException | IllegalArgumentException e) {
             // We will end up here if the input argument data cannot be decoded properly
             final var haltReason = ERROR_DECODING_PRECOMPILE_INPUT;
@@ -239,7 +240,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         }
 
         final var recipient = frame.getRecipientAddress();
-        // but we accept delegates iff the token redirect contract calls us,
+        // but we accept delegates if the token redirect contract calls us,
         // so if they are not a token, or on the permitted callers list, then
         // we are a delegate and we are done.
         if (isToken(frame, recipient)) {
@@ -323,6 +324,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
                 }
                 final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
                 final var nestedFunctionSelector = target.descriptor();
+
                 switch (nestedFunctionSelector) {
                         // cases will be added with the addition of precompiles using redirect operations
                     case AbiConstants.ABI_ID_ERC_APPROVE -> {
@@ -494,6 +496,13 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
     }
 
     private Pair<Long, Bytes> computeUsingRedirectExecutor(final Bytes input, final MessageFrame frame) {
+        final var target = getRedirectTarget(input);
+        if (AbiConstants.ABI_HRC_IS_ASSOCIATED == target.descriptor()) {
+            // We can't support this precompile since the copied code from mono services does not have the necessary
+            // logic
+            throw new PrecompileNotSupportedException(StringUtils.EMPTY);
+        }
+
         final var executor = infrastructureFactory.newRedirectExecutor(
                 input, frame, precompilePricingUtils::computeViewFunctionGas, tokenAccessor);
         final var result = executor.computeCosted();

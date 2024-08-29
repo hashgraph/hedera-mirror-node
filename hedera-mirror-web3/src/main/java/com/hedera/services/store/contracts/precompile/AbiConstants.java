@@ -224,6 +224,9 @@ public class AbiConstants {
     // updateTokenExpiryInfo(address token, Expiry expiryInfoStruct)
     public static final int ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 = 0xd27be6cd;
 
+    // isAssociated(). Should be called as IHRC(tokenAddress).isAssociated(). Currently it's not supported.
+    public static final int ABI_HRC_IS_ASSOCIATED = 0x4d8fdd6d;
+
     private AbiConstants() {
         throw new UnsupportedOperationException("Utility class");
     }

@@ -148,4 +148,12 @@ contract PrecompileTestContract is HederaTokenService {
             abi.encodeWithSignature("fakeSignature()"));
         require(success);
     }
+
+    function hrcIsAssociated(address token) public returns (bool isAssociated) {
+        isAssociated = IHRC(token).isAssociated();
+    }
+}
+
+interface IHRC {
+    function isAssociated() external returns (bool associated);
 }
