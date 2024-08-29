@@ -31,6 +31,10 @@ spec:
         name: BASE_URL
         type: basic
         value: http://{{ $target.release }}-restjava.{{ $target.namespace }}.svc.cluster.local
+      TEST_REPORTS_DIR:
+        name: TEST_REPORTS_DIR
+        type: basic
+        value: /share
   type: k6-custom/script
 {{- end}}
 {{- end }}

@@ -38,7 +38,7 @@ for i in "${!SOLC_VERSIONS[@]}"; do
     solc --base-path . --allow-paths node_modules --abi --bin --overwrite -o ${TEMP_DIR} "$contract_path"
 
     # Generate Java files using web3j
-    ../.gradle/web3j/bin/web3j generate solidity \
+    $HOME/.web3j/web3j generate solidity \
       -b "${TEMP_DIR}/${contract_name}.bin" \
       -a "${TEMP_DIR}/${contract_name}.abi" \
       -o "$OUTPUT_DIR" \
