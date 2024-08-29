@@ -14,12 +14,12 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.111.1'
+      version: '0.112.0'
   dependsOn:
     - name: mirror
       namespace: common
   driftDetection:
-    mode: warn
+    mode: enabled
     ignore:
       - paths:
           - /spec/scripts
