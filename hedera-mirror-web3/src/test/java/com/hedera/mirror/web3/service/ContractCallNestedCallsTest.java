@@ -20,64 +20,108 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ED25519_KEY;
+import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.OPTIONS;
+import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.gasComparator;
+import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.toHumanReadableMessage;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.doAnswer;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.convert.BytesDecoder;
+import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
+import com.hedera.mirror.web3.service.model.ContractDebugParameters;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.Expiry;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.HederaToken;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.TokenKey;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import java.math.BigInteger;
 import java.util.LinkedList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.web3j.tx.Contract;
 
+@RequiredArgsConstructor
 class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     private static final long CREATE_TOKEN_VALUE = 3070 * 100_000_000L;
     private static final String EXPECTED_RESULT_NEGATIVE_TESTS = "hardcodedResult";
 
+    private final ContractDebugService contractDebugService;
+
+    @Captor
+    private ArgumentCaptor<ContractDebugParameters> paramsCaptor;
+
+    @Captor
+    private ArgumentCaptor<Long> gasCaptor;
+
+    private HederaEvmTransactionProcessingResult resultCaptor;
+    private ContractCallContext contextCaptor;
+
+    @BeforeEach
+    void beforeEach() {
+        doAnswer(invocation -> {
+                    final var transactionProcessingResult =
+                            (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                    resultCaptor = transactionProcessingResult;
+                    contextCaptor = ContractCallContext.get();
+                    return transactionProcessingResult;
+                })
+                .when(processor)
+                .execute(paramsCaptor.capture(), gasCaptor.capture());
+    }
+
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                    CONTRACT_ID,                ADMIN_KEY,
-                    CONTRACT_ID,                KYC_KEY,
-                    CONTRACT_ID,                FREEZE_KEY,
-                    CONTRACT_ID,                WIPE_KEY,
-                    CONTRACT_ID,                SUPPLY_KEY,
-                    CONTRACT_ID,                FEE_SCHEDULE_KEY,
-                    CONTRACT_ID,                PAUSE_KEY,
-                    ED25519,                    ADMIN_KEY,
-                    ED25519,                    KYC_KEY,
-                    ED25519,                    FREEZE_KEY,
-                    ED25519,                    WIPE_KEY,
-                    ED25519,                    SUPPLY_KEY,
-                    ED25519,                    FEE_SCHEDULE_KEY,
-                    ED25519,                    PAUSE_KEY,
-                    ECDSA_SECPK256K1,           ADMIN_KEY,
-                    ECDSA_SECPK256K1,           KYC_KEY,
-                    ECDSA_SECPK256K1,           FREEZE_KEY,
-                    ECDSA_SECPK256K1,           WIPE_KEY,
-                    ECDSA_SECPK256K1,           SUPPLY_KEY,
-                    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
-                    ECDSA_SECPK256K1,           PAUSE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
-                    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY,
-                    """)
+                            CONTRACT_ID,                ADMIN_KEY,
+                            CONTRACT_ID,                KYC_KEY,
+                            CONTRACT_ID,                FREEZE_KEY,
+                            CONTRACT_ID,                WIPE_KEY,
+                            CONTRACT_ID,                SUPPLY_KEY,
+                            CONTRACT_ID,                FEE_SCHEDULE_KEY,
+                            CONTRACT_ID,                PAUSE_KEY,
+                            ED25519,                    ADMIN_KEY,
+                            ED25519,                    KYC_KEY,
+                            ED25519,                    FREEZE_KEY,
+                            ED25519,                    WIPE_KEY,
+                            ED25519,                    SUPPLY_KEY,
+                            ED25519,                    FEE_SCHEDULE_KEY,
+                            ED25519,                    PAUSE_KEY,
+                            ECDSA_SECPK256K1,           ADMIN_KEY,
+                            ECDSA_SECPK256K1,           KYC_KEY,
+                            ECDSA_SECPK256K1,           FREEZE_KEY,
+                            ECDSA_SECPK256K1,           WIPE_KEY,
+                            ECDSA_SECPK256K1,           SUPPLY_KEY,
+                            ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
+                            ECDSA_SECPK256K1,           PAUSE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
+                            DELEGATABLE_CONTRACT_ID,    KYC_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    PAUSE_KEY,
+                            """)
     void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType)
             throws Exception {
         // Given
@@ -107,35 +151,35 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     @CsvSource(
             textBlock =
                     """
-                    CONTRACT_ID,                ADMIN_KEY,
-                    CONTRACT_ID,                KYC_KEY,
-                    CONTRACT_ID,                FREEZE_KEY,
-                    CONTRACT_ID,                WIPE_KEY,
-                    CONTRACT_ID,                SUPPLY_KEY,
-                    CONTRACT_ID,                FEE_SCHEDULE_KEY,
-                    CONTRACT_ID,                PAUSE_KEY,
-                    ED25519,                    ADMIN_KEY,
-                    ED25519,                    KYC_KEY,
-                    ED25519,                    FREEZE_KEY,
-                    ED25519,                    WIPE_KEY,
-                    ED25519,                    SUPPLY_KEY,
-                    ED25519,                    FEE_SCHEDULE_KEY,
-                    ED25519,                    PAUSE_KEY,
-                    ECDSA_SECPK256K1,           ADMIN_KEY,
-                    ECDSA_SECPK256K1,           KYC_KEY,
-                    ECDSA_SECPK256K1,           FREEZE_KEY,
-                    ECDSA_SECPK256K1,           WIPE_KEY,
-                    ECDSA_SECPK256K1,           SUPPLY_KEY,
-                    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
-                    ECDSA_SECPK256K1,           PAUSE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
-                    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY
-                    """)
+                            CONTRACT_ID,                ADMIN_KEY,
+                            CONTRACT_ID,                KYC_KEY,
+                            CONTRACT_ID,                FREEZE_KEY,
+                            CONTRACT_ID,                WIPE_KEY,
+                            CONTRACT_ID,                SUPPLY_KEY,
+                            CONTRACT_ID,                FEE_SCHEDULE_KEY,
+                            CONTRACT_ID,                PAUSE_KEY,
+                            ED25519,                    ADMIN_KEY,
+                            ED25519,                    KYC_KEY,
+                            ED25519,                    FREEZE_KEY,
+                            ED25519,                    WIPE_KEY,
+                            ED25519,                    SUPPLY_KEY,
+                            ED25519,                    FEE_SCHEDULE_KEY,
+                            ED25519,                    PAUSE_KEY,
+                            ECDSA_SECPK256K1,           ADMIN_KEY,
+                            ECDSA_SECPK256K1,           KYC_KEY,
+                            ECDSA_SECPK256K1,           FREEZE_KEY,
+                            ECDSA_SECPK256K1,           WIPE_KEY,
+                            ECDSA_SECPK256K1,           SUPPLY_KEY,
+                            ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
+                            ECDSA_SECPK256K1,           PAUSE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
+                            DELEGATABLE_CONTRACT_ID,    KYC_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    PAUSE_KEY
+                            """)
     void updateTokenKeysAndGetUpdatedTokenKeyForNFT(final KeyValueType keyValueType, final KeyType keyType)
             throws Exception {
         // Given
@@ -163,9 +207,9 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenExpiryAndGetUpdatedTokenExpiry(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? fungibleTokenPersist() : nftPersist();
@@ -190,9 +234,9 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenInfoAndGetUpdatedTokenInfoSymbol(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountPersist();
@@ -220,9 +264,9 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenInfoAndGetUpdatedTokenInfoName(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountPersist();
@@ -250,9 +294,9 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenInfoAndGetUpdatedTokenInfoMemo(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountPersist();
@@ -280,9 +324,9 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void deleteTokenAndGetTokenInfoIsDeleted(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? fungibleTokenPersist() : nftPersist();
@@ -305,10 +349,10 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     @CsvSource(
             textBlock =
                     """
-                true, false, true, true
-                false, false, false, false
-                true, true, true, true
-                """)
+                            true, false, true, true
+                            false, false, false, false
+                            true, true, true, true
+                            """)
     void createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
             final boolean withKeys,
             final boolean inheritKey,
@@ -346,10 +390,10 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     @CsvSource(
             textBlock =
                     """
-                true, false, true, true
-                false, false, false, false
-                true, true, true, true
-                """)
+                            true, false, true, true
+                            false, false, false, false
+                            true, true, true, true
+                            """)
     void createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
             final boolean withKeys,
             final boolean inheritKey,
@@ -387,11 +431,12 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
 
         // When
-        final var result = contract.call_nestedGetTokenInfoAndHardcodedResult(Address.ZERO.toHexString())
-                .send();
+        final var function = contract.call_nestedGetTokenInfoAndHardcodedResult(Address.ZERO.toHexString());
+        final var result = function.send();
 
         // Then
         assertThat(result).isEqualTo(EXPECTED_RESULT_NEGATIVE_TESTS);
+        verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -400,12 +445,13 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
 
         // When
-        final var result = contract.call_nestedHtsGetApprovedAndHardcodedResult(
-                        Address.ZERO.toHexString(), BigInteger.ONE)
-                .send();
+        final var function =
+                contract.call_nestedHtsGetApprovedAndHardcodedResult(Address.ZERO.toHexString(), BigInteger.ONE);
+        final var result = function.send();
 
         // Then
         assertThat(result).isEqualTo(EXPECTED_RESULT_NEGATIVE_TESTS);
+        verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -414,14 +460,15 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
 
         // When
-        final var result = contract.call_nestedMintTokenAndHardcodedResult(
-                        Address.ZERO.toHexString(),
-                        BigInteger.ZERO,
-                        List.of(ByteString.copyFromUtf8("firstMeta").toByteArray()))
-                .send();
+        final var function = contract.call_nestedMintTokenAndHardcodedResult(
+                Address.ZERO.toHexString(),
+                BigInteger.ZERO,
+                List.of(ByteString.copyFromUtf8("firstMeta").toByteArray()));
+        final var result = function.send();
 
         // Then
         assertThat(result).isEqualTo(EXPECTED_RESULT_NEGATIVE_TESTS);
+        verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
     private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
@@ -546,5 +593,66 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
                 .entity()
                 .customize(e -> e.evmAddress(null).balance(balance))
                 .persist();
+    }
+
+    private void verifyOpcodeTracerCall(final String callData, final Contract contract) {
+        ContractFunctionProviderRecord functionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .build();
+
+        final var callDataBytes = Bytes.fromHexString(callData);
+        final var debugParameters = ContractDebugParameters.builder()
+                .block(functionProvider.block())
+                .callData(callDataBytes)
+                .consensusTimestamp(domainBuilder.timestamp())
+                .gas(15_000_000L)
+                .receiver(functionProvider.contractAddress())
+                .sender(new HederaEvmAccount(functionProvider.sender()))
+                .value(functionProvider.value())
+                .build();
+
+        if (functionProvider.expectedErrorMessage() != null) {
+            verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);
+        } else {
+            verifySuccessfulOpcodeTracerCall(debugParameters);
+        }
+        assertThat(paramsCaptor.getValue()).isEqualTo(debugParameters);
+        assertThat(gasCaptor.getValue()).isEqualTo(debugParameters.getGas());
+    }
+
+    @SneakyThrows
+    private void verifyThrowingOpcodeTracerCall(
+            final ContractDebugParameters params, final ContractFunctionProviderRecord function) {
+        final var actual = contractDebugService.processOpcodeCall(params, OPTIONS);
+        assertThat(actual.transactionProcessingResult().isSuccessful()).isFalse();
+        assertThat(actual.transactionProcessingResult().getOutput()).isEqualTo(Bytes.EMPTY);
+        assertThat(actual.transactionProcessingResult())
+                .satisfiesAnyOf(
+                        result -> assertThat(result.getRevertReason())
+                                .isPresent()
+                                .map(BytesDecoder::maybeDecodeSolidityErrorStringToReadableMessage)
+                                .hasValue(function.expectedErrorMessage()),
+                        result -> assertThat(result.getHaltReason())
+                                .isPresent()
+                                .map(ExceptionalHaltReason::getDescription)
+                                .hasValue(function.expectedErrorMessage()));
+        assertThat(actual.opcodes().size()).isNotZero();
+        assertThat(toHumanReadableMessage(actual.opcodes().getLast().reason()))
+                .isEqualTo(function.expectedErrorMessage());
+    }
+
+    private void verifySuccessfulOpcodeTracerCall(final ContractDebugParameters params) {
+        final var actual = contractDebugService.processOpcodeCall(params, OPTIONS);
+        final var expected = new OpcodesProcessingResult(resultCaptor, contextCaptor.getOpcodes());
+        // Compare transaction processing result
+        assertThat(actual.transactionProcessingResult())
+                .usingRecursiveComparison()
+                .ignoringFields("logs")
+                .isEqualTo(expected.transactionProcessingResult());
+        // Compare opcodes with gas tolerance
+        assertThat(actual.opcodes())
+                .usingRecursiveComparison()
+                .withComparatorForFields(gasComparator(), "gas")
+                .isEqualTo(expected.opcodes());
     }
 }

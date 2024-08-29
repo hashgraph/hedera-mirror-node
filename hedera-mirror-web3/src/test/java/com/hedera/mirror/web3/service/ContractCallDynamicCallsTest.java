@@ -69,6 +69,7 @@ import org.web3j.tx.Contract;
 class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
     private final ContractDebugService contractDebugService;
+
     @Captor
     private ArgumentCaptor<ContractDebugParameters> paramsCaptor;
 
@@ -81,12 +82,12 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
     @BeforeEach
     void setUpArgumentCaptors() {
         doAnswer(invocation -> {
-            final var transactionProcessingResult =
-                    (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
-            resultCaptor = transactionProcessingResult;
-            contextCaptor = ContractCallContext.get();
-            return transactionProcessingResult;
-        })
+                    final var transactionProcessingResult =
+                            (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                    resultCaptor = transactionProcessingResult;
+                    contextCaptor = ContractCallContext.get();
+                    return transactionProcessingResult;
+                })
                 .when(processor)
                 .execute(paramsCaptor.capture(), gasCaptor.capture());
     }
