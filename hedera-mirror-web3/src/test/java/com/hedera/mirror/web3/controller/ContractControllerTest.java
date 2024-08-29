@@ -346,10 +346,9 @@ class ContractControllerTest {
 
     @Test
     void callWithNotSupportedPrecompile() throws Exception {
-        final var error = "Precompile not supported";
         final var request = request();
 
-        given(service.processCall(any())).willThrow(new PrecompileNotSupportedException(error));
+        given(service.processCall(any())).willThrow(new PrecompileNotSupportedException(StringUtils.EMPTY));
         contractCall(request)
                 .andExpect(status().isNotImplemented())
                 .andExpect(content()
