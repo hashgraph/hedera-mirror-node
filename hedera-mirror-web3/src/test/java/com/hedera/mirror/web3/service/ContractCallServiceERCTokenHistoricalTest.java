@@ -20,9 +20,6 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.ContractCallTestSetup.SENDER_ADDRESS_HISTORICAL;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_34_BLOCK;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_PROTO;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -31,34 +28,18 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
-import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.ERCTestContractHistorical;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityIdUtils;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServiceTest {
 
@@ -198,9 +179,39 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
 //            return isStatic ? name : name + NON_STATIC_SUFFIX;
 //        }
 //    }
-
+@Test
+void getApprovedEmptySpenderBeforeEvmV34() throws Exception {
+    recordFileBeforeEvm34 = domainBuilder
+            .recordFile()
+            .customize(f -> f.index(EVM_V_34_BLOCK - 1))
+            .persist();
+    recordFileAfterEvm34 = domainBuilder
+            .recordFile()
+            .customize(f -> f.index(EVM_V_34_BLOCK))
+            .persist();
+    testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
+    testWeb3jService.setHistoricalRange(
+            Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
+    final var tokenAddress = toAddress(1063);
+    final var ownerAddress = toAddress(1065);
+    final var ownerEntityId = ownerEntityPersistHistoricalAfterEvm34(ownerAddress);
+    final var autoRenewAddress = toAddress(1078);
+    nftPersistHistorical(
+            tokenAddress,
+            autoRenewAddress,
+            ownerEntityId,
+            ownerEntityId,
+            KEY_PROTO,
+            TokenPauseStatusEnum.PAUSED,
+            true,
+            Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+    final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+    final var result =
+            contract.call_getApproved(tokenAddress.toHexString(), BigInteger.valueOf(1L));
+    assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+}
     @Test
-    void getApprovedEmptySpenderBeforeEvmV34() throws Exception {
+    void getApprovedEmptySpenderAfterEvmV34() throws Exception {
         recordFileAfterEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK))
@@ -210,29 +221,21 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                 Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
         final var tokenAddress = toAddress(1063);
         final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var spenderAddress = toAddress(1016);
+        final var ownerEntityId = ownerEntityPersistHistoricalAfterEvm34(ownerAddress);
         final var autoRenewAddress = toAddress(1078);
-        final var spenderPublicKeyHistorical = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress, spenderPublicKeyHistorical);
-//        final var tokenMemo = "TestMemo";
-//        final var nftAmountToMint = 2;
-        final var nftEntity = nftPersistHistorical(
+        nftPersistHistorical(
                 tokenAddress,
                 autoRenewAddress,
                 ownerEntityId,
-                spenderEntityPersist,
                 ownerEntityId,
                 KEY_PROTO,
                 TokenPauseStatusEnum.PAUSED,
                 true,
                 Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress3 = getAddressFromEntity(nftEntity.toEntity());
         final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
         final var result =
-                contract.call_getApproved(tokenAddress3, BigInteger.valueOf(1L)).send();
-        //assertThatThrownBy(result::send).isInstance Of(MirrorEvmTransactionException.class);
-
+                contract.call_getApproved(tokenAddress.toHexString(), BigInteger.valueOf(1L)).send();
+        assertThat(result).isEqualTo(Address.ZERO.toHexString());
     }
 
 
@@ -256,7 +259,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                 Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
     }
 
-    private EntityId ownerEntityPersistHistorical(Address address) {
+    private EntityId ownerEntityPersistHistoricalAfterEvm34(Address address) {
         final var ownerEntityId = entityIdFromEvmAddress(address);
         domainBuilder
                 .entity()
@@ -265,6 +268,19 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                         .alias(toEvmAddress(ownerEntityId))
                         .timestampRange(Range.closedOpen(
                                 recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+        return ownerEntityId;
+    }
+
+    private EntityId ownerEntityPersistHistoricalBeforeEvm34(Address address) {
+        final var ownerEntityId = entityIdFromEvmAddress(address);
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(ownerEntityId.getId())
+                        .num(ownerEntityId.getNum())
+                        .alias(toEvmAddress(ownerEntityId))
+                        .timestampRange(Range.closedOpen(
+                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
                 .persist();
         return ownerEntityId;
     }
@@ -292,7 +308,6 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
             final Address nftAddress,
             final Address autoRenewAddress,
             final EntityId ownerEntityId,
-            final EntityId spenderEntityId,
             final EntityId treasuryId,
             final byte[] key,
             final TokenPauseStatusEnum pauseStatus,
@@ -343,10 +358,8 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
 
         domainBuilder
                 .nftHistory()
-                .customize(n -> n.accountId(spenderEntityId)
-                        .createdTimestamp(1475067194949034022L)
+                .customize(n -> n.createdTimestamp(1475067194949034022L)
                         .serialNumber(1L)
-                        .spender(spenderEntityId)
                         .metadata("NFT_METADATA_URI".getBytes())
                         .accountId(ownerEntity)
                         .tokenId(nftEntityId.getId())
@@ -357,10 +370,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
 
         domainBuilder
                 .nftHistory()
-                .customize(n -> n.accountId(spenderEntityId)
+                .customize(n -> n
                         .createdTimestamp(1475067194949034022L)
                         .serialNumber(3L)
-                        .spender(spenderEntityId)
                         .metadata("NFT_METADATA_URI".getBytes())
                         .accountId(ownerEntity)
                         .tokenId(nftEntityId.getId())
@@ -372,8 +384,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
         // nft table
         domainBuilder
                 .nft()
-                .customize(n -> n.accountId(spenderEntityId)
-                        .createdTimestamp(1475067194949034022L)
+                .customize(n -> n.createdTimestamp(1475067194949034022L)
                         .serialNumber(1L)
                         .metadata("NFT_METADATA_URI".getBytes())
                         .accountId(ownerEntity)
@@ -384,8 +395,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
 
         domainBuilder
                 .nft()
-                .customize(n -> n.accountId(spenderEntityId)
-                        .createdTimestamp(1475067194949034022L)
+                .customize(n -> n.createdTimestamp(1475067194949034022L)
                         .serialNumber(3L)
                         .metadata("NFT_METADATA_URI".getBytes())
                         .accountId(ownerEntity)
@@ -396,9 +406,4 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
 
         return nftEntityId;
     }
-    private String getAddressFromEntity(Entity entity) {
-        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getId()));
-    }
-
-
 }
