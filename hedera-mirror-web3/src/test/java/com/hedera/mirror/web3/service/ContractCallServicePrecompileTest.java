@@ -121,12 +121,12 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
     @BeforeEach
     void setUpArgumentCaptors() {
         doAnswer(invocation -> {
-            final var transactionProcessingResult =
-                    (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
-            resultCaptor = transactionProcessingResult;
-            contextCaptor = ContractCallContext.get();
-            return transactionProcessingResult;
-        })
+                    final var transactionProcessingResult =
+                            (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                    resultCaptor = transactionProcessingResult;
+                    contextCaptor = ContractCallContext.get();
+                    return transactionProcessingResult;
+                })
                 .when(processor)
                 .execute(paramsCaptor.capture(), gasCaptor.capture());
     }
@@ -1105,7 +1105,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // When
         final var functionCall = single
                 ? contract.call_associateTokenExternal(
-                getAddressFromEntity(notAssociatedAccount), getAddressFromEntity(tokenEntity))
+                        getAddressFromEntity(notAssociatedAccount), getAddressFromEntity(tokenEntity))
                 : contract.call_associateTokensExternal(
                         getAddressFromEntity(notAssociatedAccount), List.of(getAddressFromEntity(tokenEntity)));
 
@@ -1154,7 +1154,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // When
         final var functionCall = single
                 ? contract.call_dissociateTokenExternal(
-                getAddressFromEntity(associatedAccount), getAddressFromEntity(tokenEntity))
+                        getAddressFromEntity(associatedAccount), getAddressFromEntity(tokenEntity))
                 : contract.call_dissociateTokensExternal(
                         getAddressFromEntity(associatedAccount), List.of(getAddressFromEntity(tokenEntity)));
 
@@ -1966,10 +1966,10 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var functionCall = "single".equals(type)
                 ? contract.call_transferTokenExternal(
-                getAddressFromEntity(tokenEntity),
-                getAliasFromEntity(sender),
-                getAliasFromEntity(receiver),
-                BigInteger.valueOf(1L))
+                        getAddressFromEntity(tokenEntity),
+                        getAliasFromEntity(sender),
+                        getAliasFromEntity(receiver),
+                        BigInteger.valueOf(1L))
                 : contract.call_transferTokensExternal(
                         getAddressFromEntity(tokenEntity),
                         List.of(getAliasFromEntity(sender), getAliasFromEntity(receiver)),
@@ -2011,10 +2011,10 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var functionCall = "single".equals(type)
                 ? contract.call_transferNFTExternal(
-                getAddressFromEntity(tokenEntity),
-                getAliasFromEntity(sender),
-                getAliasFromEntity(receiver),
-                BigInteger.ONE)
+                        getAddressFromEntity(tokenEntity),
+                        getAliasFromEntity(sender),
+                        getAliasFromEntity(receiver),
+                        BigInteger.ONE)
                 : contract.call_transferNFTsExternal(
                         getAddressFromEntity(tokenEntity),
                         List.of(getAliasFromEntity(sender)),
@@ -2086,14 +2086,11 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         final var functionCall = contract.call_cryptoTransferExternal(transferList, new ArrayList<>());
 
-        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
-                .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
-                .build();
-
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2121,14 +2118,11 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var functionCall =
                 contract.call_cryptoTransferExternal(new TransferList(new ArrayList<>()), List.of(tokenTransferList));
 
-        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
-                .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
-                .build();
-
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2159,14 +2153,11 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         final var functionCall = contract.call_cryptoTransferExternal(transferList, List.of(tokenTransferList));
 
-        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
-                .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
-                .build();
-
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2201,14 +2192,11 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var functionCall =
                 contract.call_cryptoTransferExternal(new TransferList(new ArrayList<>()), List.of(tokenTransferList));
 
-        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
-                .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
-                .build();
-
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2492,14 +2480,14 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         final var fractionalFee = TokenTypeEnum.FUNGIBLE_COMMON.equals(tokenType)
                 ? FractionalFee.builder()
-                .allCollectorsAreExempt(true)
-                .collectorAccountId(feeCollector.toEntityId())
-                .denominator(domainBuilder.number())
-                .maximumAmount(domainBuilder.number())
-                .minimumAmount(1L)
-                .numerator(domainBuilder.number())
-                .netOfTransfers(true)
-                .build()
+                        .allCollectorsAreExempt(true)
+                        .collectorAccountId(feeCollector.toEntityId())
+                        .denominator(domainBuilder.number())
+                        .maximumAmount(domainBuilder.number())
+                        .minimumAmount(1L)
+                        .numerator(domainBuilder.number())
+                        .netOfTransfers(true)
+                        .build()
                 : null;
 
         final var fallbackFee = FallbackFee.builder()
@@ -2509,12 +2497,12 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         final var royaltyFee = TokenTypeEnum.NON_FUNGIBLE_UNIQUE.equals(tokenType)
                 ? RoyaltyFee.builder()
-                .allCollectorsAreExempt(true)
-                .collectorAccountId(feeCollector.toEntityId())
-                .denominator(domainBuilder.number())
-                .fallbackFee(fallbackFee)
-                .numerator(domainBuilder.number())
-                .build()
+                        .allCollectorsAreExempt(true)
+                        .collectorAccountId(feeCollector.toEntityId())
+                        .denominator(domainBuilder.number())
+                        .fallbackFee(fallbackFee)
+                        .numerator(domainBuilder.number())
+                        .build()
                 : null;
 
         if (TokenTypeEnum.FUNGIBLE_COMMON.equals(tokenType)) {
@@ -2572,13 +2560,13 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                     false,
                     key.getContractID().hasContractNum()
                             ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
-                            .toHexString()
+                                    .toHexString()
                             : Address.ZERO.toHexString(),
                     key.getEd25519().toByteArray(),
                     key.getECDSASecp256K1().toByteArray(),
                     key.getDelegatableContractId().hasContractNum()
                             ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
-                            .toHexString()
+                                    .toHexString()
                             : Address.ZERO.toHexString());
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalArgumentException("Unable to parse key", e);
@@ -2597,7 +2585,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 token.getSymbol(),
                 treasuryAccountId != null
                         ? EntityIdUtils.asHexedEvmAddress(new Id(
-                        treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum()))
+                                treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum()))
                         : Address.ZERO.toHexString(),
                 new String(token.getMetadata(), StandardCharsets.UTF_8),
                 token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
@@ -2744,5 +2732,15 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .usingRecursiveComparison()
                 .withComparatorForFields(gasComparator(), "gas")
                 .isEqualTo(expected.opcodes());
+    }
+
+    private ContractFunctionProviderRecord getContractFunctionProviderWithSender(
+            final String contract, final Entity sender) {
+        final var contractAddress = Address.fromHexString(contract);
+        final var senderAddress = Address.fromHexString(getAliasFromEntity(sender));
+        return ContractFunctionProviderRecord.builder()
+                .contractAddress(contractAddress)
+                .sender(senderAddress)
+                .build();
     }
 }
