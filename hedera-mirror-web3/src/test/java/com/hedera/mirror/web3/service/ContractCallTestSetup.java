@@ -1757,32 +1757,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    // Contracts persist
-    protected void evmCodesContractPersist() {
-        final var evmCodesContractBytes = functionEncodeDecoder.getContractBytes(EVM_CODES_BYTES_PATH);
-        final var evmCodesContractEntityId = entityIdFromEvmAddress(EVM_CODES_CONTRACT_ADDRESS);
-        final var evmCodesContractEvmAddress = toEvmAddress(evmCodesContractEntityId);
-
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(evmCodesContractEntityId.getId())
-                        .num(evmCodesContractEntityId.getNum())
-                        .evmAddress(evmCodesContractEvmAddress)
-                        .type(CONTRACT)
-                        .balance(1500L))
-                .persist();
-
-        domainBuilder
-                .contract()
-                .customize(c -> c.id(evmCodesContractEntityId.getId()).runtimeBytecode(evmCodesContractBytes))
-                .persist();
-
-        domainBuilder
-                .recordFile()
-                .customize(f -> f.bytes(evmCodesContractBytes))
-                .persist();
-    }
-
     protected EntityId dynamicEthCallContractPresist() {
         final var contractBytes = functionEncodeDecoder.getContractBytes(DYNAMIC_ETH_CALLS_BYTES_PATH);
         final var contractEntityId = entityIdFromEvmAddress(DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS);
