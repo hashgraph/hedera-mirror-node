@@ -25,6 +25,8 @@ const {
   response: {headers},
 } = config;
 
+const nextMiddleware = () => {};
+
 describe('Response middleware', () => {
   let mockRequest, mockResponse, responseData;
 
@@ -52,11 +54,11 @@ describe('Response middleware', () => {
 
   test('No response data', async () => {
     mockResponse.locals.responseData = undefined;
-    await expect(responseHandler(mockRequest, mockResponse, null)).rejects.toThrow(NotFoundError);
+    await expect(responseHandler(mockRequest, mockResponse, nextMiddleware)).rejects.toThrow(NotFoundError);
   });
 
   test('Custom headers', async () => {
-    await responseHandler(mockRequest, mockResponse, null);
+    await responseHandler(mockRequest, mockResponse, nextMiddleware);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
     expect(mockResponse.set).toHaveBeenNthCalledWith(2, headers.path[mockRequest.route.path]);
@@ -66,7 +68,7 @@ describe('Response middleware', () => {
 
   test('Default headers', async () => {
     mockRequest.route.path = '/api/v1/accounts';
-    await responseHandler(mockRequest, mockResponse, null);
+    await responseHandler(mockRequest, mockResponse, nextMiddleware);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
     expect(mockResponse.set).toHaveBeenNthCalledWith(2, undefined);
@@ -77,7 +79,7 @@ describe('Response middleware', () => {
   test('Custom Content-Type', async () => {
     mockResponse.locals.responseContentType = 'text/plain';
     mockResponse.locals.responseData = '123';
-    await responseHandler(mockRequest, mockResponse, null);
+    await responseHandler(mockRequest, mockResponse, nextMiddleware);
     expect(mockResponse.send).toBeCalledWith(mockResponse.locals.responseData);
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
     expect(mockResponse.set).toHaveBeenNthCalledWith(2, headers.path[mockRequest.route.path]);
@@ -89,12 +91,12 @@ describe('Response middleware', () => {
     const MOCK_URL = 'http://mock.url/next';
     mockResponse.locals.responseData.links.next = MOCK_URL;
     const assertNextValue = `<${MOCK_URL}>; rel=\"next\"`;
-    await responseHandler(mockRequest, mockResponse, null);
+    await responseHandler(mockRequest, mockResponse, nextMiddleware);
     expect(mockResponse.set).toHaveBeenNthCalledWith(4, 'Link', assertNextValue);
   });
 
   test('should NOT set the Link next header and confirm it exists', async () => {
-    await responseHandler(mockRequest, mockResponse, null);
+    await responseHandler(mockRequest, mockResponse, nextMiddleware);
     expect(mockResponse.set).toHaveBeenCalledTimes(3);
   });
 });
