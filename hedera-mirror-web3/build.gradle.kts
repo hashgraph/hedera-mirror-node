@@ -75,7 +75,9 @@ val downloadWeb3j =
         description = "Download and install Web3j CLI"
         group = "historical"
 
-        commandLine("bash", "-c", "curl -L get.web3j.io | sh")
+        val homeDir = System.getProperty("user.home")
+
+        commandLine("bash", "-c", "curl -L get.web3j.io | sh && source $homeDir/.web3j/source.sh")
     }
 
 // Tasks to download OpenZeppelin contracts
