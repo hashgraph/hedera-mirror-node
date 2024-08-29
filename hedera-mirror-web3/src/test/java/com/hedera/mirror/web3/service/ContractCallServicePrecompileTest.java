@@ -2652,17 +2652,8 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
     }
 
     private void verifyOpcodeTracerCall(final String callData, final ContractFunctionProviderRecord functionProvider) {
-
         final var callDataBytes = Bytes.fromHexString(callData);
-        final var debugParameters = ContractDebugParameters.builder()
-                .block(functionProvider.block())
-                .callData(callDataBytes)
-                .consensusTimestamp(domainBuilder.timestamp())
-                .gas(15_000_000L)
-                .receiver(functionProvider.contractAddress())
-                .sender(new HederaEvmAccount(functionProvider.sender()))
-                .value(functionProvider.value())
-                .build();
+        final var debugParameters = getDebugParameters(functionProvider, callDataBytes);
 
         if (functionProvider.expectedErrorMessage() != null) {
             verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);
@@ -2679,15 +2670,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .build();
 
         final var callDataBytes = Bytes.fromHexString(callData);
-        final var debugParameters = ContractDebugParameters.builder()
-                .block(functionProvider.block())
-                .callData(callDataBytes)
-                .consensusTimestamp(domainBuilder.timestamp())
-                .gas(15_000_000L)
-                .receiver(functionProvider.contractAddress())
-                .sender(new HederaEvmAccount(functionProvider.sender()))
-                .value(functionProvider.value())
-                .build();
+        final var debugParameters = getDebugParameters(functionProvider, callDataBytes);
 
         if (functionProvider.expectedErrorMessage() != null) {
             verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);
@@ -2732,15 +2715,5 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .usingRecursiveComparison()
                 .withComparatorForFields(gasComparator(), "gas")
                 .isEqualTo(expected.opcodes());
-    }
-
-    private ContractFunctionProviderRecord getContractFunctionProviderWithSender(
-            final String contract, final Entity sender) {
-        final var contractAddress = Address.fromHexString(contract);
-        final var senderAddress = Address.fromHexString(getAliasFromEntity(sender));
-        return ContractFunctionProviderRecord.builder()
-                .contractAddress(contractAddress)
-                .sender(senderAddress)
-                .build();
     }
 }
