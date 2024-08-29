@@ -123,6 +123,7 @@ val compileHistoricalSolidityContracts =
         description = "Compiles the historical solidity contracts to java files using web3j-cli"
         group = "historical"
         mustRunAfter(tasks.named("generateTestContractWrappers"))
+        dependsOn(downloadWeb3j)
         dependsOn(extractOpenZeppelin)
         dependsOn(tasks.named("compileTestSolidity"))
         val scriptPath = file("./src/main/resources/scripts/compile_solidity.sh").absolutePath
