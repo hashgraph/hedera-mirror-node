@@ -19,10 +19,12 @@ package com.hedera.mirror.web3.controller;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
+import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidInputException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -99,6 +101,17 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler
     private ResponseEntity<?> queryTimeoutException(final QueryTimeoutException e, WebRequest request) {
         return handleExceptionInternal(e, null, null, SERVICE_UNAVAILABLE, request);
+    }
+
+    /**
+     * Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence
+     * of a precompile
+     **/
+    @ExceptionHandler
+    private ResponseEntity<?> precompileNotSupportedException(
+            final PrecompileNotSupportedException e, WebRequest request) {
+        //        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), NOT_IMPLEMENTED);
+        return handleExceptionInternal(e, null, null, NOT_IMPLEMENTED, request);
     }
 
     @ExceptionHandler

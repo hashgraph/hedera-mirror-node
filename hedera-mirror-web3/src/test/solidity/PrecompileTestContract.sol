@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.18;
 pragma experimental ABIEncoderV2;
+
 import "./HederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 
 contract PrecompileTestContract is HederaTokenService {
 
 
-    function isTokenAddress(address token)external returns(bool){
+    function isTokenAddress(address token) external returns (bool){
         (int response,bool tokenFlag) = HederaTokenService.isToken(token);
 
         if (response != HederaResponseCodes.SUCCESS) {
@@ -16,7 +17,7 @@ contract PrecompileTestContract is HederaTokenService {
         return tokenFlag;
     }
 
-    function isTokenFrozen(address token, address account)external returns(bool){
+    function isTokenFrozen(address token, address account) external returns (bool){
         (int response,bool frozen) = HederaTokenService.isFrozen(token, account);
 
         if (response != HederaResponseCodes.SUCCESS) {
@@ -25,7 +26,7 @@ contract PrecompileTestContract is HederaTokenService {
         return frozen;
     }
 
-    function isKycGranted(address token, address account) external returns(bool){
+    function isKycGranted(address token, address account) external returns (bool){
         (int response,bool kycGranted) = HederaTokenService.isKyc(token, account);
 
         if (response != HederaResponseCodes.SUCCESS) {
@@ -34,7 +35,7 @@ contract PrecompileTestContract is HederaTokenService {
         return kycGranted;
     }
 
-    function getTokenDefaultFreeze(address token) external returns(bool) {
+    function getTokenDefaultFreeze(address token) external returns (bool) {
         (int response,bool frozen) = HederaTokenService.getTokenDefaultFreezeStatus(token);
 
         if (response != HederaResponseCodes.SUCCESS) {
@@ -43,7 +44,7 @@ contract PrecompileTestContract is HederaTokenService {
         return frozen;
     }
 
-    function getTokenDefaultKyc(address token) external returns(bool) {
+    function getTokenDefaultKyc(address token) external returns (bool) {
         (int response,bool kyc) = HederaTokenService.getTokenDefaultKycStatus(token);
 
         if (response != HederaResponseCodes.SUCCESS) {
@@ -94,7 +95,7 @@ contract PrecompileTestContract is HederaTokenService {
         nonFungibleTokenInfo = retrievedTokenInfo;
     }
 
-    function getType(address token) external returns(int) {
+    function getType(address token) external returns (int) {
         (int statusCode, int tokenType) = HederaTokenService.getTokenType(token);
 
         if (statusCode != HederaResponseCodes.SUCCESS) {
@@ -120,7 +121,7 @@ contract PrecompileTestContract is HederaTokenService {
         //"(bool,address,bytes,bytes,address)";
 
 
-        if(responseCode != HederaResponseCodes.SUCCESS) {
+        if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
 
@@ -142,4 +143,9 @@ contract PrecompileTestContract is HederaTokenService {
         (_responseCode, approved) = HederaTokenService.isApprovedForAll(token, owner, operator);
     }
 
+    function callMissingPrecompile() public returns (bool success, bytes memory result) {
+        (success, result) = address(0x167).call(
+            abi.encodeWithSignature("fakeSignature()"));
+        require(success);
+    }
 }

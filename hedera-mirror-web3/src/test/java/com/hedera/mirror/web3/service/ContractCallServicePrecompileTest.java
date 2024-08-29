@@ -48,6 +48,7 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -89,6 +90,20 @@ import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
 class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest {
+
+    @Test
+    void unsupportedPrecompileFails() {
+        // Given
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        // When
+        final var functionCall = contract.call_callMissingPrecompile();
+
+        // Then
+        assertThatThrownBy(functionCall::send)
+                .isInstanceOf(PrecompileNotSupportedException.class)
+                .hasMessage("Precompile is not supported");
+    }
 
     @Test
     void isTokenFrozen() throws Exception {
