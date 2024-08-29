@@ -18,9 +18,9 @@ import http from 'k6/http';
 
 import {isSuccess, RestTestScenarioBuilder} from '../libex/common.js';
 
-const urlTag = '/network/supply';
+const urlTag = '/network/supply?timestamp={timestamp}';
 
-const getUrl = (testParameters) => `/${urlTag}?timestamp=${testParameters['DEFAULT_BALANCE_TIMESTAMP']}`;
+const getUrl = (testParameters) => `/network/supply?timestamp=${testParameters['DEFAULT_BALANCE_TIMESTAMP']}`;
 
 const {options, run, setup} = new RestTestScenarioBuilder()
   .name('networkSupplyTimestamp') // use unique scenario name among all tests
@@ -32,4 +32,4 @@ const {options, run, setup} = new RestTestScenarioBuilder()
   .check('Network supply OK', isSuccess)
   .build();
 
-export {options, run, setup};
+export {getUrl, options, run, setup};

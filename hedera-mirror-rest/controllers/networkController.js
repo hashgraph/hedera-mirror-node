@@ -15,7 +15,6 @@
  */
 
 import _ from 'lodash';
-
 import BaseController from './baseController';
 import config from '../config';
 import {
@@ -44,6 +43,10 @@ const networkNodesMaxSize = 25;
 
 class NetworkController extends BaseController {
   static contentTypeTextPlain = 'text/plain; charset=utf-8';
+  acceptedExchangeRateParameters = new Set([filterKeys.TIMESTAMP]);
+  acceptedFeesParameters = new Set([filterKeys.ORDER, filterKeys.TIMESTAMP]);
+  acceptedNodeParameters = new Set([filterKeys.FILE_ID, filterKeys.LIMIT, filterKeys.NODE_ID, filterKeys.ORDER]);
+  acceptedSupplyParameters = new Set([filterKeys.TIMESTAMP, filterKeys.Q]);
 
   /**
    * Extracts SQL where conditions, params, order, and limit
@@ -153,6 +156,9 @@ class NetworkController extends BaseController {
     const conditions = [];
     const params = [];
     let q;
+    let hasTimestamp = false;
+    let minTimestamp = 0n;
+    let maxTimestamp = utils.nowInNs();
 
     for (const filter of filters) {
       if (_.isNil(filter)) {
@@ -160,26 +166,52 @@ class NetworkController extends BaseController {
       }
 
       if (filter.key === filterKeys.TIMESTAMP) {
-        if (filter.operator === utils.opsMap.ne) {
+        const op = filter.operator;
+        const value = BigInt(filter.value);
+        hasTimestamp = true;
+
+        if (op === utils.opsMap.ne) {
           throw InvalidArgumentError.forParams(`Not equals (ne) operator is not supported for ${filterKeys.TIMESTAMP}`);
+        } else if (op === utils.opsMap.eq || utils.ltLte.includes(op)) {
+          const offset = op === utils.opsMap.lt ? -1n : 0n;
+          maxTimestamp = utils.bigIntMin(maxTimestamp, value + offset);
+        } else if (utils.gtGte.includes(op)) {
+          const offset = op === utils.opsMap.gt ? 1n : 0n;
+          minTimestamp = utils.bigIntMax(minTimestamp, value + offset);
         }
-
-        // to ensure most recent occurrence is found convert eq to lte
-        if (utils.opsMap.eq === filter.operator) {
-          filter.operator = utils.opsMap.lte;
-        }
-
-        this.updateConditionsAndParamsWithInValues(
-          filter,
-          null,
-          params,
-          conditions,
-          'ab.consensus_timestamp',
-          params.length + 1
-        );
       } else if (filter.key === filterKeys.Q) {
         q = filter.value;
       }
+    }
+
+    if (hasTimestamp) {
+      maxTimestamp = utils.bigIntMax(maxTimestamp, 0n);
+
+      if (minTimestamp > maxTimestamp) {
+        throw new InvalidArgumentError('Lower timestamp cannot be higher than upper timestamp');
+      }
+
+      // Since a particular account's balance appears in each partition at least once, we limit the query to scan at
+      // most the two most recent partitions within the user provided bounds to improve performance.
+      const optimalLowerBound = utils.getFirstDayOfMonth(maxTimestamp, -1);
+      minTimestamp = utils.bigIntMax(minTimestamp, optimalLowerBound);
+
+      this.updateConditionsAndParamsWithInValues(
+        {operator: utils.opsMap.gte, value: minTimestamp},
+        null,
+        params,
+        conditions,
+        'ab.consensus_timestamp',
+        params.length + 1
+      );
+      this.updateConditionsAndParamsWithInValues(
+        {operator: utils.opsMap.lte, value: maxTimestamp},
+        null,
+        params,
+        conditions,
+        'ab.consensus_timestamp',
+        params.length + 1
+      );
     }
 
     return {
@@ -336,13 +368,6 @@ class NetworkController extends BaseController {
 
     res.locals[responseDataLabel] = new FeeScheduleViewModel(feeSchedule, exchangeRate, order);
   };
-
-  acceptedExchangeRateParameters = new Set([filterKeys.TIMESTAMP]);
-  acceptedFeesParameters = new Set([filterKeys.ORDER, filterKeys.TIMESTAMP]);
-
-  acceptedNodeParameters = new Set([filterKeys.FILE_ID, filterKeys.LIMIT, filterKeys.NODE_ID, filterKeys.ORDER]);
-
-  acceptedSupplyParameters = new Set([filterKeys.TIMESTAMP, filterKeys.Q]);
 }
 
 export default new NetworkController();
