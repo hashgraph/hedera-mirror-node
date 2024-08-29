@@ -41,7 +41,6 @@ import {getPoolClass, isTestEnv} from './utils';
 import {
   handleError,
   metricsHandler,
-  normalizeRequestQueryParams,
   openApiValidator,
   recordIpAndEndpoint,
   requestLogger,
@@ -120,7 +119,6 @@ if (config.response.compression) {
 // logging middleware
 app.use(httpContext.middleware);
 app.useAsync(requestLogger);
-app.use(normalizeRequestQueryParams);
 
 // metrics middleware
 if (config.metrics.enabled) {

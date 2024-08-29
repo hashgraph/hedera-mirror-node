@@ -2452,7 +2452,7 @@ components:
     EntityId:
       type: string
       description: "Network entity ID in the format of `shard.realm.num`"
-      pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
+      pattern: '^(\d{1,10}\.\d{1,10}\.\d{1,10}|\d{1,10})$'
       example: "0.0.2"
       nullable: true
     EntityIdQuery:

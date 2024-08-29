@@ -23,10 +23,13 @@ import swaggerUi from 'swagger-ui-express';
 
 // files
 import config from '../config';
-import {filterKeys} from '../constants.js';
 
 let v1OpenApiDocument;
 let v1OpenApiFile;
+let openApiMap;
+
+const pathParameterRegex = /{([^}]*)}/g;
+const integerRegexPattern = '\\d{1,10}';
 
 /**
  * Check if apiVersion is currently supported
@@ -82,15 +85,28 @@ const getV1OpenApiObject = () => {
 };
 
 const getOpenApiMap = () => {
-  const openApiObject = getV1OpenApiObject();
-  const openApiPaths = openApiObject.paths;
-  const map = new Map();
-  Object.keys(openApiPaths).forEach((path) => {
-    map.set(path, getOpenApiParameters(path, openApiObject));
-  });
-  return map;
+  if (_.isUndefined(openApiMap)) {
+    const openApiObject = getV1OpenApiObject();
+    const patternMap = getPathParametersPatterns(openApiObject);
+    openApiMap = new Map();
+    Object.keys(openApiObject.paths).forEach((path) => {
+      const parameters = getOpenApiParameters(path, openApiObject);
+      const regex = pathToRegexConverter(path, patternMap);
+      openApiMap.set(path, {
+        parameters,
+        regex,
+      });
+    });
+  }
+
+  return openApiMap;
 };
 
+/**
+ * Given a path, gets the query parameters and their default values
+ * @param path
+ * @param openApiObject
+ */
 const getOpenApiParameters = (path, openApiObject) => {
   const pathObject = openApiObject.paths[path];
   if (pathObject === undefined) {
@@ -104,25 +120,84 @@ const getOpenApiParameters = (path, openApiObject) => {
 
   return parameters.map((parameter) => {
     // Each open api parameter is prefixed by #/components/parameters/, which is 24 characters long
-    const openApiParameter = parameter.$ref?.substring(24);
-    const defaultValue = openApiObject.components.parameters[openApiParameter]?.schema.default;
-    const queryParameter = openApiParameterToQueryParameter(openApiParameter);
-    return {queryParameter, defaultValue};
+    const openApiParameterName = parameter.$ref?.substring(24);
+    if (!openApiParameterName) {
+      return;
+    }
+
+    const openApiParameter = openApiObject.components.parameters[openApiParameterName];
+    let schema = openApiParameter.schema;
+    const inPath = openApiParameter.in === 'path';
+    if (inPath && openApiParameter.schema.$ref) {
+      // Remove the prefix: #/components/schemas/
+      const schemaName = openApiParameter.schema.$ref.substring(21);
+      schema = openApiObject.components.schemas[schemaName];
+    }
+
+    const defaultValue = schema.default;
+    const parameterName = openApiParameter.name;
+    const pattern = schema.pattern;
+    return {parameterName, defaultValue, pattern, path: inPath};
   });
 };
 
-const openApiParameterToQueryParameter = (openApiParameter) => {
-  // Todo: Better way of handling this without going through each filter value?
-  switch (openApiParameter) {
-    case 'balanceQueryParam':
-      return filterKeys.BALANCE;
-    case 'limitQueryParam':
-      return filterKeys.LIMIT;
-    case 'orderQueryParam':
-      return filterKeys.ORDER;
-    default:
-      return openApiParameter;
+/**
+ * Converts an OpenApi path to a regex using the OpenApi regex patterns
+ * @param path
+ * @param patternMap
+ * @returns {RegExp}
+ */
+const pathToRegexConverter = (path, patternMap) => {
+  const splitPath = path.split('/');
+  for (let i = 0; i < splitPath.length; i++) {
+    const value = splitPath[i];
+    if (pathParameterRegex.test(value)) {
+      let pattern = patternMap.get(value);
+      if (!pattern) {
+        // When no pattern is present default to regex for an integer
+        pattern = integerRegexPattern;
+      } else {
+        // Remove beginning and ending of string regex characters
+        if (pattern.charAt(0) === '^') {
+          pattern = pattern.substring(1);
+        }
+        if (pattern.charAt(pattern.length - 1) === '$') {
+          pattern = pattern.substring(0, pattern.length - 1);
+        }
+      }
+
+      splitPath[i] = pattern;
+    }
   }
+
+  // Add beginning and ending of string regex characters to the entire path
+  path = '^' + splitPath.join('/') + '$';
+  return new RegExp(path);
+};
+
+/**
+ * Gets the regex patterns for each of the path parameters
+ * @return {Map}
+ */
+const getPathParametersPatterns = (openApiObject) => {
+  const pathParameters = new Map();
+  const openApiParameters = openApiObject.components.parameters;
+  Object.keys(openApiParameters)
+    .map((parameter) => openApiParameters[parameter])
+    .filter((parameter) => parameter.in === 'path')
+    .forEach((parameter) => {
+      // Path parameters are denoted by brackets within the OpenApi paths, such as: /api/v1/accounts/{idOrAliasOrEvmAddress}
+      const key = '{' + parameter.name + '}';
+
+      // Remove the prefix: #/components/schemas/
+      const schemaReference = parameter.schema.$ref?.substring(21);
+      const schema = schemaReference ? openApiObject.components.schemas[schemaReference] : parameter.schema;
+
+      const pattern = schema?.pattern;
+      pathParameters.set(key, pattern);
+    });
+
+  return pathParameters;
 };
 
 const serveSpec = (req, res) => res.type('text/yaml').send(getV1OpenApiFile());
