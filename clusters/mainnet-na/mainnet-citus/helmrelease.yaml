@@ -14,17 +14,17 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.111.1'
+      version: '0.112.0'
   dependsOn:
     - name: mirror
       namespace: common
-#  driftDetection:
-#    mode: warn
-#    ignore:
-#      - paths:
-#          - /spec/scripts
-#        target:
-#          kind: SGScript
+  driftDetection:
+    mode: enabled
+    ignore:
+      - paths:
+          - /spec/scripts
+        target:
+          kind: SGScript
   install:
     crds: CreateReplace
   interval: 90s
@@ -77,8 +77,6 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
-      coordinator:
-        instances: 1
       worker:
         overrides:
           - index: 0
