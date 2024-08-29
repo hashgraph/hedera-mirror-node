@@ -86,3 +86,47 @@ describe('get', () => {
     expect(values).toEqual(['v1', 'v2', 'v3']);
   });
 });
+
+describe('Single key get/set', () => {
+  test('Get undefined key', async () => {
+    const value = await cache.getSingle(undefined);
+    expect(value).toBeUndefined();
+  });
+
+  test('Get non-existent key', async () => {
+    const key = 'myKeyDoesNotExist';
+    const value = await cache.getSingle(key);
+    expect(value).toBeUndefined();
+  });
+
+  test('Set and get object', async () => {
+    const key = 'myKey';
+    const objectToCache = {a: 5, b: 'some string', c: 'another string'};
+    const setResult = await cache.setSingle(key, objectToCache);
+    expect(setResult).toEqual('OK');
+    const objectFromCache = await cache.getSingle(key);
+    expect(objectFromCache).toEqual(objectToCache);
+  });
+
+  test('Disabled', async () => {
+    config.redis.enabled = false;
+    cache = new Cache();
+
+    const key = 'myKey';
+    const value = await cache.getSingle(key);
+    expect(value).toBeUndefined();
+    const setResult = await cache.setSingle(key, 'someValue');
+    expect(setResult).toBeUndefined();
+  });
+
+  test('Unable to connect', async () => {
+    config.redis.uri = 'redis://invalid:6379';
+    cache = new Cache();
+
+    const key = 'myKey';
+    const value = await cache.getSingle('someKey');
+    expect(value).toBeUndefined();
+    const setResult = await cache.setSingle(key, 'someValue');
+    expect(setResult).toBeUndefined();
+  });
+});

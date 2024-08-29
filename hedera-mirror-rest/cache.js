@@ -74,20 +74,24 @@ export class Cache {
   }
 
   async getSingle(key) {
-    if (key === undefined || !this.ready) {
+    if (!this.ready) {
       return undefined;
     }
 
-    const value = this.redis.get(key);
+    const value =
+      (await this.redis.get(key).catch((err) => logger.warn(`Redis error during get: ${err.message}`))) || undefined;
+
     return value === undefined ? value : JSONParse(value);
   }
 
-  async setSingle(key, value, expiry) {
-    if (key === undefined || !this.ready) {
+  async setSingle(key, value) {
+    if (!this.ready) {
       return undefined;
     }
 
-    return this.redis.setex(key, expiry, JSONStringify(value));
+    return this.redis
+      .set(key, JSONStringify(value))
+      .catch((err) => logger.warn(`Redis error during set: ${err.message}`));
   }
 
   async get(keys, loader, keyMapper = (k) => (k ? k.toString() : k)) {
