@@ -2086,14 +2086,11 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         final var functionCall = contract.call_cryptoTransferExternal(transferList, new ArrayList<>());
 
-        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
-                .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
-                .build();
-
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2121,14 +2118,11 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var functionCall =
                 contract.call_cryptoTransferExternal(new TransferList(new ArrayList<>()), List.of(tokenTransferList));
 
-        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
-                .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
-                .build();
-
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2159,14 +2153,11 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         final var functionCall = contract.call_cryptoTransferExternal(transferList, List.of(tokenTransferList));
 
-        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
-                .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
-                .build();
-
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2201,14 +2192,11 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var functionCall =
                 contract.call_cryptoTransferExternal(new TransferList(new ArrayList<>()), List.of(tokenTransferList));
 
-        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
-                .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
-                .build();
-
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2664,17 +2652,8 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
     }
 
     private void verifyOpcodeTracerCall(final String callData, final ContractFunctionProviderRecord functionProvider) {
-
         final var callDataBytes = Bytes.fromHexString(callData);
-        final var debugParameters = ContractDebugParameters.builder()
-                .block(functionProvider.block())
-                .callData(callDataBytes)
-                .consensusTimestamp(domainBuilder.timestamp())
-                .gas(15_000_000L)
-                .receiver(functionProvider.contractAddress())
-                .sender(new HederaEvmAccount(functionProvider.sender()))
-                .value(functionProvider.value())
-                .build();
+        final var debugParameters = getDebugParameters(functionProvider, callDataBytes);
 
         if (functionProvider.expectedErrorMessage() != null) {
             verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);
@@ -2691,15 +2670,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .build();
 
         final var callDataBytes = Bytes.fromHexString(callData);
-        final var debugParameters = ContractDebugParameters.builder()
-                .block(functionProvider.block())
-                .callData(callDataBytes)
-                .consensusTimestamp(domainBuilder.timestamp())
-                .gas(15_000_000L)
-                .receiver(functionProvider.contractAddress())
-                .sender(new HederaEvmAccount(functionProvider.sender()))
-                .value(functionProvider.value())
-                .build();
+        final var debugParameters = getDebugParameters(functionProvider, callDataBytes);
 
         if (functionProvider.expectedErrorMessage() != null) {
             verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);
