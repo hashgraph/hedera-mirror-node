@@ -31,7 +31,9 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
@@ -213,6 +215,29 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     protected String getAliasFromEntity(Entity entity) {
         return Bytes.wrap(entity.getEvmAddress()).toHexString();
+    }
+
+    protected ContractDebugParameters getDebugParameters(
+            final ContractFunctionProviderRecord functionProvider, final Bytes callDataBytes) {
+        return ContractDebugParameters.builder()
+                .block(functionProvider.block())
+                .callData(callDataBytes)
+                .consensusTimestamp(domainBuilder.timestamp())
+                .gas(TRANSACTION_GAS_LIMIT)
+                .receiver(functionProvider.contractAddress())
+                .sender(new HederaEvmAccount(functionProvider.sender()))
+                .value(functionProvider.value())
+                .build();
+    }
+
+    protected ContractFunctionProviderRecord getContractFunctionProviderWithSender(
+            final String contract, final Entity sender) {
+        final var contractAddress = Address.fromHexString(contract);
+        final var senderAddress = Address.fromHexString(getAliasFromEntity(sender));
+        return ContractFunctionProviderRecord.builder()
+                .contractAddress(contractAddress)
+                .sender(senderAddress)
+                .build();
     }
 
     public enum KeyType {
