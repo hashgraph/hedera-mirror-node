@@ -110,7 +110,6 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler
     private ResponseEntity<?> precompileNotSupportedException(
             final PrecompileNotSupportedException e, WebRequest request) {
-        //        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), NOT_IMPLEMENTED);
         return handleExceptionInternal(e, null, null, NOT_IMPLEMENTED, request);
     }
 

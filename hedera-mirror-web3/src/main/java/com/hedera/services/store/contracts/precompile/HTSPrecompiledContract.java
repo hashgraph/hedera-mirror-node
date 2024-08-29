@@ -499,7 +499,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         if (AbiConstants.ABI_HRC_IS_ASSOCIATED == target.descriptor()) {
             // We can't support this precompile since the copied code from mono services does not have the necessary
             // logic
-            throw new PrecompileNotSupportedException(StringUtils.EMPTY);
+            throw new PrecompileNotSupportedException("HRC isAssociated() precompile is not supported.");
         }
 
         final var executor = infrastructureFactory.newRedirectExecutor(
