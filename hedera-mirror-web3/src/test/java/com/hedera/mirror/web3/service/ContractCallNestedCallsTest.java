@@ -41,7 +41,6 @@ import com.hedera.mirror.web3.web3j.generated.NestedCalls.HederaToken;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.TokenKey;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import java.math.BigInteger;
 import java.util.LinkedList;
@@ -601,15 +600,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
                 .build();
 
         final var callDataBytes = Bytes.fromHexString(callData);
-        final var debugParameters = ContractDebugParameters.builder()
-                .block(functionProvider.block())
-                .callData(callDataBytes)
-                .consensusTimestamp(domainBuilder.timestamp())
-                .gas(15_000_000L)
-                .receiver(functionProvider.contractAddress())
-                .sender(new HederaEvmAccount(functionProvider.sender()))
-                .value(functionProvider.value())
-                .build();
+        final var debugParameters = getDebugParameters(functionProvider, callDataBytes);
 
         if (functionProvider.expectedErrorMessage() != null) {
             verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);

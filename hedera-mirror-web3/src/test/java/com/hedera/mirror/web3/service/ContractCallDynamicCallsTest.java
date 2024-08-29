@@ -49,7 +49,6 @@ import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.NftTransfer;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TokenTransferList;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TransferList;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import java.math.BigInteger;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -915,15 +914,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
 
     private void verifyOpcodeTracerCall(final String callData, final ContractFunctionProviderRecord functionProvider) {
         final var callDataBytes = Bytes.fromHexString(callData);
-        final var debugParameters = ContractDebugParameters.builder()
-                .block(functionProvider.block())
-                .callData(callDataBytes)
-                .consensusTimestamp(domainBuilder.timestamp())
-                .gas(15_000_000L)
-                .receiver(functionProvider.contractAddress())
-                .sender(new HederaEvmAccount(functionProvider.sender()))
-                .value(functionProvider.value())
-                .build();
+        final var debugParameters = getDebugParameters(functionProvider, callDataBytes);
 
         if (functionProvider.expectedErrorMessage() != null) {
             verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);
@@ -940,15 +931,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceTest {
                 .build();
 
         final var callDataBytes = Bytes.fromHexString(callData);
-        final var debugParameters = ContractDebugParameters.builder()
-                .block(functionProvider.block())
-                .callData(callDataBytes)
-                .consensusTimestamp(domainBuilder.timestamp())
-                .gas(15_000_000L)
-                .receiver(functionProvider.contractAddress())
-                .sender(new HederaEvmAccount(functionProvider.sender()))
-                .value(functionProvider.value())
-                .build();
+        final var debugParameters = getDebugParameters(functionProvider, callDataBytes);
 
         if (functionProvider.expectedErrorMessage() != null) {
             verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);
