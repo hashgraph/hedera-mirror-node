@@ -22,12 +22,8 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddr
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_34_BLOCK;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_PROTO;
-import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.OPTIONS;
-import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.gasComparator;
-import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.toHumanReadableMessage;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.doAnswer;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -37,42 +33,22 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.web3.common.ContractCallContext;
-import com.hedera.mirror.web3.convert.BytesDecoder;
-import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
-import com.hedera.mirror.web3.service.model.ContractDebugParameters;
-import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.NestedCallsHistorical;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import java.math.BigInteger;
 import java.util.Collections;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.web3j.tx.Contract;
 
-@RequiredArgsConstructor
-class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceTest {
-
-    private final ContractDebugService contractDebugService;
-
-    @Captor
-    private ArgumentCaptor<ContractDebugParameters> paramsCaptor;
-
-    @Captor
-    private ArgumentCaptor<Long> gasCaptor;
-
-    private HederaEvmTransactionProcessingResult resultCaptor;
-    private ContractCallContext contextCaptor;
+class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     private RecordFile recordFileBeforeEvm34;
+
+    public ContractCallNestedCallsHistoricalTest(ContractDebugService contractDebugService) {
+        super(contractDebugService);
+    }
 
     @BeforeEach
     void beforeEach() {
@@ -83,16 +59,6 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceT
         testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
         testWeb3jService.setHistoricalRange(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-
-        doAnswer(invocation -> {
-                    final var transactionProcessingResult =
-                            (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
-                    resultCaptor = transactionProcessingResult;
-                    contextCaptor = ContractCallContext.get();
-                    return transactionProcessingResult;
-                })
-                .when(processor)
-                .execute(paramsCaptor.capture(), gasCaptor.capture());
     }
 
     @Test
@@ -313,58 +279,5 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceT
                                 recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
                 .persist();
         return spenderEntityId;
-    }
-
-    private void verifyOpcodeTracerCall(final String callData, final Contract contract) {
-        ContractFunctionProviderRecord functionProvider = ContractFunctionProviderRecord.builder()
-                .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .build();
-
-        final var callDataBytes = Bytes.fromHexString(callData);
-        final var debugParameters = getDebugParameters(functionProvider, callDataBytes);
-
-        if (functionProvider.expectedErrorMessage() != null) {
-            verifyThrowingOpcodeTracerCall(debugParameters, functionProvider);
-        } else {
-            verifySuccessfulOpcodeTracerCall(debugParameters);
-        }
-        assertThat(paramsCaptor.getValue()).isEqualTo(debugParameters);
-        assertThat(gasCaptor.getValue()).isEqualTo(debugParameters.getGas());
-    }
-
-    @SneakyThrows
-    private void verifyThrowingOpcodeTracerCall(
-            final ContractDebugParameters params, final ContractFunctionProviderRecord function) {
-        final var actual = contractDebugService.processOpcodeCall(params, OPTIONS);
-        assertThat(actual.transactionProcessingResult().isSuccessful()).isFalse();
-        assertThat(actual.transactionProcessingResult().getOutput()).isEqualTo(Bytes.EMPTY);
-        assertThat(actual.transactionProcessingResult())
-                .satisfiesAnyOf(
-                        result -> assertThat(result.getRevertReason())
-                                .isPresent()
-                                .map(BytesDecoder::maybeDecodeSolidityErrorStringToReadableMessage)
-                                .hasValue(function.expectedErrorMessage()),
-                        result -> assertThat(result.getHaltReason())
-                                .isPresent()
-                                .map(ExceptionalHaltReason::getDescription)
-                                .hasValue(function.expectedErrorMessage()));
-        assertThat(actual.opcodes().size()).isNotZero();
-        assertThat(toHumanReadableMessage(actual.opcodes().getLast().reason()))
-                .isEqualTo(function.expectedErrorMessage());
-    }
-
-    private void verifySuccessfulOpcodeTracerCall(final ContractDebugParameters params) {
-        final var actual = contractDebugService.processOpcodeCall(params, OPTIONS);
-        final var expected = new OpcodesProcessingResult(resultCaptor, contextCaptor.getOpcodes());
-        // Compare transaction processing result
-        assertThat(actual.transactionProcessingResult())
-                .usingRecursiveComparison()
-                .ignoringFields("logs")
-                .isEqualTo(expected.transactionProcessingResult());
-        // Compare opcodes with gas tolerance
-        assertThat(actual.opcodes())
-                .usingRecursiveComparison()
-                .withComparatorForFields(gasComparator(), "gas")
-                .isEqualTo(expected.opcodes());
     }
 }
