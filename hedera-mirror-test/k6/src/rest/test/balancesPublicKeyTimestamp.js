@@ -16,21 +16,23 @@
 
 import http from 'k6/http';
 
-import {isSuccess, RestTestScenarioBuilder} from '../libex/common.js';
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {balanceListName} from '../libex/constants.js';
 
-const urlTag = '/network/supply?timestamp={timestamp}';
+const urlTag = '/balances?account.publickey={accountId}&timestamp={timestamp}';
 
-const getUrl = (testParameters) => `/network/supply?timestamp=${testParameters['DEFAULT_BALANCE_TIMESTAMP']}`;
+const getUrl = (testParameters) =>
+  `/balances?account.publickey=${testParameters['DEFAULT_PUBLIC_KEY']}&timestamp=${testParameters['DEFAULT_BALANCE_TIMESTAMP']}`;
 
 const {options, run, setup} = new RestTestScenarioBuilder()
-  .name('networkSupplyTimestamp') // use unique scenario name among all tests
+  .name('balancesPublicKeyTimestamp') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
     const url = `${testParameters['BASE_URL_PREFIX']}${getUrl(testParameters)}`;
     return http.get(url);
   })
-  .requiredParameters('DEFAULT_BALANCE_TIMESTAMP')
-  .check('Network supply OK', isSuccess)
+  .requiredParameters('DEFAULT_PUBLIC_KEY', 'DEFAULT_BALANCE_TIMESTAMP')
+  .check('Balances OK', (r) => isValidListResponse(r, balanceListName))
   .build();
 
 export {getUrl, options, run, setup};

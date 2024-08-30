@@ -34,6 +34,7 @@ import * as accountsTokenAllowance from './accountsTokenAllowance.js';
 import * as balances from './balances.js';
 import * as balancesAccount from './balancesAccount.js';
 import * as balancesAccountTimestamp from './balancesAccountTimestamp.js';
+import * as balancesPublicKeyTimestamp from './balancesPublicKeyTimestamp.js';
 import * as balancesTimestamp from './balancesTimestamp.js';
 import * as blocks from './blocks.js';
 import * as blocksNumber from './blocksNumber.js';
@@ -97,6 +98,7 @@ const tests = {
   balances,
   balancesAccount,
   balancesAccountTimestamp,
+  balancesPublicKeyTimestamp,
   balancesTimestamp,
   blocks,
   blocksNumber,
