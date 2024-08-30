@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.112.0-rc3'
+      version: '0.112.1-rc1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -103,10 +103,6 @@ spec:
         enabled: true
     stackgres:
       enabled: true
-      operator:
-        image:
-          name: gcr.io/mirrornode/stackgres-operator
-          tag: '1.9.0'
     traefik:
       resources:
         limits:
