@@ -91,10 +91,6 @@ import org.web3j.tx.Contract;
 
 class ContractCallServicePrecompileTest extends AbstractContractCallServiceOpcodeTracerTest {
 
-    ContractCallServicePrecompileTest(ContractDebugService contractDebugService) {
-        super(contractDebugService);
-    }
-
     @Test
     void isTokenFrozen() throws Exception {
         // Given

@@ -46,10 +46,6 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
 
     private RecordFile recordFileBeforeEvm34;
 
-    public ContractCallNestedCallsHistoricalTest(ContractDebugService contractDebugService) {
-        super(contractDebugService);
-    }
-
     @BeforeEach
     void beforeEach() {
         recordFileBeforeEvm34 = domainBuilder

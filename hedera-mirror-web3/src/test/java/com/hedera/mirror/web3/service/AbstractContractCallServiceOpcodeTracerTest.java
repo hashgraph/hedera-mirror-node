@@ -28,7 +28,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -38,10 +38,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.web3j.tx.Contract;
 
-@RequiredArgsConstructor
 abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContractCallServiceTest {
 
-    private final ContractDebugService contractDebugService;
+    @Resource
+    protected ContractDebugService contractDebugService;
 
     @Captor
     private ArgumentCaptor<ContractDebugParameters> paramsCaptor;

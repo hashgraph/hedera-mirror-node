@@ -45,10 +45,6 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
     private static final long CREATE_TOKEN_VALUE = 3070 * 100_000_000L;
     private static final String EXPECTED_RESULT_NEGATIVE_TESTS = "hardcodedResult";
 
-    public ContractCallNestedCallsTest(ContractDebugService contractDebugService) {
-        super(contractDebugService);
-    }
-
     @ParameterizedTest
     @CsvSource(
             textBlock =

@@ -49,10 +49,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTracerTest {
 
-    public ContractCallDynamicCallsTest(ContractDebugService contractDebugService) {
-        super(contractDebugService);
-    }
-
     @ParameterizedTest
     @CsvSource(
             textBlock =
