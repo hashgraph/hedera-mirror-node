@@ -12,6 +12,10 @@ aims to document the required changes associated with any new feature.
 - [ ] `TransactionType`
 - [ ] `DomainBuilder`
 
+## GraphQL API
+
+- [ ] Transaction type
+
 ## Importer
 
 - [ ] V1 migration
@@ -62,10 +66,6 @@ The Java monitor needs to be updated for any new or modified HAPI transactions t
 - [ ] `TransactionTypes`
 - [ ] `rosetta-cli` validation configuration
 - [ ] BDD Test
-
-## GraphQL API
-
-- [ ] Transaction type
 
 ## Test
 

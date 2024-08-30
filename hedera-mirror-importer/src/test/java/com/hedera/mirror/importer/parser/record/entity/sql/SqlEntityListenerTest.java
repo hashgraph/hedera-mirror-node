@@ -2799,6 +2799,51 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
                 .containsExactlyInAnyOrder(tokenAirdropUpdateState, nftAirdropUpdateState);
     }
 
+    @ParameterizedTest
+    @EnumSource(
+            value = TokenAirdropStateEnum.class,
+            names = {"CANCELLED", "CLAIMED"})
+    void onTokenAirdropPartialUpdate(TokenAirdropStateEnum state) {
+        // given
+        var tokenAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
+        var nftAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE).get();
+
+        // when
+        var tokenAirdropUpdateState = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(a -> a.state(state)
+                        .amount(null) // Record files that change state do not include PendingAirdropValue so remove the
+                        // amount here
+                        .receiverAccountId(tokenAirdrop.getReceiverAccountId())
+                        .senderAccountId(tokenAirdrop.getSenderAccountId())
+                        .tokenId(tokenAirdrop.getTokenId())
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .get();
+        var nftAirdropUpdateState = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                .customize(a -> a.state(state)
+                        .receiverAccountId(nftAirdrop.getReceiverAccountId())
+                        .senderAccountId(nftAirdrop.getSenderAccountId())
+                        .serialNumber(nftAirdrop.getSerialNumber())
+                        .tokenId(nftAirdrop.getTokenId())
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .get();
+        sqlEntityListener.onTokenAirdrop(tokenAirdropUpdateState);
+        sqlEntityListener.onTokenAirdrop(nftAirdropUpdateState);
+        completeFileAndCommit();
+
+        // then
+        tokenAirdrop.setTimestampRange(
+                Range.closedOpen(tokenAirdrop.getTimestampLower(), tokenAirdropUpdateState.getTimestampLower()));
+        nftAirdrop.setTimestampRange(
+                Range.closedOpen(nftAirdrop.getTimestampLower(), nftAirdropUpdateState.getTimestampLower()));
+        assertThat(findHistory(TokenAirdrop.class)).isEmpty();
+        assertThat(tokenAirdropRepository.findAll())
+                .containsExactlyInAnyOrder(tokenAirdropUpdateState, nftAirdropUpdateState);
+    }
+
     @Test
     void onTokenAllowance() {
         // given

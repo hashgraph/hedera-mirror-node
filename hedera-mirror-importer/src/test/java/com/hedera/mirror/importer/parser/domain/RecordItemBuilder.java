@@ -730,6 +730,13 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
     }
 
+    public PendingAirdropId.Builder pendingAirdropId() {
+        return PendingAirdropId.newBuilder()
+                .setReceiverId(accountId())
+                .setSenderId(accountId())
+                .setFungibleTokenType(tokenId());
+    }
+
     public Builder<UtilPrngTransactionBody.Builder> prng() {
         return prng(0);
     }
@@ -800,36 +807,40 @@ public class RecordItemBuilder {
     public Builder<TokenAirdropTransactionBody.Builder> tokenAirdrop() {
         var fungibleTokenId = tokenId();
         var nftTokenId = tokenId();
+        var sender = accountId();
+        var receiver = accountId();
+        var pendingReceiver = accountId();
 
         // Airdrops that transfer to the account and do not go into the pending airdrop list
         var tokenTransferList = TokenTransferList.newBuilder()
                 .setToken(fungibleTokenId)
                 .addTransfers(AccountAmount.newBuilder()
-                        .setAccountID(accountId())
+                        .setAccountID(sender)
                         .setAmount(-100)
                         .build())
                 .addTransfers(AccountAmount.newBuilder()
-                        .setAccountID(accountId())
+                        .setAccountID(receiver)
                         .setAmount(100)
                         .build());
         var nftTransferList = TokenTransferList.newBuilder()
                 .setToken(nftTokenId)
                 .addNftTransfers(NftTransfer.newBuilder()
+                        .setSenderAccountID(sender)
                         .setSerialNumber(1L)
-                        .setReceiverAccountID(accountId())
+                        .setReceiverAccountID(receiver)
                         .build());
 
         var fungiblePendingAirdropId = PendingAirdropId.newBuilder()
-                .setSenderId(accountId())
-                .setReceiverId(accountId())
+                .setSenderId(sender)
+                .setReceiverId(pendingReceiver)
                 .setFungibleTokenType(fungibleTokenId);
         var fungiblePendingAirdrop = PendingAirdropRecord.newBuilder()
                 .setPendingAirdropId(fungiblePendingAirdropId)
                 .setPendingAirdropValue(
                         PendingAirdropValue.newBuilder().setAmount(1000L).build());
         var nftPendingAirdropId = PendingAirdropId.newBuilder()
-                .setSenderId(accountId())
-                .setReceiverId(accountId())
+                .setSenderId(sender)
+                .setReceiverId(pendingReceiver)
                 .setNonFungibleToken(NftID.newBuilder()
                         .setTokenID(nftTokenId)
                         .setSerialNumber(1L)
@@ -843,13 +854,13 @@ public class RecordItemBuilder {
                         .addNewPendingAirdrops(nftPendingAirdrop));
     }
 
-    public Builder<TokenCancelAirdropTransactionBody.Builder> tokenCancelAirdrop(PendingAirdropId pendingAirdropId) {
-        var transactionBody = TokenCancelAirdropTransactionBody.newBuilder().addPendingAirdrops(pendingAirdropId);
+    public Builder<TokenCancelAirdropTransactionBody.Builder> tokenCancelAirdrop() {
+        var transactionBody = TokenCancelAirdropTransactionBody.newBuilder().addPendingAirdrops(pendingAirdropId());
         return new Builder<>(TransactionType.TOKENCANCELAIRDROP, transactionBody);
     }
 
-    public Builder<TokenClaimAirdropTransactionBody.Builder> tokenClaimAirdrop(PendingAirdropId pendingAirdropId) {
-        var transactionBody = TokenClaimAirdropTransactionBody.newBuilder().addPendingAirdrops(pendingAirdropId);
+    public Builder<TokenClaimAirdropTransactionBody.Builder> tokenClaimAirdrop() {
+        var transactionBody = TokenClaimAirdropTransactionBody.newBuilder().addPendingAirdrops(pendingAirdropId());
         return new Builder<>(TransactionType.TOKENCLAIMAIRDROP, transactionBody);
     }
 

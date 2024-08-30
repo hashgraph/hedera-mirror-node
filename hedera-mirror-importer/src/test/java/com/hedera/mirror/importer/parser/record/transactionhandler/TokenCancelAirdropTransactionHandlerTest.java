@@ -37,8 +37,7 @@ import org.mockito.ArgumentCaptor;
 class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenCancelAirdropTransactionHandler(
-                entityProperties, new TokenUpdateAirdropTransactionHandler(entityIdService, entityListener));
+        return new TokenCancelAirdropTransactionHandler(entityListener, entityProperties);
     }
 
     @Override
@@ -74,8 +73,10 @@ class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandle
             pendingAirdropId.setNonFungibleToken(
                     NftID.newBuilder().setTokenID(token).setSerialNumber(1L));
         }
-        var recordItem =
-                recordItemBuilder.tokenCancelAirdrop(pendingAirdropId.build()).build();
+        var recordItem = recordItemBuilder
+                .tokenCancelAirdrop()
+                .transactionBody(b -> b.clearPendingAirdrops().addPendingAirdrops(pendingAirdropId.build()))
+                .build();
         long timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder
                 .transaction()

@@ -27,6 +27,6 @@ public interface TokenAirdropHistoryRepository
 
     @Modifying
     @Override
-    @Query(value = "delete from token_airdrop_history where upper(timestamp_range) <= ?1", nativeQuery = true)
+    @Query(value = "delete from token_airdrop_history where timestamp_range << int8range(?1, null)", nativeQuery = true)
     int prune(long consensusTimestamp);
 }

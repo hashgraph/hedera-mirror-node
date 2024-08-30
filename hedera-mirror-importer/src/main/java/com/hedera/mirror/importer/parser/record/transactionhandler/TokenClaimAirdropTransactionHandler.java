@@ -16,39 +16,30 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.function.Function;
 
 @Named
-@RequiredArgsConstructor
-class TokenClaimAirdropTransactionHandler extends AbstractTransactionHandler {
+class TokenClaimAirdropTransactionHandler extends AbstractTokenUpdateAirdropTransactionHandler {
 
-    private final EntityProperties entityProperties;
-    private final TokenUpdateAirdropTransactionHandler tokenUpdateAirdropTransactionHandler;
+    private final Function<RecordItem, List<PendingAirdropId>> airdropExtractor =
+            r -> r.getTransactionBody().getTokenClaimAirdrop().getPendingAirdropsList();
 
-    @Override
-    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isTokenAirdrops() || !recordItem.isSuccessful()) {
-            return;
-        }
-
-        var pendingAirdropIds =
-                recordItem.getTransactionBody().getTokenClaimAirdrop().getPendingAirdropsList();
-        tokenUpdateAirdropTransactionHandler.doUpdateTransaction(
-                recordItem, TokenAirdropStateEnum.CLAIMED, pendingAirdropIds);
+    public TokenClaimAirdropTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
+        super(entityListener, entityProperties);
     }
 
     @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        var pendingAirdropIds =
-                recordItem.getTransactionBody().getTokenClaimAirdrop().getPendingAirdropsList();
-        return tokenUpdateAirdropTransactionHandler.getEntity(pendingAirdropIds);
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
+        super.doUpdateTransaction(recordItem, TokenAirdropStateEnum.CLAIMED, airdropExtractor);
     }
 
     @Override

@@ -3547,14 +3547,18 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         var expectedState = TokenAirdropStateEnum.CANCELLED;
         RecordItemBuilder.Builder<?> updateAirdrop = recordItemBuilder
-                .tokenCancelAirdrop(pendingFungibleAirdropId)
-                .transactionBody(b -> b.addPendingAirdrops(pendingNftAirdropId))
+                .tokenCancelAirdrop()
+                .transactionBody(b -> b.clearPendingAirdrops()
+                        .addPendingAirdrops(pendingFungibleAirdropId)
+                        .addPendingAirdrops(pendingNftAirdropId))
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateTimestamp)));
         if (airdropType == TokenAirdropStateEnum.CLAIMED) {
             expectedState = TokenAirdropStateEnum.CLAIMED;
             updateAirdrop = recordItemBuilder
-                    .tokenClaimAirdrop(pendingFungibleAirdropId)
-                    .transactionBody(b -> b.addPendingAirdrops(pendingNftAirdropId))
+                    .tokenClaimAirdrop()
+                    .transactionBody(b -> b.clearPendingAirdrops()
+                            .addPendingAirdrops(pendingFungibleAirdropId)
+                            .addPendingAirdrops(pendingNftAirdropId))
                     .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateTimestamp)));
         }
         parseRecordItemAndCommit(updateAirdrop.build());
@@ -3661,14 +3665,18 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         var expectedState = TokenAirdropStateEnum.CANCELLED;
         RecordItemBuilder.Builder<?> updateAirdrop = recordItemBuilder
-                .tokenCancelAirdrop(pendingFungibleAirdropId)
-                .transactionBody(b -> b.addPendingAirdrops(pendingNftAirdropId))
+                .tokenCancelAirdrop()
+                .transactionBody(b -> b.clearPendingAirdrops()
+                        .addPendingAirdrops(pendingFungibleAirdropId)
+                        .addPendingAirdrops(pendingNftAirdropId))
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateTimestamp)));
         if (airdropType == TokenAirdropStateEnum.CLAIMED) {
             expectedState = TokenAirdropStateEnum.CLAIMED;
             updateAirdrop = recordItemBuilder
-                    .tokenClaimAirdrop(pendingFungibleAirdropId)
-                    .transactionBody(b -> b.addPendingAirdrops(pendingNftAirdropId))
+                    .tokenClaimAirdrop()
+                    .transactionBody(b -> b.clearPendingAirdrops()
+                            .addPendingAirdrops(pendingFungibleAirdropId)
+                            .addPendingAirdrops(pendingNftAirdropId))
                     .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateTimestamp)));
         }
 
@@ -3687,6 +3695,74 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         expectedPendingNft.setTimestampRange(Range.atLeast(updateTimestamp));
         assertThat(tokenAirdropRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(
+            value = TokenAirdropStateEnum.class,
+            names = {"CANCELLED", "CLAIMED"})
+    void tokenAirdropPartialData(TokenAirdropStateEnum airdropType) {
+        // given
+        entityProperties.getPersist().setTokenAirdrops(true);
+
+        // when a claim or cancel occurs but there is no prior pending airdrop
+        long updateTimestamp = 30L;
+        var pendingFungibleAirdropId = PendingAirdropId.newBuilder()
+                .setReceiverId(RECEIVER)
+                .setSenderId(PAYER)
+                .setFungibleTokenType(TOKEN_ID)
+                .build();
+        var nftTokenId = TokenID.newBuilder().setTokenNum(1234L).build();
+        var protoNftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(SERIAL_NUMBER_1);
+        var pendingNftAirdropId = PendingAirdropId.newBuilder()
+                .setReceiverId(RECEIVER)
+                .setSenderId(PAYER)
+                .setNonFungibleToken(protoNftId)
+                .build();
+
+        var expectedState = TokenAirdropStateEnum.CANCELLED;
+        RecordItemBuilder.Builder<?> updateAirdrop;
+        if (airdropType == TokenAirdropStateEnum.CANCELLED) {
+            updateAirdrop = recordItemBuilder
+                    .tokenCancelAirdrop()
+                    .transactionBody(b -> b.clearPendingAirdrops()
+                            .addPendingAirdrops(pendingFungibleAirdropId)
+                            .addPendingAirdrops(pendingNftAirdropId))
+                    .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateTimestamp)));
+        } else {
+            expectedState = TokenAirdropStateEnum.CLAIMED;
+            updateAirdrop = recordItemBuilder
+                    .tokenClaimAirdrop()
+                    .transactionBody(b -> b.clearPendingAirdrops()
+                            .addPendingAirdrops(pendingFungibleAirdropId)
+                            .addPendingAirdrops(pendingNftAirdropId))
+                    .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateTimestamp)));
+        }
+        parseRecordItemAndCommit(updateAirdrop.build());
+
+        // then
+        var expectedPendingFungible = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                // Amount will be null when there is no pending airdrop
+                .customize(t -> t.amount(null)
+                        .receiverAccountId(RECEIVER.getAccountNum())
+                        .senderAccountId(PAYER.getAccountNum())
+                        .timestampRange(Range.atLeast(updateTimestamp))
+                        .tokenId(TOKEN_ID.getTokenNum()))
+                .get();
+        var expectedPendingNft = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                .customize(t -> t.receiverAccountId(RECEIVER.getAccountNum())
+                        .senderAccountId(PAYER.getAccountNum())
+                        .serialNumber(SERIAL_NUMBER_1)
+                        .timestampRange(Range.atLeast(updateTimestamp))
+                        .tokenId(nftTokenId.getTokenNum()))
+                .get();
+        expectedPendingFungible.setState(expectedState);
+        expectedPendingNft.setState(expectedState);
+        assertThat(tokenAirdropRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+        assertThat(findHistory(TokenAirdrop.class)).isEmpty();
     }
 
     @ParameterizedTest
