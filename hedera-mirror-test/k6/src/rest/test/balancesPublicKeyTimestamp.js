@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,19 +19,20 @@ import http from 'k6/http';
 import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
 import {balanceListName} from '../libex/constants.js';
 
-const urlTag = '/balances?timestamp=X';
+const urlTag = '/balances?account.publickey={accountId}&timestamp={timestamp}';
 
 const getUrl = (testParameters) =>
-  `/balances?timestamp=${testParameters['DEFAULT_BALANCE_TIMESTAMP']}&limit=${testParameters['DEFAULT_LIMIT']}`;
+  `/balances?account.publickey=${testParameters['DEFAULT_PUBLIC_KEY']}&timestamp=${testParameters['DEFAULT_BALANCE_TIMESTAMP']}`;
 
 const {options, run, setup} = new RestTestScenarioBuilder()
-  .name('balancesTimestamp') // use unique scenario name among all tests
+  .name('balancesPublicKeyTimestamp') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
     const url = `${testParameters['BASE_URL_PREFIX']}${getUrl(testParameters)}`;
     return http.get(url);
   })
-  .check('Balances with timestamp OK', (r) => isValidListResponse(r, balanceListName))
+  .requiredParameters('DEFAULT_PUBLIC_KEY', 'DEFAULT_BALANCE_TIMESTAMP')
+  .check('Balances OK', (r) => isValidListResponse(r, balanceListName))
   .build();
 
 export {getUrl, options, run, setup};
