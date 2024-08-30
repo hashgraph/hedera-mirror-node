@@ -32,41 +32,50 @@ public class ContractCallSystemPrecompileHistoricalTest extends AbstractContract
     @ParameterizedTest
     @CsvSource({"150", "100", "50", "49"})
     void exchangeRatePrecompileTinycentsToTinybars(long blockNumber) throws Exception {
+        // Given
         final var recordFile =
                 domainBuilder.recordFile().customize(f -> f.index(blockNumber)).persist();
         testWeb3jService.setBlockType(BlockType.of(String.valueOf(blockNumber)));
         testWeb3jService.setHistoricalRange(
                 Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompileHistorical::deploy);
+        // When
         final var result =
                 contract.call_tinycentsToTinybars(BigInteger.valueOf(100L)).send();
+        // Then
         assertThat(result).isEqualTo(BigInteger.valueOf(8L));
     }
 
     @ParameterizedTest
     @CsvSource({"150", "100", "50", "49"})
     void exchangeRatePrecompileTinybarsToTinycents(long blockNumber) throws Exception {
+        // Given
         final var recordFile =
                 domainBuilder.recordFile().customize(f -> f.index(blockNumber)).persist();
         testWeb3jService.setBlockType(BlockType.of(String.valueOf(blockNumber)));
         testWeb3jService.setHistoricalRange(
                 Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompileHistorical::deploy);
+        // When
         final var result =
                 contract.call_tinybarsToTinycents(BigInteger.valueOf(100L)).send();
+        // Then
         assertThat(result).isEqualTo(BigInteger.valueOf(1200L));
     }
 
     @ParameterizedTest
     @CsvSource({"150", "100", "50", "49"})
     void pseudoRandomGeneratorPrecompileFunctionsTestEthCallHistorical(long blockNumber) throws Exception {
+        // Given
         final var recordFile =
                 domainBuilder.recordFile().customize(f -> f.index(blockNumber)).persist();
         testWeb3jService.setBlockType(BlockType.of(String.valueOf(blockNumber)));
         testWeb3jService.setHistoricalRange(
                 Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
         final var contract = testWeb3jService.deploy(PrngSystemContractHistorical::deploy);
+        // When
         final var result = contract.call_getPseudorandomSeed().send();
+        // Then
         assertEquals(32, result.length, "The string should represent a 32-byte long array");
     }
 }
