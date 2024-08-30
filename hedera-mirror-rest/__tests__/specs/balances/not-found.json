@@ -51,7 +51,10 @@
       }
     ]
   },
-  "url": "/api/v1/balances?account.id=0.0.3",
+  "urls": [
+    "/api/v1/balances?account.id=0.0.3",
+    "/api/v1/balances?account.publickey=97c6b472d72b34598dc4f5ca20b68d40916cf9f68f32bbc3dcacebd0680fe920&timestamp=lte:2345"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "timestamp": null,

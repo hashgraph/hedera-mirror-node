@@ -68,18 +68,21 @@ const formatBalancesResult = (req, result, limit, order) => {
   return ret;
 };
 
-const entityPublicKeyQuery = `select id from entity where type in ('ACCOUNT', 'CONTRACT') and public_key = $1`;
+const entityPublicKeyQuery = `select id from entity where type in ('ACCOUNT', 'CONTRACT') and public_key = $1 limit $2`;
 
-const getAccountIdsByPublicKey = async (publicKey) => {
+const getAccountIdsByPublicKey = async (publicKey, limit) => {
   if (_.isEmpty(publicKey)) {
     return null;
   }
 
-  const result = await pool.queryQuietly(entityPublicKeyQuery, publicKey);
+  const params = [...publicKey, limit];
+  const result = await pool.queryQuietly(entityPublicKeyQuery, params);
 
   if (result) {
     const ids = result.rows.map((r) => r.id);
-    return `ab.account_id in (${ids})`;
+    if (!_.isEmpty(ids)) {
+      return `ab.account_id in (${ids})`;
+    }
   }
 
   return null;
@@ -126,7 +129,11 @@ const getBalances = async (req, res) => {
       return;
     }
 
-    const accountIdsQuery = await getAccountIdsByPublicKey(pubKeyParams);
+    const accountIdsQuery = await getAccountIdsByPublicKey(pubKeyParams, limit);
+    if (pubKeyQuery && !accountIdsQuery) {
+      return;
+    }
+
     [sqlQuery, tsParams] = await getBalancesQuery(
       accountQuery,
       balanceQuery,

@@ -117,10 +117,7 @@ function filterTests(tests, suite) {
   const exclude = getFilter(suite, true);
   const include = getFilter(suite, false);
   const filtered = Object.keys(tests).filter((name) => {
-    if (name === 'rampUp') {
-      return true;
-    }
-    return !exclude.test(name) && include.test(name);
+    return !exclude.test(name) && (name === 'rampUp' || include.test(name));
   });
   return Object.fromEntries(filtered.map((name) => [name, tests[name]]));
 }

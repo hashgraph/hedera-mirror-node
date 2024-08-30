@@ -42,6 +42,8 @@ be considerably slower if they're picked and vice versa.
 
 ### Common
 
+The following parameters can be used to configure all tests regardless of API:
+
 | Name                  | Default          | Description                                                        |
 | --------------------- | ---------------- | ------------------------------------------------------------------ |
 | BASE_URL              | http://localhost | The URL prefix without `/api/v1` to connect to                     |
@@ -51,6 +53,8 @@ be considerably slower if they're picked and vice versa.
 | DEFAULT_VUS           | 10               | The number of virtual users k6 should use to parallelize execution |
 
 ### REST API
+
+The following parameters can be used to configure a REST test:
 
 | Name                               | Default | Description                        |
 | ---------------------------------- | ------- | ---------------------------------- |
@@ -161,7 +165,7 @@ Some examples:
   or `topic`
 - `REST_TEST_INCLUDE='^(account|token).*$'` will include only test cases that start with either `account` or `token`
 
-To run a testkube test / testsuite with test case filters, do
+To run a testkube test / testsuite with test case filters, run the following:
 
 ```shell
 testkube run testsuite test-suite-rest -v REST_TEST_EXCLUDE='^transaction.*$' -v WEB3_TEST_INCLUDE='^.*receive.*$'
@@ -182,25 +186,25 @@ To run a test suite, such as rest, use the following command:
 source k6.env && k6 run src/rest/apis.js
 ```
 
-The test suite will run the tests sequentially with a configurable graceful period in between, so they don't
+The test suite will run the tests sequentially with a configurable graceful period in between so that they don't
 interfere with each other. Once the tests complete, `k6` will show a test summary. Disregard the per scenario RPS
 reported in the `http_reqs` section since it's calculated as the total requests in a scenario divided by the run time of
 the test suite.
 
 At the end of a test suite run, a simplified Markdown format `report.md` will be generated. Below is an example
-of such a report. The main metrics to consider are the `Pass RPS` and `Avg. Req Duration`.
+of such a report. The main columns to consider are the `Pass RPS` and the `Avg. Req Duration`.
 
 | Scenario | URL       | VUS  | Pass%  | RPS       | Pass RPS  | Avg. Req Duration | Skipped? | Comment |
 | -------- | --------- | ---- | ------ | --------- | --------- | ----------------- | -------- | ------- |
 | accounts | /accounts | 1500 | 100.00 | 1390.03/s | 1390.03/s | 351.87ms          | No       |         |
-| blocks   | /block    | 1500 | 99.9   | 5572.19/s | 5571.63/s | 300.11ms          | No       |         |
+| blocks   | /block    | 1500 | 99.9   | 5571.63/s | 5572.19/s | 300.11ms          | No       |         |
 
 ### Single Test
 
 To run a single test, such as the rosetta `accountBalance` test, us a command similar to the below:
 
 ```shell
-k6 run src/rosetta/test/accountBalance.js
+source k6.env && k6 run src/rosetta/test/accountBalance.js
 ```
 
-When it completes, k6 will show a similar summary report. However, there won't be a `report.md` report.
+When it completes, k6 will show a similar summary report. However, there will not be a report file generated.
