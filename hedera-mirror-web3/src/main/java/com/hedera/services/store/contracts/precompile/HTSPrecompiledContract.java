@@ -31,6 +31,7 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
+import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -128,6 +129,28 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         return false;
     }
 
+    private static RedirectTarget getRedirectTarget(final Bytes input) {
+        try {
+            return DescriptorUtils.getRedirectTarget(input);
+        } catch (final Exception e) {
+            throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+        }
+    }
+
+    private static PrecompileContext precompileContext(@NonNull final MessageFrame frame) {
+        final var precompileContext = initialFrameOf(frame).getContextVariable(PRECOMPILE_CONTEXT);
+        if (precompileContext == null) {
+            throw new InvalidTransactionException("Frame is missing precompile context", FAIL_INVALID);
+        } else {
+            return (PrecompileContext) precompileContext;
+        }
+    }
+
+    private static @NonNull MessageFrame initialFrameOf(@NonNull final MessageFrame frame) {
+        final var stack = frame.getMessageFrameStack();
+        return stack.isEmpty() ? frame : stack.getLast();
+    }
+
     @Override
     public Pair<Long, Bytes> computeCosted(
             final Bytes input,
@@ -180,12 +203,17 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
             prepareComputation(
                     input, ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater())::unaliased, precompileContext);
         } catch (final NoSuchElementException e) {
+            // We will end up here if the precompileLookup does not match any precompile to the function selector
+            throw new PrecompileNotSupportedException(StringUtils.EMPTY);
+        } catch (final InvalidTransactionException | IllegalArgumentException e) {
+            // We will end up here if the input argument data cannot be decoded properly
             final var haltReason = ERROR_DECODING_PRECOMPILE_INPUT;
             frame.setExceptionalHaltReason(Optional.of(haltReason));
             return PrecompileContractResult.halt(null, Optional.of(haltReason));
         }
 
         if (precompileContext.getPrecompile() == null || precompileContext.getTransactionBody() == null) {
+            // We will end up here if the function selector has < 4 bytes
             final var haltReason = Optional.of(ERROR_DECODING_PRECOMPILE_INPUT);
             frame.setExceptionalHaltReason(haltReason);
             return PrecompileContractResult.halt(null, haltReason);
@@ -211,7 +239,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         }
 
         final var recipient = frame.getRecipientAddress();
-        // but we accept delegates iff the token redirect contract calls us,
+        // but we accept delegates if the token redirect contract calls us,
         // so if they are not a token, or on the permitted callers list, then
         // we are a delegate and we are done.
         if (isToken(frame, recipient)) {
@@ -295,6 +323,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
                 }
                 final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
                 final var nestedFunctionSelector = target.descriptor();
+
                 switch (nestedFunctionSelector) {
                         // cases will be added with the addition of precompiles using redirect operations
                     case AbiConstants.ABI_ID_ERC_APPROVE -> {
@@ -466,6 +495,13 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
     }
 
     private Pair<Long, Bytes> computeUsingRedirectExecutor(final Bytes input, final MessageFrame frame) {
+        final var target = getRedirectTarget(input);
+        if (AbiConstants.ABI_HRC_IS_ASSOCIATED == target.descriptor()) {
+            // We can't support this precompile since the copied code from mono services does not have the necessary
+            // logic
+            throw new PrecompileNotSupportedException("HRC isAssociated() precompile is not supported.");
+        }
+
         final var executor = infrastructureFactory.newRedirectExecutor(
                 input, frame, precompilePricingUtils::computeViewFunctionGas, tokenAccessor);
         final var result = executor.computeCosted();
@@ -497,30 +533,8 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         };
     }
 
-    private static RedirectTarget getRedirectTarget(final Bytes input) {
-        try {
-            return DescriptorUtils.getRedirectTarget(input);
-        } catch (final Exception e) {
-            throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
-        }
-    }
-
     private long defaultGas() {
         return evmProperties.getHtsDefaultGasCost();
-    }
-
-    private static PrecompileContext precompileContext(@NonNull final MessageFrame frame) {
-        final var precompileContext = initialFrameOf(frame).getContextVariable(PRECOMPILE_CONTEXT);
-        if (precompileContext == null) {
-            throw new InvalidTransactionException("Frame is missing precompile context", FAIL_INVALID);
-        } else {
-            return (PrecompileContext) precompileContext;
-        }
-    }
-
-    private static @NonNull MessageFrame initialFrameOf(@NonNull final MessageFrame frame) {
-        final var stack = frame.getMessageFrameStack();
-        return stack.isEmpty() ? frame : stack.getLast();
     }
 
     @VisibleForTesting

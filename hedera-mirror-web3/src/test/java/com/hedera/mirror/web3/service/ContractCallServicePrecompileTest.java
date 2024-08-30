@@ -55,6 +55,7 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.convert.BytesDecoder;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
+import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
@@ -129,6 +130,32 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 })
                 .when(processor)
                 .execute(paramsCaptor.capture(), gasCaptor.capture());
+    }
+
+    @Test
+    void unsupportedPrecompileFails() {
+        // Given
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        // When
+        final var functionCall = contract.call_callMissingPrecompile();
+
+        // Then
+        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+    }
+
+    // Temporary test until we start supporting this precompile
+    @Test
+    void hrcIsAssociatedFails() {
+        // Given
+        final var token = persistFungibleToken();
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        // When
+        final var functionCall = contract.call_hrcIsAssociated(getAddressFromEntity(token));
+
+        // Then
+        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
     }
 
     @Test

@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.web3.Web3Properties;
+import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
@@ -340,6 +342,18 @@ class ContractControllerTest {
         contractCall(request)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(convert(new GenericErrorResponse(BAD_REQUEST.getReasonPhrase(), error))));
+    }
+
+    @Test
+    void callWithNotSupportedPrecompile() throws Exception {
+        final var request = request();
+
+        given(service.processCall(any())).willThrow(new PrecompileNotSupportedException(StringUtils.EMPTY));
+        contractCall(request)
+                .andExpect(status().isNotImplemented())
+                .andExpect(content()
+                        .string(convert(
+                                new GenericErrorResponse(NOT_IMPLEMENTED.getReasonPhrase(), StringUtils.EMPTY))));
     }
 
     @Test
