@@ -45,6 +45,7 @@ public class ContractCallTestUtil {
 
     public static final String ESTIMATE_GAS_ERROR_MESSAGE =
             "Expected gas usage to be within the expected range, but it was not. Estimate: %d, Actual: %d";
+    public static final Long ZERO_VALUE = 0L;
 
     public static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
@@ -71,6 +72,9 @@ public class ContractCallTestUtil {
         -128, -61, -12, 63, 3, -45, 108, 34, 61, -2, -83, -48, -118, 20, 84, 85, 85, 67, -125, 46, 49, 26, 17, -116, 27,
         25, 38, -95, 50, 77, 40, -38
     };
+
+    public static final long EVM_V_34_BLOCK = 50L;
+
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *

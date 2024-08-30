@@ -124,7 +124,6 @@ rosetta:
 
 stackgres:
   coordinator:
-    enableMetricsExporter: true
     instances: 2
     resources:
       cpu: 7350m
@@ -145,7 +144,6 @@ stackgres:
       size: 256Gi
       storageClass: zfs
   worker:
-    enableMetricsExporter: true
     instances: 3
     replicasPerInstance: 1
     resources:

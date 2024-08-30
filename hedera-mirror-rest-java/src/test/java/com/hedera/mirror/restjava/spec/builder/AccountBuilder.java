@@ -16,27 +16,16 @@
 
 package com.hedera.mirror.restjava.spec.builder;
 
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
-class AccountBuilder extends AbstractEntityBuilder<Entity, Entity.EntityBuilder<?, ?>> {
-
-    private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
-            "alias", BASE32_CONVERTER,
-            "evmAddress", HEX_OR_BASE64_CONVERTER,
-            "key", HEX_OR_BASE64_CONVERTER);
-
-    AccountBuilder() {
-        super(METHOD_PARAMETER_CONVERTERS);
-    }
+class AccountBuilder extends EntityBuilder {
 
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
@@ -45,30 +34,9 @@ class AccountBuilder extends AbstractEntityBuilder<Entity, Entity.EntityBuilder<
 
     @Override
     protected Entity.EntityBuilder<?, ?> getEntityBuilder() {
-        return Entity.builder()
-                .declineReward(Boolean.FALSE)
-                .deleted(Boolean.FALSE)
+        return super.getEntityBuilder()
                 .maxAutomaticTokenAssociations(0)
-                .num(0L)
-                .memo("entity memo")
-                .num(0L)
                 .publicKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f")
-                .realm(0L)
-                .receiverSigRequired(Boolean.FALSE)
-                .shard(0L)
-                .stakedNodeId(-1L)
-                .stakePeriodStart(-1L)
-                .timestampRange(Range.atLeast(0L))
                 .type(EntityType.ACCOUNT);
-    }
-
-    @Override
-    protected Entity getFinalEntity(Entity.EntityBuilder<?, ?> builder, Map<String, Object> account) {
-        var entity = builder.build();
-        if (entity.getId() == null) {
-            builder.id(entity.toEntityId().getId());
-            entity = builder.build();
-        }
-        return entity;
     }
 }

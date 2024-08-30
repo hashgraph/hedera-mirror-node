@@ -17,15 +17,25 @@
 package com.hedera.mirror.importer.parser.record.ethereum;
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
+import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
+import com.hedera.mirror.importer.repository.FileDataRepository;
 import jakarta.inject.Named;
+import java.util.List;
 
 @Named
-public class Eip2930EthereumTransactionParser implements EthereumTransactionParser {
+public class Eip2930EthereumTransactionParser extends AbstractEthereumTransactionParser {
+
     public static final int EIP2930_TYPE_BYTE = 1;
+    private static final byte[] EIP2930_TYPE_BYTES = Integers.toBytes(EIP2930_TYPE_BYTE);
     private static final String TRANSACTION_TYPE_NAME = "EIP2930";
     private static final int EIP2930_TYPE_RLP_ITEM_COUNT = 11;
+
+    public Eip2930EthereumTransactionParser(FileDataRepository fileDataRepository) {
+        super(fileDataRepository);
+    }
 
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
@@ -65,5 +75,23 @@ public class Eip2930EthereumTransactionParser implements EthereumTransactionPars
                 .type(EIP2930_TYPE_BYTE);
 
         return ethereumTransaction.build();
+    }
+
+    @Override
+    protected byte[] encode(EthereumTransaction ethereumTransaction) {
+        return RLPEncoder.sequence(
+                EIP2930_TYPE_BYTES,
+                List.of(
+                        ethereumTransaction.getChainId(),
+                        Integers.toBytes(ethereumTransaction.getNonce()),
+                        ethereumTransaction.getGasPrice(),
+                        Integers.toBytes(ethereumTransaction.getGasLimit()),
+                        ethereumTransaction.getToAddress(),
+                        getValue(ethereumTransaction),
+                        ethereumTransaction.getCallData(),
+                        List.of(/*accessList*/ ),
+                        Integers.toBytes(ethereumTransaction.getRecoveryId()),
+                        ethereumTransaction.getSignatureR(),
+                        ethereumTransaction.getSignatureS()));
     }
 }

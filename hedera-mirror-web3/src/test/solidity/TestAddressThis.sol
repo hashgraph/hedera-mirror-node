@@ -1,22 +1,22 @@
-pragma solidity 0.8.18;
+pragma solidity ^0.8.18;
 
 contract TestAddressThis {
 
-    constructor() payable {
+    constructor() {
         address test = address(this);
         if (test == address(0)) {
             revert("Zero address.");
         }
     }
 
-    function testAddressThis() public {
+    function testAddressThisFunction() public view {
         address test = address(this);
         if (test == address(0)) {
             revert("Zero address.");
         }
     }
 
-    function getAddressThis() public view returns(address) {
+    function getAddressThis() public view returns (address) {
         return address(this);
     }
 }

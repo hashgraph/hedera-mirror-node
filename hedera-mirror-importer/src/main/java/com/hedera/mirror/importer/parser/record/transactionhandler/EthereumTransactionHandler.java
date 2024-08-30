@@ -31,6 +31,7 @@ import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ArrayUtils;
 
 @Named
 @RequiredArgsConstructor
@@ -79,9 +80,6 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
                 ethereumTransaction.setCallDataId(EntityId.of(body.getCallData()));
             }
 
-            // EVM logic uses weibar for gas values, convert transaction body gas values to tinybars
-            convertGasWeiToTinyBars(ethereumTransaction);
-
             // update ethereumTransaction with record values
             var transactionRecord = recordItem.getTransactionRecord();
             ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
@@ -89,6 +87,18 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
             ethereumTransaction.setHash(DomainUtils.toBytes(transactionRecord.getEthereumHash()));
             ethereumTransaction.setMaxGasAllowance(body.getMaxGasAllowance());
             ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
+
+            if (ArrayUtils.isEmpty(ethereumTransaction.getHash())) {
+                var hash = ethereumTransactionParser.getHash(
+                        ethereumTransaction.getCallData(),
+                        ethereumTransaction.getCallDataId(),
+                        ethereumTransaction.getConsensusTimestamp(),
+                        ethereumTransaction.getData());
+                ethereumTransaction.setHash(hash);
+            }
+
+            // EVM logic uses weibar for gas values, convert transaction body gas values to tinybars
+            convertGasWeiToTinyBars(ethereumTransaction);
 
             entityListener.onEthereumTransaction(ethereumTransaction);
             updateAccountNonce(recordItem, ethereumTransaction);

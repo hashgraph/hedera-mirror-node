@@ -17,16 +17,24 @@
 package com.hedera.mirror.importer.parser.record.ethereum;
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
+import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
+import com.hedera.mirror.importer.repository.FileDataRepository;
 import jakarta.inject.Named;
 import java.math.BigInteger;
 
 @Named
-public class LegacyEthereumTransactionParser implements EthereumTransactionParser {
-    private static final int LEGACY_TYPE_BYTE = 0;
+public class LegacyEthereumTransactionParser extends AbstractEthereumTransactionParser {
+
+    public static final int LEGACY_TYPE_BYTE = 0;
     private static final int LEGACY_TYPE_RLP_ITEM_COUNT = 9;
     private static final String TRANSACTION_TYPE_NAME = "Legacy";
+
+    public LegacyEthereumTransactionParser(FileDataRepository fileDataRepository) {
+        super(fileDataRepository);
+    }
 
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
@@ -64,5 +72,19 @@ public class LegacyEthereumTransactionParser implements EthereumTransactionParse
         }
 
         return ethereumTransaction.build();
+    }
+
+    @Override
+    protected byte[] encode(EthereumTransaction ethereumTransaction) {
+        return RLPEncoder.list(
+                Integers.toBytes(ethereumTransaction.getNonce()),
+                ethereumTransaction.getGasPrice(),
+                Integers.toBytes(ethereumTransaction.getGasLimit()),
+                ethereumTransaction.getToAddress(),
+                getValue(ethereumTransaction),
+                ethereumTransaction.getCallData(),
+                ethereumTransaction.getSignatureV(),
+                ethereumTransaction.getSignatureR(),
+                ethereumTransaction.getSignatureS());
     }
 }

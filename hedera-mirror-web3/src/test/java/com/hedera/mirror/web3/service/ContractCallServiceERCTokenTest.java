@@ -17,9 +17,6 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -34,16 +31,13 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
-    public static final String REDIRECT_SUFFIX = "Redirect";
     public static final String NON_STATIC_SUFFIX = "NonStatic";
 
     private static Stream<Arguments> ercContractFunctionArgumentsProviderHistoricalReadOnly() {
@@ -106,120 +100,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         }
     }
 
-    @ParameterizedTest
-    @EnumSource(ErcContractModificationFunctions.class)
-    void supportedErcModificationPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
-                .isTrue();
-    }
-
-    @ParameterizedTest
-    @EnumSource(ErcContractReadOnlyFunctions.class)
-    void supportedErcReadOnlyRedirectPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction) {
-        final var functionName = ercFunction.name + REDIRECT_SUFFIX;
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
-                .isTrue();
-    }
-
-    @ParameterizedTest
-    @EnumSource(ErcContractReadOnlyFunctionsNegative.class)
-    void supportedErcReadOnlyRedirectPrecompileNegativeOperationsTest(
-            final ErcContractReadOnlyFunctionsNegative ercFunction) {
-        final var functionName = ercFunction.name + REDIRECT_SUFFIX;
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
-
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @EnumSource(ErcContractModificationFunctions.class)
-    void supportedErcModificationsRedirectPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
-        final var functionName = ercFunction.name + "Redirect";
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
-                .isTrue();
-    }
-
-    @Test
-    void delegateTransferDoesNotExecuteAndReturnEmpty() {
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                "delegateTransfer", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    public enum ErcContractReadOnlyFunctions implements ContractFunctionProviderEnum {
-        GET_APPROVED_EMPTY_SPENDER("getApproved", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
-        IS_APPROVE_FOR_ALL(
-                "isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Boolean[] {true}),
-        IS_APPROVE_FOR_ALL_WITH_ALIAS(
-                "isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS}, new Boolean[] {true}),
-        ALLOWANCE_OF(
-                "allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Long[] {13L}),
-        ALLOWANCE_OF_WITH_ALIAS(
-                "allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS}, new Long[] {13L}),
-        GET_APPROVED("getApproved", new Object[] {NFT_ADDRESS, 1L}, new Address[] {SPENDER_ALIAS}),
-        ERC_DECIMALS("decimals", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Integer[] {12}),
-        TOTAL_SUPPLY("totalSupply", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Long[] {12345L}),
-        ERC_SYMBOL("symbol", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"HBAR"}),
-        BALANCE_OF("balanceOf", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Long[] {12L}),
-        BALANCE_OF_WITH_ALIAS("balanceOf", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Long[] {12L}),
-        ERC_NAME("name", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"Hbars"}),
-        OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 1L}, new Address[] {OWNER_ADDRESS}),
-        EMPTY_OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
-        TOKEN_URI("tokenURI", new Object[] {NFT_ADDRESS, 1L}, new String[] {"NFT_METADATA_URI"});
-
-        private final String name;
-        private final Object[] functionParameters;
-        private final Object[] expectedResultFields;
-
-        public String getName(final boolean isStatic) {
-            return isStatic ? name : name + NON_STATIC_SUFFIX;
-        }
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    public enum ErcContractReadOnlyFunctionsNegative implements ContractFunctionProviderEnum {
-        // Negative scenarios - expected to throw an exception
-        ERC_DECIMALS_NEGATIVE("decimals", new Address[] {NFT_ADDRESS}),
-        OWNER_OF_NEGATIVE("getOwnerOf", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 1L}),
-        TOKEN_URI_NEGATIVE("tokenURI", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 1L});
-
-        private final String name;
-        private final Object[] functionParameters;
-    }
-
     @Getter
     @RequiredArgsConstructor
     public enum ErcContractReadOnlyFunctionsHistorical implements ContractFunctionProviderEnum {
@@ -266,27 +146,5 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         public String getName(final boolean isStatic) {
             return isStatic ? name : name + NON_STATIC_SUFFIX;
         }
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    public enum ErcContractModificationFunctions implements ContractFunctionProviderEnum {
-        APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
-        DELETE_ALLOWANCE_NFT("approve", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
-        APPROVE_NFT("approve", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, 1L}),
-        APPROVE_WITH_ALIAS("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 2L}),
-        TRANSFER("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM("transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM_TO_HOLLOW_ACCOUNT(
-                "transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, HOLLOW_ACCOUNT_ALIAS, 1L}),
-        TRANSFER_FROM_NFT("transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
-        TRANSFER_WITH_ALIAS("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM_WITH_ALIAS(
-                "transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM_NFT_WITH_ALIAS(
-                "transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L});
-
-        private final String name;
-        private final Object[] functionParameters;
     }
 }

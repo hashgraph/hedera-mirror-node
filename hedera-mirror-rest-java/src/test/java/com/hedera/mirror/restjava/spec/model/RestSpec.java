@@ -23,7 +23,7 @@ import java.util.Map;
 
 public record RestSpec(
         String description,
-        String extendedDescription,
+        List<String> extendedDescription,
         String matrix,
         Map<String, String> responseHeaders,
         @JsonDeserialize(using = JsonAsStringDeserializer.class) String responseJson,

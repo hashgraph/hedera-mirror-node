@@ -16,7 +16,8 @@
 
 package com.hedera.mirror.restjava.spec;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static com.hedera.mirror.restjava.spec.config.SpecTestConfig.REST_API;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
@@ -39,9 +40,11 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.runner.RunWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestClient;
@@ -57,9 +60,35 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
     private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");
     private static final List<Path> SELECTED_SPECS = List.of(
-            REST_BASE_PATH.resolve("accounts/alias-into-evm-address.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/alias-not-found.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/no-params.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/all-params.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/all-params.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/empty.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/no-params.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/specific-spender-id.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/spender-id-range-token-id-upper.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/rewards/no-params.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/rewards/no-rewards.json"),
+            REST_BASE_PATH.resolve("accounts/{id}/rewards/specific-timestamp.json"),
+            REST_BASE_PATH.resolve("accounts/specific-id.json"),
             REST_BASE_PATH.resolve("blocks/no-records.json"),
-            REST_BASE_PATH.resolve("accounts/specific-id.json"));
+            REST_BASE_PATH.resolve("blocks/timestamp-param.json"),
+            REST_BASE_PATH.resolve("blocks/all-params-together.json"),
+            REST_BASE_PATH.resolve("blocks/limit-param.json"),
+            REST_BASE_PATH.resolve("blocks/no-records.json"),
+            REST_BASE_PATH.resolve("blocks/{id}/hash-64.json"),
+            REST_BASE_PATH.resolve("blocks/{id}/hash-96.json"),
+            REST_BASE_PATH.resolve("network/exchangerate/no-params.json"),
+            REST_BASE_PATH.resolve("network/exchangerate/timestamp-upper-bound.json"),
+            REST_BASE_PATH.resolve("network/fees/no-params.json"),
+            REST_BASE_PATH.resolve("network/fees/order.json"),
+            REST_BASE_PATH.resolve("network/fees/timestamp-not-found.json"),
+            REST_BASE_PATH.resolve("network/stake/no-params.json"),
+            REST_BASE_PATH.resolve("topics/{id}/messages/all-params.json"),
+            REST_BASE_PATH.resolve("topics/{id}/messages/encoding.json"),
+            REST_BASE_PATH.resolve("topics/{id}/messages/no-params.json"),
+            REST_BASE_PATH.resolve("topics/{id}/messages/order.json"));
 
     private final ResourceDatabasePopulator databaseCleaner;
     private final DataSource dataSource;
@@ -70,10 +99,9 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     RestSpecTest(
             @Value("classpath:cleanup.sql") Resource cleanupSqlResource,
             DataSource dataSource,
-            GenericContainer<?> jsRestApi,
+            @Qualifier(REST_API) GenericContainer<?> jsRestApi,
             ObjectMapper objectMapper,
             SpecDomainBuilder specDomainBuilder) {
-
         this.databaseCleaner = new ResourceDatabasePopulator(cleanupSqlResource);
         this.dataSource = dataSource;
         this.objectMapper = objectMapper;
@@ -138,10 +166,16 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     @SneakyThrows
     private void testSpecUrl(String url, SpecTestNormalized specTest, RestSpecNormalized spec) {
 
-        var response = restClient.get().uri(url).retrieve().toEntity(String.class);
+        var response = restClient
+                .get()
+                .uri(url)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, (req, res) -> {
+                    // Override default handling of 4xx errors, and proceed to evaluate the response.
+                })
+                .toEntity(String.class);
 
         assertThat(response.getStatusCode().value()).isEqualTo(specTest.responseStatus());
-        // No assertions made on response headers in phase 1
         JSONAssert.assertEquals(specTest.responseJson(), response.getBody(), JSONCompareMode.LENIENT);
     }
 }

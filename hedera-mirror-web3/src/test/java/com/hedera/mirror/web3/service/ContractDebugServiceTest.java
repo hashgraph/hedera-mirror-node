@@ -17,6 +17,9 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.OPTIONS;
+import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.gasComparator;
+import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.toHumanReadableMessage;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.doAnswer;
 
@@ -27,13 +30,11 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.convert.BytesDecoder;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import java.math.BigInteger;
-import java.util.Comparator;
 import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +52,6 @@ import org.mockito.Captor;
 class ContractDebugServiceTest extends ContractCallTestSetup {
 
     private static final Long DEFAULT_CALL_VALUE = 0L;
-    private static final OpcodeTracerOptions OPTIONS = new OpcodeTracerOptions(false, false, false);
     private final ContractDebugService contractDebugService;
 
     @Captor
@@ -66,17 +66,6 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
     private EntityId senderEntityId;
     private EntityId treasuryEntityId;
     private EntityId spenderEntityId;
-
-    private static String toHumanReadableMessage(final String solidityError) {
-        return BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage(Bytes.fromHexString(solidityError));
-    }
-
-    private static Comparator<Long> gasComparator() {
-        return (d1, d2) -> {
-            final var diff = Math.abs(d1 - d2);
-            return Math.toIntExact(diff <= 64L ? 0 : d1 - d2);
-        };
-    }
 
     @BeforeEach
     void setUpEntities() {
@@ -105,19 +94,6 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
                 })
                 .when(processor)
                 .execute(paramsCaptor.capture(), gasCaptor.capture());
-    }
-
-    @ParameterizedTest
-    @EnumSource(ContractCallServicePrecompileTest.SupportedContractModificationFunctions.class)
-    void evmPrecompileSupportedModificationTokenFunctions(final ContractFunctionProviderEnum function) {
-        setUpModificationContractEntities();
-        final var params = serviceParametersForDebug(
-                function,
-                MODIFICATION_CONTRACT_ABI_PATH,
-                MODIFICATION_CONTRACT_ADDRESS,
-                DEFAULT_CALL_VALUE,
-                domainBuilder.timestamp());
-        verifyOpcodeTracerCall(params, function);
     }
 
     @ParameterizedTest
@@ -199,27 +175,6 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
                 .usingRecursiveComparison()
                 .withComparatorForFields(gasComparator(), "gas")
                 .isEqualTo(expected.opcodes());
-    }
-
-    private void setUpModificationContractEntities() {
-        final var modificationContractId = modificationContractPersist();
-        commonTokensPersist(modificationContractId, MODIFICATION_CONTRACT_ADDRESS);
-        fungibleTokenPersist(
-                spenderEntityId,
-                KEY_PROTO,
-                FROZEN_FUNGIBLE_TOKEN_ADDRESS,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                9999999999999L,
-                TokenPauseStatusEnum.PAUSED,
-                true);
-        fungibleTokenPersist(
-                senderEntityId,
-                KEY_PROTO,
-                UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                9999999999999L,
-                TokenPauseStatusEnum.UNPAUSED,
-                false);
     }
 
     private void setUpDynamicCallsContractEntities() {

@@ -321,34 +321,88 @@ class AllowancesControllerTest extends ControllerTest {
         }
 
         @ParameterizedTest
-        @CsvSource({
-            "0.0.,0.0.1002,0.0.2000,false,2,asc",
-            "0.0.1001,1.2.3.4,0.0.2000,false,2,asc",
-            "0.65537.1001,1.2.3,0.0.2000,false,2,asc",
-            "0.0.-1001,1.2.3,0.0.2000,false,2,asc",
-            "0.0.1001,0.0.2000,1.2.3.4,false,2,asc",
-            "0.0.1001,0.0.3000,0.0.2000,false,-1,asc",
-            "0.0.1001,0.0.3000,0.0.2000,false,111,asc",
-            "0.0.1001,0.0.3000,0.0.2000,false,3,ttt",
-            "0.0.1001,gee:0.0.3000,0.0.2000,false,3,asc",
-            "null,gte:0.0.3000,0.0.2000,false,3,asc",
-            "0.0.4294967296,gt:0.0.3000,gte:0.0.3000,false,3,asc",
-            "9223372036854775807,0.0.3000,0.0.2000,false,3,asc",
-            "0x00000001000000000000000200000000000000034,0.0.3000,0.0.2000,false,3,asc"
-        })
-        void invalidParameters(String id, String accountId, String tokenId, String owner, String limit, String order) {
-            // Given
-            var uriParams = "?account.id={accountId}&owner={owner}&token.id={token.id}&limit={limit}&order={order}";
+        @ValueSource(
+                strings = {
+                    "abc",
+                    "a.b.c",
+                    "0.0.",
+                    "0.65537.1001",
+                    "0.0.-1001",
+                    "9223372036854775807",
+                    "0x00000001000000000000000200000000000000034"
+                })
+        void invalidId(String id) {
+            // When
+            ThrowingCallable callable =
+                    () -> restClient.get().uri("", id).retrieve().body(NftAllowancesResponse.class);
 
+            // Then
+            validateError(
+                    callable,
+                    HttpClientErrorException.BadRequest.class,
+                    "Failed to convert 'id' with value: '" + id + "'");
+        }
+
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "abc",
+                    "a.b.c",
+                    "0.0.",
+                    "0.65537.1001",
+                    "0.0.-1001",
+                    "9223372036854775807",
+                    "0x00000001000000000000000200000000000000034"
+                })
+        void invalidAccountId(String accountId) {
             // When
             ThrowingCallable callable = () -> restClient
                     .get()
-                    .uri(uriParams, id, accountId, owner, tokenId, limit, order)
+                    .uri("?account.id={accountId}", "0.0.1001", accountId)
                     .retrieve()
                     .body(NftAllowancesResponse.class);
 
             // Then
-            validateError(callable, HttpClientErrorException.BadRequest.class, "Bad Request");
+            validateError(
+                    callable,
+                    HttpClientErrorException.BadRequest.class,
+                    "Failed to convert 'account.id' with value: '" + accountId + "'");
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+            "101, limit must be less than or equal to 100",
+            "-1, limit must be greater than 0",
+            "a, Failed to convert 'limit' with value: 'a'"
+        })
+        void invalidLimit(String limit, String expected) {
+            // When
+            ThrowingCallable callable = () -> restClient
+                    .get()
+                    .uri("?limit={limit}", "0.0.1001", limit)
+                    .retrieve()
+                    .body(NftAllowancesResponse.class);
+
+            // Then
+            validateError(callable, HttpClientErrorException.BadRequest.class, expected);
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+            "ascending, Failed to convert 'order' with value: 'ascending'",
+            "dsc, Failed to convert 'order' with value: 'dsc'",
+            "invalid, Failed to convert 'order' with value: 'invalid'"
+        })
+        void invalidOrder(String order, String expected) {
+            // When
+            ThrowingCallable callable = () -> restClient
+                    .get()
+                    .uri("?order={order}", "0.0.1001", order)
+                    .retrieve()
+                    .body(NftAllowancesResponse.class);
+
+            // Then
+            validateError(callable, HttpClientErrorException.BadRequest.class, expected);
         }
 
         @ParameterizedTest
@@ -391,6 +445,32 @@ class AllowancesControllerTest extends ControllerTest {
 
             // Then
             validateError(callable, HttpClientErrorException.BadRequest.class, message);
+        }
+
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "abc",
+                    "a.b.c",
+                    "0.0.",
+                    "0.65537.1001",
+                    "0.0.-1001",
+                    "9223372036854775807",
+                    "0x00000001000000000000000200000000000000034"
+                })
+        void invalidTokenId(String tokenId) {
+            // When
+            ThrowingCallable callable = () -> restClient
+                    .get()
+                    .uri("?token.id={tokenId}", "0.0.1001", tokenId)
+                    .retrieve()
+                    .body(NftAllowancesResponse.class);
+
+            // Then
+            validateError(
+                    callable,
+                    HttpClientErrorException.BadRequest.class,
+                    "Failed to convert 'token.id' with value: '" + tokenId + "'");
         }
 
         @Test
