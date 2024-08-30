@@ -22,6 +22,7 @@ import {EntityService} from './service/index';
 import {EvmAddressType} from './constants';
 import {InvalidArgumentError} from './errors/index';
 import * as utils from './utils';
+import _ from 'lodash';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
 
@@ -67,7 +68,25 @@ const formatBalancesResult = (req, result, limit, order) => {
   return ret;
 };
 
-const entityJoin = `join (select id, public_key from entity where type in ('ACCOUNT', 'CONTRACT')) ac on ac.id = ab.account_id`;
+const entityPublicKeyQuery = `select id from entity where type in ('ACCOUNT', 'CONTRACT') and public_key = $1 limit $2`;
+
+const getAccountIdsByPublicKey = async (publicKey, limit) => {
+  if (_.isEmpty(publicKey)) {
+    return null;
+  }
+
+  const params = [...publicKey, limit];
+  const result = await pool.queryQuietly(entityPublicKeyQuery, params);
+
+  if (result) {
+    const ids = result.rows.map((r) => r.id);
+    if (!_.isEmpty(ids)) {
+      return `ab.account_id in (${ids})`;
+    }
+  }
+
+  return null;
+};
 
 /**
  * Handler function for /balances API.
@@ -102,40 +121,48 @@ const getBalances = async (req, res) => {
   };
 
   let sqlQuery;
+  let sqlParams;
+
   if (tsQuery) {
     const tsQueryResult = await getTsQuery(tsQuery, tsParams);
     if (!tsQueryResult.query) {
       return;
     }
 
+    const accountIdsQuery = await getAccountIdsByPublicKey(pubKeyParams, limit);
+    if (pubKeyQuery && !accountIdsQuery) {
+      return;
+    }
+
     [sqlQuery, tsParams] = await getBalancesQuery(
       accountQuery,
       balanceQuery,
+      accountIdsQuery,
       limitQuery,
       order,
-      pubKeyQuery,
       tsQueryResult
     );
+    sqlParams = utils.mergeParams(tsParams, accountParams, balanceParams, params);
   } else {
     // use current balance from entity table when there's no timestamp query filter
     const conditions = [accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ');
     const whereClause = conditions && `where ${conditions}`;
     const tokenBalanceSubQuery = getTokenAccountBalanceSubQuery(order);
+    sqlParams = utils.mergeParams(tsParams, accountParams, pubKeyParams, balanceParams, params);
     sqlQuery = `
-      with account_balance as (
+      with entity_balance as (
         select id as account_id, balance, balance_timestamp as consensus_timestamp, public_key
         from entity
         where type in ('ACCOUNT', 'CONTRACT')
       )
       select ab.*, (${tokenBalanceSubQuery}) as token_balances
-      from account_balance ab
+      from entity_balance ab
       ${whereClause}
       order by ab.account_id ${order}
       ${limitQuery}`;
   }
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
-  const sqlParams = utils.mergeParams(tsParams, accountParams, pubKeyParams, balanceParams, params);
   const result = await pool.queryQuietly(pgSqlQuery, sqlParams);
   res.locals[constants.responseDataLabel] = formatBalancesResult(req, result, limit, order);
   logger.debug(`getBalances returning ${result.rows.length} entries`);
@@ -182,12 +209,10 @@ const getAccountBalanceTimestampRange = async (tsQuery, tsParams) => {
   return {lower, upper};
 };
 
-const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery, tsQueryResult) => {
-  // Only need to join entity if we're selecting on publickey
-  const joinEntityClause = pubKeyQuery ? entityJoin : '';
+const getBalancesQuery = async (accountQuery, balanceQuery, accountIdsQuery, limitQuery, order, tsQueryResult) => {
   const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, tsQueryResult.query);
   const whereClause = `
-      where ${[tsQueryResult.query, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
+      where ${[tsQueryResult.query, accountQuery, accountIdsQuery, balanceQuery].filter(Boolean).join(' and ')}`;
   const {lower, upper} = tsQueryResult.timestampRange;
   // The first upper is for the consensus_timestamp in the select fields, also double the lower and the upper since
   // they are used twice, in the token balance subquery and in the where clause of the main query
@@ -199,7 +224,6 @@ const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, p
         ?::bigint as consensus_timestamp,
         (${tokenBalanceSubQuery}) as token_balances
       from account_balance ab
-      ${joinEntityClause}
       ${whereClause}
       order by ab.account_id ${order}, ab.consensus_timestamp desc
       ${limitQuery}`;
