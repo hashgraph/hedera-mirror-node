@@ -8,7 +8,7 @@ metadata:
 spec:
   coordinator:
     configurations:
-      sgPoolingConfig: {{ include "hedera-mirror.stackgres" . }}
+      sgPoolingConfig: {{ include "hedera-mirror.stackgres" . }}-coordinator
       sgPostgresConfig: {{ include "hedera-mirror.stackgres" . }}-coordinator
     instances: {{ .Values.stackgres.coordinator.instances }}
     managedSql:
@@ -46,7 +46,7 @@ spec:
   shards:
     clusters: {{ .Values.stackgres.worker.instances }}
     configurations:
-      sgPoolingConfig: {{ include "hedera-mirror.stackgres" . }}
+      sgPoolingConfig: {{ include "hedera-mirror.stackgres" . }}-worker
       sgPostgresConfig: {{ include "hedera-mirror.stackgres" . }}-worker
     instancesPerCluster: {{ .Values.stackgres.worker.replicasPerInstance }}
     managedSql:

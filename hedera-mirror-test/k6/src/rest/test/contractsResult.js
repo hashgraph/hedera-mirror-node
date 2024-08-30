@@ -30,8 +30,7 @@ const {options, run, setup} = new RestTestScenarioBuilder()
     const url = `${testParameters['BASE_URL_PREFIX']}${getUrl(testParameters)}`;
     return http.get(url);
   })
-  .requiredParameters('DEFAULT_CONTRACT_ID')
-  .check('Contracts id state OK', (r) => isValidListResponse(r, resultListName))
+  .check('Contracts results OK', (r) => isValidListResponse(r, resultListName))
   .build();
 
 export {getUrl, options, run, setup};
