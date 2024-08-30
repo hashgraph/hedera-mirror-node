@@ -186,7 +186,7 @@ To run a test suite, such as rest, use the following command:
 source k6.env && k6 run src/rest/apis.js
 ```
 
-The test suite will run the tests sequentially with a configurable graceful period in between so that they don't
+The test suite will run the tests sequentially with a configurable grace period in between tests so that they don't
 interfere with each other. Once the tests complete, `k6` will show a test summary. Disregard the per scenario RPS
 reported in the `http_reqs` section since it's calculated as the total requests in a scenario divided by the run time of
 the test suite.
@@ -201,7 +201,7 @@ of such a report. The main columns to consider are the `Pass RPS` and the `Avg. 
 
 ### Single Test
 
-To run a single test, such as the rosetta `accountBalance` test, us a command similar to the below:
+To run a single test, such as the rosetta `accountBalance` test, use a command similar to the below:
 
 ```shell
 source k6.env && k6 run src/rosetta/test/accountBalance.js
