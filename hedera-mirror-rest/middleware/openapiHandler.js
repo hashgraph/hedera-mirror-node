@@ -84,6 +84,11 @@ const getV1OpenApiObject = () => {
   return v1OpenApiDocument;
 };
 
+/**
+ * Get the path to parameter properties map for the OpenApi Spec
+ *
+ * @returns {Map<string, {parameterName, defaultValue, pattern}>}
+ */
 const getOpenApiMap = () => {
   if (_.isUndefined(openApiMap)) {
     const openApiObject = getV1OpenApiObject();
@@ -109,36 +114,24 @@ const getOpenApiMap = () => {
  */
 const getOpenApiParameters = (path, openApiObject) => {
   const pathObject = openApiObject.paths[path];
-  if (pathObject === undefined) {
-    return {};
-  }
-
-  const parameters = pathObject.get?.parameters;
+  const parameters = pathObject?.get?.parameters;
   if (parameters === undefined) {
     return {};
   }
 
-  return parameters.map((parameter) => {
-    // Each open api parameter is prefixed by #/components/parameters/, which is 24 characters long
-    const openApiParameterName = parameter.$ref?.substring(24);
-    if (!openApiParameterName) {
-      return;
-    }
-
-    const openApiParameter = openApiObject.components.parameters[openApiParameterName];
-    let schema = openApiParameter.schema;
-    const inPath = openApiParameter.in === 'path';
-    if (inPath && openApiParameter.schema.$ref) {
-      // Remove the prefix: #/components/schemas/
-      const schemaName = openApiParameter.schema.$ref.substring(21);
-      schema = openApiObject.components.schemas[schemaName];
-    }
-
-    const defaultValue = schema.default;
-    const parameterName = openApiParameter.name;
-    const pattern = schema.pattern;
-    return {parameterName, defaultValue, pattern, path: inPath};
-  });
+  return (
+    parameters
+      // Each open api parameter is prefixed by #/components/parameters/, which is 24 characters long
+      .map((p) => p.$ref?.substring(24))
+      .filter((p) => p !== undefined)
+      .map((p) => openApiObject.components.parameters[p])
+      .filter((p) => p.in !== 'path')
+      .map((p) => {
+        const defaultValue = p.schema?.default;
+        const parameterName = p.name;
+        return {parameterName, defaultValue};
+      })
+  );
 };
 
 /**
@@ -189,6 +182,7 @@ const getPathParametersPatterns = (openApiObject) => {
       // Path parameters are denoted by brackets within the OpenApi paths, such as: /api/v1/accounts/{idOrAliasOrEvmAddress}
       const key = '{' + parameter.name + '}';
 
+      // A schema may be nested within the parameter directly or it may be a reference to a schema in the components/schema object
       // Remove the prefix: #/components/schemas/
       const schemaReference = parameter.schema.$ref?.substring(21);
       const schema = schemaReference ? openApiObject.components.schemas[schemaReference] : parameter.schema;

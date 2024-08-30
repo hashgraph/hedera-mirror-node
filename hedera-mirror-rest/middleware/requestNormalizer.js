@@ -23,31 +23,33 @@ const openApiMap = getOpenApiMap();
 
 /**
  * Normalizes a request by adding any missing default values and sorting the query parameters.
- * @param path
+ * @param path {string}
  * @param query
  * @returns {string}
  */
 const normalizeRequestQueryParams = (path, query) => {
   const openApiPathMap = getOpenApiPathMap(path);
-  if (!_.isEmpty(openApiPathMap)) {
-    // Add default values to query parameters
-    for (const openApiParam of openApiPathMap.parameters) {
-      const openApiQueryParam = query[openApiParam.parameterName];
-      if (openApiQueryParam === undefined && openApiParam.defaultValue !== undefined && openApiParam.path === false) {
-        query[openApiParam.parameterName] = openApiParam.defaultValue.toString();
-      }
+  if (_.isEmpty(openApiPathMap)) {
+    return sortQueryProperties(query);
+  }
+
+  for (const openApiParam of openApiPathMap.parameters) {
+    if (query[openApiParam?.parameterName] === undefined && openApiParam?.defaultValue !== undefined) {
+      // Add default value to query parameter
+      query[openApiParam.parameterName] = openApiParam.defaultValue;
+    } else if (Array.isArray(query[openApiParam?.parameterName])) {
+      // Sort any listed query parameters
+      query[openApiParam.parameterName].sort();
     }
   }
 
-  for (let element in query) {
-    if (Array.isArray(query[element])) {
-      query[element].sort();
-    }
-  }
-
-  return qs.stringify(query, stringifyOptions);
+  return sortQueryProperties(query);
 };
 
+/**
+ * @param path
+ * @returns {parameters [{parameterName, defaultValue}]}
+ */
 const getOpenApiPathMap = (path) => {
   let openApiPathMap = openApiMap.get(path);
 
@@ -66,6 +68,10 @@ const getOpenApiPathMap = (path) => {
 
 const alphabeticalSort = (a, b) => {
   return a.localeCompare(b);
+};
+
+const sortQueryProperties = (query) => {
+  return qs.stringify(query, stringifyOptions);
 };
 
 // alphabeticalSort is used to sort the properties of the Object

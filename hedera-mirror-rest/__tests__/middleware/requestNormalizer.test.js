@@ -54,7 +54,15 @@ describe('request normalizer', () => {
           'account.id': ['lt:0.0.21', 'gt:0.0.20'],
         },
       },
-      expected: 'account.id=gt:0.0.20&account.id=lt:0.0.21&outOfOrder:=1',
+      // Query parameters that are arrays are not sorted if no path is provided
+      expected: 'account.id=lt:0.0.21&account.id=gt:0.0.20&outOfOrder:=1',
+    },
+    {
+      input: {
+        path: undefined,
+        query: undefined,
+      },
+      expected: '',
     },
     {
       input: {
