@@ -883,6 +883,17 @@ class OpcodeServiceTest extends ContractCallTestSetup {
         private final Object[] expectedResultFields;
     }
 
+    @Getter
+    @RequiredArgsConstructor
+    enum ExchangeRateFunctions implements ContractFunctionProviderEnum {
+        TINYCENTS_TO_TINYBARS("tinycentsToTinybars", new Object[] {100L}, new Long[] {8L}),
+        TINYBARS_TO_TINYCENTS("tinybarsToTinycents", new Object[] {100L}, new Object[] {1200L});
+
+        private final String name;
+        private final Object[] functionParameters;
+        private final Object[] expectedResultFields;
+    }
+
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     @DisplayName("processOpcodeCall")
@@ -1111,7 +1122,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             contractEntityId = systemExchangeRateContractPersist();
 
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    ContractCallSystemPrecompileHistoricalTest.ExchangeRateFunctions.TINYBARS_TO_TINYCENTS,
+                    ExchangeRateFunctions.TINYBARS_TO_TINYCENTS,
                     TransactionType.CONTRACTCALL,
                     EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS,
                     EXCHANGE_RATE_PRECOMPILE_ABI_PATH,
@@ -1129,7 +1140,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             contractEntityId = systemExchangeRateContractPersist();
 
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    ContractCallSystemPrecompileHistoricalTest.ExchangeRateFunctions.TINYCENTS_TO_TINYBARS,
+                    ExchangeRateFunctions.TINYCENTS_TO_TINYBARS,
                     TransactionType.CONTRACTCALL,
                     EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS,
                     EXCHANGE_RATE_PRECOMPILE_ABI_PATH,
