@@ -170,14 +170,12 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         defaultTransactionHashTypes = entityProperties.getPersist().getTransactionHashTypes();
 
         entityProperties.getPersist().setEntityHistory(true);
-        entityProperties.getPersist().setTokenAirdrops(true);
         entityProperties.getPersist().setTrackBalance(true);
     }
 
     @AfterEach
     void afterEach() {
         entityProperties.getPersist().setEntityHistory(true);
-        entityProperties.getPersist().setTokenAirdrops(false);
         entityProperties.getPersist().setTransactionHashTypes(defaultTransactionHashTypes);
         entityProperties.getPersist().setTransactionHash(true);
         entityProperties.getPersist().setTrackBalance(true);

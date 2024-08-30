@@ -3512,7 +3512,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             names = {"CANCELLED", "CLAIMED"})
     void tokenAirdrop(TokenAirdropStateEnum airdropType) {
         // given
-        entityProperties.getPersist().setTokenAirdrops(true);
         long transferAmount = 100;
         long pendingAmount = 1000;
         long createTimestamp = 10L;
@@ -3685,7 +3684,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             names = {"CANCELLED", "CLAIMED"})
     void tokenAirdropUpdateState(TokenAirdropStateEnum airdropType) {
         // given
-        entityProperties.getPersist().setTokenAirdrops(true);
         long pendingAmount = 1000;
         long createTimestamp = 10L;
         var nftTokenId = TokenID.newBuilder().setTokenNum(1234L).build();
@@ -3805,8 +3803,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             names = {"CANCELLED", "CLAIMED"})
     void tokenAirdropPartialData(TokenAirdropStateEnum airdropType) {
         // given
-        entityProperties.getPersist().setTokenAirdrops(true);
-
         // when a claim or cancel occurs but there is no prior pending airdrop
         long updateTimestamp = 30L;
         var pendingFungibleAirdropId = PendingAirdropId.newBuilder()

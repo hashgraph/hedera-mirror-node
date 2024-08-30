@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -25,19 +26,26 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import com.hederahashgraph.api.proto.java.TokenClaimAirdropTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    private final EntityId receiver = domainBuilder.entityId();
+    private final AccountID receiverAccountId = recordItemBuilder.accountId();
+    private final EntityId sender = domainBuilder.entityId();
+    private final AccountID senderAccountId = recordItemBuilder.accountId();
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenClaimAirdropTransactionHandler(entityListener, entityProperties);
+        return new TokenClaimAirdropTransactionHandler(entityIdService, entityListener, entityProperties);
     }
 
     @Override
@@ -54,7 +62,8 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
 
     @BeforeEach
     void beforeEach() {
-        entityProperties.getPersist().setTokenAirdrops(true);
+        when(entityIdService.lookup(receiverAccountId)).thenReturn(Optional.of(receiver));
+        when(entityIdService.lookup(senderAccountId)).thenReturn(Optional.of(sender));
     }
 
     @ParameterizedTest
@@ -62,11 +71,9 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
     void claimAirdrop(TokenTypeEnum tokenType) {
         // given
         var tokenAirdrop = ArgumentCaptor.forClass(TokenAirdrop.class);
-        var receiver = recordItemBuilder.accountId();
-        var sender = recordItemBuilder.accountId();
         var token = recordItemBuilder.tokenId();
         var pendingAirdropId =
-                PendingAirdropId.newBuilder().setReceiverId(receiver).setSenderId(sender);
+                PendingAirdropId.newBuilder().setReceiverId(receiverAccountId).setSenderId(senderAccountId);
         if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
             pendingAirdropId.setFungibleTokenType(token);
         } else {
@@ -83,8 +90,8 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
                 .customize(t -> t.consensusTimestamp(timestamp))
                 .get();
 
-        var expectedEntityTransactions = getExpectedEntityTransactions(
-                recordItem, transaction, EntityId.of(receiver), EntityId.of(sender), EntityId.of(token));
+        var expectedEntityTransactions =
+                getExpectedEntityTransactions(recordItem, transaction, receiver, sender, EntityId.of(token));
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -94,8 +101,8 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
 
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())
-                .returns(receiver.getAccountNum(), TokenAirdrop::getReceiverAccountId)
-                .returns(sender.getAccountNum(), TokenAirdrop::getSenderAccountId)
+                .returns(receiver.getNum(), TokenAirdrop::getReceiverAccountId)
+                .returns(sender.getNum(), TokenAirdrop::getSenderAccountId)
                 .returns(TokenAirdropStateEnum.CLAIMED, TokenAirdrop::getState)
                 .returns(Range.atLeast(timestamp), TokenAirdrop::getTimestampRange)
                 .returns(token.getTokenNum(), TokenAirdrop::getTokenId);

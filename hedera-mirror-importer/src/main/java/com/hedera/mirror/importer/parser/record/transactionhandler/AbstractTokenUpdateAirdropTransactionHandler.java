@@ -21,8 +21,12 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
@@ -32,22 +36,31 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 abstract class AbstractTokenUpdateAirdropTransactionHandler extends AbstractTransactionHandler {
 
+    private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
+    private final Function<RecordItem, List<PendingAirdropId>> extractor;
+    private final TokenAirdropStateEnum state;
+    private final TransactionType type;
 
-    public void doUpdateTransaction(
-            RecordItem recordItem,
-            TokenAirdropStateEnum state,
-            Function<RecordItem, List<PendingAirdropId>> extractor) {
+    @Override
+    public void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokenAirdrops() || !recordItem.isSuccessful()) {
             return;
         }
 
         var pendingAirdropIds = extractor.apply(recordItem);
         for (var pendingAirdropId : pendingAirdropIds) {
-            var receiver = EntityId.of(pendingAirdropId.getReceiverId());
+            var receiver =
+                    entityIdService.lookup(pendingAirdropId.getReceiverId()).orElse(EntityId.EMPTY);
+            var sender = entityIdService.lookup(pendingAirdropId.getSenderId()).orElse(EntityId.EMPTY);
+            if (EntityId.isEmpty(receiver) || EntityId.isEmpty(sender)) {
+                Utility.handleRecoverableError(
+                        "Invalid update token airdrop entity id at {}", recordItem.getConsensusTimestamp());
+                continue;
+            }
+
             recordItem.addEntityId(receiver);
-            var sender = EntityId.of(pendingAirdropId.getSenderId());
             recordItem.addEntityId(sender);
 
             var tokenAirdrop = new TokenAirdrop();
@@ -70,5 +83,10 @@ abstract class AbstractTokenUpdateAirdropTransactionHandler extends AbstractTran
             tokenAirdrop.setTokenId(tokenEntityId.getId());
             entityListener.onTokenAirdrop(tokenAirdrop);
         }
+    }
+
+    @Override
+    public TransactionType getType() {
+        return type;
     }
 }
