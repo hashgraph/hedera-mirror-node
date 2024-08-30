@@ -59,9 +59,6 @@ spec:
           replicaExternalLabelName: __replica__
     stackgres:
       enabled: true
-      operator:
-        image:
-          name: gcr.io/mirrornode/stackgres-operator
     traefik:
       service:
         annotations:
