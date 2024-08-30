@@ -16,74 +16,66 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
+import com.google.common.collect.Range;
 import com.hedera.mirror.web3.viewmodel.BlockType;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import com.hedera.mirror.web3.web3j.generated.ExchangeRatePrecompileHistorical;
+import com.hedera.mirror.web3.web3j.generated.PrngSystemContractHistorical;
+import java.math.BigInteger;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
-public class ContractCallSystemPrecompileHistoricalTest extends ContractCallTestSetup {
+public class ContractCallSystemPrecompileHistoricalTest extends AbstractContractCallServiceTest {
 
-    private static final List<BlockType> BLOCK_NUMBERS_FOR_EVM_VERSION = List.of(
-            BlockType.of(String.valueOf(EVM_V_46_BLOCK)),
-            BlockType.of(String.valueOf(EVM_V_38_BLOCK)),
-            BlockType.of(String.valueOf(EVM_V_34_BLOCK)),
-            BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-
-    private static Stream<Arguments> exchangeRateFunctionsProviderHistorical() {
-        return Arrays.stream(ExchangeRateFunctions.values())
-                .flatMap(exchangeRateFunction -> BLOCK_NUMBERS_FOR_EVM_VERSION.stream()
-                        .map(blockNumber -> Arguments.of(exchangeRateFunction, blockNumber)));
-    }
-
-    private static Stream<Arguments> blockNumberForDifferentEvmVersionsProviderHistorical() {
-        return BLOCK_NUMBERS_FOR_EVM_VERSION.stream().map(Arguments::of);
+    @ParameterizedTest
+    @CsvSource({"150", "100", "50", "49"})
+    void exchangeRatePrecompileTinycentsToTinybars(long blockNumber) throws Exception {
+        // Given
+        final var recordFile =
+                domainBuilder.recordFile().customize(f -> f.index(blockNumber)).persist();
+        testWeb3jService.setBlockType(BlockType.of(String.valueOf(blockNumber)));
+        testWeb3jService.setHistoricalRange(
+                Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
+        final var contract = testWeb3jService.deploy(ExchangeRatePrecompileHistorical::deploy);
+        // When
+        final var result =
+                contract.call_tinycentsToTinybars(BigInteger.valueOf(100L)).send();
+        // Then
+        assertThat(result).isEqualTo(BigInteger.valueOf(8L));
     }
 
     @ParameterizedTest
-    @MethodSource("exchangeRateFunctionsProviderHistorical")
-    void exchangeRateFunctionsTestEthCallHistorical(final ExchangeRateFunctions contractFunc, BlockType blockNumber) {
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_CALL, 0L, blockNumber);
-        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.expectedResultFields);
-
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+    @CsvSource({"150", "100", "50", "49"})
+    void exchangeRatePrecompileTinybarsToTinycents(long blockNumber) throws Exception {
+        // Given
+        final var recordFile =
+                domainBuilder.recordFile().customize(f -> f.index(blockNumber)).persist();
+        testWeb3jService.setBlockType(BlockType.of(String.valueOf(blockNumber)));
+        testWeb3jService.setHistoricalRange(
+                Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
+        final var contract = testWeb3jService.deploy(ExchangeRatePrecompileHistorical::deploy);
+        // When
+        final var result =
+                contract.call_tinybarsToTinycents(BigInteger.valueOf(100L)).send();
+        // Then
+        assertThat(result).isEqualTo(BigInteger.valueOf(1200L));
     }
 
     @ParameterizedTest
-    @MethodSource("blockNumberForDifferentEvmVersionsProviderHistorical")
-    void pseudoRandomGeneratorPrecompileFunctionsTestEthCallHistorical(BlockType blockNumber) {
-        final var functionName = "getPseudorandomSeed";
-        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_CALL, 0L, blockNumber);
-
-        final var result = contractCallService.processCall(serviceParameters);
-
-        // Length of "0x" + 64 hex characters (2 per byte * 32 bytes)
-        assertEquals(66, result.length(), "The string should represent a 32-byte long array");
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    enum ExchangeRateFunctions implements ContractFunctionProviderEnum {
-        TINYCENTS_TO_TINYBARS("tinycentsToTinybars", new Object[] {100L}, new Long[] {8L}),
-        TINYBARS_TO_TINYCENTS("tinybarsToTinycents", new Object[] {100L}, new Object[] {1200L});
-
-        private final String name;
-        private final Object[] functionParameters;
-        private final Object[] expectedResultFields;
+    @CsvSource({"150", "100", "50", "49"})
+    void pseudoRandomGeneratorPrecompileFunctionsTestEthCallHistorical(long blockNumber) throws Exception {
+        // Given
+        final var recordFile =
+                domainBuilder.recordFile().customize(f -> f.index(blockNumber)).persist();
+        testWeb3jService.setBlockType(BlockType.of(String.valueOf(blockNumber)));
+        testWeb3jService.setHistoricalRange(
+                Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
+        final var contract = testWeb3jService.deploy(PrngSystemContractHistorical::deploy);
+        // When
+        final var result = contract.call_getPseudorandomSeed().send();
+        // Then
+        assertEquals(32, result.length, "The string should represent a 32-byte long array");
     }
 }

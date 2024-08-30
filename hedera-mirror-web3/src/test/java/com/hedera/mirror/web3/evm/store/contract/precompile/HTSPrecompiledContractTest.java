@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.common.PrecompileContext;
+import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -313,9 +314,10 @@ class HTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
-        final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
 
-        assertThat(FAILURE_RESULT).isEqualTo(precompileResult);
+        assertThrows(
+                PrecompileNotSupportedException.class,
+                () -> subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor));
     }
 
     @Test

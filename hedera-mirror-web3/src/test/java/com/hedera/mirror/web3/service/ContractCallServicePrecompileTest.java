@@ -48,6 +48,7 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -90,6 +91,32 @@ import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
 class ContractCallServicePrecompileTest extends AbstractContractCallServiceOpcodeTracerTest {
+
+    @Test
+    void unsupportedPrecompileFails() {
+        // Given
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        // When
+        final var functionCall = contract.call_callMissingPrecompile();
+
+        // Then
+        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+    }
+
+    // Temporary test until we start supporting this precompile
+    @Test
+    void hrcIsAssociatedFails() {
+        // Given
+        final var token = persistFungibleToken();
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        // When
+        final var functionCall = contract.call_hrcIsAssociated(getAddressFromEntity(token));
+
+        // Then
+        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+    }
 
     @Test
     void isTokenFrozen() throws Exception {
