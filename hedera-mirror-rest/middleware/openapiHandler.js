@@ -87,7 +87,7 @@ const getV1OpenApiObject = () => {
 /**
  * Get the path to parameter properties map for the OpenApi Spec
  *
- * @returns {Map<string, {parameterName, defaultValue, pattern}>}
+ * @returns {Map<string, {parameterName, defaultValue, pattern}, regex: RegExp>}
  */
 const getOpenApiMap = () => {
   if (_.isUndefined(openApiMap)) {
@@ -170,22 +170,22 @@ const pathToRegexConverter = (path, patternMap) => {
 
 /**
  * Gets the regex patterns for each of the path parameters
- * @return {Map}
+ * @return {Map<string, string>}
  */
 const getPathParametersPatterns = (openApiObject) => {
   const pathParameters = new Map();
   const openApiParameters = openApiObject.components.parameters;
   Object.keys(openApiParameters)
-    .map((parameter) => openApiParameters[parameter])
-    .filter((parameter) => parameter.in === 'path')
-    .forEach((parameter) => {
+    .map((p) => openApiParameters[p])
+    .filter((p) => p.in === 'path')
+    .forEach((p) => {
       // Path parameters are denoted by brackets within the OpenApi paths, such as: /api/v1/accounts/{idOrAliasOrEvmAddress}
-      const key = '{' + parameter.name + '}';
+      const key = '{' + p.name + '}';
 
       // A schema may be nested within the parameter directly or it may be a reference to a schema in the components/schema object
       // Remove the prefix: #/components/schemas/
-      const schemaReference = parameter.schema.$ref?.substring(21);
-      const schema = schemaReference ? openApiObject.components.schemas[schemaReference] : parameter.schema;
+      const schemaReference = p.schema.$ref?.substring(21);
+      const schema = schemaReference ? openApiObject.components.schemas[schemaReference] : p.schema;
 
       const pattern = schema?.pattern;
       pathParameters.set(key, pattern);

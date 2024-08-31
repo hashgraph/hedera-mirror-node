@@ -23,7 +23,7 @@ describe('request normalizer', () => {
         path: '/api/v1/blocks',
         query: {},
       },
-      expected: 'limit=25&order=desc',
+      expected: '/api/v1/blocks?limit=25&order=desc',
     },
     {
       input: {
@@ -34,7 +34,7 @@ describe('request normalizer', () => {
           limit: '5',
         },
       },
-      expected: 'limit=5&order=asc&unknown=3',
+      expected: '/api/v1/blocks?limit=5&order=asc&unknown=3',
     },
     {
       input: {
@@ -44,7 +44,7 @@ describe('request normalizer', () => {
           limit: '3',
         },
       },
-      expected: 'account.id=gt:0.0.20&account.id=lt:0.0.21&balance=true&limit=3&order=asc',
+      expected: '/api/v1/accounts?account.id=gt:0.0.20&account.id=lt:0.0.21&balance=true&limit=3&order=asc',
     },
     {
       input: {
@@ -55,14 +55,14 @@ describe('request normalizer', () => {
         },
       },
       // Query parameters that are arrays are not sorted if no path is provided
-      expected: 'account.id=lt:0.0.21&account.id=gt:0.0.20&outOfOrder:=1',
+      expected: 'undefined?account.id=lt:0.0.21&account.id=gt:0.0.20&outOfOrder:=1',
     },
     {
       input: {
         path: undefined,
         query: undefined,
       },
-      expected: '',
+      expected: undefined,
     },
     {
       input: {
@@ -71,7 +71,7 @@ describe('request normalizer', () => {
           limit: ['2', '4'],
         },
       },
-      expected: 'balance=true&limit=2&limit=4&order=asc',
+      expected: '/api/v1/accounts?balance=true&limit=2&limit=4&order=asc',
     },
     {
       input: {
@@ -82,7 +82,7 @@ describe('request normalizer', () => {
           index: 'lt:1',
         },
       },
-      expected: 'index=lt:1&limit=25&order=desc&timestamp=1639010141.000000000&topic0=A',
+      expected: '/api/v1/contracts/results/logs?index=lt:1&limit=25&order=desc&timestamp=1639010141.000000000&topic0=A',
     },
     {
       input: {
@@ -94,7 +94,8 @@ describe('request normalizer', () => {
           order: 'asc',
         },
       },
-      expected: 'limit=25&order=asc&serialnumber=gte:2&spender.id=gte:2004&token.id=gte:1500',
+      expected:
+        '/api/v1/accounts/0.0.1001/nfts?limit=25&order=asc&serialnumber=gte:2&spender.id=gte:2004&token.id=gte:1500',
     },
     {
       input: {
@@ -104,21 +105,21 @@ describe('request normalizer', () => {
           order: 'asc',
         },
       },
-      expected: 'limit=25&order=asc&timestamp=gte:1234567890.000000005',
+      expected: '/api/v1/tokens/1500/nfts/2/transactions?limit=25&order=asc&timestamp=gte:1234567890.000000005',
     },
     {
       input: {
         path: '/api/v1/tokens/1500/nfts/2/transactions',
         query: {},
       },
-      expected: 'limit=25&order=desc',
+      expected: '/api/v1/tokens/1500/nfts/2/transactions?limit=25&order=desc',
     },
     {
       input: {
         path: '/api/v1/tokens/0.0.1500/nfts/2/transactions',
         query: {},
       },
-      expected: 'limit=25&order=desc',
+      expected: '/api/v1/tokens/0.0.1500/nfts/2/transactions?limit=25&order=desc',
     },
     {
       input: {
@@ -129,7 +130,31 @@ describe('request normalizer', () => {
           'spender.id': 'gte:2004',
         },
       },
-      expected: 'limit=25&order=desc&serialnumber=gte:2&spender.id=gte:2004&token.id=gte:1500',
+      expected:
+        '/api/v1/accounts/0.0.1001/nfts?limit=25&order=desc&serialnumber=gte:2&spender.id=gte:2004&token.id=gte:1500',
+    },
+    {
+      input: {
+        path: '/api/v1/contracts/62cf9068fed962cf9aaabbb962cf9068fed9dddd',
+        query: {},
+      },
+      expected: '/api/v1/contracts/62cf9068fed962cf9aaabbb962cf9068fed9dddd',
+    },
+    {
+      input: {
+        path: '/api/v1/contracts/62cf9068fed962cf9aaabbb962cf9068fed9dddd/results',
+        query: {
+          limit: '3',
+        },
+      },
+      expected: '/api/v1/contracts/62cf9068fed962cf9aaabbb962cf9068fed9dddd/results?internal=false&limit=3&order=desc',
+    },
+    {
+      input: {
+        path: '/api/v1/topics/7/messages',
+        query: {},
+      },
+      expected: '/api/v1/topics/7/messages?limit=25&order=desc',
     },
   ];
 

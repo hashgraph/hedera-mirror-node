@@ -30,7 +30,7 @@ const openApiMap = getOpenApiMap();
 const normalizeRequestQueryParams = (path, query) => {
   const openApiPathMap = getOpenApiPathMap(path);
   if (_.isEmpty(openApiPathMap)) {
-    return sortQueryProperties(query);
+    return formatPathQuery(path, query);
   }
 
   for (const openApiParam of openApiPathMap.parameters) {
@@ -43,7 +43,7 @@ const normalizeRequestQueryParams = (path, query) => {
     }
   }
 
-  return sortQueryProperties(query);
+  return formatPathQuery(path, query);
 };
 
 /**
@@ -68,6 +68,10 @@ const getOpenApiPathMap = (path) => {
 
 const alphabeticalSort = (a, b) => {
   return a.localeCompare(b);
+};
+
+const formatPathQuery = (path, query) => {
+  return _.isEmpty(query) ? path : path + '?' + sortQueryProperties(query);
 };
 
 const sortQueryProperties = (query) => {
