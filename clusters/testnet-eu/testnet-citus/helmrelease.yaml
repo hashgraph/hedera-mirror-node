@@ -79,9 +79,20 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
     stackgres:
+      coordinator:
+        config:
+          work_mem: "16MB"
       worker:
+        config:
+          shared_buffers: "12GB"
+          work_mem: "16MB"
         persistentVolume:
           size: 900Gi
+        resources:
+          cpu: 9500m
+          memory: 34Gi
+          requests:
+            patroni: 9500m
     test:
       cucumberTags: "@acceptance and not @equivalence and not @historical and not @estimateprecompile"
       enabled: false
