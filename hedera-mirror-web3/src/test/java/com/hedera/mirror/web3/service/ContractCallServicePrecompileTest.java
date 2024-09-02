@@ -17,8 +17,6 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ECDSA_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EMPTY_UNTRIMMED_ADDRESS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ECDSA_TYPE;
@@ -2381,24 +2379,24 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 .type(tokenType));
 
         switch (keyType) {
-            case AbstractContractCallServiceTest.KeyType.ADMIN_KEY:
+            case ADMIN_KEY:
                 break;
-            case AbstractContractCallServiceTest.KeyType.KYC_KEY:
+            case KYC_KEY:
                 tokenBuilder.customize(t -> t.kycKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.FREEZE_KEY:
+            case FREEZE_KEY:
                 tokenBuilder.customize(t -> t.freezeKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.WIPE_KEY:
+            case WIPE_KEY:
                 tokenBuilder.customize(t -> t.wipeKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.SUPPLY_KEY:
+            case SUPPLY_KEY:
                 tokenBuilder.customize(t -> t.supplyKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.FEE_SCHEDULE_KEY:
+            case FEE_SCHEDULE_KEY:
                 tokenBuilder.customize(t -> t.feeScheduleKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.PAUSE_KEY:
+            case PAUSE_KEY:
                 tokenBuilder.customize(t -> t.pauseKey(key.toByteArray()));
                 break;
             default:
@@ -2407,20 +2405,6 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         tokenBuilder.persist();
         return tokenEntity;
-    }
-
-    private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
-        return switch (keyValueType) {
-            case CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
-            case ED25519 -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), ED25519_KEY, new byte[0], Address.ZERO.toHexString());
-            case ECDSA_SECPK256K1 -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], ECDSA_KEY, Address.ZERO.toHexString());
-            case DELEGATABLE_CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
-            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
-        };
     }
 
     private ModificationPrecompileTestContract.KeyValue getKeyValueForTypeModificationContract(
