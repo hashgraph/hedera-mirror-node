@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,21 @@
 
 import http from 'k6/http';
 
-import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
-import {resultListName} from '../libex/constants.js';
+import {isSuccess, RestTestScenarioBuilder} from '../libex/common.js';
 
-const urlTag = '/contracts/results';
+const urlTag = '/network/supply?timestamp={timestamp}';
 
-const getUrl = (testParameters) => `${urlTag}?limit=${testParameters['DEFAULT_LIMIT']}`;
+const getUrl = (testParameters) => `/network/supply?timestamp=${testParameters['DEFAULT_BALANCE_TIMESTAMP']}`;
 
 const {options, run, setup} = new RestTestScenarioBuilder()
-  .name('contractsResults') // use unique scenario name among all tests
+  .name('networkSupplyTimestamp') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
     const url = `${testParameters['BASE_URL_PREFIX']}${getUrl(testParameters)}`;
     return http.get(url);
   })
-  .check('Contracts results OK', (r) => isValidListResponse(r, resultListName))
+  .requiredParameters('DEFAULT_BALANCE_TIMESTAMP')
+  .check('Network supply OK', isSuccess)
   .build();
 
 export {getUrl, options, run, setup};

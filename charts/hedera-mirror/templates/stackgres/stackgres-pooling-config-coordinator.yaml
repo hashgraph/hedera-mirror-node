@@ -3,10 +3,10 @@ apiVersion: stackgres.io/v1
 kind: SGPoolingConfig
 metadata:
   labels: {{ include "hedera-mirror.labels" . | nindent 4 }}
-  name: {{ include "hedera-mirror.stackgres" . }}
+  name: {{ include "hedera-mirror.stackgres" . }}-coordinator
   namespace: {{ include "hedera-mirror.namespace" . }}
 spec:
   pgBouncer:
     pgbouncer.ini:
-      {{ toYaml .Values.stackgres.pgbouncer | nindent 6 }}
+      {{ toYaml .Values.stackgres.coordinator.pgbouncer | nindent 6 }}
 {{- end -}}
