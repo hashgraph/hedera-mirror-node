@@ -78,11 +78,10 @@ global:
 
 image:
   pullPolicy: IfNotPresent
+  pullSecrets: []
   registry: gcr.io
   repository: mirrornode/hedera-mirror-monitor
   tag: ""  # Defaults to the chart's app version
-
-imagePullSecrets: []
 
 ingress:
   annotations: {}
