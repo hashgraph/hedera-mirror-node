@@ -64,12 +64,6 @@ spec:
         MonitorSubscribeLatency:
           enabled: false
     rest:
-      config:
-        hedera:
-          mirror:
-            rest:
-              query:
-                topicMessageLookup: true
       ingress:
         enabled: false
       env:
