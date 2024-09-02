@@ -22,7 +22,7 @@ env:
 
 jobs:
   validate:
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     timeout-minutes: 30
     env:
       ROSETTA_CLI_VERSION: v0.10.3
