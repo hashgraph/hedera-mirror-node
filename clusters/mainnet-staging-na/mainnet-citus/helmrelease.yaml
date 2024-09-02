@@ -107,7 +107,10 @@ spec:
           cpu: 9500m
           memory: 34Gi
           requests:
-            patroni: 9500m
+            containers:
+              patroni:
+                cpu: 9500m
+                memory: 34Gi
     test:
       config:
         hedera:
