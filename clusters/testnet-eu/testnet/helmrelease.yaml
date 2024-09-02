@@ -36,7 +36,7 @@ spec:
     global:
       hostname: "*.mirrornode.hedera.com"
     grpc:
-      enabled: false
+      enabled: true
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "0"
