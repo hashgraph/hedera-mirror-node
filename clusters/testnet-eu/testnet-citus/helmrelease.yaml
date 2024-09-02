@@ -44,7 +44,7 @@ spec:
     grpc:
       enabled: true
       ingress:
-        enabled: true
+        enabled: false
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "0"
@@ -52,7 +52,7 @@ spec:
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
-      enabled: true
+      enabled: false
       env:
         HEDERA_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "true"
         HEDERA_MIRROR_MONITOR_NETWORK: "TESTNET"
@@ -67,14 +67,14 @@ spec:
     rest:
       enabled: true
       ingress:
-        enabled: true
+        enabled: false
       monitor:
         test:
           enabled: true
     restjava:
       enabled: true
       ingress:
-        enabled: true
+        enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
@@ -84,8 +84,8 @@ spec:
           size: 900Gi
     test:
       cucumberTags: "@acceptance and not @equivalence and not @historical and not @estimateprecompile"
-      enabled: true
+      enabled: false
     web3:
       enabled: true
       ingress:
-        enabled: true
+        enabled: false
