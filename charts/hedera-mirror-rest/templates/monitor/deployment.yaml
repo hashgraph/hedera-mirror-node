@@ -54,7 +54,7 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /config
-      imagePullSecrets: {{ toYaml .Values.monitor.imagePullSecrets | nindent 8 }}
+      imagePullSecrets: {{ toYaml .Values.monitor.image.pullSecrets | nindent 8 }}
       nodeSelector: {{ toYaml .Values.monitor.nodeSelector | nindent 8 }}
       priorityClassName: {{ .Values.monitor.priorityClassName }}
       securityContext:

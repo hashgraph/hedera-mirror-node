@@ -393,9 +393,11 @@ test:
     - -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}
   image:
     pullPolicy: IfNotPresent
+    pullSecrets: []
     registry: gcr.io
     repository: mirrornode/hedera-mirror-test
     tag: ""  # Defaults to the chart's app version
+  priorityClassName: ""
   resources:
     limits:
       cpu: 3
