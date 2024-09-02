@@ -32,7 +32,6 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -59,15 +58,12 @@ import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyV
 import java.math.BigInteger;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.web3j.abi.TypeEncoder;
 import org.web3j.tx.Contract;
 
@@ -441,8 +437,20 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     }
 
     @ParameterizedTest
-    @MethodSource("tracerOptions")
-    void callWithDifferentCombinationsOfTracerOptions(final OpcodeTracerOptions options) {
+    @CsvSource({
+        "true, true, true",
+        "false, true, true",
+        "true, false, true",
+        "true, true, false",
+        "false, false, true",
+        "false, true, false",
+        "true, false, false",
+        "false, false, false"
+    })
+    void callWithDifferentCombinationsOfTracerOptions(
+            final boolean stack, final boolean memory, final boolean storage) {
+        // Given
+        final var options = new OpcodeTracerOptions(stack, memory, storage);
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
         final var treasuryEntity = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntity.toEntityId());
@@ -466,13 +474,16 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 senderEntity.toEntityId(),
                 domainBuilder.timestamp());
 
+        // When
         final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
 
+        // Then
         verifyOpcodesResponse(opcodesResponse, options);
     }
 
     @Test
     void callWithContractResultNotFoundExceptionTest() {
+        // Given
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
         final var functionCall = contract.call_tinybarsToTinycents(BigInteger.TEN);
         final var callData = functionCall.encodeFunctionCall().getBytes();
@@ -488,6 +499,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 consensusTimestamp);
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
+        // Then
         assertThatExceptionOfType(EntityNotFoundException.class)
                 .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
                 .withMessage("Contract result not found: " + consensusTimestamp);
@@ -495,6 +507,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     @Test
     void callWithTransactionNotFoundExceptionTest() {
+        // Given
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
         final var functionCall = contract.call_tinybarsToTinycents(BigInteger.TEN);
         final var callData = functionCall.encodeFunctionCall().getBytes();
@@ -510,6 +523,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 domainBuilder.timestamp());
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
+        // Then
         assertThatExceptionOfType(EntityNotFoundException.class)
                 .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
                 .withMessage("Transaction not found: " + transactionIdOrHash);
@@ -517,6 +531,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     @Test
     void callWithContractTransactionHashNotFoundExceptionTest() {
+        // Given
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var senderEntity = accountPersist();
         final var treasuryEntity = accountPersist();
@@ -536,6 +551,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 senderEntity.toEntityId(),
                 domainBuilder.timestamp());
 
+        // Then
         assertThatExceptionOfType(EntityNotFoundException.class)
                 .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
                 .withMessage("Contract transaction hash not found: " + transactionIdOrHash);
@@ -828,13 +844,13 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 .persist();
     }
 
-    private ContractTransactionHash persistContractTransactionHash(
+    private void persistContractTransactionHash(
             final long consensusTimestamp,
             final EntityId contractEntityId,
             final byte[] ethHash,
             final EntityId senderEntityId,
             final ContractResult contractResult) {
-        return domainBuilder
+        domainBuilder
                 .contractTransactionHash()
                 .customize(contractTransactionHash -> contractTransactionHash
                         .consensusTimestamp(consensusTimestamp)
@@ -911,18 +927,5 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 .persist();
 
         return entity;
-    }
-
-    private static Stream<Arguments> tracerOptions() {
-        return Stream.of(
-                        new OpcodeTracerOptions(true, true, true),
-                        new OpcodeTracerOptions(false, true, true),
-                        new OpcodeTracerOptions(true, false, true),
-                        new OpcodeTracerOptions(true, true, false),
-                        new OpcodeTracerOptions(false, false, true),
-                        new OpcodeTracerOptions(false, true, false),
-                        new OpcodeTracerOptions(true, false, false),
-                        new OpcodeTracerOptions(false, false, false))
-                .map(Arguments::of);
     }
 }
