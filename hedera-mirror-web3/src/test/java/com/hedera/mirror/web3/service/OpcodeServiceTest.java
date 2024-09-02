@@ -72,7 +72,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     public static final long AMOUNT = 0L;
 
-    private final String SUCCESS_PREFIX = "0x0000000000000000000000000000000000000000000000000000000000000020";
+    private static final String SUCCESS_PREFIX = "0x0000000000000000000000000000000000000000000000000000000000000020";
 
     private final OpcodeService opcodeService;
     private final EvmEncodingFacade evmEncoder;
