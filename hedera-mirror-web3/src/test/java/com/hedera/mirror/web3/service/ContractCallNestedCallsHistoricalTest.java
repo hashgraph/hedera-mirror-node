@@ -42,7 +42,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceTest {
+class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     private RecordFile recordFileBeforeEvm34;
 
@@ -80,13 +80,14 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceT
         final var contract = testWeb3jService.deploy(NestedCallsHistorical::deploy);
 
         // When
-        final var result =
-                contract.call_nestedGetTokenInfo(tokenAddress.toHexString()).send();
+        final var function = contract.call_nestedGetTokenInfo(tokenAddress.toHexString());
+        final var result = function.send();
         // Then
         assertThat(result).isNotNull();
         assertThat(result.token).isNotNull();
         assertThat(result.deleted).isFalse();
         assertThat(result.token.memo).isEqualTo(tokenMemo);
+        verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -111,8 +112,8 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceT
         final var contract = testWeb3jService.deploy(NestedCallsHistorical::deploy);
 
         // When
-        final var result = contract.call_nestedHtsGetApproved(tokenAddress.toHexString(), BigInteger.ONE)
-                .send();
+        final var function = contract.call_nestedHtsGetApproved(tokenAddress.toHexString(), BigInteger.ONE);
+        final var result = function.send();
 
         // Then
         final var key = ByteString.fromHex(spenderPublicKey);
@@ -120,6 +121,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceT
                         Bytes.wrap(recoverAddressFromPubKey(key.substring(2).toByteArray())))
                 .toString();
         assertThat(result).isEqualTo(expectedOutput);
+        verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -154,16 +156,16 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceT
         final var contract = testWeb3jService.deploy(NestedCallsHistorical::deploy);
 
         // When
-        final var result = contract.call_nestedMintToken(
-                        tokenAddress.toHexString(),
-                        BigInteger.ZERO,
-                        Collections.singletonList(
-                                ByteString.copyFromUtf8("firstMeta").toByteArray()))
-                .send();
+        final var function = contract.call_nestedMintToken(
+                tokenAddress.toHexString(),
+                BigInteger.ZERO,
+                Collections.singletonList(ByteString.copyFromUtf8("firstMeta").toByteArray()));
+        final var result = function.send();
 
         // Then
         int expectedTotalSupply = nftAmountToMint + 1;
         assertThat(result).isEqualTo(BigInteger.valueOf(expectedTotalSupply));
+        verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
     private EntityId nftPersistHistorical(

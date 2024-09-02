@@ -25,7 +25,7 @@ const getUrl = (testParameters) =>
   `/balances?timestamp=${testParameters['DEFAULT_BALANCE_TIMESTAMP']}&limit=${testParameters['DEFAULT_LIMIT']}`;
 
 const {options, run, setup} = new RestTestScenarioBuilder()
-  .name('balancesWithTimestamp') // use unique scenario name among all tests
+  .name('balancesTimestamp') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
     const url = `${testParameters['BASE_URL_PREFIX']}${getUrl(testParameters)}`;

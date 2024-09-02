@@ -48,9 +48,11 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.AccountAmount;
@@ -88,7 +90,33 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
-class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest {
+class ContractCallServicePrecompileTest extends AbstractContractCallServiceOpcodeTracerTest {
+
+    @Test
+    void unsupportedPrecompileFails() {
+        // Given
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        // When
+        final var functionCall = contract.call_callMissingPrecompile();
+
+        // Then
+        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+    }
+
+    // Temporary test until we start supporting this precompile
+    @Test
+    void hrcIsAssociatedFails() {
+        // Given
+        final var token = persistFungibleToken();
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        // When
+        final var functionCall = contract.call_hrcIsAssociated(getAddressFromEntity(token));
+
+        // Then
+        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+    }
 
     @Test
     void isTokenFrozen() throws Exception {
@@ -117,7 +145,6 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         assertThat(functionCall.send()).isTrue();
-
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
@@ -153,7 +180,6 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         assertThat(functionCall.send()).isTrue();
-
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
@@ -172,7 +198,6 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         assertThat(functionCall.send()).isTrue();
-
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
     }
 
@@ -408,57 +433,57 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
     @CsvSource(
             textBlock =
                     """
-    FUNGIBLE_COMMON, ECDSA_SECPK256K1, ADMIN_KEY
-    FUNGIBLE_COMMON, ECDSA_SECPK256K1, KYC_KEY
-    FUNGIBLE_COMMON, ECDSA_SECPK256K1, FREEZE_KEY
-    FUNGIBLE_COMMON, ECDSA_SECPK256K1, WIPE_KEY
-    FUNGIBLE_COMMON, ECDSA_SECPK256K1, SUPPLY_KEY
-    FUNGIBLE_COMMON, ECDSA_SECPK256K1, FEE_SCHEDULE_KEY
-    FUNGIBLE_COMMON, ECDSA_SECPK256K1, PAUSE_KEY
-    FUNGIBLE_COMMON, ED25519, ADMIN_KEY
-    FUNGIBLE_COMMON, ED25519, FREEZE_KEY
-    FUNGIBLE_COMMON, ED25519, WIPE_KEY
-    FUNGIBLE_COMMON, ED25519, SUPPLY_KEY
-    FUNGIBLE_COMMON, ED25519, FEE_SCHEDULE_KEY
-    FUNGIBLE_COMMON, ED25519, PAUSE_KEY
-    FUNGIBLE_COMMON, CONTRACT_ID, ADMIN_KEY
-    FUNGIBLE_COMMON, CONTRACT_ID, FREEZE_KEY
-    FUNGIBLE_COMMON, CONTRACT_ID, WIPE_KEY
-    FUNGIBLE_COMMON, CONTRACT_ID, SUPPLY_KEY
-    FUNGIBLE_COMMON, CONTRACT_ID, FEE_SCHEDULE_KEY
-    FUNGIBLE_COMMON, CONTRACT_ID, PAUSE_KEY
-    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, ADMIN_KEY
-    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, FREEZE_KEY
-    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, WIPE_KEY
-    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, SUPPLY_KEY
-    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, FEE_SCHEDULE_KEY
-    FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, PAUSE_KEY
-    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, ADMIN_KEY
-    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, KYC_KEY
-    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, FREEZE_KEY
-    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, WIPE_KEY
-    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, SUPPLY_KEY
-    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, FEE_SCHEDULE_KEY
-    NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, PAUSE_KEY
-    NON_FUNGIBLE_UNIQUE, ED25519, ADMIN_KEY
-    NON_FUNGIBLE_UNIQUE, ED25519, FREEZE_KEY
-    NON_FUNGIBLE_UNIQUE, ED25519, WIPE_KEY
-    NON_FUNGIBLE_UNIQUE, ED25519, SUPPLY_KEY
-    NON_FUNGIBLE_UNIQUE, ED25519, FEE_SCHEDULE_KEY
-    NON_FUNGIBLE_UNIQUE, ED25519, PAUSE_KEY
-    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, ADMIN_KEY
-    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, FREEZE_KEY
-    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, WIPE_KEY
-    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, SUPPLY_KEY
-    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, FEE_SCHEDULE_KEY
-    NON_FUNGIBLE_UNIQUE, CONTRACT_ID, PAUSE_KEY
-    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, ADMIN_KEY
-    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, FREEZE_KEY
-    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, WIPE_KEY
-    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, SUPPLY_KEY
-    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, FEE_SCHEDULE_KEY
-    NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, PAUSE_KEY
-""")
+                                FUNGIBLE_COMMON, ECDSA_SECPK256K1, ADMIN_KEY
+                                FUNGIBLE_COMMON, ECDSA_SECPK256K1, KYC_KEY
+                                FUNGIBLE_COMMON, ECDSA_SECPK256K1, FREEZE_KEY
+                                FUNGIBLE_COMMON, ECDSA_SECPK256K1, WIPE_KEY
+                                FUNGIBLE_COMMON, ECDSA_SECPK256K1, SUPPLY_KEY
+                                FUNGIBLE_COMMON, ECDSA_SECPK256K1, FEE_SCHEDULE_KEY
+                                FUNGIBLE_COMMON, ECDSA_SECPK256K1, PAUSE_KEY
+                                FUNGIBLE_COMMON, ED25519, ADMIN_KEY
+                                FUNGIBLE_COMMON, ED25519, FREEZE_KEY
+                                FUNGIBLE_COMMON, ED25519, WIPE_KEY
+                                FUNGIBLE_COMMON, ED25519, SUPPLY_KEY
+                                FUNGIBLE_COMMON, ED25519, FEE_SCHEDULE_KEY
+                                FUNGIBLE_COMMON, ED25519, PAUSE_KEY
+                                FUNGIBLE_COMMON, CONTRACT_ID, ADMIN_KEY
+                                FUNGIBLE_COMMON, CONTRACT_ID, FREEZE_KEY
+                                FUNGIBLE_COMMON, CONTRACT_ID, WIPE_KEY
+                                FUNGIBLE_COMMON, CONTRACT_ID, SUPPLY_KEY
+                                FUNGIBLE_COMMON, CONTRACT_ID, FEE_SCHEDULE_KEY
+                                FUNGIBLE_COMMON, CONTRACT_ID, PAUSE_KEY
+                                FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, ADMIN_KEY
+                                FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, FREEZE_KEY
+                                FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, WIPE_KEY
+                                FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, SUPPLY_KEY
+                                FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, FEE_SCHEDULE_KEY
+                                FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID, PAUSE_KEY
+                                NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, ADMIN_KEY
+                                NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, KYC_KEY
+                                NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, FREEZE_KEY
+                                NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, WIPE_KEY
+                                NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, SUPPLY_KEY
+                                NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, FEE_SCHEDULE_KEY
+                                NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1, PAUSE_KEY
+                                NON_FUNGIBLE_UNIQUE, ED25519, ADMIN_KEY
+                                NON_FUNGIBLE_UNIQUE, ED25519, FREEZE_KEY
+                                NON_FUNGIBLE_UNIQUE, ED25519, WIPE_KEY
+                                NON_FUNGIBLE_UNIQUE, ED25519, SUPPLY_KEY
+                                NON_FUNGIBLE_UNIQUE, ED25519, FEE_SCHEDULE_KEY
+                                NON_FUNGIBLE_UNIQUE, ED25519, PAUSE_KEY
+                                NON_FUNGIBLE_UNIQUE, CONTRACT_ID, ADMIN_KEY
+                                NON_FUNGIBLE_UNIQUE, CONTRACT_ID, FREEZE_KEY
+                                NON_FUNGIBLE_UNIQUE, CONTRACT_ID, WIPE_KEY
+                                NON_FUNGIBLE_UNIQUE, CONTRACT_ID, SUPPLY_KEY
+                                NON_FUNGIBLE_UNIQUE, CONTRACT_ID, FEE_SCHEDULE_KEY
+                                NON_FUNGIBLE_UNIQUE, CONTRACT_ID, PAUSE_KEY
+                                NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, ADMIN_KEY
+                                NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, FREEZE_KEY
+                                NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, WIPE_KEY
+                                NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, SUPPLY_KEY
+                                NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, FEE_SCHEDULE_KEY
+                                NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID, PAUSE_KEY
+                            """)
     void getTokenKey(
             final TokenTypeEnum tokenType,
             final KeyValueType keyValueType,
@@ -949,6 +974,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
@@ -972,6 +998,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
@@ -1010,6 +1037,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1043,6 +1071,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
@@ -1069,6 +1098,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1088,6 +1118,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
@@ -1116,6 +1147,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1139,6 +1171,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1161,12 +1194,12 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // When
         final var functionCall = contract.call_mintTokenExternal(
                 getAddressFromEntity(tokenEntity), BigInteger.valueOf(30), new ArrayList<>());
-
         final var result = functionCall.send();
-        assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply + 30L));
 
         // Then
+        assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply + 30L));
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1190,10 +1223,10 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         final var result = functionCall.send();
 
-        assertThat(result.component3().getFirst()).isEqualTo(BigInteger.ONE);
-
         // Then
+        assertThat(result.component3().getFirst()).isEqualTo(BigInteger.ONE);
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1222,6 +1255,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         // Then
         assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply - 4L));
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1245,16 +1279,16 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
+        // When
         final var functionCall = contract.call_burnTokenExternal(
                 getAddressFromEntity(tokenEntity), BigInteger.ZERO, List.of(BigInteger.ONE));
 
         final var result = functionCall.send();
 
-        // When
-        assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply - 1));
-
         // Then
+        assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply - 1));
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1278,6 +1312,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1305,6 +1340,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1328,6 +1364,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1351,6 +1388,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1369,6 +1407,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1386,6 +1425,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1413,6 +1453,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1431,6 +1472,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1456,6 +1498,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1479,10 +1522,16 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var functionCall = contract.call_createFungibleTokenExternal(token, initialSupply, decimals);
         final var result = functionCall.send();
 
+        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .value(value)
+                .build();
+
         // Then
         assertThat(result.component2()).isNotEqualTo(Address.ZERO.toHexString());
 
         verifyEthCallAndEstimateGas(functionCall, contract, value);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
     }
 
     @Test
@@ -1524,10 +1573,16 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 token, initialSupply, decimals, List.of(fixedFee), List.of(fractionalFee));
         final var result = functionCall.send();
 
+        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .value(value)
+                .build();
+
         // Then
         assertThat(result.component2()).isNotEqualTo(Address.ZERO.toHexString());
 
         verifyEthCallAndEstimateGas(functionCall, contract, value);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
     }
 
     @Test
@@ -1549,10 +1604,16 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
         final var functionCall = contract.call_createNonFungibleTokenExternal(token);
         final var result = functionCall.send();
 
+        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .value(value)
+                .build();
+
         // Then
         assertThat(result.component2()).isNotEqualTo(Address.ZERO.toHexString());
 
         verifyEthCallAndEstimateGas(functionCall, contract, value);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
     }
 
     @Test
@@ -1592,10 +1653,15 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                 token, List.of(fixedFee), List.of(royaltyFee));
         final var result = functionCall.send();
 
+        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .value(value)
+                .build();
         // Then
         assertThat(result.component2()).isNotEqualTo(Address.ZERO.toHexString());
 
         verifyEthCallAndEstimateGas(functionCall, contract, value);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
     }
 
     @Test
@@ -1617,6 +1683,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, 0L);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1895,8 +1962,14 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         List.of(getAliasFromEntity(sender), getAliasFromEntity(receiver)),
                         List.of(BigInteger.ONE, BigInteger.valueOf(-1L)));
 
+        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .sender(Address.fromHexString(getAliasFromEntity(payer)))
+                .build();
+
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
     }
 
     @ParameterizedTest
@@ -1935,8 +2008,53 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
                         List.of(getAliasFromEntity(receiver)),
                         List.of(BigInteger.ONE));
 
+        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .sender(Address.fromHexString(getAliasFromEntity(payer)))
+                .build();
+
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+    }
+
+    @Test
+    void transferFromNft() throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        final var sender = persistAccountEntity();
+        final var tokenEntity = persistTokenEntity();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(sender.toEntityId()))
+                .persist();
+        final var receiver = persistAccountEntity();
+        final var payer = persistAccountEntity();
+
+        persistAssociation(tokenEntity, payer);
+        persistAssociation(tokenEntity, sender);
+        persistAssociation(tokenEntity, receiver);
+
+        // When
+        testWeb3jService.setSender(getAliasFromEntity(payer));
+        final var functionCall = contract.call_transferFromNFTExternal(
+                getAddressFromEntity(tokenEntity),
+                getAliasFromEntity(sender),
+                getAliasFromEntity(receiver),
+                BigInteger.ONE);
+
+        // Then
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        final var callData = functionCall.encodeFunctionCall();
+        final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .sender(Address.fromHexString(getAliasFromEntity(payer)))
+                .build();
+        verifyOpcodeTracerCall(callData, contractFunctionProvider);
     }
 
     @Test
@@ -1957,6 +2075,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -1986,6 +2107,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2018,6 +2142,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2054,6 +2181,9 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(
+                functionCall.encodeFunctionCall(),
+                getContractFunctionProviderWithSender(contract.getContractAddress(), payer));
     }
 
     @Test
@@ -2074,6 +2204,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -2096,21 +2227,22 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-        FUNGIBLE_COMMON, ED25519
-        FUNGIBLE_COMMON, ECDSA_SECPK256K1
-        FUNGIBLE_COMMON, CONTRACT_ID
-        FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID
-        NON_FUNGIBLE_UNIQUE, ED25519
-        NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1
-        NON_FUNGIBLE_UNIQUE, CONTRACT_ID
-        NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID
-        """)
+                            FUNGIBLE_COMMON, ED25519
+                            FUNGIBLE_COMMON, ECDSA_SECPK256K1
+                            FUNGIBLE_COMMON, CONTRACT_ID
+                            FUNGIBLE_COMMON, DELEGATABLE_CONTRACT_ID
+                            NON_FUNGIBLE_UNIQUE, ED25519
+                            NON_FUNGIBLE_UNIQUE, ECDSA_SECPK256K1
+                            NON_FUNGIBLE_UNIQUE, CONTRACT_ID
+                            NON_FUNGIBLE_UNIQUE, DELEGATABLE_CONTRACT_ID
+                            """)
     void updateTokenKey(final TokenTypeEnum tokenTypeEnum, final KeyValueType keyValueType) throws Exception {
         // Given
         final var allCasesKeyType = 0b1111111;
@@ -2130,6 +2262,7 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceTest 
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     private void verifyEthCallAndEstimateGas(
