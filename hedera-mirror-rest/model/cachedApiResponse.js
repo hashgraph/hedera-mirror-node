@@ -20,11 +20,11 @@ import {responseBodyLabel} from '../constants.js';
  * API response cached in Redis.
  */
 class CachedApiResponse {
-  constructor(res) {
-    this.body = res.locals[responseBodyLabel];
+  constructor(status, headers, body) {
+    this.body = body;
     this.cacheTime = Date.now();
-    this.headers = res.getHeaders();
-    this.status = res.statusCode;
+    this.headers = headers;
+    this.status = status;
   }
 }
 

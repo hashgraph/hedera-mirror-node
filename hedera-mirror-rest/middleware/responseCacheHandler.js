@@ -16,26 +16,43 @@
 
 import {Cache} from '../cache';
 import CachedApiResponse from '../model/cachedApiResponse.js';
-import {requestStartTime, responseCacheKeyLabel} from '../constants.js';
+import {requestStartTime, responseBodyLabel, responseCacheKeyLabel} from '../constants.js';
 
+const AGE_HEADER_NAME = 'age';
+const CACHE_BYPASS_HEADER_VALUE = 'no-cache';
 const CACHE_CONTROL_HEADER_NAME = 'cache-control';
-const cache = new Cache();
+const PRAGMA_HEADER_NAME = 'pragma';
+
+let cache = new Cache();
+let cacheKeyGenerator = (req) => {
+  return req.path; // Interact with Edwin's code
+};
 
 // Response middleware that checks for and returns cached response.
 const responseCacheCheckHandler = async (req, res, next) => {
-  const responseCacheKey = req.path; // Call Edwin's function here
-  const cachedResponse = await cache.getSingle(responseCacheKey);
+  const cacheControl = req.headers[CACHE_CONTROL_HEADER_NAME];
+  const pragma = req.headers[PRAGMA_HEADER_NAME];
+  if (pragma === CACHE_BYPASS_HEADER_VALUE || cacheControl === CACHE_BYPASS_HEADER_VALUE) {
+    logger.warn(`${req.ip} ${req.method} ${req.originalUrl} attempted cache bypass`);
+  }
 
-  if (cachedResponse) {
+  const responseCacheKey = cacheKeyGenerator(req);
+  const rawCachedResponse = await cache.getSingle(responseCacheKey);
+
+  if (rawCachedResponse) {
     logger.debug(`Cache hit: ${responseCacheKey}`);
-    // TODO adjust cache-control header and decrement time it's been locally cached.
+
+    const cachedResponse = Object.assign(new CachedApiResponse(), rawCachedResponse);
+    const age = Date.now() - cachedResponse.cacheTime;
+    const code = cachedResponse.status;
     res.set(cachedResponse.headers);
-    res.status(cachedResponse.status);
+    res.set(AGE_HEADER_NAME, age);
+    res.status(code);
     res.send(cachedResponse.body);
 
     const startTime = res.locals[requestStartTime];
     const elapsed = startTime ? Date.now() - startTime : 0;
-    logger.info(`Cached - ${req.ip} ${req.method} ${req.originalUrl} in ${elapsed} ms: ${code}`);
+    logger.info(`${req.ip} ${req.method} ${req.originalUrl} from cache in ${elapsed} ms: ${code}`);
   } else {
     logger.debug(`Cache miss: ${responseCacheKey}`);
     res.locals[responseCacheKeyLabel] = responseCacheKey;
@@ -50,7 +67,7 @@ const responseCacheUpdateHandler = async (req, res, next) => {
     const cacheControlHeader = res.getHeaders()[CACHE_CONTROL_HEADER_NAME];
     const expiry = getCacheControlExpiry(cacheControlHeader);
     if (expiry) {
-      const cachedResponse = new CachedApiResponse(res);
+      const cachedResponse = new CachedApiResponse(res.status, res.getHeaders(), res.locals[responseBodyLabel]);
       cache.setSingle(responseCacheKey, cachedResponse, expiry);
     }
   }
@@ -58,6 +75,16 @@ const responseCacheUpdateHandler = async (req, res, next) => {
   next();
 };
 
+// For testing
+const setCache = (cacheToUse) => {
+  cache = cacheToUse;
+};
+
+const setCacheKeyGenerator = (generatorFunction) => {
+  cacheKeyGenerator = generatorFunction;
+};
+
+// TODO don't need this no more
 const getCacheControlExpiry = (headerValue) => {
   if (headerValue) {
     const maxAge = headerValue.match(/^.*max-age=(\d+)/);
@@ -68,4 +95,4 @@ const getCacheControlExpiry = (headerValue) => {
   return undefined;
 };
 
-export {responseCacheCheckHandler, responseCacheUpdateHandler};
+export {responseCacheCheckHandler, responseCacheUpdateHandler, setCache, setCacheKeyGenerator};

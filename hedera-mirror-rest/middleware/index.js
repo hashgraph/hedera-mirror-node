@@ -18,5 +18,10 @@ export {handleError} from './httpErrorHandler';
 export * from './metricsHandler';
 export {openApiValidator, serveSwaggerDocs} from './openapiHandler';
 export * from './requestHandler';
-export {responseCacheCheckHandler, responseCacheUpdateHandler} from './responseCacheHandler.js';
+export {
+  responseCacheCheckHandler,
+  responseCacheUpdateHandler,
+  setCache,
+  setCacheKeyGenerator,
+} from './responseCacheHandler.js';
 export {default as responseHandler} from './responseHandler';

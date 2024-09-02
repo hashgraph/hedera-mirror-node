@@ -17,7 +17,7 @@
 import config from '../config';
 import {Cache} from '../cache';
 import {RedisContainer} from '@testcontainers/redis';
-import {defaultBeforeAllTimeoutMillis} from './integrationUtils.js';
+import {defaultBeforeAllTimeoutMillis} from './integrationUtils';
 
 let cache;
 let redisContainer;
