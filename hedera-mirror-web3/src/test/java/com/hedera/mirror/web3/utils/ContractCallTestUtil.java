@@ -79,7 +79,7 @@ public class ContractCallTestUtil {
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *
      * @param estimatedGas The expected gas used from the initial call.
-     * @param actualGas   The actual gas used.
+     * @param actualGas    The actual gas used.
      * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
      */
     public static boolean isWithinExpectedGasRange(final long estimatedGas, final long actualGas) {

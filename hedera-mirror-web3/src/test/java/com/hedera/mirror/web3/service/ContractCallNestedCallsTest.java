@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
+class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     private static final long CREATE_TOKEN_VALUE = 3070 * 100_000_000L;
     private static final String EXPECTED_RESULT_NEGATIVE_TESTS = "hardcodedResult";
@@ -49,35 +49,35 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     @CsvSource(
             textBlock =
                     """
-                    CONTRACT_ID,                ADMIN_KEY,
-                    CONTRACT_ID,                KYC_KEY,
-                    CONTRACT_ID,                FREEZE_KEY,
-                    CONTRACT_ID,                WIPE_KEY,
-                    CONTRACT_ID,                SUPPLY_KEY,
-                    CONTRACT_ID,                FEE_SCHEDULE_KEY,
-                    CONTRACT_ID,                PAUSE_KEY,
-                    ED25519,                    ADMIN_KEY,
-                    ED25519,                    KYC_KEY,
-                    ED25519,                    FREEZE_KEY,
-                    ED25519,                    WIPE_KEY,
-                    ED25519,                    SUPPLY_KEY,
-                    ED25519,                    FEE_SCHEDULE_KEY,
-                    ED25519,                    PAUSE_KEY,
-                    ECDSA_SECPK256K1,           ADMIN_KEY,
-                    ECDSA_SECPK256K1,           KYC_KEY,
-                    ECDSA_SECPK256K1,           FREEZE_KEY,
-                    ECDSA_SECPK256K1,           WIPE_KEY,
-                    ECDSA_SECPK256K1,           SUPPLY_KEY,
-                    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
-                    ECDSA_SECPK256K1,           PAUSE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
-                    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY,
-                    """)
+                            CONTRACT_ID,                ADMIN_KEY,
+                            CONTRACT_ID,                KYC_KEY,
+                            CONTRACT_ID,                FREEZE_KEY,
+                            CONTRACT_ID,                WIPE_KEY,
+                            CONTRACT_ID,                SUPPLY_KEY,
+                            CONTRACT_ID,                FEE_SCHEDULE_KEY,
+                            CONTRACT_ID,                PAUSE_KEY,
+                            ED25519,                    ADMIN_KEY,
+                            ED25519,                    KYC_KEY,
+                            ED25519,                    FREEZE_KEY,
+                            ED25519,                    WIPE_KEY,
+                            ED25519,                    SUPPLY_KEY,
+                            ED25519,                    FEE_SCHEDULE_KEY,
+                            ED25519,                    PAUSE_KEY,
+                            ECDSA_SECPK256K1,           ADMIN_KEY,
+                            ECDSA_SECPK256K1,           KYC_KEY,
+                            ECDSA_SECPK256K1,           FREEZE_KEY,
+                            ECDSA_SECPK256K1,           WIPE_KEY,
+                            ECDSA_SECPK256K1,           SUPPLY_KEY,
+                            ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
+                            ECDSA_SECPK256K1,           PAUSE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
+                            DELEGATABLE_CONTRACT_ID,    KYC_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    PAUSE_KEY,
+                            """)
     void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType)
             throws Exception {
         // Given
@@ -107,35 +107,35 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     @CsvSource(
             textBlock =
                     """
-                    CONTRACT_ID,                ADMIN_KEY,
-                    CONTRACT_ID,                KYC_KEY,
-                    CONTRACT_ID,                FREEZE_KEY,
-                    CONTRACT_ID,                WIPE_KEY,
-                    CONTRACT_ID,                SUPPLY_KEY,
-                    CONTRACT_ID,                FEE_SCHEDULE_KEY,
-                    CONTRACT_ID,                PAUSE_KEY,
-                    ED25519,                    ADMIN_KEY,
-                    ED25519,                    KYC_KEY,
-                    ED25519,                    FREEZE_KEY,
-                    ED25519,                    WIPE_KEY,
-                    ED25519,                    SUPPLY_KEY,
-                    ED25519,                    FEE_SCHEDULE_KEY,
-                    ED25519,                    PAUSE_KEY,
-                    ECDSA_SECPK256K1,           ADMIN_KEY,
-                    ECDSA_SECPK256K1,           KYC_KEY,
-                    ECDSA_SECPK256K1,           FREEZE_KEY,
-                    ECDSA_SECPK256K1,           WIPE_KEY,
-                    ECDSA_SECPK256K1,           SUPPLY_KEY,
-                    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
-                    ECDSA_SECPK256K1,           PAUSE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
-                    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY
-                    """)
+                            CONTRACT_ID,                ADMIN_KEY,
+                            CONTRACT_ID,                KYC_KEY,
+                            CONTRACT_ID,                FREEZE_KEY,
+                            CONTRACT_ID,                WIPE_KEY,
+                            CONTRACT_ID,                SUPPLY_KEY,
+                            CONTRACT_ID,                FEE_SCHEDULE_KEY,
+                            CONTRACT_ID,                PAUSE_KEY,
+                            ED25519,                    ADMIN_KEY,
+                            ED25519,                    KYC_KEY,
+                            ED25519,                    FREEZE_KEY,
+                            ED25519,                    WIPE_KEY,
+                            ED25519,                    SUPPLY_KEY,
+                            ED25519,                    FEE_SCHEDULE_KEY,
+                            ED25519,                    PAUSE_KEY,
+                            ECDSA_SECPK256K1,           ADMIN_KEY,
+                            ECDSA_SECPK256K1,           KYC_KEY,
+                            ECDSA_SECPK256K1,           FREEZE_KEY,
+                            ECDSA_SECPK256K1,           WIPE_KEY,
+                            ECDSA_SECPK256K1,           SUPPLY_KEY,
+                            ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
+                            ECDSA_SECPK256K1,           PAUSE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
+                            DELEGATABLE_CONTRACT_ID,    KYC_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    PAUSE_KEY
+                            """)
     void updateTokenKeysAndGetUpdatedTokenKeyForNFT(final KeyValueType keyValueType, final KeyType keyType)
             throws Exception {
         // Given
@@ -163,9 +163,9 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenExpiryAndGetUpdatedTokenExpiry(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? fungibleTokenPersist() : nftPersist();
@@ -190,9 +190,9 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenInfoAndGetUpdatedTokenInfoSymbol(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountPersist();
@@ -220,9 +220,9 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenInfoAndGetUpdatedTokenInfoName(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountPersist();
@@ -250,9 +250,9 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenInfoAndGetUpdatedTokenInfoMemo(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountPersist();
@@ -280,9 +280,9 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void deleteTokenAndGetTokenInfoIsDeleted(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? fungibleTokenPersist() : nftPersist();
@@ -305,10 +305,10 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     @CsvSource(
             textBlock =
                     """
-                true, false, true, true
-                false, false, false, false
-                true, true, true, true
-                """)
+                            true, false, true, true
+                            false, false, false, false
+                            true, true, true, true
+                            """)
     void createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
             final boolean withKeys,
             final boolean inheritKey,
@@ -346,10 +346,10 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
     @CsvSource(
             textBlock =
                     """
-                true, false, true, true
-                false, false, false, false
-                true, true, true, true
-                """)
+                            true, false, true, true
+                            false, false, false, false
+                            true, true, true, true
+                            """)
     void createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
             final boolean withKeys,
             final boolean inheritKey,
@@ -387,11 +387,12 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
 
         // When
-        final var result = contract.call_nestedGetTokenInfoAndHardcodedResult(Address.ZERO.toHexString())
-                .send();
+        final var function = contract.call_nestedGetTokenInfoAndHardcodedResult(Address.ZERO.toHexString());
+        final var result = function.send();
 
         // Then
         assertThat(result).isEqualTo(EXPECTED_RESULT_NEGATIVE_TESTS);
+        verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -400,12 +401,13 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
 
         // When
-        final var result = contract.call_nestedHtsGetApprovedAndHardcodedResult(
-                        Address.ZERO.toHexString(), BigInteger.ONE)
-                .send();
+        final var function =
+                contract.call_nestedHtsGetApprovedAndHardcodedResult(Address.ZERO.toHexString(), BigInteger.ONE);
+        final var result = function.send();
 
         // Then
         assertThat(result).isEqualTo(EXPECTED_RESULT_NEGATIVE_TESTS);
+        verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -414,14 +416,15 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
 
         // When
-        final var result = contract.call_nestedMintTokenAndHardcodedResult(
-                        Address.ZERO.toHexString(),
-                        BigInteger.ZERO,
-                        List.of(ByteString.copyFromUtf8("firstMeta").toByteArray()))
-                .send();
+        final var function = contract.call_nestedMintTokenAndHardcodedResult(
+                Address.ZERO.toHexString(),
+                BigInteger.ZERO,
+                List.of(ByteString.copyFromUtf8("firstMeta").toByteArray()));
+        final var result = function.send();
 
         // Then
         assertThat(result).isEqualTo(EXPECTED_RESULT_NEGATIVE_TESTS);
+        verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
     private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {

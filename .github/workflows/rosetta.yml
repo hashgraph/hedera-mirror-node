@@ -22,7 +22,7 @@ env:
 
 jobs:
   validate:
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     timeout-minutes: 30
     env:
       ROSETTA_CLI_VERSION: v0.10.3
@@ -72,18 +72,18 @@ jobs:
           tags: "${{ env.MODULE }}:${{ github.sha }}"
 
       - name: Importer Configuration
-        run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application_importer.yml
+        run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > ${{ github.workspace }}/application_importer.yml
 
       - name: Rosetta Configuration
-        run: echo "${{ secrets.ROSETTA_ROSETTA_CONFIG }}" | base64 -d > /tmp/application_rosetta.yml
+        run: echo "${{ secrets.ROSETTA_ROSETTA_CONFIG }}" | base64 -d > ${{ github.workspace }}/application_rosetta.yml
 
       - name: Run Mirror Node in Online Mode
         run: |
           ONLINE_CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=${STARTDATE} \
             -e NETWORK=${NETWORK} \
             -e HEDERA_MIRROR_ROSETTA_RESPONSE_MAXTRANSACTIONSINBLOCK=4 \
-            -v /tmp/application_importer.yml:/app/importer/application.yml \
-            -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
+            -v ${{ github.workspace }}/application_importer.yml:/app/importer/application.yml \
+            -v ${{ github.workspace }}/application_rosetta.yml:/app/rosetta/application.yml \
             -p 5700:5700 "${MODULE}:${{ github.sha }}")
           echo "ONLINE_CONTAINER_ID=$ONLINE_CONTAINER_ID" >> $GITHUB_ENV
 

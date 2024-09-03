@@ -21,7 +21,7 @@ env:
 jobs:
   release:
     name: Release
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-medium
     env:
       RELEASE_NOTES_FILENAME: release_notes
     outputs:
@@ -84,7 +84,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4
+        uses: gradle/actions/setup-gradle@16bf8bc8fe830fa669c3c9f914d3eb147c629707 # v4
 
       - name: Create and Switch to Release Branch
         run: |
@@ -143,7 +143,7 @@ jobs:
 
   create_pr:
     name: Create PR
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-medium
     needs: release
     if: ${{ needs.release.outputs.create_pr == 'true' }}
     env:
@@ -178,7 +178,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4
+        uses: gradle/actions/setup-gradle@16bf8bc8fe830fa669c3c9f914d3eb147c629707 # v4
 
       - name: Reset main to release branch
         run: |

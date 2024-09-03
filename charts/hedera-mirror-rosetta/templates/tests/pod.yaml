@@ -4,6 +4,7 @@ kind: Pod
 metadata:
   annotations: {{- toYaml .Values.test.annotations | nindent 4 }}
   labels: {{- include "hedera-mirror-rosetta.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "hedera-mirror-rosetta.name" . }}-test
   name: {{ include "hedera-mirror-rosetta.fullname" . }}-test
   namespace: {{ include "hedera-mirror-rosetta.namespace" . }}
 spec:
@@ -25,6 +26,8 @@ spec:
         - name: rosetta-test
           mountPath: /test
           readOnly: true
+  imagePullSecrets: {{ toYaml .Values.test.image.pullSecrets | nindent 4 }}
+  priorityClassName: {{ .Values.test.priorityClassName }}
   restartPolicy: Never
   securityContext:
     fsGroup: 1000

@@ -66,11 +66,10 @@ hpa:
 
 image:
   pullPolicy: IfNotPresent
+  pullSecrets: []
   registry: gcr.io
   repository: mirrornode/hedera-mirror-rest
   tag: ""  # Defaults to the chart's app version
-
-imagePullSecrets: []
 
 ingress:
   annotations:
@@ -109,10 +108,10 @@ monitor:
   enabled: true
   image:
     pullPolicy: IfNotPresent
+    pullSecrets: []
     registry: gcr.io
     repository: mirrornode/hedera-mirror-rest-monitor
     tag: ""  # Defaults to the chart's app version
-  imagePullSecrets: []
   nodeSelector: {}
   priorityClassName: ""
   resources:
@@ -132,8 +131,10 @@ monitor:
     enabled: true
     image:
       pullPolicy: IfNotPresent
+      pullSecrets: []
       repository: curlimages/curl
       tag: latest
+    priorityClassName: ""
   tolerations: []
 
 nameOverride: ""
@@ -268,8 +269,10 @@ test:
   enabled: true
   image:
     pullPolicy: IfNotPresent
+    pullSecrets: []
     repository: bats/bats
     tag: 1.11.0
+  priorityClassName: ""
 
 tolerations: []
 

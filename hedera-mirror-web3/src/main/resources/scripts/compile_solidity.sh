@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Export the PIP3 bin path
+export PATH="${HOME}/.local/bin:${PATH}"
+
 # Define Solidity versions and output directories
 OUTPUT_DIR="./build/generated/sources/web3j/test/java"
 SOLC_VERSIONS=("0.8.7")
@@ -21,6 +24,9 @@ case $OS in
         exit 1
         ;;
 esac
+
+chmod +x "$HOME/.web3j/source.sh"
+source $HOME/.web3j/source.sh
 
 # Loop over Solidity versions
 for i in "${!SOLC_VERSIONS[@]}"; do

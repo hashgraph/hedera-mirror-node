@@ -70,12 +70,16 @@ tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
+val homeDir = System.getenv("HOME")
+val web3jLink = file("$homeDir/.web3j/web3j")
+
 val downloadWeb3j =
     tasks.register<Exec>("downloadWeb3j") {
         description = "Download and install Web3j CLI"
         group = "historical"
 
         commandLine("bash", "-c", "curl -L get.web3j.io | sh")
+        onlyIf { !web3jLink.exists() }
     }
 
 // Tasks to download OpenZeppelin contracts

@@ -4,6 +4,7 @@ kind: Pod
 metadata:
   annotations: {{- toYaml .Values.test.annotations | nindent 4 }}
   labels: {{- include "hedera-mirror-rest-java.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "hedera-mirror-rest-java.name" . }}-test
   name: {{ include "hedera-mirror-rest-java.fullname" . }}-test
   namespace: {{ include "hedera-mirror-rest-java.namespace" . }}
 spec:
@@ -25,6 +26,8 @@ spec:
         - name: rest-java-test
           mountPath: /test
           readOnly: true
+  imagePullSecrets: {{ toYaml .Values.test.image.pullSecrets | nindent 4 }}
+  priorityClassName: {{ .Values.test.priorityClassName }}
   restartPolicy: Never
   securityContext:
     fsGroup: 1000

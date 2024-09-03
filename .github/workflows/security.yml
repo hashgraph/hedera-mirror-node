@@ -24,7 +24,7 @@ env:
 jobs:
   dependencies:
     name: Dependency Check
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - name: Harden Runner
@@ -47,7 +47,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4
+        uses: gradle/actions/setup-gradle@16bf8bc8fe830fa669c3c9f914d3eb147c629707 # v4
         with:
           gradle-home-cache-includes: |
             caches
@@ -63,7 +63,7 @@ jobs:
         run: ./gradlew dependencyCheckAggregate
 
       - name: Upload report
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         if: failure()
         with:
           name: dependency-check-report
@@ -73,7 +73,7 @@ jobs:
     name: GoSec Code Scan
     env:
       GO111MODULE: on
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
@@ -109,7 +109,7 @@ jobs:
   sonar:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: SonarCloud
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
@@ -133,7 +133,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4
+        uses: gradle/actions/setup-gradle@16bf8bc8fe830fa669c3c9f914d3eb147c629707 # v4
 
       - name: Cache SonarCloud dependencies
         uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
@@ -151,7 +151,7 @@ jobs:
   snyk:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: Snyk Open Source
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
@@ -173,7 +173,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4
+        uses: gradle/actions/setup-gradle@16bf8bc8fe830fa669c3c9f914d3eb147c629707 # v4
 
       - name: Setup Snyk
         run: npm install -g snyk-to-html @wcj/html-to-markdown-cli
@@ -198,7 +198,7 @@ jobs:
   snyk-code:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: Snyk Code
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
@@ -220,7 +220,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4
+        uses: gradle/actions/setup-gradle@16bf8bc8fe830fa669c3c9f914d3eb147c629707 # v4
 
       - name: Setup Snyk
         run: npm install -g snyk-to-html @wcj/html-to-markdown-cli
