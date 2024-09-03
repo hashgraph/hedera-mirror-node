@@ -98,6 +98,9 @@ hedera:
             /api/v1/contracts: { "cache-control": "public, max-age=10" }
             /api/v1/contracts/:contractId/results/:consensusTimestamp([0-9.]+):
               { "cache-control": "public, max-age=600" }
+            /api/v1/contracts/results: { "cache-control": "public, max-age=10" }
+            /api/v1/contracts/results/logs:
+              { "cache-control": "public, max-age=10" }
             /api/v1/contracts/results/:transactionIdOrHash:
               { "cache-control": "public, max-age=600" }
             /api/v1/contracts/results/:transactionIdOrHash/actions:
