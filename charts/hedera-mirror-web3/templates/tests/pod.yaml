@@ -4,6 +4,7 @@ kind: Pod
 metadata:
   annotations: {{- toYaml .Values.test.annotations | nindent 4 }}
   labels: {{- include "hedera-mirror-web3.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "hedera-mirror-web3.name" . }}-test
   name: {{ include "hedera-mirror-web3.fullname" . }}-test
   namespace: {{ include "hedera-mirror-web3.namespace" . }}
 spec:
@@ -25,6 +26,8 @@ spec:
         - name: web3-test
           mountPath: /test
           readOnly: true
+  imagePullSecrets: {{ toYaml .Values.test.image.pullSecrets | nindent 4 }}
+  priorityClassName: {{ .Values.test.priorityClassName }}
   restartPolicy: Never
   securityContext:
     fsGroup: 1000
