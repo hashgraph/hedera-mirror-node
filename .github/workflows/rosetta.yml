@@ -73,10 +73,10 @@ jobs:
           tags: "${{ env.MODULE }}:${{ github.sha }}"
 
       - name: Importer Configuration
-        run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application_importer.yml
+        run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > ${{ github.workspace }}/application_importer.yml
 
       - name: Rosetta Configuration
-        run: echo "${{ secrets.ROSETTA_ROSETTA_CONFIG }}" | base64 -d > /tmp/application_rosetta.yml
+        run: echo "${{ secrets.ROSETTA_ROSETTA_CONFIG }}" | base64 -d > ${{ github.workspace }}/application_rosetta.yml
 
       - name: Run Mirror Node in Online Mode
         run: |

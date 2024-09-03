@@ -96,7 +96,7 @@ jobs:
   chart:
     name: Publish charts
     needs: image
-    runs-on: mirror-node-linux-large
+    runs-on: mirror-node-linux-medium
     permissions:
       contents: write
     steps:
