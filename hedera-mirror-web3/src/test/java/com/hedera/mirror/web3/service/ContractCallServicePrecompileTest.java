@@ -2532,14 +2532,6 @@ class ContractCallServicePrecompileTest extends AbstractContractCallServiceOpcod
         return expectedTokenKeys;
     }
 
-    private String getAddressFromEntityId(EntityId entity) {
-        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
-    }
-
-    private String getAddressFromEvmAddress(byte[] evmAddress) {
-        return Address.wrap(Bytes.wrap(evmAddress)).toHexString();
-    }
-
     private KeyValue getKeyValue(byte[] serializedKey) {
         try {
             final var key = Key.parseFrom(serializedKey);
