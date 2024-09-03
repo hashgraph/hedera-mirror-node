@@ -1,9 +1,6 @@
 name: Cleanup
 
 on:
-  push:
-    branches:
-      - 09188-CI-Runners
   schedule:
     - cron: "0 0 * * *" # Daily at midnight
 

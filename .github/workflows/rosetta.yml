@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - "main"
-      - 09188-CI-Runners
     tags:
       - "v*"
 
