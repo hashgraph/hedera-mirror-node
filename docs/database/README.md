@@ -11,7 +11,7 @@ by many external clients. If operators store less data or only have a few intern
 these requirements can be relaxed.
 
 - PostgreSQL 14+
-- 8 vCPUs
+- 10 vCPUs
 - 40 GiB memory
 - 1-55 TiB
 
@@ -268,9 +268,9 @@ recommended configuration for a production Citus cluster. Note the storage size 
 since open access until April 2023.
 
 | Node Type   | Count | vCPU | Memory | Disk Storage |
-|-------------|-------|------|--------|--------------|
-| Coordinator | 2     | 7    | 24 GB  | 256 GB       |
-| Worker      | 3     | 7    | 24 GB  | 3 TB         |
+| ----------- | ----- | ---- | ------ | ------------ |
+| Coordinator | 2     | 8    | 24 GB  | 256 GB       |
+| Worker      | 3     | 10   | 34 GB  | 3 TB         |
 
 Following are the prerequisites and steps for migrating V1 data to V2. As of mirror node v0.103.0, the migration script
 is expected to migrate full mainnet data in 10 days.
@@ -280,7 +280,8 @@ is expected to migrate full mainnet data in 10 days.
    ```shell
    sudo apt-get install -y bc csvkit
    ```
-2. Create a Citus cluster with enough resources (Disk, CPU and memory). For GKE, an e2-custom-6-32768 can be used.
+2. Create a Citus cluster with enough resources (Disk, CPU and memory). For GKE, use n2-custom-10-32768 for
+   coordinators, and n2-custom-12-40960 for workers.
 3. Ensure the source and target schemas are compatible by deploying the same version to both. Be sure to leave importer
    disabled for the target deployment.
 4. Get the correct version of [flyway](https://flywaydb.org/documentation/usage/commandline/) based on your OS and
@@ -293,9 +294,8 @@ is expected to migrate full mainnet data in 10 days.
    [migration.config](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.config). The source should be
    the source from step 5.
 9. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script. Due to the time
-   it will take to complete the migration,
-   it is recommended to run the script in a way that doesn't require your terminal session to remain open (e.g.
-   `./migration.sh > migration.log 2> migration-error.log & disown`)
+   it will take to complete the migration, it is recommended to run the script in a way that doesn't require your
+   terminal session to remain open (e.g. `./migration.sh > migration.log 2> migration-error.log & disown`)
 10. Update the mirror node configuration to point to the new Citus DB and enable the importer. If you have modified the
     configuration of any checksums for repeatable migrations under `hedera.mirror.importer.migration`, you must make
     sure this configuration remains the same in the new cluster.
