@@ -23,10 +23,8 @@ import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.TokenID;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +33,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 class TokenAirdropTransactionHandler extends AbstractTransactionHandler {
 
-    private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
@@ -48,15 +45,8 @@ class TokenAirdropTransactionHandler extends AbstractTransactionHandler {
         var pendingAirdrops = recordItem.getTransactionRecord().getNewPendingAirdropsList();
         for (var pendingAirdrop : pendingAirdrops) {
             var pendingAirdropId = pendingAirdrop.getPendingAirdropId();
-            var receiver =
-                    entityIdService.lookup(pendingAirdropId.getReceiverId()).orElse(EntityId.EMPTY);
-            var sender = entityIdService.lookup(pendingAirdropId.getSenderId()).orElse(EntityId.EMPTY);
-            if (EntityId.isEmpty(receiver) || EntityId.isEmpty(sender)) {
-                Utility.handleRecoverableError(
-                        "Invalid pending token airdrop entity id at {}", recordItem.getConsensusTimestamp());
-                continue;
-            }
-
+            var receiver = EntityId.of(pendingAirdropId.getReceiverId());
+            var sender = EntityId.of(pendingAirdropId.getSenderId());
             recordItem.addEntityId(receiver);
             recordItem.addEntityId(sender);
 
