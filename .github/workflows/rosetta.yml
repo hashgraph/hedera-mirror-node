@@ -83,8 +83,8 @@ jobs:
           ONLINE_CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=${STARTDATE} \
             -e NETWORK=${NETWORK} \
             -e HEDERA_MIRROR_ROSETTA_RESPONSE_MAXTRANSACTIONSINBLOCK=4 \
-            -v /tmp/application_importer.yml:/app/importer/application.yml \
-            -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
+            -v ${{ github.workspace }}/application_importer.yml:/app/importer/application.yml \
+            -v ${{ github.workspace }}/application_rosetta.yml:/app/rosetta/application.yml \
             -p 5700:5700 "${MODULE}:${{ github.sha }}")
           echo "ONLINE_CONTAINER_ID=$ONLINE_CONTAINER_ID" >> $GITHUB_ENV
 
