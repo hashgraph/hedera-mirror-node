@@ -2,11 +2,11 @@ name: Charts
 
 on:
   pull_request:
-    branches: [ main, release/** ]
-    paths: [ charts/** ]
+    branches: [main, release/**]
+    paths: [charts/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+    branches: [main, release/**]
+    tags: [v*]
 
 permissions:
   contents: read

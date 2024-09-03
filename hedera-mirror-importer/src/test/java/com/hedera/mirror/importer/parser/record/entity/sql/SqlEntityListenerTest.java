@@ -44,6 +44,8 @@ import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
+import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
@@ -87,6 +89,7 @@ import com.hedera.mirror.importer.repository.PrngRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenAirdropRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
@@ -150,6 +153,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     private final SqlProperties sqlProperties;
     private final StakingRewardTransferRepository stakingRewardTransferRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final TokenAirdropRepository tokenAirdropRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenRepository tokenRepository;
     private final TokenTransferRepository tokenTransferRepository;
@@ -2699,6 +2703,143 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactly(expectedTokenAccount);
         assertThat(findHistory(TokenAccount.class)).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void onTokenAirdrop() {
+        // given
+        var tokenAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
+        var tokenAirdrop2 =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE).get();
+
+        // when
+        sqlEntityListener.onTokenAirdrop(tokenAirdrop);
+        sqlEntityListener.onTokenAirdrop(tokenAirdrop2);
+
+        // when
+        long newAmount = 50000L;
+        var updatedAmountAirdrop = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(a -> a.amount(newAmount)
+                        .receiverAccountId(tokenAirdrop.getReceiverAccountId())
+                        .senderAccountId(tokenAirdrop.getSenderAccountId())
+                        .tokenId(tokenAirdrop.getTokenId())
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .get();
+        sqlEntityListener.onTokenAirdrop(updatedAmountAirdrop);
+        completeFileAndCommit();
+
+        // then
+        tokenAirdrop.setTimestampRange(
+                Range.closedOpen(tokenAirdrop.getTimestampLower(), updatedAmountAirdrop.getTimestampLower()));
+        assertThat(findHistory(TokenAirdrop.class)).containsExactly(tokenAirdrop);
+        updatedAmountAirdrop.setAmount(newAmount);
+        assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(updatedAmountAirdrop, tokenAirdrop2);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+            CANCELLED, 1
+            CANCELLED, 2
+            CLAIMED,   1
+            CLAIMED,   2
+            """)
+    void onTokenAirdropUpdate(TokenAirdropStateEnum state, int commitIndex) {
+        // given
+        var tokenAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
+        var nftAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE).get();
+
+        sqlEntityListener.onTokenAirdrop(tokenAirdrop);
+        sqlEntityListener.onTokenAirdrop(nftAirdrop);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(tokenAirdrop, nftAirdrop);
+            assertThat(findHistory(TokenAirdrop.class)).isEmpty();
+        }
+
+        // when
+        var tokenAirdropUpdateState = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(a -> a.state(state)
+                        .amount(null) // Record files that change state do not include PendingAirdropValue so remove the
+                        // amount here
+                        .receiverAccountId(tokenAirdrop.getReceiverAccountId())
+                        .senderAccountId(tokenAirdrop.getSenderAccountId())
+                        .tokenId(tokenAirdrop.getTokenId())
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .get();
+        var nftAirdropUpdateState = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                .customize(a -> a.state(state)
+                        .receiverAccountId(nftAirdrop.getReceiverAccountId())
+                        .senderAccountId(nftAirdrop.getSenderAccountId())
+                        .serialNumber(nftAirdrop.getSerialNumber())
+                        .tokenId(nftAirdrop.getTokenId())
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .get();
+        sqlEntityListener.onTokenAirdrop(tokenAirdropUpdateState);
+        sqlEntityListener.onTokenAirdrop(nftAirdropUpdateState);
+        completeFileAndCommit();
+
+        // then
+        tokenAirdrop.setTimestampRange(
+                Range.closedOpen(tokenAirdrop.getTimestampLower(), tokenAirdropUpdateState.getTimestampLower()));
+        nftAirdrop.setTimestampRange(
+                Range.closedOpen(nftAirdrop.getTimestampLower(), nftAirdropUpdateState.getTimestampLower()));
+        assertThat(findHistory(TokenAirdrop.class)).containsExactly(tokenAirdrop, nftAirdrop);
+        tokenAirdropUpdateState.setAmount(tokenAirdrop.getAmount());
+        assertThat(tokenAirdropRepository.findAll())
+                .containsExactlyInAnyOrder(tokenAirdropUpdateState, nftAirdropUpdateState);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = TokenAirdropStateEnum.class,
+            names = {"CANCELLED", "CLAIMED"})
+    void onTokenAirdropPartialUpdate(TokenAirdropStateEnum state) {
+        // given
+        var tokenAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
+        var nftAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE).get();
+
+        // when
+        var tokenAirdropUpdateState = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(a -> a.state(state)
+                        .amount(null) // Record files that change state do not include PendingAirdropValue so remove the
+                        // amount here
+                        .receiverAccountId(tokenAirdrop.getReceiverAccountId())
+                        .senderAccountId(tokenAirdrop.getSenderAccountId())
+                        .tokenId(tokenAirdrop.getTokenId())
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .get();
+        var nftAirdropUpdateState = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                .customize(a -> a.state(state)
+                        .receiverAccountId(nftAirdrop.getReceiverAccountId())
+                        .senderAccountId(nftAirdrop.getSenderAccountId())
+                        .serialNumber(nftAirdrop.getSerialNumber())
+                        .tokenId(nftAirdrop.getTokenId())
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .get();
+        sqlEntityListener.onTokenAirdrop(tokenAirdropUpdateState);
+        sqlEntityListener.onTokenAirdrop(nftAirdropUpdateState);
+        completeFileAndCommit();
+
+        // then
+        tokenAirdrop.setTimestampRange(
+                Range.closedOpen(tokenAirdrop.getTimestampLower(), tokenAirdropUpdateState.getTimestampLower()));
+        nftAirdrop.setTimestampRange(
+                Range.closedOpen(nftAirdrop.getTimestampLower(), nftAirdropUpdateState.getTimestampLower()));
+        assertThat(findHistory(TokenAirdrop.class)).isEmpty();
+        assertThat(tokenAirdropRepository.findAll())
+                .containsExactlyInAnyOrder(tokenAirdropUpdateState, nftAirdropUpdateState);
     }
 
     @Test

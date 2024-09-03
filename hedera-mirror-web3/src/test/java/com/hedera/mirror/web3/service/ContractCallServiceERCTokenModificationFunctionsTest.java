@@ -642,9 +642,10 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var amount = 10L;
         // When
         contract.send_delegateTransfer(
-                tokenAddress.toHexString(), toAddress(recipient).toHexString(), BigInteger.valueOf(amount)).send();
+                        tokenAddress.toHexString(), toAddress(recipient).toHexString(), BigInteger.valueOf(amount))
+                .send();
         final var result = testWeb3jService.getTransactionResult();
-        //Then
+        // Then
         assertThat(result).isEqualTo("0x");
     }
 
