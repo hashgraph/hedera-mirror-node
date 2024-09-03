@@ -65,4 +65,5 @@ OS=$(uname)
 
 if (! check_solc_select_installed); then
     install_solc_select
+    export PATH=$HOME/.local/bin:$PATH
 fi
