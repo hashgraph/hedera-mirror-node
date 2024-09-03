@@ -22,6 +22,9 @@ case $OS in
         ;;
 esac
 
+chmod +x "$HOME/.web3j/source.sh"
+source $HOME/.web3j/source.sh
+
 # Loop over Solidity versions
 for i in "${!SOLC_VERSIONS[@]}"; do
   # Install solc-select version
