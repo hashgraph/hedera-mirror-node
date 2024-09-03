@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Export the PIP3 bin path
+export PATH="${HOME}/.local/bin:${PATH}"
+
 # Define Solidity versions and output directories
 OUTPUT_DIR="./build/generated/sources/web3j/test/java"
 SOLC_VERSIONS=("0.8.7")

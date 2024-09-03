@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Export the PIP3 bin path
+export PATH="${HOME}/.local/bin:${PATH}"
+
 # Function to install pip3 and solc-select on Ubuntu/Debian
 install_on_debian() {
     sudo apt update
@@ -65,5 +68,4 @@ OS=$(uname)
 
 if (! check_solc_select_installed); then
     install_solc_select
-    export PATH=$HOME/.local/bin:$PATH
 fi
