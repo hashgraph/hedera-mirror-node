@@ -14,7 +14,7 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.112.1-rc1'
+      version: '0.113.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -70,7 +70,7 @@ spec:
                 averageUtilization: 40
       resources:
         requests:
-          cpu: 1100m  # same as limits
+          cpu: 1100m # same as limits
     restjava:
       hpa:
         metrics:
@@ -82,7 +82,7 @@ spec:
                 averageUtilization: 40
       resources:
         requests:
-          cpu: 2  # same as limits
+          cpu: 2 # same as limits
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
@@ -136,4 +136,4 @@ spec:
                 averageUtilization: 40
       resources:
         requests:
-          cpu: 2  # same as limits
+          cpu: 2 # same as limits
