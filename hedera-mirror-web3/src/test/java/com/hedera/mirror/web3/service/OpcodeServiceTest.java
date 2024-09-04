@@ -60,6 +60,7 @@ import java.util.LinkedList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -70,7 +71,7 @@ import org.web3j.tx.Contract;
 @RequiredArgsConstructor
 class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
-    public static final long AMOUNT = 0L;
+    private static final long AMOUNT = 0L;
 
     private static final String SUCCESS_PREFIX = "0x0000000000000000000000000000000000000000000000000000000000000020";
 
@@ -347,7 +348,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var callData =
                 Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
         final byte[] expectedResultBytes = {1};
-        final var expectedResult = DomainUtils.bytesToHex(DomainUtils.leftPadBytes(expectedResultBytes, 32));
+        final var expectedResult = DomainUtils.bytesToHex(DomainUtils.leftPadBytes(expectedResultBytes, Bytes32.SIZE));
 
         final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
@@ -558,14 +559,14 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     }
 
     private byte getByteFromBoolean(final boolean bool) {
-        return bool ? (byte) 1 : (byte) 0;
+        return (byte) (bool ? 1 : 0);
     }
 
     private String getExpectedResultFromBooleans(Boolean... booleans) {
         StringBuilder result = new StringBuilder();
         for (Boolean booleanValue : booleans) {
             final var byteValue = getByteFromBoolean(booleanValue);
-            result.append(DomainUtils.bytesToHex(DomainUtils.leftPadBytes(new byte[] {byteValue}, 32)));
+            result.append(DomainUtils.bytesToHex(DomainUtils.leftPadBytes(new byte[] {byteValue}, Bytes32.SIZE)));
         }
         return result.toString();
     }
@@ -655,7 +656,6 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 persistTransaction,
                 persistContractResult,
                 senderEntityId,
-                null,
                 consensusTimestamp);
     }
 
@@ -686,7 +686,6 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
             final boolean persistTransaction,
             final boolean persistContractResult,
             final EntityId senderEntityId,
-            final byte[] expectedResult,
             final long consensusTimestamp) {
         return setUpForSuccessWithExpectedResultAndBalance(
                 transactionType,
@@ -696,7 +695,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 persistContractResult,
                 senderEntityId,
                 0,
-                expectedResult,
+                null,
                 consensusTimestamp);
     }
 
@@ -711,7 +710,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
             final byte[] expectedResult,
             final long consensusTimestamp) {
 
-        final var ethHash = domainBuilder.bytes(32);
+        final var ethHash = domainBuilder.bytes(Bytes32.SIZE);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
 
