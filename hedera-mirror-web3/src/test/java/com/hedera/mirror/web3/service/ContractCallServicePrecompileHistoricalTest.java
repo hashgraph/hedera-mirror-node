@@ -1019,24 +1019,24 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
                 .type(tokenType));
 
         switch (keyType) {
-            case AbstractContractCallServiceTest.KeyType.ADMIN_KEY:
+            case ADMIN_KEY:
                 break;
-            case AbstractContractCallServiceTest.KeyType.KYC_KEY:
+            case KYC_KEY:
                 tokenBuilder.customize(t -> t.kycKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.FREEZE_KEY:
+            case FREEZE_KEY:
                 tokenBuilder.customize(t -> t.freezeKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.WIPE_KEY:
+            case WIPE_KEY:
                 tokenBuilder.customize(t -> t.wipeKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.SUPPLY_KEY:
+            case SUPPLY_KEY:
                 tokenBuilder.customize(t -> t.supplyKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.FEE_SCHEDULE_KEY:
+            case FEE_SCHEDULE_KEY:
                 tokenBuilder.customize(t -> t.feeScheduleKey(key.toByteArray()));
                 break;
-            case AbstractContractCallServiceTest.KeyType.PAUSE_KEY:
+            case PAUSE_KEY:
                 tokenBuilder.customize(t -> t.pauseKey(key.toByteArray()));
                 break;
             default:
