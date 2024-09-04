@@ -100,9 +100,8 @@ gcloud compute disks delete {diskName} --project {gcpProject} --zone {diskZone}
 
 ### Update Passwords
 
-1. `Stackgres` doesn't allow for the `superuser` or `replication` password to be set by configuration so you will need
-   to
-   retrieve the old password from the cluster by executing the below command:
+1. `Stackgres` doesn't allow for the `superuser` password to be set by configuration so you will need
+   to retrieve the old password from the cluster by executing the below command:
    <br>
    `kubectl exec -it -n mainnet-citus -c postgres-util  {releaseName}-citus-shard0-0  -- psql -U postgres -d mirror_node -c "select * from pg_dist_authinfo where rolename='postgres'"`
 2. Open a session using `postgres-util` container on the primary coordinator
@@ -116,7 +115,11 @@ gcloud compute disks delete {diskName} --project {gcpProject} --zone {diskZone}
     update set authinfo = excluded.authinfo;`
 4. Retrieve the new passwords for this cluster
    <br>
+   For `authenticator`, `postgres`, and `replicator` passwords:
+   <br>
    `kubectl get secrets -n {targetNamespace} {releaseName}-citus-coord -o yaml |ksd`
+   <br>
+   For all other passwords:
    <br>
    `kubectl get secrets -n {targetNamespace} {releaseName}-passwords -o yaml |ksd`
    <br>
@@ -167,8 +170,10 @@ $cmd$);
 SELECT run_command_on_workers($cmd$
 alter user replicator with password '';
 $cmd$);
+SELECT run_command_on_workers($cmd$
+alter user authenticator with password '';
+$cmd$);
 
-alter user replicator with password '';
 alter user mirror_graphql with password '';
 alter user mirror_grpc with password '';
 alter user mirror_importer with password '';
@@ -177,6 +182,8 @@ alter user mirror_rest with password '';
 alter user mirror_rest_java with password '';
 alter user mirror_rosetta with password '';
 alter user mirror_web3 with password '';
+alter user replicator with password '';
+alter user authenticator with password '';
 ```
 
 ## Example YAML
