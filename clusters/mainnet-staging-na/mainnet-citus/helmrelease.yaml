@@ -19,7 +19,7 @@ spec:
     - name: mirror
       namespace: common
   driftDetection:
-    mode: warn
+    mode: enabled
     ignore:
       - paths: [""]
         target:
@@ -87,13 +87,7 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
-      coordinator:
-        config:
-          work_mem: "16MB"
       worker:
-        config:
-          shared_buffers: "12GB"
-          work_mem: "16MB"
         overrides:
           - index: 0
             pods:
@@ -103,14 +97,10 @@ spec:
             pods:
               persistentVolume:
                 size: 14000Gi
-        resources:
-          cpu: 9500m
-          memory: 34Gi
-          requests:
-            containers:
-              patroni:
-                cpu: 9500m
-                memory: 34Gi
+          - index: 1
+            pods:
+              persistentVolume:
+                size: 3200Gi
     test:
       config:
         hedera:
