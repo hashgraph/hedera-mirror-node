@@ -17,6 +17,12 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.exception.BlockNumberNotFoundException.UNKNOWN_BLOCK_NUMBER;
+import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.KeyType.FEE_SCHEDULE_KEY;
+import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.KeyType.FREEZE_KEY;
+import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.KeyType.KYC_KEY;
+import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.KeyType.PAUSE_KEY;
+import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.KeyType.SUPPLY_KEY;
+import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.KeyType.WIPE_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ECDSA_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ECDSA_TYPE;
@@ -1186,17 +1192,17 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         expectedTokenKeys.add(
                 new PrecompileTestContractHistorical.TokenKey(BigInteger.ONE, getKeyValue(tokenEntity.getKey())));
         expectedTokenKeys.add(
-                new PrecompileTestContractHistorical.TokenKey(BigInteger.valueOf(2), getKeyValue(token.getKycKey())));
+                new PrecompileTestContractHistorical.TokenKey(KYC_KEY.keyTypeNumeric, getKeyValue(token.getKycKey())));
         expectedTokenKeys.add(new PrecompileTestContractHistorical.TokenKey(
-                BigInteger.valueOf(4), getKeyValue(token.getFreezeKey())));
-        expectedTokenKeys.add(
-                new PrecompileTestContractHistorical.TokenKey(BigInteger.valueOf(8), getKeyValue(token.getWipeKey())));
+                FREEZE_KEY.keyTypeNumeric, getKeyValue(token.getFreezeKey())));
         expectedTokenKeys.add(new PrecompileTestContractHistorical.TokenKey(
-                BigInteger.valueOf(16), getKeyValue(token.getSupplyKey())));
+                WIPE_KEY.keyTypeNumeric, getKeyValue(token.getWipeKey())));
         expectedTokenKeys.add(new PrecompileTestContractHistorical.TokenKey(
-                BigInteger.valueOf(32), getKeyValue(token.getFeeScheduleKey())));
+                SUPPLY_KEY.keyTypeNumeric, getKeyValue(token.getSupplyKey())));
         expectedTokenKeys.add(new PrecompileTestContractHistorical.TokenKey(
-                BigInteger.valueOf(64), getKeyValue(token.getPauseKey())));
+                FEE_SCHEDULE_KEY.keyTypeNumeric, getKeyValue(token.getFeeScheduleKey())));
+        expectedTokenKeys.add(new PrecompileTestContractHistorical.TokenKey(
+                PAUSE_KEY.keyTypeNumeric, getKeyValue(token.getPauseKey())));
 
         return expectedTokenKeys;
     }
