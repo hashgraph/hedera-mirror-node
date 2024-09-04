@@ -35,4 +35,3 @@ spec:
   securityUpgrade:
     mode: InPlace
 ```
-    

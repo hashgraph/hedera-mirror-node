@@ -24,7 +24,7 @@ env:
 jobs:
   dependencies:
     name: Dependency Check
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - name: Harden Runner
@@ -73,7 +73,7 @@ jobs:
     name: GoSec Code Scan
     env:
       GO111MODULE: on
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
@@ -109,7 +109,7 @@ jobs:
   sonar:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: SonarCloud
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
@@ -151,7 +151,7 @@ jobs:
   snyk:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: Snyk Open Source
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
@@ -198,7 +198,7 @@ jobs:
   snyk-code:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: Snyk Code
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1

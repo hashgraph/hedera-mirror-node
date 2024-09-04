@@ -76,6 +76,8 @@ public class EntityProperties {
 
         private boolean tokens = true;
 
+        private boolean tokenAirdrops = true;
+
         private boolean topics = true;
 
         private boolean topicMessageLookups = false;
@@ -107,6 +109,10 @@ public class EntityProperties {
 
         @NotNull
         private Set<TransactionType> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);
+
+        public boolean isTokenAirdrops() {
+            return tokenAirdrops && tokens;
+        }
 
         public boolean shouldPersistEntityTransaction(EntityId entityId) {
             return entityTransactions && !EntityId.isEmpty(entityId) && !entityTransactionExclusion.contains(entityId);

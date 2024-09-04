@@ -16,14 +16,31 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import jakarta.inject.Named;
+import java.util.List;
+import java.util.function.Function;
 
 @Named
-class TokenClaimAirdropTransactionHandler extends AbstractTransactionHandler {
+class TokenClaimAirdropTransactionHandler extends AbstractTokenUpdateAirdropTransactionHandler {
 
-    @Override
-    public TransactionType getType() {
-        return TransactionType.TOKENCLAIMAIRDROP;
+    private static final Function<RecordItem, List<PendingAirdropId>> airdropExtractor =
+            r -> r.getTransactionBody().getTokenClaimAirdrop().getPendingAirdropsList();
+
+    public TokenClaimAirdropTransactionHandler(
+            EntityIdService entityIdService, EntityListener entityListener, EntityProperties entityProperties) {
+        super(
+                entityIdService,
+                entityListener,
+                entityProperties,
+                airdropExtractor,
+                TokenAirdropStateEnum.CLAIMED,
+                TransactionType.TOKENCLAIMAIRDROP);
     }
 }

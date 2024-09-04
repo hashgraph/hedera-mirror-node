@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.CREATE_TOKEN_VALUE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ED25519_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -41,8 +42,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTracerTest {
-
-    private static final long CREATE_TOKEN_VALUE = 3070 * 100_000_000L;
     private static final String EXPECTED_RESULT_NEGATIVE_TESTS = "hardcodedResult";
 
     @ParameterizedTest

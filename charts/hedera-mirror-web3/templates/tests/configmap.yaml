@@ -4,6 +4,7 @@ kind: ConfigMap
 metadata:
   annotations: {{- toYaml .Values.test.annotations | nindent 4 }}
   labels: {{- include "hedera-mirror-web3.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "hedera-mirror-web3.name" . }}-test
   name: {{ include "hedera-mirror-web3.fullname" . }}-test
   namespace: {{ include "hedera-mirror-web3.namespace" . }}
 data:

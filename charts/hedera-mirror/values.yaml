@@ -293,7 +293,7 @@ stackgres:
       shared_buffers: "9GB"
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
-      work_mem: "24MB"
+      work_mem: "16MB"
     enableMetricsExporter: false
     enablePostgresUtil: true
     instances: 1
@@ -341,10 +341,10 @@ stackgres:
       max_wal_size: "24GB"
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
-      shared_buffers: "9GB"
+      shared_buffers: "12GB"
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
-      work_mem: "24MB"
+      work_mem: "16MB"
     enableMetricsExporter: false
     enablePostgresUtil: true
     instances: 1
@@ -393,9 +393,11 @@ test:
     - -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}
   image:
     pullPolicy: IfNotPresent
+    pullSecrets: []
     registry: gcr.io
     repository: mirrornode/hedera-mirror-test
     tag: ""  # Defaults to the chart's app version
+  priorityClassName: ""
   resources:
     limits:
       cpu: 3

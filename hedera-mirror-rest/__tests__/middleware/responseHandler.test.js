@@ -71,7 +71,7 @@ describe('Response middleware', () => {
     await responseHandler(mockRequest, mockResponse, nextMiddleware);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(2, undefined);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(2, headers.path[mockRequest.route.path]);
     expect(mockResponse.set).toHaveBeenNthCalledWith(3, 'Content-Type', 'application/json; charset=utf-8');
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });

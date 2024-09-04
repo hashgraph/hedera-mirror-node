@@ -132,11 +132,10 @@ global:
 
 image:
   pullPolicy: IfNotPresent
+  pullSecrets: []
   registry: gcr.io
   repository: mirrornode/hedera-mirror-importer
   tag: ""  # Defaults to the chart's app version
-
-imagePullSecrets: []
 
 labels: {}
 
