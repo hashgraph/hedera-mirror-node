@@ -72,7 +72,7 @@ class ContractCallSystemPrecompileTest extends AbstractContractCallServiceTest {
     }
 
     @Test
-    void pseudoRandomGeneratorPrecompileFunctionsTestEthEstimateGas() {
+    void pseudoRandomGeneratorPrecompileFunctionsTestEthEstimateGas() throws Exception {
         final var contract = testWeb3jService.deploy(PrngSystemContract::deploy);
         final var functionCall = contract.send_getPseudorandomSeed(BigInteger.ZERO);
         verifyEthCallAndEstimateGas(functionCall, contract);

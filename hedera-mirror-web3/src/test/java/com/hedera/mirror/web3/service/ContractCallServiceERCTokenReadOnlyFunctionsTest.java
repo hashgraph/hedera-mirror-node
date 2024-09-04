@@ -674,7 +674,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallGetApprovedEmptySpenderRedirect() {
+    void ethCallGetApprovedEmptySpenderRedirect() throws Exception {
         final var treasuryEntityId = accountPersist();
         final var tokenEntity = persistTokenEntity();
         domainBuilder
@@ -695,7 +695,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallIsApprovedForAllRedirect() {
+    void ethCallIsApprovedForAllRedirect() throws Exception {
         final var owner = accountPersist();
         final var spender = accountPersist();
         final var tokenEntity = nftPersist(owner);
@@ -717,7 +717,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallIsApprovedForAllWithAliasRedirect() {
+    void ethCallIsApprovedForAllWithAliasRedirect() throws Exception {
         final var spender = spenderEntityPersistWithAlias();
         final var owner = senderEntityPersistWithAlias();
         final var tokenEntity = nftPersist(owner);
@@ -739,7 +739,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallAllowanceRedirect() {
+    void ethCallAllowanceRedirect() throws Exception {
         final var owner = accountPersist();
         final var spender = accountPersist();
         final var tokenEntity = fungibleTokenPersist();
@@ -762,7 +762,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallAllowanceWithAliasRedirect() {
+    void ethCallAllowanceWithAliasRedirect() throws Exception {
         final var spender = spenderEntityPersistWithAlias();
         final var owner = senderEntityPersistWithAlias();
         final var tokenEntity = fungibleTokenPersist();
@@ -783,7 +783,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallGetApprovedRedirect() {
+    void ethCallGetApprovedRedirect() throws Exception {
         final var owner = accountPersist();
         final var spender = accountPersist();
         final var tokenEntity = nftPersist(owner, owner, spender);
@@ -794,7 +794,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallGetDecimalsRedirect() {
+    void ethCallGetDecimalsRedirect() throws Exception {
         final var decimals = 12;
         final var tokenEntity = persistTokenEntity();
         domainBuilder
@@ -808,7 +808,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallGetTotalSupplyRedirect() {
+    void ethCallGetTotalSupplyRedirect() throws Exception {
         final var totalSupply = 12345L;
         final var tokenEntity = persistTokenEntity();
         domainBuilder
@@ -825,7 +825,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallSymbolRedirect() {
+    void ethCallSymbolRedirect() throws Exception {
         final var symbol = "HBAR";
         final var tokenEntity = persistTokenEntity();
         domainBuilder
@@ -841,7 +841,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallBalanceOfRedirect() {
+    void ethCallBalanceOfRedirect() throws Exception {
         final var owner = accountPersist();
         final var tokenEntity = fungibleTokenPersist(owner);
         final var balance = 12L;
@@ -859,7 +859,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallBalanceOfWithAliasRedirect() {
+    void ethCallBalanceOfWithAliasRedirect() throws Exception {
         final var owner = senderEntityPersistWithAlias();
         final var tokenEntity = fungibleTokenPersist(owner);
         final var balance = 12L;
@@ -877,7 +877,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallNameRedirect() {
+    void ethCallNameRedirect() throws Exception {
         final var tokenName = "Hbars";
         final var tokenEntity = persistTokenEntity();
         domainBuilder
@@ -893,7 +893,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallGetOwnerOfRedirect() {
+    void ethCallGetOwnerOfRedirect() throws Exception {
         final var owner = accountPersist();
         final var tokenEntity = nftPersist(owner);
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
@@ -903,7 +903,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallGetOwnerOfEmptyOwnerRedirect() {
+    void ethCallGetOwnerOfEmptyOwnerRedirect() throws Exception {
         final var tokenEntity = nftPersist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
@@ -912,7 +912,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     @Test
-    void ethCallTokenURIRedirect() {
+    void ethCallTokenURIRedirect() throws Exception {
         final var ownerEntity = accountPersist();
         final byte[] kycKey = domainBuilder.key();
         final var metadata = "NFT_METADATA_URI";

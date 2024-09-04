@@ -57,7 +57,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                             NON_FUNGIBLE_UNIQUE,    0,      NftMetadata
                             """)
     void mintTokenGetTotalSupplyAndBalanceOfTreasury(
-            final TokenTypeEnum tokenType, final long amount, final String metadata) {
+            final TokenTypeEnum tokenType, final long amount, final String metadata) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
@@ -91,7 +91,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                             NON_FUNGIBLE_UNIQUE,    0,    1
                             """)
     void burnTokenGetTotalSupplyAndBalanceOfTreasury(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
@@ -125,7 +125,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                             NON_FUNGIBLE_UNIQUE,    0,    1
                             """)
     void wipeTokenGetTotalSupplyAndBalanceOfTreasury(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var senderEntityId = accountPersist();
@@ -158,7 +158,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
             FUNGIBLE_COMMON,
             NON_FUNGIBLE_UNIQUE
             """)
-    void pauseTokenGetPauseStatusUnpauseGetPauseStatus(final TokenTypeEnum tokenType) {
+    void pauseTokenGetPauseStatusUnpauseGetPauseStatus(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
 
@@ -185,7 +185,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
             FUNGIBLE_COMMON,
             NON_FUNGIBLE_UNIQUE
             """)
-    void freezeTokenGetPauseStatusUnpauseGetPauseStatus(final TokenTypeEnum tokenType) {
+    void freezeTokenGetPauseStatusUnpauseGetPauseStatus(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
@@ -249,7 +249,8 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                             FUNGIBLE_COMMON,        1,      0
                             NON_FUNGIBLE_UNIQUE,    0,      1
                             """)
-    void associateTokenTransfer(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+    void associateTokenTransfer(final TokenTypeEnum tokenType, final long amount, final long serialNumber)
+            throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
@@ -334,7 +335,8 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                             FUNGIBLE_COMMON,        1,      0
                             NON_FUNGIBLE_UNIQUE,    0,      1
                             """)
-    void approveTokenGetAllowance(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+    void approveTokenGetAllowance(final TokenTypeEnum tokenType, final long amount, final long serialNumber)
+            throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var ownerEntityId = accountPersist();
@@ -380,7 +382,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                             NON_FUNGIBLE_UNIQUE,    0,      1
                             """)
     void approveTokenTransferFromGetAllowanceGetBalance(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var ownerEntityId = accountPersist();
@@ -424,7 +426,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                             NON_FUNGIBLE_UNIQUE,    0,      1
                             """)
     void approveTokenTransferGetAllowanceGetBalance(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var senderEntityId = senderEntityPersistWithAlias();
@@ -462,7 +464,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                             NON_FUNGIBLE_UNIQUE,    0,      1
                             """)
     void approveTokenCryptoTransferGetAllowanceGetBalance(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
@@ -509,7 +511,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     }
 
     @Test
-    void approveForAllTokenTransferFromGetAllowance() {
+    void approveForAllTokenTransferFromGetAllowance() throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
@@ -535,7 +537,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     }
 
     @Test
-    void approveForAllCryptoTransferGetAllowance() {
+    void approveForAllCryptoTransferGetAllowance() throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
@@ -574,7 +576,8 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                             NON_FUNGIBLE_UNIQUE,    0,      1,      true
                             """)
     void cryptoTransferFromGetAllowanceGetBalance(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber, final boolean approvalForAll) {
+            final TokenTypeEnum tokenType, final long amount, final long serialNumber, final boolean approvalForAll)
+            throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
@@ -622,7 +625,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     }
 
     @Test
-    void transferFromNFTGetAllowance() {
+    void transferFromNFTGetAllowance() throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = accountPersist();
@@ -652,7 +655,8 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                             FUNGIBLE_COMMON,        1,      0
                             NON_FUNGIBLE_UNIQUE,    0,      1
                             """)
-    void transferFromGetAllowanceGetBalance(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+    void transferFromGetAllowanceGetBalance(final TokenTypeEnum tokenType, final long amount, final long serialNumber)
+            throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
@@ -688,7 +692,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
             FUNGIBLE_COMMON
             NON_FUNGIBLE_UNIQUE
             """)
-    void grantKycRevokeKyc(final TokenTypeEnum tokenType) {
+    void grantKycRevokeKyc(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
@@ -713,7 +717,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     }
 
     @Test
-    void getAddressThis() {
+    void getAddressThis() throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 

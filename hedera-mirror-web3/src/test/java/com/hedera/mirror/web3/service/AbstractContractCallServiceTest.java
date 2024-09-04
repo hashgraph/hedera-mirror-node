@@ -16,9 +16,13 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ECDSA_KEY;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -34,10 +38,13 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
+import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.KeyValueFactory;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -62,6 +69,9 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     @Resource
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    private static final long DEFAULT_TOKEN_EXPIRATION_SECONDS = 4_000_000_000L;
+    private static final long DEFAULT_TOKEN_EXPIRATION_PERIOD = 8_000_000L;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -103,22 +113,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         });
     }
 
-    protected void verifyEthCallAndEstimateGas(
-            final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract) {
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        testWeb3jService.setEstimateGas(true);
-        final AtomicLong estimateGasUsedResult = new AtomicLong();
-        // Verify eth_call
-        assertDoesNotThrow(
-                () -> estimateGasUsedResult.set(functionCall.send().getGasUsed().longValue()));
-
-        // Verify eth_estimateGas
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
-                .isTrue();
-    }
-
     protected <T extends Exception> void verifyEstimateGasRevertExecution(
             final RemoteFunctionCall<TransactionReceipt> functionCall,
             final String exceptionMessage,
@@ -147,6 +141,24 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
                 .isTrue();
+    }
+
+    protected void verifyEthCallAndEstimateGas(final RemoteFunctionCall<?> functionCall, final Contract contract)
+            throws Exception {
+        // Given
+        testWeb3jService.setEstimateGas(true);
+        functionCall.send();
+
+        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getEstimatedGas());
+
+        // When
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
+
+        // Then
+        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
+                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
+                .isTrue();
+        testWeb3jService.setEstimateGas(false);
     }
 
     protected ContractExecutionParameters getContractExecutionParameters(
@@ -238,6 +250,76 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .contractAddress(contractAddress)
                 .sender(senderAddress)
                 .build();
+    }
+
+    protected Object getTokenExpiry(final Class classType, final Entity autoRenewAccountEntity) {
+        return getTokenExpiry(
+                classType,
+                DEFAULT_TOKEN_EXPIRATION_SECONDS,
+                toAddress(autoRenewAccountEntity.toEntityId()).toHexString(),
+                DEFAULT_TOKEN_EXPIRATION_PERIOD);
+    }
+
+    protected Object getTokenExpiry(
+            final Class classType,
+            final long seconds,
+            final String autoRenewAccountAddress,
+            final long expirationPeriod) {
+        return ExpiryFactory.getInstance(
+                classType,
+                new ExpiryFactory.Builder()
+                        .second(BigInteger.valueOf(seconds))
+                        .autoRenewAccount(autoRenewAccountAddress)
+                        .autoRenewPeriod(BigInteger.valueOf(expirationPeriod)));
+    }
+
+    protected Object getKeyValue(
+            final Class classType,
+            final Boolean inheritAccountKey,
+            final String contractId,
+            final byte[] ed25519,
+            final byte[] ECDSA_secp256k1,
+            final String delegatableContractId) {
+        return KeyValueFactory.getInstance(
+                classType,
+                new KeyValueFactory.Builder()
+                        .inheritAccountKey(inheritAccountKey)
+                        .contractId(contractId)
+                        .ed25519(ed25519)
+                        .ECDSA_secp256k1(ECDSA_secp256k1)
+                        .delegatableContractId(delegatableContractId));
+    }
+
+    protected Object getKeyValueForType(
+            final Class classType, final KeyValueType keyValueType, String contractAddress) {
+        return switch (keyValueType) {
+            case INHERIT_ACCOUNT_KEY -> getKeyValue(
+                    classType,
+                    Boolean.TRUE,
+                    Address.ZERO.toHexString(),
+                    new byte[0],
+                    new byte[0],
+                    Address.ZERO.toHexString());
+            case CONTRACT_ID -> getKeyValue(
+                    classType, Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+            case ED25519 -> getKeyValue(
+                    classType,
+                    Boolean.FALSE,
+                    Address.ZERO.toHexString(),
+                    ED25519_KEY,
+                    new byte[0],
+                    Address.ZERO.toHexString());
+            case ECDSA_SECPK256K1 -> getKeyValue(
+                    classType,
+                    Boolean.FALSE,
+                    Address.ZERO.toHexString(),
+                    new byte[0],
+                    ECDSA_KEY,
+                    Address.ZERO.toHexString());
+            case DELEGATABLE_CONTRACT_ID -> getKeyValue(
+                    classType, Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
+            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
+        };
     }
 
     public enum KeyType {

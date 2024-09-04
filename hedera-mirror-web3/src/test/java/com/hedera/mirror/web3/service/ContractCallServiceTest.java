@@ -239,7 +239,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     @Test
-    void estimateGasForPureCall() {
+    void estimateGasForPureCall() throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
 
@@ -286,7 +286,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     @Test
-    void estimateGasForViewCall() {
+    void estimateGasForViewCall() throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
 
@@ -386,7 +386,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     @Test
-    void estimateGasForBalanceCallToContract() {
+    void estimateGasForBalanceCallToContract() throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
@@ -521,7 +521,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     @Test
-    void estimateGasForStateChangeCall() {
+    void estimateGasForStateChangeCall() throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
 
@@ -533,7 +533,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     @Test
-    void estimateGasForCreate2ContractDeploy() {
+    void estimateGasForCreate2ContractDeploy() throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
 
@@ -649,7 +649,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     @Test
-    void ercPrecompileCallForEstimateGas() {
+    void ercPrecompileCallForEstimateGas() throws Exception {
         // Given
         final var token = tokenPersist();
         final var contract = testWeb3jService.deploy(EthCall::deploy);

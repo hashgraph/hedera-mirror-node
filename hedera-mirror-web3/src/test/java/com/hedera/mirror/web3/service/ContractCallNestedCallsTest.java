@@ -19,8 +19,6 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.CREATE_TOKEN_VALUE;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ED25519_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.protobuf.ByteString;
@@ -426,31 +424,12 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
         verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
-    private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
-        return switch (keyValueType) {
-            case INHERIT_ACCOUNT_KEY -> new KeyValue(
-                    Boolean.TRUE, Address.ZERO.toHexString(), new byte[0], new byte[0], Address.ZERO.toHexString());
-            case CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
-            case ED25519 -> new KeyValue(
-                    Boolean.FALSE,
-                    Address.ZERO.toHexString(),
-                    NEW_ED25519_KEY,
-                    new byte[0],
-                    Address.ZERO.toHexString());
-            case ECDSA_SECPK256K1 -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], NEW_ECDSA_KEY, Address.ZERO.toHexString());
-            case DELEGATABLE_CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
-            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
-        };
+    private Expiry getTokenExpiry(final Entity autoRenewAccountEntity) {
+        return (Expiry) super.getTokenExpiry(NestedCalls.class, autoRenewAccountEntity);
     }
 
-    private Expiry getTokenExpiry(final Entity autoRenewAccountEntity) {
-        return new Expiry(
-                BigInteger.valueOf(4_000_000_000L),
-                toAddress(autoRenewAccountEntity.toEntityId()).toHexString(),
-                BigInteger.valueOf(8_000_000L));
+    protected KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
+        return (KeyValue) super.getKeyValueForType(NestedCalls.class, keyValueType, contractAddress);
     }
 
     private HederaToken getHederaToken(

@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContractCallServiceTest {
 
     @Test
-    void approveFungibleToken() {
+    void approveFungibleToken() throws Exception {
         // Given
         final var spender = accountPersist();
         final var token = fungibleTokenPersist();
@@ -58,7 +58,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void approveNFT() {
+    void approveNFT() throws Exception {
         // Given
         final var spender = accountPersist();
         final var treasury = accountPersist();
@@ -76,7 +76,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void deleteAllowanceNFT() {
+    void deleteAllowanceNFT() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -93,7 +93,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void approveFungibleTokenWithAlias() {
+    void approveFungibleTokenWithAlias() throws Exception {
         // Given
         final var spender = accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY);
         final var treasury = accountPersist();
@@ -115,7 +115,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void approveNFTWithAlias() {
+    void approveNFTWithAlias() throws Exception {
         // Given
         final var treasury = accountPersist();
         accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY);
@@ -135,7 +135,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transfer() {
+    void transfer() throws Exception {
         // Given
         final var recipient = accountPersist();
         final var treasury = accountPersist();
@@ -158,7 +158,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferFrom() {
+    void transferFrom() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var owner = accountPersist();
@@ -187,7 +187,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferFromToHollowAccount() {
+    void transferFromToHollowAccount() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var owner = accountPersist();
@@ -227,7 +227,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferFromNFT() {
+    void transferFromNFT() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var owner = accountPersist();
@@ -256,7 +256,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferWithAlias() {
+    void transferWithAlias() throws Exception {
         // Given
         final var recipient = accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY);
         final var treasury = accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY);
@@ -277,7 +277,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferFromWithAlias() {
+    void transferFromWithAlias() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var owner = accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY);
@@ -306,7 +306,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferFromNFTWithAlias() {
+    void transferFromNFTWithAlias() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var owner = accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY);
@@ -331,7 +331,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void approveFungibleTokenRedirect() {
+    void approveFungibleTokenRedirect() throws Exception {
         // Given
         final var spender = accountPersist();
         final var token = fungibleTokenPersist();
@@ -352,7 +352,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void approveNFTRedirect() {
+    void approveNFTRedirect() throws Exception {
         // Given
         final var spender = accountPersist();
         final var treasury = accountPersist();
@@ -370,7 +370,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void deleteAllowanceNFTRedirect() {
+    void deleteAllowanceNFTRedirect() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
@@ -387,7 +387,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void approveFungibleTokenWithAliasRedirect() {
+    void approveFungibleTokenWithAliasRedirect() throws Exception {
         // Given
         final var spender = accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY);
         final var token = fungibleTokenPersist();
@@ -408,7 +408,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void approveNFTWithAliasRedirect() {
+    void approveNFTWithAliasRedirect() throws Exception {
         // Given
         final var treasury = accountPersist();
         accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY);
@@ -430,7 +430,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferRedirect() {
+    void transferRedirect() throws Exception {
         // Given
         final var recipient = accountPersist();
         final var treasury = accountPersist();
@@ -453,7 +453,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferFromRedirect() {
+    void transferFromRedirect() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var owner = accountPersist();
@@ -481,7 +481,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferFromToHollowAccountRedirect() {
+    void transferFromToHollowAccountRedirect() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var owner = accountPersist();
@@ -522,7 +522,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferFromNFTRedirect() {
+    void transferFromNFTRedirect() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var owner = accountPersist();
@@ -551,7 +551,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferWithAliasRedirect() {
+    void transferWithAliasRedirect() throws Exception {
         // Given
         final var recipient = accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY);
         final var treasury = accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY);
@@ -572,7 +572,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferFromWithAliasRedirect() {
+    void transferFromWithAliasRedirect() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var owner = accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY);
@@ -600,7 +600,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     }
 
     @Test
-    void transferFromNFTWithAliasRedirect() {
+    void transferFromNFTWithAliasRedirect() throws Exception {
         // Given
         final var treasury = accountPersist();
         final var owner = accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY);

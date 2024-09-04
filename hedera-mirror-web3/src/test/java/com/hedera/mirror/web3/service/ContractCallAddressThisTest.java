@@ -58,7 +58,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
     }
 
     @Test
-    void addressThisFromFunction() {
+    void addressThisFromFunction() throws Exception {
         final var contract = testWeb3jService.deploy(TestAddressThis::deploy);
         final var functionCall = contract.send_testAddressThisFunction();
         verifyEthCallAndEstimateGas(functionCall, contract);
