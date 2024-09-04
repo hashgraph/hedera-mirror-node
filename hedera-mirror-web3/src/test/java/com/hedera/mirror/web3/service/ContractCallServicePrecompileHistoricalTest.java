@@ -68,7 +68,7 @@ import org.web3j.tx.Contract;
 class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void isTokenFrozen(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -96,7 +96,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void isTokenFrozenWithAlias(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -123,7 +123,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void isKycGranted(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -150,7 +150,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void isKycGrantedWithAlias(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -177,7 +177,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void isKycGrantedForNFT(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -203,7 +203,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void isKycGrantedForNFTWithAlias(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -229,7 +229,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void isTokenAddress(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -246,7 +246,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void isTokenAddressNFT(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -262,7 +262,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getDefaultKycToken(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -285,7 +285,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getDefaultKycNFT(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -301,7 +301,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getTokenType(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -318,7 +318,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getTokenTypeNFT(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -334,7 +334,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getTokenDefaultFreeze(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -357,7 +357,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getNFTDefaultFreeze(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -384,7 +384,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getCustomFeesForTokenWithFixedFee(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -424,7 +424,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getCustomFeesForTokenWithFractionalFee(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -468,7 +468,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getCustomFeesForTokenWithRoyaltyFee(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -514,7 +514,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getExpiryForToken(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -547,7 +547,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getApproved(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -579,7 +579,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getAllowanceForToken(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -610,7 +610,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void isApprovedForAllNFT(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -638,7 +638,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getFungibleTokenInfo(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -691,7 +691,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getNonFungibleTokenInfo(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -759,7 +759,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getTokenInfoFungible(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
@@ -807,7 +807,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     }
 
     @ParameterizedTest
-    @CsvSource({"50", "49"})
+    @ValueSource(longs = {50, 49})
     void getTokenInfoNonFungible(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
