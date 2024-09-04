@@ -47,10 +47,18 @@ class RecordFileService extends BaseService {
     from ${RecordFile.tableName}
     where ${RecordFile.CONSENSUS_END} in (
       select
-       (select ${RecordFile.CONSENSUS_END} from ${RecordFile.tableName} where ${RecordFile.CONSENSUS_END} >= timestamp order by ${RecordFile.CONSENSUS_END} limit 1) as consensus_end
+       (
+         select ${RecordFile.CONSENSUS_END}
+         from ${RecordFile.tableName}
+         where ${RecordFile.CONSENSUS_END} >= timestamp and
+           ${RecordFile.CONSENSUS_END} >= $2 and
+           ${RecordFile.CONSENSUS_END} < $3
+         order by ${RecordFile.CONSENSUS_END}
+         limit 1
+       ) as consensus_end
     from (select unnest($1::bigint[]) as timestamp) as tmp
       group by consensus_end
-    )`;
+    ) and ${RecordFile.CONSENSUS_END} >= $2 and ${RecordFile.CONSENSUS_END} < $3`;
 
   static recordFileBlockDetailsFromTimestampQuery = `select
     ${RecordFile.CONSENSUS_END}, ${RecordFile.GAS_USED}, ${RecordFile.HASH}, ${RecordFile.INDEX}
@@ -101,11 +109,16 @@ class RecordFileService extends BaseService {
    */
   async getRecordFileBlockDetailsFromTimestampArray(timestamps) {
     const recordFileMap = new Map();
-    const timestampOrder = this.getTimestampOrder(timestamps);
-    let query = RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery;
-    query += ` order by consensus_end ${timestampOrder}`;
+    if (timestamps.length === 0) {
+      return recordFileMap;
+    }
 
-    const rows = await super.getRows(query, [timestamps], 'getRecordFileBlockDetailsFromTimestampArray');
+    const {maxTimestamp, minTimestamp, order} = this.getTimestampArrayContext(timestamps);
+    let query = RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery;
+    query += ` order by consensus_end ${order}`;
+    const params = [timestamps, minTimestamp, BigInt(maxTimestamp) + 10_000_000_000n];
+
+    const rows = await super.getRows(query, params, 'getRecordFileBlockDetailsFromTimestampArray');
 
     let index = 0;
     for (const row of rows) {
@@ -116,8 +129,8 @@ class RecordFileService extends BaseService {
         if (consensusEnd >= timestamp && consensusStart <= timestamp) {
           recordFileMap.set(timestamp, recordFile);
         } else if (
-          (timestampOrder === orderFilterValues.ASC && timestamp > consensusEnd) ||
-          (timestampOrder === orderFilterValues.DESC && timestamp < consensusStart)
+          (order === orderFilterValues.ASC && timestamp > consensusEnd) ||
+          (order === orderFilterValues.DESC && timestamp < consensusStart)
         ) {
           break;
         }
@@ -182,14 +195,26 @@ class RecordFileService extends BaseService {
     return row ? new RecordFile(row) : null;
   }
 
-  getTimestampOrder(timestamps) {
+  getTimestampArrayContext(timestamps) {
     if (timestamps.length === 0) {
-      return orderFilterValues.ASC;
+      return {
+        order: orderFilterValues.ASC,
+      };
     }
 
     const first = timestamps[0];
     const last = timestamps[timestamps.length - 1];
-    return first > last ? orderFilterValues.DESC : orderFilterValues.ASC;
+    return first > last
+      ? {
+          maxTimestamp: first,
+          minTimestamp: last,
+          order: orderFilterValues.DESC,
+        }
+      : {
+          maxTimestamp: last,
+          minTimestamp: first,
+          order: orderFilterValues.ASC,
+        };
   }
 }
 
