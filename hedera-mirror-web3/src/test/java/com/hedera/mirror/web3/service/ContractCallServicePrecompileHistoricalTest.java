@@ -64,6 +64,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -78,24 +79,13 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void isTokenFrozen(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var account = persistAccountEntityHistorical(historicalRange);
-        final var tokenEntity = persistTokenEntityHistorical(historicalRange);
-        persistFungibleTokenHistorical(tokenEntity, historicalRange);
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
-                        .associated(true)
-                        .timestampRange(historicalRange))
-                .persist();
+        final var accountAndToken = persistAccountTokenAndFrozenRelationshipHistorical(historicalRange);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContractHistorical::deploy);
 
         // When
-        final var functionCall =
-                contract.call_isTokenFrozen(getAddressFromEntity(tokenEntity), getAddressFromEntity(account));
+        final var functionCall = contract.call_isTokenFrozen(
+                getAddressFromEntity(accountAndToken.getRight()), getAddressFromEntity(accountAndToken.getLeft()));
 
         // Then
         assertThat(functionCall.send()).isTrue();
@@ -106,23 +96,12 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void isTokenFrozenWithAlias(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var account = persistAccountEntityHistoricalWithAlias(historicalRange);
-        final var tokenEntity = persistTokenEntityHistorical(historicalRange);
-        persistFungibleTokenHistorical(tokenEntity, historicalRange);
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
-                        .associated(true)
-                        .timestampRange(historicalRange))
-                .persist();
+        final var accountAndToken = persistAccountTokenAndFrozenRelationshipHistorical(historicalRange);
         final var contract = testWeb3jService.deploy(PrecompileTestContractHistorical::deploy);
 
         // When
-        final var functionCall =
-                contract.call_isTokenFrozen(getAddressFromEntity(tokenEntity), getAliasFromEntity(account));
+        final var functionCall = contract.call_isTokenFrozen(
+                getAddressFromEntity(accountAndToken.getRight()), getAliasFromEntity(accountAndToken.getLeft()));
 
         // Then
         assertThat(functionCall.send()).isTrue();
@@ -1323,5 +1302,21 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
                         .associated(true)
                         .timestampRange(historicalRange))
                 .persist();
+    }
+
+    private Pair<Entity, Entity> persistAccountTokenAndFrozenRelationshipHistorical(final Range<Long> historicalRange) {
+        final var account = persistAccountEntityHistoricalWithAlias(historicalRange);
+        final var tokenEntity = persistTokenEntityHistorical(historicalRange);
+        persistFungibleTokenHistorical(tokenEntity, historicalRange);
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(account.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                        .associated(true)
+                        .timestampRange(historicalRange))
+                .persist();
+        return Pair.of(account, tokenEntity);
     }
 }
