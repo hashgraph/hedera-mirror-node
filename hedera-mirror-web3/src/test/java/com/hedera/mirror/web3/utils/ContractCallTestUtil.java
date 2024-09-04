@@ -73,6 +73,9 @@ public class ContractCallTestUtil {
 
     public static final long EVM_V_34_BLOCK = 50L;
 
+    public static final long DEFAULT_TOKEN_EXPIRATION_SECONDS = 4_000_000_000L;
+    public static final long DEFAULT_TOKEN_EXPIRATION_PERIOD = 8_000_000L;
+
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *

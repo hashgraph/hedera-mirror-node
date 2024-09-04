@@ -17,6 +17,8 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.DEFAULT_TOKEN_EXPIRATION_PERIOD;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.DEFAULT_TOKEN_EXPIRATION_SECONDS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ECDSA_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
@@ -39,7 +41,10 @@ import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.HederaTokenFactory;
 import com.hedera.mirror.web3.utils.KeyValueFactory;
+import com.hedera.mirror.web3.utils.TokenKeyFactory;
+import com.hedera.mirror.web3.utils.TokenKeyFactory.Builder;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
@@ -50,6 +55,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -70,8 +76,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     @Resource
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    private static final long DEFAULT_TOKEN_EXPIRATION_SECONDS = 4_000_000_000L;
-    private static final long DEFAULT_TOKEN_EXPIRATION_PERIOD = 8_000_000L;
+    protected static ExpiryFactory expiryFactory;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -252,25 +257,17 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .build();
     }
 
-    protected Object getTokenExpiry(final Class classType, final Entity autoRenewAccountEntity) {
-        return getTokenExpiry(
-                classType,
-                DEFAULT_TOKEN_EXPIRATION_SECONDS,
+    protected <T> T getTokenExpiry(final Entity autoRenewAccountEntity) {
+        return expiryFactory.getInstance(
+                BigInteger.valueOf(DEFAULT_TOKEN_EXPIRATION_SECONDS),
                 toAddress(autoRenewAccountEntity.toEntityId()).toHexString(),
-                DEFAULT_TOKEN_EXPIRATION_PERIOD);
+                BigInteger.valueOf(DEFAULT_TOKEN_EXPIRATION_PERIOD));
     }
 
-    protected Object getTokenExpiry(
-            final Class classType,
-            final long seconds,
-            final String autoRenewAccountAddress,
-            final long expirationPeriod) {
-        return ExpiryFactory.getInstance(
-                classType,
-                new ExpiryFactory.Builder()
-                        .second(BigInteger.valueOf(seconds))
-                        .autoRenewAccount(autoRenewAccountAddress)
-                        .autoRenewPeriod(BigInteger.valueOf(expirationPeriod)));
+    protected <T> T getTokenExpiry(
+            final long seconds, final String autoRenewAccountAddress, final long expirationPeriod) {
+        return expiryFactory.getInstance(
+                BigInteger.valueOf(seconds), autoRenewAccountAddress, BigInteger.valueOf(expirationPeriod));
     }
 
     protected Object getKeyValue(
@@ -320,6 +317,36 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                     classType, Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
             default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
         };
+    }
+
+    protected Object getTokenKey(final Class classType, final BigInteger keyType, final Object keyValue) {
+        return TokenKeyFactory.getInstance(
+                classType, new Builder().keyType(keyType).keyValue(keyValue));
+    }
+
+    protected Object getHederaToken(
+            final Class classType,
+            final String name,
+            final String symbol,
+            final String treasury,
+            final String memo,
+            final Boolean tokenSupplyType,
+            final BigInteger maxSupply,
+            final Boolean freezeDefault,
+            final List<Object> tokenKeys,
+            final Object expiry) {
+        return HederaTokenFactory.getInstance(
+                classType,
+                new HederaTokenFactory.Builder()
+                        .name(name)
+                        .symbol(symbol)
+                        .treasury(treasury)
+                        .memo(memo)
+                        .tokenSupplyType(tokenSupplyType)
+                        .maxSupply(maxSupply)
+                        .freezeDefault(freezeDefault)
+                        .tokenKeys(tokenKeys)
+                        .expiry(expiry));
     }
 
     public enum KeyType {

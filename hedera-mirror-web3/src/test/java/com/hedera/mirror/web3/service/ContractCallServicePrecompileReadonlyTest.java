@@ -39,12 +39,15 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.utils.ExpiryFactory;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.Expiry;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FixedFee;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FungibleTokenInfo;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.NonFungibleTokenInfo;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenInfo;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenKey;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -54,6 +57,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -61,6 +65,11 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.web3j.tx.Contract;
 
 class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServiceOpcodeTracerTest {
+
+    @BeforeAll
+    static void setupFactories() {
+        expiryFactory = new ExpiryFactory(PrecompileTestContract.class);
+    }
 
     @Test
     void unsupportedPrecompileFails() {
@@ -602,8 +611,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         // Given
         final var autoRenewAccount =
                 domainBuilder.entity().customize(e -> e.evmAddress(null)).persist();
-        final var expectedExpiry =
-                (PrecompileTestContract.Expiry) getTokenExpiry(PrecompileTestContract.class, autoRenewAccount);
+        final var expectedExpiry = (Expiry) getTokenExpiry(autoRenewAccount);
         final var expiryPeriod = expectedExpiry.second.longValue() * 1_000_000_000L;
         final var autoRenewExpiry = expectedExpiry.autoRenewPeriod.longValue();
         final var tokenEntity = domainBuilder
@@ -692,8 +700,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var feeCollector = persistAccountEntity();
         final var autoRenewAccount =
                 domainBuilder.entity().customize(e -> e.evmAddress(null)).persist();
-        final var expectedExpiry =
-                (PrecompileTestContract.Expiry) getTokenExpiry(PrecompileTestContract.class, autoRenewAccount);
+        final var expectedExpiry = (Expiry) getTokenExpiry(autoRenewAccount);
         final var expiryPeriod = expectedExpiry.second.longValue() * 1_000_000_000L;
         final var autoRenewExpiry = expectedExpiry.autoRenewPeriod.longValue();
         final var tokenEntity = domainBuilder
@@ -766,8 +773,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var feeCollector = persistAccountEntity();
         final var autoRenewAccount =
                 domainBuilder.entity().customize(e -> e.evmAddress(null)).persist();
-        final var expectedExpiry =
-                (PrecompileTestContract.Expiry) getTokenExpiry(PrecompileTestContract.class, autoRenewAccount);
+        final var expectedExpiry = (Expiry) getTokenExpiry(autoRenewAccount);
         final var expiryPeriod = expectedExpiry.second.longValue() * 1_000_000_000L;
         final var autoRenewExpiry = expectedExpiry.autoRenewPeriod.longValue();
         final var tokenEntity = domainBuilder
@@ -850,8 +856,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var feeCollector = persistAccountEntity();
         final var autoRenewAccount =
                 domainBuilder.entity().customize(e -> e.evmAddress(null)).persist();
-        final var expectedExpiry =
-                (PrecompileTestContract.Expiry) getTokenExpiry(PrecompileTestContract.class, autoRenewAccount);
+        final var expectedExpiry = (Expiry) getTokenExpiry(autoRenewAccount);
         final var expiryPeriod = expectedExpiry.second.longValue() * 1_000_000_000L;
         final var autoRenewExpiry = expectedExpiry.autoRenewPeriod.longValue();
         final var tokenEntity = domainBuilder
@@ -1002,8 +1007,12 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         return tokenEntity;
     }
 
-    protected KeyValue getKeyValueForType(KeyValueType keyValueType, String contractAddress) {
+    private KeyValue getKeyValueForType(final KeyValueType keyValueType, final String contractAddress) {
         return (KeyValue) super.getKeyValueForType(PrecompileTestContract.class, keyValueType, contractAddress);
+    }
+
+    private TokenKey getTokenKey(final BigInteger keyType, final Object keyValue) {
+        return (TokenKey) super.getTokenKey(PrecompileTestContract.class, keyType, keyValue);
     }
 
     private Entity persistTokenEntity() {
@@ -1093,20 +1102,14 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
     private List<PrecompileTestContract.TokenKey> getExpectedTokenKeys(final Entity tokenEntity, final Token token) {
         final var expectedTokenKeys = new ArrayList<PrecompileTestContract.TokenKey>();
-        expectedTokenKeys.add(new PrecompileTestContract.TokenKey(
-                KeyType.ADMIN_KEY.getKeyTypeNumeric(), getKeyValue(tokenEntity.getKey())));
-        expectedTokenKeys.add(new PrecompileTestContract.TokenKey(
-                KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValue(token.getKycKey())));
-        expectedTokenKeys.add(new PrecompileTestContract.TokenKey(
-                KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValue(token.getFreezeKey())));
-        expectedTokenKeys.add(new PrecompileTestContract.TokenKey(
-                KeyType.WIPE_KEY.getKeyTypeNumeric(), getKeyValue(token.getWipeKey())));
-        expectedTokenKeys.add(new PrecompileTestContract.TokenKey(
-                KeyType.SUPPLY_KEY.getKeyTypeNumeric(), getKeyValue(token.getSupplyKey())));
-        expectedTokenKeys.add(new PrecompileTestContract.TokenKey(
-                KeyType.FEE_SCHEDULE_KEY.getKeyTypeNumeric(), getKeyValue(token.getFeeScheduleKey())));
-        expectedTokenKeys.add(new PrecompileTestContract.TokenKey(
-                KeyType.PAUSE_KEY.getKeyTypeNumeric(), getKeyValue(token.getPauseKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.ADMIN_KEY.getKeyTypeNumeric(), getKeyValue(tokenEntity.getKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValue(token.getKycKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValue(token.getFreezeKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.WIPE_KEY.getKeyTypeNumeric(), getKeyValue(token.getWipeKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), getKeyValue(token.getSupplyKey())));
+        expectedTokenKeys.add(
+                getTokenKey(KeyType.FEE_SCHEDULE_KEY.getKeyTypeNumeric(), getKeyValue(token.getFeeScheduleKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.PAUSE_KEY.getKeyTypeNumeric(), getKeyValue(token.getPauseKey())));
 
         return expectedTokenKeys;
     }

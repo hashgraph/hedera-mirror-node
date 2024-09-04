@@ -16,8 +16,9 @@
 
 package com.hedera.mirror.web3.utils;
 
+import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls;
-import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
 import java.math.BigInteger;
 
 public class TokenKeyFactory {
@@ -31,7 +32,7 @@ public class TokenKeyFactory {
 
     public static class Builder {
         private BigInteger keyType;
-        private KeyValue key;
+        private Object keyValue;
         private Class classType;
 
         public Builder keyType(BigInteger keyType) {
@@ -39,8 +40,8 @@ public class TokenKeyFactory {
             return this;
         }
 
-        public Builder key(KeyValue key) {
-            this.key = key;
+        public Builder keyValue(Object keyValue) {
+            this.keyValue = keyValue;
             return this;
         }
 
@@ -52,7 +53,13 @@ public class TokenKeyFactory {
         private Object build() {
             assert classType != null;
             if (classType.equals(NestedCalls.class)) {
-                return new NestedCalls.TokenKey(this.keyType, this.key);
+                return new NestedCalls.TokenKey(this.keyType, (NestedCalls.KeyValue) this.keyValue);
+            } else if (classType.equals(PrecompileTestContract.class)) {
+                return new PrecompileTestContract.TokenKey(
+                        this.keyType, (PrecompileTestContract.KeyValue) this.keyValue);
+            } else if (classType.equals(ModificationPrecompileTestContract.class)) {
+                return new ModificationPrecompileTestContract.TokenKey(
+                        this.keyType, (ModificationPrecompileTestContract.KeyValue) this.keyValue);
             }
             throw new RuntimeException("Class type not supported.");
         }

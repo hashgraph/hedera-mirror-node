@@ -40,7 +40,6 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.utils.ExpiryFactory;
-import com.hedera.mirror.web3.utils.ExpiryFactory.Builder;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.AccountAmount;
@@ -62,6 +61,7 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -70,6 +70,11 @@ import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
 class ContractCallServicePrecompileModificationTest extends AbstractContractCallServiceOpcodeTracerTest {
+
+    @BeforeAll
+    static void setupFactories() {
+        expiryFactory = new ExpiryFactory(ModificationPrecompileTestContract.class);
+    }
 
     @Test
     void transferFrom() throws Exception {
@@ -1319,7 +1324,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var tokenExpiry = getTokenExpiry(tokenWithAutoRenewPair.getRight());
+        final var tokenExpiry = (Expiry) getTokenExpiry(tokenWithAutoRenewPair.getRight());
 
         // When
         final var functionCall = contract.call_updateTokenExpiryInfoExternal(
@@ -1352,7 +1357,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var tokenKeys = new ArrayList<TokenKey>();
-        tokenKeys.add(new TokenKey(
+        tokenKeys.add(getTokenKey(
                 BigInteger.valueOf(allCasesKeyType), getKeyValueForType(keyValueType, contract.getContractAddress())));
 
         // When
@@ -1394,10 +1399,9 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(tokenType).treasuryAccountId(treasuryAccountId))
                 .persist();
 
-        final var supplyKey =
-                getKeyValue(Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+        final var supplyKey = getKeyValue(contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
         final var keys = new ArrayList<TokenKey>();
-        keys.add(new TokenKey(AbstractContractCallServiceTest.KeyType.SUPPLY_KEY.getKeyTypeNumeric(), supplyKey));
+        keys.add(getTokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), supplyKey));
         return new HederaToken(
                 token.getName(),
                 token.getSymbol(),
@@ -1442,29 +1446,14 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .build();
     }
 
-    protected Expiry getTokenExpiry(final Entity autoRenewAccountEntity) {
-        return (Expiry) super.getTokenExpiry(ModificationPrecompileTestContract.class, autoRenewAccountEntity);
-    }
-
-    protected Expiry getTokenExpiry(
-            final long seconds, final String autoRenewAccountAddress, final long expirationPeriod) {
-        return (Expiry) ExpiryFactory.getInstance(
-                ModificationPrecompileTestContract.class,
-                new Builder()
-                        .second(BigInteger.valueOf(seconds))
-                        .autoRenewAccount(autoRenewAccountAddress)
-                        .autoRenewPeriod(BigInteger.valueOf(expirationPeriod)));
-    }
-
     private KeyValue getKeyValue(
-            final Boolean inheritAccountKey,
             final String contractId,
             final byte[] ed25519,
             final byte[] ECDSA_secp256k1,
             final String delegatableContractId) {
         return (KeyValue) super.getKeyValue(
                 ModificationPrecompileTestContract.class,
-                inheritAccountKey,
+                Boolean.FALSE,
                 contractId,
                 ed25519,
                 ECDSA_secp256k1,
@@ -1474,6 +1463,10 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
         return (KeyValue)
                 super.getKeyValueForType(ModificationPrecompileTestContract.class, keyValueType, contractAddress);
+    }
+
+    private TokenKey getTokenKey(BigInteger keyType, Object keyValue) {
+        return (TokenKey) super.getTokenKey(ModificationPrecompileTestContract.class, keyType, keyValue);
     }
 
     private Entity persistTokenEntity() {

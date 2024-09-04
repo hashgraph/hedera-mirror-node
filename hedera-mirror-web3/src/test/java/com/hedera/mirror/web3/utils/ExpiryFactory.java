@@ -16,58 +16,35 @@
 
 package com.hedera.mirror.web3.utils;
 
-import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
-import com.hedera.mirror.web3.web3j.generated.NestedCalls;
-import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
+import java.lang.reflect.Constructor;
 import java.math.BigInteger;
 
 public class ExpiryFactory {
 
-    // Private constructor to prevent direct instantiation
-    private ExpiryFactory() {}
+    private static final String INNER_CLASS_NAME = "Expiry";
+    private static Class classType;
+    private static Constructor constructor;
 
-    public static Object getInstance(final Class classType, final Builder builder) {
-        return builder.classType(classType).build();
+    public ExpiryFactory(final Class thatClassType) {
+        classType = thatClassType;
     }
 
-    public static class Builder {
-
-        private BigInteger second;
-        private String autoRenewAccount;
-        private BigInteger autoRenewPeriod;
-        private Class classType;
-
-        public Builder second(BigInteger second) {
-            this.second = second;
-            return this;
-        }
-
-        public Builder autoRenewAccount(String autoRenewAccount) {
-            this.autoRenewAccount = autoRenewAccount;
-            return this;
-        }
-
-        public Builder autoRenewPeriod(BigInteger autoRenewPeriod) {
-            this.autoRenewPeriod = autoRenewPeriod;
-            return this;
-        }
-
-        private Builder classType(Class<?> classType) {
-            this.classType = classType;
-            return this;
-        }
-
-        private Object build() {
-            assert classType != null;
-            if (classType.equals(NestedCalls.class)) {
-                return new NestedCalls.Expiry(this.second, this.autoRenewAccount, this.autoRenewPeriod);
-            } else if (classType.equals(PrecompileTestContract.class)) {
-                return new PrecompileTestContract.Expiry(this.second, this.autoRenewAccount, this.autoRenewPeriod);
-            } else if (classType.equals(ModificationPrecompileTestContract.class)) {
-                return new ModificationPrecompileTestContract.Expiry(
-                        this.second, this.autoRenewAccount, this.autoRenewPeriod);
+    public static <T> T getInstance(
+            final BigInteger second, final String autoRenewAccount, final BigInteger autoRenewPeriod) {
+        try {
+            Class<?> innerClass;
+            for (Class<?> declaredClass : classType.getDeclaredClasses()) {
+                if (declaredClass.getSimpleName().equals(INNER_CLASS_NAME)) {
+                    innerClass = declaredClass;
+                    constructor = innerClass.getConstructor(BigInteger.class, String.class, BigInteger.class);
+                    break;
+                }
             }
-            throw new RuntimeException("Class type not supported.");
+
+            // Use reflection to create a new instance of the Expiry class
+            return (T) constructor.newInstance(second, autoRenewAccount, autoRenewPeriod);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to instantiate Expiry class", e);
         }
     }
 }
