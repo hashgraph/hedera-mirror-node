@@ -136,14 +136,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         final var account = persistAccountEntityHistorical(historicalRange);
         final var tokenEntity = persistTokenEntityHistorical(historicalRange);
         persistFungibleTokenHistorical(tokenEntity, historicalRange);
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true)
-                        .timestampRange(historicalRange))
-                .persist();
+        persistTokenRelationshipWithKycGrantedHistorical(tokenEntity, account, historicalRange);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContractHistorical::deploy);
 
@@ -163,14 +156,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         final var account = persistAccountEntityHistoricalWithAlias(historicalRange);
         final var tokenEntity = persistTokenEntityHistorical(historicalRange);
         persistFungibleTokenHistorical(tokenEntity, historicalRange);
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true)
-                        .timestampRange(historicalRange))
-                .persist();
+        persistTokenRelationshipWithKycGrantedHistorical(tokenEntity, account, historicalRange);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContractHistorical::deploy);
 
@@ -189,14 +175,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         final var historicalRange = setUpHistoricalContext(blockNumber);
         final var account = persistAccountEntityHistorical(historicalRange);
         final var tokenEntity = persistNftHistorical(historicalRange);
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true)
-                        .timestampRange(historicalRange))
-                .persist();
+        persistTokenRelationshipWithKycGrantedHistorical(tokenEntity, account, historicalRange);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContractHistorical::deploy);
 
@@ -215,14 +194,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         final var historicalRange = setUpHistoricalContext(blockNumber);
         final var account = persistAccountEntityHistoricalWithAlias(historicalRange);
         final var tokenEntity = persistNftHistorical(historicalRange);
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true)
-                        .timestampRange(historicalRange))
-                .persist();
+        persistTokenRelationshipWithKycGrantedHistorical(tokenEntity, account, historicalRange);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContractHistorical::deploy);
 
@@ -1339,5 +1311,17 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
                 fractionalFees,
                 royaltyFees,
                 LEDGER_ID);
+    }
+
+    private void persistTokenRelationshipWithKycGrantedHistorical(
+            final Entity tokenEntity, final Entity account, final Range<Long> historicalRange) {
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(account.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true)
+                        .timestampRange(historicalRange))
+                .persist();
     }
 }
