@@ -24,9 +24,6 @@ const CACHE_CONTROL_HEADER_NAME = 'cache-control';
 const PRAGMA_HEADER_NAME = 'pragma';
 
 let cache = new Cache();
-let cacheKeyGenerator = (req) => {
-  return req.path; // Interact with Edwin's code
-};
 
 // Response middleware that checks for and returns cached response.
 const responseCacheCheckHandler = async (req, res, next) => {
@@ -75,24 +72,15 @@ const responseCacheUpdateHandler = async (req, res, next) => {
   next();
 };
 
+const cacheKeyGenerator = (req) => {
+  return req.path;
+  // Interact with Edwin's code (normalizeRequestQueryParams()).
+  // URL path, Accept-Encoding header (specified in our Vary header).
+};
+
 // For testing
 const setCache = (cacheToUse) => {
   cache = cacheToUse;
 };
 
-const setCacheKeyGenerator = (generatorFunction) => {
-  cacheKeyGenerator = generatorFunction;
-};
-
-// TODO don't need this no more
-const getCacheControlExpiry = (headerValue) => {
-  if (headerValue) {
-    const maxAge = headerValue.match(/^.*max-age=(\d+)/);
-    if (maxAge && maxAge.length === 2) {
-      return parseInt(maxAge[1], 10);
-    }
-  }
-  return undefined;
-};
-
-export {responseCacheCheckHandler, responseCacheUpdateHandler, setCache, setCacheKeyGenerator};
+export {responseCacheCheckHandler, responseCacheUpdateHandler, setCache};

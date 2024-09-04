@@ -21,16 +21,15 @@ import {Cache} from '../../cache';
 import {RedisContainer} from '@testcontainers/redis';
 import {defaultBeforeAllTimeoutMillis} from '../integrationUtils';
 import CachedApiResponse from '../../model/cachedApiResponse.js';
-import {responseCacheCheckHandler, responseCacheUpdateHandler, setCache, setCacheKeyGenerator} from '../../middleware';
+import {responseCacheCheckHandler, responseCacheUpdateHandler, setCache} from '../../middleware';
 import {responseCacheKeyLabel} from '../../constants';
 
 const CACHE_KEY_VALUE = 'cacheKey';
 
+let redisContainer;
 config.redis.enabled = true;
 const cache = new Cache();
 setCache(cache);
-
-let redisContainer;
 
 beforeAll(async () => {
   redisContainer = await new RedisContainer().withStartupTimeout(20000).start();
@@ -48,8 +47,6 @@ describe('Response cache check middleware', () => {
 
   beforeEach(() => {
     cache.clear();
-    mockCacheKeyGenerator = jest.fn().mockReturnValue(CACHE_KEY_VALUE);
-    setCacheKeyGenerator(mockCacheKeyGenerator);
 
     responseData = {accounts: [], links: {next: null}};
     mockNextMiddleware = jest.fn();
@@ -58,6 +55,7 @@ describe('Response cache check middleware', () => {
       ip: '127.0.0.1',
       method: 'GET',
       originalUrl: '/api/v1/accounts?account.id=gte:0.0.18&account.id=lt:0.0.21&limit=3',
+      path: CACHE_KEY_VALUE,
       query: {'account.id': ['gte:0.0.18', 'lt:0.0.21'], limit: 3},
       requestStartTime: Date.now() - 5,
       route: {
@@ -76,7 +74,6 @@ describe('Response cache check middleware', () => {
 
   test('Cache miss', async () => {
     await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
-    expect(mockCacheKeyGenerator).toBeCalledWith(mockRequest);
     const cacheKey = mockResponse.locals[responseCacheKeyLabel];
     expect(cacheKey).toEqual(CACHE_KEY_VALUE);
     expect(await cache.getSingle(cacheKey)).toBeUndefined();
@@ -88,9 +85,7 @@ describe('Response cache check middleware', () => {
 
     const cachedResponse = new CachedApiResponse(mockResponse.status, mockResponse.headers, body);
     cache.setSingle(CACHE_KEY_VALUE, cachedResponse);
-
     await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
-    expect(mockCacheKeyGenerator).toBeCalledWith(mockRequest);
     expect(mockNextMiddleware).not.toBeCalled();
   });
 });
