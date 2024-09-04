@@ -32,6 +32,7 @@ configurations.all {
 }
 
 repositories {
+    mavenLocal()
     maven { url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/") }
     maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") }
 }

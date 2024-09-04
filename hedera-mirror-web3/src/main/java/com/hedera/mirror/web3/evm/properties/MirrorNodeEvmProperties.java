@@ -23,10 +23,10 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_3
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.swirlds.common.utility.SemanticVersion;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -199,7 +199,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean allowCallsToNonContractAccounts() {
-        return getSemanticEvmVersion().compareTo(EVM_VERSION_0_46) >= 0;
+        return getSemanticEvmVersion().minor() > 46;
     }
 
     @Override
@@ -209,7 +209,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean callsToNonExistingEntitiesEnabled(Address target) {
-        return !(getSemanticEvmVersion().compareTo(EVM_VERSION_0_46) < 0
+        return !(getSemanticEvmVersion().minor() < 46
                 || !allowCallsToNonContractAccounts()
                 || grandfatherContracts().contains(target));
     }

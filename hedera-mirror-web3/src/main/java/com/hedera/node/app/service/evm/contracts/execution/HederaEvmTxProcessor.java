@@ -26,7 +26,7 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEv
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.swirlds.common.utility.SemanticVersion;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Provider;
@@ -204,13 +204,15 @@ public class HederaEvmTxProcessor {
     }
 
     protected void process(
-            final MessageFrame frame, final OperationTracer operationTracer, final SemanticVersion evmVersion) {
+            final MessageFrame frame,
+            final OperationTracer operationTracer,
+            final com.hedera.hapi.node.base.SemanticVersion evmVersion) {
         final AbstractMessageProcessor executor = getMessageProcessor(frame.getType(), evmVersion);
         executor.process(frame, operationTracer);
     }
 
     private AbstractMessageProcessor getMessageProcessor(
-            final MessageFrame.Type type, final SemanticVersion evmVersion) {
+            final MessageFrame.Type type, final com.hedera.hapi.node.base.SemanticVersion evmVersion) {
         return switch (type) {
             case MESSAGE_CALL -> mcps.get(evmVersion).get();
             case CONTRACT_CREATION -> ccps.get(evmVersion).get();

@@ -35,7 +35,7 @@ import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.utility.SemanticVersion;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Map;
