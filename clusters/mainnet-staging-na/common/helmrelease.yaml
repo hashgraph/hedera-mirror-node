@@ -10,14 +10,14 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.112.1-rc1'
+      version: '0.113.0-rc1'
   dependsOn:
     - name: testkube
       namespace: testkube
   driftDetection:
-    mode: warn
+    mode: enabled
     ignore:
-      - paths: [ "" ]
+      - paths: [""]
         target:
           kind: (MutatingWebhookConfiguration|SGConfig|ValidatingWebhookConfiguration)
   install:

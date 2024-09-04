@@ -14,12 +14,12 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.112.0-rc2'
+      version: '0.113.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
   driftDetection:
-    mode: warn
+    mode: enabled
   install:
     crds: CreateReplace
   interval: 90s
@@ -41,7 +41,6 @@ spec:
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
-        HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_ENTITYTRANSACTIONS: "false"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
     monitor:
       env:
@@ -57,7 +56,7 @@ spec:
       monitor:
         enabled: false
     test:
-      enabled: true
+      enabled: false
       config:
         hedera:
           mirror:
