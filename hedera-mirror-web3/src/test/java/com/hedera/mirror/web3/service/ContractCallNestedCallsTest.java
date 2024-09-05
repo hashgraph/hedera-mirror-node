@@ -26,10 +26,10 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.KeyValueFactory;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.Expiry;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.HederaToken;
-import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.TokenKey;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import java.math.BigInteger;
@@ -47,6 +47,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
     @BeforeAll
     static void setupFactories() {
         expiryFactory = new ExpiryFactory(NestedCalls.class);
+        keyValueFactory = new KeyValueFactory(NestedCalls.class);
     }
 
     @ParameterizedTest
@@ -429,10 +430,6 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
         // Then
         assertThat(result).isEqualTo(EXPECTED_RESULT_NEGATIVE_TESTS);
         verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
-    }
-
-    private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
-        return (KeyValue) super.getKeyValueForType(NestedCalls.class, keyValueType, contractAddress);
     }
 
     private TokenKey getTokenKey(final BigInteger keyType, final Object keyValue) {

@@ -29,8 +29,7 @@ public class ExpiryFactory {
         classType = thatClassType;
     }
 
-    public static <T> T getInstance(
-            final BigInteger second, final String autoRenewAccount, final BigInteger autoRenewPeriod) {
+    public <T> T getInstance(final BigInteger second, final String autoRenewAccount, final BigInteger autoRenewPeriod) {
         try {
             Class<?> innerClass;
             for (Class<?> declaredClass : classType.getDeclaredClasses()) {

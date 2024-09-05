@@ -40,12 +40,12 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.KeyValueFactory;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.AccountAmount;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.Expiry;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.HederaToken;
-import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.NftTransfer;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.TokenKey;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.TokenTransferList;
@@ -74,6 +74,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @BeforeAll
     static void setupFactories() {
         expiryFactory = new ExpiryFactory(ModificationPrecompileTestContract.class);
+        keyValueFactory = new KeyValueFactory(ModificationPrecompileTestContract.class);
     }
 
     @Test
@@ -1399,7 +1400,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(tokenType).treasuryAccountId(treasuryAccountId))
                 .persist();
 
-        final var supplyKey = getKeyValue(contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+        final var supplyKey = getKeyValue(false, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
         final var keys = new ArrayList<TokenKey>();
         keys.add(getTokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), supplyKey));
         return new HederaToken(
@@ -1444,25 +1445,6 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .sender(new HederaEvmAccount(testWeb3jService.getSender()))
                 .value(value)
                 .build();
-    }
-
-    private KeyValue getKeyValue(
-            final String contractId,
-            final byte[] ed25519,
-            final byte[] ECDSA_secp256k1,
-            final String delegatableContractId) {
-        return (KeyValue) super.getKeyValue(
-                ModificationPrecompileTestContract.class,
-                Boolean.FALSE,
-                contractId,
-                ed25519,
-                ECDSA_secp256k1,
-                delegatableContractId);
-    }
-
-    private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
-        return (KeyValue)
-                super.getKeyValueForType(ModificationPrecompileTestContract.class, keyValueType, contractAddress);
     }
 
     private TokenKey getTokenKey(BigInteger keyType, Object keyValue) {

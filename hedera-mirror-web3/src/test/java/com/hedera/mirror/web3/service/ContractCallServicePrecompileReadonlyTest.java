@@ -40,6 +40,7 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.KeyValueFactory;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.Expiry;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FixedFee;
@@ -69,6 +70,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @BeforeAll
     static void setupFactories() {
         expiryFactory = new ExpiryFactory(PrecompileTestContract.class);
+        keyValueFactory = new KeyValueFactory(PrecompileTestContract.class);
     }
 
     @Test
@@ -1007,10 +1009,6 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         return tokenEntity;
     }
 
-    private KeyValue getKeyValueForType(final KeyValueType keyValueType, final String contractAddress) {
-        return (KeyValue) super.getKeyValueForType(PrecompileTestContract.class, keyValueType, contractAddress);
-    }
-
     private TokenKey getTokenKey(final BigInteger keyType, final Object keyValue) {
         return (TokenKey) super.getTokenKey(PrecompileTestContract.class, keyType, keyValue);
     }
@@ -1117,8 +1115,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     private KeyValue getKeyValue(byte[] serializedKey) {
         try {
             final var key = Key.parseFrom(serializedKey);
-            return (KeyValue) getKeyValue(
-                    PrecompileTestContract.class,
+            return getKeyValue(
                     false,
                     key.getContractID().hasContractNum()
                             ? EntityIdUtils.asTypedEvmAddress(key.getContractID())

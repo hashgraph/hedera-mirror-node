@@ -77,6 +77,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     protected static ExpiryFactory expiryFactory;
+    protected static KeyValueFactory keyValueFactory;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -270,51 +271,28 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 BigInteger.valueOf(seconds), autoRenewAccountAddress, BigInteger.valueOf(expirationPeriod));
     }
 
-    protected Object getKeyValue(
-            final Class classType,
+    protected <T> T getKeyValue(
             final Boolean inheritAccountKey,
             final String contractId,
             final byte[] ed25519,
             final byte[] ECDSA_secp256k1,
             final String delegatableContractId) {
-        return KeyValueFactory.getInstance(
-                classType,
-                new KeyValueFactory.Builder()
-                        .inheritAccountKey(inheritAccountKey)
-                        .contractId(contractId)
-                        .ed25519(ed25519)
-                        .ECDSA_secp256k1(ECDSA_secp256k1)
-                        .delegatableContractId(delegatableContractId));
+        return keyValueFactory.getInstance(
+                inheritAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId);
     }
 
-    protected Object getKeyValueForType(
-            final Class classType, final KeyValueType keyValueType, String contractAddress) {
+    protected <T> T getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
         return switch (keyValueType) {
             case INHERIT_ACCOUNT_KEY -> getKeyValue(
-                    classType,
-                    Boolean.TRUE,
-                    Address.ZERO.toHexString(),
-                    new byte[0],
-                    new byte[0],
-                    Address.ZERO.toHexString());
+                    Boolean.TRUE, Address.ZERO.toHexString(), new byte[0], new byte[0], Address.ZERO.toHexString());
             case CONTRACT_ID -> getKeyValue(
-                    classType, Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
             case ED25519 -> getKeyValue(
-                    classType,
-                    Boolean.FALSE,
-                    Address.ZERO.toHexString(),
-                    ED25519_KEY,
-                    new byte[0],
-                    Address.ZERO.toHexString());
+                    Boolean.FALSE, Address.ZERO.toHexString(), ED25519_KEY, new byte[0], Address.ZERO.toHexString());
             case ECDSA_SECPK256K1 -> getKeyValue(
-                    classType,
-                    Boolean.FALSE,
-                    Address.ZERO.toHexString(),
-                    new byte[0],
-                    ECDSA_KEY,
-                    Address.ZERO.toHexString());
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], ECDSA_KEY, Address.ZERO.toHexString());
             case DELEGATABLE_CONTRACT_ID -> getKeyValue(
-                    classType, Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
             default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
         };
     }

@@ -16,83 +16,40 @@
 
 package com.hedera.mirror.web3.utils;
 
-import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
-import com.hedera.mirror.web3.web3j.generated.NestedCalls;
-import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
+import java.lang.reflect.Constructor;
 
 public class KeyValueFactory {
 
-    // Private constructor to prevent direct instantiation
-    private KeyValueFactory() {}
+    private static final String INNER_CLASS_NAME = "KeyValue";
+    private static Class classType;
+    private static Constructor constructor;
 
-    public static Object getInstance(final Class<?> classType, final Builder builder) {
-        return builder.classType(classType).build();
+    public KeyValueFactory(final Class thatClassType) {
+        classType = thatClassType;
     }
 
-    public static class Builder {
-
-        private Boolean inheritAccountKey;
-        private String contractId;
-        private byte[] ed25519;
-        private byte[] ECDSA_secp256k1;
-        private String delegatableContractId;
-        private Class<?> classType;
-
-        public Builder inheritAccountKey(Boolean inheritAccountKey) {
-            this.inheritAccountKey = inheritAccountKey;
-            return this;
-        }
-
-        public Builder contractId(String contractId) {
-            this.contractId = contractId;
-            return this;
-        }
-
-        public Builder ed25519(byte[] ed25519) {
-            this.ed25519 = ed25519;
-            return this;
-        }
-
-        public Builder ECDSA_secp256k1(byte[] ECDSA_secp256k1) {
-            this.ECDSA_secp256k1 = ECDSA_secp256k1;
-            return this;
-        }
-
-        public Builder delegatableContractId(String delegatableContractId) {
-            this.delegatableContractId = delegatableContractId;
-            return this;
-        }
-
-        private Builder classType(Class<?> classType) {
-            this.classType = classType;
-            return this;
-        }
-
-        private Object build() {
-            assert classType != null;
-            if (classType.equals(NestedCalls.class)) {
-                return new NestedCalls.KeyValue(
-                        this.inheritAccountKey,
-                        this.contractId,
-                        this.ed25519,
-                        this.ECDSA_secp256k1,
-                        this.delegatableContractId);
-            } else if (classType.equals(PrecompileTestContract.class)) {
-                return new PrecompileTestContract.KeyValue(
-                        this.inheritAccountKey,
-                        this.contractId,
-                        this.ed25519,
-                        this.ECDSA_secp256k1,
-                        this.delegatableContractId);
-            } else if (classType.equals(ModificationPrecompileTestContract.class)) {
-                return new ModificationPrecompileTestContract.KeyValue(
-                        this.inheritAccountKey,
-                        this.contractId,
-                        this.ed25519,
-                        this.ECDSA_secp256k1,
-                        this.delegatableContractId);
+    public <T> T getInstance(
+            final Boolean inheritAccountKey,
+            final String contractId,
+            final byte[] ed25519,
+            final byte[] ECDSA_secp256k1,
+            final String delegatableContractId) {
+        try {
+            Class<?> innerClass;
+            for (Class<?> declaredClass : classType.getDeclaredClasses()) {
+                if (declaredClass.getSimpleName().equals(INNER_CLASS_NAME)) {
+                    innerClass = declaredClass;
+                    constructor = innerClass.getConstructor(
+                            Boolean.class, String.class, byte[].class, byte[].class, String.class);
+                    break;
+                }
             }
-            throw new RuntimeException("Class type not supported.");
+
+            // Use reflection to create a new instance of the Expiry class
+            return (T) constructor.newInstance(
+                    inheritAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to instantiate Expiry class", e);
         }
     }
 }
