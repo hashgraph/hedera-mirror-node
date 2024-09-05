@@ -55,8 +55,6 @@ dependencies {
 }
 
 web3j {
-    excludedContracts =
-        listOf("DynamicEthCallsHistorical", "EthCallHistorical", "EvmCodesHistorical")
     generateBoth = true
     generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
     useNativeJavaTypes = true
