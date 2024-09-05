@@ -45,7 +45,6 @@ public class KeyValueFactory {
                 }
             }
 
-            // Use reflection to create a new instance of the Expiry class
             return (T) constructor.newInstance(
                     inheritAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId);
         } catch (Exception e) {

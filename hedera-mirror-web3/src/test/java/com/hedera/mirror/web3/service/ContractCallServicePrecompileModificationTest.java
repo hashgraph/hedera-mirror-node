@@ -40,7 +40,9 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.HederaTokenFactory;
 import com.hedera.mirror.web3.utils.KeyValueFactory;
+import com.hedera.mirror.web3.utils.TokenKeyFactory;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.AccountAmount;
@@ -75,6 +77,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     static void setupFactories() {
         expiryFactory = new ExpiryFactory(ModificationPrecompileTestContract.class);
         keyValueFactory = new KeyValueFactory(ModificationPrecompileTestContract.class);
+        tokenKeyFactory = new TokenKeyFactory(ModificationPrecompileTestContract.class);
+        hederaTokenFactory = new HederaTokenFactory(ModificationPrecompileTestContract.class);
     }
 
     @Test
@@ -1403,7 +1407,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var supplyKey = getKeyValue(false, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
         final var keys = new ArrayList<TokenKey>();
         keys.add(getTokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), supplyKey));
-        return new HederaToken(
+        return getHederaToken(
                 token.getName(),
                 token.getSymbol(),
                 getAddressFromEntityId(treasuryAccountId),
@@ -1447,10 +1451,6 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .build();
     }
 
-    private TokenKey getTokenKey(BigInteger keyType, Object keyValue) {
-        return (TokenKey) super.getTokenKey(ModificationPrecompileTestContract.class, keyType, keyValue);
-    }
-
     private Entity persistTokenEntity() {
         return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
     }
@@ -1476,7 +1476,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var keys = new ArrayList<TokenKey>();
         final var entityRenewAccountId = tokenEntity.getAutoRenewAccountId();
 
-        return new HederaToken(
+        return getHederaToken(
                 token.getName(),
                 token.getSymbol(),
                 treasuryAccountId != null
@@ -1499,7 +1499,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var keys = new ArrayList<TokenKey>();
         final var entityRenewAccountId = entity.getAutoRenewAccountId();
 
-        return new HederaToken(
+        return getHederaToken(
                 token.getName(),
                 token.getSymbol(),
                 EntityIdUtils.asHexedEvmAddress(

@@ -40,15 +40,17 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.HederaTokenFactory;
 import com.hedera.mirror.web3.utils.KeyValueFactory;
+import com.hedera.mirror.web3.utils.TokenKeyFactory;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.Expiry;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FixedFee;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FungibleTokenInfo;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.HederaToken;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.NonFungibleTokenInfo;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenInfo;
-import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenKey;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -71,6 +73,8 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     static void setupFactories() {
         expiryFactory = new ExpiryFactory(PrecompileTestContract.class);
         keyValueFactory = new KeyValueFactory(PrecompileTestContract.class);
+        tokenKeyFactory = new TokenKeyFactory(PrecompileTestContract.class);
+        hederaTokenFactory = new HederaTokenFactory(PrecompileTestContract.class);
     }
 
     @Test
@@ -729,7 +733,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
 
-        final var expectedHederaToken = new PrecompileTestContract.HederaToken(
+        final var expectedHederaToken = (HederaToken) getHederaToken(
                 token.getName(),
                 token.getSymbol(),
                 getAddressFromEvmAddress(treasury.getEvmAddress()),
@@ -807,7 +811,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
 
-        final var expectedHederaToken = new PrecompileTestContract.HederaToken(
+        final var expectedHederaToken = (HederaToken) getHederaToken(
                 token.getName(),
                 token.getSymbol(),
                 getAddressFromEvmAddress(treasury.getEvmAddress()),
@@ -882,7 +886,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
 
-        final var expectedHederaToken = new PrecompileTestContract.HederaToken(
+        final var expectedHederaToken = (HederaToken) getHederaToken(
                 token.getName(),
                 token.getSymbol(),
                 getAddressFromEvmAddress(treasury.getEvmAddress()),
@@ -1007,10 +1011,6 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         tokenBuilder.persist();
         return tokenEntity;
-    }
-
-    private TokenKey getTokenKey(final BigInteger keyType, final Object keyValue) {
-        return (TokenKey) super.getTokenKey(PrecompileTestContract.class, keyType, keyValue);
     }
 
     private Entity persistTokenEntity() {

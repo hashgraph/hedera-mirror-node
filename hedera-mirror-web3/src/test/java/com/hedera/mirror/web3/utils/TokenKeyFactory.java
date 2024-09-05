@@ -16,52 +16,42 @@
 
 package com.hedera.mirror.web3.utils;
 
-import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
-import com.hedera.mirror.web3.web3j.generated.NestedCalls;
-import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
+import java.lang.reflect.Constructor;
 import java.math.BigInteger;
 
 public class TokenKeyFactory {
 
-    // Private constructor to prevent direct instantiation
-    private TokenKeyFactory() {}
+    private static final String INNER_CLASS_NAME = "TokenKey";
+    private static final String HELPER_CLASS_NAME = "KeyValue";
+    private static Class classType;
+    private static Constructor constructor;
 
-    public static Object getInstance(final Class classType, final Builder builder) {
-        return builder.classType(classType).build();
+    public TokenKeyFactory(final Class thatClassType) {
+        classType = thatClassType;
     }
 
-    public static class Builder {
-        private BigInteger keyType;
-        private Object keyValue;
-        private Class classType;
-
-        public Builder keyType(BigInteger keyType) {
-            this.keyType = keyType;
-            return this;
-        }
-
-        public Builder keyValue(Object keyValue) {
-            this.keyValue = keyValue;
-            return this;
-        }
-
-        private Builder classType(Class<?> classType) {
-            this.classType = classType;
-            return this;
-        }
-
-        private Object build() {
-            assert classType != null;
-            if (classType.equals(NestedCalls.class)) {
-                return new NestedCalls.TokenKey(this.keyType, (NestedCalls.KeyValue) this.keyValue);
-            } else if (classType.equals(PrecompileTestContract.class)) {
-                return new PrecompileTestContract.TokenKey(
-                        this.keyType, (PrecompileTestContract.KeyValue) this.keyValue);
-            } else if (classType.equals(ModificationPrecompileTestContract.class)) {
-                return new ModificationPrecompileTestContract.TokenKey(
-                        this.keyType, (ModificationPrecompileTestContract.KeyValue) this.keyValue);
+    public <T, U> T getInstance(final BigInteger keyType, final U keyValue) {
+        try {
+            Class<?> innerClassKeyValue = null;
+            for (Class<?> declaredClass : classType.getDeclaredClasses()) {
+                if (declaredClass.getSimpleName().equals(HELPER_CLASS_NAME)) {
+                    innerClassKeyValue = declaredClass;
+                    break;
+                }
             }
-            throw new RuntimeException("Class type not supported.");
+
+            Class<?> innerClassTokenKey;
+            for (Class<?> declaredClass : classType.getDeclaredClasses()) {
+                if (declaredClass.getSimpleName().equals(INNER_CLASS_NAME)) {
+                    innerClassTokenKey = declaredClass;
+                    constructor = innerClassTokenKey.getConstructor(BigInteger.class, innerClassKeyValue);
+                    break;
+                }
+            }
+
+            return (T) constructor.newInstance(keyType, keyValue);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to instantiate Expiry class", e);
         }
     }
 }

@@ -33,6 +33,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -44,7 +45,6 @@ import com.hedera.mirror.web3.utils.ExpiryFactory;
 import com.hedera.mirror.web3.utils.HederaTokenFactory;
 import com.hedera.mirror.web3.utils.KeyValueFactory;
 import com.hedera.mirror.web3.utils.TokenKeyFactory;
-import com.hedera.mirror.web3.utils.TokenKeyFactory.Builder;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
@@ -55,6 +55,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.tuweni.bytes.Bytes;
@@ -70,6 +71,10 @@ import org.web3j.tx.Contract;
 @SuppressWarnings("unchecked")
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
+    public static final String DEFAULT_TOKEN_NAME = "name";
+    public static final String DEFAULT_TOKEN_SYMBOL = "symbol";
+    public static final String DEFAULT_TOKEN_MEMO = "memo";
+
     @Resource
     protected TestWeb3jService testWeb3jService;
 
@@ -78,6 +83,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     protected static ExpiryFactory expiryFactory;
     protected static KeyValueFactory keyValueFactory;
+    protected static TokenKeyFactory tokenKeyFactory;
+    protected static HederaTokenFactory hederaTokenFactory;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -297,13 +304,11 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         };
     }
 
-    protected Object getTokenKey(final Class classType, final BigInteger keyType, final Object keyValue) {
-        return TokenKeyFactory.getInstance(
-                classType, new Builder().keyType(keyType).keyValue(keyValue));
+    protected <T, U> T getTokenKey(final BigInteger keyType, final U keyValue) {
+        return tokenKeyFactory.getInstance(keyType, keyValue);
     }
 
-    protected Object getHederaToken(
-            final Class classType,
+    protected <T, U, V> T getHederaToken(
             final String name,
             final String symbol,
             final String treasury,
@@ -311,20 +316,53 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
             final Boolean tokenSupplyType,
             final BigInteger maxSupply,
             final Boolean freezeDefault,
-            final List<Object> tokenKeys,
-            final Object expiry) {
-        return HederaTokenFactory.getInstance(
-                classType,
-                new HederaTokenFactory.Builder()
-                        .name(name)
-                        .symbol(symbol)
-                        .treasury(treasury)
-                        .memo(memo)
-                        .tokenSupplyType(tokenSupplyType)
-                        .maxSupply(maxSupply)
-                        .freezeDefault(freezeDefault)
-                        .tokenKeys(tokenKeys)
-                        .expiry(expiry));
+            final List<U> tokenKeys,
+            final V expiry) {
+        return hederaTokenFactory.getInstance(
+                name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault, tokenKeys, expiry);
+    }
+
+    protected <T, U> T getHederaToken(
+            final TokenTypeEnum tokenType,
+            final boolean withKeys,
+            final boolean inheritAccountKey,
+            final boolean freezeDefault,
+            final Entity treasuryEntity) {
+        final List<U> tokenKeys = new LinkedList<>();
+        final var keyType = inheritAccountKey ? KeyValueType.INHERIT_ACCOUNT_KEY : KeyValueType.ECDSA_SECPK256K1;
+        if (withKeys) {
+            tokenKeys.add(getTokenKey(KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
+            tokenKeys.add(getTokenKey(KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
+        }
+
+        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
+            tokenKeys.add(getTokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
+        }
+
+        return getHederaToken(
+                DEFAULT_TOKEN_NAME,
+                DEFAULT_TOKEN_SYMBOL,
+                toAddress(treasuryEntity.getId()).toHexString(),
+                DEFAULT_TOKEN_MEMO,
+                Boolean.TRUE, // finite amount
+                BigInteger.valueOf(10L), // max supply
+                freezeDefault, // freeze default
+                tokenKeys,
+                getTokenExpiry(domainBuilder.entity().persist()));
+    }
+
+    protected <T> T getHederaToken(
+            final TokenTypeEnum tokenType, final Entity treasuryEntity, final Entity autoRenewAccountEntity) {
+        return getHederaToken(
+                DEFAULT_TOKEN_NAME,
+                DEFAULT_TOKEN_SYMBOL,
+                toAddress(treasuryEntity.getId()).toHexString(),
+                DEFAULT_TOKEN_MEMO,
+                tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? Boolean.FALSE : Boolean.TRUE,
+                BigInteger.valueOf(10L),
+                Boolean.TRUE,
+                List.of(),
+                getTokenExpiry(autoRenewAccountEntity));
     }
 
     public enum KeyType {

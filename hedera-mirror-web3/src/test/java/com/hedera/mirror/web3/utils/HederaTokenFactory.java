@@ -16,129 +16,62 @@
 
 package com.hedera.mirror.web3.utils;
 
-import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
-import com.hedera.mirror.web3.web3j.generated.NestedCalls;
-import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
+import java.lang.reflect.Constructor;
 import java.math.BigInteger;
 import java.util.List;
 
 public class HederaTokenFactory {
 
-    // Private constructor to prevent direct instantiation
-    private HederaTokenFactory() {}
+    private static final String INNER_CLASS_NAME = "HederaToken";
+    private static final String HELPER_CLASS_NAME = "Expiry";
+    private static Class classType;
+    private static Constructor constructor;
 
-    public static Object getInstance(final Class classType, final Builder builder) {
-        return builder.classType(classType).build();
+    public HederaTokenFactory(final Class thatClassType) {
+        classType = thatClassType;
     }
 
-    public static class Builder {
-        private String name;
-        private String symbol;
-        private String treasury;
-        private String memo;
-        private Boolean tokenSupplyType;
-        private BigInteger maxSupply;
-        private Boolean freezeDefault;
-        private List<Object> tokenKeys;
-        private Object expiry;
-        private Class classType;
-
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder symbol(String symbol) {
-            this.symbol = symbol;
-            return this;
-        }
-
-        public Builder treasury(String treasury) {
-            this.treasury = treasury;
-            return this;
-        }
-
-        public Builder memo(String memo) {
-            this.memo = memo;
-            return this;
-        }
-
-        public Builder tokenSupplyType(Boolean tokenSupplyType) {
-            this.tokenSupplyType = tokenSupplyType;
-            return this;
-        }
-
-        public Builder maxSupply(BigInteger maxSupply) {
-            this.maxSupply = maxSupply;
-            return this;
-        }
-
-        public Builder freezeDefault(Boolean freezeDefault) {
-            this.freezeDefault = freezeDefault;
-            return this;
-        }
-
-        public Builder tokenKeys(List<Object> tokenKeys) {
-            this.tokenKeys = tokenKeys;
-            return this;
-        }
-
-        public Builder expiry(Object expiry) {
-            this.expiry = expiry;
-            return this;
-        }
-
-        private Builder classType(Class classType) {
-            this.classType = classType;
-            return this;
-        }
-
-        private Object build() {
-            assert classType != null;
-            if (classType.equals(NestedCalls.class)) {
-                final var convertedKeys = this.tokenKeys.stream()
-                        .map(key -> (NestedCalls.TokenKey) key)
-                        .toList();
-                return new NestedCalls.HederaToken(
-                        this.name,
-                        this.symbol,
-                        this.treasury,
-                        this.memo,
-                        this.tokenSupplyType,
-                        this.maxSupply,
-                        this.freezeDefault,
-                        convertedKeys,
-                        (NestedCalls.Expiry) this.expiry);
-            } else if (classType.equals(PrecompileTestContract.class)) {
-                final var convertedKeys = this.tokenKeys.stream()
-                        .map(key -> (PrecompileTestContract.TokenKey) key)
-                        .toList();
-                return new PrecompileTestContract.HederaToken(
-                        this.name,
-                        this.symbol,
-                        this.treasury,
-                        this.memo,
-                        this.tokenSupplyType,
-                        this.maxSupply,
-                        this.freezeDefault,
-                        convertedKeys,
-                        (PrecompileTestContract.Expiry) this.expiry);
-            } else if (classType.equals(ModificationPrecompileTestContract.class)) {
-                final var convertedKeys = this.tokenKeys.stream()
-                        .map(key -> (ModificationPrecompileTestContract.TokenKey) key)
-                        .toList();
-                return new ModificationPrecompileTestContract.HederaToken(
-                        this.name,
-                        this.symbol,
-                        this.treasury,
-                        this.memo,
-                        this.tokenSupplyType,
-                        this.maxSupply,
-                        this.freezeDefault,
-                        convertedKeys,
-                        (ModificationPrecompileTestContract.Expiry) this.expiry);
+    public <T, U, V> T getInstance(
+            final String name,
+            final String symbol,
+            final String treasury,
+            final String memo,
+            final Boolean tokenSupplyType,
+            final BigInteger maxSupply,
+            final Boolean freezeDefault,
+            final List<U> tokenKeys,
+            V expiry) {
+        try {
+            Class<?> innerClassExpiry = null;
+            for (Class<?> declaredClass : classType.getDeclaredClasses()) {
+                if (declaredClass.getSimpleName().equals(HELPER_CLASS_NAME)) {
+                    innerClassExpiry = declaredClass;
+                    break;
+                }
             }
-            throw new RuntimeException("Class type not supported.");
+
+            Class<?> innerClassTokenKey;
+            for (Class<?> declaredClass : classType.getDeclaredClasses()) {
+                if (declaredClass.getSimpleName().equals(INNER_CLASS_NAME)) {
+                    innerClassTokenKey = declaredClass;
+                    constructor = innerClassTokenKey.getConstructor(
+                            String.class,
+                            String.class,
+                            String.class,
+                            String.class,
+                            Boolean.class,
+                            BigInteger.class,
+                            Boolean.class,
+                            List.class,
+                            innerClassExpiry);
+                    break;
+                }
+            }
+
+            return (T) constructor.newInstance(
+                    name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault, tokenKeys, expiry);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to instantiate Expiry class", e);
         }
     }
 }
