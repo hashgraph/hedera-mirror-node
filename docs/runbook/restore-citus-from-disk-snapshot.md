@@ -100,20 +100,7 @@ gcloud compute disks delete {diskName} --project {gcpProject} --zone {diskZone}
 
 ### Update Passwords
 
-1. `Stackgres` doesn't allow for the `superuser` password to be set by configuration so you will need
-   to retrieve the old password from the cluster by executing the below command:
-   <br>
-   `kubectl exec -it -n mainnet-citus -c postgres-util  {releaseName}-citus-shard0-0  -- psql -U postgres -d mirror_node -c "select * from pg_dist_authinfo where rolename='postgres'"`
-2. Open a session using `postgres-util` container on the primary coordinator
-   <br>
-   `kubectl exec -it -n {targetNamespace} -c postgres-util {releaseName}-citus-coord-{indexOfPrimaryCoordinatorInstance} -- psql -U postgres -d mirror_node`
-   <br>
-3. Use the password from step 1 to configure the below to configure communication with other clusters
-   `insert into pg_dist_authinfo(nodeid, rolename, authinfo)
-    values (0, 'postgres', 'password=') on conflict (nodeid, rolename)
-    do
-    update set authinfo = excluded.authinfo;`
-4. Retrieve the new passwords for this cluster
+1. Retrieve the new passwords for this cluster
    <br>
    For `authenticator`, `postgres`, and `replicator` passwords:
    <br>
@@ -123,14 +110,27 @@ gcloud compute disks delete {diskName} --project {gcpProject} --zone {diskZone}
    <br>
    `kubectl get secrets -n {targetNamespace} {releaseName}-passwords -o yaml |ksd`
    <br>
-5. Fill in the SQL commands in the [template](#sql-commands-to-update-passwords) with the correct passwords
-   and execute in the session opened in step 2
+2. Using the `postgres` user password from step 1, update the `postgres` user password for each primary coordinator
+   and worker pod. Replace the below pod names with the correct pod names for the primary coordinator and
+   worker pod
+   <br>
+   `kubectl exec -it -n mainnet-citus -c postgres-util  {releaseName}-citus-coord-0  -- psql -U postgres -c "alter user postgres with password ''"`
+   <br>
+   `kubectl exec -it -n mainnet-citus -c postgres-util  {releaseName}-citus-shard0-0  -- psql -U postgres -c "alter user postgres with password ''"`
+   <br>
+   `kubectl exec -it -n mainnet-citus -c postgres-util  {releaseName}-citus-shard1-0  -- psql -U postgres -c "alter user postgres with password ''"`
+   <br>
+   `kubectl exec -it -n mainnet-citus -c postgres-util  {releaseName}-citus-shard2-0  -- psql -U postgres -c "alter user postgres with password ''"`
+3. Open a session using `postgres-util` container on the primary coordinator
+   <br>
+   `kubectl exec -it -n {targetNamespace} -c postgres-util {releaseName}-citus-coord-{indexOfPrimaryCoordinatorInstance} -- psql -U postgres -d mirror_node`
+   <br>
+4. Fill in the SQL commands in the [template](#sql-commands-to-update-passwords) with the correct passwords
+   and execute in the session opened in step 3
 
 ### SQL Commands to Update Passwords
 
 ```sql
-alter user postgres with password '';
-
 insert into pg_dist_authinfo(nodeid, rolename, authinfo)
 values (0, 'postgres', 'password=')
 on conflict (nodeid, rolename)
