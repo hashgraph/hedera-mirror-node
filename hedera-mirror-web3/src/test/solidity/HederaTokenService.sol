@@ -213,6 +213,7 @@ abstract contract HederaTokenService {
 
     /// Retrieves fungible specific token info for a fungible token
     /// @param token The ID of the token as a solidity address
+    /// @dev This function reverts if the call is not successful
     function getFungibleTokenInfo(address token) internal returns (int responseCode, IHederaTokenService.FungibleTokenInfo memory tokenInfo) {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.getFungibleTokenInfo.selector, token));
@@ -222,6 +223,7 @@ abstract contract HederaTokenService {
 
     /// Retrieves general token info for a given token
     /// @param token The ID of the token as a solidity address
+    /// @dev This function reverts if the call is not successful
     function getTokenInfo(address token) internal returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo) {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.getTokenInfo.selector, token));
@@ -231,6 +233,7 @@ abstract contract HederaTokenService {
 
     /// Retrieves non-fungible specific token info for a given NFT
     /// @param token The ID of the token as a solidity address
+    /// @dev This function reverts if the call is not successful
     function getNonFungibleTokenInfo(address token, int64 serialNumber) internal returns (int responseCode, IHederaTokenService.NonFungibleTokenInfo memory tokenInfo) {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.getNonFungibleTokenInfo.selector, token, serialNumber));
@@ -244,6 +247,7 @@ abstract contract HederaTokenService {
     /// @return fixedFees Set of fixed fees for `token`
     /// @return fractionalFees Set of fractional fees for `token`
     /// @return royaltyFees Set of royalty fees for `token`
+    /// @dev This function reverts if the call is not successful
     function getTokenCustomFees(address token) internal returns (int64 responseCode,
         IHederaTokenService.FixedFee[] memory fixedFees,
         IHederaTokenService.FractionalFee[] memory fractionalFees,
@@ -355,6 +359,7 @@ abstract contract HederaTokenService {
     /// @param account The account address associated with the token
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return frozen True if `account` is frozen for `token`
+    /// @dev This function reverts if the call is not successful
     function isFrozen(address token, address account) internal returns (int64 responseCode, bool frozen){
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.isFrozen.selector, token, account));
@@ -366,6 +371,7 @@ abstract contract HederaTokenService {
     /// @param account The account address associated with the token
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return kycGranted True if `account` has kyc granted for `token`
+    /// @dev This function reverts if the call is not successful
     function isKyc(address token, address account) internal returns (int64 responseCode, bool kycGranted){
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.isKyc.selector, token, account));
@@ -448,6 +454,7 @@ abstract contract HederaTokenService {
     /// @param token The token address to check
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return defaultFreezeStatus True if `token` default freeze status is frozen.
+    /// @dev This function reverts if the call is not successful
     function getTokenDefaultFreezeStatus(address token) internal returns (int responseCode, bool defaultFreezeStatus) {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.getTokenDefaultFreezeStatus.selector, token));
@@ -458,6 +465,7 @@ abstract contract HederaTokenService {
     /// @param token The token address to check
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return defaultKycStatus True if `token` default kyc status is KycNotApplicable and false if Revoked.
+    /// @dev This function reverts if the call is not successful
     function getTokenDefaultKycStatus(address token) internal returns (int responseCode, bool defaultKycStatus) {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.getTokenDefaultKycStatus.selector, token));
@@ -598,6 +606,7 @@ abstract contract HederaTokenService {
     /// @param keyType The keyType of the desired KeyValue
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return key KeyValue info for key of type `keyType`
+    /// @dev This function reverts if the call is not successful
     function getTokenKey(address token, uint keyType)
     internal returns (int64 responseCode, IHederaTokenService.KeyValue memory key){
         (bool success, bytes memory result) = precompileAddress.call(
@@ -611,6 +620,7 @@ abstract contract HederaTokenService {
     /// @param token The token address
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return isTokenFlag True if valid token found for the given address
+    /// @dev This function reverts if the call is not successful
     function isToken(address token) internal returns (int64 responseCode, bool isTokenFlag) {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.isToken.selector, token));
@@ -621,6 +631,7 @@ abstract contract HederaTokenService {
     /// @param token The token address
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return tokenType the token type. 0 is FUNGIBLE_COMMON, 1 is NON_FUNGIBLE_UNIQUE, -1 is UNRECOGNIZED
+    /// @dev This function reverts if the call is not successful
     function getTokenType(address token) internal returns (int64 responseCode, int32 tokenType) {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.getTokenType.selector, token));
@@ -631,6 +642,7 @@ abstract contract HederaTokenService {
     /// @param token The token address
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return expiryInfo The expiry info of the token
+    /// @dev This function reverts if the call is not successful
     function getTokenExpiryInfo(address token) internal returns (int responseCode, IHederaTokenService.Expiry memory expiryInfo){
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.getTokenExpiryInfo.selector, token));
@@ -668,6 +680,6 @@ abstract contract HederaTokenService {
         );
 
         emit CallResponseEvent(success, result);
-        (responseCode, response) = success ? abi.decode(result, (int32, bytes)) : (HederaResponseCodes.UNKNOWN, bytes(""));
+        (responseCode, response) = success ? (HederaResponseCodes.SUCCESS, result) : (HederaResponseCodes.UNKNOWN, bytes(""));
     }
 }
