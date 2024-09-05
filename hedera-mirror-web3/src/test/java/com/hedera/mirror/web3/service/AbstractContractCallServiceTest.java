@@ -281,10 +281,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
             final Boolean inheritAccountKey,
             final String contractId,
             final byte[] ed25519,
-            final byte[] ECDSA_secp256k1,
+            final byte[] ecdsaSecp256K1,
             final String delegatableContractId) {
         return keyValueFactory.getInstance(
-                inheritAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId);
+                inheritAccountKey, contractId, ed25519, ecdsaSecp256K1, delegatableContractId);
     }
 
     protected <T> T getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {

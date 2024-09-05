@@ -32,7 +32,7 @@ public class KeyValueFactory {
             final Boolean inheritAccountKey,
             final String contractId,
             final byte[] ed25519,
-            final byte[] ECDSA_secp256k1,
+            final byte[] ecdsaSecp256K1,
             final String delegatableContractId) {
         try {
             Class<?> innerClass;
@@ -46,7 +46,7 @@ public class KeyValueFactory {
             }
 
             return (T) constructor.newInstance(
-                    inheritAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId);
+                    inheritAccountKey, contractId, ed25519, ecdsaSecp256K1, delegatableContractId);
         } catch (Exception e) {
             throw new RuntimeException("Unable to instantiate Expiry class", e);
         }
