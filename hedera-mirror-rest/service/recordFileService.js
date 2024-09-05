@@ -118,7 +118,7 @@ class RecordFileService extends BaseService {
     query += ` order by consensus_end ${order}`;
     const params = [timestamps, minTimestamp, BigInt(maxTimestamp) + 10_000_000_000n];
 
-    const rows = await super.getRows(query, params, 'getRecordFileBlockDetailsFromTimestampArray');
+    const rows = await super.getRows(query, params);
 
     let index = 0;
     for (const row of rows) {
