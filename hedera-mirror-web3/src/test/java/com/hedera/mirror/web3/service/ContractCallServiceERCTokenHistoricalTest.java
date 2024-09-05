@@ -47,934 +47,824 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.ERCTestContractHistorical;
 import java.math.BigInteger;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServiceTest {
-
     private RecordFile recordFileBeforeEvm34;
-    protected static RecordFile recordFileAfterEvm34;
+    private RecordFile recordFileAfterEvm34;
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void getApprovedEmptySpenderBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_getApproved(tokenAddress.toHexString(), BigInteger.valueOf(2L))
-                : contract.call_getApprovedNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(2L));
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+    @Nested
+    class beforeEvm34Tests {
+        @BeforeEach
+        void beforeEach() {
+            recordFileBeforeEvmV34Persist();
+            recordFileAfterEvmV34Persist();
+            testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
+            testWeb3jService.setHistoricalRange(
+                    Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
+        }
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void getApprovedEmptySpenderBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_getApproved(tokenAddress.toHexString(), BigInteger.valueOf(2L))
+                    : contract.call_getApprovedNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(2L));
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void getApprovedBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_getApproved(tokenAddress.toHexString(), BigInteger.valueOf(3L))
+                    : contract.call_getApprovedNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(3L));
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void isApproveForAllBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_isApprovedForAll(tokenAddress.toHexString(), ownerAddress.toHexString(),
+                    spenderAddress.toHexString())
+                    : contract.call_isApprovedForAllNonStatic(tokenAddress.toHexString(), ownerAddress.toHexString(),
+                            spenderAddress.toHexString());
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void isApproveForAllBeforeEvmV34WithAlias(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var autoRenewAddress = toAddress(1078);
+            final var senderAddress = toAddress(1014);
+            final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    senderEntityPersist,
+                    spenderEntityPersist,
+                    senderEntityPersist,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            nftAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), senderEntityPersist, senderEntityPersist,
+                    spenderEntityPersist);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_isApprovedForAll(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
+                    SPENDER_ALIAS.toHexString())
+                    : contract.call_isApprovedForAllNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
+                            SPENDER_ALIAS.toHexString());
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void allowanceBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            fungibleTokenPersistHistorical(
+                    ownerEntityId,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            fungibleTokenAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), ownerEntityId, ownerEntityId,
+                    spenderEntityPersist);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_allowance(tokenAddress.toHexString(), ownerAddress.toHexString(),
+                    spenderAddress.toHexString())
+                    : contract.call_allowanceNonStatic(tokenAddress.toHexString(), ownerAddress.toHexString(),
+                            spenderAddress.toHexString());
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void allowanceBeforeEvmV34WithAlias(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var autoRenewAddress = toAddress(1078);
+            final var senderAddress = toAddress(1014);
+            final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            fungibleTokenPersistHistorical(
+                    senderEntityPersist,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            fungibleTokenAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), senderEntityPersist,
+                    senderEntityPersist, spenderEntityPersist);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_allowance(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
+                    SPENDER_ALIAS.toHexString())
+                    : contract.call_allowanceNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
+                            SPENDER_ALIAS.toHexString());
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void decimalsBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            fungibleTokenPersistHistorical(
+                    ownerEntityId,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_decimals(tokenAddress.toHexString())
+                    : contract.call_decimalsNonStatic(tokenAddress.toHexString());
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void totalSupplyBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            fungibleTokenPersistHistorical(
+                    ownerEntityId,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            balancePersistHistorical(tokenAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
+                    ownerAddress, 12L);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_totalSupply(tokenAddress.toHexString())
+                    : contract.call_totalSupplyNonStatic(tokenAddress.toHexString());
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void symbolBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            fungibleTokenPersistHistorical(
+                    ownerEntityId,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_symbol(tokenAddress.toHexString())
+                    : contract.call_symbolNonStatic(tokenAddress.toHexString());
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void balanceOfBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var tokenEntity = entityIdFromEvmAddress(tokenAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var senderAddress = toAddress(1014);
+            final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
+            fungibleTokenPersistHistorical(
+                    senderEntityPersist,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            tokenAccountPersistHistorical(senderEntityPersist, tokenEntity);
+            final var balance = 10L;
+            balancePersistHistorical(tokenAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
+                    senderAddress, balance);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_balanceOf(tokenAddress.toHexString(), senderAddress.toHexString())
+                    : contract.call_balanceOfNonStatic(tokenAddress.toHexString(), senderAddress.toHexString());
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void balanceOfBeforeEvmV34WithAlias(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var tokenEntity = entityIdFromEvmAddress(tokenAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var senderAddress = toAddress(1014);
+            final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
+            fungibleTokenPersistHistorical(
+                    senderEntityPersist,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            tokenAccountPersistHistorical(senderEntityPersist, tokenEntity);
+            final var balance = 10L;
+            balancePersistHistorical(tokenAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
+                    senderAddress, balance);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_balanceOf(tokenAddress.toHexString(), SENDER_ALIAS.toHexString())
+                    : contract.call_balanceOfNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString());
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void nameBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            fungibleTokenPersistHistorical(
+                    ownerEntityId,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_name(tokenAddress.toHexString())
+                    : contract.call_nameNonStatic(tokenAddress.toHexString());
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void ownerOfBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            tokenAccountPersistHistorical(ownerEntityId, entityIdFromEvmAddress(tokenAddress));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(1L))
+                    : contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1L));
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void emptyOwnerOfBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(2L))
+                    : contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(2L));
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void tokenURIBeforeEvmV34(final boolean isStatic) {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_tokenURI(tokenAddress.toHexString(), BigInteger.valueOf(1L))
+                    : contract.call_tokenURINonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1L));
+            // Then
+            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void getApprovedEmptySpenderAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_getApproved(tokenAddress.toHexString(), BigInteger.valueOf(2L)).send()
-                : contract.call_getApprovedNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(2L)).send();
-        // Then
-        assertThat(result).isEqualTo(Address.ZERO.toHexString());
+    @Nested
+    class afterEvm34Tests {
+        @BeforeEach
+        void beforeEach() {
+            recordFileAfterEvmV34Persist();
+            testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
+            testWeb3jService.setHistoricalRange(
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void getApprovedEmptySpenderAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_getApproved(tokenAddress.toHexString(), BigInteger.valueOf(2L)).send()
+                    : contract.call_getApprovedNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(2L)).send();
+            // Then
+            assertThat(result).isEqualTo(Address.ZERO.toHexString());
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void getApprovedAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_getApproved(tokenAddress.toHexString(), BigInteger.valueOf(3L)).send()
+                    : contract.call_getApprovedNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(3L)).send();
+            // Then
+            assertThat(result).isEqualTo(SPENDER_ALIAS.toHexString());
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void isApproveForAllAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            nftAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), ownerEntityId, ownerEntityId,
+                    spenderEntityPersist);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_isApprovedForAll(tokenAddress.toHexString(), ownerAddress.toHexString(),
+                    spenderAddress.toHexString()).send()
+                    : contract.call_isApprovedForAllNonStatic(tokenAddress.toHexString(), ownerAddress.toHexString(),
+                            spenderAddress.toHexString()).send();
+            // Then
+            assertThat(result).isEqualTo(true);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void isApproveForAllAfterEvmV34WithAlias(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var autoRenewAddress = toAddress(1078);
+            final var senderAddress = toAddress(1014);
+            final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    senderEntityPersist,
+                    spenderEntityPersist,
+                    senderEntityPersist,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            nftAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), senderEntityPersist, senderEntityPersist,
+                    spenderEntityPersist);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_isApprovedForAll(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
+                    SPENDER_ALIAS.toHexString()).send()
+                    : contract.call_isApprovedForAllNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
+                            SPENDER_ALIAS.toHexString()).send();
+            // Then
+            assertThat(result).isEqualTo(true);
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void allowanceAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            fungibleTokenPersistHistorical(
+                    ownerEntityId,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            fungibleTokenAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), ownerEntityId, ownerEntityId,
+                    spenderEntityPersist);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_allowance(tokenAddress.toHexString(), ownerAddress.toHexString(),
+                    spenderAddress.toHexString()).send()
+                    : contract.call_allowanceNonStatic(tokenAddress.toHexString(), ownerAddress.toHexString(),
+                            spenderAddress.toHexString()).send();
+            // Then
+            assertThat(result).isEqualTo(BigInteger.valueOf(10L));
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void allowanceAfterEvmV34WithAlias(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var autoRenewAddress = toAddress(1078);
+            final var senderAddress = toAddress(1014);
+            final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            fungibleTokenPersistHistorical(
+                    senderEntityPersist,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            fungibleTokenAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), senderEntityPersist,
+                    senderEntityPersist, spenderEntityPersist);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_allowance(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
+                    SPENDER_ALIAS.toHexString()).send()
+                    : contract.call_allowanceNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
+                            SPENDER_ALIAS.toHexString()).send();
+            // Then
+            assertThat(result).isEqualTo(BigInteger.valueOf(10L));
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void decimalsAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            fungibleTokenPersistHistorical(
+                    ownerEntityId,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_decimals(tokenAddress.toHexString()).send()
+                    : contract.call_decimalsNonStatic(tokenAddress.toHexString()).send();
+            // Then
+            assertThat(result).isEqualTo(BigInteger.valueOf(12));
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void totalSupplyAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            fungibleTokenPersistHistorical(
+                    ownerEntityId,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            balancePersistHistorical(tokenAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
+                    ownerAddress, 12L);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_totalSupply(tokenAddress.toHexString()).send()
+                    : contract.call_totalSupplyNonStatic(tokenAddress.toHexString()).send();
+            // Then
+            assertThat(result).isEqualTo(BigInteger.valueOf(12345L));
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void symbolAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            fungibleTokenPersistHistorical(
+                    ownerEntityId,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_symbol(tokenAddress.toHexString()).send()
+                    : contract.call_symbolNonStatic(tokenAddress.toHexString()).send();
+            // Then
+            assertThat(result).isEqualTo("HBAR");
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void balanceOfAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var tokenEntity = entityIdFromEvmAddress(tokenAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var senderAddress = toAddress(1014);
+            final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
+            fungibleTokenPersistHistorical(
+                    senderEntityPersist,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            tokenAccountPersistHistorical(senderEntityPersist, tokenEntity);
+            final var balance = 10L;
+            balancePersistHistorical(tokenAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
+                    senderAddress, balance);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_balanceOf(tokenAddress.toHexString(), senderAddress.toHexString()).send()
+                    : contract.call_balanceOfNonStatic(tokenAddress.toHexString(), senderAddress.toHexString()).send();
+            // Then
+            assertThat(result).isEqualTo(BigInteger.valueOf(balance));
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void balanceOfAfterEvmV34WithAlias(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var tokenEntity = entityIdFromEvmAddress(tokenAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var senderAddress = toAddress(1014);
+            final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
+            fungibleTokenPersistHistorical(
+                    senderEntityPersist,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            tokenAccountPersistHistorical(senderEntityPersist, tokenEntity);
+            final var balance = 10L;
+            balancePersistHistorical(tokenAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
+                    senderAddress, balance);
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_balanceOf(tokenAddress.toHexString(), SENDER_ALIAS.toHexString()).send()
+                    : contract.call_balanceOfNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString()).send();
+            // Then
+            assertThat(result).isEqualTo(BigInteger.valueOf(balance));
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void nameAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1062);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            fungibleTokenPersistHistorical(
+                    ownerEntityId,
+                    tokenAddress,
+                    autoRenewAddress,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_name(tokenAddress.toHexString()).send()
+                    : contract.call_nameNonStatic(tokenAddress.toHexString()).send();
+            // Then
+            assertThat(result).isEqualTo("Hbars");
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void ownerOfAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            tokenAccountPersistHistorical(ownerEntityId, entityIdFromEvmAddress(tokenAddress));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(1L)).send()
+                    : contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1L)).send();
+            // Then
+            assertThat(result).isEqualTo(ownerAddress.toHexString());
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void emptyOwnerOfAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(2L)).send()
+                    : contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(2L)).send();
+            // Then
+            assertThat(result).isEqualTo(Address.ZERO.toHexString());
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = {true, false})
+        void tokenURIAfterEvmV34(final boolean isStatic) throws Exception {
+            // Given
+            final var tokenAddress = toAddress(1063);
+            final var ownerAddress = toAddress(1065);
+            final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+            final var autoRenewAddress = toAddress(1078);
+            final var spenderAddress = toAddress(1041);
+            final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
+            nftPersistHistorical(
+                    tokenAddress,
+                    autoRenewAddress,
+                    ownerEntityId,
+                    spenderEntityPersist,
+                    ownerEntityId,
+                    Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+            final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
+            // When
+            final var result = isStatic
+                    ? contract.call_tokenURI(tokenAddress.toHexString(), BigInteger.valueOf(1L)).send()
+                    : contract.call_tokenURINonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1L)).send();
+            // Then
+            assertThat(result).isEqualTo("NFT_METADATA_URI");
+        }
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void getApprovedBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_getApproved(tokenAddress.toHexString(), BigInteger.valueOf(3L))
-                : contract.call_getApprovedNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(3L));
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void getApprovedAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_getApproved(tokenAddress.toHexString(), BigInteger.valueOf(3L)).send()
-                : contract.call_getApprovedNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(3L)).send();
-        // Then
-        assertThat(result).isEqualTo(SPENDER_ALIAS.toHexString());
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void isApproveForAllBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_isApprovedForAll(tokenAddress.toHexString(), ownerAddress.toHexString(),
-                spenderAddress.toHexString())
-                : contract.call_isApprovedForAllNonStatic(tokenAddress.toHexString(), ownerAddress.toHexString(),
-                        spenderAddress.toHexString());
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void isApproveForAllAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        nftAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), ownerEntityId, ownerEntityId,
-                spenderEntityPersist);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_isApprovedForAll(tokenAddress.toHexString(), ownerAddress.toHexString(),
-                spenderAddress.toHexString()).send()
-                : contract.call_isApprovedForAllNonStatic(tokenAddress.toHexString(), ownerAddress.toHexString(),
-                        spenderAddress.toHexString()).send();
-        // Then
-        assertThat(result).isEqualTo(true);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void isApproveForAllBeforeEvmV34WithAlias(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var autoRenewAddress = toAddress(1078);
-        final var senderAddress = toAddress(1014);
-        final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                senderEntityPersist,
-                spenderEntityPersist,
-                senderEntityPersist,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        nftAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), senderEntityPersist, senderEntityPersist,
-                spenderEntityPersist);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_isApprovedForAll(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
-                SPENDER_ALIAS.toHexString())
-                : contract.call_isApprovedForAllNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
-                        SPENDER_ALIAS.toHexString());
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void isApproveForAllAfterEvmV34WithAlias(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var autoRenewAddress = toAddress(1078);
-        final var senderAddress = toAddress(1014);
-        final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                senderEntityPersist,
-                spenderEntityPersist,
-                senderEntityPersist,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        nftAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), senderEntityPersist, senderEntityPersist,
-                spenderEntityPersist);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_isApprovedForAll(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
-                SPENDER_ALIAS.toHexString()).send()
-                : contract.call_isApprovedForAllNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
-                        SPENDER_ALIAS.toHexString()).send();
-        // Then
-        assertThat(result).isEqualTo(true);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void allowanceBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        fungibleTokenAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), ownerEntityId, ownerEntityId,
-                spenderEntityPersist);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_allowance(tokenAddress.toHexString(), ownerAddress.toHexString(),
-                spenderAddress.toHexString())
-                : contract.call_allowanceNonStatic(tokenAddress.toHexString(), ownerAddress.toHexString(),
-                        spenderAddress.toHexString());
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void allowanceAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        fungibleTokenAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), ownerEntityId, ownerEntityId,
-                spenderEntityPersist);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_allowance(tokenAddress.toHexString(), ownerAddress.toHexString(),
-                spenderAddress.toHexString()).send()
-                : contract.call_allowanceNonStatic(tokenAddress.toHexString(), ownerAddress.toHexString(),
-                        spenderAddress.toHexString()).send();
-        // Then
-        assertThat(result).isEqualTo(BigInteger.valueOf(10L));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void allowanceBeforeEvmV34WithAlias(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var autoRenewAddress = toAddress(1078);
-        final var senderAddress = toAddress(1014);
-        final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        fungibleTokenPersistHistorical(
-                senderEntityPersist,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        fungibleTokenAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), senderEntityPersist,
-                senderEntityPersist, spenderEntityPersist);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_allowance(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
-                SPENDER_ALIAS.toHexString())
-                : contract.call_allowanceNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
-                        SPENDER_ALIAS.toHexString());
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void allowanceAfterEvmV34WithAlias(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var autoRenewAddress = toAddress(1078);
-        final var senderAddress = toAddress(1014);
-        final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        fungibleTokenPersistHistorical(
-                senderEntityPersist,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        fungibleTokenAllowancePersistHistorical(entityIdFromEvmAddress(tokenAddress), senderEntityPersist,
-                senderEntityPersist, spenderEntityPersist);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_allowance(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
-                SPENDER_ALIAS.toHexString()).send()
-                : contract.call_allowanceNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString(),
-                        SPENDER_ALIAS.toHexString()).send();
-        // Then
-        assertThat(result).isEqualTo(BigInteger.valueOf(10L));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void decimalsBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_decimals(tokenAddress.toHexString())
-                : contract.call_decimalsNonStatic(tokenAddress.toHexString());
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void decimalsAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_decimals(tokenAddress.toHexString()).send()
-                : contract.call_decimalsNonStatic(tokenAddress.toHexString()).send();
-        // Then
-        assertThat(result).isEqualTo(BigInteger.valueOf(12));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void totalSupplyBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        balancePersistHistorical(tokenAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
-                ownerAddress, 12L);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_totalSupply(tokenAddress.toHexString())
-                : contract.call_totalSupplyNonStatic(tokenAddress.toHexString());
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void totalSupplyAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        balancePersistHistorical(tokenAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
-                ownerAddress, 12L);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_totalSupply(tokenAddress.toHexString()).send()
-                : contract.call_totalSupplyNonStatic(tokenAddress.toHexString()).send();
-        // Then
-        assertThat(result).isEqualTo(BigInteger.valueOf(12345L));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void symbolBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_symbol(tokenAddress.toHexString())
-                : contract.call_symbolNonStatic(tokenAddress.toHexString());
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void symbolAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_symbol(tokenAddress.toHexString()).send()
-                : contract.call_symbolNonStatic(tokenAddress.toHexString()).send();
-        // Then
-        assertThat(result).isEqualTo("HBAR");
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void balanceOfBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var tokenEntity = entityIdFromEvmAddress(tokenAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var senderAddress = toAddress(1014);
-        final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
-        fungibleTokenPersistHistorical(
-                senderEntityPersist,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        tokenAccountPersistHistorical(senderEntityPersist, tokenEntity);
-        final var balance = 10L;
-        balancePersistHistorical(tokenAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
-                senderAddress, balance);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_balanceOf(tokenAddress.toHexString(), senderAddress.toHexString())
-                : contract.call_balanceOfNonStatic(tokenAddress.toHexString(), senderAddress.toHexString());
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void balanceOfAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var tokenEntity = entityIdFromEvmAddress(tokenAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var senderAddress = toAddress(1014);
-        final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
-        fungibleTokenPersistHistorical(
-                senderEntityPersist,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        tokenAccountPersistHistorical(senderEntityPersist, tokenEntity);
-        final var balance = 10L;
-        balancePersistHistorical(tokenAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
-                senderAddress, balance);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_balanceOf(tokenAddress.toHexString(), senderAddress.toHexString()).send()
-                : contract.call_balanceOfNonStatic(tokenAddress.toHexString(), senderAddress.toHexString()).send();
-        // Then
-        assertThat(result).isEqualTo(BigInteger.valueOf(balance));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void balanceOfBeforeEvmV34WithAlias(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var tokenEntity = entityIdFromEvmAddress(tokenAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var senderAddress = toAddress(1014);
-        final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
-        fungibleTokenPersistHistorical(
-                senderEntityPersist,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        tokenAccountPersistHistorical(senderEntityPersist, tokenEntity);
-        final var balance = 10L;
-        balancePersistHistorical(tokenAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
-                senderAddress, balance);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_balanceOf(tokenAddress.toHexString(), SENDER_ALIAS.toHexString())
-                : contract.call_balanceOfNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString());
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void balanceOfAfterEvmV34WithAlias(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var tokenEntity = entityIdFromEvmAddress(tokenAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var senderAddress = toAddress(1014);
-        final var senderEntityPersist = senderEntityPersistHistorical(senderAddress);
-        fungibleTokenPersistHistorical(
-                senderEntityPersist,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        tokenAccountPersistHistorical(senderEntityPersist, tokenEntity);
-        final var balance = 10L;
-        balancePersistHistorical(tokenAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()),
-                senderAddress, balance);
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_balanceOf(tokenAddress.toHexString(), SENDER_ALIAS.toHexString()).send()
-                : contract.call_balanceOfNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString()).send();
-        // Then
-        assertThat(result).isEqualTo(BigInteger.valueOf(balance));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void nameBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_name(tokenAddress.toHexString())
-                : contract.call_nameNonStatic(tokenAddress.toHexString());
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void nameAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1062);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                tokenAddress,
-                autoRenewAddress,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_name(tokenAddress.toHexString()).send()
-                : contract.call_nameNonStatic(tokenAddress.toHexString()).send();
-        // Then
-        assertThat(result).isEqualTo("Hbars");
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void ownerOfBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        tokenAccountPersistHistorical(ownerEntityId, entityIdFromEvmAddress(tokenAddress));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(1L))
-                : contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1L));
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void ownerOfAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        tokenAccountPersistHistorical(ownerEntityId, entityIdFromEvmAddress(tokenAddress));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(1L)).send()
-                : contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1L)).send();
-        // Then
-        assertThat(result).isEqualTo(ownerAddress.toHexString());
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void emptyOwnerOfBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(2L))
-                : contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(2L));
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void emptyOwnerOfAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(2L)).send()
-                : contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(2L)).send();
-        // Then
-        assertThat(result).isEqualTo(Address.ZERO.toHexString());
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void tokenURIBeforeEvmV34(final boolean isStatic) {
-        // Given
-        recordFileBeforeEvmV34Persist();
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_tokenURI(tokenAddress.toHexString(), BigInteger.valueOf(1L))
-                : contract.call_tokenURINonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1L));
-        // Then
-        assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void tokenURIAfterEvmV34(final boolean isStatic) throws Exception {
-        // Given
-        recordFileAfterEvmV34Persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var tokenAddress = toAddress(1063);
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var autoRenewAddress = toAddress(1078);
-        final var spenderAddress = toAddress(1041);
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress);
-        nftPersistHistorical(
-                tokenAddress,
-                autoRenewAddress,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
-        // When
-        final var result = isStatic
-                ? contract.call_tokenURI(tokenAddress.toHexString(), BigInteger.valueOf(1L)).send()
-                : contract.call_tokenURINonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1L)).send();
-        // Then
-        assertThat(result).isEqualTo("NFT_METADATA_URI");
-    }
 
     @ParameterizedTest
     @ValueSource(longs = {51, Long.MAX_VALUE - 1})
