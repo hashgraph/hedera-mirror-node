@@ -44,7 +44,7 @@ const responseCacheCheckHandler = async (req, res, next) => {
     const cachedResponse = Object.assign(new CachedApiResponse(), cachedTtlAndValue.value);
     const code = cachedResponse.status;
     res.set(cachedResponse.headers);
-    res.set(CACHE_CONTROL_HEADER_NAME, cachedTtlAndValue.ttl);
+    res.set(CACHE_CONTROL_HEADER_NAME, `public, max-age=${cachedTtlAndValue.ttl}`);
     res.status(code);
     res.send(cachedResponse.body);
 
