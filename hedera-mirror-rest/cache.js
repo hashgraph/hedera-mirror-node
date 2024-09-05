@@ -20,7 +20,7 @@ import _ from 'lodash';
 import {JSONParse, JSONStringify} from './utils';
 
 export class Cache {
-  constructor() {
+  constructor(keyPrefix = '') {
     const {redis: redisConfig} = config;
     const {enabled, sentinel, uri} = redisConfig;
     const sentinelOptions = sentinel.enabled
@@ -37,6 +37,7 @@ export class Cache {
       enableOfflineQueue: true,
       enableReadyCheck: true,
       keepAlive: 30000,
+      keyPrefix: keyPrefix,
       lazyConnect: !enabled,
       maxRetriesPerRequest: redisConfig.maxRetriesPerRequest,
       retryStrategy: (attempt) => {
@@ -73,24 +74,38 @@ export class Cache {
     return this.redis.flushall();
   }
 
-  async getSingle(key) {
+  async getSingleWithTtl(key) {
     if (!this.ready) {
       return undefined;
     }
 
-    const value =
-      (await this.redis.get(key).catch((err) => logger.warn(`Redis error during get: ${err.message}`))) || undefined;
+    let valueWithTtl = undefined; // Cache miss to caller
+    await this.redis
+      .multi()
+      .ttl(key)
+      .get(key)
+      .exec(function (err, result) {
+        if (err) {
+          logger.warn(`Redis error during get: ${err.message}`);
+        } else {
+          // result is [[null, ttl], [null, value]], with value === null on cache miss.
+          const rawValue = result[1][1];
+          if (rawValue) {
+            valueWithTtl = {ttl: result[0][1], value: JSONParse(rawValue)};
+          }
+        }
+      });
 
-    return value === undefined ? value : JSONParse(value);
+    return valueWithTtl;
   }
 
-  async setSingle(key, value) {
+  async setSingle(key, expiry, value) {
     if (!this.ready) {
       return undefined;
     }
 
     return this.redis
-      .set(key, JSONStringify(value))
+      .setex(key, expiry, JSONStringify(value))
       .catch((err) => logger.warn(`Redis error during set: ${err.message}`));
   }
 

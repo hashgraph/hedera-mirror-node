@@ -89,23 +89,23 @@ describe('get', () => {
 
 describe('Single key get/set', () => {
   test('Get undefined key', async () => {
-    const value = await cache.getSingle(undefined);
+    const value = await cache.getSingleWithTtl(undefined);
     expect(value).toBeUndefined();
   });
 
   test('Get non-existent key', async () => {
     const key = 'myKeyDoesNotExist';
-    const value = await cache.getSingle(key);
+    const value = await cache.getSingleWithTtl(key);
     expect(value).toBeUndefined();
   });
 
   test('Set and get object', async () => {
     const key = 'myKey';
     const objectToCache = {a: 5, b: 'some string', c: 'another string'};
-    const setResult = await cache.setSingle(key, objectToCache);
+    const setResult = await cache.setSingle(key, 5, objectToCache);
     expect(setResult).toEqual('OK');
-    const objectFromCache = await cache.getSingle(key);
-    expect(objectFromCache).toEqual(objectToCache);
+    const objectFromCache = await cache.getSingleWithTtl(key);
+    expect(objectFromCache.value).toEqual(objectToCache);
   });
 
   test('Disabled', async () => {
@@ -113,7 +113,7 @@ describe('Single key get/set', () => {
     cache = new Cache();
 
     const key = 'myKey';
-    const value = await cache.getSingle(key);
+    const value = await cache.getSingleWithTtl(key);
     expect(value).toBeUndefined();
     const setResult = await cache.setSingle(key, 'someValue');
     expect(setResult).toBeUndefined();
@@ -124,7 +124,7 @@ describe('Single key get/set', () => {
     cache = new Cache();
 
     const key = 'myKey';
-    const value = await cache.getSingle('someKey');
+    const value = await cache.getSingleWithTtl('someKey');
     expect(value).toBeUndefined();
     const setResult = await cache.setSingle(key, 'someValue');
     expect(setResult).toBeUndefined();

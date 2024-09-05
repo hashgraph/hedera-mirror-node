@@ -28,7 +28,7 @@ const CACHE_KEY_VALUE = 'cacheKey';
 
 let redisContainer;
 config.redis.enabled = true;
-const cache = new Cache();
+const cache = new Cache('testApiResponse:');
 setCache(cache);
 
 beforeAll(async () => {
@@ -43,7 +43,7 @@ afterAll(async () => {
 });
 
 describe('Response cache check middleware', () => {
-  let mockCacheKeyGenerator, mockNextMiddleware, mockRequest, mockResponse, responseData;
+  let mockNextMiddleware, mockRequest, mockResponse, responseData;
 
   beforeEach(() => {
     cache.clear();
@@ -76,15 +76,14 @@ describe('Response cache check middleware', () => {
     await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
     const cacheKey = mockResponse.locals[responseCacheKeyLabel];
     expect(cacheKey).toEqual(CACHE_KEY_VALUE);
-    expect(await cache.getSingle(cacheKey)).toBeUndefined();
+    expect(await cache.getSingleWithTtl(cacheKey)).toBeUndefined();
     expect(mockNextMiddleware).toBeCalled();
   });
 
   test('Cache hit', async () => {
     const body = {};
-
     const cachedResponse = new CachedApiResponse(mockResponse.status, mockResponse.headers, body);
-    cache.setSingle(CACHE_KEY_VALUE, cachedResponse);
+    await cache.setSingle(CACHE_KEY_VALUE, 30, cachedResponse);
     await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
     expect(mockNextMiddleware).not.toBeCalled();
   });

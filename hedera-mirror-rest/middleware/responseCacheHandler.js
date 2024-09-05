@@ -16,17 +16,19 @@
 
 import {Cache} from '../cache';
 import CachedApiResponse from '../model/cachedApiResponse.js';
-import {requestStartTime, responseBodyLabel, responseCacheKeyLabel} from '../constants.js';
+import {responseBodyLabel, responseCacheKeyLabel} from '../constants.js';
 
-const AGE_HEADER_NAME = 'age';
 const CACHE_BYPASS_HEADER_VALUE = 'no-cache';
 const CACHE_CONTROL_HEADER_NAME = 'cache-control';
+const DEFAULT_REDIS_EXPIRY = 1;
 const PRAGMA_HEADER_NAME = 'pragma';
 
-let cache = new Cache();
+let cache = new Cache('apiResponse:');
 
 // Response middleware that checks for and returns cached response.
 const responseCacheCheckHandler = async (req, res, next) => {
+  const startTime = Date.now();
+
   const cacheControl = req.headers[CACHE_CONTROL_HEADER_NAME];
   const pragma = req.headers[PRAGMA_HEADER_NAME];
   if (pragma === CACHE_BYPASS_HEADER_VALUE || cacheControl === CACHE_BYPASS_HEADER_VALUE) {
@@ -34,21 +36,19 @@ const responseCacheCheckHandler = async (req, res, next) => {
   }
 
   const responseCacheKey = cacheKeyGenerator(req);
-  const rawCachedResponse = await cache.getSingle(responseCacheKey);
+  const cachedTtlAndValue = await cache.getSingleWithTtl(responseCacheKey);
 
-  if (rawCachedResponse) {
+  if (cachedTtlAndValue) {
     logger.debug(`Cache hit: ${responseCacheKey}`);
 
-    const cachedResponse = Object.assign(new CachedApiResponse(), rawCachedResponse);
-    const age = Date.now() - cachedResponse.cacheTime;
+    const cachedResponse = Object.assign(new CachedApiResponse(), cachedTtlAndValue.value);
     const code = cachedResponse.status;
     res.set(cachedResponse.headers);
-    res.set(AGE_HEADER_NAME, age);
+    res.set(CACHE_CONTROL_HEADER_NAME, cachedTtlAndValue.ttl);
     res.status(code);
     res.send(cachedResponse.body);
 
-    const startTime = res.locals[requestStartTime];
-    const elapsed = startTime ? Date.now() - startTime : 0;
+    const elapsed = Date.now() - startTime;
     logger.info(`${req.ip} ${req.method} ${req.originalUrl} from cache in ${elapsed} ms: ${code}`);
   } else {
     logger.debug(`Cache miss: ${responseCacheKey}`);
@@ -61,12 +61,10 @@ const responseCacheCheckHandler = async (req, res, next) => {
 const responseCacheUpdateHandler = async (req, res, next) => {
   const responseCacheKey = res.locals[responseCacheKeyLabel];
   if (responseCacheKey) {
-    const cacheControlHeader = res.getHeaders()[CACHE_CONTROL_HEADER_NAME];
-    const expiry = getCacheControlExpiry(cacheControlHeader);
-    if (expiry) {
-      const cachedResponse = new CachedApiResponse(res.status, res.getHeaders(), res.locals[responseBodyLabel]);
-      cache.setSingle(responseCacheKey, cachedResponse, expiry);
-    }
+    const cacheControlHeaderExpiry = getCacheControlExpiry(res.getHeaders()[CACHE_CONTROL_HEADER_NAME]);
+    const redisExpiry = _.isNull(cacheControlHeaderExpiry) ? DEFAULT_REDIS_EXPIRY : cacheControlHeaderExpiry;
+    const cachedResponse = new CachedApiResponse(res.status, res.getHeaders(), res.locals[responseBodyLabel]);
+    cache.setSingle(responseCacheKey, redisExpiry, cachedResponse);
   }
 
   next();
@@ -75,7 +73,17 @@ const responseCacheUpdateHandler = async (req, res, next) => {
 const cacheKeyGenerator = (req) => {
   return req.path;
   // Interact with Edwin's code (normalizeRequestQueryParams()).
-  // URL path, Accept-Encoding header (specified in our Vary header).
+  // Add Accept-Encoding header value (specified in our Vary header).
+};
+
+const getCacheControlExpiry = (headerValue) => {
+  if (headerValue) {
+    const maxAge = headerValue.match(/^.*max-age=(\d+)/);
+    if (maxAge && maxAge.length === 2) {
+      return parseInt(maxAge[1], 10);
+    }
+  }
+  return undefined;
 };
 
 // For testing
