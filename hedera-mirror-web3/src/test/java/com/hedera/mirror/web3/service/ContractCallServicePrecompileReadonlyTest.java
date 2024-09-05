@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ECDSA_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ECDSA_TYPE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ED_25519_TYPE;
@@ -50,6 +48,10 @@ import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
+import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.HederaTokenFactory;
+import com.hedera.mirror.web3.utils.KeyValueFactory;
+import com.hedera.mirror.web3.utils.TokenKeyFactory;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FixedFee;
@@ -67,6 +69,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -75,6 +78,14 @@ import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
 class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServiceOpcodeTracerTest {
+
+    @BeforeAll
+    static void setupFactories() {
+        expiryFactory = new ExpiryFactory(PrecompileTestContract.class);
+        keyValueFactory = new KeyValueFactory(PrecompileTestContract.class);
+        tokenKeyFactory = new TokenKeyFactory(PrecompileTestContract.class);
+        hederaTokenFactory = new HederaTokenFactory(PrecompileTestContract.class);
+    }
 
     @Test
     void unsupportedPrecompileFails() {
@@ -614,9 +625,11 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void getExpiryForToken() throws Exception {
         // Given
-        final var expiryPeriod = 9999999999999L;
-        final var autoRenewExpiry = 100000000L;
-        final var autoRenewAccount = persistAccountEntity();
+        final var autoRenewAccount =
+                domainBuilder.entity().customize(e -> e.evmAddress(null)).persist();
+        final var expectedExpiry = (Expiry) getTokenExpiry(autoRenewAccount);
+        final var expiryPeriod = expectedExpiry.second.longValue() * 1_000_000_000L;
+        final var autoRenewExpiry = expectedExpiry.autoRenewPeriod.longValue();
         final var tokenEntity = domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.TOKEN)
@@ -633,13 +646,6 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         // When
         final var functionCall = contract.call_getExpiryInfoForToken(getAddressFromEntity(tokenEntity));
-
-        final var expectedExpiry = new Expiry(
-                BigInteger.valueOf(expiryPeriod).divide(BigInteger.valueOf(1_000_000_000L)),
-                Address.fromHexString(
-                                Bytes.wrap(autoRenewAccount.getEvmAddress()).toHexString())
-                        .toHexString(),
-                BigInteger.valueOf(autoRenewExpiry));
 
         // Then
         assertThat(functionCall.send()).isEqualTo(expectedExpiry);
@@ -708,8 +714,18 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         // Given
         final var treasury = persistAccountEntity();
         final var feeCollector = persistAccountEntity();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var autoRenewAccount =
+                domainBuilder.entity().customize(e -> e.evmAddress(null)).persist();
+        final var expectedExpiry = (Expiry) getTokenExpiry(autoRenewAccount);
+        final var expiryPeriod = expectedExpiry.second.longValue() * 1_000_000_000L;
+        final var autoRenewExpiry = expectedExpiry.autoRenewPeriod.longValue();
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN)
+                        .autoRenewAccountId(autoRenewAccount.getId())
+                        .expirationTimestamp(expiryPeriod)
+                        .autoRenewPeriod(autoRenewExpiry))
+                .persist();
         final var token = domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -727,11 +743,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
 
-        final var expectedExpiry = new Expiry(
-                BigInteger.valueOf(tokenEntity.getExpirationTimestamp()).divide(BigInteger.valueOf(1_000_000_000L)),
-                Address.ZERO.toHexString(),
-                BigInteger.valueOf(tokenEntity.getAutoRenewPeriod()));
-        final var expectedHederaToken = new HederaToken(
+        final var expectedHederaToken = (HederaToken) getHederaToken(
                 token.getName(),
                 token.getSymbol(),
                 getAddressFromEvmAddress(treasury.getEvmAddress()),
@@ -775,8 +787,18 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var owner = persistAccountEntity();
         final var treasury = persistAccountEntity();
         final var feeCollector = persistAccountEntity();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var autoRenewAccount =
+                domainBuilder.entity().customize(e -> e.evmAddress(null)).persist();
+        final var expectedExpiry = (Expiry) getTokenExpiry(autoRenewAccount);
+        final var expiryPeriod = expectedExpiry.second.longValue() * 1_000_000_000L;
+        final var autoRenewExpiry = expectedExpiry.autoRenewPeriod.longValue();
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN)
+                        .autoRenewAccountId(autoRenewAccount.getId())
+                        .expirationTimestamp(expiryPeriod)
+                        .autoRenewPeriod(autoRenewExpiry))
+                .persist();
         final var token = domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -799,11 +821,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
 
-        final var expectedExpiry = new Expiry(
-                BigInteger.valueOf(tokenEntity.getExpirationTimestamp()).divide(BigInteger.valueOf(1_000_000_000L)),
-                Address.ZERO.toHexString(),
-                BigInteger.valueOf(tokenEntity.getAutoRenewPeriod()));
-        final var expectedHederaToken = new HederaToken(
+        final var expectedHederaToken = (HederaToken) getHederaToken(
                 token.getName(),
                 token.getSymbol(),
                 getAddressFromEvmAddress(treasury.getEvmAddress()),
@@ -852,8 +870,18 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         // Given
         final var treasury = persistAccountEntity();
         final var feeCollector = persistAccountEntity();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var autoRenewAccount =
+                domainBuilder.entity().customize(e -> e.evmAddress(null)).persist();
+        final var expectedExpiry = (Expiry) getTokenExpiry(autoRenewAccount);
+        final var expiryPeriod = expectedExpiry.second.longValue() * 1_000_000_000L;
+        final var autoRenewExpiry = expectedExpiry.autoRenewPeriod.longValue();
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN)
+                        .autoRenewAccountId(autoRenewAccount.getId())
+                        .expirationTimestamp(expiryPeriod)
+                        .autoRenewPeriod(autoRenewExpiry))
+                .persist();
         final var token = domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(tokenType).treasuryAccountId(treasury.toEntityId()))
@@ -868,11 +896,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
 
-        final var expectedExpiry = new Expiry(
-                BigInteger.valueOf(tokenEntity.getExpirationTimestamp()).divide(BigInteger.valueOf(1_000_000_000L)),
-                Address.ZERO.toHexString(),
-                BigInteger.valueOf(tokenEntity.getAutoRenewPeriod()));
-        final var expectedHederaToken = new HederaToken(
+        final var expectedHederaToken = (HederaToken) getHederaToken(
                 token.getName(),
                 token.getSymbol(),
                 getAddressFromEvmAddress(treasury.getEvmAddress()),
@@ -1032,20 +1056,6 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         return tokenEntity;
     }
 
-    private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
-        return switch (keyValueType) {
-            case CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
-            case ED25519 -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), ED25519_KEY, new byte[0], Address.ZERO.toHexString());
-            case ECDSA_SECPK256K1 -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], ECDSA_KEY, Address.ZERO.toHexString());
-            case DELEGATABLE_CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
-            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
-        };
-    }
-
     private Entity persistTokenEntity() {
         return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
     }
@@ -1133,14 +1143,14 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
     private List<TokenKey> getExpectedTokenKeys(final Entity tokenEntity, final Token token) {
         final var expectedTokenKeys = new ArrayList<TokenKey>();
-        expectedTokenKeys.add(new TokenKey(KeyType.ADMIN_KEY.getKeyTypeNumeric(), getKeyValue(tokenEntity.getKey())));
-        expectedTokenKeys.add(new TokenKey(KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValue(token.getKycKey())));
-        expectedTokenKeys.add(new TokenKey(KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValue(token.getFreezeKey())));
-        expectedTokenKeys.add(new TokenKey(KeyType.WIPE_KEY.getKeyTypeNumeric(), getKeyValue(token.getWipeKey())));
-        expectedTokenKeys.add(new TokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), getKeyValue(token.getSupplyKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.ADMIN_KEY.getKeyTypeNumeric(), getKeyValue(tokenEntity.getKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValue(token.getKycKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValue(token.getFreezeKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.WIPE_KEY.getKeyTypeNumeric(), getKeyValue(token.getWipeKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), getKeyValue(token.getSupplyKey())));
         expectedTokenKeys.add(
-                new TokenKey(KeyType.FEE_SCHEDULE_KEY.getKeyTypeNumeric(), getKeyValue(token.getFeeScheduleKey())));
-        expectedTokenKeys.add(new TokenKey(KeyType.PAUSE_KEY.getKeyTypeNumeric(), getKeyValue(token.getPauseKey())));
+                getTokenKey(KeyType.FEE_SCHEDULE_KEY.getKeyTypeNumeric(), getKeyValue(token.getFeeScheduleKey())));
+        expectedTokenKeys.add(getTokenKey(KeyType.PAUSE_KEY.getKeyTypeNumeric(), getKeyValue(token.getPauseKey())));
 
         return expectedTokenKeys;
     }
@@ -1148,7 +1158,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     private KeyValue getKeyValue(byte[] serializedKey) {
         try {
             final var key = Key.parseFrom(serializedKey);
-            return new KeyValue(
+            return getKeyValue(
                     false,
                     key.getContractID().hasContractNum()
                             ? EntityIdUtils.asTypedEvmAddress(key.getContractID())

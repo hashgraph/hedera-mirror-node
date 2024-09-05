@@ -22,8 +22,6 @@ import static com.hedera.mirror.common.util.CommonUtils.instant;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.CREATE_TOKEN_VALUE;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
@@ -46,6 +44,10 @@ import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
+import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.HederaTokenFactory;
+import com.hedera.mirror.web3.utils.KeyValueFactory;
+import com.hedera.mirror.web3.utils.TokenKeyFactory;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls;
 import com.hedera.mirror.web3.web3j.generated.ExchangeRatePrecompile;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls;
@@ -56,12 +58,12 @@ import com.hedera.mirror.web3.web3j.generated.NestedCalls.TokenKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import java.math.BigInteger;
-import java.util.LinkedList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -77,6 +79,14 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     private final OpcodeService opcodeService;
     private final EvmEncodingFacade evmEncoder;
+
+    @BeforeAll
+    static void setupFactories() {
+        expiryFactory = new ExpiryFactory(NestedCalls.class);
+        keyValueFactory = new KeyValueFactory(NestedCalls.class);
+        tokenKeyFactory = new TokenKeyFactory(NestedCalls.class);
+        hederaTokenFactory = new HederaTokenFactory(NestedCalls.class);
+    }
 
     @ParameterizedTest
     @CsvSource(
@@ -118,8 +128,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
 
-        final var keyValue = getKeyValueForType(keyValueType, contractAddress);
-        final var tokenKey = new TokenKey(keyType.getKeyTypeNumeric(), keyValue);
+        final var keyValue = (KeyValue) getKeyValueForType(keyValueType, contractAddress);
+        final var tokenKey = (TokenKey) getTokenKey(keyType.getKeyTypeNumeric(), keyValue);
         final var expectedResult = TypeEncoder.encode(keyValue);
         final var expectedResultBytes = Bytes.fromHexString(expectedResult).toArray();
 
@@ -179,8 +189,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
 
-        final var keyValue = getKeyValueForType(keyValueType, contractAddress);
-        final var tokenKey = new TokenKey(keyType.getKeyTypeNumeric(), keyValue);
+        final var keyValue = (KeyValue) getKeyValueForType(keyValueType, contractAddress);
+        final var tokenKey = (TokenKey) getTokenKey(keyType.getKeyTypeNumeric(), keyValue);
         final var expectedResult = TypeEncoder.encode(keyValue);
         final var expectedResultBytes = Bytes.fromHexString(expectedResult).toArray();
 
@@ -213,7 +223,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var autoRenewAccount = accountPersist();
-        final var tokenExpiry = getTokenExpiry(autoRenewAccount);
+        final var tokenExpiry = (Expiry) getTokenExpiry(autoRenewAccount);
 
         final var functionCall =
                 contract.call_updateTokenExpiryAndGetUpdatedTokenExpiry(tokenAddress.toHexString(), tokenExpiry);
@@ -246,7 +256,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 : nftPersist(treasuryEntity.toEntityId());
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+        final var tokenInfo = (HederaToken) getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
 
         final var functionCall =
                 contract.call_updateTokenInfoAndGetUpdatedTokenInfoSymbol(tokenAddress.toHexString(), tokenInfo);
@@ -278,7 +288,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 : nftPersist(treasuryEntity.toEntityId());
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+        final var tokenInfo = (HederaToken) getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
 
         final var functionCall =
                 contract.call_updateTokenInfoAndGetUpdatedTokenInfoName(tokenAddress.toHexString(), tokenInfo);
@@ -311,7 +321,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 : nftPersist(treasuryEntity.toEntityId());
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+        final var tokenInfo = (HederaToken) getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
 
         final var functionCall =
                 contract.call_updateTokenInfoAndGetUpdatedTokenInfoMemo(tokenAddress.toHexString(), tokenInfo);
@@ -376,7 +386,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         // Given
         final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(
+        final var tokenInfo = (HederaToken) getHederaToken(
                 TokenTypeEnum.FUNGIBLE_COMMON, withKeys, inheritKey, defaultFreezeStatus, treasuryEntity);
         tokenInfo.freezeDefault = defaultFreezeStatus;
 
@@ -415,7 +425,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         // Given
         final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(
+        final var tokenInfo = (HederaToken) getHederaToken(
                 TokenTypeEnum.NON_FUNGIBLE_UNIQUE, withKeys, inheritKey, defaultFreezeStatus, treasuryEntity);
         tokenInfo.freezeDefault = defaultFreezeStatus;
 
@@ -537,7 +547,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var senderEntity = accountPersist();
         final var treasuryEntity = accountPersist();
         final var autoRenewAccount = accountPersist();
-        final var hederaToken = getHederaToken(TokenTypeEnum.FUNGIBLE_COMMON, treasuryEntity, autoRenewAccount);
+        final var hederaToken =
+                (HederaToken) getHederaToken(TokenTypeEnum.FUNGIBLE_COMMON, treasuryEntity, autoRenewAccount);
 
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
         final var functionCall =
@@ -569,76 +580,6 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
             result.append(DomainUtils.bytesToHex(DomainUtils.leftPadBytes(new byte[] {byteValue}, Bytes32.SIZE)));
         }
         return result.toString();
-    }
-
-    private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
-        return switch (keyValueType) {
-            case INHERIT_ACCOUNT_KEY -> new KeyValue(
-                    Boolean.TRUE, Address.ZERO.toHexString(), new byte[0], new byte[0], Address.ZERO.toHexString());
-            case CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
-            case ED25519 -> new KeyValue(
-                    Boolean.FALSE,
-                    Address.ZERO.toHexString(),
-                    NEW_ED25519_KEY,
-                    new byte[0],
-                    Address.ZERO.toHexString());
-            case ECDSA_SECPK256K1 -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], NEW_ECDSA_KEY, Address.ZERO.toHexString());
-            case DELEGATABLE_CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
-            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
-        };
-    }
-
-    private HederaToken getHederaToken(
-            final TokenTypeEnum tokenType,
-            final boolean withKeys,
-            final boolean inheritAccountKey,
-            final boolean freezeDefault,
-            final Entity treasuryEntity) {
-        final List<TokenKey> tokenKeys = new LinkedList<>();
-        final var keyType = inheritAccountKey ? KeyValueType.INHERIT_ACCOUNT_KEY : KeyValueType.ECDSA_SECPK256K1;
-        if (withKeys) {
-            tokenKeys.add(new TokenKey(KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
-            tokenKeys.add(new TokenKey(KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
-        }
-
-        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            tokenKeys.add(new TokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
-        }
-
-        return new HederaToken(
-                "name",
-                "symbol",
-                toAddress(treasuryEntity.getId()).toHexString(),
-                "memo",
-                Boolean.TRUE, // finite amount
-                BigInteger.valueOf(10L), // max supply
-                freezeDefault, // freeze default
-                tokenKeys,
-                getTokenExpiry(domainBuilder.entity().persist()));
-    }
-
-    private HederaToken getHederaToken(
-            final TokenTypeEnum tokenType, final Entity treasuryEntity, final Entity autoRenewAccountEntity) {
-        return new HederaToken(
-                "name",
-                "symbol",
-                toAddress(treasuryEntity.getId()).toHexString(),
-                "memo",
-                tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? Boolean.FALSE : Boolean.TRUE,
-                BigInteger.valueOf(10L),
-                Boolean.TRUE,
-                List.of(),
-                getTokenExpiry(autoRenewAccountEntity));
-    }
-
-    private Expiry getTokenExpiry(final Entity autoRenewAccountEntity) {
-        return new Expiry(
-                BigInteger.valueOf(4_000_000_000L),
-                toAddress(autoRenewAccountEntity.toEntityId()).toHexString(),
-                BigInteger.valueOf(8_000_000L));
     }
 
     private TransactionIdOrHashParameter setUp(

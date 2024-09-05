@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
-import java.util.Arrays;
 import java.util.function.ToLongFunction;
 import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
@@ -57,22 +56,24 @@ public class ContractCallTestUtil {
         58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
         77, -103, 47, -118, 107, -58, -85, -63, 55, -57
     };
-    public static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
-    public static final Key KEY_WITH_ECDSA_TYPE =
-            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDSA_KEY)).build();
-    public static final byte[] ED25519_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
-    public static final Key KEY_WITH_ED_25519_TYPE =
-            Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
 
-    public static final byte[] NEW_ECDSA_KEY = new byte[] {
+    public static final byte[] ECDSA_KEY = new byte[] {
         2, 64, 59, -126, 81, -22, 0, 35, 67, -70, 110, 96, 109, 2, -8, 111, -112, -100, -87, -85, 66, 36, 37, -97, 19,
         68, -87, -110, -13, -115, 74, 86, 90
     };
 
-    public static final byte[] NEW_ED25519_KEY = new byte[] {
+    public static final byte[] ED25519_KEY = new byte[] {
         -128, -61, -12, 63, 3, -45, 108, 34, 61, -2, -83, -48, -118, 20, 84, 85, 85, 67, -125, 46, 49, 26, 17, -116, 27,
         25, 38, -95, 50, 77, 40, -38
     };
+
+    public static final Key KEY_WITH_ECDSA_TYPE =
+            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDSA_KEY)).build();
+    public static final Key KEY_WITH_ED_25519_TYPE =
+            Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
+
+    public static final long DEFAULT_TOKEN_EXPIRATION_SECONDS = 4_000_000_000L;
+    public static final long DEFAULT_TOKEN_EXPIRATION_PERIOD = 8_000_000L;
 
     public static final long EVM_V_34_BLOCK = 50L;
 

@@ -19,14 +19,16 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.CREATE_TOKEN_VALUE;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ED25519_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.HederaTokenFactory;
+import com.hedera.mirror.web3.utils.KeyValueFactory;
+import com.hedera.mirror.web3.utils.TokenKeyFactory;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.Expiry;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.HederaToken;
@@ -34,15 +36,23 @@ import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.TokenKey;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import java.math.BigInteger;
-import java.util.LinkedList;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTracerTest {
     private static final String EXPECTED_RESULT_NEGATIVE_TESTS = "hardcodedResult";
+
+    @BeforeAll
+    static void setupFactories() {
+        expiryFactory = new ExpiryFactory(NestedCalls.class);
+        keyValueFactory = new KeyValueFactory(NestedCalls.class);
+        tokenKeyFactory = new TokenKeyFactory(NestedCalls.class);
+        hederaTokenFactory = new HederaTokenFactory(NestedCalls.class);
+    }
 
     @ParameterizedTest
     @CsvSource(
@@ -85,8 +95,8 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
 
-        final var keyValue = getKeyValueForType(keyValueType, contractAddress);
-        final var tokenKey = new TokenKey(keyType.getKeyTypeNumeric(), keyValue);
+        final var keyValue = (KeyValue) getKeyValueForType(keyValueType, contractAddress);
+        final var tokenKey = (TokenKey) getTokenKey(keyType.getKeyTypeNumeric(), keyValue);
 
         // When
         final var result = contract.call_updateTokenKeysAndGetUpdatedTokenKey(
@@ -143,8 +153,8 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
 
-        final var keyValue = getKeyValueForType(keyValueType, contractAddress);
-        final var tokenKey = new TokenKey(keyType.getKeyTypeNumeric(), keyValue);
+        final var keyValue = (KeyValue) getKeyValueForType(keyValueType, contractAddress);
+        final var tokenKey = (TokenKey) getTokenKey(keyType.getKeyTypeNumeric(), keyValue);
 
         // When
         final var result = contract.call_updateTokenKeysAndGetUpdatedTokenKey(
@@ -171,7 +181,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var autoRenewAccount = accountPersist();
-        final var tokenExpiry = getTokenExpiry(autoRenewAccount);
+        final var tokenExpiry = (Expiry) getTokenExpiry(autoRenewAccount);
 
         // When
         final var result = contract.call_updateTokenExpiryAndGetUpdatedTokenExpiry(
@@ -201,7 +211,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
                 : nftPersist(treasuryEntity);
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+        final var tokenInfo = (HederaToken) getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
 
         // When
         final var result = contract.call_updateTokenInfoAndGetUpdatedTokenInfoSymbol(
@@ -231,7 +241,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
                 : nftPersist(treasuryEntity);
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+        final var tokenInfo = (HederaToken) getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
 
         // When
         final var result = contract.call_updateTokenInfoAndGetUpdatedTokenInfoName(
@@ -261,7 +271,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
                 : nftPersist(treasuryEntity);
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+        final var tokenInfo = (HederaToken) getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
 
         // When
         final var result = contract.call_updateTokenInfoAndGetUpdatedTokenInfoMemo(
@@ -317,7 +327,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
         // Given
         final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(
+        final var tokenInfo = (HederaToken) getHederaToken(
                 TokenTypeEnum.FUNGIBLE_COMMON, withKeys, inheritKey, defaultFreezeStatus, treasuryEntity);
         tokenInfo.freezeDefault = defaultFreezeStatus;
         testWeb3jService.setValue(CREATE_TOKEN_VALUE);
@@ -358,7 +368,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
         // Given
         final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(
+        final var tokenInfo = (HederaToken) getHederaToken(
                 TokenTypeEnum.NON_FUNGIBLE_UNIQUE, withKeys, inheritKey, defaultFreezeStatus, treasuryEntity);
         tokenInfo.freezeDefault = defaultFreezeStatus;
         testWeb3jService.setValue(CREATE_TOKEN_VALUE);
@@ -424,76 +434,6 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
         // Then
         assertThat(result).isEqualTo(EXPECTED_RESULT_NEGATIVE_TESTS);
         verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
-    }
-
-    private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
-        return switch (keyValueType) {
-            case INHERIT_ACCOUNT_KEY -> new KeyValue(
-                    Boolean.TRUE, Address.ZERO.toHexString(), new byte[0], new byte[0], Address.ZERO.toHexString());
-            case CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
-            case ED25519 -> new KeyValue(
-                    Boolean.FALSE,
-                    Address.ZERO.toHexString(),
-                    NEW_ED25519_KEY,
-                    new byte[0],
-                    Address.ZERO.toHexString());
-            case ECDSA_SECPK256K1 -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], NEW_ECDSA_KEY, Address.ZERO.toHexString());
-            case DELEGATABLE_CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
-            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
-        };
-    }
-
-    private Expiry getTokenExpiry(final Entity autoRenewAccountEntity) {
-        return new Expiry(
-                BigInteger.valueOf(4_000_000_000L),
-                toAddress(autoRenewAccountEntity.toEntityId()).toHexString(),
-                BigInteger.valueOf(8_000_000L));
-    }
-
-    private HederaToken getHederaToken(
-            final TokenTypeEnum tokenType, final Entity treasuryEntity, final Entity autoRenewAccountEntity) {
-        return new HederaToken(
-                "name",
-                "symbol",
-                toAddress(treasuryEntity.getId()).toHexString(),
-                "memo",
-                tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? Boolean.FALSE : Boolean.TRUE,
-                BigInteger.valueOf(10L),
-                Boolean.TRUE,
-                List.of(),
-                getTokenExpiry(autoRenewAccountEntity));
-    }
-
-    private HederaToken getHederaToken(
-            final TokenTypeEnum tokenType,
-            final boolean withKeys,
-            final boolean inheritAccountKey,
-            final boolean freezeDefault,
-            final Entity treasuryEntity) {
-        final List<TokenKey> tokenKeys = new LinkedList<>();
-        final var keyType = inheritAccountKey ? KeyValueType.INHERIT_ACCOUNT_KEY : KeyValueType.ECDSA_SECPK256K1;
-        if (withKeys) {
-            tokenKeys.add(new TokenKey(KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
-            tokenKeys.add(new TokenKey(KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
-        }
-
-        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            tokenKeys.add(new TokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
-        }
-
-        return new HederaToken(
-                "name",
-                "symbol",
-                toAddress(treasuryEntity.getId()).toHexString(),
-                "memo",
-                Boolean.TRUE, // finite amount
-                BigInteger.valueOf(10L), // max supply
-                freezeDefault, // freeze default
-                tokenKeys,
-                getTokenExpiry(domainBuilder.entity().persist()));
     }
 
     private Token fungibleTokenPersist() {

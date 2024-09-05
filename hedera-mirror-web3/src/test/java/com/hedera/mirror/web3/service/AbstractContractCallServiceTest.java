@@ -16,6 +16,11 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.DEFAULT_TOKEN_EXPIRATION_PERIOD;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.DEFAULT_TOKEN_EXPIRATION_SECONDS;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ECDSA_KEY;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
@@ -29,6 +34,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -36,15 +42,22 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
+import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.HederaTokenFactory;
+import com.hedera.mirror.web3.utils.KeyValueFactory;
+import com.hedera.mirror.web3.utils.TokenKeyFactory;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -59,11 +72,20 @@ import org.web3j.tx.Contract;
 @SuppressWarnings("unchecked")
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
+    public static final String DEFAULT_TOKEN_NAME = "name";
+    public static final String DEFAULT_TOKEN_SYMBOL = "symbol";
+    public static final String DEFAULT_TOKEN_MEMO = "memo";
+
     @Resource
     protected TestWeb3jService testWeb3jService;
 
     @Resource
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    protected static ExpiryFactory expiryFactory;
+    protected static KeyValueFactory keyValueFactory;
+    protected static TokenKeyFactory tokenKeyFactory;
+    protected static HederaTokenFactory hederaTokenFactory;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -240,6 +262,106 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .contractAddress(contractAddress)
                 .sender(senderAddress)
                 .build();
+    }
+
+    protected <T> T getTokenExpiry(final Entity autoRenewAccountEntity) {
+        return expiryFactory.getInstance(
+                BigInteger.valueOf(DEFAULT_TOKEN_EXPIRATION_SECONDS),
+                toAddress(autoRenewAccountEntity.toEntityId()).toHexString(),
+                BigInteger.valueOf(DEFAULT_TOKEN_EXPIRATION_PERIOD));
+    }
+
+    protected <T> T getTokenExpiry(
+            final long seconds, final String autoRenewAccountAddress, final long expirationPeriod) {
+        return expiryFactory.getInstance(
+                BigInteger.valueOf(seconds), autoRenewAccountAddress, BigInteger.valueOf(expirationPeriod));
+    }
+
+    protected <T> T getKeyValue(
+            final Boolean inheritAccountKey,
+            final String contractId,
+            final byte[] ed25519,
+            final byte[] ECDSA_secp256k1,
+            final String delegatableContractId) {
+        return keyValueFactory.getInstance(
+                inheritAccountKey, contractId, ed25519, ECDSA_secp256k1, delegatableContractId);
+    }
+
+    protected <T> T getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
+        return switch (keyValueType) {
+            case INHERIT_ACCOUNT_KEY -> getKeyValue(
+                    Boolean.TRUE, Address.ZERO.toHexString(), new byte[0], new byte[0], Address.ZERO.toHexString());
+            case CONTRACT_ID -> getKeyValue(
+                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+            case ED25519 -> getKeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), ED25519_KEY, new byte[0], Address.ZERO.toHexString());
+            case ECDSA_SECPK256K1 -> getKeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], ECDSA_KEY, Address.ZERO.toHexString());
+            case DELEGATABLE_CONTRACT_ID -> getKeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
+            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
+        };
+    }
+
+    protected <T, U> T getTokenKey(final BigInteger keyType, final U keyValue) {
+        return tokenKeyFactory.getInstance(keyType, keyValue);
+    }
+
+    protected <T, U, V> T getHederaToken(
+            final String name,
+            final String symbol,
+            final String treasury,
+            final String memo,
+            final Boolean tokenSupplyType,
+            final BigInteger maxSupply,
+            final Boolean freezeDefault,
+            final List<U> tokenKeys,
+            final V expiry) {
+        return hederaTokenFactory.getInstance(
+                name, symbol, treasury, memo, tokenSupplyType, maxSupply, freezeDefault, tokenKeys, expiry);
+    }
+
+    protected <T, U> T getHederaToken(
+            final TokenTypeEnum tokenType,
+            final boolean withKeys,
+            final boolean inheritAccountKey,
+            final boolean freezeDefault,
+            final Entity treasuryEntity) {
+        final List<U> tokenKeys = new LinkedList<>();
+        final var keyType = inheritAccountKey ? KeyValueType.INHERIT_ACCOUNT_KEY : KeyValueType.ECDSA_SECPK256K1;
+        if (withKeys) {
+            tokenKeys.add(getTokenKey(KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
+            tokenKeys.add(getTokenKey(KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
+        }
+
+        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
+            tokenKeys.add(getTokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
+        }
+
+        return getHederaToken(
+                DEFAULT_TOKEN_NAME,
+                DEFAULT_TOKEN_SYMBOL,
+                toAddress(treasuryEntity.getId()).toHexString(),
+                DEFAULT_TOKEN_MEMO,
+                Boolean.TRUE, // finite amount
+                BigInteger.valueOf(10L), // max supply
+                freezeDefault, // freeze default
+                tokenKeys,
+                getTokenExpiry(domainBuilder.entity().persist()));
+    }
+
+    protected <T> T getHederaToken(
+            final TokenTypeEnum tokenType, final Entity treasuryEntity, final Entity autoRenewAccountEntity) {
+        return getHederaToken(
+                DEFAULT_TOKEN_NAME,
+                DEFAULT_TOKEN_SYMBOL,
+                toAddress(treasuryEntity.getId()).toHexString(),
+                DEFAULT_TOKEN_MEMO,
+                tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? Boolean.FALSE : Boolean.TRUE,
+                BigInteger.valueOf(10L),
+                Boolean.TRUE,
+                List.of(),
+                getTokenExpiry(autoRenewAccountEntity));
     }
 
     protected String getAddressFromEntityId(final EntityId entity) {
