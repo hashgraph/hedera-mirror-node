@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+import config from '../../config';
+import entityId from '../../entityId';
 import {NetworkNodeService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
 import integrationDomainOps from '../integrationDomainOps';
 import {setupIntegrationTest} from '../integrationUtils';
+import * as utils from '../../utils';
 
 setupIntegrationTest();
 
@@ -25,95 +29,105 @@ const defaultNodeFilter = 'abe.node_id = $2';
 describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
   test('Verify simple query', async () => {
     const [query, params] = NetworkNodeService.getNetworkNodesWithFiltersQuery([], [102], 'asc', 5);
-    const expected = `with adb as (
-        select start_consensus_timestamp,end_consensus_timestamp,file_id
-        from address_book
-        where file_id = $1
-        order by start_consensus_timestamp desc limit 1
-      ),
-      ns as (
-        select max_stake,min_stake,node_id,reward_rate,stake,stake_not_rewarded,stake_rewarded,staking_period
-        from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
-      )
-      select
-        abe.description,
-        abe.memo,
-        abe.node_id,
-        abe.node_account_id,
-        abe.node_cert_hash,
-        abe.public_key,
-        adb.file_id,
-        adb.start_consensus_timestamp,
-        adb.end_consensus_timestamp,
-        ns.max_stake,
-        ns.min_stake,
-        ns.reward_rate,
-        ns.stake,
-        ns.stake_not_rewarded,
-        ns.stake_rewarded,
-        ns.staking_period,
-        coalesce(
-          (
-            select jsonb_agg(
-              jsonb_build_object('ip_address_v4',ip_address_v4,'port',port,'domain_name',domain_name) order by ip_address_v4 asc,port asc)
-            from address_book_service_endpoint abse
-            where abse.consensus_timestamp = abe.consensus_timestamp and abse.node_id = abe.node_id
-          ),
-          '[]'
-        ) as service_endpoints
-        from address_book_entry abe
-        join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-        left join ns on abe.node_id = ns.node_id
-        order by abe.node_id asc
-        limit $2`;
+    const expected = `with adb as (select start_consensus_timestamp, end_consensus_timestamp, file_id
+                                   from address_book
+                                   where file_id = $1
+                                   order by start_consensus_timestamp desc
+                                   limit 1),
+                           ns as (select max_stake,
+                                         min_stake,
+                                         node_id,
+                                         reward_rate,
+                                         stake,
+                                         stake_not_rewarded,
+                                         stake_rewarded,
+                                         staking_period
+                                  from node_stake
+                                  where consensus_timestamp = (select max(consensus_timestamp) from node_stake))
+                      select abe.description,
+                             abe.memo,
+                             abe.node_id,
+                             abe.node_account_id,
+                             abe.node_cert_hash,
+                             abe.public_key,
+                             adb.file_id,
+                             adb.start_consensus_timestamp,
+                             adb.end_consensus_timestamp,
+                             ns.max_stake,
+                             ns.min_stake,
+                             ns.reward_rate,
+                             ns.stake,
+                             ns.stake_not_rewarded,
+                             ns.stake_rewarded,
+                             ns.staking_period,
+                             coalesce(
+                                     (select jsonb_agg(
+                                                     jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port,
+                                                                        'domain_name', domain_name)
+                                                     order by ip_address_v4 asc,port asc)
+                                      from address_book_service_endpoint abse
+                                      where abse.consensus_timestamp = abe.consensus_timestamp
+                                        and abse.node_id = abe.node_id),
+                                     '[]'
+                             ) as service_endpoints
+                      from address_book_entry abe
+                               join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
+                               left join ns on abe.node_id = ns.node_id
+                      order by abe.node_id asc
+                      limit $2`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([102, 5]);
   });
 
   test('Verify node file query', async () => {
     const [query, params] = NetworkNodeService.getNetworkNodesWithFiltersQuery([defaultNodeFilter], [102, 3], 'asc', 5);
-    const expected = `with adb as (
-      select start_consensus_timestamp,end_consensus_timestamp,file_id
-      from address_book
-      where file_id = $1
-      order by start_consensus_timestamp desc limit 1
-    ),
-    ns as (
-      select max_stake,min_stake,node_id,reward_rate,stake,stake_not_rewarded,stake_rewarded,staking_period
-      from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
-    )
-    select
-      abe.description,
-      abe.memo,
-      abe.node_id,
-      abe.node_account_id,
-      abe.node_cert_hash,
-      abe.public_key,
-      adb.file_id,
-      adb.start_consensus_timestamp,
-      adb.end_consensus_timestamp,
-      ns.max_stake,
-      ns.min_stake,
-      ns.reward_rate,
-      ns.stake,
-      ns.stake_not_rewarded,
-      ns.stake_rewarded,
-      ns.staking_period,
-      coalesce(
-        (
-          select jsonb_agg(
-            jsonb_build_object('ip_address_v4',ip_address_v4,'port',port,'domain_name',domain_name) order by ip_address_v4 asc,port asc)
-          from address_book_service_endpoint abse
-          where abse.consensus_timestamp = abe.consensus_timestamp and abse.node_id = abe.node_id
-        ),
-        '[]'
-      ) as service_endpoints
-      from address_book_entry abe
-      join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-      left join ns on abe.node_id = ns.node_id
-      where abe.node_id = $2
-      order by abe.node_id asc
-      limit $3`;
+    const expected = `with adb as (select start_consensus_timestamp, end_consensus_timestamp, file_id
+                                   from address_book
+                                   where file_id = $1
+                                   order by start_consensus_timestamp desc
+                                   limit 1),
+                           ns as (select max_stake,
+                                         min_stake,
+                                         node_id,
+                                         reward_rate,
+                                         stake,
+                                         stake_not_rewarded,
+                                         stake_rewarded,
+                                         staking_period
+                                  from node_stake
+                                  where consensus_timestamp = (select max(consensus_timestamp) from node_stake))
+                      select abe.description,
+                             abe.memo,
+                             abe.node_id,
+                             abe.node_account_id,
+                             abe.node_cert_hash,
+                             abe.public_key,
+                             adb.file_id,
+                             adb.start_consensus_timestamp,
+                             adb.end_consensus_timestamp,
+                             ns.max_stake,
+                             ns.min_stake,
+                             ns.reward_rate,
+                             ns.stake,
+                             ns.stake_not_rewarded,
+                             ns.stake_rewarded,
+                             ns.staking_period,
+                             coalesce(
+                                     (select jsonb_agg(
+                                                     jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port,
+                                                                        'domain_name', domain_name)
+                                                     order by ip_address_v4 asc,port asc)
+                                      from address_book_service_endpoint abse
+                                      where abse.consensus_timestamp = abe.consensus_timestamp
+                                        and abse.node_id = abe.node_id),
+                                     '[]'
+                             ) as service_endpoints
+                      from address_book_entry abe
+                               join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
+                               left join ns on abe.node_id = ns.node_id
+                      where abe.node_id = $2
+                      order by abe.node_id asc
+                      limit $3`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([102, 3, 5]);
   });
@@ -609,5 +623,40 @@ describe('NetworkNodeService.getNetworkStake tests', () => {
 
   test('empty', async () => {
     await expect(NetworkNodeService.getNetworkStake()).resolves.toBeNull();
+  });
+});
+
+describe(`NetworkNodeService.getSupply`, () => {
+  test('Without timestamp', async () => {
+    const accounts = [];
+    const timestamp = utils.nowInNs();
+    config.network.unreleasedSupplyAccounts.forEach((range) => {
+      const from = entityId.parse(range.from).getEncodedId();
+      const to = entityId.parse(range.to).getEncodedId();
+      _.range(from, to + 1).forEach((id) => {
+        accounts.push({balance: 1n, balance_timestamp: timestamp, num: id});
+      });
+    });
+    await integrationDomainOps.loadAccounts(accounts);
+    await expect(NetworkNodeService.getSupply([])).resolves.toEqual({
+      consensus_timestamp: timestamp,
+      unreleased_supply: '548',
+    });
+  });
+  test('With timestamp', async () => {
+    const balances = [];
+    const timestamp = utils.nowInNs();
+    config.network.unreleasedSupplyAccounts.forEach((range) => {
+      const from = entityId.parse(range.from).getEncodedId();
+      const to = entityId.parse(range.to).getEncodedId();
+      _.range(from, to + 1).forEach((id) => {
+        balances.push({balance: 1n, timestamp: timestamp, id: id});
+      });
+    });
+    await integrationDomainOps.loadBalances(balances);
+    await expect(NetworkNodeService.getSupply([`ab.consensus_timestamp <= ${timestamp}`])).resolves.toEqual({
+      consensus_timestamp: timestamp,
+      unreleased_supply: '548',
+    });
   });
 });

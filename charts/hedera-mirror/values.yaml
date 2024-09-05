@@ -277,9 +277,11 @@ stackgres:
     config:
       autovacuum_max_workers: "2"
       checkpoint_timeout: "1800"
-      citus.executor_slow_start_interval: "20ms"
+      citus.executor_slow_start_interval: "10ms"
+      citus.force_max_query_parallelization: "on"
       citus.max_cached_conns_per_worker: "6"
       citus.max_shared_pool_size: "850"
+      citus.node_conninfo: "sslmode=disable"  # Disable SSL to work around https://github.com/hashgraph/hedera-mirror-node/issues/9143
       full_page_writes: "true"  # Required for replication to work in recovery scenarios
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
@@ -291,9 +293,22 @@ stackgres:
       shared_buffers: "9GB"
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
-      work_mem: "32MB"
+      work_mem: "16MB"
     enableMetricsExporter: false
+    enablePostgresUtil: true
     instances: 1
+    pgbouncer:
+      pgbouncer:
+        default_pool_size: "800"
+        ignore_startup_parameters: extra_float_digits,options,statement_timeout
+        max_client_conn: "1600"
+        max_prepared_statements: "512"
+        pool_mode: transaction
+      users:
+        mirror_node:
+          pool_mode: session
+        mirror_importer:
+          pool_mode: session
     replication:
       mode: sync-all
     resources:
@@ -311,26 +326,13 @@ stackgres:
     - name: pg_trgm
       version: "1.6"
   nameOverride: citus
-  pgbouncer:
-    pgbouncer:
-      default_pool_size: "800"
-      ignore_startup_parameters: extra_float_digits,options,statement_timeout
-      max_client_conn: "800"
-      max_db_connections: "0"
-      max_prepared_statements: "256"
-      max_user_connections: "0"
-      pool_mode: transaction
-    users:
-      mirror_node:
-        pool_mode: session
-      mirror_importer:
-        pool_mode: session
   podAntiAffinity: true
   postgresVersion: 16
   worker:
     config:
       autovacuum_max_workers: "2"
       checkpoint_timeout: "1800"
+      citus.node_conninfo: "sslmode=disable"  # Disable SSL to work around https://github.com/hashgraph/hedera-mirror-node/issues/9143
       full_page_writes: "false"  # Not required for ZFS and Enabling this causes hash indexes to have spikes in write performance.
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
@@ -339,13 +341,26 @@ stackgres:
       max_wal_size: "24GB"
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
-      shared_buffers: "9GB"
+      shared_buffers: "12GB"
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
-      work_mem: "32MB"
+      work_mem: "16MB"
     enableMetricsExporter: false
+    enablePostgresUtil: true
     instances: 1
     overrides: []  # Override shard(s) configuration
+    pgbouncer:
+      pgbouncer:
+        default_pool_size: "900"
+        ignore_startup_parameters: extra_float_digits,options,statement_timeout
+        max_client_conn: "2000"
+        max_prepared_statements: "512"
+        pool_mode: transaction
+      users:
+        mirror_node:
+          pool_mode: session
+        mirror_importer:
+          pool_mode: session
     replicasPerInstance: 1
     resources:
       cpu: 100m
@@ -378,9 +393,11 @@ test:
     - -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}
   image:
     pullPolicy: IfNotPresent
+    pullSecrets: []
     registry: gcr.io
     repository: mirrornode/hedera-mirror-test
     tag: ""  # Defaults to the chart's app version
+  priorityClassName: ""
   resources:
     limits:
       cpu: 3

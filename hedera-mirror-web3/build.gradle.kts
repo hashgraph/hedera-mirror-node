@@ -55,8 +55,6 @@ dependencies {
 }
 
 web3j {
-    excludedContracts =
-        listOf("DynamicEthCallsHistorical", "EthCallHistorical", "EvmCodesHistorical")
     generateBoth = true
     generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
     useNativeJavaTypes = true
@@ -70,35 +68,16 @@ tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
-val web3jDir = rootDir.resolve(".gradle").resolve("web3j")
-val web3jVersion = "1.6.0"
-val web3jName = "web3j-cli-shadow-${web3jVersion}.tar"
-val web3jFile = web3jDir.resolve(web3jName)
+val homeDir = System.getenv("HOME")
+val web3jLink = file("$homeDir/.web3j/web3j")
 
 val downloadWeb3j =
-    tasks.register("downloadWeb3j") {
-        val url =
-            "https://github.com/bilyana-gospodinova/web3j-cli/releases/download/${web3jVersion}/${web3jName}"
-        description = "Download Web3j CLI"
+    tasks.register<Exec>("downloadWeb3j") {
+        description = "Download and install Web3j CLI"
         group = "historical"
-        doLast {
-            web3jDir.mkdirs()
-            val connection = URI(url).toURL().openConnection() as HttpURLConnection
-            connection.inputStream.use { input ->
-                web3jFile.outputStream().use { output -> input.copyTo(output) }
-            }
-        }
-        onlyIf { !web3jFile.exists() }
-    }
 
-val extractWeb3j =
-    tasks.register<Copy>("extractWeb3j") {
-        description = "Extracts the Web3j CLI"
-        group = "historical"
-        dependsOn(downloadWeb3j)
-        from(tarTree(web3jFile))
-        into(web3jDir)
-        eachFile { path = path.replaceFirst("web3j-cli-shadow-${web3jVersion}", "") }
+        commandLine("bash", "-c", "curl -L get.web3j.io | sh")
+        onlyIf { !web3jLink.exists() }
     }
 
 // Tasks to download OpenZeppelin contracts
@@ -146,7 +125,7 @@ val compileHistoricalSolidityContracts =
         description = "Compiles the historical solidity contracts to java files using web3j-cli"
         group = "historical"
         mustRunAfter(tasks.named("generateTestContractWrappers"))
-        dependsOn(extractWeb3j)
+        dependsOn(downloadWeb3j)
         dependsOn(extractOpenZeppelin)
         dependsOn(tasks.named("compileTestSolidity"))
         val scriptPath = file("./src/main/resources/scripts/compile_solidity.sh").absolutePath

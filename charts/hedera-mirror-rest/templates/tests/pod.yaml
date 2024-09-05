@@ -4,6 +4,7 @@ kind: Pod
 metadata:
   annotations: {{- toYaml .Values.test.annotations | nindent 4 }}
   labels: {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "hedera-mirror-rest.name" . }}-test
   name: {{ include "hedera-mirror-rest.fullname" . }}-test
   namespace: {{ include "hedera-mirror-rest.namespace" . }}
 spec:
@@ -17,6 +18,8 @@ spec:
         - name: tests
           mountPath: /usr/lib/hedera-mirror-rest
           readOnly: true
+  imagePullSecrets: {{ toYaml .Values.test.image.pullSecrets | nindent 4 }}
+  priorityClassName: {{ .Values.test.priorityClassName }}
   terminationGracePeriodSeconds: 1
   restartPolicy: Never
   volumes:

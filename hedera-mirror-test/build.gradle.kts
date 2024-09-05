@@ -38,7 +38,11 @@ dependencies {
     testImplementation("io.grpc:grpc-inprocess")
     testImplementation("com.esaulpaugh:headlong")
     testImplementation("com.google.guava:guava")
-    testImplementation("com.hedera.hashgraph:sdk")
+    // With 2.38.0, the SDK updated the headlong dependency from 10.0.0 to 12.1.0. Web3 is not ready
+    // for that yet.
+    testImplementation("com.hedera.hashgraph:sdk") {
+        exclude(group = "com.esaulpaugh", module = "headlong")
+    }
     testImplementation("io.cucumber:cucumber-junit-platform-engine")
     testImplementation("io.cucumber:cucumber-spring")
     testImplementation("io.grpc:grpc-okhttp")

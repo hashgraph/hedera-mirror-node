@@ -44,6 +44,8 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 public class CommonTestConfiguration {
 
+    public static final String POSTGRESQL = "postgresql";
+
     @Value("#{environment.matchesProfiles('v2')}")
     private boolean v2;
 
@@ -94,7 +96,7 @@ public class CommonTestConfiguration {
         return new SimpleMeterRegistry();
     }
 
-    @Bean
+    @Bean(POSTGRESQL)
     @ServiceConnection("postgresql")
     PostgreSQLContainer<?> postgresql() {
         var imageName = v2 ? "gcr.io/mirrornode/citus:12.1.1" : "postgres:14-alpine";

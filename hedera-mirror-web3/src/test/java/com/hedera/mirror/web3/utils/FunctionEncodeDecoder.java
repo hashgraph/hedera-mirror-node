@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.util.FastHex;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
@@ -38,7 +37,6 @@ import jakarta.inject.Named;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -132,19 +130,6 @@ public class FunctionEncodeDecoder {
         return Bytes.wrap(function.encodeCall(parametersBytes).array());
     }
 
-    public Bytes functionHashWithEmptyDataFor(
-            final String functionName, final Path contractPath, final Object... parameters) {
-        final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
-        final Function function = Function.fromJson(jsonFunction);
-        return Bytes.wrap(encodeCall(function).array());
-    }
-
-    public ByteBuffer encodeCall(final Function function) {
-        final ByteBuffer dest = ByteBuffer.allocate(function.selector().length + 3200);
-        dest.put(function.selector());
-        return dest;
-    }
-
     public String encodedResultFor(final String functionName, final Path contractPath, final Object... results) {
         final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
         final var func = Function.fromJson(jsonFunction);
@@ -154,13 +139,6 @@ public class FunctionEncodeDecoder {
                         .encode(encodeTupleParameters(tupleType.toString(), results))
                         .array())
                 .toHexString();
-    }
-
-    public Tuple decodeResult(final String functionName, final Path contractPath, final String response) {
-        final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
-
-        final Function function = Function.fromJson(jsonFunction);
-        return function.decodeReturn(FastHex.decode(response.replace("0x", "")));
     }
 
     private Tuple encodeTupleParameters(final String tupleSig, final Object... parameters) {

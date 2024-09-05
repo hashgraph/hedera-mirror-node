@@ -23,6 +23,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -621,6 +622,31 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
                 BigInteger.valueOf(serialNumber));
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+    }
+
+    @Test
+    void delegateTransferDoesNotExecuteAndReturnEmpty() throws Exception {
+        // Given
+        final var recipient = accountPersist();
+        final var treasury = accountPersist();
+        final var token = fungibleTokenPersist(treasury);
+        final var tokenEntity = entityIdFromEvmAddress(toAddress(token.getTokenId()));
+        final var tokenAddress = toAddress(tokenEntity.getId());
+        tokenAssociateAccountPersist(recipient, entityIdFromEvmAddress(toAddress(tokenEntity.getId())));
+
+        final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
+        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
+
+        tokenAssociateAccountPersist(contractEntityId, tokenEntity);
+        final var amount = 10L;
+        // When
+        contract.send_delegateTransfer(
+                        tokenAddress.toHexString(), toAddress(recipient).toHexString(), BigInteger.valueOf(amount))
+                .send();
+        final var result = testWeb3jService.getTransactionResult();
+        // Then
+        assertThat(result).isEqualTo("0x");
     }
 
     private EntityId accountPersistWithAlias(final Address alias, final ByteString publicKey) {

@@ -19,18 +19,28 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
+import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.annotation.Resource;
@@ -52,6 +62,9 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     @Resource
     protected TestWeb3jService testWeb3jService;
 
+    @Resource
+    protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
 
@@ -71,6 +84,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     @BeforeEach
     final void setup() {
         domainBuilder.recordFile().persist();
+        testWeb3jService.reset();
     }
 
     @AfterEach
@@ -97,11 +111,11 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
         testWeb3jService.setEstimateGas(true);
         final AtomicLong estimateGasUsedResult = new AtomicLong();
-        // Verify ethCall
+        // Verify eth_call
         assertDoesNotThrow(
                 () -> estimateGasUsedResult.set(functionCall.send().getGasUsed().longValue()));
 
-        // Verify estimateGas
+        // Verify eth_estimateGas
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
                 .isTrue();
@@ -167,6 +181,74 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 Address.fromHexString(contract.getContractAddress()),
                 payerAddress,
                 value);
+    }
+
+    protected Entity persistAccountEntity() {
+        return domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).balance(1_000_000_000_000L))
+                .persist();
+    }
+
+    protected void persistAssociation(final Entity token, final Entity account) {
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(token.getId())
+                        .accountId(account.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true))
+                .persist();
+    }
+
+    protected void persistAssociation(final Entity token, final Long accountId) {
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(token.getId())
+                        .accountId(accountId)
+                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true))
+                .persist();
+    }
+
+    protected String getAddressFromEntity(Entity entity) {
+        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
+    }
+
+    protected String getAliasFromEntity(Entity entity) {
+        return Bytes.wrap(entity.getEvmAddress()).toHexString();
+    }
+
+    protected ContractDebugParameters getDebugParameters(
+            final ContractFunctionProviderRecord functionProvider, final Bytes callDataBytes) {
+        return ContractDebugParameters.builder()
+                .block(functionProvider.block())
+                .callData(callDataBytes)
+                .consensusTimestamp(domainBuilder.timestamp())
+                .gas(TRANSACTION_GAS_LIMIT)
+                .receiver(functionProvider.contractAddress())
+                .sender(new HederaEvmAccount(functionProvider.sender()))
+                .value(functionProvider.value())
+                .build();
+    }
+
+    protected ContractFunctionProviderRecord getContractFunctionProviderWithSender(
+            final String contract, final Entity sender) {
+        final var contractAddress = Address.fromHexString(contract);
+        final var senderAddress = Address.fromHexString(getAliasFromEntity(sender));
+        return ContractFunctionProviderRecord.builder()
+                .contractAddress(contractAddress)
+                .sender(senderAddress)
+                .build();
+    }
+
+    protected String getAddressFromEntityId(final EntityId entity) {
+        return HEX_PREFIX
+                + EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
+    }
+
+    protected String getAddressFromEvmAddress(final byte[] evmAddress) {
+        return Address.wrap(Bytes.wrap(evmAddress)).toHexString();
     }
 
     public enum KeyType {

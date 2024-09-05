@@ -33,7 +33,7 @@ jobs:
     env:
       CONTEXT: hedera-mirror-${{ matrix.project }}
       IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.project }}
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
@@ -57,10 +57,10 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4
+        uses: gradle/actions/setup-gradle@16bf8bc8fe830fa669c3c9f914d3eb147c629707 # v4
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@f112390a2df9932162083945e46d439060d66ec2 # v2.1.4
+        uses: google-github-actions/auth@62cf5bd3e4211a0a0b51f2c6d6a37129d828611d # v2.1.5
         with:
           credentials_json: "${{ secrets.GCR_KEY }}"
 
@@ -94,7 +94,7 @@ jobs:
 
   deploy:
     needs: publish
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-medium
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
