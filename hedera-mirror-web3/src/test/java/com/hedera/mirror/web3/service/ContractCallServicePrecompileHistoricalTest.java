@@ -23,8 +23,6 @@ import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.Key
 import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.KeyType.PAUSE_KEY;
 import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.KeyType.SUPPLY_KEY;
 import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.KeyType.WIPE_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ECDSA_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ECDSA_TYPE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ED_25519_TYPE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.LEDGER_ID;
@@ -50,12 +48,20 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.web3.utils.ExpiryFactory;
+import com.hedera.mirror.web3.utils.HederaTokenFactory;
+import com.hedera.mirror.web3.utils.KeyValueFactory;
+import com.hedera.mirror.web3.utils.TokenKeyFactory;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical.Expiry;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical.FixedFee;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical.FungibleTokenInfo;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical.HederaToken;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical.NonFungibleTokenInfo;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical.TokenInfo;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical.TokenKey;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -67,12 +73,21 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.web3j.tx.Contract;
 
 class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallServiceTest {
+
+    @BeforeAll
+    static void setupFactories() {
+        expiryFactory = new ExpiryFactory(PrecompileTestContractHistorical.class);
+        keyValueFactory = new KeyValueFactory(PrecompileTestContractHistorical.class);
+        tokenKeyFactory = new TokenKeyFactory(PrecompileTestContractHistorical.class);
+        hederaTokenFactory = new HederaTokenFactory(PrecompileTestContractHistorical.class);
+    }
 
     @ParameterizedTest
     @ValueSource(longs = {50, 49})
@@ -1005,20 +1020,6 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         return tokenEntity;
     }
 
-    private KeyValue getKeyValueForType(final KeyValueType keyValueType, final String contractAddress) {
-        return switch (keyValueType) {
-            case CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
-            case ED25519 -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), ED25519_KEY, new byte[0], Address.ZERO.toHexString());
-            case ECDSA_SECPK256K1 -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], ECDSA_KEY, Address.ZERO.toHexString());
-            case DELEGATABLE_CONTRACT_ID -> new KeyValue(
-                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
-            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
-        };
-    }
-
     private Entity persistTokenEntityHistorical(final Range<Long> timestampRange) {
         return domainBuilder
                 .entity()
@@ -1138,30 +1139,22 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         return CustomFee.builder().build();
     }
 
-    private List<PrecompileTestContractHistorical.TokenKey> getExpectedTokenKeys(
-            final Entity tokenEntity, final Token token) {
-        final var expectedTokenKeys = new ArrayList<PrecompileTestContractHistorical.TokenKey>();
-        expectedTokenKeys.add(
-                new PrecompileTestContractHistorical.TokenKey(BigInteger.ONE, getKeyValue(tokenEntity.getKey())));
-        expectedTokenKeys.add(
-                new PrecompileTestContractHistorical.TokenKey(KYC_KEY.keyTypeNumeric, getKeyValue(token.getKycKey())));
-        expectedTokenKeys.add(new PrecompileTestContractHistorical.TokenKey(
-                FREEZE_KEY.keyTypeNumeric, getKeyValue(token.getFreezeKey())));
-        expectedTokenKeys.add(new PrecompileTestContractHistorical.TokenKey(
-                WIPE_KEY.keyTypeNumeric, getKeyValue(token.getWipeKey())));
-        expectedTokenKeys.add(new PrecompileTestContractHistorical.TokenKey(
-                SUPPLY_KEY.keyTypeNumeric, getKeyValue(token.getSupplyKey())));
-        expectedTokenKeys.add(new PrecompileTestContractHistorical.TokenKey(
-                FEE_SCHEDULE_KEY.keyTypeNumeric, getKeyValue(token.getFeeScheduleKey())));
-        expectedTokenKeys.add(new PrecompileTestContractHistorical.TokenKey(
-                PAUSE_KEY.keyTypeNumeric, getKeyValue(token.getPauseKey())));
+    private List<TokenKey> getExpectedTokenKeys(final Entity tokenEntity, final Token token) {
+        final var expectedTokenKeys = new ArrayList<TokenKey>();
+        expectedTokenKeys.add(getTokenKey(BigInteger.ONE, getKeyValue(tokenEntity.getKey())));
+        expectedTokenKeys.add(getTokenKey(KYC_KEY.keyTypeNumeric, getKeyValue(token.getKycKey())));
+        expectedTokenKeys.add(getTokenKey(FREEZE_KEY.keyTypeNumeric, getKeyValue(token.getFreezeKey())));
+        expectedTokenKeys.add(getTokenKey(WIPE_KEY.keyTypeNumeric, getKeyValue(token.getWipeKey())));
+        expectedTokenKeys.add(getTokenKey(SUPPLY_KEY.keyTypeNumeric, getKeyValue(token.getSupplyKey())));
+        expectedTokenKeys.add(getTokenKey(FEE_SCHEDULE_KEY.keyTypeNumeric, getKeyValue(token.getFeeScheduleKey())));
+        expectedTokenKeys.add(getTokenKey(PAUSE_KEY.keyTypeNumeric, getKeyValue(token.getPauseKey())));
 
         return expectedTokenKeys;
     }
 
-    private PrecompileTestContractHistorical.FixedFee getFixedFee(
+    private FixedFee getFixedFee(
             final com.hedera.mirror.common.domain.token.FixedFee fixedFee, final Entity feeCollector) {
-        return new PrecompileTestContractHistorical.FixedFee(
+        return new FixedFee(
                 BigInteger.valueOf(fixedFee.getAmount()),
                 getAddressFromEntityId(fixedFee.getDenominatingTokenId()),
                 false,
@@ -1191,10 +1184,10 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
                 getAddressFromEvmAddress(feeCollector.getEvmAddress()));
     }
 
-    private PrecompileTestContractHistorical.KeyValue getKeyValue(final byte[] serializedKey) {
+    private KeyValue getKeyValue(final byte[] serializedKey) {
         try {
             final var key = Key.parseFrom(serializedKey);
-            return new PrecompileTestContractHistorical.KeyValue(
+            return getKeyValue(
                     false,
                     key.getContractID().hasContractNum()
                             ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
@@ -1254,15 +1247,14 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         return historicalRange;
     }
 
-    private PrecompileTestContractHistorical.HederaToken createExpectedHederaToken(
-            final Entity tokenEntity, final Token token, final Entity treasury) {
+    private HederaToken createExpectedHederaToken(final Entity tokenEntity, final Token token, final Entity treasury) {
         final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
 
-        final var expectedExpiry = new PrecompileTestContractHistorical.Expiry(
-                BigInteger.valueOf(tokenEntity.getExpirationTimestamp()).divide(BigInteger.valueOf(1_000_000_000L)),
+        final var expectedExpiry = (Expiry) getTokenExpiry(
+                tokenEntity.getExpirationTimestamp() / 1_000_000_000L,
                 Address.ZERO.toHexString(),
-                BigInteger.valueOf(tokenEntity.getAutoRenewPeriod()));
-        return new PrecompileTestContractHistorical.HederaToken(
+                tokenEntity.getAutoRenewPeriod());
+        return getHederaToken(
                 token.getName(),
                 token.getSymbol(),
                 getAddressFromEvmAddress(treasury.getEvmAddress()),
@@ -1274,14 +1266,14 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
                 expectedExpiry);
     }
 
-    private PrecompileTestContractHistorical.TokenInfo createExpectedTokenInfo(
-            PrecompileTestContractHistorical.HederaToken expectedHederaToken,
+    private TokenInfo createExpectedTokenInfo(
+            HederaToken expectedHederaToken,
             Token token,
             Entity tokenEntity,
-            List<PrecompileTestContractHistorical.FixedFee> fixedFees,
+            List<FixedFee> fixedFees,
             List<PrecompileTestContractHistorical.FractionalFee> fractionalFees,
             List<PrecompileTestContractHistorical.RoyaltyFee> royaltyFees) {
-        return new PrecompileTestContractHistorical.TokenInfo(
+        return new TokenInfo(
                 expectedHederaToken,
                 BigInteger.valueOf(token.getTotalSupply()),
                 tokenEntity.getDeleted(),
