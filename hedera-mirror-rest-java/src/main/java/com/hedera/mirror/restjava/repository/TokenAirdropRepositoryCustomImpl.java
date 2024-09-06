@@ -34,7 +34,7 @@ import org.springframework.data.domain.Sort.Direction;
 
 @Named
 @RequiredArgsConstructor
-class TokenAirdropRepositoryCustomImpl extends AbstractCustomRepository implements TokenAirdropRepositoryCustom {
+class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
 
     private final DSLContext dslContext;
     private static final Map<OrderSpec, List<SortField<?>>> SORT_ORDERS = Map.of(

@@ -41,7 +41,7 @@ import org.springframework.data.domain.Sort.Direction;
 
 @Named
 @RequiredArgsConstructor
-class NftAllowanceRepositoryCustomImpl extends AbstractCustomRepository implements NftAllowanceRepositoryCustom {
+class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
 
     private static final Condition APPROVAL_CONDITION = NFT_ALLOWANCE.APPROVED_FOR_ALL.isTrue();
     private static final Map<OrderSpec, List<SortField<?>>> SORT_ORDERS = Map.of(

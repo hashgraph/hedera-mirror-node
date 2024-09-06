@@ -24,9 +24,9 @@ import com.hedera.mirror.restjava.common.RangeOperator;
 import org.jooq.Condition;
 import org.jooq.Field;
 
-abstract class AbstractCustomRepository {
+interface CustomRepository {
 
-    protected static Condition getCondition(Field<Long> field, EntityIdRangeParameter param) {
+    default Condition getCondition(Field<Long> field, EntityIdRangeParameter param) {
         if (param == null) {
             return noCondition();
         }
@@ -34,7 +34,7 @@ abstract class AbstractCustomRepository {
         return getCondition(field, param.operator(), param.value().getId());
     }
 
-    protected static Condition getCondition(Field<Long> field, IntegerRangeParameter param) {
+    default Condition getCondition(Field<Long> field, IntegerRangeParameter param) {
         if (param == null) {
             return noCondition();
         }
@@ -42,7 +42,7 @@ abstract class AbstractCustomRepository {
         return getCondition(field, param.operator(), param.value().longValue());
     }
 
-    protected static Condition getCondition(Field<Long> field, RangeOperator operator, Long value) {
+    default Condition getCondition(Field<Long> field, RangeOperator operator, Long value) {
         return operator.getFunction().apply(field, value);
     }
 }
