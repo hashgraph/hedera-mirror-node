@@ -54,13 +54,13 @@ class RecordFileService extends BaseService {
          from ${RecordFile.tableName}
          where ${RecordFile.CONSENSUS_END} >= timestamp and
            ${RecordFile.CONSENSUS_END} >= $2 and
-           ${RecordFile.CONSENSUS_END} < $3
+           ${RecordFile.CONSENSUS_END} <= $3
          order by ${RecordFile.CONSENSUS_END}
          limit 1
        ) as consensus_end
     from (select unnest($1::bigint[]) as timestamp) as tmp
       group by consensus_end
-    ) and ${RecordFile.CONSENSUS_END} >= $2 and ${RecordFile.CONSENSUS_END} < $3`;
+    ) and ${RecordFile.CONSENSUS_END} >= $2 and ${RecordFile.CONSENSUS_END} <= $3`;
 
   static recordFileBlockDetailsFromTimestampQuery = `select
     ${RecordFile.CONSENSUS_END}, ${RecordFile.GAS_USED}, ${RecordFile.HASH}, ${RecordFile.INDEX}
@@ -117,7 +117,7 @@ class RecordFileService extends BaseService {
 
     const {maxTimestamp, minTimestamp, order} = this.getTimestampArrayContext(timestamps);
     const query = `${RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery}
-    order by consensus_end ${order}`;
+      order by consensus_end ${order}`;
     const params = [timestamps, minTimestamp, BigInt(maxTimestamp) + config.query.maxRecordFileCloseIntervalNs];
 
     const rows = await super.getRows(query, params);
@@ -128,7 +128,7 @@ class RecordFileService extends BaseService {
       const {consensusEnd, consensusStart} = recordFile;
       for (; index < timestamps.length; index++) {
         const timestamp = timestamps[index];
-        if (consensusEnd >= timestamp && consensusStart <= timestamp) {
+        if (consensusStart <= timestamp && consensusEnd >= timestamp) {
           recordFileMap.set(timestamp, recordFile);
         } else if (
           (order === orderFilterValues.ASC && timestamp > consensusEnd) ||
