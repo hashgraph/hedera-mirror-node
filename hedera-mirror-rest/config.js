@@ -166,20 +166,16 @@ const parseDurationConfig = (name, value) => {
   return BigInt(ms) * NANOSECONDS_PER_MILLISECOND;
 };
 
+const durationQueryConfigKeys = [
+  'maxRecordFileCloseInterval',
+  'maxTimestampRange',
+  'maxTransactionConsensusTimestampRange',
+  'maxTransactionsTimestampRange',
+];
+
 const parseQueryConfig = () => {
-  const conf = getConfig();
-
-  conf.query.maxTimestampRangeNs = parseDurationConfig('query.maxTimestampRange', conf.query.maxTimestampRange);
-
-  conf.query.maxTransactionConsensusTimestampRangeNs = parseDurationConfig(
-    'query.maxTransactionConsensusTimestampRange',
-    conf.query.maxTransactionConsensusTimestampRange
-  );
-
-  conf.query.maxTransactionsTimestampRangeNs = parseDurationConfig(
-    'query.maxTransactionsTimestampRange',
-    conf.query.maxTransactionsTimestampRange
-  );
+  const {query} = getConfig();
+  durationQueryConfigKeys.forEach((key) => (query[`${key}Ns`] = parseDurationConfig(`query.${key}`, query[key])));
 };
 
 const parseNetworkConfig = () => {

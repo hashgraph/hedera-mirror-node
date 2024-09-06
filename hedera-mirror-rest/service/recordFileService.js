@@ -15,9 +15,11 @@
  */
 
 import _ from 'lodash';
+
 import BaseService from './baseService';
+import config from '../config';
 import {RecordFile} from '../model';
-import {orderFilterValues} from '../constants.js';
+import {orderFilterValues} from '../constants';
 
 const buildWhereSqlStatement = (whereQuery) => {
   let where = '';
@@ -114,9 +116,9 @@ class RecordFileService extends BaseService {
     }
 
     const {maxTimestamp, minTimestamp, order} = this.getTimestampArrayContext(timestamps);
-    let query = RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery;
-    query += ` order by consensus_end ${order}`;
-    const params = [timestamps, minTimestamp, BigInt(maxTimestamp) + 10_000_000_000n];
+    const query = `${RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery}
+    order by consensus_end ${order}`;
+    const params = [timestamps, minTimestamp, BigInt(maxTimestamp) + config.query.maxRecordFileCloseIntervalNs];
 
     const rows = await super.getRows(query, params);
 
@@ -195,13 +197,13 @@ class RecordFileService extends BaseService {
     return row ? new RecordFile(row) : null;
   }
 
+  /**
+   * Gets the timestamp context from a sorted timestamp array. Note the timestamps array must not be empty.
+   *
+   * @param timestamps
+   * @returns {{maxTimestamp: *, minTimestamp: *, order: string}
+   */
   getTimestampArrayContext(timestamps) {
-    if (timestamps.length === 0) {
-      return {
-        order: orderFilterValues.ASC,
-      };
-    }
-
     const first = timestamps[0];
     const last = timestamps[timestamps.length - 1];
     return first > last
