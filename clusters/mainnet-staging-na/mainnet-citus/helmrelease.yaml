@@ -96,11 +96,11 @@ spec:
           - index: 1
             pods:
               persistentVolume:
-                size: 3200Gi
+                size: 14000Gi
           - index: 2
             pods:
               persistentVolume:
-                size: 14000Gi
+                size: 3200Gi
     test:
       config:
         hedera:
