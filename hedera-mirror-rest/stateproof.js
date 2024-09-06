@@ -27,8 +27,6 @@ import TransactionId from './transactionId';
 import * as utils from './utils';
 import {NoSuchKey} from '@aws-sdk/client-s3';
 
-const {maxTransactionConsensusTimestampRangeNs} = config.query;
-
 const fileQuery = `select file_data,
                          node_count,
                          string_agg(memo, ',')                                 as memos,
@@ -80,7 +78,7 @@ const transactionIdQuery = `select consensus_timestamp
  */
 const getSuccessfulTransactionConsensusTimestamp = async (transactionId, nonce, scheduled) => {
   const validStart = BigInt(transactionId.getValidStartNs());
-  const maxConsensusTimestamp = validStart + maxTransactionConsensusTimestampRangeNs;
+  const maxConsensusTimestamp = validStart + config.query.maxTransactionConsensusTimestampRangeNs;
   const sqlParams = [transactionId.getEntityId().getEncodedId(), validStart, nonce, scheduled, maxConsensusTimestamp];
   const {rows} = await pool.queryQuietly(transactionIdQuery, sqlParams);
 
@@ -102,8 +100,7 @@ const getSuccessfulTransactionConsensusTimestamp = async (transactionId, nonce, 
  *                                              downloaded from
  */
 const getRCDFileInfoByConsensusTimestamp = async (consensusTimestamp) => {
-  // Provide an upper bound of +1 month to reduce the number of partitions to scan
-  const upperBound = utils.getFirstDayOfMonth(consensusTimestamp, 1);
+  const upperBound = consensusTimestamp + config.query.maxRecordFileCloseIntervalNs;
   const {rows} = await pool.queryQuietly(recordFileQuery, [consensusTimestamp, upperBound]);
   if (_.isEmpty(rows)) {
     throw new NotFoundError(`No matching RCD file found with ${consensusTimestamp} in the range`);

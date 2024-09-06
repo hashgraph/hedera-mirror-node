@@ -114,8 +114,8 @@ describe('getSuccessfulTransactionConsensusTimestamp', () => {
 });
 
 describe('getRCDFileInfoByConsensusTimestamp', () => {
-  const consensusTimestamp = '1578342501111222333';
-  const upperBound = utils.getFirstDayOfMonth(consensusTimestamp, 1);
+  const consensusTimestamp = 1578342501111222333n;
+  const upperBound = consensusTimestamp + config.query.maxRecordFileCloseIntervalNs;
   const expectedRCDFileName = '2020-02-09T18_30_25.001721Z.rcd';
   const validQueryResult = {
     rows: [{bytes: null, name: expectedRCDFileName, node_account_id: '3', version: 5}],
