@@ -104,8 +104,9 @@ describe('Single key get/set', () => {
     const objectToCache = {a: 5, b: 'some string', c: 'another string'};
     const setResult = await cache.setSingle(key, 5, objectToCache);
     expect(setResult).toEqual('OK');
-    const objectFromCache = await cache.getSingleWithTtl(key);
-    expect(objectFromCache.value).toEqual(objectToCache);
+    const objectWithTtlFromCache = await cache.getSingleWithTtl(key);
+    expect(objectWithTtlFromCache.value).toEqual(objectToCache);
+    expect(objectWithTtlFromCache.ttl).toBeGreaterThan(0);
   });
 
   test('Disabled', async () => {

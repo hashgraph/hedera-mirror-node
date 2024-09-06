@@ -17,7 +17,9 @@
 import {Cache} from '../cache';
 import CachedApiResponse from '../model/cachedApiResponse.js';
 import {responseBodyLabel, responseCacheKeyLabel} from '../constants.js';
+import _ from 'lodash';
 
+const ACCEPT_ENCODING_HEADER_NAME = 'accept-encoding';
 const CACHE_BYPASS_HEADER_VALUE = 'no-cache';
 const CACHE_CONTROL_HEADER_NAME = 'cache-control';
 const DEFAULT_REDIS_EXPIRY = 1;
@@ -49,7 +51,9 @@ const responseCacheCheckHandler = async (req, res, next) => {
     res.send(cachedResponse.body);
 
     const elapsed = Date.now() - startTime;
-    logger.info(`${req.ip} ${req.method} ${req.originalUrl} from cache in ${elapsed} ms: ${code}`);
+    logger.info(
+      `${req.ip} ${req.method} ${req.originalUrl} from cache (ttl: ${cachedTtlAndValue.ttl}) in ${elapsed} ms: ${code}`
+    );
   } else {
     logger.debug(`Cache miss: ${responseCacheKey}`);
     res.locals[responseCacheKeyLabel] = responseCacheKey;
@@ -70,10 +74,17 @@ const responseCacheUpdateHandler = async (req, res, next) => {
   next();
 };
 
+/*
+ * Generate the cache key to access Redis. Note that Accept-Encoding is specified in the API response Vary
+ * header, and therefore that request header value is used as part of the cache key.
+ *
+ * Current key format:
+ *
+ *   accept-encoding header value : path?query - The latter part will be based on Edwin's request normalizer (9113).
+ */
 const cacheKeyGenerator = (req) => {
-  return req.path;
-  // Interact with Edwin's code (normalizeRequestQueryParams()).
-  // Add Accept-Encoding header value (specified in our Vary header).
+  const acceptEncoding = req.headers[ACCEPT_ENCODING_HEADER_NAME];
+  return `${_.isNil(acceptEncoding) ? '' : acceptEncoding}:${req.originalUrl}`;
 };
 
 const getCacheControlExpiry = (headerValue) => {
@@ -91,4 +102,4 @@ const setCache = (cacheToUse) => {
   cache = cacheToUse;
 };
 
-export {responseCacheCheckHandler, responseCacheUpdateHandler, setCache};
+export {cacheKeyGenerator, responseCacheCheckHandler, responseCacheUpdateHandler, setCache};

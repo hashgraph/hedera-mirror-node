@@ -22,7 +22,6 @@ import {responseBodyLabel} from '../constants.js';
 class CachedApiResponse {
   constructor(status, headers, body) {
     this.body = body;
-    this.cacheTime = Date.now();
     this.headers = headers;
     this.status = status;
   }
