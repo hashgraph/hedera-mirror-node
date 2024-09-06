@@ -26,6 +26,7 @@ import stateproof from '../stateproof';
 import {CompositeRecordFile} from '../stream';
 import TransactionId from '../transactionId';
 import {opsMap} from '../utils';
+import * as utils from '../utils.js';
 
 global.pool = {};
 
@@ -38,10 +39,10 @@ const {
   canReachConsensus,
   downloadRecordStreamFilesFromObjectStorage,
   formatCompactableRecordFile,
-  getAddressBooksAndNodeAccountIdsByConsensusNs,
+  getAddressBooksAndNodeAccountIdsByConsensusTimestamp,
   getQueryParamValues,
-  getRCDFileInfoByConsensusNs,
-  getSuccessfulTransactionConsensusNs,
+  getRCDFileInfoByConsensusTimestamp,
+  getSuccessfulTransactionConsensusTimestamp,
 } = stateproof;
 
 const emptyQueryResult = {
@@ -59,24 +60,27 @@ const verifyFakeCallCountAndLastCallParamsArg = (fake, expectedCount, expectedLa
   expect(actualParams).toEqual(expectedLastCallParams);
 };
 
-describe('getSuccessfulTransactionConsensusNs', () => {
-  const expectedValidConsensusNs = '1234567891000000001';
+describe('getSuccessfulTransactionConsensusTimestamp', () => {
+  const expectedValidConsensusTimestamp = '1234567891000000001';
   const validQueryResult = {
-    rows: [{consensus_timestamp: expectedValidConsensusNs}],
+    rows: [{consensus_timestamp: expectedValidConsensusTimestamp}],
   };
   const transactionId = TransactionId.fromString('0.0.1-1234567891-000111222');
+  const {maxTransactionConsensusTimestampRangeNs} = config.query;
+  const validStart = BigInt(transactionId.getValidStartNs());
 
   test('with transaction found in db table', async () => {
     const fakeQuery = sinon.fake.resolves(validQueryResult);
     global.pool = {queryQuietly: fakeQuery};
 
-    const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId, 0, false);
-    expect(consensusNs).toEqual(expectedValidConsensusNs);
+    const consensusTimestamp = await getSuccessfulTransactionConsensusTimestamp(transactionId, 0, false);
+    expect(consensusTimestamp).toEqual(expectedValidConsensusTimestamp);
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
       transactionId.getEntityId().getEncodedId(),
-      transactionId.getValidStartNs(),
+      validStart,
       0,
       false,
+      validStart + maxTransactionConsensusTimestampRangeNs,
     ]);
   });
 
@@ -84,12 +88,13 @@ describe('getSuccessfulTransactionConsensusNs', () => {
     const fakeQuery = sinon.fake.resolves(emptyQueryResult);
     global.pool = {queryQuietly: fakeQuery};
 
-    await expect(getSuccessfulTransactionConsensusNs(transactionId, 0, false)).rejects.toThrow();
+    await expect(getSuccessfulTransactionConsensusTimestamp(transactionId, 0, false)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
       transactionId.getEntityId().getEncodedId(),
-      transactionId.getValidStartNs(),
+      validStart,
       0,
       false,
+      validStart + maxTransactionConsensusTimestampRangeNs,
     ]);
   });
 
@@ -97,18 +102,20 @@ describe('getSuccessfulTransactionConsensusNs', () => {
     const fakeQuery = sinon.fake.rejects(new Error('db runtime error'));
     global.pool = {queryQuietly: fakeQuery};
 
-    await expect(getSuccessfulTransactionConsensusNs(transactionId, 0, false)).rejects.toThrow();
+    await expect(getSuccessfulTransactionConsensusTimestamp(transactionId, 0, false)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
       transactionId.getEntityId().getEncodedId(),
-      transactionId.getValidStartNs(),
+      validStart,
       0,
       false,
+      validStart + maxTransactionConsensusTimestampRangeNs,
     ]);
   });
 });
 
-describe('getRCDFileInfoByConsensusNs', () => {
-  const consensusNs = '1578342501111222333';
+describe('getRCDFileInfoByConsensusTimestamp', () => {
+  const consensusTimestamp = '1578342501111222333';
+  const upperBound = utils.getFirstDayOfMonth(consensusTimestamp, 1);
   const expectedRCDFileName = '2020-02-09T18_30_25.001721Z.rcd';
   const validQueryResult = {
     rows: [{bytes: null, name: expectedRCDFileName, node_account_id: '3', version: 5}],
@@ -124,29 +131,29 @@ describe('getRCDFileInfoByConsensusNs', () => {
     const fakeQuery = sinon.fake.resolves(validQueryResult);
     global.pool = {queryQuietly: fakeQuery};
 
-    const info = await getRCDFileInfoByConsensusNs(consensusNs);
+    const info = await getRCDFileInfoByConsensusTimestamp(consensusTimestamp);
     expect(info).toEqual(expectedRCDFileInfo);
-    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, consensusNs);
+    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusTimestamp, upperBound]);
   });
 
   test('with record file not found', async () => {
     const fakeQuery = sinon.fake.resolves(emptyQueryResult);
     global.pool = {queryQuietly: fakeQuery};
 
-    await expect(getRCDFileInfoByConsensusNs(consensusNs)).rejects.toThrow();
-    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, consensusNs);
+    await expect(getRCDFileInfoByConsensusTimestamp(consensusTimestamp)).rejects.toThrow();
+    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusTimestamp, upperBound]);
   });
 
   test('with db query error', async () => {
     const fakeQuery = sinon.fake.rejects(new Error('db runtime error'));
     global.pool = {queryQuietly: fakeQuery};
 
-    await expect(getRCDFileInfoByConsensusNs(consensusNs)).rejects.toThrow();
-    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, consensusNs);
+    await expect(getRCDFileInfoByConsensusTimestamp(consensusTimestamp)).rejects.toThrow();
+    verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusTimestamp, upperBound]);
   });
 });
 
-describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
+describe('getAddressBooksAndNodeAccountIdsByConsensusTimestamp', () => {
   const nodeAccountId3 = EntityId.parse('0.0.3');
   const nodeAccountId4 = EntityId.parse('0.0.4');
   const nodeAccountId5 = EntityId.parse('0.0.5');
@@ -159,7 +166,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
     _.map(nodeAccountIds, (id) => id.toString()),
     ','
   );
-  const transactionConsensusNs = '1234567899000000021';
+  const transactionConsensusTimestamp = '1234567899000000021';
 
   let queryResultWithNodeAccountIds;
   let queryResultWithMemos;
@@ -208,7 +215,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
     global.pool = {queryQuietly: queryStub};
 
     if (expectPass) {
-      const result = await getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs);
+      const result = await getAddressBooksAndNodeAccountIdsByConsensusTimestamp(transactionConsensusTimestamp);
       expect(result.addressBooks).toEqual(
         _.map(queryResult.rows, (row) => Buffer.from(row.file_data).toString('base64'))
       );
@@ -224,7 +231,9 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
 
       expect(queryStub.callCount).toEqual(1);
     } else {
-      await expect(getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs)).rejects.toThrow();
+      await expect(
+        getAddressBooksAndNodeAccountIdsByConsensusTimestamp(transactionConsensusTimestamp)
+      ).rejects.toThrow();
       expect(queryStub.callCount).toEqual(1);
     }
   };
