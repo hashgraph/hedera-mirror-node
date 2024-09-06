@@ -203,7 +203,6 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         .tokenId(nftTokenId2))
                 .persist();
 
-        // serialNumber gt 4 -> serialAirdrop1, serialAirdrop2, serialAirdrop3
         var expectedAirdrops = List.of(serialAirdrop1, serialAirdrop2, serialAirdrop3);
         var request = OutstandingTokenAirdropRequest.builder()
                 .senderId(new EntityIdNumParameter(EntityId.of(sender)))
@@ -212,7 +211,6 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
-        // serialNumber lt 10 -> serialAirdrop1, serialAirdrop3
         expectedAirdrops = List.of(serialAirdrop1, serialAirdrop3);
         request = OutstandingTokenAirdropRequest.builder()
                 .senderId(new EntityIdNumParameter(EntityId.of(sender)))
@@ -221,7 +219,6 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
-        // tokenId eq nftTokenId -> serialAirdrop1, serialAirdrop2
         expectedAirdrops = List.of(serialAirdrop1, serialAirdrop2);
         request = OutstandingTokenAirdropRequest.builder()
                 .senderId(new EntityIdNumParameter(EntityId.of(sender)))
@@ -230,7 +227,6 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
-        // tokenId eq nftTokenId && serialNumber lte 5 -> serialAirdrop1
         expectedAirdrops = List.of(serialAirdrop1);
         request = OutstandingTokenAirdropRequest.builder()
                 .senderId(new EntityIdNumParameter(EntityId.of(sender)))
@@ -240,7 +236,6 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
-        // tokenId eq nftTokenId && serialNumber gte 10 -> serialAirdrop2
         expectedAirdrops = List.of(serialAirdrop2);
         request = OutstandingTokenAirdropRequest.builder()
                 .senderId(new EntityIdNumParameter(EntityId.of(sender)))
@@ -250,7 +245,6 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
-        // receiver eq 3000 -> airdrop1, serialAirdrop1, serialAirdrop2
         expectedAirdrops = List.of(airdrop1, serialAirdrop1, serialAirdrop2);
         request = OutstandingTokenAirdropRequest.builder()
                 .senderId(new EntityIdNumParameter(EntityId.of(sender)))
@@ -259,7 +253,6 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
-        // receiver eq 3000 && serialNumber lte 5 -> serialAirdrop1
         expectedAirdrops = List.of(serialAirdrop1);
         request = OutstandingTokenAirdropRequest.builder()
                 .senderId(new EntityIdNumParameter(EntityId.of(sender)))
