@@ -16,18 +16,16 @@
 
 package com.hedera.mirror.restjava.common;
 
-public interface RangeParameter<T> {
+import lombok.experimental.UtilityClass;
 
-    RangeOperator operator();
+@UtilityClass
+public class Constants {
 
-    T value();
+    public static final String ACCOUNT_ID = "account.id";
+    public static final String RECEIVER_ID = "receiver.id";
+    public static final String SERIAL_NUMBER = "serialnumber";
+    public static final String TOKEN_ID = "token.id";
 
-    // Considering EQ in the same category as GT,GTE as an assumption
-    default boolean hasLowerBound() {
-        return operator() == RangeOperator.GT || operator() == RangeOperator.GTE || operator() == RangeOperator.EQ;
-    }
-
-    default boolean hasUpperBound() {
-        return operator() == RangeOperator.LT || operator() == RangeOperator.LTE;
-    }
+    public static final int MAX_LIMIT = 100;
+    public static final String DEFAULT_LIMIT = "25";
 }

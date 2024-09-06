@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.repository;
 
-public interface RangeParameter<T> {
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
+import com.hedera.mirror.restjava.dto.OutstandingTokenAirdropRequest;
+import jakarta.validation.constraints.NotNull;
+import java.util.Collection;
 
-    RangeOperator operator();
+public interface TokenAirdropRepositoryCustom {
 
-    T value();
-
-    // Considering EQ in the same category as GT,GTE as an assumption
-    default boolean hasLowerBound() {
-        return operator() == RangeOperator.GT || operator() == RangeOperator.GTE || operator() == RangeOperator.EQ;
-    }
-
-    default boolean hasUpperBound() {
-        return operator() == RangeOperator.LT || operator() == RangeOperator.LTE;
-    }
+    @NotNull
+    Collection<TokenAirdrop> findAllOutstanding(OutstandingTokenAirdropRequest request, EntityId accountId);
 }

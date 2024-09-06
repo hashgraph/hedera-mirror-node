@@ -25,7 +25,6 @@ import static org.jooq.impl.DSL.noCondition;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
-import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.service.Bound;
 import jakarta.inject.Named;
@@ -42,7 +41,7 @@ import org.springframework.data.domain.Sort.Direction;
 
 @Named
 @RequiredArgsConstructor
-class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
+class NftAllowanceRepositoryCustomImpl extends AbstractCustomRepository implements NftAllowanceRepositoryCustom {
 
     private static final Condition APPROVAL_CONDITION = NFT_ALLOWANCE.APPROVED_FOR_ALL.isTrue();
     private static final Map<OrderSpec, List<SortField<?>>> SORT_ORDERS = Map.of(
@@ -136,18 +135,6 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         long value = primaryParam.value().getId();
         value += primaryParam.hasLowerBound() ? 1L : -1L;
         return getCondition(primaryField, primaryParam.operator(), value);
-    }
-
-    private static Condition getCondition(Field<Long> field, RangeOperator operator, Long value) {
-        return operator.getFunction().apply(field, value);
-    }
-
-    private static Condition getCondition(Field<Long> field, EntityIdRangeParameter param) {
-        if (param == null) {
-            return noCondition();
-        }
-
-        return getCondition(field, param.operator(), param.value().getId());
     }
 
     private record OrderSpec(boolean byOwner, Direction direction) {}

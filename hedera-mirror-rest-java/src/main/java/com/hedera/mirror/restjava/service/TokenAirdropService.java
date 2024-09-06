@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.service;
 
-import lombok.experimental.UtilityClass;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
+import com.hedera.mirror.restjava.dto.OutstandingTokenAirdropRequest;
+import java.util.Collection;
 
-@UtilityClass
-public class ParameterNames {
+public interface TokenAirdropService {
 
-    public static final String ACCOUNT_ID = "account.id";
-    public static final String TOKEN_ID = "token.id";
+    Collection<TokenAirdrop> getOutstandingTokenAirdrops(OutstandingTokenAirdropRequest request);
 }
