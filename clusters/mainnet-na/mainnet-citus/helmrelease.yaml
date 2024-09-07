@@ -47,11 +47,6 @@ spec:
     importer:
       enabled: true
       env:
-        HEDERA_MIRROR_IMPORTER_DOWNLOADER_RECORD_BATCHSIZE: "600"
-        HEDERA_MIRROR_IMPORTER_DOWNLOADER_RECORD_FREQUENCY: "1"
-        HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_REDIS_ENABLED: "false"
-        HEDERA_MIRROR_IMPORTER_PARSER_RECORD_FREQUENCY: "10"
-        HEDERA_MIRROR_IMPORTER_PARSER_RECORD_QUEUECAPACITY: "40"
         HEDERA_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "0"
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
@@ -82,20 +77,7 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
-      coordinator:
-        config:
-          citus.enable_deadlock_prevention: "off"
       worker:
-        config:
-          checkpoint_timeout: "90min"
-          effective_io_concurrency: "256"
-          maintenance_io_concurrency: "256"
-          maintenance_work_mem: "32GB"
-          max_parallel_maintenance_workers: "16"
-          max_parallel_workers: "40"
-          max_wal_size: "60GB"
-          max_worker_processes: "48"
-          shared_buffers: "70GB"
         overrides:
           - index: 0
             pods:
@@ -109,15 +91,6 @@ spec:
             pods:
               persistentVolume:
                 size: 3200Gi
-        resources:
-          cpu: 44000m
-          memory: 176Gi
-          requests:
-            containers:
-              patroni:
-                cpu: 44000m
-                memory: 176Gi
-
     test:
       config:
         hedera:
