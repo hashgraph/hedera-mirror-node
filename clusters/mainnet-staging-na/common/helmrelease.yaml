@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.113.0-rc1'
+      version: '0.113.0-rc2'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -72,8 +72,8 @@ spec:
             DEFAULT_TOPIC_ID: "1693742"
             DEFAULT_TOPIC_SEQUENCE: "5098305126"
             DEFAULT_TOPIC_TIMESTAMP: "1682642567.991586003"
-            DEFAULT_TRANSACTION_HASH: 0x8b7d19d392c477e29ef713f35451b82bd5ed65f1713951bf996ed8a41ed3100589ae2da457d5e0e8663fe364873fb7db
-            DEFAULT_TRANSACTION_ID: 0.0.2186182-1682642681-835182914
+            DEFAULT_TRANSACTION_HASH: 0x9c7daa10348eb6de10ba5268024056db7fcb06faed49062e6e32cbc0fcbd0c0d44dc9aca800251797b179f4b189dfab9
+            DEFAULT_TRANSACTION_ID: 0.0.1082181-1725646545-819106593
             DEFAULT_VUS: "1500"
           restjava:
             DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_OWNER: "639043"
