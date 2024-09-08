@@ -86,7 +86,7 @@ export class Cache {
       .get(key)
       .exec(function (err, result) {
         if (err) {
-          logger.warn(`Redis error during get: ${err.message}`);
+          logger.warn(`Redis error during ttl/get: ${err.message}`);
         } else {
           // result is [[null, ttl], [null, value]], with value === null on cache miss.
           const rawValue = result[1][1];

@@ -41,12 +41,13 @@ const responseCacheCheckHandler = async (req, res, next) => {
   const cachedTtlAndValue = await cache.getSingleWithTtl(responseCacheKey);
 
   if (cachedTtlAndValue) {
+    const {ttl: redisTtl, value: redisValue} = cachedTtlAndValue;
     logger.debug(`Cache hit: ${responseCacheKey}`);
 
-    const cachedResponse = Object.assign(new CachedApiResponse(), cachedTtlAndValue.value);
+    const cachedResponse = Object.assign(new CachedApiResponse(), redisValue);
     const code = cachedResponse.status;
     res.set(cachedResponse.headers);
-    res.set(CACHE_CONTROL_HEADER_NAME, `public, max-age=${cachedTtlAndValue.ttl}`);
+    res.set(CACHE_CONTROL_HEADER_NAME, `public, max-age=${redisTtl}`);
     res.status(code);
     res.send(cachedResponse.body);
 
@@ -54,6 +55,7 @@ const responseCacheCheckHandler = async (req, res, next) => {
     logger.info(
       `${req.ip} ${req.method} ${req.originalUrl} from cache (ttl: ${cachedTtlAndValue.ttl}) in ${elapsed} ms: ${code}`
     );
+    next();
   } else {
     logger.debug(`Cache miss: ${responseCacheKey}`);
     res.locals[responseCacheKeyLabel] = responseCacheKey;
@@ -64,11 +66,13 @@ const responseCacheCheckHandler = async (req, res, next) => {
 // Response middleware that caches the completed response.
 const responseCacheUpdateHandler = async (req, res, next) => {
   const responseCacheKey = res.locals[responseCacheKeyLabel];
-  if (responseCacheKey) {
+  // Don't cache negative outcomes
+  if (responseCacheKey && res.statusCode === 200) {
     const cacheControlHeaderExpiry = getCacheControlExpiry(res.getHeaders()[CACHE_CONTROL_HEADER_NAME]);
     const redisExpiry = _.isNull(cacheControlHeaderExpiry) ? DEFAULT_REDIS_EXPIRY : cacheControlHeaderExpiry;
-    const cachedResponse = new CachedApiResponse(res.status, res.getHeaders(), res.locals[responseBodyLabel]);
+    const cachedResponse = new CachedApiResponse(res.statusCode, res.getHeaders(), res.locals[responseBodyLabel]);
     cache.setSingle(responseCacheKey, redisExpiry, cachedResponse);
+    logger.debug(`Added response to cache at key: ${responseCacheKey}`);
   }
 
   next();
