@@ -67,6 +67,7 @@ describe('Response cache check middleware', () => {
     mockResponse = {
       headers: [],
       locals: [],
+      removeHeader: jest.fn(),
       send: jest.fn(),
       set: jest.fn(),
       status: jest.fn(),
@@ -83,12 +84,32 @@ describe('Response cache check middleware', () => {
     expect(cacheKey).toEqual(expectedCacheKey);
 
     // Middleware must not have handled the response directly.
+    expect(mockResponse.removeHeader).not.toBeCalled();
     expect(mockResponse.send).not.toBeCalled();
     expect(mockResponse.set).not.toBeCalled();
     expect(mockResponse.status).not.toBeCalled();
 
     // Middleware must invoke provided next() function to continue normal API request processing.
     expect(mockNextMiddleware).toBeCalled();
+  });
+
+  test('Cache miss with bypass attempts', async () => {
+    const logSpy = jest.spyOn(logger, 'warn');
+
+    mockRequest.headers['pragma'] = 'no-cache';
+
+    // The cache is empty, thus a cache miss is expected.
+    await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
+
+    mockRequest.headers['pragma'] = undefined;
+    mockRequest.headers['cache-control'] = 'no-cache';
+
+    // The cache is empty, thus a cache miss is expected.
+    await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
+
+    expect(logSpy).toHaveBeenNthCalledWith(1, expect.stringContaining('attempted cache bypass'));
+    expect(logSpy).toHaveBeenNthCalledWith(2, expect.stringContaining('attempted cache bypass'));
+    logSpy.mockRestore();
   });
 
   test('Cache hit', async () => {
@@ -108,11 +129,12 @@ describe('Response cache check middleware', () => {
 
     // Cache hit is expected, and the middleware must handle the response.
     await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
+    expect(mockResponse.removeHeader).toBeCalledWith('content-encoding');
     expect(mockResponse.send).toBeCalledWith(cachedBody);
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, cachedHeaders);
     expect(mockResponse.status).toBeCalledWith(cachedStatusCode);
 
-    // Middleware must not invoke provided next().
-    expect(mockNextMiddleware).not.toBeCalled();
+    // Middleware must invoke provided next() function to continue normal API request processing.
+    expect(mockNextMiddleware).toBeCalled();
   });
 });

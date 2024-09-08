@@ -15,8 +15,8 @@
  */
 
 import {Cache} from '../cache';
-import CachedApiResponse from '../model/cachedApiResponse.js';
-import {responseBodyLabel, responseCacheKeyLabel} from '../constants.js';
+import CachedApiResponse from '../model/cachedApiResponse';
+import {responseBodyLabel, responseCacheKeyLabel} from '../constants';
 import _ from 'lodash';
 
 const ACCEPT_ENCODING_HEADER_NAME = 'accept-encoding';
