@@ -195,6 +195,7 @@ describe('Override query config', () => {
   test('success', async () => {
     const queryConfig = {
       bindTimestampRange: true,
+      maxRecordFileCloseInterval: '8s',
       maxRepeatedQueryParameters: 2,
       maxTimestampRange: '1d',
       maxTransactionConsensusTimestampRange: '10m',
@@ -202,6 +203,8 @@ describe('Override query config', () => {
     };
     const expected = {
       bindTimestampRange: true,
+      maxRecordFileCloseInterval: '8s',
+      maxRecordFileCloseIntervalNs: 8000000000n,
       maxRepeatedQueryParameters: 2,
       maxTimestampRange: '1d',
       maxTimestampRangeNs: 86400000000000n,
@@ -218,6 +221,7 @@ describe('Override query config', () => {
 
   test.each`
     name                                               | queryConfig
+    ${'invalid maxRecordFileCloseInterval'}            | ${{maxRecordFileCloseInterval: '1g'}}
     ${'invalid maxTimestampRange'}                     | ${{maxTimestampRange: '1q'}}
     ${'invalid maxTransactionConsensusTimestampRange'} | ${{maxTransactionConsensusTimestampRange: '1z'}}
     ${'invalid maxTransactionsTimestampRange'}         | ${{maxTransactionsTimestampRange: '1z'}}
