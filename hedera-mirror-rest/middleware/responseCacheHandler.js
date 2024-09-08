@@ -48,6 +48,7 @@ const responseCacheCheckHandler = async (req, res, next) => {
     const code = cachedResponse.status;
     res.set(cachedResponse.headers);
     res.set(CACHE_CONTROL_HEADER_NAME, `public, max-age=${redisTtl}`);
+    res.removeHeader('content-encoding'); // Remove so that compression middleware will act on this response.
     res.status(code);
     res.send(cachedResponse.body);
 
@@ -55,12 +56,11 @@ const responseCacheCheckHandler = async (req, res, next) => {
     logger.info(
       `${req.ip} ${req.method} ${req.originalUrl} from cache (ttl: ${cachedTtlAndValue.ttl}) in ${elapsed} ms: ${code}`
     );
-    next();
   } else {
     logger.debug(`Cache miss: ${responseCacheKey}`);
     res.locals[responseCacheKeyLabel] = responseCacheKey;
-    next();
   }
+  next();
 };
 
 // Response middleware that caches the completed response.
