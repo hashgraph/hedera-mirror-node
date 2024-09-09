@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.112.1'
+      version: '0.113.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -68,7 +68,7 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
     test:
-      cucumberTags: "@acceptance and not @equivalence and not @estimateprecompile"
+      cucumberTags: "@acceptance"
       enabled: false
     web3:
       enabled: false
