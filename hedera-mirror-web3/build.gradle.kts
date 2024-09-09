@@ -62,6 +62,9 @@ web3j {
     useNativeJavaTypes = true
 }
 
+val historicalSolidityVersion = "0.8.7"
+val latestSolidityVersion = "0.8.24"
+
 // Define "testHistorical" source set needed for the test historical solidity contracts and web3j
 sourceSets {
     val testHistorical by creating {
@@ -69,9 +72,9 @@ sourceSets {
         resources { setSrcDirs(listOf("src/testHistorical/resources")) }
         compileClasspath += sourceSets["test"].output + configurations["testRuntimeClasspath"]
         runtimeClasspath += sourceSets["test"].output + configurations["testRuntimeClasspath"]
-        solidity { version = "0.8.7" }
+        solidity { version = historicalSolidityVersion }
     }
-    test { solidity { version = "0.8.24" } }
+    test { solidity { version = latestSolidityVersion } }
 }
 
 tasks.bootRun { jvmArgs = listOf("--enable-preview") }
@@ -125,26 +128,30 @@ val extractOpenZeppelin =
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
-tasks.processTestResources { dependsOn(tasks.named("generateTestContractWrappers")) }
+tasks.processTestResources {
+    dependsOn(tasks.named("generateTestContractWrappers"))
+    dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
+    dependsOn(tasks.named("moveAndCleanTestHistorical"))
+}
 
-// Define the solidity resolve task for version 0.8.7
 tasks.register("resolveSolidityHistorical", SolidityResolve::class) {
     group = "historical"
-    version = "0.8.7"
+    description = "Resolves the historical solidity version $historicalSolidityVersion"
+    version = historicalSolidityVersion
     sources = fileTree("src/testHistorical/solidity")
     allowPaths = setOf("src/testHistorical/solidity")
-    packageJson =
-        file(".gradle/nodejs/node-v18.17.1-darwin-arm64/lib/node_modules/npm/package.json")
+
+    val packageJsonFile = "./build/node_modules/@openzeppelin/contracts/package.json"
+    packageJson = file(packageJsonFile)
     dependsOn("extractContracts")
 }
 
-// Define the solidity compile task for version 0.8.7
 afterEvaluate {
     tasks.named("compileTestHistoricalSolidity", SolidityCompile::class.java).configure {
         group = "historical"
         allowPaths = setOf("src/testHistorical/solidity/openzeppelin")
         ignoreMissing = true
-        version = "0.8.7"
+        version = historicalSolidityVersion
         source = fileTree("src/testHistorical/solidity") { include("*.sol") }
         dependsOn(extractOpenZeppelin)
     }
