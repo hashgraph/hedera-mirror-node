@@ -20,6 +20,8 @@ graphql:
     enabled: true
   serviceMonitor:
     enabled: true
+  test:
+    priorityClassName: high
 
 grpc:
   alertmanager:
@@ -33,6 +35,10 @@ grpc:
   priorityClassName: medium
   prometheusRules:
     enabled: true
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 1024Mi
   serviceMonitor:
     enabled: true
 
@@ -85,6 +91,9 @@ rest:
       enabled: true
   hpa:
     minReplicas: 2
+  monitor:
+    test:
+      priorityClassName: high
   podDisruptionBudget:
     enabled: true
   priorityClassName: medium
@@ -92,6 +101,8 @@ rest:
     enabled: true
   serviceMonitor:
     enabled: true
+  test:
+    priorityClassName: high
 
 restjava:
   alertmanager:
@@ -107,6 +118,8 @@ restjava:
     enabled: true
   serviceMonitor:
     enabled: true
+  test:
+    priorityClassName: high
 
 rosetta:
   alertmanager:
@@ -121,6 +134,8 @@ rosetta:
     enabled: true
   serviceMonitor:
     enabled: true
+  test:
+    priorityClassName: high
 
 stackgres:
   coordinator:
@@ -147,8 +162,8 @@ stackgres:
     instances: 3
     replicasPerInstance: 1
     resources:
-      cpu: 7350m
-      memory: 24Gi
+      cpu: 9500m
+      memory: 34Gi
       requests:
         containers:
           cluster-controller:
@@ -156,7 +171,7 @@ stackgres:
           envoy:
             cpu: 750m
           patroni:
-            cpu: 7350m
+            cpu: 9500m
           pgbouncer:
             cpu: 300m
           prometheus-postgres-exporter:
@@ -164,6 +179,9 @@ stackgres:
     persistentVolume:
       size: 3000Gi
       storageClass: zfs
+
+test:
+  priorityClassName: high
 
 web3:
   alertmanager:
@@ -179,3 +197,5 @@ web3:
     enabled: true
   serviceMonitor:
     enabled: true
+  test:
+    priorityClassName: high

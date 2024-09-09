@@ -4,6 +4,7 @@ kind: ConfigMap
 metadata:
   annotations: {{- toYaml .Values.test.annotations | nindent 4 }}
   labels: {{- include "hedera-mirror-graphql.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "hedera-mirror-graphql.name" . }}-test
   name: {{ include "hedera-mirror-graphql.fullname" . }}-test
   namespace: {{ include "hedera-mirror-graphql.namespace" . }}
 data:

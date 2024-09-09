@@ -16,1240 +16,915 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.common.domain.transaction.TransactionType.ETHEREUMTRANSACTION;
 import static com.hedera.mirror.common.util.CommonUtils.instant;
-import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.CREATE_TOKEN_VALUE;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ED25519_KEY;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
+import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
-import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.Mockito.doAnswer;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.rest.model.OpcodesResponse;
-import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.common.TransactionHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdParameter;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
-import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.service.model.ContractDebugParameters;
-import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls;
+import com.hedera.mirror.web3.web3j.generated.ExchangeRatePrecompile;
+import com.hedera.mirror.web3.web3j.generated.NestedCalls;
+import com.hedera.mirror.web3.web3j.generated.NestedCalls.Expiry;
+import com.hedera.mirror.web3.web3j.generated.NestedCalls.HederaToken;
+import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
+import com.hedera.mirror.web3.web3j.generated.NestedCalls.TokenKey;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import java.math.BigInteger;
-import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.web3j.abi.TypeEncoder;
+import org.web3j.tx.Contract;
 
 @RequiredArgsConstructor
-class OpcodeServiceTest extends ContractCallTestSetup {
+class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
-    public static final long AMOUNT = 0L;
-    public static final long GAS = 15_000_000L;
+    private static final long AMOUNT = 0L;
+
+    private static final String SUCCESS_PREFIX = "0x0000000000000000000000000000000000000000000000000000000000000020";
 
     private final OpcodeService opcodeService;
-    private final EntityDatabaseAccessor entityDatabaseAccessor;
+    private final EvmEncodingFacade evmEncoder;
 
-    @Getter
-    @RequiredArgsConstructor
-    private enum NestedEthCallContractFunctions implements ContractFunctionProviderEnum {
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            1,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    1L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {1, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}}
-                    },
-                    1L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {1, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    1L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            1,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    1L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            2,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    2L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {2, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}}
-                    },
-                    2L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {2, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    2L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            2,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    2L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            4,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    4L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {4, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}}
-                    },
-                    4L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {4, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    4L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            4,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    4L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            8,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    8L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {8, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}}
-                    },
-                    8L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {8, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    8L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            8,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    8L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            16,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    16L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {16, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
-                        }
-                    },
-                    16L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {16, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    16L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            16,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    16L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            32,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    32L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {32, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
-                        }
-                    },
-                    32L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {32, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    32L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            32,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    32L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            64,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    64L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {64, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
-                        }
-                    },
-                    64L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {64, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    64L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            64,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    64L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            1,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    1L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {1, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}}
-                    },
-                    1L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {1, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    1L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            1,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    1L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            2,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    2L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {2, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}}
-                    },
-                    2L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {2, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    2L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            2,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    2L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            4,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    4L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {4, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}}
-                    },
-                    4L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {4, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    4L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            4,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    4L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            8,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    8L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {8, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}}
-                    },
-                    8L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {8, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    8L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            8,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    8L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            16,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    16L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {16, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
-                        }
-                    },
-                    16L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {16, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    16L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            16,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    16L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            32,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    32L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {32, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
-                        }
-                    },
-                    32L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {32, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    32L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            32,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    32L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_CONTRACT_ADDRESS(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            64,
-                            new Object[] {
-                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
-                            }
-                        }
-                    },
-                    64L
-                },
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_ED25519_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {64, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
-                        }
-                    },
-                    64L
-                },
-                new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_ECDSA_KEY(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {64, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-                    },
-                    64L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}),
-        UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_DELEGATE_CONTRACT_ID(
-                "updateTokenKeysAndGetUpdatedTokenKey",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new Object[] {
-                        new Object[] {
-                            64,
-                            new Object[] {
-                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
-                            }
-                        }
-                    },
-                    64L
-                },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        UPDATE_TOKEN_EXPIRY_AND_GET_TOKEN_EXPIRY(
-                "updateTokenExpiryAndGetUpdatedTokenExpiry",
-                new Object[] {
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    new TokenExpiryWrapper(
-                            4_000_000_000L,
-                            EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS),
-                            8_000_000L)
-                },
-                new Object[] {4_000_000_000L, AUTO_RENEW_ACCOUNT_ADDRESS, 8_000_000L
-                }), // 4_000_000_000L in order to fit in uint32 until there is a support for int64 in EvmEncodingFacade
-        // to match the Expiry struct in IHederaTokenService
-        UPDATE_NFT_TOKEN_EXPIRY_AND_GET_TOKEN_EXPIRY(
-                "updateTokenExpiryAndGetUpdatedTokenExpiry",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS,
-                    new TokenExpiryWrapper(
-                            4_000_000_000L,
-                            EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS),
-                            8_000_000L)
-                },
-                new Object[] {4_000_000_000L, AUTO_RENEW_ACCOUNT_ADDRESS, 8_000_000L
-                }), // 4_000_000_000L in order to fit in uint32 until there is a support for int64 in EvmEncodingFacade
-        // to match the Expiry struct in IHederaTokenService
-        UPDATE_TOKEN_INFO_AND_GET_TOKEN_INFO_SYMBOL(
-                "updateTokenInfoAndGetUpdatedTokenInfoSymbol",
-                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE},
-                new Object[] {FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE.getSymbol()}),
-        UPDATE_NFT_TOKEN_INFO_AND_GET_TOKEN_INFO_SYMBOL(
-                "updateTokenInfoAndGetUpdatedTokenInfoSymbol",
-                new Object[] {NFT_TRANSFER_ADDRESS, NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE},
-                new Object[] {NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE.getSymbol()}),
-        UPDATE_TOKEN_INFO_AND_GET_TOKEN_INFO_NAME(
-                "updateTokenInfoAndGetUpdatedTokenInfoName",
-                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE},
-                new Object[] {FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE.getName()}),
-        UPDATE_NFT_TOKEN_INFO_AND_GET_TOKEN_INFO_NAME(
-                "updateTokenInfoAndGetUpdatedTokenInfoName",
-                new Object[] {NFT_TRANSFER_ADDRESS, NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE},
-                new Object[] {NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE.getName()}),
-        UPDATE_TOKEN_INFO_AND_GET_TOKEN_INFO_MEMO(
-                "updateTokenInfoAndGetUpdatedTokenInfoMemo",
-                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE},
-                new Object[] {FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE.getMemo()}),
-        UPDATE_NFT_TOKEN_INFO_AND_GET_TOKEN_INFO_MEMO(
-                "updateTokenInfoAndGetUpdatedTokenInfoMemo",
-                new Object[] {NFT_TRANSFER_ADDRESS, NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE},
-                new Object[] {NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE.getMemo()}),
-        UPDATE_TOKEN_INFO_AND_GET_TOKEN_INFO_AUTO_RENEW_PERIOD(
-                "updateTokenInfoAndGetUpdatedTokenInfoAutoRenewPeriod",
-                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE},
-                new Object[] {FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE.getExpiry().autoRenewPeriod()}),
-        UPDATE_NFT_TOKEN_INFO_AND_GET_TOKEN_INFO_AUTO_RENEW_PERIOD(
-                "updateTokenInfoAndGetUpdatedTokenInfoAutoRenewPeriod",
-                new Object[] {NFT_TRANSFER_ADDRESS, NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE},
-                new Object[] {
-                    NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE.getExpiry().autoRenewPeriod()
-                }),
-        DELETE_TOKEN_AND_GET_TOKEN_INFO_IS_DELETED(
-                "deleteTokenAndGetTokenInfoIsDeleted",
-                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS},
-                new Object[] {true}),
-        DELETE_NFT_TOKEN_AND_GET_TOKEN_INFO_IS_DELETED(
-                "deleteTokenAndGetTokenInfoIsDeleted", new Object[] {NFT_TRANSFER_ADDRESS}, new Object[] {true}),
-        CREATE_FUNGIBLE_TOKEN_WITH_KEYS(
-                "createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
-                new Object[] {FUNGIBLE_TOKEN_WITH_KEYS, 10L, 10},
-                new Object[] {true, true, true}),
-        CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS(
-                "createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
-                new Object[] {FUNGIBLE_TOKEN_INHERIT_KEYS, 10L, 10},
-                new Object[] {true, true, true}),
-        CREATE_FUNGIBLE_TOKEN_NO_KEYS(
-                "createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
-                new Object[] {FUNGIBLE_TOKEN, 10L, 10},
-                new Object[] {false, false, true}),
-        CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS(
-                "createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
-                new Object[] {NON_FUNGIBLE_TOKEN_WITH_KEYS, 10L, 10},
-                new Object[] {true, true, true}),
-        CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS(
-                "createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
-                new Object[] {NON_FUNGIBLE_TOKEN_INHERIT_KEYS, 10L, 10},
-                new Object[] {true, true, true}),
-        CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS(
-                "createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
-                new Object[] {NON_FUNGIBLE_TOKEN, 10L, 10},
-                new Object[] {false, false, true});
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                    CONTRACT_ID,                ADMIN_KEY,
+                    CONTRACT_ID,                KYC_KEY,
+                    CONTRACT_ID,                FREEZE_KEY,
+                    CONTRACT_ID,                WIPE_KEY,
+                    CONTRACT_ID,                SUPPLY_KEY,
+                    CONTRACT_ID,                FEE_SCHEDULE_KEY,
+                    CONTRACT_ID,                PAUSE_KEY,
+                    ED25519,                    ADMIN_KEY,
+                    ED25519,                    KYC_KEY,
+                    ED25519,                    FREEZE_KEY,
+                    ED25519,                    WIPE_KEY,
+                    ED25519,                    SUPPLY_KEY,
+                    ED25519,                    FEE_SCHEDULE_KEY,
+                    ED25519,                    PAUSE_KEY,
+                    ECDSA_SECPK256K1,           ADMIN_KEY,
+                    ECDSA_SECPK256K1,           KYC_KEY,
+                    ECDSA_SECPK256K1,           FREEZE_KEY,
+                    ECDSA_SECPK256K1,           WIPE_KEY,
+                    ECDSA_SECPK256K1,           SUPPLY_KEY,
+                    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
+                    ECDSA_SECPK256K1,           PAUSE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
+                    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
+                    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
+                    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY,
+                    """)
+    void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType) {
+        // Given
+        final var tokenEntity = fungibleTokenPersist();
+        final var tokenAddress = toAddress(tokenEntity.getTokenId());
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+        final var contractAddress = contract.getContractAddress();
 
-        private final String name;
-        private final Object[] functionParameters;
-        private final Object[] expectedResultFields;
+        final var keyValue = getKeyValueForType(keyValueType, contractAddress);
+        final var tokenKey = new TokenKey(keyType.getKeyTypeNumeric(), keyValue);
+        final var expectedResult = TypeEncoder.encode(keyValue);
+        final var expectedResultBytes = Bytes.fromHexString(expectedResult).toArray();
+
+        final var functionCall = contract.call_updateTokenKeysAndGetUpdatedTokenKey(
+                tokenAddress.toHexString(), List.of(tokenKey), keyType.getKeyTypeNumeric());
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
+
+        final var options = new OpcodeTracerOptions();
+        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+        // Then
+        verifyOpcodesResponseWithExpectedReturnValue(opcodesResponse, options, SUCCESS_PREFIX + expectedResult);
     }
 
-    @Nested
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    @DisplayName("processOpcodeCall")
-    class ProcessOpcodeCall {
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                    CONTRACT_ID,                ADMIN_KEY,
+                    CONTRACT_ID,                KYC_KEY,
+                    CONTRACT_ID,                FREEZE_KEY,
+                    CONTRACT_ID,                WIPE_KEY,
+                    CONTRACT_ID,                SUPPLY_KEY,
+                    CONTRACT_ID,                FEE_SCHEDULE_KEY,
+                    CONTRACT_ID,                PAUSE_KEY,
+                    ED25519,                    ADMIN_KEY,
+                    ED25519,                    KYC_KEY,
+                    ED25519,                    FREEZE_KEY,
+                    ED25519,                    WIPE_KEY,
+                    ED25519,                    SUPPLY_KEY,
+                    ED25519,                    FEE_SCHEDULE_KEY,
+                    ED25519,                    PAUSE_KEY,
+                    ECDSA_SECPK256K1,           ADMIN_KEY,
+                    ECDSA_SECPK256K1,           KYC_KEY,
+                    ECDSA_SECPK256K1,           FREEZE_KEY,
+                    ECDSA_SECPK256K1,           WIPE_KEY,
+                    ECDSA_SECPK256K1,           SUPPLY_KEY,
+                    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
+                    ECDSA_SECPK256K1,           PAUSE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
+                    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
+                    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
+                    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
+                    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY
+                    """)
+    void updateTokenKeysAndGetUpdatedTokenKeyForNFT(final KeyValueType keyValueType, final KeyType keyType) {
+        // Given
+        final var treasuryEntity = accountPersist();
+        final var tokenEntity = nftPersist(treasuryEntity.toEntityId());
+        final var tokenAddress = toAddress(tokenEntity.getTokenId());
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+        final var contractAddress = contract.getContractAddress();
 
-        @Captor
-        private ArgumentCaptor<ContractDebugParameters> serviceParametersCaptor;
+        final var keyValue = getKeyValueForType(keyValueType, contractAddress);
+        final var tokenKey = new TokenKey(keyType.getKeyTypeNumeric(), keyValue);
+        final var expectedResult = TypeEncoder.encode(keyValue);
+        final var expectedResultBytes = Bytes.fromHexString(expectedResult).toArray();
 
-        @Captor
-        private ArgumentCaptor<Long> gasCaptor;
+        final var functionCall = contract.call_updateTokenKeysAndGetUpdatedTokenKey(
+                tokenAddress.toHexString(), List.of(tokenKey), keyType.getKeyTypeNumeric());
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
 
-        private HederaEvmTransactionProcessingResult resultCaptor;
+        final var options = new OpcodeTracerOptions();
+        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
 
-        private ContractCallContext contextCaptor;
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
 
-        private ContractDebugParameters expectedServiceParameters;
-        private EntityId senderEntityId;
-        private EntityId contractEntityId;
-        private long consensusTimestamp;
+        // Then
+        verifyOpcodesResponseWithExpectedReturnValue(opcodesResponse, options, SUCCESS_PREFIX + expectedResult);
+    }
 
-        static Stream<Arguments> tracerOptions() {
-            return Stream.of(
-                            new OpcodeTracerOptions(true, true, true),
-                            new OpcodeTracerOptions(false, true, true),
-                            new OpcodeTracerOptions(true, false, true),
-                            new OpcodeTracerOptions(true, true, false),
-                            new OpcodeTracerOptions(false, false, true),
-                            new OpcodeTracerOptions(false, true, false),
-                            new OpcodeTracerOptions(true, false, false),
-                            new OpcodeTracerOptions(false, false, false))
-                    .map(Arguments::of);
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+                FUNGIBLE_COMMON
+                NON_FUNGIBLE_UNIQUE
+                """)
+    void updateTokenExpiryAndGetUpdatedTokenExpiry(final TokenTypeEnum tokenType) {
+        // Given
+        final var treasuryEntity = accountPersist();
+        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+                ? fungibleTokenPersist(treasuryEntity)
+                : nftPersist(treasuryEntity.toEntityId());
+        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+        final var autoRenewAccount = accountPersist();
+        final var tokenExpiry = getTokenExpiry(autoRenewAccount);
+
+        final var functionCall =
+                contract.call_updateTokenExpiryAndGetUpdatedTokenExpiry(tokenAddress.toHexString(), tokenExpiry);
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
+        final var expectedResult = TypeEncoder.encode(tokenExpiry);
+        final var expectedResultBytes = Bytes.fromHexString(expectedResult).toArray();
+
+        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final OpcodeTracerOptions options = new OpcodeTracerOptions();
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+        // Then
+        verifyOpcodesResponseWithExpectedReturnValue(opcodesResponse, options, HEX_PREFIX + expectedResult);
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+                FUNGIBLE_COMMON
+                NON_FUNGIBLE_UNIQUE
+                """)
+    void updateTokenInfoAndGetUpdatedTokenInfoSymbol(final TokenTypeEnum tokenType) {
+        // Given
+        final var treasuryEntity = accountPersist();
+        final var autoRenewAccount = accountPersist();
+        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+                ? fungibleTokenPersist(treasuryEntity)
+                : nftPersist(treasuryEntity.toEntityId());
+        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+
+        final var functionCall =
+                contract.call_updateTokenInfoAndGetUpdatedTokenInfoSymbol(tokenAddress.toHexString(), tokenInfo);
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
+        final var expectedResultBytes = tokenInfo.symbol.getBytes();
+        final var expectedResult = evmEncoder.encodeSymbol(tokenInfo.symbol).toHexString();
+
+        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final OpcodeTracerOptions options = new OpcodeTracerOptions();
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+        // Then
+        verifyOpcodesResponseWithExpectedReturnValue(opcodesResponse, options, expectedResult);
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+                FUNGIBLE_COMMON
+                NON_FUNGIBLE_UNIQUE
+                """)
+    void updateTokenInfoAndGetUpdatedTokenInfoName(final TokenTypeEnum tokenType) {
+        // Given
+        final var treasuryEntity = accountPersist();
+        final var autoRenewAccount = accountPersist();
+        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+                ? fungibleTokenPersist(treasuryEntity)
+                : nftPersist(treasuryEntity.toEntityId());
+        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+
+        final var functionCall =
+                contract.call_updateTokenInfoAndGetUpdatedTokenInfoName(tokenAddress.toHexString(), tokenInfo);
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
+        final var expectedResultBytes = tokenInfo.name.getBytes();
+        final var expectedResult = evmEncoder.encodeName(tokenInfo.name).toHexString();
+
+        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final OpcodeTracerOptions options = new OpcodeTracerOptions();
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+        // Then
+        verifyOpcodesResponseWithExpectedReturnValue(opcodesResponse, options, expectedResult);
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+                FUNGIBLE_COMMON
+                NON_FUNGIBLE_UNIQUE
+                """)
+    void updateTokenInfoAndGetUpdatedTokenInfoMemo(final TokenTypeEnum tokenType) {
+        // Given
+        final var treasuryEntity = accountPersist();
+        final var autoRenewAccount = accountPersist();
+        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+                ? fungibleTokenPersist(treasuryEntity)
+                : nftPersist(treasuryEntity.toEntityId());
+        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+
+        final var functionCall =
+                contract.call_updateTokenInfoAndGetUpdatedTokenInfoMemo(tokenAddress.toHexString(), tokenInfo);
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
+        final var expectedResultBytes = tokenInfo.memo.getBytes();
+        final var expectedResult = evmEncoder.encodeName(tokenInfo.memo).toHexString();
+
+        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final OpcodeTracerOptions options = new OpcodeTracerOptions();
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+        // Then
+        verifyOpcodesResponseWithExpectedReturnValue(opcodesResponse, options, expectedResult);
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+                FUNGIBLE_COMMON
+                NON_FUNGIBLE_UNIQUE
+                """)
+    void deleteTokenAndGetTokenInfoIsDeleted(final TokenTypeEnum tokenType) {
+        // Given
+        final var treasuryEntity = accountPersist();
+        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+                ? fungibleTokenPersist()
+                : nftPersist(treasuryEntity.toEntityId());
+        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+
+        final var functionCall = contract.call_deleteTokenAndGetTokenInfoIsDeleted(tokenAddress.toHexString());
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
+        final byte[] expectedResultBytes = {1};
+        final var expectedResult = DomainUtils.bytesToHex(DomainUtils.leftPadBytes(expectedResultBytes, Bytes32.SIZE));
+
+        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final OpcodeTracerOptions options = new OpcodeTracerOptions();
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+        // Then
+        verifyOpcodesResponseWithExpectedReturnValue(opcodesResponse, options, HEX_PREFIX + expectedResult);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                true, false, true, true
+                false, false, false, false
+                true, true, true, true
+                """)
+    void createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
+            final boolean withKeys,
+            final boolean inheritKey,
+            final boolean defaultKycStatus,
+            final boolean defaultFreezeStatus) {
+        // Given
+        final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+        final var tokenInfo = getHederaToken(
+                TokenTypeEnum.FUNGIBLE_COMMON, withKeys, inheritKey, defaultFreezeStatus, treasuryEntity);
+        tokenInfo.freezeDefault = defaultFreezeStatus;
+
+        final var functionCall =
+                contract.call_createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
+                        tokenInfo, BigInteger.ONE, BigInteger.ONE);
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
+        final var expectedResult = getExpectedResultFromBooleans(defaultKycStatus, defaultFreezeStatus, true);
+        final var expectedResultBytes = expectedResult.getBytes();
+
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, CREATE_TOKEN_VALUE, expectedResultBytes);
+        final OpcodeTracerOptions options = new OpcodeTracerOptions();
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+        // Then
+        verifyOpcodesResponseWithExpectedReturnValue(opcodesResponse, options, HEX_PREFIX + expectedResult);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                true, false, true, true
+                false, false, false, false
+                true, true, true, true
+                """)
+    void createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
+            final boolean withKeys,
+            final boolean inheritKey,
+            final boolean defaultKycStatus,
+            final boolean defaultFreezeStatus) {
+        // Given
+        final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+        final var tokenInfo = getHederaToken(
+                TokenTypeEnum.NON_FUNGIBLE_UNIQUE, withKeys, inheritKey, defaultFreezeStatus, treasuryEntity);
+        tokenInfo.freezeDefault = defaultFreezeStatus;
+
+        final var functionCall =
+                contract.call_createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(tokenInfo);
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
+        final var expectedResult = getExpectedResultFromBooleans(defaultKycStatus, defaultFreezeStatus, true);
+        final var expectedResultBytes = expectedResult.getBytes();
+
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, CREATE_TOKEN_VALUE, expectedResultBytes);
+        final OpcodeTracerOptions options = new OpcodeTracerOptions();
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+        // Then
+        verifyOpcodesResponseWithExpectedReturnValue(opcodesResponse, options, HEX_PREFIX + expectedResult);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "true, true, true",
+        "false, true, true",
+        "true, false, true",
+        "true, true, false",
+        "false, false, true",
+        "false, true, false",
+        "true, false, false",
+        "false, false, false"
+    })
+    void callWithDifferentCombinationsOfTracerOptions(
+            final boolean stack, final boolean memory, final boolean storage) {
+        // Given
+        final var options = new OpcodeTracerOptions(stack, memory, storage);
+        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
+        final var treasuryEntity = accountPersist();
+        final var treasuryAddress = toAddress(treasuryEntity.toEntityId());
+        final var tokenEntity = nftPersist(treasuryEntity.toEntityId());
+        final var tokenAddress = toAddress(tokenEntity.getTokenId());
+        final var senderEntity = accountPersist();
+
+        final var functionCall = contract.send_mintTokenGetTotalSupplyAndBalanceOfTreasury(
+                tokenAddress.toHexString(),
+                BigInteger.ONE,
+                List.of(new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}),
+                treasuryAddress.toHexString());
+
+        final var callData = functionCall.encodeFunctionCall().getBytes();
+        final var transactionIdOrHash = setUp(
+                ETHEREUMTRANSACTION,
+                contract,
+                callData,
+                true,
+                true,
+                senderEntity.toEntityId(),
+                domainBuilder.timestamp());
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+        // Then
+        verifyOpcodesResponse(opcodesResponse, options);
+    }
+
+    @Test
+    void callWithContractResultNotFoundExceptionTest() {
+        // Given
+        final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
+        final var functionCall = contract.call_tinybarsToTinycents(BigInteger.TEN);
+        final var callData = functionCall.encodeFunctionCall().getBytes();
+        final var senderEntity = accountPersist();
+        final var consensusTimestamp = domainBuilder.timestamp();
+        final var transactionIdOrHash = setUp(
+                TransactionType.CONTRACTCALL,
+                contract,
+                callData,
+                true,
+                false,
+                senderEntity.toEntityId(),
+                consensusTimestamp);
+        final OpcodeTracerOptions options = new OpcodeTracerOptions();
+
+        // Then
+        assertThatExceptionOfType(EntityNotFoundException.class)
+                .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
+                .withMessage("Contract result not found: " + consensusTimestamp);
+    }
+
+    @Test
+    void callWithTransactionNotFoundExceptionTest() {
+        // Given
+        final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
+        final var functionCall = contract.call_tinybarsToTinycents(BigInteger.TEN);
+        final var callData = functionCall.encodeFunctionCall().getBytes();
+        final var senderEntity = accountPersist();
+
+        final var transactionIdOrHash = setUp(
+                TransactionType.CONTRACTCALL,
+                contract,
+                callData,
+                false,
+                true,
+                senderEntity.toEntityId(),
+                domainBuilder.timestamp());
+        final OpcodeTracerOptions options = new OpcodeTracerOptions();
+
+        // Then
+        assertThatExceptionOfType(EntityNotFoundException.class)
+                .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
+                .withMessage("Transaction not found: " + transactionIdOrHash);
+    }
+
+    @Test
+    void callWithContractTransactionHashNotFoundExceptionTest() {
+        // Given
+        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
+        final var senderEntity = accountPersist();
+        final var treasuryEntity = accountPersist();
+        final var autoRenewAccount = accountPersist();
+        final var hederaToken = getHederaToken(TokenTypeEnum.FUNGIBLE_COMMON, treasuryEntity, autoRenewAccount);
+
+        final OpcodeTracerOptions options = new OpcodeTracerOptions();
+        final var functionCall =
+                contract.call_createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
+                        hederaToken, BigInteger.ONE, BigInteger.ONE);
+        final var transactionIdOrHash = setUp(
+                ETHEREUMTRANSACTION,
+                contract,
+                functionCall.encodeFunctionCall().getBytes(),
+                false,
+                true,
+                senderEntity.toEntityId(),
+                domainBuilder.timestamp());
+
+        // Then
+        assertThatExceptionOfType(EntityNotFoundException.class)
+                .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
+                .withMessage("Contract transaction hash not found: " + transactionIdOrHash);
+    }
+
+    private byte getByteFromBoolean(final boolean bool) {
+        return (byte) (bool ? 1 : 0);
+    }
+
+    private String getExpectedResultFromBooleans(Boolean... booleans) {
+        StringBuilder result = new StringBuilder();
+        for (Boolean booleanValue : booleans) {
+            final var byteValue = getByteFromBoolean(booleanValue);
+            result.append(DomainUtils.bytesToHex(DomainUtils.leftPadBytes(new byte[] {byteValue}, Bytes32.SIZE)));
+        }
+        return result.toString();
+    }
+
+    private KeyValue getKeyValueForType(final KeyValueType keyValueType, String contractAddress) {
+        return switch (keyValueType) {
+            case INHERIT_ACCOUNT_KEY -> new KeyValue(
+                    Boolean.TRUE, Address.ZERO.toHexString(), new byte[0], new byte[0], Address.ZERO.toHexString());
+            case CONTRACT_ID -> new KeyValue(
+                    Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+            case ED25519 -> new KeyValue(
+                    Boolean.FALSE,
+                    Address.ZERO.toHexString(),
+                    NEW_ED25519_KEY,
+                    new byte[0],
+                    Address.ZERO.toHexString());
+            case ECDSA_SECPK256K1 -> new KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], NEW_ECDSA_KEY, Address.ZERO.toHexString());
+            case DELEGATABLE_CONTRACT_ID -> new KeyValue(
+                    Boolean.FALSE, Address.ZERO.toHexString(), new byte[0], new byte[0], contractAddress);
+            default -> throw new RuntimeException("Unsupported key type: " + keyValueType.name());
+        };
+    }
+
+    private HederaToken getHederaToken(
+            final TokenTypeEnum tokenType,
+            final boolean withKeys,
+            final boolean inheritAccountKey,
+            final boolean freezeDefault,
+            final Entity treasuryEntity) {
+        final List<TokenKey> tokenKeys = new LinkedList<>();
+        final var keyType = inheritAccountKey ? KeyValueType.INHERIT_ACCOUNT_KEY : KeyValueType.ECDSA_SECPK256K1;
+        if (withKeys) {
+            tokenKeys.add(new TokenKey(KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
+            tokenKeys.add(new TokenKey(KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
         }
 
-        @BeforeEach
-        void setUp() {
-            genesisBlockPersist();
-            historicalBlocksPersist();
-            historicalDataPersist();
-            precompileContractPersist();
-            senderEntityId = senderEntityPersist();
-            final var ownerEntityId = ownerEntityPersist();
-            final var spenderEntityId = spenderEntityPersist();
-            fungibleTokenPersist(
+        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
+            tokenKeys.add(new TokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
+        }
+
+        return new HederaToken(
+                "name",
+                "symbol",
+                toAddress(treasuryEntity.getId()).toHexString(),
+                "memo",
+                Boolean.TRUE, // finite amount
+                BigInteger.valueOf(10L), // max supply
+                freezeDefault, // freeze default
+                tokenKeys,
+                getTokenExpiry(domainBuilder.entity().persist()));
+    }
+
+    private HederaToken getHederaToken(
+            final TokenTypeEnum tokenType, final Entity treasuryEntity, final Entity autoRenewAccountEntity) {
+        return new HederaToken(
+                "name",
+                "symbol",
+                toAddress(treasuryEntity.getId()).toHexString(),
+                "memo",
+                tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? Boolean.FALSE : Boolean.TRUE,
+                BigInteger.valueOf(10L),
+                Boolean.TRUE,
+                List.of(),
+                getTokenExpiry(autoRenewAccountEntity));
+    }
+
+    private Expiry getTokenExpiry(final Entity autoRenewAccountEntity) {
+        return new Expiry(
+                BigInteger.valueOf(4_000_000_000L),
+                toAddress(autoRenewAccountEntity.toEntityId()).toHexString(),
+                BigInteger.valueOf(8_000_000L));
+    }
+
+    private TransactionIdOrHashParameter setUp(
+            final TransactionType transactionType,
+            final Contract contract,
+            final byte[] callData,
+            final boolean persistTransaction,
+            final boolean persistContractResult,
+            final EntityId senderEntityId,
+            final long consensusTimestamp) {
+        return setUpForSuccessWithExpectedResult(
+                transactionType,
+                contract,
+                callData,
+                persistTransaction,
+                persistContractResult,
+                senderEntityId,
+                consensusTimestamp);
+    }
+
+    private TransactionIdOrHashParameter setUpEthereumTransaction(
+            final NestedCalls contract, final byte[] callData, final byte[] expectedResult) {
+        return setUpEthereumTransactionWithSenderBalance(contract, callData, 0, expectedResult);
+    }
+
+    private TransactionIdOrHashParameter setUpEthereumTransactionWithSenderBalance(
+            final Contract contract, final byte[] callData, final long senderBalance, final byte[] expectedResult) {
+        final var senderEntity = accountPersistWithBalance(senderBalance);
+        return setUpForSuccessWithExpectedResultAndBalance(
+                ETHEREUMTRANSACTION,
+                contract,
+                callData,
+                true,
+                true,
+                senderEntity.toEntityId(),
+                senderBalance,
+                expectedResult,
+                senderEntity.getCreatedTimestamp() + 1);
+    }
+
+    private TransactionIdOrHashParameter setUpForSuccessWithExpectedResult(
+            final TransactionType transactionType,
+            final Contract contract,
+            final byte[] callData,
+            final boolean persistTransaction,
+            final boolean persistContractResult,
+            final EntityId senderEntityId,
+            final long consensusTimestamp) {
+        return setUpForSuccessWithExpectedResultAndBalance(
+                transactionType,
+                contract,
+                callData,
+                persistTransaction,
+                persistContractResult,
+                senderEntityId,
+                0,
+                null,
+                consensusTimestamp);
+    }
+
+    private TransactionIdOrHashParameter setUpForSuccessWithExpectedResultAndBalance(
+            final TransactionType transactionType,
+            final Contract contract,
+            final byte[] callData,
+            final boolean persistTransaction,
+            final boolean persistContractResult,
+            final EntityId senderEntityId,
+            final long senderBalance,
+            final byte[] expectedResult,
+            final long consensusTimestamp) {
+
+        final var ethHash = domainBuilder.bytes(Bytes32.SIZE);
+        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
+
+        final var transaction = persistTransaction(
+                consensusTimestamp, contractEntityId, senderEntityId, transactionType, persistTransaction);
+
+        final EthereumTransaction ethTransaction;
+        if (transactionType == ETHEREUMTRANSACTION) {
+            ethTransaction = persistEthereumTransaction(
+                    callData,
+                    consensusTimestamp,
+                    ethHash,
                     senderEntityId,
-                    KEY_PROTO,
-                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-                    AUTO_RENEW_ACCOUNT_ADDRESS,
-                    9999999999999L,
-                    TokenPauseStatusEnum.UNPAUSED,
-                    false);
-            nftPersist(
-                    NFT_TRANSFER_ADDRESS,
-                    AUTO_RENEW_ACCOUNT_ADDRESS,
-                    ownerEntityId,
-                    spenderEntityId,
-                    ownerEntityId,
-                    KEY_PROTO,
-                    TokenPauseStatusEnum.UNPAUSED,
-                    false);
+                    contract.getContractAddress(),
+                    persistTransaction,
+                    senderBalance);
+        } else {
+            ethTransaction = null;
+        }
+        final var contractResult = createContractResult(
+                consensusTimestamp,
+                contractEntityId,
+                callData,
+                senderEntityId,
+                transaction,
+                persistContractResult,
+                senderBalance);
+
+        persistContractActionsWithExpectedResult(
+                senderEntityId,
+                consensusTimestamp,
+                contractEntityId,
+                contract.getContractAddress(),
+                expectedResult,
+                senderBalance);
+
+        if (persistTransaction) {
+            persistContractTransactionHash(
+                    consensusTimestamp, contractEntityId, ethHash, senderEntityId, contractResult);
         }
 
-        @BeforeEach
-        void setUpArgumentCaptors() {
-            doAnswer(invocation -> {
-                        final var transactionProcessingResult =
-                                (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
-                        resultCaptor = transactionProcessingResult;
-                        contextCaptor = ContractCallContext.get();
-                        return transactionProcessingResult;
-                    })
-                    .when(processor)
-                    .execute(serviceParametersCaptor.capture(), gasCaptor.capture());
+        if (ethTransaction != null) {
+            return new TransactionHashParameter(Bytes.of(ethTransaction.getHash()));
+        } else {
+            return new TransactionIdParameter(transaction.getPayerAccountId(), instant(transaction.getValidStartNs()));
         }
+    }
 
-        @SneakyThrows
-        TransactionIdOrHashParameter setUp(
-                final ContractFunctionProviderEnum provider,
-                final TransactionType transactionType,
-                final Address contractAddress,
-                final Path contractAbiPath,
-                final boolean persistTransaction,
-                final boolean persistContractResult) {
-            assertThat(contractEntityId).isNotNull();
-            assertThat(senderEntityId).isNotNull();
+    private Transaction persistTransaction(
+            final long consensusTimestamp,
+            final EntityId contractEntityId,
+            final EntityId senderEntityId,
+            final TransactionType transactionType,
+            final boolean persistTransaction) {
+        final var validStartNs = consensusTimestamp - 1;
 
-            consensusTimestamp = domainBuilder.timestamp();
-            final var validStartNs = consensusTimestamp - 1;
-            final var ethHash = domainBuilder.bytes(32);
-            final var callData = functionEncodeDecoder
-                    .functionHashFor(provider.getName(), contractAbiPath, provider.getFunctionParameters())
-                    .toArray();
+        final var transactionBuilder = domainBuilder.transaction().customize(transaction -> transaction
+                .consensusTimestamp(consensusTimestamp)
+                .entityId(contractEntityId)
+                .payerAccountId(senderEntityId)
+                .type(transactionType.getProtoId())
+                .validStartNs(validStartNs));
 
-            final var transactionBuilder = domainBuilder.transaction().customize(transaction -> transaction
-                    .consensusTimestamp(consensusTimestamp)
-                    .entityId(contractEntityId)
-                    .payerAccountId(senderEntityId)
-                    .type(transactionType.getProtoId())
-                    .validStartNs(validStartNs));
-            final var transaction = persistTransaction ? transactionBuilder.persist() : transactionBuilder.get();
+        return persistTransaction ? transactionBuilder.persist() : transactionBuilder.get();
+    }
 
-            final EthereumTransaction ethTransaction;
-            if (transactionType == TransactionType.ETHEREUMTRANSACTION) {
-                final var ethTransactionBuilder = domainBuilder
-                        .ethereumTransaction(false)
-                        .customize(ethereumTransaction -> ethereumTransaction
-                                .callData(callData)
-                                .consensusTimestamp(consensusTimestamp)
-                                .gasLimit(GAS)
-                                .hash(ethHash)
-                                .payerAccountId(senderEntityId)
-                                .toAddress(contractAddress.toArray())
-                                .value(BigInteger.valueOf(AMOUNT).toByteArray()));
-                ethTransaction = persistTransaction ? ethTransactionBuilder.persist() : ethTransactionBuilder.get();
-            } else {
-                ethTransaction = null;
-            }
+    private EthereumTransaction persistEthereumTransaction(
+            final byte[] callData,
+            final long consensusTimestamp,
+            final byte[] ethHash,
+            final EntityId senderEntityId,
+            final String contractAddress,
+            final boolean persistTransaction,
+            final long value) {
+        final var ethTransactionBuilder = domainBuilder
+                .ethereumTransaction(false)
+                .customize(ethereumTransaction -> ethereumTransaction
+                        .callData(callData)
+                        .consensusTimestamp(consensusTimestamp)
+                        .gasLimit(TRANSACTION_GAS_LIMIT)
+                        .hash(ethHash)
+                        .payerAccountId(senderEntityId)
+                        .toAddress(Address.fromHexString(contractAddress).toArray())
+                        .value(
+                                value > 0
+                                        ? BigInteger.valueOf(value).toByteArray()
+                                        : BigInteger.valueOf(AMOUNT).toByteArray()));
+        return persistTransaction ? ethTransactionBuilder.persist() : ethTransactionBuilder.get();
+    }
 
-            final var contractResultBuilder = domainBuilder.contractResult().customize(contractResult -> contractResult
-                    .amount(AMOUNT)
-                    .consensusTimestamp(consensusTimestamp)
-                    .contractId(contractEntityId.getId())
-                    .functionParameters(callData)
-                    .gasLimit(GAS)
-                    .senderId(senderEntityId)
-                    .transactionHash(transaction.getTransactionHash()));
-            final var contractResult =
-                    persistContractResult ? contractResultBuilder.persist() : contractResultBuilder.get();
+    private ContractResult createContractResult(
+            final long consensusTimestamp,
+            final EntityId contractEntityId,
+            final byte[] callData,
+            final EntityId senderEntityId,
+            final Transaction transaction,
+            final boolean persistContractResult,
+            final long value) {
+        final var contractResultBuilder = domainBuilder.contractResult().customize(contractResult -> contractResult
+                .amount(value > 0 ? value : AMOUNT)
+                .consensusTimestamp(consensusTimestamp)
+                .contractId(contractEntityId.getId())
+                .functionParameters(callData)
+                .gasLimit(TRANSACTION_GAS_LIMIT)
+                .senderId(senderEntityId)
+                .transactionHash(transaction.getTransactionHash()));
+        return persistContractResult ? contractResultBuilder.persist() : contractResultBuilder.get();
+    }
 
-            final var expectedResult = provider.getExpectedResultFields() != null
-                    ? Bytes.fromHexString(functionEncodeDecoder.encodedResultFor(
-                                    provider.getName(), contractAbiPath, provider.getExpectedResultFields()))
-                            .toArray()
-                    : null;
-            final var expectedError = provider.getExpectedErrorMessage() != null
-                    ? provider.getExpectedErrorMessage().getBytes()
-                    : null;
+    private void persistContractActionsWithExpectedResult(
+            final EntityId senderEntityId,
+            final long consensusTimestamp,
+            final EntityId contractEntityId,
+            final String contractAddress,
+            final byte[] expectedResult,
+            final long value) {
+        domainBuilder
+                .contractAction()
+                .customize(contractAction -> contractAction
+                        .caller(senderEntityId)
+                        .callerType(EntityType.ACCOUNT)
+                        .consensusTimestamp(consensusTimestamp)
+                        .payerAccountId(senderEntityId)
+                        .recipientContract(contractEntityId)
+                        .recipientAddress(contractAddress.getBytes())
+                        .gas(TRANSACTION_GAS_LIMIT)
+                        .resultData(expectedResult)
+                        .resultDataType(OUTPUT.getNumber())
+                        .value(value > 0 ? value : AMOUNT))
+                .persist();
+    }
 
-            domainBuilder
-                    .contractAction()
-                    .customize(contractAction -> contractAction
-                            .caller(senderEntityId)
-                            .callerType(EntityType.ACCOUNT)
-                            .consensusTimestamp(consensusTimestamp)
-                            .payerAccountId(senderEntityId)
-                            .recipientContract(contractEntityId)
-                            .recipientAddress(contractAddress.toArrayUnsafe())
-                            .gas(GAS)
-                            .resultData(expectedError != null ? expectedError : expectedResult)
-                            .resultDataType(expectedError != null ? REVERT_REASON.getNumber() : OUTPUT.getNumber())
-                            .value(AMOUNT))
-                    .persist();
+    private void persistContractTransactionHash(
+            final long consensusTimestamp,
+            final EntityId contractEntityId,
+            final byte[] ethHash,
+            final EntityId senderEntityId,
+            final ContractResult contractResult) {
+        domainBuilder
+                .contractTransactionHash()
+                .customize(contractTransactionHash -> contractTransactionHash
+                        .consensusTimestamp(consensusTimestamp)
+                        .entityId(contractEntityId.getId())
+                        .hash(ethHash)
+                        .payerAccountId(senderEntityId.getId())
+                        .transactionResult(contractResult.getTransactionResult()))
+                .persist();
+    }
 
-            if (persistTransaction) {
-                domainBuilder
-                        .contractTransactionHash()
-                        .customize(contractTransactionHash -> contractTransactionHash
-                                .consensusTimestamp(consensusTimestamp)
-                                .entityId(contractEntityId.getId())
-                                .hash(ethHash)
-                                .payerAccountId(senderEntityId.getId())
-                                .transactionResult(contractResult.getTransactionResult()))
-                        .persist();
-            }
+    private Token fungibleTokenPersist() {
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
 
-            expectedServiceParameters = ContractDebugParameters.builder()
-                    .block(provider.getBlock())
-                    .callData(Bytes.of(callData))
-                    .consensusTimestamp(consensusTimestamp)
-                    .gas(GAS)
-                    .receiver(entityDatabaseAccessor
-                            .get(contractAddress, Optional.empty())
-                            .map(this::entityAddress)
-                            .orElse(Address.ZERO))
-                    .sender(new HederaEvmAccount(SENDER_ALIAS))
-                    .value(AMOUNT)
-                    .build();
+        return domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+    }
 
-            if (ethTransaction != null) {
-                return new TransactionHashParameter(Bytes.of(ethTransaction.getHash()));
-            } else {
-                return new TransactionIdParameter(
-                        transaction.getPayerAccountId(), instant(transaction.getValidStartNs()));
-            }
-        }
+    private Token fungibleTokenPersist(final Entity autoRenewAccount) {
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .persist();
 
-        @ParameterizedTest
-        @MethodSource("tracerOptions")
-        void callWithDifferentCombinationsOfTracerOptions(final OpcodeTracerOptions options) {
-            contractEntityId = dynamicEthCallContractPresist();
-            final var providerEnum = DynamicCallsContractFunctions.MINT_NFT;
+        return domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(autoRenewAccount.toEntityId()))
+                .persist();
+    }
 
-            final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    providerEnum,
-                    TransactionType.ETHEREUMTRANSACTION,
-                    DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS,
-                    DYNAMIC_ETH_CALLS_ABI_PATH,
-                    true,
-                    true);
+    private Token nftPersist(final EntityId treasuryEntityId) {
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(TOKEN).autoRenewAccountId(treasuryEntityId.getId()))
+                .persist();
 
-            final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .treasuryAccountId(treasuryEntityId))
+                .persist();
 
-            verifyOpcodesResponse(providerEnum, DYNAMIC_ETH_CALLS_ABI_PATH, opcodesResponse, options);
-        }
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+        return token;
+    }
 
-        @ParameterizedTest
-        @EnumSource(NestedEthCallContractFunctions.class)
-        void callWithNestedEthCalls(final ContractFunctionProviderEnum providerEnum) {
-            contractEntityId = nestedEthCallsContractPersist();
+    private Entity accountPersist() {
+        return domainBuilder.entity().customize(a -> a.evmAddress(null)).persist();
+    }
 
-            final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    providerEnum,
-                    TransactionType.ETHEREUMTRANSACTION,
-                    NESTED_ETH_CALLS_CONTRACT_ADDRESS,
-                    NESTED_CALLS_ABI_PATH,
-                    true,
-                    true);
-            final OpcodeTracerOptions options = new OpcodeTracerOptions();
+    private Entity accountPersistWithBalance(final long balance) {
+        final var entity = domainBuilder
+                .entity()
+                .customize(e -> e.evmAddress(null).balance(balance))
+                .persist();
 
-            final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(entity.getCreatedTimestamp(), EntityId.of(2)))
+                        .balance(balance))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(entity.getCreatedTimestamp(), entity.toEntityId()))
+                        .balance(balance))
+                .persist();
 
-            verifyOpcodesResponse(providerEnum, NESTED_CALLS_ABI_PATH, opcodesResponse, options);
-        }
-
-        @Test
-        void callWithContractResultNotFoundExceptionTest() {
-            contractEntityId = systemExchangeRateContractPersist();
-
-            final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    ContractCallSystemPrecompileHistoricalTest.ExchangeRateFunctions.TINYBARS_TO_TINYCENTS,
-                    TransactionType.CONTRACTCALL,
-                    EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS,
-                    EXCHANGE_RATE_PRECOMPILE_ABI_PATH,
-                    true,
-                    false);
-            final OpcodeTracerOptions options = new OpcodeTracerOptions();
-
-            assertThatExceptionOfType(EntityNotFoundException.class)
-                    .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
-                    .withMessage("Contract result not found: " + consensusTimestamp);
-        }
-
-        @Test
-        void callWithTransactionNotFoundExceptionTest() {
-            contractEntityId = systemExchangeRateContractPersist();
-
-            final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    ContractCallSystemPrecompileHistoricalTest.ExchangeRateFunctions.TINYCENTS_TO_TINYBARS,
-                    TransactionType.CONTRACTCALL,
-                    EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS,
-                    EXCHANGE_RATE_PRECOMPILE_ABI_PATH,
-                    false,
-                    true);
-            final OpcodeTracerOptions options = new OpcodeTracerOptions();
-
-            assertThatExceptionOfType(EntityNotFoundException.class)
-                    .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
-                    .withMessage("Transaction not found: " + transactionIdOrHash);
-        }
-
-        @Test
-        void callWithContractTransactionHashNotFoundExceptionTest() {
-            contractEntityId = nestedEthCallsContractPersist();
-
-            final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    NestedEthCallContractFunctions.CREATE_FUNGIBLE_TOKEN_NO_KEYS,
-                    TransactionType.ETHEREUMTRANSACTION,
-                    NESTED_ETH_CALLS_CONTRACT_ADDRESS,
-                    NESTED_CALLS_ABI_PATH,
-                    false,
-                    true);
-            final OpcodeTracerOptions options = new OpcodeTracerOptions();
-
-            assertThatExceptionOfType(EntityNotFoundException.class)
-                    .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
-                    .withMessage("Contract transaction hash not found: " + transactionIdOrHash);
-        }
-
-        private void verifyOpcodesResponse(
-                final ContractFunctionProviderEnum providerEnum,
-                final Path contractAbiPath,
-                final OpcodesResponse opcodesResponse,
-                final OpcodeTracerOptions options) {
-            assertThat(opcodesResponse).isEqualTo(expectedOpcodesResponse(resultCaptor, contextCaptor.getOpcodes()));
-            assertThat(serviceParametersCaptor.getValue()).isEqualTo(expectedServiceParameters);
-            assertThat(gasCaptor.getValue()).isEqualTo(expectedServiceParameters.getGas());
-            assertThat(contextCaptor.getOpcodeTracerOptions()).isEqualTo(options);
-
-            if (providerEnum.getExpectedErrorMessage() != null) {
-                assertThat(opcodesResponse.getOpcodes().getLast().getReason())
-                        .isEqualTo(Hex.encodeHexString(
-                                providerEnum.getExpectedErrorMessage().getBytes()));
-            } else if (!opcodesResponse.getFailed() && providerEnum.getExpectedResultFields() != null) {
-                assertThat(opcodesResponse.getReturnValue())
-                        .isEqualTo(Bytes
-                                // trims the leading zeros
-                                .fromHexString(functionEncodeDecoder.encodedResultFor(
-                                        providerEnum.getName(),
-                                        contractAbiPath,
-                                        providerEnum.getExpectedResultFields()))
-                                .toHexString());
-            }
-        }
-
-        private OpcodesResponse expectedOpcodesResponse(
-                final HederaEvmTransactionProcessingResult result, final List<Opcode> opcodes) {
-            return new OpcodesResponse()
-                    .address(result.getRecipient()
-                            .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
-                            .map(this::entityAddress)
-                            .map(Address::toHexString)
-                            .orElse(Address.ZERO.toHexString()))
-                    .contractId(result.getRecipient()
-                            .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
-                            .map(Entity::toEntityId)
-                            .map(EntityId::toString)
-                            .orElse(null))
-                    .failed(!result.isSuccessful())
-                    .gas(result.getGasUsed())
-                    .opcodes(opcodes.stream()
-                            .map(opcode -> new com.hedera.mirror.rest.model.Opcode()
-                                    .depth(opcode.depth())
-                                    .gas(opcode.gas())
-                                    .gasCost(opcode.gasCost())
-                                    .op(opcode.op())
-                                    .pc(opcode.pc())
-                                    .reason(opcode.reason())
-                                    .stack(opcode.stack().stream()
-                                            .map(Bytes::toHexString)
-                                            .toList())
-                                    .memory(opcode.memory().stream()
-                                            .map(Bytes::toHexString)
-                                            .toList())
-                                    .storage(opcode.storage().entrySet().stream()
-                                            .collect(Collectors.toMap(
-                                                    entry -> entry.getKey().toHexString(),
-                                                    entry -> entry.getValue().toHexString()))))
-                            .toList())
-                    .returnValue(Optional.ofNullable(result.getOutput())
-                            .map(Bytes::toHexString)
-                            .orElse(Bytes.EMPTY.toHexString()));
-        }
-
-        public Address entityAddress(Entity entity) {
-            if (entity == null) {
-                return Address.ZERO;
-            }
-            if (entity.getEvmAddress() != null && entity.getEvmAddress().length == EVM_ADDRESS_LENGTH) {
-                return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
-            }
-            if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
-                return Address.wrap(Bytes.wrap(entity.getAlias()));
-            }
-            return toAddress(entity.toEntityId());
-        }
-
-        @Getter
-        @RequiredArgsConstructor
-        private enum DynamicCallsContractFunctions implements ContractFunctionProviderEnum {
-            MINT_NFT("mintTokenGetTotalSupplyAndBalanceOfTreasury", new Object[] {
-                NFT_ADDRESS,
-                0L,
-                new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()},
-                OWNER_ADDRESS
-            });
-
-            private final String name;
-            private final Object[] functionParameters;
-        }
+        return entity;
     }
 }

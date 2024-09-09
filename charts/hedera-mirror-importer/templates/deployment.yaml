@@ -50,7 +50,7 @@ spec:
             - name: {{ $name }}
             {{- toYaml $config | nindent 14 }}
             {{- end }}
-      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+      imagePullSecrets: {{ toYaml .Values.image.pullSecrets | nindent 8 }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
       priorityClassName: {{ .Values.priorityClassName }}
       securityContext: {{ toYaml .Values.podSecurityContext | nindent 8 }}

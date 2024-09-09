@@ -1318,7 +1318,7 @@ paths:
         - tokens
 tags:
   - name: accounts
-    description: The accounts object represents the information associated with an account entity and returns a list of account information.
+    description: The accounts object represents the information associated with an account entity and returns a list of account information.The accounts list endpoint is cached and not updated as frequently as the account lookup by a specific ID endpoint.
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#accounts
   - name: balances
@@ -1326,9 +1326,9 @@ tags:
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#balances
   - name: contracts
-    description: The contracts objects represents the information associated with contract entities.
+    description: The contracts objects represents the information associated with contract entities.The contracts list endpoint is cached and not updated as frequently as the contract lookup by a specific ID endpoint.
   - name: schedules
-    description: The schedules object represents the information associated with a schedule entity.
+    description: The schedules object represents the information associated with a schedule entity.The schedules list endpoints is cached and not updated as frequently as the schedule lookup by a specific ID endpoint.
   - name: transactions
     description: The transaction object represents the transactions processed on the Hedera network.
     externalDocs:
@@ -1338,10 +1338,10 @@ tags:
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#topic-messages
   - name: tokens
-    description: The tokens object represents the information associated with a token entity and returns a list of token information.
+    description: The tokens object represents the information associated with a token entity and returns a list of token information.The tokens list endpoint is cached and not updated as frequently as the token lookup by a specific ID.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.113.0-SNAPSHOT
+  version: 0.114.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"

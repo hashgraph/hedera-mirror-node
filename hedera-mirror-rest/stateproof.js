@@ -27,46 +27,20 @@ import TransactionId from './transactionId';
 import * as utils from './utils';
 import {NoSuchKey} from '@aws-sdk/client-s3';
 
+const fileQuery = `select file_data,
+                         node_count,
+                         string_agg(memo, ',')                                 as memos,
+                         string_agg(cast(abe.node_account_id as varchar), ',') as node_account_ids
+                  from address_book ab
+                           left join address_book_entry abe
+                                     on ab.start_consensus_timestamp = abe.consensus_timestamp
+                  where start_consensus_timestamp <= $1
+                    and file_id = 102
+                  group by start_consensus_timestamp
+                  order by start_consensus_timestamp`;
+
 const recordFileSuffixRegex = /\.rcd(\.gz)?$/;
-
-/**
- * Get the consensus_timestamp of the transaction. Throws exception if no such successful transaction found or multiple such
- * transactions found.
- * @param {TransactionId} transactionId
- * @param {Number} nonce
- * @param {Boolean} scheduled
- * @returns {Promise<String>} consensus_timestamp of the successful transaction if found
- */
-const getSuccessfulTransactionConsensusNs = async (transactionId, nonce, scheduled) => {
-  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), nonce, scheduled];
-  const sqlQuery = `SELECT consensus_timestamp
-                    FROM transaction
-                    WHERE payer_account_id = $1
-                      AND valid_start_ns = $2
-                      AND nonce = $3
-                      AND scheduled = $4
-                      AND result = 22`; // only the successful transaction
-
-  const {rows} = await pool.queryQuietly(sqlQuery, sqlParams);
-  if (_.isEmpty(rows)) {
-    throw new NotFoundError('Transaction not found');
-  } else if (rows.length > 1) {
-    throw new DbError('Invalid state, more than one transaction found');
-  }
-
-  return _.first(rows).consensus_timestamp;
-};
-
-/**
- * Get the RCD file name, raw bytes if available, and the account ID of the node it was downloaded from, where
- * consensusNs is in the range [consensus_start, consensus_end]. Throws exception if no such RCD file found.
- *
- * @param {string} consensusNs consensus timestamp within the range of the RCD file to search
- * @returns {Promise<{Buffer, String, String}>} RCD file name, raw bytes, and the account ID of the node the file was
- *                                              downloaded from
- */
-const getRCDFileInfoByConsensusNs = async (consensusNs) => {
-  const sqlQuery = `select bytes, name, node_account_id, version
+const recordFileQuery = `select bytes, name, node_account_id, version
                     from record_file rf
                              join address_book ab
                                   on (ab.end_consensus_timestamp is null and
@@ -80,17 +54,60 @@ const getRCDFileInfoByConsensusNs = async (consensusNs) => {
                                   on rf.node_id = abe.node_id and
                                      abe.consensus_timestamp =
                                      ab.start_consensus_timestamp
-                    where consensus_end >= $1
+                    where consensus_end >= $1 and consensus_end <= $2
                     order by consensus_end
                     limit 1`;
 
-  const {rows} = await pool.queryQuietly(sqlQuery, consensusNs);
+const transactionIdQuery = `select consensus_timestamp
+                    from transaction
+                    where payer_account_id = $1
+                      and valid_start_ns = $2
+                      and nonce = $3
+                      and scheduled = $4
+                      and result = 22
+                      and consensus_timestamp >= $2
+                      and consensus_timestamp <= $5`;
+
+/**
+ * Get the consensus_timestamp of the transaction. Throws exception if no such successful transaction found or multiple such
+ * transactions found.
+ * @param {TransactionId} transactionId
+ * @param {Number} nonce
+ * @param {Boolean} scheduled
+ * @returns {Promise<BigInt>} consensus_timestamp of the successful transaction if found
+ */
+const getSuccessfulTransactionConsensusTimestamp = async (transactionId, nonce, scheduled) => {
+  const validStart = BigInt(transactionId.getValidStartNs());
+  const maxConsensusTimestamp = validStart + config.query.maxTransactionConsensusTimestampRangeNs;
+  const sqlParams = [transactionId.getEntityId().getEncodedId(), validStart, nonce, scheduled, maxConsensusTimestamp];
+  const {rows} = await pool.queryQuietly(transactionIdQuery, sqlParams);
+
   if (_.isEmpty(rows)) {
-    throw new NotFoundError(`No matching RCD file found with ${consensusNs} in the range`);
+    throw new NotFoundError('Transaction not found');
+  } else if (rows.length > 1) {
+    throw new DbError('Invalid state, more than one transaction found');
+  }
+
+  return _.first(rows).consensus_timestamp;
+};
+
+/**
+ * Get the RCD file name, raw bytes if available, and the account ID of the node it was downloaded from, where
+ * consensusTimestamp is in the range [consensus_start, consensus_end]. Throws exception if no such RCD file found.
+ *
+ * @param {BigInt} consensusTimestamp consensus timestamp within the range of the RCD file to search
+ * @returns {Promise<{Buffer, String, String}>} RCD file name, raw bytes, and the account ID of the node the file was
+ *                                              downloaded from
+ */
+const getRCDFileInfoByConsensusTimestamp = async (consensusTimestamp) => {
+  const upperBound = consensusTimestamp + config.query.maxRecordFileCloseIntervalNs;
+  const {rows} = await pool.queryQuietly(recordFileQuery, [consensusTimestamp, upperBound]);
+  if (_.isEmpty(rows)) {
+    throw new NotFoundError(`No matching RCD file found with ${consensusTimestamp} in the range`);
   }
 
   const info = rows[0];
-  logger.debug(`Found RCD file ${info.name} for consensus timestamp ${consensusNs}`);
+  logger.debug(`Found RCD file ${info.name} for consensus timestamp ${consensusTimestamp}`);
   return {
     bytes: info.bytes,
     name: info.name,
@@ -100,33 +117,20 @@ const getRCDFileInfoByConsensusNs = async (consensusNs) => {
 };
 
 /**
- * Get the chain of address books and node account IDs at or before consensusNs.
- * @param {String} consensusNs
+ * Get the chain of address books and node account IDs at or before consensusTimestamp.
+ * @param {BigInt} consensusTimestamp
  * @returns {Promise<Object>} List of base64 address book data in chronological order and list of node account IDs.
  */
-const getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
-  // Get the chain of address books whose start_consensus_timestamp <= consensusNs, also aggregate the corresponding
+const getAddressBooksAndNodeAccountIdsByConsensusTimestamp = async (consensusTimestamp) => {
+  // Get the chain of address books whose start_consensus_timestamp <= consensusTimestamp, also aggregate the corresponding
   // memo and node account ids from table address_book_entry
-  let sqlQuery = `SELECT file_data,
-                         node_count,
-                         string_agg(memo, ',')                                 AS memos,
-                         string_agg(cast(abe.node_account_id AS VARCHAR), ',') AS node_account_ids
-                  FROM address_book ab
-                           LEFT JOIN address_book_entry abe
-                                     ON ab.start_consensus_timestamp = abe.consensus_timestamp
-                  WHERE start_consensus_timestamp <= $1
-                    AND file_id = 102
-                  GROUP BY start_consensus_timestamp`;
-  if (config.stateproof.addressBookHistory) {
-    sqlQuery += `
-      ORDER BY start_consensus_timestamp`;
-  } else {
-    sqlQuery += `
-      ORDER BY start_consensus_timestamp DESC
-      LIMIT 1`;
+  let sqlQuery = fileQuery;
+
+  if (!config.stateproof.addressBookHistory) {
+    sqlQuery += ` desc limit 1`;
   }
 
-  const {rows} = await pool.queryQuietly(sqlQuery, consensusNs);
+  const {rows} = await pool.queryQuietly(sqlQuery, consensusTimestamp);
   if (_.isEmpty(rows)) {
     throw new NotFoundError('No address book found');
   }
@@ -143,7 +147,7 @@ const getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
     throw new DbError('Number of nodes found mismatch node_count in latest address book');
   }
 
-  logger.debug(`Found the list of nodes "${nodeAccountIds}" for consensus timestamp ${consensusNs}`);
+  logger.debug(`Found the list of nodes "${nodeAccountIds}" for consensus timestamp ${consensusTimestamp}`);
   const addressBooks = _.map(rows, (row) => Buffer.from(row.file_data).toString('base64'));
   return {
     addressBooks,
@@ -305,9 +309,9 @@ const getStateProofForTransaction = async (req, res) => {
 
   const transactionId = TransactionId.fromString(req.params.transactionId);
   const {nonce, scheduled} = getQueryParamValues(filters);
-  const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId, nonce, scheduled);
-  const rcdFileInfo = await getRCDFileInfoByConsensusNs(consensusNs);
-  const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs);
+  const consensusTimestamp = await getSuccessfulTransactionConsensusTimestamp(transactionId, nonce, scheduled);
+  const rcdFileInfo = await getRCDFileInfoByConsensusTimestamp(consensusTimestamp);
+  const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusTimestamp(consensusTimestamp);
 
   const sigFilename = rcdFileInfo.name.replace(recordFileSuffixRegex, '.rcd_sig');
   const sigFileObjects = await downloadRecordStreamFilesFromObjectStorage(
@@ -361,10 +365,10 @@ if (utils.isTestEnv()) {
     canReachConsensus,
     downloadRecordStreamFilesFromObjectStorage,
     formatCompactableRecordFile,
-    getAddressBooksAndNodeAccountIdsByConsensusNs,
+    getAddressBooksAndNodeAccountIdsByConsensusTimestamp,
     getQueryParamValues,
-    getRCDFileInfoByConsensusNs,
-    getSuccessfulTransactionConsensusNs,
+    getRCDFileInfoByConsensusTimestamp,
+    getSuccessfulTransactionConsensusTimestamp,
   });
 }
 

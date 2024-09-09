@@ -46,6 +46,7 @@ public class ContractCallTestUtil {
     public static final String ESTIMATE_GAS_ERROR_MESSAGE =
             "Expected gas usage to be within the expected range, but it was not. Estimate: %d, Actual: %d";
     public static final Long ZERO_VALUE = 0L;
+    public static final long CREATE_TOKEN_VALUE = 3070 * 100_000_000L;
 
     public static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
@@ -79,7 +80,7 @@ public class ContractCallTestUtil {
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *
      * @param estimatedGas The expected gas used from the initial call.
-     * @param actualGas   The actual gas used.
+     * @param actualGas    The actual gas used.
      * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
      */
     public static boolean isWithinExpectedGasRange(final long estimatedGas, final long actualGas) {

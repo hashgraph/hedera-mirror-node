@@ -34,6 +34,7 @@ import * as accountsTokenAllowance from './accountsTokenAllowance.js';
 import * as balances from './balances.js';
 import * as balancesAccount from './balancesAccount.js';
 import * as balancesAccountTimestamp from './balancesAccountTimestamp.js';
+import * as balancesPublicKeyTimestamp from './balancesPublicKeyTimestamp.js';
 import * as balancesTimestamp from './balancesTimestamp.js';
 import * as blocks from './blocks.js';
 import * as blocksNumber from './blocksNumber.js';
@@ -52,6 +53,7 @@ import * as networkFees from './networkFees.js';
 import * as networkNodes from './networkNodes.js';
 import * as networkStake from './networkStake.js';
 import * as networkSupply from './networkSupply.js';
+import * as networkSupplyTimestamp from './networkSupplyTimestamp.js';
 import * as rampUp from './rampUp.js';
 import * as schedules from './schedules.js';
 import * as schedulesAccount from './schedulesAccount.js';
@@ -96,6 +98,7 @@ const tests = {
   balances,
   balancesAccount,
   balancesAccountTimestamp,
+  balancesPublicKeyTimestamp,
   balancesTimestamp,
   blocks,
   blocksNumber,
@@ -114,6 +117,7 @@ const tests = {
   networkNodes,
   networkStake,
   networkSupply,
+  networkSupplyTimestamp,
   rampUp,
   schedules,
   schedulesAccount,

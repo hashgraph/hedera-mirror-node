@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Export the PIP3 bin path
+export PATH="${HOME}/.local/bin:${PATH}"
+
 # Define Solidity versions and output directories
 OUTPUT_DIR="./build/generated/sources/web3j/test/java"
 SOLC_VERSIONS=("0.8.7")
@@ -22,6 +25,9 @@ case $OS in
         ;;
 esac
 
+chmod +x "$HOME/.web3j/source.sh"
+source $HOME/.web3j/source.sh
+
 # Loop over Solidity versions
 for i in "${!SOLC_VERSIONS[@]}"; do
   # Install solc-select version
@@ -38,7 +44,7 @@ for i in "${!SOLC_VERSIONS[@]}"; do
     solc --base-path . --allow-paths node_modules --abi --bin --overwrite -o ${TEMP_DIR} "$contract_path"
 
     # Generate Java files using web3j
-    ../.gradle/web3j/bin/web3j generate solidity \
+    $HOME/.web3j/web3j generate solidity \
       -b "${TEMP_DIR}/${contract_name}.bin" \
       -a "${TEMP_DIR}/${contract_name}.abi" \
       -o "$OUTPUT_DIR" \

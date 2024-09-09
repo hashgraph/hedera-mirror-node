@@ -1124,8 +1124,7 @@ const buildAndValidateFilters = (
   query,
   acceptedParameters,
   filterValidator = filterValidityChecks,
-  filterDependencyChecker = filterDependencyCheck,
-  excludedCombinatons = [[]]
+  filterDependencyChecker = filterDependencyCheck
 ) => {
   const {badParams, filters} = buildFilters(query);
   const {invalidParams, unknownParams} = validateAndParseFilters(filters, filterValidator, acceptedParameters);
@@ -1402,12 +1401,15 @@ const getPoolClass = () => {
   Pool.prototype.queryQuietly = async function (query, params = [], preQueryHint = undefined) {
     let client;
     let result;
+    let startTime;
+
     params = Array.isArray(params) ? params : [params];
     const clientErrorCallback = (error) => {
       logger.error(`error event emitted on pg pool. ${error.stack}`);
     };
 
     if (logger.isTraceEnabled()) {
+      startTime = Date.now();
       const callerInfo = new Error().stack
         .split('\n')
         .splice(1)
@@ -1433,6 +1435,11 @@ const getPoolClass = () => {
         await client.query(`begin; ${preQueryHint}`);
         result = await client.query(query, params);
         await client.query('commit');
+      }
+
+      if (logger.isTraceEnabled()) {
+        const elapsed = Date.now() - startTime;
+        logger.trace(`Query took ${elapsed} ms and returned ${result.rows.length} entries`);
       }
 
       return result;

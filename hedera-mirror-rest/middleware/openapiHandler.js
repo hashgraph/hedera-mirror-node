@@ -108,7 +108,9 @@ const openApiValidator = (app) => {
       apiSpec: path.resolve(process.cwd(), getSpecPath(1)),
       ignoreUndocumented: true,
       validateRequests: false,
-      validateResponses: true,
+      validateResponses: {
+        allErrors: true,
+      },
     })
   );
 };
