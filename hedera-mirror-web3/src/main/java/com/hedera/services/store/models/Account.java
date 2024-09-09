@@ -39,12 +39,9 @@ import org.hyperledger.besu.datatypes.Address;
  * This model is used as a value in a special state (CachingStateFrame), used for speculative write operations. Object
  * immutability is required for this model in order to be used seamlessly in the state.
  * <p>
- * Differences with the original:
- * 1. Removed fields like memo, key, isReceiverSigRequired, isSmartContract
- * 2. Added field accountAddress for convenience
- * 3. Changed collection types to SortedMap and SortedSet
- * 4. Added constructors and set methods for creating new instances and achieve immutability
- * 6. Added factory method that returns empty instance
+ * Differences with the original: 1. Removed fields like memo, key, isReceiverSigRequired, isSmartContract 2. Added
+ * field accountAddress for convenience 3. Changed collection types to SortedMap and SortedSet 4. Added constructors and
+ * set methods for creating new instances and achieve immutability 6. Added factory method that returns empty instance
  * 7. Added isEmptyAccount() method
  */
 @Getter
@@ -146,8 +143,8 @@ public class Account extends HederaEvmAccount {
     }
 
     /**
-     * Create a partial account with only ID and balance values.
-     * Used for treasury accounts as those are the only fields we need.
+     * Create a partial account with only ID and balance values. Used for treasury accounts as those are the only fields
+     * we need.
      */
     public Account(Long entityId, Id id, long balance) {
         this(
@@ -175,8 +172,8 @@ public class Account extends HederaEvmAccount {
     }
 
     /**
-     * Create a partial account with only alias, ID and balance values.
-     * Used for treasury accounts as those are the only fields we need.
+     * Create a partial account with only alias, ID and balance values. Used for treasury accounts as those are the only
+     * fields we need.
      */
     public Account(ByteString alias, Long entityId, Id id, long balance) {
         this(
@@ -212,6 +209,14 @@ public class Account extends HederaEvmAccount {
                 0L, Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)), Long.MAX_VALUE);
     }
 
+    public static Account getDummySenderAccountWithAlias(Address senderAddress) {
+        return new Account(
+                ByteString.copyFrom(senderAddress.toArray()),
+                0L,
+                Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)),
+                Long.MAX_VALUE);
+    }
+
     public Account autoAssociate() {
         final int updatedNumAssociations = getNumAssociations() + 1;
         return toBuilder()
@@ -232,8 +237,16 @@ public class Account extends HederaEvmAccount {
         return balance != null && balance.get() != null ? balance.get() : 0L;
     }
 
+    public Account setBalance(long balance) {
+        return toBuilder().balance(() -> balance).build();
+    }
+
     public Long getOwnedNfts() {
         return ownedNfts != null ? ownedNfts.get() : 0L;
+    }
+
+    public Account setOwnedNfts(long newOwnedNfts) {
+        return toBuilder().ownedNfts(() -> newOwnedNfts).build();
     }
 
     public SortedMap<EntityNum, Long> getCryptoAllowances() {
@@ -244,16 +257,34 @@ public class Account extends HederaEvmAccount {
         return fungibleTokenAllowances != null ? fungibleTokenAllowances.get() : Collections.emptySortedMap();
     }
 
+    public Account setFungibleTokenAllowances(SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+        return toBuilder()
+                .fungibleTokenAllowances(() -> fungibleTokenAllowances)
+                .build();
+    }
+
     public SortedSet<FcTokenAllowanceId> getApproveForAllNfts() {
         return approveForAllNfts != null ? approveForAllNfts.get() : Collections.emptySortedSet();
+    }
+
+    public Account setApproveForAllNfts(SortedSet<FcTokenAllowanceId> approveForAllNfts) {
+        return toBuilder().approveForAllNfts(() -> approveForAllNfts).build();
     }
 
     public Integer getNumAssociations() {
         return numAssociations != null ? numAssociations.get() : 0;
     }
 
+    public Account setNumAssociations(int numAssociations) {
+        return toBuilder().numAssociations(() -> numAssociations).build();
+    }
+
     public Integer getNumPositiveBalances() {
         return numPositiveBalances != null ? numPositiveBalances.get() : 0;
+    }
+
+    public Account setNumPositiveBalances(int newNumPositiveBalances) {
+        return toBuilder().numPositiveBalances(() -> newNumPositiveBalances).build();
     }
 
     public boolean isAutoAssociateEnabled() {
@@ -262,14 +293,6 @@ public class Account extends HederaEvmAccount {
 
     public boolean isEmptyAccount() {
         return this.equals(getEmptyAccount());
-    }
-
-    public Account setApproveForAllNfts(SortedSet<FcTokenAllowanceId> approveForAllNfts) {
-        return toBuilder().approveForAllNfts(() -> approveForAllNfts).build();
-    }
-
-    public Account setBalance(long balance) {
-        return toBuilder().balance(() -> balance).build();
     }
 
     public Account setCryptoAllowance(SortedMap<EntityNum, Long> cryptoAllowances) {
@@ -284,12 +307,6 @@ public class Account extends HederaEvmAccount {
         return toBuilder().expiry(expiry).build();
     }
 
-    public Account setFungibleTokenAllowances(SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
-        return toBuilder()
-                .fungibleTokenAllowances(() -> fungibleTokenAllowances)
-                .build();
-    }
-
     public Account setIsSmartContract(boolean isSmartContract) {
         return toBuilder().isSmartContract(isSmartContract).build();
     }
@@ -298,20 +315,8 @@ public class Account extends HederaEvmAccount {
         return toBuilder().maxAutoAssociations(maxAutoAssociations).build();
     }
 
-    public Account setNumAssociations(int numAssociations) {
-        return toBuilder().numAssociations(() -> numAssociations).build();
-    }
-
     public Account setNumTreasuryTitles(int numTreasuryTitles) {
         return toBuilder().numTreasuryTitles(numTreasuryTitles).build();
-    }
-
-    public Account setNumPositiveBalances(int newNumPositiveBalances) {
-        return toBuilder().numPositiveBalances(() -> newNumPositiveBalances).build();
-    }
-
-    public Account setOwnedNfts(long newOwnedNfts) {
-        return toBuilder().ownedNfts(() -> newOwnedNfts).build();
     }
 
     public Account setUsedAutoAssociations(int usedCount) {
@@ -321,8 +326,12 @@ public class Account extends HederaEvmAccount {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Account account = (Account) o;
         return getExpiry() == account.getExpiry()
                 && isDeleted() == account.isDeleted()
