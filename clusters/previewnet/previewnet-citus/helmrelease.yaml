@@ -40,7 +40,6 @@ spec:
     - kind: Secret
       name: mirror
   values:
-    grpc:
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "PREVIEWNET"
