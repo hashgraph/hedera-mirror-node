@@ -7,5 +7,5 @@ metadata:
   namespace: {{ include "hedera-mirror.namespace" . }}
 spec:
   postgresql.conf: {{ tpl (toYaml .Values.stackgres.coordinator.config) . | nindent 4 }}
-  postgresVersion: {{ .Values.stackgres.postgresVersion | quote }}
+  postgresVersion: {{ mustRegexReplaceAll "^(\\d+)(\\.\\d+)+" .Values.stackgres.postgresVersion "${1}" | quote }}
 {{- end -}}

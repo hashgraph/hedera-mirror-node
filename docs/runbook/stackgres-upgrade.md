@@ -29,7 +29,8 @@ After successful deployment of the upgraded Stackgres Helm chart, we need to per
    spec:
      maxRetries: 1
      op: securityUpgrade
-     priorityClassName: critical
+     scheduling:
+       priorityClassName: critical
      securityUpgrade:
        method: InPlace
      sgShardedCluster: mirror-citus
