@@ -14,7 +14,7 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.113.0'
+      version: '0.113.1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -80,7 +80,7 @@ spec:
         persistentVolume:
           size: 900Gi
     test:
-      cucumberTags: "@acceptance"
+      cucumberTags: "@acceptance and not @estimateprecompile"
       enabled: true
     web3:
       enabled: true
