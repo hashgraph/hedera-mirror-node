@@ -25,28 +25,32 @@ import {cacheKeyGenerator, responseCacheCheckHandler, responseCacheUpdateHandler
 import {responseCacheKeyLabel} from '../../constants';
 import {JSONStringify} from '../../utils.js';
 
-const {
-  response: {headers},
-} = config;
-
+let cache;
 let redisContainer;
-config.redis.enabled = true;
-const cache = new Cache('testApiResponse:');
-setCache(cache);
 
 beforeAll(async () => {
+  config.redis.enabled = true;
   redisContainer = await new RedisContainer().withStartupTimeout(20000).start();
-  config.redis.uri = `0.0.0.0:${redisContainer.getMappedPort(6379)}`;
   logger.info('Started Redis container');
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
-  cache.stop();
   await redisContainer.stop({signal: 'SIGKILL', t: 5});
   logger.info('Stopped Redis container');
 });
 
-describe('Response cache check middleware', () => {
+beforeEach(async () => {
+  config.redis.uri = `0.0.0.0:${redisContainer.getMappedPort(6379)}`;
+  cache = new Cache();
+  setCache(cache);
+  await cache.clear();
+});
+
+afterEach(async () => {
+  await cache.stop();
+});
+
+describe('Response cache middleware', () => {
   let mockNextMiddleware, mockRequest, mockResponse, responseData;
 
   beforeEach(() => {
@@ -75,68 +79,98 @@ describe('Response cache check middleware', () => {
     };
   });
 
-  test('Cache miss', async () => {
-    // The cache is empty, thus a cache miss is expected.
-    await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
+  describe('Cache check front-end', () => {
+    test('Cache miss', async () => {
+      // The cache is empty, thus a cache miss is expected.
+      await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
 
-    // Middleware must provide cache key in locals[] to be utilized downstream.
-    const expectedCacheKey = cacheKeyGenerator(mockRequest);
-    const cacheKey = mockResponse.locals[responseCacheKeyLabel];
-    expect(cacheKey).toEqual(expectedCacheKey);
+      // Middleware must provide cache key in locals[] to be utilized downstream.
+      const expectedCacheKey = cacheKeyGenerator(mockRequest);
+      const cacheKey = mockResponse.locals[responseCacheKeyLabel];
+      expect(cacheKey).toEqual(expectedCacheKey);
 
-    // Middleware must not have handled the response directly.
-    expect(mockResponse.removeHeader).not.toBeCalled();
-    expect(mockResponse.send).not.toBeCalled();
-    expect(mockResponse.set).not.toBeCalled();
-    expect(mockResponse.status).not.toBeCalled();
+      // Middleware must not have handled the response directly.
+      expect(mockResponse.removeHeader).not.toBeCalled();
+      expect(mockResponse.send).not.toBeCalled();
+      expect(mockResponse.set).not.toBeCalled();
+      expect(mockResponse.status).not.toBeCalled();
 
-    // Middleware must invoke provided next() function to continue normal API request processing.
-    expect(mockNextMiddleware).toBeCalled();
+      // Middleware must invoke provided next() function to continue normal API request processing.
+      expect(mockNextMiddleware).toBeCalled();
+    });
+
+    test('Cache miss with bypass attempts', async () => {
+      const logSpy = jest.spyOn(logger, 'warn');
+
+      mockRequest.headers['pragma'] = 'no-cache';
+
+      // The cache is empty, thus a cache miss is expected.
+      await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
+
+      mockRequest.headers['pragma'] = undefined;
+      mockRequest.headers['cache-control'] = 'no-cache';
+
+      // The cache is empty, thus a cache miss is expected.
+      await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
+
+      expect(logSpy).toHaveBeenNthCalledWith(1, expect.stringContaining('attempted cache bypass'));
+      expect(logSpy).toHaveBeenNthCalledWith(2, expect.stringContaining('attempted cache bypass'));
+      logSpy.mockRestore();
+    });
+
+    test('Cache hit', async () => {
+      const cachedBody = JSONStringify({a: 'b'});
+      const cachedHeaders = {
+        'cache-control': 'public, max-age=60',
+        'content-encoding': 'gzip',
+        etag: 'W/"5c35-Gld7z2oXbbJUpCcZpRCrhYePM04',
+        vary: 'accept-encoding',
+      };
+      const cachedStatusCode = 200;
+
+      // Place the expected response in the cache.
+      const cachedResponse = new CachedApiResponse(cachedStatusCode, cachedHeaders, cachedBody);
+      const cacheKey = cacheKeyGenerator(mockRequest);
+      await cache.setSingle(cacheKey, 30, cachedResponse);
+
+      // Cache hit is expected, and the middleware must handle the response.
+      await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
+      expect(mockResponse.removeHeader).toBeCalledWith('content-encoding');
+      expect(mockResponse.send).toBeCalledWith(cachedBody);
+      expect(mockResponse.set).toHaveBeenNthCalledWith(1, cachedHeaders);
+      expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'cache-control', expect.stringContaining('public, max-age='));
+      expect(mockResponse.status).toBeCalledWith(cachedStatusCode);
+
+      // Middleware must invoke provided next() function to continue normal API request processing.
+      expect(mockNextMiddleware).toBeCalled();
+    });
   });
 
-  test('Cache miss with bypass attempts', async () => {
-    const logSpy = jest.spyOn(logger, 'warn');
+  describe('Cache update back-end', () => {
+    test('No cache key in locals', async () => {
+      const cacheKey = cacheKeyGenerator(mockRequest);
 
-    mockRequest.headers['pragma'] = 'no-cache';
+      // No cache key in locals means don't cache the response
+      await responseCacheUpdateHandler(mockRequest, mockResponse, mockNextMiddleware);
+      const cachedResponse = await cache.getSingleWithTtl(cacheKey);
+      expect(cachedResponse).toBeUndefined();
 
-    // The cache is empty, thus a cache miss is expected.
-    await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
+      // Middleware must invoke provided next() function to continue normal API request processing.
+      expect(mockNextMiddleware).toBeCalled();
+    });
 
-    mockRequest.headers['pragma'] = undefined;
-    mockRequest.headers['cache-control'] = 'no-cache';
+    test('Do not cache negative results', async () => {
+      const cacheKey = cacheKeyGenerator(mockRequest);
+      mockResponse.locals[responseCacheKeyLabel] = cacheKey;
+      mockResponse.statusCode = 503;
 
-    // The cache is empty, thus a cache miss is expected.
-    await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
+      // No cache key in locals means don't cache the response
+      await responseCacheUpdateHandler(mockRequest, mockResponse, mockNextMiddleware);
+      const cachedResponse = await cache.getSingleWithTtl(cacheKey);
+      expect(cachedResponse).toBeUndefined();
 
-    expect(logSpy).toHaveBeenNthCalledWith(1, expect.stringContaining('attempted cache bypass'));
-    expect(logSpy).toHaveBeenNthCalledWith(2, expect.stringContaining('attempted cache bypass'));
-    logSpy.mockRestore();
-  });
-
-  test('Cache hit', async () => {
-    const cachedBody = JSONStringify({a: 'b'});
-    const cachedHeaders = {
-      'cache-control': 'public, max-age=60',
-      'content-encoding': 'gzip',
-      etag: 'W/"5c35-Gld7z2oXbbJUpCcZpRCrhYePM04',
-      vary: 'accept-encoding',
-    };
-    const cachedStatusCode = 200;
-
-    // Place the expected response in the cache.
-    const cachedResponse = new CachedApiResponse(cachedStatusCode, cachedHeaders, cachedBody);
-    const cacheKey = cacheKeyGenerator(mockRequest);
-    await cache.setSingle(cacheKey, 30, cachedResponse);
-
-    // Cache hit is expected, and the middleware must handle the response.
-    await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
-    expect(mockResponse.removeHeader).toBeCalledWith('content-encoding');
-    expect(mockResponse.send).toBeCalledWith(cachedBody);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(1, cachedHeaders);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'cache-control', expect.stringContaining('public, max-age='));
-    expect(mockResponse.status).toBeCalledWith(cachedStatusCode);
-
-    // Middleware must invoke provided next() function to continue normal API request processing.
-    expect(mockNextMiddleware).toBeCalled();
+      // Middleware must invoke provided next() function to continue normal API request processing.
+      expect(mockNextMiddleware).toBeCalled();
+    });
   });
 });

@@ -116,7 +116,7 @@ describe('Single key get/set', () => {
     const key = 'myKey';
     const value = await cache.getSingleWithTtl(key);
     expect(value).toBeUndefined();
-    const setResult = await cache.setSingle(key, 'someValue');
+    const setResult = await cache.setSingle(key, 5, 'someValue');
     expect(setResult).toBeUndefined();
   });
 
