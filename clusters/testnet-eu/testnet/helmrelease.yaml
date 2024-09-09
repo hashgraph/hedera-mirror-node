@@ -68,7 +68,7 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
     test:
-      cucumberTags: "@acceptance and not @equivalence and not @estimateprecompile"
+      cucumberTags: "@acceptance"
       enabled: false
     web3:
       enabled: false

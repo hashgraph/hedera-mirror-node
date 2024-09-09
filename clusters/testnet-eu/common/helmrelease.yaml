@@ -60,9 +60,6 @@ spec:
               memory: 6Gi
     stackgres:
       enabled: true
-      operator:
-        image:
-          name: gcr.io/mirrornode/stackgres-operator
     traefik:
       service:
         annotations:
