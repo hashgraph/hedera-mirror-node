@@ -78,11 +78,6 @@ tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
 tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 
-tasks.compileTestJava {
-    options.compilerArgs.add("--enable-preview")
-    options.compilerArgs.removeIf { it == "-Werror" }
-}
-
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
 // Tasks to download OpenZeppelin contracts
@@ -218,7 +213,13 @@ tasks.register("moveAndCleanTestHistorical") {
     group = "historical"
 
     dependsOn("moveTestHistoricalFiles")
-    finalizedBy("deleteTestHistoricalDir")
+    dependsOn("deleteTestHistoricalDir")
+}
+
+tasks.compileTestJava {
+    options.compilerArgs.add("--enable-preview")
+    options.compilerArgs.removeIf { it == "-Werror" }
+    dependsOn("moveAndCleanTestHistorical")
 }
 
 afterEvaluate { tasks.named("resolveSolidity") { dependsOn("extractContracts") } }
