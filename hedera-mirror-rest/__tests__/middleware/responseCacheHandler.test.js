@@ -41,6 +41,7 @@ beforeAll(async () => {
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
+  cache.stop();
   await redisContainer.stop({signal: 'SIGKILL', t: 5});
   logger.info('Stopped Redis container');
 });
@@ -132,6 +133,7 @@ describe('Response cache check middleware', () => {
     expect(mockResponse.removeHeader).toBeCalledWith('content-encoding');
     expect(mockResponse.send).toBeCalledWith(cachedBody);
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, cachedHeaders);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'cache-control', expect.stringContaining('public, max-age='));
     expect(mockResponse.status).toBeCalledWith(cachedStatusCode);
 
     // Middleware must invoke provided next() function to continue normal API request processing.
