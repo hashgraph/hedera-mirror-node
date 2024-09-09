@@ -54,8 +54,6 @@ describe('Response cache middleware', () => {
   let mockNextMiddleware, mockRequest, mockResponse, responseData;
 
   beforeEach(() => {
-    cache.clear();
-
     responseData = {accounts: [], links: {next: null}};
     mockNextMiddleware = jest.fn();
     mockRequest = {
@@ -100,7 +98,8 @@ describe('Response cache middleware', () => {
     });
 
     test('Cache miss with bypass attempts', async () => {
-      const logSpy = jest.spyOn(logger, 'warn');
+      const logSpy = jest.spyOn(logger, 'debug');
+      logger.level = 'debug';
 
       mockRequest.headers['pragma'] = 'no-cache';
 
@@ -164,7 +163,6 @@ describe('Response cache middleware', () => {
       mockResponse.locals[responseCacheKeyLabel] = cacheKey;
       mockResponse.statusCode = 503;
 
-      // No cache key in locals means don't cache the response
       await responseCacheUpdateHandler(mockRequest, mockResponse, mockNextMiddleware);
       const cachedResponse = await cache.getSingleWithTtl(cacheKey);
       expect(cachedResponse).toBeUndefined();

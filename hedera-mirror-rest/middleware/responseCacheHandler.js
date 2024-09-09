@@ -31,10 +31,13 @@ let cache = new Cache('apiResponse:');
 const responseCacheCheckHandler = async (req, res, next) => {
   const startTime = Date.now();
 
-  const cacheControl = req.headers[CACHE_CONTROL_HEADER_NAME];
-  const pragma = req.headers[PRAGMA_HEADER_NAME];
-  if (pragma === CACHE_BYPASS_HEADER_VALUE || cacheControl === CACHE_BYPASS_HEADER_VALUE) {
-    logger.warn(`${req.ip} ${req.method} ${req.originalUrl} attempted cache bypass`);
+  // TODO Maybe this whole thing should go. Do we care to know if we just ignore it and log at debug level?
+  if (logger.isDebugEnabled()) {
+    const cacheControl = req.headers[CACHE_CONTROL_HEADER_NAME];
+    const pragma = req.headers[PRAGMA_HEADER_NAME];
+    if (pragma === CACHE_BYPASS_HEADER_VALUE || cacheControl === CACHE_BYPASS_HEADER_VALUE) {
+      logger.debug(`${req.ip} ${req.method} ${req.originalUrl} attempted cache bypass`);
+    }
   }
 
   const responseCacheKey = cacheKeyGenerator(req);
@@ -42,8 +45,6 @@ const responseCacheCheckHandler = async (req, res, next) => {
 
   if (cachedTtlAndValue) {
     const {ttl: redisTtl, value: redisValue} = cachedTtlAndValue;
-    logger.debug(`Cache hit: ${responseCacheKey}`);
-
     const cachedResponse = Object.assign(new CachedApiResponse(), redisValue);
     const code = cachedResponse.status;
     res.set(cachedResponse.headers);
@@ -57,7 +58,6 @@ const responseCacheCheckHandler = async (req, res, next) => {
       `${req.ip} ${req.method} ${req.originalUrl} from cache (ttl: ${cachedTtlAndValue.ttl}) in ${elapsed} ms: ${code}`
     );
   } else {
-    logger.debug(`Cache miss: ${responseCacheKey}`);
     res.locals[responseCacheKeyLabel] = responseCacheKey;
   }
   next();
