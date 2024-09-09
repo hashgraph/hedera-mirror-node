@@ -71,8 +71,7 @@ const responseCacheUpdateHandler = async (req, res, next) => {
     const cacheControlHeaderExpiry = getCacheControlExpiry(res.getHeaders()[CACHE_CONTROL_HEADER_NAME]);
     const redisExpiry = _.isNull(cacheControlHeaderExpiry) ? DEFAULT_REDIS_EXPIRY : cacheControlHeaderExpiry;
     const cachedResponse = new CachedApiResponse(res.statusCode, res.getHeaders(), res.locals[responseBodyLabel]);
-    cache.setSingle(responseCacheKey, redisExpiry, cachedResponse);
-    logger.debug(`Added response to cache at key: ${responseCacheKey}`);
+    await cache.setSingle(responseCacheKey, redisExpiry, cachedResponse);
   }
 
   next();
