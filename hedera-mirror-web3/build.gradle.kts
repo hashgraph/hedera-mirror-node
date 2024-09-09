@@ -16,6 +16,8 @@
 
 import java.net.HttpURLConnection
 import java.net.URI
+import org.web3j.solidity.gradle.plugin.SolidityCompile
+import org.web3j.solidity.gradle.plugin.SolidityResolve
 
 description = "Hedera Mirror Node Web3"
 
@@ -24,6 +26,7 @@ plugins {
     id("org.web3j")
     id("org.web3j.solidity")
     id("spring-conventions")
+    id("idea")
 }
 
 dependencies {
@@ -54,15 +57,43 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
 }
 
+sourceSets {
+    val testHistorical by creating {
+        java { setSrcDirs(listOf("src/testHistorical/java")) }
+        resources {
+            setSrcDirs(listOf("src/testHistorical/resources", "src/testHistorical/solidity"))
+        }
+        compileClasspath += sourceSets["main"].output + configurations["testRuntimeClasspath"]
+        runtimeClasspath += sourceSets["main"].output + configurations["testRuntimeClasspath"]
+        solidity { version = "0.8.7" }
+    }
+    test { solidity { version = "0.8.24" } }
+}
+
+idea {
+    module {
+        // For sources
+        testSources.from(sourceSets["testHistorical"].allSource.srcDirs)
+
+        // For resource files
+        testResources.from(sourceSets["testHistorical"].resources.srcDirs)
+    }
+}
+
 web3j {
-    excludedContracts =
-        listOf("DynamicEthCallsHistorical", "EthCallHistorical", "EvmCodesHistorical")
     generateBoth = true
     generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
     useNativeJavaTypes = true
 }
 
-sourceSets { test { solidity { version = "0.8.24" } } }
+tasks.register("resolveSolidityHistorical", SolidityResolve::class) {
+    version = "0.8.7"
+    sources = fileTree("src/testHistorical/solidity")
+    allowPaths = setOf("src/testHistorical/solidity")
+    packageJson =
+        file(".gradle/nodejs/node-v18.17.1-darwin-arm64/lib/node_modules/npm/package.json")
+    dependsOn("extractContracts")
+}
 
 tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
@@ -70,26 +101,14 @@ tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
-val homeDir = System.getenv("HOME")
-val web3jLink = file("$homeDir/.web3j/web3j")
-
-val downloadWeb3j =
-    tasks.register<Exec>("downloadWeb3j") {
-        description = "Download and install Web3j CLI"
-        group = "historical"
-
-        commandLine("bash", "-c", "curl -L get.web3j.io | sh")
-        onlyIf { !web3jLink.exists() }
-    }
-
 // Tasks to download OpenZeppelin contracts
 val openZeppelinVersion = "4.9.3"
 val openZeppelinFile = layout.buildDirectory.file("openzeppelin.zip").get().asFile
 val openZeppelinDir =
     layout.projectDirectory.asFile
         .resolve("src")
-        .resolve("test")
-        .resolve("solidity_historical")
+        .resolve("testHistorical")
+        .resolve("solidity")
         .resolve("openzeppelin")
 
 val downloadOpenZeppelin =
@@ -97,6 +116,10 @@ val downloadOpenZeppelin =
         description = "Download OpenZeppelin contracts"
         group = "historical"
         doLast {
+            val buildDir = layout.buildDirectory.asFile.get()
+            if (!buildDir.exists()) {
+                mkdir(buildDir)
+            }
             openZeppelinDir.mkdirs()
             val openZeppelinUrl =
                 "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/v${openZeppelinVersion}.zip"
@@ -121,31 +144,37 @@ val extractOpenZeppelin =
         }
     }
 
-// Task to compile Solidity contracts and generate Java files
-val compileHistoricalSolidityContracts =
-    tasks.register<Exec>("compileHistoricalSolidityContracts") {
-        description = "Compiles the historical solidity contracts to java files using web3j-cli"
-        group = "historical"
-        mustRunAfter(tasks.named("generateTestContractWrappers"))
-        dependsOn(downloadWeb3j)
-        dependsOn(extractOpenZeppelin)
-        dependsOn(tasks.named("compileTestSolidity"))
-        val scriptPath = file("./src/main/resources/scripts/compile_solidity.sh").absolutePath
-        doFirst { file(scriptPath).setExecutable(true) }
-        commandLine("bash", scriptPath)
-    }
-
 tasks.assemble { dependsOn(tasks.processTestResources) }
 
 tasks.compileTestJava {
     options.compilerArgs.add("--enable-preview")
     options.compilerArgs.removeIf { it == "-Werror" }
-    dependsOn(compileHistoricalSolidityContracts)
+    //    dependsOn(compileHistoricalSolidityContracts)
 }
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
 tasks.processTestResources {
     dependsOn(tasks.named("generateTestContractWrappers"))
-    dependsOn(compileHistoricalSolidityContracts)
+    dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
 }
+
+afterEvaluate {
+    tasks.named("generateTestHistoricalContractWrappers") {
+        dependsOn(tasks.named("generateTestContractWrappers"))
+        dependsOn(extractOpenZeppelin)
+        dependsOn(tasks.named("resolveSolidityHistorical"))
+    }
+}
+
+afterEvaluate {
+    tasks.named("compileTestHistoricalSolidity", SolidityCompile::class.java).configure {
+        allowPaths = setOf("src/testHistorical/solidity/openzeppelin")
+        ignoreMissing = true
+        version = "0.8.7"
+        source = fileTree("src/testHistorical/solidity") { include("*.sol") }
+        dependsOn(extractOpenZeppelin)
+    }
+}
+
+afterEvaluate { tasks.named("resolveSolidity") { dependsOn("extractContracts") } }

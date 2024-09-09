@@ -54,6 +54,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.3")
     implementation("org.testcontainers:postgresql:1.20.1")
     implementation("com.github.kselveliev:web3j-gradle-plugin:4.12.0")
+    implementation("org.web3j.solidity:solidity-gradle-plugin:0.5.1")
 }
 
 val gitHook =
