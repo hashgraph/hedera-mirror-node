@@ -92,6 +92,10 @@ spec:
             pods:
               persistentVolume:
                 size: 14000Gi
+          - index: 2
+            pods:
+              persistentVolume:
+                size: 3200Gi
         resources:
           cpu: 9500m
           memory: 34Gi
