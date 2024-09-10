@@ -86,7 +86,7 @@ hedera:
         uri: redis://127.0.0.1:6379
       response:
         cache:
-          enabled: true;
+          enabled: true
         compression: true
         headers:
           default: { "cache-control": "public, max-age=1" }

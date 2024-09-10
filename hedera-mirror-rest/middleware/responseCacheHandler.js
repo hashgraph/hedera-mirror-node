@@ -67,7 +67,7 @@ const responseCacheCheckHandler = async (req, res, next) => {
 const responseCacheUpdateHandler = async (req, res, next) => {
   const responseCacheKey = res.locals[responseCacheKeyLabel];
   // Don't cache negative outcomes
-  if (responseCacheKey && res.statusCode === 200) {
+  if (responseCacheKey && (res.statusCode === 200 || res.statusCode === 304)) {
     const cacheControlHeaderExpiry = getCacheControlExpiry(res.getHeaders()[CACHE_CONTROL_HEADER_NAME]);
     const redisExpiry = _.isNull(cacheControlHeaderExpiry) ? DEFAULT_REDIS_EXPIRY : cacheControlHeaderExpiry;
     const cachedResponse = new CachedApiResponse(res.statusCode, res.getHeaders(), res.locals[responseBodyLabel]);
