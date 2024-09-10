@@ -93,6 +93,7 @@ global.pool = pool;
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
 const app = addAsync(express());
 const {apiPrefix} = constants;
+const applicationCacheEnabled = config.response.cache.enabled && config.redis.enabled;
 
 app.disable('x-powered-by');
 app.set('trust proxy', true);
@@ -128,7 +129,9 @@ if (config.metrics.enabled) {
 }
 
 // Check for cached response
-app.use(responseCacheCheckHandler);
+if (applicationCacheEnabled) {
+  app.use(responseCacheCheckHandler);
+}
 
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
@@ -183,7 +186,10 @@ if (config.metrics.ipMetrics) {
 
 // response data handling middleware
 app.useAsync(responseHandler);
-app.useAsync(responseCacheUpdateHandler);
+
+if (applicationCacheEnabled) {
+  app.useAsync(responseCacheUpdateHandler);
+}
 
 // response error handling middleware
 app.useAsync(handleError);
