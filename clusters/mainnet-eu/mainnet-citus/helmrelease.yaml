@@ -76,13 +76,7 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
-      coordinator:
-        config:
-          work_mem: "16MB"
       worker:
-        config:
-          shared_buffers: "12GB"
-          work_mem: "16MB"
         overrides:
           - index: 0
             pods:
@@ -96,14 +90,6 @@ spec:
             pods:
               persistentVolume:
                 size: 3200Gi
-        resources:
-          cpu: 9500m
-          memory: 34Gi
-          requests:
-            containers:
-              patroni:
-                cpu: 9500m
-                memory: 34Gi
     test:
       config:
         hedera:
