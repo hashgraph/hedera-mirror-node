@@ -330,7 +330,7 @@ public class TestWeb3jService implements Web3jService {
         return contractAddress;
     }
 
-    public void contractPersist(String binary, long entityId) {
+    private void contractPersist(String binary, long entityId) {
         final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
         final var entity = domainBuilder
                 .entity()
