@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import "./openzeppelin/token/ERC20/IERC20.sol";
+import "./openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+import "./openzeppelin/token/ERC721/IERC721.sol";
+import "./openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
+import "./openzeppelin/token/ERC721/extensions/IERC721Enumerable.sol";
 
-contract ERCTestContract {
+contract ERCTestContractHistorical {
 
     //Read operations
 
