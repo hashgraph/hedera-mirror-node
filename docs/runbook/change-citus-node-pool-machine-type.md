@@ -12,7 +12,7 @@ Need to Change Machine Type for Citus Node Pool(s)
    <br>
    `kubectl scale deployment --context {sourceClusterContext} -n {namespace} mirror-importer --replicas=0`
    <br>
-   `kubectl annotate sgclusters.stackgres.io -n {namespace} stackgres.io/reconciliation-pause="true" --overwrite`
+   `kubectl annotate sgclusters.stackgres.io -n {namespace} --all stackgres.io/reconciliation-pause="true" --overwrite`
    <br>
    `kubectl scale sts -n {namespace} -l 'app=StackGresCluster' --replicas=0`
 3. Resize the node pool(s) down to 0 nodes
