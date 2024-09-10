@@ -36,7 +36,6 @@ const responseCacheCheckHandler = async (req, res, next) => {
     const cachedResponse = Object.assign(new CachedApiResponse(), redisValue);
     const statusCode = cachedResponse.status;
 
-    res.set(cachedResponse.headers);
     res.removeHeader('content-encoding'); // Remove so that compression middleware will act on this response.
     res.status(statusCode);
     res.send(cachedResponse.body);
