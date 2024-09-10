@@ -12,9 +12,9 @@ spec:
         name: hedera-mirror-node
       version: '0.113.1'
   driftDetection:
-    mode: warn
+    mode: enabled
     ignore:
-      - paths: [ "" ]
+      - paths: [""]
         target:
           kind: (MutatingWebhookConfiguration|SGConfig|ValidatingWebhookConfiguration)
   install:
