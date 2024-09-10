@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import java.net.HttpURLConnection
-import java.net.URI
 import org.web3j.solidity.gradle.plugin.SolidityCompile
 import org.web3j.solidity.gradle.plugin.SolidityResolve
 
@@ -83,55 +81,12 @@ tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
-// Tasks to download OpenZeppelin contracts
-val openZeppelinVersion = "4.9.3"
-val openZeppelinFile = layout.buildDirectory.file("openzeppelin.zip").get().asFile
-val openZeppelinDir =
-    layout.projectDirectory.asFile
-        .resolve("src")
-        .resolve("testHistorical")
-        .resolve("solidity")
-        .resolve("openzeppelin")
-
-val downloadOpenZeppelin =
-    tasks.register("downloadOpenZeppelin") {
-        description = "Download OpenZeppelin contracts"
-        group = "historical"
-        doLast {
-            val buildDir = layout.buildDirectory.asFile.get()
-            if (!buildDir.exists()) {
-                mkdir(buildDir)
-            }
-            openZeppelinDir.mkdirs()
-            val openZeppelinUrl =
-                "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/v${openZeppelinVersion}.zip"
-            val connection = URI(openZeppelinUrl).toURL().openConnection() as HttpURLConnection
-            connection.inputStream.use { input ->
-                openZeppelinFile.outputStream().use { output -> input.copyTo(output) }
-            }
-        }
-        onlyIf { !openZeppelinFile.exists() }
-    }
-
-val extractOpenZeppelin =
-    tasks.register<Copy>("extractContracts") {
-        description = "Extracts the OpenZeppelin dependencies into the configured output folder"
-        group = "historical"
-        dependsOn(downloadOpenZeppelin)
-        from(zipTree(openZeppelinFile))
-        into(openZeppelinDir)
-        include("openzeppelin-contracts-${openZeppelinVersion}/contracts/**/*.sol")
-        eachFile {
-            path = path.replaceFirst("openzeppelin-contracts-${openZeppelinVersion}/contracts", "")
-        }
-    }
-
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
 tasks.processTestResources {
     dependsOn(tasks.named("generateTestContractWrappers"))
     dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
-    dependsOn(tasks.named("moveAndCleanTestHistorical"))
+    dependsOn(tasks.named("moveAndCleanTestHistoricalFiles"))
 }
 
 tasks.register("resolveSolidityHistorical", SolidityResolve::class) {
@@ -143,7 +98,6 @@ tasks.register("resolveSolidityHistorical", SolidityResolve::class) {
 
     val packageJsonFile = "./build/node_modules/@openzeppelin/contracts/package.json"
     packageJson = file(packageJsonFile)
-    dependsOn("extractContracts")
 }
 
 afterEvaluate {
@@ -153,14 +107,12 @@ afterEvaluate {
         ignoreMissing = true
         version = historicalSolidityVersion
         source = fileTree("src/testHistorical/solidity") { include("*.sol") }
-        dependsOn(extractOpenZeppelin)
     }
 }
 
 afterEvaluate {
     tasks.named("generateTestHistoricalContractWrappers") {
         dependsOn(tasks.named("generateTestContractWrappers"))
-        dependsOn(extractOpenZeppelin)
         dependsOn(tasks.named("resolveSolidityHistorical"))
     }
 }
@@ -171,65 +123,48 @@ val processTestHistoricalResources =
 
         dependsOn(tasks.named("generateTestContractWrappers"))
         dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
-        dependsOn(tasks.named("moveAndCleanTestHistorical"))
+        dependsOn(tasks.named("moveAndCleanTestHistoricalFiles"))
     }
 
-// The generated java files are moved from "testHistorical" to "test" folder in build so that
-// they can be resolved successfully in imports.
-tasks.register<Copy>("moveTestHistoricalFiles") {
-    description = "Move files from testHistorical to test in the generated web3j sources directory."
+tasks.register<Copy>("moveAndCleanTestHistoricalFiles") {
+    description =
+        "Move files from testHistorical to test and then clean up the testHistorical directory."
     group = "historical"
 
     // Define source and destination directories
     val srcDir =
-        file(
-            "$rootDir/hedera-mirror-web3/build/generated/sources/web3j/testHistorical/java/com/hedera/mirror/web3/web3j/generated"
-        )
+        layout.buildDirectory
+            .dir(
+                "generated/sources/web3j/testHistorical/java/com/hedera/mirror/web3/web3j/generated"
+            )
+            .get()
+            .asFile
     val destDir =
-        file(
-            "$rootDir/hedera-mirror-web3/build/generated/sources/web3j/test/java/com/hedera/mirror/web3/web3j/generated"
-        )
+        layout.buildDirectory
+            .dir("generated/sources/web3j/test/java/com/hedera/mirror/web3/web3j/generated")
+            .get()
+            .asFile
 
     // Copy only files that match the pattern "*Historical.java"
     from(srcDir) { include("**/*Historical.java") }
     into(destDir)
 
-    // Only move if there are files
-    doFirst {
-        if (!srcDir.exists()) {
-            throw GradleException("Source directory $srcDir does not exist!")
-        }
+    doLast {
+        val testHistoricalDir =
+            layout.buildDirectory.dir("generated/sources/web3j/testHistorical").get().asFile
+        testHistoricalDir.deleteRecursively()
+        println("Deleted testHistorical directory: $srcDir")
     }
+
     dependsOn(tasks.named("generateTestContractWrappers"))
     dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
-}
-
-tasks.register<Delete>("deleteTestHistoricalDir") {
-    description = "Delete the testHistorical directory after moving files."
-    group = "historical"
-
-    delete(file("$rootDir/hedera-mirror-web3/build/generated/sources/web3j/testHistorical"))
-
-    // Only delete if move task was successful
-    mustRunAfter("moveTestHistoricalFiles")
-}
-
-tasks.register("moveAndCleanTestHistorical") {
-    description =
-        "Move files from testHistorical to test and then clean up the testHistorical directory."
-    group = "historical"
-
-    dependsOn("moveTestHistoricalFiles")
-    dependsOn("deleteTestHistoricalDir")
 }
 
 tasks.compileTestJava {
     options.compilerArgs.add("--enable-preview")
     options.compilerArgs.removeIf { it == "-Werror" }
-    dependsOn("moveAndCleanTestHistorical")
+    dependsOn("moveAndCleanTestHistoricalFiles")
 }
-
-afterEvaluate { tasks.named("resolveSolidity") { dependsOn("extractContracts") } }
 
 tasks.named("compileTestHistoricalJava") { group = "historical" }
 
