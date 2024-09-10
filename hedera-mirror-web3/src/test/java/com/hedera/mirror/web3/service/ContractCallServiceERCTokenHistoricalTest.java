@@ -84,7 +84,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
 
         @ParameterizedTest
         @ValueSource(booleans = {true, false})
-        void getApproved(final boolean isStatic) throws Exception {
+        void getApproved(final boolean isStatic) {
             // Given
             final var owner = persistAccountEntityHistorical(historicalRange);
             final var spender = persistAccountEntityHistorical(historicalRange);
