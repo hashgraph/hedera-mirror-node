@@ -153,7 +153,6 @@ tasks.register<Copy>("moveAndCleanTestHistoricalFiles") {
         val testHistoricalDir =
             layout.buildDirectory.dir("generated/sources/web3j/testHistorical").get().asFile
         testHistoricalDir.deleteRecursively()
-        println("Deleted testHistorical directory: $testHistoricalDir")
     }
 
     dependsOn(tasks.named("generateTestContractWrappers"))
