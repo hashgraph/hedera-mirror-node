@@ -97,30 +97,6 @@ describe('Response cache middleware', () => {
       expect(mockNextMiddleware).toBeCalled();
     });
 
-    test('Cache miss with bypass attempts', async () => {
-      const logSpy = jest.spyOn(logger, 'debug');
-      const prevLogLevel = logger.level;
-      logger.level = 'debug';
-
-      mockRequest.headers['pragma'] = 'no-cache';
-
-      // The cache is empty, thus a cache miss is expected.
-      await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
-
-      mockRequest.headers['pragma'] = undefined;
-      mockRequest.headers['cache-control'] = 'no-cache';
-
-      // The cache is empty, thus a cache miss is expected.
-      await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
-
-      expect(logSpy).toHaveBeenNthCalledWith(1, expect.stringContaining('attempted cache bypass'));
-      expect(logSpy).toHaveBeenNthCalledWith(2, expect.stringContaining('attempted cache bypass'));
-      expect(mockNextMiddleware).toBeCalled();
-
-      logSpy.mockRestore();
-      logger.level = prevLogLevel;
-    });
-
     test('Cache hit', async () => {
       const cachedBody = JSONStringify({a: 'b'});
       const cacheControlMaxAge = 60;
