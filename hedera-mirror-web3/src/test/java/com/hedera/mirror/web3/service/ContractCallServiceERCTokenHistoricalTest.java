@@ -845,9 +845,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                 .customize(f -> f.index(EVM_V_34_BLOCK))
                 .persist();
         testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        final var historicalRange = Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd());
-        testWeb3jService.setHistoricalRange(historicalRange);
-        return historicalRange;
+        final var rangeAfterEvm34 = Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd());
+        testWeb3jService.setHistoricalRange(rangeAfterEvm34);
+        return rangeAfterEvm34;
     }
 
     private Range<Long> setUpHistoricalContextBeforeEvm34() {
