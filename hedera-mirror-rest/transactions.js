@@ -48,6 +48,9 @@ const {
 
 const cache = new Cache();
 
+const scheduleCreate = TransactionType.getName(42);
+const CACHE_CONTROL_HEADER_NAME = 'cache-control';
+
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,
   Transaction.CONSENSUS_TIMESTAMP,
@@ -846,6 +849,18 @@ const getTransactionsByIdOrHash = async (req, res) => {
   }
 
   const transactions = await formatTransactionRows(rows);
+
+  if (transactions.length > 1) {
+    for (const transaction of transactions) {
+      const cacheControlMaxAge = 5;
+      if (
+        transaction.name === scheduleCreate &&
+        !filters.some((f) => f.key === constants.filterKeys.SCHEDULED && f.value === true)
+      ) {
+        res.set(CACHE_CONTROL_HEADER_NAME, `public, max-age=${cacheControlMaxAge}`);
+      }
+    }
+  }
 
   logger.debug(`getTransactionsByIdOrHash returning ${transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {

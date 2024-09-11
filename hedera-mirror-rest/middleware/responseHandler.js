@@ -37,8 +37,10 @@ const responseHandler = async (req, res, next) => {
     throw new NotFoundError();
   } else {
     const path = res.locals[requestPathLabel] ?? req.route.path;
-    res.set(headers.default);
-    res.set(headers.path[path]);
+    if (!res.get('cache-control')) {
+      res.set(headers.default);
+      res.set(headers.path[path]);
+    }
 
     const code = res.locals.statusCode;
     const contentType = res.locals[responseContentType] || APPLICATION_JSON;
