@@ -44,7 +44,7 @@ const responseCacheCheckHandler = async (req, res, next) => {
 
     const elapsed = Date.now() - startTime;
     logger.info(
-      `${req.ip} ${req.method} ${req.originalUrl} from cache (ttl: ${cachedTtlAndValue.ttl}) in ${elapsed} ms: ${statusCode}`
+      `${req.ip} ${req.method} ${req.originalUrl} from cache (ttl: ${redisTtl}) in ${elapsed} ms: ${statusCode}`
     );
   } else {
     res.locals[responseCacheKeyLabel] = responseCacheKey;
