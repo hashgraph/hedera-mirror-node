@@ -633,6 +633,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
     @ValueSource(longs = {51, Long.MAX_VALUE - 1})
     void ercReadOnlyPrecompileHistoricalNotExistingBlockTest(final long blockNumber) {
         // When
+        testWeb3jService.setUseContractCallDeploy(true);
         testWeb3jService.setBlockType(BlockType.of(String.valueOf(blockNumber)));
         // Then
         assertThatThrownBy(() -> testWeb3jService.deploy(ERCTestContractHistorical::deploy))
