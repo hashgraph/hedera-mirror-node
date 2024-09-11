@@ -2722,8 +2722,8 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         var updatedAmountAirdrop = domainBuilder
                 .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
                 .customize(a -> a.amount(newAmount)
-                        .receiverAccountId(tokenAirdrop.getReceiverAccountId())
-                        .senderAccountId(tokenAirdrop.getSenderAccountId())
+                        .receiverId(tokenAirdrop.getReceiverId())
+                        .senderId(tokenAirdrop.getSenderId())
                         .tokenId(tokenAirdrop.getTokenId())
                         .timestampRange(Range.atLeast(domainBuilder.timestamp())))
                 .get();
@@ -2768,16 +2768,16 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
                 .customize(a -> a.state(state)
                         .amount(null) // Record files that change state do not include PendingAirdropValue so remove the
                         // amount here
-                        .receiverAccountId(tokenAirdrop.getReceiverAccountId())
-                        .senderAccountId(tokenAirdrop.getSenderAccountId())
+                        .receiverId(tokenAirdrop.getReceiverId())
+                        .senderId(tokenAirdrop.getSenderId())
                         .tokenId(tokenAirdrop.getTokenId())
                         .timestampRange(Range.atLeast(domainBuilder.timestamp())))
                 .get();
         var nftAirdropUpdateState = domainBuilder
                 .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                 .customize(a -> a.state(state)
-                        .receiverAccountId(nftAirdrop.getReceiverAccountId())
-                        .senderAccountId(nftAirdrop.getSenderAccountId())
+                        .receiverId(nftAirdrop.getReceiverId())
+                        .senderId(nftAirdrop.getSenderId())
                         .serialNumber(nftAirdrop.getSerialNumber())
                         .tokenId(nftAirdrop.getTokenId())
                         .timestampRange(Range.atLeast(domainBuilder.timestamp())))
@@ -2814,16 +2814,16 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
                 .customize(a -> a.state(state)
                         .amount(null) // Record files that change state do not include PendingAirdropValue so remove the
                         // amount here
-                        .receiverAccountId(tokenAirdrop.getReceiverAccountId())
-                        .senderAccountId(tokenAirdrop.getSenderAccountId())
+                        .receiverId(tokenAirdrop.getReceiverId())
+                        .senderId(tokenAirdrop.getSenderId())
                         .tokenId(tokenAirdrop.getTokenId())
                         .timestampRange(Range.atLeast(domainBuilder.timestamp())))
                 .get();
         var nftAirdropUpdateState = domainBuilder
                 .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                 .customize(a -> a.state(state)
-                        .receiverAccountId(nftAirdrop.getReceiverAccountId())
-                        .senderAccountId(nftAirdrop.getSenderAccountId())
+                        .receiverId(nftAirdrop.getReceiverId())
+                        .senderId(nftAirdrop.getSenderId())
                         .serialNumber(nftAirdrop.getSerialNumber())
                         .tokenId(nftAirdrop.getTokenId())
                         .timestampRange(Range.atLeast(domainBuilder.timestamp())))

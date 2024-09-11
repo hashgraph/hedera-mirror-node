@@ -18,12 +18,12 @@ package com.hedera.mirror.restjava.repository;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
-import com.hedera.mirror.restjava.dto.OutstandingTokenAirdropRequest;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
 
 public interface TokenAirdropRepositoryCustom extends CustomRepository {
 
     @NotNull
-    Collection<TokenAirdrop> findAllOutstanding(OutstandingTokenAirdropRequest request, EntityId accountId);
+    Collection<TokenAirdrop> findAllOutstanding(TokenAirdropRequest request, EntityId accountId);
 }

@@ -3609,16 +3609,16 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var expectedPendingFungible = domainBuilder
                 .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
                 .customize(t -> t.amount(pendingAmount)
-                        .receiverAccountId(RECEIVER.getAccountNum())
-                        .senderAccountId(PAYER.getAccountNum())
+                        .receiverId(RECEIVER.getAccountNum())
+                        .senderId(PAYER.getAccountNum())
                         .state(TokenAirdropStateEnum.PENDING)
                         .timestampRange(Range.atLeast(airdropTimestamp))
                         .tokenId(TOKEN_ID.getTokenNum()))
                 .get();
         var expectedPendingNft = domainBuilder
                 .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                .customize(t -> t.receiverAccountId(RECEIVER.getAccountNum())
-                        .senderAccountId(PAYER.getAccountNum())
+                .customize(t -> t.receiverId(RECEIVER.getAccountNum())
+                        .senderId(PAYER.getAccountNum())
                         .serialNumber(SERIAL_NUMBER_1)
                         .state(TokenAirdropStateEnum.PENDING)
                         .timestampRange(Range.atLeast(airdropTimestamp))
@@ -3738,15 +3738,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var expectedPendingFungible = domainBuilder
                 .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
                 .customize(t -> t.amount(pendingAmount)
-                        .receiverAccountId(RECEIVER.getAccountNum())
-                        .senderAccountId(PAYER.getAccountNum())
+                        .receiverId(RECEIVER.getAccountNum())
+                        .senderId(PAYER.getAccountNum())
                         .timestampRange(Range.atLeast(airdropTimestamp))
                         .tokenId(TOKEN_ID.getTokenNum()))
                 .get();
         var expectedPendingNft = domainBuilder
                 .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                .customize(t -> t.receiverAccountId(RECEIVER.getAccountNum())
-                        .senderAccountId(PAYER.getAccountNum())
+                .customize(t -> t.receiverId(RECEIVER.getAccountNum())
+                        .senderId(PAYER.getAccountNum())
                         .serialNumber(SERIAL_NUMBER_1)
                         .timestampRange(Range.atLeast(airdropTimestamp))
                         .tokenId(nftTokenId.getTokenNum()))
@@ -3843,15 +3843,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
                 // Amount will be null when there is no pending airdrop
                 .customize(t -> t.amount(null)
-                        .receiverAccountId(RECEIVER.getAccountNum())
-                        .senderAccountId(PAYER.getAccountNum())
+                        .receiverId(RECEIVER.getAccountNum())
+                        .senderId(PAYER.getAccountNum())
                         .timestampRange(Range.atLeast(updateTimestamp))
                         .tokenId(TOKEN_ID.getTokenNum()))
                 .get();
         var expectedPendingNft = domainBuilder
                 .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                .customize(t -> t.receiverAccountId(RECEIVER.getAccountNum())
-                        .senderAccountId(PAYER.getAccountNum())
+                .customize(t -> t.receiverId(RECEIVER.getAccountNum())
+                        .senderId(PAYER.getAccountNum())
                         .serialNumber(SERIAL_NUMBER_1)
                         .timestampRange(Range.atLeast(updateTimestamp))
                         .tokenId(nftTokenId.getTokenNum()))

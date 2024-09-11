@@ -25,9 +25,9 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.common.EntityIdNumParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
-import com.hedera.mirror.restjava.common.IntegerRangeParameter;
+import com.hedera.mirror.restjava.common.NumberRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
-import com.hedera.mirror.restjava.dto.OutstandingTokenAirdropRequest;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -49,9 +49,9 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
     @Test
     void findBySenderId() {
         var tokenAirdrop = domainBuilder.tokenAirdrop(FUNGIBLE_COMMON).persist();
-        var entityId = EntityId.of(tokenAirdrop.getSenderAccountId());
-        var request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(entityId))
+        var entityId = EntityId.of(tokenAirdrop.getSenderId());
+        var request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(entityId))
                 .build();
         assertThat(repository.findAllOutstanding(request, entityId)).contains(tokenAirdrop);
     }
@@ -65,12 +65,11 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                 .persist();
         var tokenAirdrop2 = domainBuilder
                 .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a ->
-                        a.senderAccountId(tokenAirdrop.getSenderAccountId()).timestampRange(Range.atLeast(2000L)))
+                .customize(a -> a.senderId(tokenAirdrop.getSenderId()).timestampRange(Range.atLeast(2000L)))
                 .persist();
-        var entityId = EntityId.of(tokenAirdrop.getSenderAccountId());
-        var outstandingTokenAirdropRequest = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(entityId))
+        var entityId = EntityId.of(tokenAirdrop.getSenderId());
+        var outstandingTokenAirdropRequest = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(entityId))
                 .order(order)
                 .build();
 
@@ -83,11 +82,10 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
     @Test
     void noMatch() {
         var tokenAirdrop = domainBuilder.tokenAirdrop(FUNGIBLE_COMMON).persist();
-        var entityId = EntityId.of(tokenAirdrop.getSenderAccountId());
-        var request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(entityId))
-                .receiverId(
-                        new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenAirdrop.getReceiverAccountId())))
+        var entityId = EntityId.of(tokenAirdrop.getSenderId());
+        var request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(entityId))
+                .entityId(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenAirdrop.getReceiverId())))
                 .build();
         assertThat(repository.findAllOutstanding(request, entityId)).isEmpty();
     }
@@ -98,26 +96,26 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         var sender = domainBuilder.entity().get();
         var receiver = domainBuilder.entity().get();
         var token = domainBuilder.token().get();
-        var serialNumber = 5;
+        var serialNumber = 5L;
 
         var tokenAirdrop = domainBuilder
                 .tokenAirdrop(FUNGIBLE_COMMON)
-                .customize(a -> a.senderAccountId(sender.getId()).receiverAccountId(receiver.getId()))
+                .customize(a -> a.senderId(sender.getId()).receiverId(receiver.getId()))
                 .persist();
         var tokenAirdrop2 = domainBuilder
                 .tokenAirdrop(FUNGIBLE_COMMON)
-                .customize(a -> a.senderAccountId(sender.getId()).tokenId(token.getTokenId()))
+                .customize(a -> a.senderId(sender.getId()).tokenId(token.getTokenId()))
                 .persist();
         var nftAirdrop = domainBuilder
                 .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderAccountId(sender.getId())
-                        .receiverAccountId(receiver.getId())
+                .customize(a -> a.senderId(sender.getId())
+                        .receiverId(receiver.getId())
                         .serialNumber(serialNumber)
                         .tokenId(token.getTokenId()))
                 .persist();
         var nftAirdrop2 = domainBuilder
                 .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderAccountId(sender.getId()).serialNumber(serialNumber))
+                .customize(a -> a.senderId(sender.getId()).serialNumber(serialNumber))
                 .persist();
 
         // Default asc ordering by receiver, tokenId
@@ -127,8 +125,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         var serialNumberAirdrops = List.of(nftAirdrop, nftAirdrop2);
 
         var orderedAirdrops = order.isAscending() ? allAirdrops : allAirdrops.reversed();
-        var request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(sender.toEntityId()))
+        var request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(sender.toEntityId()))
                 .order(order)
                 .build();
         assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
@@ -136,8 +134,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
 
         // With token id condition
         var tokenIdAirdrops = order.isAscending() ? tokenSpecifiedAirdrops : tokenSpecifiedAirdrops.reversed();
-        request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(sender.toEntityId()))
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(sender.toEntityId()))
                 .order(order)
                 .tokenId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(token.getTokenId())))
                 .build();
@@ -146,20 +144,20 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
 
         // With receiver id condition
         var receiverIdAirdrops = order.isAscending() ? receiverSpecifiedAirdrops : receiverSpecifiedAirdrops.reversed();
-        request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(sender.toEntityId()))
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(sender.toEntityId()))
                 .order(order)
-                .receiverId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver.getId())))
+                .entityId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver.getId())))
                 .build();
         assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
                 .containsExactlyElementsOf(receiverIdAirdrops);
 
         // With serial number condition
         var serialNumberAirdropsOrdered = order.isAscending() ? serialNumberAirdrops : serialNumberAirdrops.reversed();
-        request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(sender.toEntityId()))
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(sender.toEntityId()))
                 .order(order)
-                .serialNumber(new IntegerRangeParameter(RangeOperator.EQ, serialNumber))
+                .serialNumber(new NumberRangeParameter(RangeOperator.EQ, serialNumber))
                 .build();
         assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
                 .containsExactlyElementsOf(serialNumberAirdropsOrdered);
@@ -178,86 +176,85 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
 
         var airdrop1 = domainBuilder
                 .tokenAirdrop(FUNGIBLE_COMMON)
-                .customize(a ->
-                        a.senderAccountId(sender).receiverAccountId(receiver).tokenId(tokenId))
+                .customize(a -> a.senderId(sender).receiverId(receiver).tokenId(tokenId))
                 .persist();
         var serialAirdrop1 = domainBuilder
                 .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderAccountId(sender)
-                        .receiverAccountId(receiver)
+                .customize(a -> a.senderId(sender)
+                        .receiverId(receiver)
                         .serialNumber(serialNumber)
                         .tokenId(nftTokenId))
                 .persist();
         var serialAirdrop2 = domainBuilder
                 .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderAccountId(sender)
-                        .receiverAccountId(receiver)
+                .customize(a -> a.senderId(sender)
+                        .receiverId(receiver)
                         .serialNumber(serialNumber2)
                         .tokenId(nftTokenId))
                 .persist();
         var serialAirdrop3 = domainBuilder
                 .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderAccountId(sender)
-                        .receiverAccountId(receiver2)
+                .customize(a -> a.senderId(sender)
+                        .receiverId(receiver2)
                         .serialNumber(serialNumber)
                         .tokenId(nftTokenId2))
                 .persist();
 
         var expectedAirdrops = List.of(serialAirdrop1, serialAirdrop2, serialAirdrop3);
-        var request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(EntityId.of(sender)))
-                .serialNumber(new IntegerRangeParameter(RangeOperator.GT, 4))
+        var request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
+                .serialNumber(new NumberRangeParameter(RangeOperator.GT, 4L))
                 .build();
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
         expectedAirdrops = List.of(serialAirdrop1, serialAirdrop3);
-        request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(EntityId.of(sender)))
-                .serialNumber(new IntegerRangeParameter(RangeOperator.LT, 10))
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
+                .serialNumber(new NumberRangeParameter(RangeOperator.LT, 10L))
                 .build();
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
         expectedAirdrops = List.of(serialAirdrop1, serialAirdrop2);
-        request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(EntityId.of(sender)))
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(nftTokenId)))
                 .build();
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
         expectedAirdrops = List.of(serialAirdrop1);
-        request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(EntityId.of(sender)))
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(nftTokenId)))
-                .serialNumber(new IntegerRangeParameter(RangeOperator.LTE, 5))
+                .serialNumber(new NumberRangeParameter(RangeOperator.LTE, 5L))
                 .build();
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
         expectedAirdrops = List.of(serialAirdrop2);
-        request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(EntityId.of(sender)))
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(nftTokenId)))
-                .serialNumber(new IntegerRangeParameter(RangeOperator.GTE, 10))
+                .serialNumber(new NumberRangeParameter(RangeOperator.GTE, 10L))
                 .build();
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
         expectedAirdrops = List.of(airdrop1, serialAirdrop1, serialAirdrop2);
-        request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(EntityId.of(sender)))
-                .receiverId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver)))
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
+                .entityId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver)))
                 .build();
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);
 
         expectedAirdrops = List.of(serialAirdrop1);
-        request = OutstandingTokenAirdropRequest.builder()
-                .senderId(new EntityIdNumParameter(EntityId.of(sender)))
-                .receiverId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver)))
-                .serialNumber(new IntegerRangeParameter(RangeOperator.LTE, 5))
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
+                .entityId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver)))
+                .serialNumber(new NumberRangeParameter(RangeOperator.LTE, 5L))
                 .build();
         assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
                 .containsExactlyElementsOf(expectedAirdrops);

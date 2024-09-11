@@ -27,6 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -34,7 +35,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class IntegerRangeParameterTest {
+class NumberRangeParameterTest {
 
     @Mock
     private RestJavaProperties properties;
@@ -53,19 +54,28 @@ class IntegerRangeParameterTest {
     }
 
     @Test
-    void testConversion() {
-        assertThat(new IntegerRangeParameter(RangeOperator.GTE, 2000))
-                .isEqualTo(IntegerRangeParameter.valueOf("gte:2000"));
-        assertThat(new IntegerRangeParameter(RangeOperator.EQ, 2000)).isEqualTo(IntegerRangeParameter.valueOf("2000"));
-        assertThat(IntegerRangeParameter.EMPTY)
-                .isEqualTo(IntegerRangeParameter.valueOf(""))
-                .isEqualTo(IntegerRangeParameter.valueOf(null));
+    void testNoOperatorPresent() {
+        assertThat(new NumberRangeParameter(RangeOperator.EQ, 2000L)).isEqualTo(NumberRangeParameter.valueOf("2000"));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"a", ".1", "someinvalidstring"})
+    @EnumSource(RangeOperator.class)
+    void testGte(RangeOperator operator) {
+        assertThat(new NumberRangeParameter(operator, 2000L))
+                .isEqualTo(NumberRangeParameter.valueOf(operator + ":2000"));
+    }
+
+    @Test
+    void testEmpty() {
+        assertThat(NumberRangeParameter.EMPTY)
+                .isEqualTo(NumberRangeParameter.valueOf(""))
+                .isEqualTo(NumberRangeParameter.valueOf(null));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"a", ".1", "someinvalidstring", "-1", "9223372036854775808", ":2000"})
     @DisplayName("IntegerRangeParameter parse from string tests, negative cases")
     void testInvalidParam(String input) {
-        assertThrows(IllegalArgumentException.class, () -> IntegerRangeParameter.valueOf(input));
+        assertThrows(IllegalArgumentException.class, () -> NumberRangeParameter.valueOf(input));
     }
 }

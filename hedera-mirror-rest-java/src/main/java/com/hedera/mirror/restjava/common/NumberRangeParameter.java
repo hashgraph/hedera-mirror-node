@@ -18,21 +18,30 @@ package com.hedera.mirror.restjava.common;
 
 import org.apache.commons.lang3.StringUtils;
 
-public record IntegerRangeParameter(RangeOperator operator, Integer value) implements RangeParameter<Integer> {
+public record NumberRangeParameter(RangeOperator operator, Long value) implements RangeParameter<Long> {
 
-    public static final IntegerRangeParameter EMPTY = new IntegerRangeParameter(null, null);
+    public static final NumberRangeParameter EMPTY = new NumberRangeParameter(null, null);
 
-    public static IntegerRangeParameter valueOf(String valueRangeParam) {
+    public static NumberRangeParameter valueOf(String valueRangeParam) {
         if (StringUtils.isBlank(valueRangeParam)) {
             return EMPTY;
         }
 
         var splitVal = valueRangeParam.split(":");
         return switch (splitVal.length) {
-            case 1 -> new IntegerRangeParameter(RangeOperator.EQ, Integer.valueOf(splitVal[0]));
-            case 2 -> new IntegerRangeParameter(RangeOperator.of(splitVal[0]), Integer.valueOf(splitVal[1]));
+            case 1 -> new NumberRangeParameter(RangeOperator.EQ, getNumberValue(splitVal[0]));
+            case 2 -> new NumberRangeParameter(RangeOperator.of(splitVal[0]), getNumberValue(splitVal[1]));
             default -> throw new IllegalArgumentException(
-                    "Invalid range operator %s. Should have format rangeOperator:Integer".formatted(valueRangeParam));
+                    "Invalid range operator %s. Should have format rangeOperator:Number".formatted(valueRangeParam));
         };
+    }
+
+    private static long getNumberValue(String number) {
+        var value = Long.parseLong(number);
+        if (value < 0) {
+            throw new IllegalArgumentException("Invalid range value: " + number);
+        }
+
+        return value;
     }
 }

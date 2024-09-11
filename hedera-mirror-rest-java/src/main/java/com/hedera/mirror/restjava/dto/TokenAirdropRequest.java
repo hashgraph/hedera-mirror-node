@@ -18,16 +18,17 @@ package com.hedera.mirror.restjava.dto;
 
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
-import com.hedera.mirror.restjava.common.IntegerRangeParameter;
+import com.hedera.mirror.restjava.common.NumberRangeParameter;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Sort;
 
 @Data
 @Builder
-public class OutstandingTokenAirdropRequest {
+public class TokenAirdropRequest {
 
-    private EntityIdParameter senderId;
+    // Sender Id for Outstanding Airdrops, Receiver Id for Pending Airdrops
+    private EntityIdParameter accountId;
 
     @Builder.Default
     private int limit = 25;
@@ -35,9 +36,10 @@ public class OutstandingTokenAirdropRequest {
     @Builder.Default
     private Sort.Direction order = Sort.Direction.ASC;
 
-    private EntityIdRangeParameter receiverId;
+    // Receiver Id for Outstanding Airdrops, Sender Id for Pending Airdrops
+    private EntityIdRangeParameter entityId;
 
-    private IntegerRangeParameter serialNumber;
+    private NumberRangeParameter serialNumber;
 
     private EntityIdRangeParameter tokenId;
 }

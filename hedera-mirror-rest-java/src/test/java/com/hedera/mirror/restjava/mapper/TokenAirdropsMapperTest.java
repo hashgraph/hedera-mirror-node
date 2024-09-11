@@ -53,8 +53,8 @@ class TokenAirdropsMapperTest {
         assertThat(mapper.map(List.of(tokenAirdrop)))
                 .first()
                 .returns(tokenType == NON_FUNGIBLE_UNIQUE ? null : tokenAirdrop.getAmount(), TokenAirdrop::getAmount)
-                .returns(EntityId.of(tokenAirdrop.getReceiverAccountId()).toString(), TokenAirdrop::getReceiverId)
-                .returns(EntityId.of(tokenAirdrop.getSenderAccountId()).toString(), TokenAirdrop::getSenderId)
+                .returns(EntityId.of(tokenAirdrop.getReceiverId()).toString(), TokenAirdrop::getReceiverId)
+                .returns(EntityId.of(tokenAirdrop.getSenderId()).toString(), TokenAirdrop::getSenderId)
                 .returns(
                         tokenType == FUNGIBLE_COMMON ? null : tokenAirdrop.getSerialNumber(),
                         TokenAirdrop::getSerialNumber)

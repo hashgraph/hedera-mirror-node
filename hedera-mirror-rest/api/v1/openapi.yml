@@ -162,18 +162,17 @@ paths:
           $ref: "#/components/responses/NotFoundError"
       tags:
         - accounts
-  /api/v1/accounts/{senderIdOrAliasOrEvmAddress}/airdrops/outstanding:
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/airdrops/outstanding:
     get:
-      summary: Get get pending airdrops sent by an account
+      summary: Get get outstanding airdrops sent by an account
       description: |
-        Returns pending airdrops that have been sent by an account.
+        Returns outstanding airdrops that have been sent by an account.
       operationId: getOutstandingTokenAirdrops
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/orderQueryParam"
-        - $ref: "#/components/parameters/receiverIdOrAliasOrEvmAddressQueryParam"
-        - $ref: "#/components/parameters/serialNumberQueryParam"
+        - $ref: "#/components/parameters/receiverIdQueryParam"
         - $ref: "#/components/parameters/tokenIdQueryParam"
       responses:
         200:
@@ -187,7 +186,7 @@ paths:
         404:
           $ref: "#/components/responses/NotFoundError"
       tags:
-        - accounts
+        - airdrops
   /api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/crypto:
     get:
       summary: Get crypto allowances for an account info
@@ -3352,6 +3351,7 @@ components:
         serial_number:
           example: 1
           format: int64
+          nullable: true
           type: integer
         timestamp:
           $ref: "#/components/schemas/TimestampRange"
@@ -4454,26 +4454,40 @@ components:
       example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
       schema:
         type: string
-    receiverIdOrAliasOrEvmAddressQueryParam:
+    receiverIdQueryParam:
       name: receiver.id
+      description: The ID of the receiver to return information for
       in: query
-      description: Receiver account id or account alias with no shard realm or evm address with no shard realm
       examples:
-        aliasOnly:
-          value: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
-        accountNumOnly:
-          value: 8
-        realmAccountNum:
-          value: 0.8
-        shardRealmAccountNum:
-          value: 0.0.8
-        evmAddress:
-          value: ac384c53f03855fa1b3616052f8ba32c6c2a2fec
-        evmAddressWithPrefix:
-          value: 0xac384c53f03855fa1b3616052f8ba32c6c2a2fec
+        noValue:
+          summary: --
+          value: ""
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+        idGtOperator:
+          summary: Example of id greather than operator
+          value: gt:0.0.200
+        idGteOperator:
+          summary: Example of id greather than or equal to operator
+          value: gte:0.0.200
+        idLtOperator:
+          summary: Example of id less than operator
+          value: lt:0.0.200
+        idLteOperator:
+          summary: Example of id less than or equal to operator
+          value: lte:0.0.200
       schema:
-        pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))$
-        type: string
+        $ref: "#/components/schemas/EntityIdQuery"
     scheduledQueryParam:
       name: scheduled
       in: query

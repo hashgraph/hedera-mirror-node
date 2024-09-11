@@ -29,11 +29,14 @@ import com.hedera.mirror.rest.model.TokenAirdropsResponse;
 import com.hedera.mirror.restjava.mapper.TokenAirdropsMapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient.RequestHeadersSpec;
 import org.springframework.web.client.RestClient.RequestHeadersUriSpec;
 
@@ -54,7 +57,7 @@ class TokenAirdropsControllerTest extends ControllerTest {
         @Override
         protected RequestHeadersSpec<?> defaultRequest(RequestHeadersUriSpec<?> uriSpec) {
             var tokenAirdrop = domainBuilder.tokenAirdrop(FUNGIBLE_COMMON).persist();
-            return uriSpec.uri("", tokenAirdrop.getSenderAccountId());
+            return uriSpec.uri("", tokenAirdrop.getSenderId());
         }
 
         @ValueSource(strings = {"1000", "0.1000", "0.0.1000"})
@@ -63,7 +66,7 @@ class TokenAirdropsControllerTest extends ControllerTest {
             // Given
             var tokenAirdrop = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
-                    .customize(a -> a.senderAccountId(1000L))
+                    .customize(a -> a.senderId(1000L))
                     .persist();
 
             // When
@@ -82,7 +85,7 @@ class TokenAirdropsControllerTest extends ControllerTest {
             var entity = domainBuilder.entity().persist();
             var tokenAirdrop = domainBuilder
                     .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                    .customize(a -> a.senderAccountId(entity.getId()))
+                    .customize(a -> a.senderId(entity.getId()))
                     .persist();
 
             // When
@@ -102,7 +105,7 @@ class TokenAirdropsControllerTest extends ControllerTest {
             var entity = domainBuilder.entity().persist();
             var tokenAirdrop = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
-                    .customize(a -> a.senderAccountId(entity.getId()))
+                    .customize(a -> a.senderId(entity.getId()))
                     .persist();
 
             // When
@@ -123,19 +126,18 @@ class TokenAirdropsControllerTest extends ControllerTest {
             var id = entity.getId();
             var tokenAirdrop1 = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
-                    .customize(a -> a.senderAccountId(entity.getId()))
+                    .customize(a -> a.senderId(entity.getId()))
                     .persist();
             var tokenAirdrop2 = domainBuilder
                     .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                    .customize(a -> a.senderAccountId(entity.getId()))
+                    .customize(a -> a.senderId(entity.getId()))
                     .persist();
             var baseLink = "/api/v1/accounts/%d/airdrops/outstanding".formatted(id);
 
             // When
             var result = restClient.get().uri("?limit=1", id).retrieve().body(TokenAirdropsResponse.class);
             var nextParams = "?limit=1&receiver.id=gte:%s&token.id=gt:%s"
-                    .formatted(
-                            EntityId.of(tokenAirdrop1.getReceiverAccountId()), EntityId.of(tokenAirdrop1.getTokenId()));
+                    .formatted(EntityId.of(tokenAirdrop1.getReceiverId()), EntityId.of(tokenAirdrop1.getTokenId()));
 
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(tokenAirdrop1), baseLink + nextParams));
@@ -145,14 +147,13 @@ class TokenAirdropsControllerTest extends ControllerTest {
 
             // Then
             nextParams = "?limit=1&receiver.id=gte:%s&token.id=gt:%s"
-                    .formatted(
-                            EntityId.of(tokenAirdrop2.getReceiverAccountId()), EntityId.of(tokenAirdrop2.getTokenId()));
+                    .formatted(EntityId.of(tokenAirdrop2.getReceiverId()), EntityId.of(tokenAirdrop2.getTokenId()));
             assertThat(result).isEqualTo(getExpectedResponse(List.of(tokenAirdrop2), baseLink + nextParams));
 
             // When follow link 2
             result = restClient
                     .get()
-                    .uri(nextParams, tokenAirdrop1.getReceiverAccountId())
+                    .uri(nextParams, tokenAirdrop1.getReceiverId())
                     .retrieve()
                     .body(TokenAirdropsResponse.class);
             // Then
@@ -171,28 +172,26 @@ class TokenAirdropsControllerTest extends ControllerTest {
 
             var tokenAirdrop1 = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
-                    .customize(a -> a.senderAccountId(sender)
-                            .receiverAccountId(receiver)
-                            .tokenId(fungibleTokenId))
+                    .customize(a -> a.senderId(sender).receiverId(receiver).tokenId(fungibleTokenId))
                     .persist();
 
             var nftAirdrop = domainBuilder
                     .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                    .customize(a -> a.senderAccountId(sender)
-                            .receiverAccountId(receiver)
+                    .customize(a -> a.senderId(sender)
+                            .receiverId(receiver)
                             .tokenId(token1)
                             .serialNumber(serial1))
                     .persist();
             var nftAirdrop2 = domainBuilder
                     .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                    .customize(a -> a.senderAccountId(sender)
-                            .receiverAccountId(receiver)
+                    .customize(a -> a.senderId(sender)
+                            .receiverId(receiver)
                             .tokenId(token2)
                             .serialNumber(serial1))
                     .persist();
             domainBuilder
                     .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                    .customize(a -> a.receiverAccountId(receiver))
+                    .customize(a -> a.receiverId(receiver))
                     .persist();
 
             var uriParams = "?limit=1&receiver.id=gte:%s&order=desc".formatted(receiver);
@@ -229,10 +228,138 @@ class TokenAirdropsControllerTest extends ControllerTest {
             assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
         }
 
-        private TokenAirdropsResponse getExpectedResponse(List<TokenAirdrop> tokenAirdrops, String next) {
-            return new TokenAirdropsResponse()
-                    .airdrops(mapper.map(tokenAirdrops))
-                    .links(new Links().next(next));
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "0.0x000000000000000000000000000000000186Fb1b",
+                    "0.0.0x000000000000000000000000000000000186Fb1b",
+                    "0x000000000000000000000000000000000186Fb1b",
+                    "0.0.AABBCC22",
+                    "0.AABBCC22",
+                    "AABBCC22"
+                })
+        void notFound(String accountId) {
+            // When
+            ThrowingCallable callable =
+                    () -> restClient.get().uri("", accountId).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            validateError(callable, HttpClientErrorException.NotFound.class, "No account found for the given ID");
         }
+
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "abc",
+                    "a.b.c",
+                    "0.0.",
+                    "0.65537.1001",
+                    "0.0.-1001",
+                    "9223372036854775807",
+                    "0x00000001000000000000000200000000000000034"
+                })
+        void invalidId(String id) {
+            // When
+            ThrowingCallable callable =
+                    () -> restClient.get().uri("", id).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            validateError(
+                    callable,
+                    HttpClientErrorException.BadRequest.class,
+                    "Failed to convert 'id' with value: '" + id + "'");
+        }
+
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "abc",
+                    "a.b.c",
+                    "0.0.",
+                    "0.65537.1001",
+                    "0.0.-1001",
+                    "9223372036854775807",
+                    "0x00000001000000000000000200000000000000034"
+                })
+        void invalidAccountId(String accountId) {
+            // When
+            ThrowingCallable callable = () -> restClient
+                    .get()
+                    .uri("?receiver.id={accountId}", "0.0.1001", accountId)
+                    .retrieve()
+                    .body(TokenAirdropsResponse.class);
+
+            // Then
+            validateError(
+                    callable,
+                    HttpClientErrorException.BadRequest.class,
+                    "Failed to convert 'receiver.id' with value: '" + accountId + "'");
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+            "101, limit must be less than or equal to 100",
+            "-1, limit must be greater than 0",
+            "a, Failed to convert 'limit' with value: 'a'"
+        })
+        void invalidLimit(String limit, String expected) {
+            // When
+            ThrowingCallable callable = () -> restClient
+                    .get()
+                    .uri("?limit={limit}", "0.0.1001", limit)
+                    .retrieve()
+                    .body(TokenAirdropsResponse.class);
+
+            // Then
+            validateError(callable, HttpClientErrorException.BadRequest.class, expected);
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+            "ascending, Failed to convert 'order' with value: 'ascending'",
+            "dsc, Failed to convert 'order' with value: 'dsc'",
+            "invalid, Failed to convert 'order' with value: 'invalid'"
+        })
+        void invalidOrder(String order, String expected) {
+            // When
+            ThrowingCallable callable = () -> restClient
+                    .get()
+                    .uri("?order={order}", "0.0.1001", order)
+                    .retrieve()
+                    .body(TokenAirdropsResponse.class);
+
+            // Then
+            validateError(callable, HttpClientErrorException.BadRequest.class, expected);
+        }
+
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "abc",
+                    "a.b.c",
+                    "0.0.",
+                    "0.65537.1001",
+                    "0.0.-1001",
+                    "9223372036854775807",
+                    "0x00000001000000000000000200000000000000034"
+                })
+        void invalidTokenId(String tokenId) {
+            // When
+            ThrowingCallable callable = () -> restClient
+                    .get()
+                    .uri("?token.id={tokenId}", "0.0.1001", tokenId)
+                    .retrieve()
+                    .body(TokenAirdropsResponse.class);
+
+            // Then
+            validateError(
+                    callable,
+                    HttpClientErrorException.BadRequest.class,
+                    "Failed to convert 'token.id' with value: '" + tokenId + "'");
+        }
+    }
+
+    private TokenAirdropsResponse getExpectedResponse(List<TokenAirdrop> tokenAirdrops, String next) {
+        return new TokenAirdropsResponse().airdrops(mapper.map(tokenAirdrops)).links(new Links().next(next));
     }
 }

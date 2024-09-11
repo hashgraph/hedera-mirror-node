@@ -87,8 +87,8 @@ class TokenAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest 
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())
                 .returns(amount, TokenAirdrop::getAmount)
-                .returns(receiver.getAccountNum(), TokenAirdrop::getReceiverAccountId)
-                .returns(sender.getAccountNum(), TokenAirdrop::getSenderAccountId)
+                .returns(receiver.getAccountNum(), TokenAirdrop::getReceiverId)
+                .returns(sender.getAccountNum(), TokenAirdrop::getSenderId)
                 .returns(0L, TokenAirdrop::getSerialNumber)
                 .returns(PENDING, TokenAirdrop::getState)
                 .returns(Range.atLeast(timestamp), TokenAirdrop::getTimestampRange)
@@ -130,8 +130,8 @@ class TokenAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest 
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())
                 .returns(null, TokenAirdrop::getAmount)
-                .returns(receiver.getAccountNum(), TokenAirdrop::getReceiverAccountId)
-                .returns(sender.getAccountNum(), TokenAirdrop::getSenderAccountId)
+                .returns(receiver.getAccountNum(), TokenAirdrop::getReceiverId)
+                .returns(sender.getAccountNum(), TokenAirdrop::getSenderId)
                 .returns(PENDING, TokenAirdrop::getState)
                 .returns(Range.atLeast(timestamp), TokenAirdrop::getTimestampRange)
                 .returns(token.getTokenNum(), TokenAirdrop::getTokenId);

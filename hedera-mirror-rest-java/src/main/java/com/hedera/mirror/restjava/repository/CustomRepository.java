@@ -19,7 +19,7 @@ package com.hedera.mirror.restjava.repository;
 import static org.jooq.impl.DSL.noCondition;
 
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
-import com.hedera.mirror.restjava.common.IntegerRangeParameter;
+import com.hedera.mirror.restjava.common.NumberRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import org.jooq.Condition;
 import org.jooq.Field;
@@ -34,7 +34,7 @@ interface CustomRepository {
         return getCondition(field, param.operator(), param.value().getId());
     }
 
-    default Condition getCondition(Field<Long> field, IntegerRangeParameter param) {
+    default Condition getCondition(Field<Long> field, NumberRangeParameter param) {
         if (param == null) {
             return noCondition();
         }

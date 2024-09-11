@@ -27,9 +27,9 @@ import com.hedera.mirror.rest.model.TokenAirdrop;
 import com.hedera.mirror.rest.model.TokenAirdropsResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
-import com.hedera.mirror.restjava.common.IntegerRangeParameter;
 import com.hedera.mirror.restjava.common.LinkFactory;
-import com.hedera.mirror.restjava.dto.OutstandingTokenAirdropRequest;
+import com.hedera.mirror.restjava.common.NumberRangeParameter;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import com.hedera.mirror.restjava.mapper.TokenAirdropsMapper;
 import com.hedera.mirror.restjava.service.TokenAirdropService;
 import jakarta.validation.constraints.Max;
@@ -65,17 +65,17 @@ public class TokenAirdropsController {
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(name = RECEIVER_ID, required = false) EntityIdRangeParameter receiverId,
-            @RequestParam(name = SERIAL_NUMBER, required = false) IntegerRangeParameter serialNumber,
+            @RequestParam(name = SERIAL_NUMBER, required = false) NumberRangeParameter serialNumber,
             @RequestParam(name = TOKEN_ID, required = false) EntityIdRangeParameter tokenId) {
-        var request = OutstandingTokenAirdropRequest.builder()
-                .senderId(id)
+        var request = TokenAirdropRequest.builder()
+                .accountId(id)
+                .entityId(receiverId)
                 .limit(limit)
                 .order(order)
-                .receiverId(receiverId)
                 .serialNumber(serialNumber)
                 .tokenId(tokenId)
                 .build();
-        var response = service.getOutstandingTokenAirdrops(request);
+        var response = service.getOutstandingAirdrops(request);
         var airdrops = tokenMapper.map(response);
         var sort = Sort.by(order, RECEIVER_ID, TOKEN_ID);
         var pageable = PageRequest.of(0, limit, sort);

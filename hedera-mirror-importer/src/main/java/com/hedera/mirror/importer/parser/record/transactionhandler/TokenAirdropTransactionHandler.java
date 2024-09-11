@@ -52,8 +52,8 @@ class TokenAirdropTransactionHandler extends AbstractTransactionHandler {
 
             var tokenAirdrop = new TokenAirdrop();
             tokenAirdrop.setState(TokenAirdropStateEnum.PENDING);
-            tokenAirdrop.setReceiverAccountId(receiver.getId());
-            tokenAirdrop.setSenderAccountId(sender.getId());
+            tokenAirdrop.setReceiverId(receiver.getId());
+            tokenAirdrop.setSenderId(sender.getId());
             tokenAirdrop.setTimestampRange(Range.atLeast(recordItem.getConsensusTimestamp()));
 
             TokenID tokenId;

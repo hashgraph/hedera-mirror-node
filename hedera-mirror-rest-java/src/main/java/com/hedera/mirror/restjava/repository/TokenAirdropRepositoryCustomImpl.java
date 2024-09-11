@@ -21,7 +21,7 @@ import static org.jooq.impl.DSL.noCondition;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
-import com.hedera.mirror.restjava.dto.OutstandingTokenAirdropRequest;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import com.hedera.mirror.restjava.jooq.domain.enums.AirdropState;
 import jakarta.inject.Named;
 import java.util.Collection;
@@ -37,24 +37,23 @@ import org.springframework.data.domain.Sort.Direction;
 class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
 
     private final DSLContext dslContext;
-    private static final Map<OrderSpec, List<SortField<?>>> SORT_ORDERS = Map.of(
+    private static final Map<OrderSpec, List<SortField<?>>> OUTSTANDING_SORT_ORDERS = Map.of(
             new OrderSpec(true, Direction.ASC),
                     List.of(
-                            TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID.asc(),
+                            TOKEN_AIRDROP.RECEIVER_ID.asc(),
                             TOKEN_AIRDROP.TOKEN_ID.asc(),
                             TOKEN_AIRDROP.SERIAL_NUMBER.asc()),
             new OrderSpec(true, Direction.DESC),
                     List.of(
-                            TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID.desc(),
+                            TOKEN_AIRDROP.RECEIVER_ID.desc(),
                             TOKEN_AIRDROP.TOKEN_ID.desc(),
                             TOKEN_AIRDROP.SERIAL_NUMBER.desc()),
-            new OrderSpec(false, Direction.ASC),
-                    List.of(TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID.asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
+            new OrderSpec(false, Direction.ASC), List.of(TOKEN_AIRDROP.RECEIVER_ID.asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
             new OrderSpec(false, Direction.DESC),
-                    List.of(TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID.desc(), TOKEN_AIRDROP.TOKEN_ID.desc()));
+                    List.of(TOKEN_AIRDROP.RECEIVER_ID.desc(), TOKEN_AIRDROP.TOKEN_ID.desc()));
 
     @Override
-    public Collection<TokenAirdrop> findAllOutstanding(OutstandingTokenAirdropRequest request, EntityId accountId) {
+    public Collection<TokenAirdrop> findAllOutstanding(TokenAirdropRequest request, EntityId accountId) {
         var serialNumberCondition = getCondition(TOKEN_AIRDROP.SERIAL_NUMBER, request.getSerialNumber());
         var includeSerialNumber = !serialNumberCondition.equals(noCondition());
         if (includeSerialNumber) {
@@ -64,14 +63,14 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
         }
 
         var condition = TOKEN_AIRDROP
-                .SENDER_ACCOUNT_ID
+                .SENDER_ID
                 .eq(accountId.getId())
                 .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING))
-                .and(getCondition(TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID, request.getReceiverId()))
+                .and(getCondition(TOKEN_AIRDROP.RECEIVER_ID, request.getEntityId()))
                 .and(getCondition(TOKEN_AIRDROP.TOKEN_ID, request.getTokenId()))
                 .and(serialNumberCondition);
 
-        var order = SORT_ORDERS.get(new OrderSpec(includeSerialNumber, request.getOrder()));
+        var order = OUTSTANDING_SORT_ORDERS.get(new OrderSpec(includeSerialNumber, request.getOrder()));
         return dslContext
                 .selectFrom(TOKEN_AIRDROP)
                 .where(condition)

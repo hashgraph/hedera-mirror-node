@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.restjava.service;
 
+import static com.hedera.mirror.restjava.common.Constants.SENDER_ID;
+
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
-import com.hedera.mirror.restjava.dto.OutstandingTokenAirdropRequest;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import com.hedera.mirror.restjava.repository.TokenAirdropRepository;
 import jakarta.inject.Named;
 import java.util.Collection;
@@ -30,8 +32,12 @@ public class TokenAirdropServiceImpl implements TokenAirdropService {
     private final EntityService entityService;
     private final TokenAirdropRepository repository;
 
-    public Collection<TokenAirdrop> getOutstandingTokenAirdrops(OutstandingTokenAirdropRequest request) {
-        var id = entityService.lookup(request.getSenderId());
+    public Collection<TokenAirdrop> getOutstandingAirdrops(TokenAirdropRequest request) {
+        var accountId = request.getAccountId();
+        if (accountId == null) {
+            throw new IllegalArgumentException(SENDER_ID + " is required");
+        }
+        var id = entityService.lookup(accountId);
         return repository.findAllOutstanding(request, id);
     }
 }

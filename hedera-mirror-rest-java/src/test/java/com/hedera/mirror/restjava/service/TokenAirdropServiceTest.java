@@ -18,15 +18,16 @@ package com.hedera.mirror.restjava.service;
 
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.FUNGIBLE_COMMON;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.common.EntityIdAliasParameter;
+import com.hedera.mirror.restjava.common.EntityIdEvmAddressParameter;
 import com.hedera.mirror.restjava.common.EntityIdNumParameter;
-import com.hedera.mirror.restjava.dto.OutstandingTokenAirdropRequest;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.domain.Sort.Direction;
 
 @RequiredArgsConstructor
 class TokenAirdropServiceTest extends RestJavaIntegrationTest {
@@ -37,21 +38,19 @@ class TokenAirdropServiceTest extends RestJavaIntegrationTest {
     private static final EntityId TOKEN_ID = EntityId.of(5000L);
 
     @Test
-    void getOutstandingTokenAirdrops() {
+    void getOutstandingAirdrops() {
         var fungibleAirdrop = domainBuilder
                 .tokenAirdrop(FUNGIBLE_COMMON)
                 .customize(a -> a.amount(100L)
-                        .receiverAccountId(RECEIVER.getId())
-                        .senderAccountId(SENDER.getId())
+                        .receiverId(RECEIVER.getId())
+                        .senderId(SENDER.getId())
                         .tokenId(TOKEN_ID.getId()))
                 .persist();
 
-        var request = OutstandingTokenAirdropRequest.builder()
-                .limit(2)
-                .senderId(new EntityIdNumParameter(SENDER))
-                .order(Direction.ASC)
+        var request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(SENDER))
                 .build();
-        var response = service.getOutstandingTokenAirdrops(request);
+        var response = service.getOutstandingAirdrops(request);
         assertThat(response).containsExactly(fungibleAirdrop);
     }
 
@@ -60,14 +59,42 @@ class TokenAirdropServiceTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         var tokenAirdrop = domainBuilder
                 .tokenAirdrop(FUNGIBLE_COMMON)
-                .customize(a -> a.senderAccountId(entity.getId()))
+                .customize(a -> a.senderId(entity.getId()))
                 .persist();
-        var request = OutstandingTokenAirdropRequest.builder()
-                .limit(2)
-                .senderId(new EntityIdAliasParameter(entity.getShard(), entity.getRealm(), entity.getAlias()))
-                .order(Direction.ASC)
+        var request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdAliasParameter(entity.getShard(), entity.getRealm(), entity.getAlias()))
                 .build();
-        var response = service.getOutstandingTokenAirdrops(request);
+        var response = service.getOutstandingAirdrops(request);
         assertThat(response).containsExactly(tokenAirdrop);
+    }
+
+    @Test
+    void getOutstandingAirdropByEvmAddress() {
+        var entity = domainBuilder.entity().persist();
+        var tokenAirdrop = domainBuilder
+                .tokenAirdrop(FUNGIBLE_COMMON)
+                .customize(a -> a.senderId(entity.getId()))
+                .persist();
+        var request = TokenAirdropRequest.builder()
+                .accountId(
+                        new EntityIdEvmAddressParameter(entity.getShard(), entity.getRealm(), entity.getEvmAddress()))
+                .build();
+        var response = service.getOutstandingAirdrops(request);
+        assertThat(response).containsExactly(tokenAirdrop);
+    }
+
+    @Test
+    void getOutstandingAirdropNotFound() {
+        var request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(SENDER))
+                .build();
+        var response = service.getOutstandingAirdrops(request);
+        assertThat(response).isEmpty();
+    }
+
+    @Test
+    void getOutstandingNoSender() {
+        var request = TokenAirdropRequest.builder().build();
+        assertThrows(IllegalArgumentException.class, () -> service.getOutstandingAirdrops(request));
     }
 }

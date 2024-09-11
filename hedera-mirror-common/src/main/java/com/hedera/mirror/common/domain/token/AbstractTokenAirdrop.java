@@ -43,10 +43,10 @@ public class AbstractTokenAirdrop implements History {
     private Long amount;
 
     @jakarta.persistence.Id
-    private long receiverAccountId;
+    private long receiverId;
 
     @jakarta.persistence.Id
-    private long senderAccountId;
+    private long senderId;
 
     @jakarta.persistence.Id
     private long serialNumber;
@@ -63,8 +63,8 @@ public class AbstractTokenAirdrop implements History {
     @JsonIgnore
     public Id getId() {
         Id id = new Id();
-        id.setReceiverAccountId(receiverAccountId);
-        id.setSenderAccountId(senderAccountId);
+        id.setReceiverId(receiverId);
+        id.setSenderId(senderId);
         id.setSerialNumber(serialNumber);
         id.setTokenId(tokenId);
         return id;
@@ -75,8 +75,8 @@ public class AbstractTokenAirdrop implements History {
         @Serial
         private static final long serialVersionUID = -8165098238647325621L;
 
-        private long receiverAccountId;
-        private long senderAccountId;
+        private long receiverId;
+        private long senderId;
         private long serialNumber;
         private long tokenId;
     }

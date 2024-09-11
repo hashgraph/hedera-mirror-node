@@ -14,19 +14,27 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.mapper;
 
-import lombok.experimental.UtilityClass;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
-@UtilityClass
-public class Constants {
+public interface CollectionMapper<S, T> {
 
-    public static final String ACCOUNT_ID = "account.id";
-    public static final String RECEIVER_ID = "receiver.id";
-    public static final String SENDER_ID = "sender.id";
-    public static final String SERIAL_NUMBER = "serialnumber";
-    public static final String TOKEN_ID = "token.id";
+    T map(S source);
 
-    public static final int MAX_LIMIT = 100;
-    public static final String DEFAULT_LIMIT = "25";
+    default List<T> map(Collection<S> sources) {
+        if (sources == null) {
+            return Collections.emptyList();
+        }
+
+        List<T> list = new ArrayList<>(sources.size());
+        for (S source : sources) {
+            list.add(map(source));
+        }
+
+        return list;
+    }
 }

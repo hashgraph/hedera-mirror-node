@@ -17,10 +17,10 @@
 package com.hedera.mirror.restjava.service;
 
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
-import com.hedera.mirror.restjava.dto.OutstandingTokenAirdropRequest;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import java.util.Collection;
 
 public interface TokenAirdropService {
 
-    Collection<TokenAirdrop> getOutstandingTokenAirdrops(OutstandingTokenAirdropRequest request);
+    Collection<TokenAirdrop> getOutstandingAirdrops(TokenAirdropRequest request);
 }
