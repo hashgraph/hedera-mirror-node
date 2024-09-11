@@ -25,17 +25,17 @@ describe the needed steps to achieve this goal.
 The new modularized code base will be added as a dependency to the `hedera-mirror-web3` project. The entry point for
 simulating a transaction will be a special
 component named `TransactionExecutor`. This component will be responsible for executing the transaction and returning
-the result. First, we will need to create
-an instance of this executor for each new transaction with a factory pattern via `TransactionExecutors` class that
-accepts
+the result. It's created by a factory pattern via `TransactionExecutors` class that accepts
 a `State` implementation and `Map` of system properties.
 
 Having the initialized executor, we can call the `execute` method with the `transaction body`, `consensus timestamp` and
 specific `OperationTracers` we want. The executor will return list of `transaction records`
 produced, where the transaction output can be extracted from.
 
-Since archive nodes execute transactions asynchronously, each new transaction will create its own `TransactionExecutor`
-with its own managed writable state, keeping the existing `ContractCallContext` logic.
+Archive nodes execute transactions asynchronously, but `TransactionExecutor` is stateless and each transaction will have
+its own
+internally managed writable state. So, there will be no need to create a separate `TransactionExecutor` for each new
+transaction.
 
 ![Lifecycle of TransactionExecutor creation and execution](images/TransactionExecutor.svg)
 
@@ -71,25 +71,13 @@ Account account = accountState.get(accountId);
 
 This class will construct the base of the `ReadableKVState` component and will be the linking point between the
 `ReadableStates` implementation and the mirror node DB. We will define mirror node
-specific `DatabaseReadableKVStateBase` that will
-have a concrete `DatabaseAccessor` for the type of values it will return and a cache that will keep the only read
-values.
+specific `DatabaseReadableKVStateBase` for each entity type, that will
+have methods for reading the specific type and mapping it to the needed PBJ type. It will also keep a cache with the
+only read entities.
 
-For each PBJ type we want to read from DB we will have a separate `DatabaseReadableKVStateBase` instance.
-
-![Class diagram for a DatabaseReadableKVStateBase](images/DatabaseReadableKVStateBase.svg)
-
-### DatabaseAccessor
-
-With the `StackedStateFrames` design, we already have `DatabaseAccessors` that are used to access the DB. We will reuse
-most of the existing ones and
-add new accessors for the types that don't have one, such as Storage, Bytecode, Files.
-
-In addition, the database accessors should be modified to map the DB entities to the generated PBJ types of the models,
-instead of the models from the hedera-services mono
-code base.
-
-![Workflow of a DatabaseAccessor](images/DatabaseAccessor.svg)
+For each PBJ type we want to read from DB we will have a separate `DatabaseReadableKVStateBase` instance e.g.
+`AccountDatabaseReadableKVStateBase`,
+`TokenDatabaseReadableKVStateBase`, `FileDatabaseReadableKVStateBase`, etc.
 
 ### State
 
@@ -101,10 +89,35 @@ register listeners and commit changes.
 In the `getReadableStates` method, we will iterate over each registered service and create a new `ReadableKVStateBase`
 instance
 for each state type for this service.
-For example, for the `ACCOUNTS` state of token service, we will create a new `DatabaseReadableKVStateBase` instance with
-the `DatabaseAccessor` for the account type (e.g. `AccountDatabaseAccessor`).
+For example, for the `ACCOUNTS` state of token service, we will create a new `AccountDatabaseReadableKVStateBase`
+instance.
 
 ![ReadableStateBase initialization for each service](images/Register-KVStateBases-for-all-services.svg)
+
+### Historical state and execution
+
+For some cases like `eth_debugTraceTransaction` or reading historical data with `eth_call` we will need to use the
+historical state of the network.
+This will be achieved by loading historical state in the different `DatabaseReadableKVStateBase`
+implementations inside the `readFromDataSource` method that is going to be overridden. This method will read the
+timestamp
+from the `ContractCallContext` that is set for each transaction, so that we
+keep this state in a synchronized manner.
+
+If the timestamp value is 0, then we will know we are not in a historical state and will use latest data from DB, as the
+current logic is operating.
+
+### Debugging and tracing functionality support
+
+As noted above in order to support `eth_debugTraceTransaction`, we will need to be able to use historical timestamp to
+load specific state
+from the past. Apart from this, we will need to implement a new `OpcodeTracer` invariant, that is compliant with the new
+services codebase
+and implements `EvmActionTracer`.
+
+Instead of keeping record of the sidecar actions produced, this new tracer will keep track of the executed opcodes and
+their metadata.
+It will populate the `List<Opcode>` type inside `ContractCallContext`, which is currently used.
 
 ### Needed components
 
@@ -113,7 +126,8 @@ Apart from the `State`, several other components are needed to be implemented. T
 - `ServicesRegistry` - a component that will hold all the registered services and their schemas
 - `ServiceMigrator` - a component that will be responsible for migrating the data and data structure from a given schema
   into the state
-- `NetworkInfo` - a component that will have a dummy address book and methods that throw Unsupported exception. This
+- `NetworkInfo` - a component that will have a dummy address book with empty content and methods that throw Unsupported
+  exception. This
   component is required in the methods downstream and cannot be null
 
 ### Workflow of State initialization
@@ -133,13 +147,13 @@ These are the steps for the minimal amount of `State` setup, so that we can use 
 6. Migrate the data from a chosen schema (default to latest) into the state. This step will initialize the system
    accounts and will create a
    skeleton of the state definition for each service with empty initial data, so that they are ready to be populated
-7. Create genesis files with system data such as `feeSchedules` and `exchangeRates` and commit them to the state
 
 The state is then initialized and populated and can be used to create a `TransactionExecutor` instance.
 
-For performance reasons, we can keep a single instance of the `State` with this system genesis information, since it
-will be the same for all calls and keep a new
-instance of `WritableStates` in `ContractCallContext` for each new transaction.
+For performance reasons, we can keep a single instance of the `State` with this system genesis information. Each new
+transaction
+will create its own `SavepointStackImpl`, wrapping the passed state and any simulated changes will be written to the
+stack, instead of the shared single `State` that the mirror node will keep.
 
 ![Components for initializing and migrating the State](images/StateMigration.svg)
 
@@ -154,7 +168,8 @@ still supported.
 We can define a feature flag that will control which flow to be used (old mono code base or new reusable services code
 base). The deviation point will be inside `ContractCallService.doProcessCall`, where:
 
-- if the feature flag is enabled, we will call the new `TransactionExecutor.execute` method
+- if the feature flag is enabled, we will call the new `TransactionExecutor.execute` method. In the case of
+  ContractDebugService invocation - the new `Tracer` type should be passed as an optional argument
 - if the feature flag is disabled, we will call the `MirrorEvmTxProcessor.execute` method
 
 After the new code base is fully integrated and tested, we will remove the old mono code base and the feature flag.
@@ -164,7 +179,7 @@ After the new code base is fully integrated and tested, we will remove the old m
 The testing of the new code base from services will include only checks for potential regression. This covers the
 following tests:
 
-- Integration tests inside `hedera-mirror-web3` testing the behaviour of ContractCallService
+- Integration tests inside `hedera-mirror-web3` testing the behaviour of `ContractCallService`
 - Acceptance tests covering web3 logic
 
 In all cases - the existing behaviour and expected results should remain the same.
@@ -176,11 +191,12 @@ anymore. This will include the following packages and files:
 
 - com.hedera.node.app.service
 - com.hedera.services
-- com.hedera.mirror.web3.evm.account
-- com.hedera.mirror.web3.evm.config.ServicesConfiguration
-- com.hedera.mirror.web3.evm.contracts - all files except `OpcodesProcessingResult`
-- com.hedera.mirror.web3.evm.contracts.operations
-- com.hedera.mirror.web3.evm.contracts.store - all files except the `DatabaseAccessors`
-- com.hedera.mirror.web3.evm.contracts.store.token
+- com.hedera.mirror.web3.evm, without the following files (they can be moved in different packages):
+  - EvmConfiguration
+  - Opcode
+  - OpcodeTracerOptions
+  - TracerType
+  - OpcodesProcessingResult
+  - MirrorNodeEvmProperties
 
 Apart from these classes, all unit tests related to them should also be removed.
