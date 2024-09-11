@@ -50,6 +50,10 @@ spec:
     rest:
       monitor:
         enabled: false
+    stackgres:
+      worker:
+        persistentVolume:
+          size: 1000Gi
     test:
       enabled: false
       config:
