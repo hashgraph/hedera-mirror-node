@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import java.net.HttpURLConnection
+import java.net.URI
 import org.web3j.solidity.gradle.plugin.SolidityCompile
 import org.web3j.solidity.gradle.plugin.SolidityResolve
 
@@ -75,6 +77,49 @@ sourceSets {
     test { solidity { version = latestSolidityVersion } }
 }
 
+// Tasks to download OpenZeppelin contracts
+val openZeppelinVersion = "4.9.3"
+val openZeppelinFile = layout.buildDirectory.file("openzeppelin.zip").get().asFile
+val openZeppelinDir =
+    layout.projectDirectory.asFile
+        .resolve("src")
+        .resolve("testHistorical")
+        .resolve("solidity")
+        .resolve("openzeppelin")
+
+val downloadOpenZeppelin =
+    tasks.register("downloadOpenZeppelin") {
+        description = "Download OpenZeppelin contracts"
+        group = "historical"
+        doLast {
+            val buildDir = layout.buildDirectory.asFile.get()
+            if (!buildDir.exists()) {
+                mkdir(buildDir)
+            }
+            openZeppelinDir.mkdirs()
+            val openZeppelinUrl =
+                "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/v${openZeppelinVersion}.zip"
+            val connection = URI(openZeppelinUrl).toURL().openConnection() as HttpURLConnection
+            connection.inputStream.use { input ->
+                openZeppelinFile.outputStream().use { output -> input.copyTo(output) }
+            }
+        }
+        onlyIf { !openZeppelinFile.exists() }
+    }
+
+val extractOpenZeppelin =
+    tasks.register<Copy>("extractContracts") {
+        description = "Extracts the OpenZeppelin dependencies into the configured output folder"
+        group = "historical"
+        dependsOn(downloadOpenZeppelin)
+        from(zipTree(openZeppelinFile))
+        into(openZeppelinDir)
+        include("openzeppelin-contracts-${openZeppelinVersion}/contracts/**/*.sol")
+        eachFile {
+            path = path.replaceFirst("openzeppelin-contracts-${openZeppelinVersion}/contracts", "")
+        }
+    }
+
 tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
 tasks.compileJava { options.compilerArgs.add("--enable-preview") }
@@ -98,6 +143,7 @@ tasks.register("resolveSolidityHistorical", SolidityResolve::class) {
 
     val packageJsonFile = "./build/node_modules/@openzeppelin/contracts/package.json"
     packageJson = file(packageJsonFile)
+    dependsOn("extractContracts")
 }
 
 afterEvaluate {
@@ -107,12 +153,14 @@ afterEvaluate {
         ignoreMissing = true
         version = historicalSolidityVersion
         source = fileTree("src/testHistorical/solidity") { include("*.sol") }
+        dependsOn("extractContracts")
     }
 }
 
 afterEvaluate {
     tasks.named("generateTestHistoricalContractWrappers") {
         dependsOn(tasks.named("generateTestContractWrappers"))
+        dependsOn(extractOpenZeppelin)
         dependsOn(tasks.named("resolveSolidityHistorical"))
     }
 }
@@ -158,6 +206,8 @@ tasks.register<Copy>("moveAndCleanTestHistoricalFiles") {
     dependsOn(tasks.named("generateTestContractWrappers"))
     dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
 }
+
+afterEvaluate { tasks.named("resolveSolidity") { dependsOn("extractContracts") } }
 
 tasks.compileTestJava {
     options.compilerArgs.add("--enable-preview")

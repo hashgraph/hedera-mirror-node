@@ -947,6 +947,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     @ParameterizedTest
     @ValueSource(longs = {51, Long.MAX_VALUE - 1})
     void evmPrecompileReadOnlyTokenFunctionsEthCallHistoricalNotExistingBlockTest(final long blockNumber) {
+        testWeb3jService.setUseContractCallDeploy(true);
         testWeb3jService.setBlockType(BlockType.of(String.valueOf(blockNumber)));
         assertThatThrownBy(() -> testWeb3jService.deploy(PrecompileTestContractHistorical::deploy))
                 .isInstanceOf(RuntimeException.class)
