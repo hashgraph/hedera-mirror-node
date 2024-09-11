@@ -40,6 +40,7 @@ describe('Response middleware', () => {
       },
     };
     mockResponse = {
+      get: jest.fn(),
       locals: {
         responseData: responseData,
         statusCode: 200,
