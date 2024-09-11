@@ -436,6 +436,23 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     @Test
+    void ethCallWithValueAndNotExistingSenderAlias() {
+        // Given
+        final var receiverEntity = accountPersist();
+        final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
+        final var notExistingSenderAlias = Address.fromHexString("0x6b175474e89094c44da98b954eedeac495271d0f");
+        final var serviceParameters =
+                getContractExecutionParametersWithValue(Bytes.EMPTY, notExistingSenderAlias, receiverAddress, 10L);
+
+        // When
+        final var result = contractExecutionService.processCall(serviceParameters);
+
+        // Then
+        assertThat(result).isEqualTo(HEX_PREFIX);
+        assertGasLimit(serviceParameters);
+    }
+
+    @Test
     void invalidFunctionSig() {
         // Given
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ERROR);
