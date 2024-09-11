@@ -14,31 +14,35 @@ Need to create a snapshot of disks for Citus cluster
 
 * Have access to running Citus cluster in a Kubernetes cluster
 * Have `jq` installed
+  TODO include postgres version in the description
+* Traffic is not routed to the environment where snapshots are being taken from
 
 ## Steps
 
 1. Configure kubectl to point to the `source cluster`
    <br>
    `gcloud container clusters get-credentials {clusterName} --region {clusterRegion} --project {gcpProjectName}`
-2. Get the details needed for the name and description of the snapshot
+2. Get the details needed for the name and description of the snapshots
    <br>
-   `kubectl get pvc -A -lstackgres.io/cluster="true" -o json |jq -r '.items[]|"{\n  pvcName: \(.metadata.name),\n  pvcSize: \(.spec.resources.requests.storage),\n  volumeName: \(.spec.volumeName),\n  namespace: \(.metadata.namespace)\n}"'`
+   `kubectl get pv -o json |jq -r '.items[]|select(.metadata.annotations."pv.kubernetes.io/provisioned-by"=="zfs.csi.openebs.io" and .status.phase == "Bound")|"namespace: \(.spec.claimRef.namespace) volumeName: \(.metadata.name) pvcName: \(.spec.claimRef.name) pvcSize: \(.spec.capacity.storage)  nodeId: \(.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0])"'`
+3. Scale down the importer and Citus cluster(s) in all namespaces for effected disks. (TODO do 2 steps)
    <br>
-   `kubectl get zfsvolumes -A -o json |jq -r '.items[]|"{\n  volumeName: \(.metadata.name),\n  capacity: \(.spec.capacity),\n  nodeId: \(.metadata.labels["kubernetes.io/nodename"]),\n  namespace: \(.metadata.namespace)\n}"'`
-3. Scale down the importer in all namespaces for effected disks
+   `kubectl scale deployment --context {sourceClusterContext} -n {namespace} mirror-importer --replicas=0`
    <br>
-   `kubectl scale deployment --context {sourceClusterContext} -n {namespace} mirror-importer --replicas=0 `
-4. Identify which `pvc`s are the primary for coordinators and workers. The easiest way to do so is by looking at
-   the `Stackgres` UI
+   `kubectl annotate sgclusters.stackgres.io -n {namespace} --all stackgres.io/reconciliation-pause="true" --overwrite`
    <br>
-   `kubectl port-forward -n {commonNamespace}  services/stackgres-restapi 8085:443`
+   `kubectl scale sts -n {namespace} -l 'stackgres.io/cluster=true' --replicas=0`
    <br>
-   open a browser and go to `https://localhost:8085`
+   wait for Citus pods to fully terminate
    <br>
-   to get username and password for `Stackgres` UI, run
+   `watch kubectl get pods -n {namespace}`
+4. Identify which `pvc`s are for the primary coordinators and workers.
    <br>
-   `kubectl get secrets -n {commonNamespace} stackgres-restapi-admin -o json |ksd |jq '.stringData|"userName: \(.k8sUsername), password: \(.clearPassword)"'`
-5. Create a new disk snapshot for each disk used in the `source cluster`s. Use the values from step 2
+   `kubectl get sgclusters.stackgres.io -A  -o json |jq -r '.items[]|"\(.metadata.namespace) \(.status.podStatuses[]|select(.primary)|.name)"'`
+5. Identify the disks to snapshot
+   <br>
+   `gcloud compute disks list --project {gcpProjectName} --filter="name~{diskPrefix}.*-zfs" --format="table(name, sizeGb, users)"`
+6. Using the values from step 2, create a new snapshot for each disk
    <br>
    Each unique `nodeId` from step 2 maps to a unique disk
    <br>
@@ -48,18 +52,13 @@ Need to create a snapshot of disks for Citus cluster
    <br>
    `nameOfSnapshot` - `{nodeId}-{dateSnapshotTaken}`
    <br>
-   `pvcNames` - comma separated list of `pvcName`s where the `pvc` `volumeName` matches the `zfsvolume`
-   `volumeName` for all `zfsvolumes` with the same `nodeId` used for `sourceDisk`
+   `pvcNames` - comma separated list of `pvcName`s with same `nodeId`
    <br>
    `pvcSizes` - comma separated list of `pvcSizes`s with position corresponding to the position in `pvcNames` list
    <br>
-   `namespaces` - comma separated list of `namespace`s where the `pvc` is located
-   with position corresponding to the position in `pvcNames` list
+   `namespaces` - comma separated list of `namespace`s with position corresponding to the position in `pvcNames` list
    <br>
-   `volumeNames` - comma separated list of `volumeName`s where the `zfsvolume` `nodeId` matches the `nodeId` used for
-   `sourceDisk` with position corresponding to the position in `pvcNames` list
-   <br>
-   `capacities` - comma separated list of `capacity` with position corresponding to the position in `pvcNames` list
+   `volumeNames` - comma separated list of `volumeName`s with position corresponding to the position in `pvcNames` list
    <br>
    `primary` - comma separated list of `true` or `false` with position corresponding to the position in `pvcNames`
    list
@@ -69,9 +68,11 @@ Need to create a snapshot of disks for Citus cluster
    (note you can restore snapshots to a different region than the `snapshotRegion`)
    <br>
    `description` -
-   `pvcNames={pvcNames}, volumeNames={volumeNames}, pvcSizes={pvcSizes}, capacities={capacities}, namespaces={namespaces}, primary={primary}`
+   `pvcNames={pvcNames}, volumeNames={volumeNames}, pvcSizes={pvcSizes}, namespaces={namespaces}, primary={primary}`
    <br>
    `gcloud compute snapshots create {nameOfSnapshot} --project={project}  --source-disk={sourceDisk} --source-disk-zone={sourceDiskZone} --storage-location={snapshotRegion} --description={description}`
-6. Once the snapshots are all finished creating, you may re-enable the importer for all namespaces
-   spun down in step 3
-   `kubectl scale deployment --context {sourceClusterContext} --replicas=1 -n {namespace} mirror-importer`
+7. Scale up the importer and Citus cluster(s) in all namespaces for effected disks
+   <br>
+   `kubectl annotate sgclusters.stackgres.io -n {namespace} stackgres.io/reconciliation-pause- --overwrite`
+   <br>
+   `kubectl scale deployment --context {sourceClusterContext} -n {namespace} mirror-importer --replicas=0`
