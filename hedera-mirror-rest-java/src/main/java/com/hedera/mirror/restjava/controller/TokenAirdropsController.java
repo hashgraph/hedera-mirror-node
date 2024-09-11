@@ -19,7 +19,6 @@ package com.hedera.mirror.restjava.controller;
 import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.RECEIVER_ID;
-import static com.hedera.mirror.restjava.common.Constants.SERIAL_NUMBER;
 import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
 
 import com.google.common.collect.ImmutableSortedMap;
@@ -28,7 +27,6 @@ import com.hedera.mirror.rest.model.TokenAirdropsResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.LinkFactory;
-import com.hedera.mirror.restjava.common.NumberRangeParameter;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import com.hedera.mirror.restjava.mapper.TokenAirdropsMapper;
 import com.hedera.mirror.restjava.service.TokenAirdropService;
@@ -65,14 +63,12 @@ public class TokenAirdropsController {
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(name = RECEIVER_ID, required = false) EntityIdRangeParameter receiverId,
-            @RequestParam(name = SERIAL_NUMBER, required = false) NumberRangeParameter serialNumber,
             @RequestParam(name = TOKEN_ID, required = false) EntityIdRangeParameter tokenId) {
         var request = TokenAirdropRequest.builder()
                 .accountId(id)
                 .entityId(receiverId)
                 .limit(limit)
                 .order(order)
-                .serialNumber(serialNumber)
                 .tokenId(tokenId)
                 .build();
         var response = service.getOutstandingAirdrops(request);

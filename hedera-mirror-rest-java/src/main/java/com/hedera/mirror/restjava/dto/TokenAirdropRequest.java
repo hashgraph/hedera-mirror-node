@@ -18,7 +18,6 @@ package com.hedera.mirror.restjava.dto;
 
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
-import com.hedera.mirror.restjava.common.NumberRangeParameter;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Sort;
@@ -38,8 +37,6 @@ public class TokenAirdropRequest {
 
     // Receiver Id for Outstanding Airdrops, Sender Id for Pending Airdrops
     private EntityIdRangeParameter entityId;
-
-    private NumberRangeParameter serialNumber;
 
     private EntityIdRangeParameter tokenId;
 }

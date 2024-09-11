@@ -25,7 +25,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.common.EntityIdNumParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
-import com.hedera.mirror.restjava.common.NumberRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import java.util.List;
@@ -151,112 +150,5 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                 .build();
         assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
                 .containsExactlyElementsOf(receiverIdAirdrops);
-
-        // With serial number condition
-        var serialNumberAirdropsOrdered = order.isAscending() ? serialNumberAirdrops : serialNumberAirdrops.reversed();
-        request = TokenAirdropRequest.builder()
-                .accountId(new EntityIdNumParameter(sender.toEntityId()))
-                .order(order)
-                .serialNumber(new NumberRangeParameter(RangeOperator.EQ, serialNumber))
-                .build();
-        assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
-                .containsExactlyElementsOf(serialNumberAirdropsOrdered);
-    }
-
-    @Test
-    void serialNumber() {
-        var sender = 1000;
-        var receiver = 3000;
-        var receiver2 = 4000;
-        var tokenId = 5000;
-        var nftTokenId = 6000;
-        var nftTokenId2 = 7000;
-        var serialNumber = 5;
-        var serialNumber2 = 10;
-
-        var airdrop1 = domainBuilder
-                .tokenAirdrop(FUNGIBLE_COMMON)
-                .customize(a -> a.senderId(sender).receiverId(receiver).tokenId(tokenId))
-                .persist();
-        var serialAirdrop1 = domainBuilder
-                .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderId(sender)
-                        .receiverId(receiver)
-                        .serialNumber(serialNumber)
-                        .tokenId(nftTokenId))
-                .persist();
-        var serialAirdrop2 = domainBuilder
-                .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderId(sender)
-                        .receiverId(receiver)
-                        .serialNumber(serialNumber2)
-                        .tokenId(nftTokenId))
-                .persist();
-        var serialAirdrop3 = domainBuilder
-                .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderId(sender)
-                        .receiverId(receiver2)
-                        .serialNumber(serialNumber)
-                        .tokenId(nftTokenId2))
-                .persist();
-
-        var expectedAirdrops = List.of(serialAirdrop1, serialAirdrop2, serialAirdrop3);
-        var request = TokenAirdropRequest.builder()
-                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
-                .serialNumber(new NumberRangeParameter(RangeOperator.GT, 4L))
-                .build();
-        assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
-                .containsExactlyElementsOf(expectedAirdrops);
-
-        expectedAirdrops = List.of(serialAirdrop1, serialAirdrop3);
-        request = TokenAirdropRequest.builder()
-                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
-                .serialNumber(new NumberRangeParameter(RangeOperator.LT, 10L))
-                .build();
-        assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
-                .containsExactlyElementsOf(expectedAirdrops);
-
-        expectedAirdrops = List.of(serialAirdrop1, serialAirdrop2);
-        request = TokenAirdropRequest.builder()
-                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
-                .tokenId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(nftTokenId)))
-                .build();
-        assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
-                .containsExactlyElementsOf(expectedAirdrops);
-
-        expectedAirdrops = List.of(serialAirdrop1);
-        request = TokenAirdropRequest.builder()
-                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
-                .tokenId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(nftTokenId)))
-                .serialNumber(new NumberRangeParameter(RangeOperator.LTE, 5L))
-                .build();
-        assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
-                .containsExactlyElementsOf(expectedAirdrops);
-
-        expectedAirdrops = List.of(serialAirdrop2);
-        request = TokenAirdropRequest.builder()
-                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
-                .tokenId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(nftTokenId)))
-                .serialNumber(new NumberRangeParameter(RangeOperator.GTE, 10L))
-                .build();
-        assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
-                .containsExactlyElementsOf(expectedAirdrops);
-
-        expectedAirdrops = List.of(airdrop1, serialAirdrop1, serialAirdrop2);
-        request = TokenAirdropRequest.builder()
-                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
-                .entityId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver)))
-                .build();
-        assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
-                .containsExactlyElementsOf(expectedAirdrops);
-
-        expectedAirdrops = List.of(serialAirdrop1);
-        request = TokenAirdropRequest.builder()
-                .accountId(new EntityIdNumParameter(EntityId.of(sender)))
-                .entityId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver)))
-                .serialNumber(new NumberRangeParameter(RangeOperator.LTE, 5L))
-                .build();
-        assertThat(repository.findAllOutstanding(request, EntityId.of(sender)))
-                .containsExactlyElementsOf(expectedAirdrops);
     }
 }

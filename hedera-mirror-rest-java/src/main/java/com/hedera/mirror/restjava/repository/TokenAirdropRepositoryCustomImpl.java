@@ -17,7 +17,6 @@
 package com.hedera.mirror.restjava.repository;
 
 import static com.hedera.mirror.restjava.jooq.domain.Tables.TOKEN_AIRDROP;
-import static org.jooq.impl.DSL.noCondition;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
@@ -37,40 +36,20 @@ import org.springframework.data.domain.Sort.Direction;
 class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
 
     private final DSLContext dslContext;
-    private static final Map<OrderSpec, List<SortField<?>>> OUTSTANDING_SORT_ORDERS = Map.of(
-            new OrderSpec(true, Direction.ASC),
-                    List.of(
-                            TOKEN_AIRDROP.RECEIVER_ID.asc(),
-                            TOKEN_AIRDROP.TOKEN_ID.asc(),
-                            TOKEN_AIRDROP.SERIAL_NUMBER.asc()),
-            new OrderSpec(true, Direction.DESC),
-                    List.of(
-                            TOKEN_AIRDROP.RECEIVER_ID.desc(),
-                            TOKEN_AIRDROP.TOKEN_ID.desc(),
-                            TOKEN_AIRDROP.SERIAL_NUMBER.desc()),
-            new OrderSpec(false, Direction.ASC), List.of(TOKEN_AIRDROP.RECEIVER_ID.asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
-            new OrderSpec(false, Direction.DESC),
-                    List.of(TOKEN_AIRDROP.RECEIVER_ID.desc(), TOKEN_AIRDROP.TOKEN_ID.desc()));
+    private static final Map<Direction, List<SortField<?>>> OUTSTANDING_SORT_ORDERS = Map.of(
+            Direction.ASC, List.of(TOKEN_AIRDROP.RECEIVER_ID.asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
+            Direction.DESC, List.of(TOKEN_AIRDROP.RECEIVER_ID.desc(), TOKEN_AIRDROP.TOKEN_ID.desc()));
 
     @Override
     public Collection<TokenAirdrop> findAllOutstanding(TokenAirdropRequest request, EntityId accountId) {
-        var serialNumberCondition = getCondition(TOKEN_AIRDROP.SERIAL_NUMBER, request.getSerialNumber());
-        var includeSerialNumber = !serialNumberCondition.equals(noCondition());
-        if (includeSerialNumber) {
-            // If the query includes a serial number, explicitly remove fungible tokens from the result as they have a
-            // serial number of 0
-            serialNumberCondition = serialNumberCondition.and(TOKEN_AIRDROP.SERIAL_NUMBER.ne(0L));
-        }
-
         var condition = TOKEN_AIRDROP
                 .SENDER_ID
                 .eq(accountId.getId())
                 .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING))
                 .and(getCondition(TOKEN_AIRDROP.RECEIVER_ID, request.getEntityId()))
-                .and(getCondition(TOKEN_AIRDROP.TOKEN_ID, request.getTokenId()))
-                .and(serialNumberCondition);
+                .and(getCondition(TOKEN_AIRDROP.TOKEN_ID, request.getTokenId()));
 
-        var order = OUTSTANDING_SORT_ORDERS.get(new OrderSpec(includeSerialNumber, request.getOrder()));
+        var order = OUTSTANDING_SORT_ORDERS.get(request.getOrder());
         return dslContext
                 .selectFrom(TOKEN_AIRDROP)
                 .where(condition)
@@ -78,6 +57,4 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
                 .limit(request.getLimit())
                 .fetchInto(TokenAirdrop.class);
     }
-
-    private record OrderSpec(boolean includeSerialNumber, Direction direction) {}
 }
