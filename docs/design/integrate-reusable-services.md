@@ -90,9 +90,21 @@ In the `getReadableStates` method, we will iterate over each registered service 
 instance
 for each state type for this service.
 For example, for the `ACCOUNTS` state of token service, we will create a new `AccountDatabaseReadableKVStateBase`
-instance.
+instance that will extend the parent `DatabaseReadableKVStateBase`.
 
-![ReadableStateBase initialization for each service](images/Register-KVStateBases-for-all-services.svg)
+We will need to support the following State keys:
+
+- STORAGE
+- BYTECODE
+- ACCOUNTS
+- TOKENS
+- NFTS
+- ALIASES
+- TOKEN_RELS
+- PENDING_AIDROPS
+- FILES
+
+![ReadableStateBase initialization for each service](images/ReadableStates.svg)
 
 ### Historical state and execution
 
@@ -198,5 +210,7 @@ anymore. This will include the following packages and files:
   - TracerType
   - OpcodesProcessingResult
   - MirrorNodeEvmProperties
+
+Delete design docs and images related to stacked state frames design, which will be obsolete at this point.
 
 Apart from these classes, all unit tests related to them should also be removed.
