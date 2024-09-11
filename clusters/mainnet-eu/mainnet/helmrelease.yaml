@@ -65,7 +65,7 @@ spec:
       env:
         HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
         HEDERA_MIRROR_REST_STATEPROOF_STREAMS_NETWORK: MAINNET
-    restJava:
+    restjava:
       enabled: false
     rosetta:
       env:
