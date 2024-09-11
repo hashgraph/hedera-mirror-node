@@ -56,7 +56,7 @@ spec:
           size: 96Gi
       worker:
         persistentVolume:
-          size: 1000Gi
+          size: 512Gi
     test:
       enabled: false
       config:
