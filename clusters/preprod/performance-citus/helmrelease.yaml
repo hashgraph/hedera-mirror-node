@@ -51,6 +51,9 @@ spec:
       monitor:
         enabled: false
     stackgres:
+      coordinator:
+        persistentVolume:
+          size: 96Gi
       worker:
         persistentVolume:
           size: 1000Gi
