@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
@@ -27,6 +28,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
@@ -79,6 +81,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -87,11 +90,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MirrorEvmTxProcessorTest {
 
     private static final int MAX_STACK_SIZE = 1024;
+    private static final String EVM_ADDRESS = "0x6b175474e89094c44da98b954eedeac495271d0f";
+    private static final String FUNCTION_HASH = "0x8070450f";
     private final HederaEvmAccount sender = new HederaEvmAccount(Address.ALTBN128_ADD);
     private final HederaEvmAccount receiver = new HederaEvmAccount(Address.ALTBN128_MUL);
     private final Address receiverAddress = receiver.canonicalAddress();
     private final Address nativePrecompileAddress = Address.SHA256;
     private final Address invalidNativePrecompileAddress = Address.BLS12_G1MUL;
+    private HederaEvmAccount senderWithAlias;
 
     @Mock
     private PricesAndFeesProvider pricesAndFeesProvider;
@@ -136,14 +142,17 @@ class MirrorEvmTxProcessorTest {
     private TokenAccessor tokenAccessor;
 
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
-
     private SemanticVersion mcpVersion;
     private SemanticVersion ccpVersion;
-    private static final String FUNCTION_HASH = "0x8070450f";
+
+    static Stream<Arguments> provideIsEstimateParameters() {
+        return Stream.of(Arguments.of(true), Arguments.of(false));
+    }
 
     @BeforeEach
     void setup() {
         setupGasCalculator();
+        setupSenderWithAlias();
         final var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
@@ -165,11 +174,17 @@ class MirrorEvmTxProcessorTest {
                 () -> {
                     mcpVersion = EVM_VERSION_0_38;
                     return new MessageCallProcessor(v38, new PrecompileContractRegistry());
+                },
+                EVM_VERSION,
+                () -> {
+                    mcpVersion = EVM_VERSION;
+                    return new MessageCallProcessor(v38, new PrecompileContractRegistry());
                 });
         Map<SemanticVersion, Provider<ContractCreationProcessor>> processorsMap = Map.of(
                 EVM_VERSION_0_30, () -> new ContractCreationProcessor(gasCalculator, v30, true, List.of(), 1),
                 EVM_VERSION_0_34, () -> new ContractCreationProcessor(gasCalculator, v34, true, List.of(), 1),
-                EVM_VERSION_0_38, () -> new ContractCreationProcessor(gasCalculator, v38, true, List.of(), 1));
+                EVM_VERSION_0_38, () -> new ContractCreationProcessor(gasCalculator, v38, true, List.of(), 1),
+                EVM_VERSION, () -> new ContractCreationProcessor(gasCalculator, v38, true, List.of(), 1));
 
         mirrorEvmTxProcessor = new MirrorEvmTxProcessorImpl(
                 worldState,
@@ -199,6 +214,32 @@ class MirrorEvmTxProcessorTest {
 
         final var params = ContractExecutionParameters.builder()
                 .sender(sender)
+                .receiver(receiver.canonicalAddress())
+                .gas(33_333L)
+                .value(1234L)
+                .callData(Bytes.EMPTY)
+                .isStatic(true)
+                .isEstimate(isEstimate)
+                .build();
+        final var result = ContractCallContext.run(ignored -> mirrorEvmTxProcessor.execute(params, params.getGas()));
+
+        assertThat(result)
+                .isNotNull()
+                .returns(true, HederaEvmTransactionProcessingResult::isSuccessful)
+                .returns(receiver.canonicalAddress(), r -> r.getRecipient().orElseThrow());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void assertSuccessExecutionWithNotExistingSenderAlias(boolean isEstimate) {
+        givenValidMockWithoutGetOrCreate();
+        when(evmProperties.getSemanticEvmVersion()).thenReturn(EVM_VERSION);
+        given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
+        given(store.getAccount(sender.canonicalAddress(), OnMissing.DONT_THROW)).willReturn(Account.getEmptyAccount());
+
+        final var params = ContractExecutionParameters.builder()
+                .sender(senderWithAlias)
                 .receiver(receiver.canonicalAddress())
                 .gas(33_333L)
                 .value(1234L)
@@ -363,7 +404,8 @@ class MirrorEvmTxProcessorTest {
         given(gasCalculator.getZeroTierGasCost()).willReturn(0L);
     }
 
-    static Stream<Arguments> provideIsEstimateParameters() {
-        return Stream.of(Arguments.of(true), Arguments.of(false));
+    private void setupSenderWithAlias() {
+        senderWithAlias = new HederaEvmAccount(Address.ALTBN128_ADD);
+        senderWithAlias.setAlias(ByteString.copyFrom(EVM_ADDRESS.getBytes()));
     }
 }

@@ -38,7 +38,7 @@ extra.apply {
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
-    set("vertxVersion", "4.5.9")
+    set("vertxVersion", "4.5.10")
     set("tuweniVersion", "2.3.1")
 }
 
@@ -69,7 +69,7 @@ dependencies {
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.53.0")
         api("com.hedera.hashgraph:sdk:2.38.0")
         api("com.ongres.scram:client:2.1")
-        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.7")
+        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.8")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
@@ -104,7 +104,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.3")
         api("org.testcontainers:junit-jupiter:1.20.1")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.27.17")
+        api("software.amazon.awssdk:bom:2.27.21")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
         api("org.web3j:core:4.12.0")
     }
