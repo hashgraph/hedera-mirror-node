@@ -158,6 +158,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
     @Test
     void getBlockHashReturnsCorrectHash() throws Exception {
+        testWeb3jService.setUseContractCallDeploy(true);
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         final var recordFileForBlockHash =
                 domainBuilder.recordFile().customize(r -> r.index(0L)).persist();
@@ -170,6 +171,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
     @Test
     void getGenesisBlockHashReturnsCorrectBlock() throws Exception {
+        testWeb3jService.setUseContractCallDeploy(true);
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         final var genesisRecordFileForBlockHash =
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
