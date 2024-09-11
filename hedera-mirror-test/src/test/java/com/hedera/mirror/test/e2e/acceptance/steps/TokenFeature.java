@@ -459,10 +459,6 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("{account} rejects the fungible token")
     public void rejectFungibleToken(AccountNameEnum ownerName) {
-        if (!properties.getFeatureProperties().isRejectToken()) {
-            return;
-        }
-
         var owner = accountClient.getAccount(ownerName);
         networkTransactionResponse = tokenClient.rejectFungibleToken(List.of(tokenId), owner);
         assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
@@ -473,10 +469,6 @@ public class TokenFeature extends AbstractFeature {
     @Then("the mirror node REST API should return the transaction {account} returns {int} fungible token to {account}")
     public void verifyTokenTransferForRejectedFungibleToken(
             AccountNameEnum senderName, long amount, AccountNameEnum treasuryName) {
-        if (!properties.getFeatureProperties().isRejectToken()) {
-            return;
-        }
-
         var sender = accountClient.getAccount(senderName).getAccountId();
         var treasury = accountClient.getAccount(treasuryName).getAccountId();
 
@@ -498,10 +490,6 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("{account} rejects serial number index {int}")
     public void rejectNonFungibleToken(AccountNameEnum ownerName, int index) {
-        if (!properties.getFeatureProperties().isRejectToken()) {
-            return;
-        }
-
         long serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
         var nftId = new NftId(tokenId, serialNumber);
         var owner = accountClient.getAccount(ownerName);
@@ -515,10 +503,6 @@ public class TokenFeature extends AbstractFeature {
     @Then(
             "the mirror node REST API should return the transaction {account} returns serial number index {int} to {account}")
     public void verifyTokenTransferForRejectedNft(AccountNameEnum senderName, int index, AccountNameEnum treasuryName) {
-        if (!properties.getFeatureProperties().isRejectToken()) {
-            return;
-        }
-
         var sender = accountClient.getAccount(senderName).getAccountId();
         var treasury = accountClient.getAccount(treasuryName).getAccountId();
         long serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
