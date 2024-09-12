@@ -26,7 +26,7 @@ import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.TokenAirdropsResponse;
-import com.hedera.mirror.restjava.mapper.TokenAirdropsMapper;
+import com.hedera.mirror.restjava.mapper.TokenAirdropMapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -43,7 +43,7 @@ import org.springframework.web.client.RestClient.RequestHeadersUriSpec;
 @RequiredArgsConstructor
 class TokenAirdropsControllerTest extends ControllerTest {
 
-    private final TokenAirdropsMapper mapper;
+    private final TokenAirdropMapper mapper;
 
     @DisplayName("/api/v1/accounts/{id}/airdrops/outstanding")
     @Nested

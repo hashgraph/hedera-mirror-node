@@ -29,7 +29,7 @@ import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.LinkFactory;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
-import com.hedera.mirror.restjava.mapper.TokenAirdropsMapper;
+import com.hedera.mirror.restjava.mapper.TokenAirdropMapper;
 import com.hedera.mirror.restjava.service.Bound;
 import com.hedera.mirror.restjava.service.TokenAirdropService;
 import jakarta.validation.constraints.Max;
@@ -58,7 +58,7 @@ public class TokenAirdropsController {
             TOKEN_ID, tokenAirdrop.getTokenId());
 
     private final LinkFactory linkFactory;
-    private final TokenAirdropsMapper tokenAirdropsMapper;
+    private final TokenAirdropMapper tokenAirdropMapper;
     private final TokenAirdropService service;
 
     @GetMapping(value = "/outstanding")
@@ -76,7 +76,7 @@ public class TokenAirdropsController {
                 .tokenIds(new Bound(tokenIds, false, TOKEN_ID))
                 .build();
         var response = service.getOutstandingAirdrops(request);
-        var airdrops = tokenAirdropsMapper.map(response);
+        var airdrops = tokenAirdropMapper.map(response);
         var sort = Sort.by(order, RECEIVER_ID, TOKEN_ID);
         var pageable = PageRequest.of(0, limit, sort);
         var links = linkFactory.create(airdrops, pageable, EXTRACTOR);

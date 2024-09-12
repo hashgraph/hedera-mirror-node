@@ -22,7 +22,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
 @Mapper(config = MapperConfiguration.class)
-public interface TokenAirdropsMapper extends CollectionMapper<TokenAirdrop, com.hedera.mirror.rest.model.TokenAirdrop> {
+public interface TokenAirdropMapper extends CollectionMapper<TokenAirdrop, com.hedera.mirror.rest.model.TokenAirdrop> {
 
     @Mapping(source = "receiverAccountId", target = "receiverId")
     @Mapping(source = "senderAccountId", target = "senderId")

@@ -31,16 +31,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-class TokenAirdropsMapperTest {
+class TokenAirdropMapperTest {
 
     private CommonMapper commonMapper;
     private DomainBuilder domainBuilder;
-    private TokenAirdropsMapper mapper;
+    private TokenAirdropMapper mapper;
 
     @BeforeEach
     void setup() {
         commonMapper = new CommonMapperImpl();
-        mapper = new TokenAirdropsMapperImpl(commonMapper);
+        mapper = new TokenAirdropMapperImpl(commonMapper);
         domainBuilder = new DomainBuilder();
     }
 
