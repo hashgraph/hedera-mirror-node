@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import bodyParser from 'body-parser';
 import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
@@ -36,11 +35,11 @@ app.disable('x-powered-by');
 app.set('trust proxy', true);
 app.set('port', port);
 app.use(
-  bodyParser.urlencoded({
+  express.urlencoded({
     extended: false,
   })
 );
-app.use(bodyParser.json());
+app.use(express.json());
 app.use(compression());
 app.use(cors());
 
