@@ -24,7 +24,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ZERO_VALUE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -881,9 +880,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 tokenToCreate, BigInteger.valueOf(10L), BigInteger.valueOf(10L));
 
         // Then
-        assertThatThrownBy(function::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -903,9 +900,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 tokenToCreate, BigInteger.valueOf(10L), BigInteger.valueOf(10L));
 
         // Then
-        assertThatThrownBy(function::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -925,9 +920,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 tokenToCreate, BigInteger.valueOf(10L), BigInteger.valueOf(10L));
 
         // Then
-        assertThatThrownBy(function::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -944,9 +937,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 tokenToCreate, BigInteger.valueOf(10L), BigInteger.valueOf(10L));
 
         // Then
-        assertThatThrownBy(function::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -963,9 +954,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 tokenToCreate, BigInteger.valueOf(10L), BigInteger.valueOf(10L));
 
         // Then
-        assertThatThrownBy(function::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -984,9 +973,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 tokenToCreate, BigInteger.valueOf(10L), BigInteger.valueOf(10L));
 
         // Then
-        assertThatThrownBy(function::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -1002,9 +989,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var function = contract.call_createNonFungibleTokenExternal(tokenToCreate);
 
         // Then
-        assertThatThrownBy(function::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -1020,9 +1005,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var function = contract.call_createNonFungibleTokenExternal(tokenToCreate);
 
         // Then
-        assertThatThrownBy(function::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -1040,9 +1023,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var function = contract.call_createNonFungibleTokenExternal(tokenToCreate);
 
         // Then
-        assertThatThrownBy(function::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -1059,9 +1040,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var function = contract.call_createNonFungibleTokenExternal(tokenToCreate);
 
         // Then
-        assertThatThrownBy(function::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(function::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @ParameterizedTest

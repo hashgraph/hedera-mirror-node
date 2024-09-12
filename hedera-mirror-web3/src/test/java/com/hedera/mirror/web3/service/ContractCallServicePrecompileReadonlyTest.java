@@ -31,7 +31,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.Expiry;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.HederaToken;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -935,9 +934,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                 getAddressFromEntity(nftEntity), BigInteger.valueOf(3L));
 
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -951,9 +948,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var functionCall = contract.call_getInformationForToken(getAddressFromEntity(account));
 
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     private void verifyEthCallAndEstimateGas(

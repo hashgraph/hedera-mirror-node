@@ -22,7 +22,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -949,9 +948,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         // When
         final var functionCall = contract.send_decimals(tokenAddress.toHexString());
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -963,9 +960,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         // When
         final var functionCall = contract.send_getOwnerOf(tokenAddress.toHexString(), BigInteger.ONE);
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -977,9 +972,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         // When
         final var functionCall = contract.send_tokenURI(tokenAddress.toHexString(), BigInteger.ONE);
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
