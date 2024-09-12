@@ -24,6 +24,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -70,7 +71,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_getApproved(getAddressFromEntity(tokenEntity), BigInteger.valueOf(1L))
                     : contract.call_getApprovedNonStatic(getAddressFromEntity(tokenEntity), BigInteger.valueOf(1L));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -86,7 +89,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_getApproved(getAddressFromEntity(nftToken), BigInteger.valueOf(1L))
                     : contract.call_getApprovedNonStatic(getAddressFromEntity(nftToken), BigInteger.valueOf(1L));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -105,7 +110,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     : contract.call_isApprovedForAllNonStatic(
                             getAddressFromEntity(nftToken), getAddressFromEntity(owner), getAddressFromEntity(spender));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -124,7 +131,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     : contract.call_isApprovedForAllNonStatic(
                             getAddressFromEntity(nftToken), SENDER_ALIAS.toHexString(), SPENDER_ALIAS.toHexString());
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -144,7 +153,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     : contract.call_allowanceNonStatic(
                             getAddressFromEntity(token), getAddressFromEntity(owner), getAddressFromEntity(spender));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -164,7 +175,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     : contract.call_allowanceNonStatic(
                             getAddressFromEntity(token), SENDER_ALIAS.toHexString(), SPENDER_ALIAS.toHexString());
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -180,7 +193,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_decimals(getAddressFromEntity(tokenEntity))
                     : contract.call_decimalsNonStatic(getAddressFromEntity(tokenEntity));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -198,7 +213,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_totalSupply(getAddressFromEntity(tokenEntity))
                     : contract.call_totalSupplyNonStatic(getAddressFromEntity(tokenEntity));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -214,7 +231,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_symbol(getAddressFromEntity(tokenEntity))
                     : contract.call_symbolNonStatic(getAddressFromEntity(tokenEntity));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -232,7 +251,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_balanceOf(getAddressFromEntity(token), getAddressFromEntity(owner))
                     : contract.call_balanceOfNonStatic(getAddressFromEntity(token), getAddressFromEntity(owner));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -250,7 +271,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_balanceOf(getAddressFromEntity(token), SENDER_ALIAS.toHexString())
                     : contract.call_balanceOfNonStatic(getAddressFromEntity(token), SENDER_ALIAS.toHexString());
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -266,7 +289,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_name(getAddressFromEntity(tokenEntity))
                     : contract.call_nameNonStatic(getAddressFromEntity(tokenEntity));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -282,7 +307,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_getOwnerOf(getAddressFromEntity(nftToken), BigInteger.valueOf(1L))
                     : contract.call_getOwnerOfNonStatic(getAddressFromEntity(nftToken), BigInteger.valueOf(1L));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -297,7 +324,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_getOwnerOf(getAddressFromEntity(nftToken), BigInteger.valueOf(2L))
                     : contract.call_getOwnerOfNonStatic(getAddressFromEntity(nftToken), BigInteger.valueOf(2L));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
 
         @ParameterizedTest
@@ -314,7 +343,9 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     ? contract.call_tokenURI(getAddressFromEntity(tokenEntity), BigInteger.valueOf(1L))
                     : contract.call_tokenURINonStatic(getAddressFromEntity(tokenEntity), BigInteger.valueOf(1L));
             // Then
-            assertThatThrownBy(result::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(result::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
         }
     }
 

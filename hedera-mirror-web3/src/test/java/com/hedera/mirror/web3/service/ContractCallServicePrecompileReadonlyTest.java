@@ -31,6 +31,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.Expiry;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.HederaToken;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -99,7 +100,9 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var functionCall = contract.call_hrcIsAssociated(getAddressFromEntity(token));
 
         // Then
-        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+        assertThatThrownBy(functionCall::send)
+                .isInstanceOf(PrecompileNotSupportedException.class)
+                .hasMessage("HRC isAssociated() precompile is not supported.");
     }
 
     @Test
@@ -932,7 +935,9 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                 getAddressFromEntity(nftEntity), BigInteger.valueOf(3L));
 
         // Then
-        assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+        assertThatThrownBy(functionCall::send)
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
     }
 
     @Test
@@ -946,7 +951,9 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var functionCall = contract.call_getInformationForToken(getAddressFromEntity(account));
 
         // Then
-        assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+        assertThatThrownBy(functionCall::send)
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
     }
 
     private void verifyEthCallAndEstimateGas(
