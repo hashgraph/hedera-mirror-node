@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.controller;
 
+import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
 import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.RECEIVER_ID;
@@ -29,9 +30,12 @@ import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.LinkFactory;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import com.hedera.mirror.restjava.mapper.TokenAirdropsMapper;
+import com.hedera.mirror.restjava.service.Bound;
 import com.hedera.mirror.restjava.service.TokenAirdropService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import lombok.CustomLog;
@@ -54,7 +58,7 @@ public class TokenAirdropsController {
             TOKEN_ID, tokenAirdrop.getTokenId());
 
     private final LinkFactory linkFactory;
-    private final TokenAirdropsMapper tokenMapper;
+    private final TokenAirdropsMapper tokenAirdropsMapper;
     private final TokenAirdropService service;
 
     @GetMapping(value = "/outstanding")
@@ -62,17 +66,17 @@ public class TokenAirdropsController {
             @PathVariable EntityIdParameter id,
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") Sort.Direction order,
-            @RequestParam(name = RECEIVER_ID, required = false) EntityIdRangeParameter receiverId,
-            @RequestParam(name = TOKEN_ID, required = false) EntityIdRangeParameter tokenId) {
+            @RequestParam(name = RECEIVER_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> receiverIds,
+            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
         var request = TokenAirdropRequest.builder()
                 .accountId(id)
-                .entityId(receiverId)
+                .entityIds(new Bound(receiverIds, true, ACCOUNT_ID))
                 .limit(limit)
                 .order(order)
-                .tokenId(tokenId)
+                .tokenIds(new Bound(tokenIds, false, TOKEN_ID))
                 .build();
         var response = service.getOutstandingAirdrops(request);
-        var airdrops = tokenMapper.map(response);
+        var airdrops = tokenAirdropsMapper.map(response);
         var sort = Sort.by(order, RECEIVER_ID, TOKEN_ID);
         var pageable = PageRequest.of(0, limit, sort);
         var links = linkFactory.create(airdrops, pageable, EXTRACTOR);

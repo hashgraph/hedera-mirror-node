@@ -22,7 +22,7 @@ import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
 
-public interface TokenAirdropRepositoryCustom extends CustomRepository {
+public interface TokenAirdropRepositoryCustom extends JooqRepository {
 
     @NotNull
     Collection<TokenAirdrop> findAllOutstanding(TokenAirdropRequest request, EntityId accountId);

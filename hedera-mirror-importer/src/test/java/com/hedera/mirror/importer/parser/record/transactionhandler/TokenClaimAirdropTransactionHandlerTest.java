@@ -101,8 +101,8 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
 
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())
-                .returns(receiver.getNum(), TokenAirdrop::getReceiverId)
-                .returns(sender.getNum(), TokenAirdrop::getSenderId)
+                .returns(receiver.getNum(), TokenAirdrop::getReceiverAccountId)
+                .returns(sender.getNum(), TokenAirdrop::getSenderAccountId)
                 .returns(TokenAirdropStateEnum.CLAIMED, TokenAirdrop::getState)
                 .returns(Range.atLeast(timestamp), TokenAirdrop::getTimestampRange)
                 .returns(token.getTokenNum(), TokenAirdrop::getTokenId);

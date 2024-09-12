@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.repository;
 
+import static com.hedera.mirror.restjava.common.RangeOperator.EQ;
 import static com.hedera.mirror.restjava.jooq.domain.Tables.TOKEN_AIRDROP;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -27,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.SortField;
 import org.springframework.data.domain.Sort.Direction;
@@ -37,17 +39,16 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
 
     private final DSLContext dslContext;
     private static final Map<Direction, List<SortField<?>>> OUTSTANDING_SORT_ORDERS = Map.of(
-            Direction.ASC, List.of(TOKEN_AIRDROP.RECEIVER_ID.asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
-            Direction.DESC, List.of(TOKEN_AIRDROP.RECEIVER_ID.desc(), TOKEN_AIRDROP.TOKEN_ID.desc()));
+            Direction.ASC, List.of(TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID.asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
+            Direction.DESC, List.of(TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID.desc(), TOKEN_AIRDROP.TOKEN_ID.desc()));
 
     @Override
     public Collection<TokenAirdrop> findAllOutstanding(TokenAirdropRequest request, EntityId accountId) {
-        var condition = TOKEN_AIRDROP
-                .SENDER_ID
-                .eq(accountId.getId())
-                .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING))
-                .and(getCondition(TOKEN_AIRDROP.RECEIVER_ID, request.getEntityId()))
-                .and(getCondition(TOKEN_AIRDROP.TOKEN_ID, request.getTokenId()));
+        var fieldBound = getFieldBound(request, true);
+        var condition = getBaseCondition(accountId, true)
+                .and(getBoundCondition(fieldBound))
+                // Exclude NFTs
+                .and(TOKEN_AIRDROP.SERIAL_NUMBER.eq(0L));
 
         var order = OUTSTANDING_SORT_ORDERS.get(request.getOrder());
         return dslContext
@@ -56,5 +57,41 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
                 .orderBy(order)
                 .limit(request.getLimit())
                 .fetchInto(TokenAirdrop.class);
+    }
+
+    private FieldBound getFieldBound(TokenAirdropRequest request, boolean outstanding) {
+        if (outstanding) {
+            return (request.getEntityIds() == null || request.getEntityIds().isEmpty())
+                    ? new FieldBound(
+                            TOKEN_AIRDROP.TOKEN_ID,
+                            TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID,
+                            request.getTokenIds(),
+                            request.getEntityIds())
+                    : new FieldBound(
+                            TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID,
+                            TOKEN_AIRDROP.TOKEN_ID,
+                            request.getEntityIds(),
+                            request.getTokenIds());
+        } else {
+            return (request.getEntityIds() == null || request.getEntityIds().isEmpty())
+                    ? new FieldBound(
+                            TOKEN_AIRDROP.TOKEN_ID,
+                            TOKEN_AIRDROP.SENDER_ACCOUNT_ID,
+                            request.getTokenIds(),
+                            request.getEntityIds())
+                    : new FieldBound(
+                            TOKEN_AIRDROP.SENDER_ACCOUNT_ID,
+                            TOKEN_AIRDROP.TOKEN_ID,
+                            request.getEntityIds(),
+                            request.getTokenIds());
+        }
+    }
+
+    private Condition getBaseCondition(EntityId accountId, boolean outstanding) {
+        return getCondition(
+                        outstanding ? TOKEN_AIRDROP.SENDER_ACCOUNT_ID : TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID,
+                        EQ,
+                        accountId.getId())
+                .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING));
     }
 }

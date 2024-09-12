@@ -22,7 +22,7 @@ import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
 
-public interface NftAllowanceRepositoryCustom extends CustomRepository {
+public interface NftAllowanceRepositoryCustom extends JooqRepository {
 
     /**
      * Find all NftAllowance matching the request parameters with the given limit, sort order, and byOwner flag

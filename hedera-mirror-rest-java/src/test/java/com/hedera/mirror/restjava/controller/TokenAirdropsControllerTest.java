@@ -57,16 +57,16 @@ class TokenAirdropsControllerTest extends ControllerTest {
         @Override
         protected RequestHeadersSpec<?> defaultRequest(RequestHeadersUriSpec<?> uriSpec) {
             var tokenAirdrop = domainBuilder.tokenAirdrop(FUNGIBLE_COMMON).persist();
-            return uriSpec.uri("", tokenAirdrop.getSenderId());
+            return uriSpec.uri("", tokenAirdrop.getSenderAccountId());
         }
 
         @ValueSource(strings = {"1000", "0.1000", "0.0.1000"})
         @ParameterizedTest
-        void outstandingAirdropByEntityId(String id) {
+        void entityId(String id) {
             // Given
             var tokenAirdrop = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
-                    .customize(a -> a.senderId(1000L))
+                    .customize(a -> a.senderAccountId(1000L))
                     .persist();
 
             // When
@@ -80,12 +80,12 @@ class TokenAirdropsControllerTest extends ControllerTest {
         }
 
         @Test
-        void evmAddressOutstanding() {
+        void evmAddress() {
             // Given
             var entity = domainBuilder.entity().persist();
             var tokenAirdrop = domainBuilder
-                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                    .customize(a -> a.senderId(entity.getId()))
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId()))
                     .persist();
 
             // When
@@ -100,12 +100,12 @@ class TokenAirdropsControllerTest extends ControllerTest {
         }
 
         @Test
-        void aliasOutstanding() {
+        void alias() {
             // Given
             var entity = domainBuilder.entity().persist();
             var tokenAirdrop = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
-                    .customize(a -> a.senderId(entity.getId()))
+                    .customize(a -> a.senderAccountId(entity.getId()))
                     .persist();
 
             // When
@@ -120,24 +120,25 @@ class TokenAirdropsControllerTest extends ControllerTest {
         }
 
         @Test
-        void followAscendingOrderLinkOutstanding() {
+        void followAscendingOrderLink() {
             // Given
             var entity = domainBuilder.entity().persist();
             var id = entity.getId();
             var tokenAirdrop1 = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
-                    .customize(a -> a.senderId(entity.getId()))
+                    .customize(a -> a.senderAccountId(entity.getId()))
                     .persist();
             var tokenAirdrop2 = domainBuilder
-                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                    .customize(a -> a.senderId(entity.getId()))
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId()))
                     .persist();
             var baseLink = "/api/v1/accounts/%d/airdrops/outstanding".formatted(id);
 
             // When
             var result = restClient.get().uri("?limit=1", id).retrieve().body(TokenAirdropsResponse.class);
             var nextParams = "?limit=1&receiver.id=gte:%s&token.id=gt:%s"
-                    .formatted(EntityId.of(tokenAirdrop1.getReceiverId()), EntityId.of(tokenAirdrop1.getTokenId()));
+                    .formatted(
+                            EntityId.of(tokenAirdrop1.getReceiverAccountId()), EntityId.of(tokenAirdrop1.getTokenId()));
 
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(tokenAirdrop1), baseLink + nextParams));
@@ -147,51 +148,55 @@ class TokenAirdropsControllerTest extends ControllerTest {
 
             // Then
             nextParams = "?limit=1&receiver.id=gte:%s&token.id=gt:%s"
-                    .formatted(EntityId.of(tokenAirdrop2.getReceiverId()), EntityId.of(tokenAirdrop2.getTokenId()));
+                    .formatted(
+                            EntityId.of(tokenAirdrop2.getReceiverAccountId()), EntityId.of(tokenAirdrop2.getTokenId()));
             assertThat(result).isEqualTo(getExpectedResponse(List.of(tokenAirdrop2), baseLink + nextParams));
 
             // When follow link 2
             result = restClient
                     .get()
-                    .uri(nextParams, tokenAirdrop1.getReceiverId())
+                    .uri(nextParams, tokenAirdrop1.getReceiverAccountId())
                     .retrieve()
                     .body(TokenAirdropsResponse.class);
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
         }
 
+        // TODO fix this test
         @Test
-        void followDescendingOrderLinkOutstanding() {
+        void followDescendingOrderLink() {
             // Given
             long sender = 1000;
             long receiver = 2000;
             long fungibleTokenId = 100;
             long token1 = 300;
             long token2 = 301;
-            long serial1 = 100;
 
-            var tokenAirdrop1 = domainBuilder
+            var airdrop1 = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
-                    .customize(a -> a.senderId(sender).receiverId(receiver).tokenId(fungibleTokenId))
+                    .customize(a -> a.senderAccountId(sender)
+                            .receiverAccountId(receiver)
+                            .tokenId(fungibleTokenId))
                     .persist();
-
-            var nftAirdrop = domainBuilder
-                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                    .customize(a -> a.senderId(sender)
-                            .receiverId(receiver)
-                            .tokenId(token1)
-                            .serialNumber(serial1))
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(sender)
+                            .receiverAccountId(receiver)
+                            .tokenId(token1))
                     .persist();
-            var nftAirdrop2 = domainBuilder
-                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                    .customize(a -> a.senderId(sender)
-                            .receiverId(receiver)
-                            .tokenId(token2)
-                            .serialNumber(serial1))
+            var airdrop3 = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(sender)
+                            .receiverAccountId(receiver)
+                            .tokenId(token2))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.receiverAccountId(receiver))
                     .persist();
             domainBuilder
                     .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                    .customize(a -> a.receiverId(receiver))
+                    .customize(a -> a.receiverAccountId(receiver))
                     .persist();
 
             var uriParams = "?limit=1&receiver.id=gte:%s&order=desc".formatted(receiver);
@@ -205,27 +210,83 @@ class TokenAirdropsControllerTest extends ControllerTest {
             var nextParams = "?limit=1&receiver.id=gte:2000&receiver.id=lte:0.0.2000&order=desc&token.id=lt:0.0.301";
 
             // Then
-            assertThat(result).isEqualTo(getExpectedResponse(List.of(nftAirdrop2), baseLink + nextParams));
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop3), baseLink + nextParams));
 
             // When follow link
             result = restClient.get().uri(nextParams, sender).retrieve().body(TokenAirdropsResponse.class);
 
             // Then
             nextParams = "?limit=1&receiver.id=gte:2000&receiver.id=lte:0.0.2000&order=desc&token.id=lt:0.0.300";
-            assertThat(result).isEqualTo(getExpectedResponse(List.of(nftAirdrop), baseLink + nextParams));
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
 
             // When follow link
             result = restClient.get().uri(nextParams, sender).retrieve().body(TokenAirdropsResponse.class);
 
             // Then
             nextParams = "?limit=1&receiver.id=gte:2000&receiver.id=lte:0.0.2000&order=desc&token.id=lt:0.0.100";
-            assertThat(result).isEqualTo(getExpectedResponse(List.of(tokenAirdrop1), baseLink + nextParams));
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop1), baseLink + nextParams));
 
             // When follow link
             result = restClient.get().uri(nextParams, sender).retrieve().body(TokenAirdropsResponse.class);
 
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
+        }
+
+        // TODO fix this test
+        @Test
+        void paginationReceiverAndToken() {
+            // Given
+            var entity = domainBuilder.entity().persist();
+            var airdrop = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(3L)
+                            .tokenId(5L))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(3L)
+                            .tokenId(6L))
+                    .persist();
+            var airdrop3 = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(4L)
+                            .tokenId(5L))
+                    .persist();
+            var airdrop4 = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(5L)
+                            .tokenId(6L))
+                    .persist();
+
+            var baseLink = "/api/v1/accounts/%d/airdrops/outstanding".formatted(entity.getId());
+            var uriParams = "?limit=1&receiver.id=gt:2&token.id=gt:4";
+            var nextParams = "?limit=1&receiver.id=gte:0.0.3&token.id=gt:0.0.5";
+
+            // When
+            var result =
+                    restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            nextParams = "?limit=1&receiver.id=gte:0.0.3&token.id=gt:0.0.6";
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            nextParams = "?limit=1&receiver.id=gte:0.0.3&token.id=gt:0.0.5";
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop3), baseLink + nextParams));
         }
 
         @ParameterizedTest
@@ -357,6 +418,25 @@ class TokenAirdropsControllerTest extends ControllerTest {
                     HttpClientErrorException.BadRequest.class,
                     "Failed to convert 'token.id' with value: '" + tokenId + "'");
         }
+
+        //        @ParameterizedTest
+        //        @CsvSource({
+        //                "?token.id=gt:0.0.1000&token.id=lt:0.0.2000,Only one occurrence of token.id",
+        //        })
+        //        void invalidNumberOfParameters(String uri) {
+        //            // When
+        //            ThrowingCallable callable = () -> restClient
+        //                    .get()
+        //                    .uri(uri, "0.0.1001")
+        //                    .retrieve()
+        //                    .body(TokenAirdropsResponse.class);
+        //
+        //            // Then
+        //            validateError(
+        //                    callable,
+        //                    HttpClientErrorException.BadRequest.class,
+        //                    "Failed to convert 'token.id' with value: ");
+        //        }
     }
 
     private TokenAirdropsResponse getExpectedResponse(List<TokenAirdrop> tokenAirdrops, String next) {

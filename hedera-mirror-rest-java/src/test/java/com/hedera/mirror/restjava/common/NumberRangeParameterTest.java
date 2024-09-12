@@ -73,7 +73,7 @@ class NumberRangeParameterTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"a", ".1", "someinvalidstring", "-1", "9223372036854775808", ":2000"})
+    @ValueSource(strings = {"a", ".1", "someinvalidstring", "-1", "9223372036854775808", ":2000", ":", "eq:", ":1"})
     @DisplayName("IntegerRangeParameter parse from string tests, negative cases")
     void testInvalidParam(String input) {
         assertThrows(IllegalArgumentException.class, () -> NumberRangeParameter.valueOf(input));

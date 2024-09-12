@@ -20,13 +20,14 @@ import static com.hedera.mirror.common.domain.token.TokenTypeEnum.FUNGIBLE_COMMO
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
+import com.hedera.mirror.restjava.common.Constants;
 import com.hedera.mirror.restjava.common.EntityIdNumParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
+import com.hedera.mirror.restjava.service.Bound;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -48,43 +49,24 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
     @Test
     void findBySenderId() {
         var tokenAirdrop = domainBuilder.tokenAirdrop(FUNGIBLE_COMMON).persist();
-        var entityId = EntityId.of(tokenAirdrop.getSenderId());
+        var entityId = EntityId.of(tokenAirdrop.getSenderAccountId());
         var request = TokenAirdropRequest.builder()
                 .accountId(new EntityIdNumParameter(entityId))
                 .build();
         assertThat(repository.findAllOutstanding(request, entityId)).contains(tokenAirdrop);
     }
 
-    @ParameterizedTest
-    @EnumSource(Direction.class)
-    void findBySenderIdOrder(Direction order) {
-        var tokenAirdrop = domainBuilder
-                .tokenAirdrop(FUNGIBLE_COMMON)
-                .customize(a -> a.timestampRange(Range.atLeast(1000L)))
-                .persist();
-        var tokenAirdrop2 = domainBuilder
-                .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderId(tokenAirdrop.getSenderId()).timestampRange(Range.atLeast(2000L)))
-                .persist();
-        var entityId = EntityId.of(tokenAirdrop.getSenderId());
-        var outstandingTokenAirdropRequest = TokenAirdropRequest.builder()
-                .accountId(new EntityIdNumParameter(entityId))
-                .order(order)
-                .build();
-
-        var expected =
-                order.isAscending() ? List.of(tokenAirdrop, tokenAirdrop2) : List.of(tokenAirdrop2, tokenAirdrop);
-        assertThat(repository.findAllOutstanding(outstandingTokenAirdropRequest, entityId))
-                .containsExactlyElementsOf(expected);
-    }
-
     @Test
     void noMatch() {
         var tokenAirdrop = domainBuilder.tokenAirdrop(FUNGIBLE_COMMON).persist();
-        var entityId = EntityId.of(tokenAirdrop.getSenderId());
+        var entityId = EntityId.of(tokenAirdrop.getSenderAccountId());
         var request = TokenAirdropRequest.builder()
                 .accountId(new EntityIdNumParameter(entityId))
-                .entityId(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenAirdrop.getReceiverId())))
+                .entityIds(new Bound(
+                        List.of(new EntityIdRangeParameter(
+                                RangeOperator.GT, EntityId.of(tokenAirdrop.getReceiverAccountId()))),
+                        true,
+                        Constants.ACCOUNT_ID))
                 .build();
         assertThat(repository.findAllOutstanding(request, entityId)).isEmpty();
     }
@@ -94,34 +76,56 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
     void conditionalClauses(Direction order) {
         var sender = domainBuilder.entity().get();
         var receiver = domainBuilder.entity().get();
-        var token = domainBuilder.token().get();
-        var serialNumber = 5L;
+        var tokenId = 5000L;
 
-        var tokenAirdrop = domainBuilder
+        var receiverSpecifiedAirdrop = domainBuilder
                 .tokenAirdrop(FUNGIBLE_COMMON)
-                .customize(a -> a.senderId(sender.getId()).receiverId(receiver.getId()))
+                .customize(a -> a.senderAccountId(sender.getId()).receiverAccountId(receiver.getId()))
                 .persist();
-        var tokenAirdrop2 = domainBuilder
+        var receiverSpecifiedAirdrop2 = domainBuilder
                 .tokenAirdrop(FUNGIBLE_COMMON)
-                .customize(a -> a.senderId(sender.getId()).tokenId(token.getTokenId()))
+                .customize(a -> a.senderAccountId(sender.getId()).receiverAccountId(receiver.getId()))
                 .persist();
-        var nftAirdrop = domainBuilder
-                .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderId(sender.getId())
-                        .receiverId(receiver.getId())
-                        .serialNumber(serialNumber)
-                        .tokenId(token.getTokenId()))
+        var tokenReceiverSpecifiedAirdrop = domainBuilder
+                .tokenAirdrop(FUNGIBLE_COMMON)
+                .customize(a -> a.senderAccountId(sender.getId())
+                        .receiverAccountId(receiver.getId())
+                        .tokenId(tokenId))
                 .persist();
-        var nftAirdrop2 = domainBuilder
+        var tokenReceiverSpecifiedAirdrop2 = domainBuilder
+                .tokenAirdrop(FUNGIBLE_COMMON)
+                .customize(a -> a.senderAccountId(sender.getId())
+                        .receiverAccountId(receiver.getId())
+                        .tokenId(tokenId + 1))
+                .persist();
+        var tokenSpecifiedAirdrop = domainBuilder
+                .tokenAirdrop(FUNGIBLE_COMMON)
+                .customize(a ->
+                        a.senderAccountId(sender.getId()).receiverAccountId(1).tokenId(tokenId))
+                .persist();
+        domainBuilder
                 .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                .customize(a -> a.senderId(sender.getId()).serialNumber(serialNumber))
+                .customize(a -> a.senderAccountId(sender.getId())
+                        .receiverAccountId(receiver.getId())
+                        .serialNumber(5)
+                        .tokenId(tokenId))
                 .persist();
 
         // Default asc ordering by receiver, tokenId
-        var allAirdrops = List.of(nftAirdrop, tokenAirdrop, tokenAirdrop2, nftAirdrop2);
-        var receiverSpecifiedAirdrops = List.of(nftAirdrop, tokenAirdrop);
-        var tokenSpecifiedAirdrops = List.of(nftAirdrop, tokenAirdrop2);
-        var serialNumberAirdrops = List.of(nftAirdrop, nftAirdrop2);
+        var allAirdrops = List.of(
+                tokenSpecifiedAirdrop,
+                receiverSpecifiedAirdrop,
+                receiverSpecifiedAirdrop2,
+                tokenReceiverSpecifiedAirdrop,
+                tokenReceiverSpecifiedAirdrop2);
+        var receiverSpecifiedAirdrops = List.of(
+                receiverSpecifiedAirdrop,
+                receiverSpecifiedAirdrop2,
+                tokenReceiverSpecifiedAirdrop,
+                tokenReceiverSpecifiedAirdrop2);
+        var tokenReceiverAirdrops = List.of(tokenReceiverSpecifiedAirdrop, tokenReceiverSpecifiedAirdrop2);
+        var tokenSpecifiedAirdrops =
+                List.of(tokenSpecifiedAirdrop, tokenReceiverSpecifiedAirdrop, tokenReceiverSpecifiedAirdrop2);
 
         var orderedAirdrops = order.isAscending() ? allAirdrops : allAirdrops.reversed();
         var request = TokenAirdropRequest.builder()
@@ -131,24 +135,63 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
                 .containsExactlyElementsOf(orderedAirdrops);
 
-        // With token id condition
+        // With receiver id condition
+        var receiverAirdrops = order.isAscending() ? receiverSpecifiedAirdrops : receiverSpecifiedAirdrops.reversed();
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(sender.toEntityId()))
+                .order(order)
+                .entityIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver.getId()))),
+                        true,
+                        Constants.ACCOUNT_ID))
+                .build();
+        assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
+                .containsExactlyElementsOf(receiverAirdrops);
+
+        // With token id and receiver condition
+        var tokenAirdrops = order.isAscending() ? tokenReceiverAirdrops : tokenReceiverAirdrops.reversed();
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(sender.toEntityId()))
+                .entityIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver.getId()))),
+                        true,
+                        Constants.ACCOUNT_ID))
+                .order(order)
+                .tokenIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(tokenId))),
+                        false,
+                        Constants.TOKEN_ID))
+                .build();
+        assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
+                .containsExactlyElementsOf(tokenAirdrops);
+
+        // With token id condition as primary sort field and with receiver id
+        request = TokenAirdropRequest.builder()
+                .accountId(new EntityIdNumParameter(sender.toEntityId()))
+                .order(order)
+                .entityIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(receiver.getId()))),
+                        false,
+                        Constants.ACCOUNT_ID))
+                .tokenIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(tokenId))),
+                        true,
+                        Constants.TOKEN_ID))
+                .build();
+        assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
+                .containsExactlyElementsOf(tokenAirdrops);
+
+        // With token id condition but no receiver id
         var tokenIdAirdrops = order.isAscending() ? tokenSpecifiedAirdrops : tokenSpecifiedAirdrops.reversed();
         request = TokenAirdropRequest.builder()
                 .accountId(new EntityIdNumParameter(sender.toEntityId()))
                 .order(order)
-                .tokenId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(token.getTokenId())))
+                .tokenIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(tokenId))),
+                        false,
+                        Constants.TOKEN_ID))
                 .build();
         assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
                 .containsExactlyElementsOf(tokenIdAirdrops);
-
-        // With receiver id condition
-        var receiverIdAirdrops = order.isAscending() ? receiverSpecifiedAirdrops : receiverSpecifiedAirdrops.reversed();
-        request = TokenAirdropRequest.builder()
-                .accountId(new EntityIdNumParameter(sender.toEntityId()))
-                .order(order)
-                .entityId(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(receiver.getId())))
-                .build();
-        assertThat(repository.findAllOutstanding(request, sender.toEntityId()))
-                .containsExactlyElementsOf(receiverIdAirdrops);
     }
 }

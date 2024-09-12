@@ -932,8 +932,8 @@ public class DomainBuilder {
     public DomainWrapper<TokenAirdrop, TokenAirdrop.TokenAirdropBuilder<?, ?>> tokenAirdrop(TokenTypeEnum type) {
         long timestamp = timestamp();
         var builder = TokenAirdrop.builder()
-                .receiverId(id())
-                .senderId(id())
+                .receiverAccountId(id())
+                .senderAccountId(id())
                 .state(TokenAirdropStateEnum.PENDING)
                 .timestampRange(Range.atLeast(timestamp))
                 .tokenId(id());
@@ -951,8 +951,8 @@ public class DomainBuilder {
             TokenTypeEnum type) {
         long timestamp = timestamp();
         var builder = TokenAirdropHistory.builder()
-                .receiverId(id())
-                .senderId(id())
+                .receiverAccountId(id())
+                .senderAccountId(id())
                 .state(TokenAirdropStateEnum.PENDING)
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());

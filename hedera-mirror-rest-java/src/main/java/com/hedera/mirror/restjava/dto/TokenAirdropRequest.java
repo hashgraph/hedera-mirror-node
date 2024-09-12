@@ -17,7 +17,7 @@
 package com.hedera.mirror.restjava.dto;
 
 import com.hedera.mirror.restjava.common.EntityIdParameter;
-import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
+import com.hedera.mirror.restjava.service.Bound;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Sort;
@@ -36,7 +36,7 @@ public class TokenAirdropRequest {
     private Sort.Direction order = Sort.Direction.ASC;
 
     // Receiver Id for Outstanding Airdrops, Sender Id for Pending Airdrops
-    private EntityIdRangeParameter entityId;
+    private Bound entityIds;
 
-    private EntityIdRangeParameter tokenId;
+    private Bound tokenIds;
 }
