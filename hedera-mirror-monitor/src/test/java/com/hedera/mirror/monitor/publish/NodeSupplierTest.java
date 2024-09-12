@@ -37,6 +37,7 @@ import com.hedera.hashgraph.sdk.proto.TransactionResponse;
 import com.hedera.mirror.monitor.HederaNetwork;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
+import com.hedera.mirror.monitor.NodeValidationProperties.TlsMode;
 import com.hedera.mirror.monitor.OperatorProperties;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
@@ -88,7 +89,10 @@ class NodeSupplierTest {
         node = new NodeProperties("0.0.3", "in-process:" + SERVER);
         networkNode = new NetworkNode();
         networkNode.setNodeAccountId(node.getAccountId());
-        networkNode.addServiceEndpointsItem(new ServiceEndpoint().ipAddressV4(node.getEndpoint()));
+        networkNode.addServiceEndpointsItem(
+                new ServiceEndpoint().ipAddressV4(node.getEndpoint()).port(50211));
+        networkNode.addServiceEndpointsItem(
+                new ServiceEndpoint().ipAddressV4(node.getEndpoint()).port(50212));
 
         publishScenarioProperties = new PublishScenarioProperties();
         publishScenarioProperties.setName("test");
@@ -166,13 +170,43 @@ class NodeSupplierTest {
     @Test
     void refreshAddressBook() {
         monitorProperties.setNodes(Set.of());
+        monitorProperties.getNodeValidation().setTls(TlsMode.PLAINTEXT);
         when(restApiClient.getNodes()).thenReturn(Flux.just(networkNode));
         assertThat(nodeSupplier.refresh().collectList().block())
                 .hasSize(1)
                 .first()
                 .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
                 .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost)
+                .returns(50211, NodeProperties::getPort)
                 .satisfies(node -> assertThat(nodeSupplier.get()).isEqualTo(node));
+    }
+
+    @Test
+    void refreshAddressBookTls() {
+        monitorProperties.setNodes(Set.of());
+        monitorProperties.getNodeValidation().setTls(TlsMode.TLS);
+        when(restApiClient.getNodes()).thenReturn(Flux.just(networkNode));
+        assertThat(nodeSupplier.refresh().collectList().block())
+                .hasSize(1)
+                .first()
+                .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
+                .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost)
+                .returns(50212, NodeProperties::getPort)
+                .satisfies(node -> assertThat(nodeSupplier.get()).isEqualTo(node));
+    }
+
+    @Test
+    void refreshAddressBookBoth() {
+        monitorProperties.setNodes(Set.of());
+        monitorProperties.getNodeValidation().setTls(TlsMode.BOTH);
+        when(restApiClient.getNodes()).thenReturn(Flux.just(networkNode));
+        assertThat(nodeSupplier.refresh().collectList().block())
+                .hasSize(2)
+                .allSatisfy(node -> assertThat(node)
+                        .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
+                        .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost))
+                .extracting(NodeProperties::getPort)
+                .containsExactlyInAnyOrder(50211, 50212);
     }
 
     @Test
