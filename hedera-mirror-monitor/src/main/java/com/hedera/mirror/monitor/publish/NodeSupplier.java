@@ -133,19 +133,16 @@ public class NodeSupplier {
     }
 
     private Flux<NodeProperties> toNodeProperties(NetworkNode networkNode) {
-        var nodes = networkNode.getServiceEndpoints().stream()
-                .map(serviceEndpoint -> {
-                    var host = StringUtils.isNotBlank(serviceEndpoint.getDomainName())
-                            ? serviceEndpoint.getDomainName()
-                            : serviceEndpoint.getIpAddressV4();
-                    var nodeProperties = new NodeProperties();
-                    nodeProperties.setAccountId(networkNode.getNodeAccountId());
-                    nodeProperties.setHost(host);
-                    nodeProperties.setPort(serviceEndpoint.getPort());
-                    return nodeProperties;
-                })
-                .toList();
-        return Flux.fromIterable(nodes);
+        return Flux.fromStream(networkNode.getServiceEndpoints().stream().map(serviceEndpoint -> {
+            var host = StringUtils.isNotBlank(serviceEndpoint.getDomainName())
+                    ? serviceEndpoint.getDomainName()
+                    : serviceEndpoint.getIpAddressV4();
+            var nodeProperties = new NodeProperties();
+            nodeProperties.setAccountId(networkNode.getNodeAccountId());
+            nodeProperties.setHost(host);
+            nodeProperties.setPort(serviceEndpoint.getPort());
+            return nodeProperties;
+        }));
     }
 
     private Client toClient(Map<String, AccountId> nodes) {

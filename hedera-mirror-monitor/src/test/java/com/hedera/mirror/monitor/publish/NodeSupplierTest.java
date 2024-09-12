@@ -178,7 +178,7 @@ class NodeSupplierTest {
                 .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
                 .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost)
                 .returns(50211, NodeProperties::getPort)
-                .satisfies(node -> assertThat(nodeSupplier.get()).isEqualTo(node));
+                .satisfies(n -> assertThat(nodeSupplier.get()).isEqualTo(n));
     }
 
     @Test
@@ -192,7 +192,7 @@ class NodeSupplierTest {
                 .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
                 .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost)
                 .returns(50212, NodeProperties::getPort)
-                .satisfies(node -> assertThat(nodeSupplier.get()).isEqualTo(node));
+                .satisfies(n -> assertThat(nodeSupplier.get()).isEqualTo(n));
     }
 
     @Test
@@ -202,7 +202,7 @@ class NodeSupplierTest {
         when(restApiClient.getNodes()).thenReturn(Flux.just(networkNode));
         assertThat(nodeSupplier.refresh().collectList().block())
                 .hasSize(2)
-                .allSatisfy(node -> assertThat(node)
+                .allSatisfy(n -> assertThat(n)
                         .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
                         .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost))
                 .extracting(NodeProperties::getPort)
@@ -220,7 +220,7 @@ class NodeSupplierTest {
                 .first()
                 .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
                 .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost)
-                .satisfies(node -> assertThat(nodeSupplier.get()).isEqualTo(node));
+                .satisfies(n -> assertThat(nodeSupplier.get()).isEqualTo(n));
     }
 
     @Test
