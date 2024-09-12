@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.exception.BlockNumberNotFoundException.UNKNOWN_BLOCK_NUMBER;
 import static com.hedera.mirror.web3.service.ContractCallService.GAS_LIMIT_METRIC;
 import static com.hedera.mirror.web3.service.ContractCallService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
@@ -33,6 +34,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -179,7 +181,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
             contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockType.number())));
             testWeb3jService.setBlockType(blockType);
-            assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(INVALID_TRANSACTION.name());
         } else {
             assertThat(functionCall.send()).isEqualTo(BigInteger.valueOf(4L));
             assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -210,7 +214,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
             contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockType.number())));
             testWeb3jService.setBlockType(blockType);
             // Then
-            assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(INVALID_TRANSACTION.name());
         } else {
             // Then
             assertThat(functionCall.send()).isEqualTo(new BigInteger(expectedResponse.substring(2), 16));
@@ -234,7 +240,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         testWeb3jService.setBlockType(invalidBlock);
 
         // Then
-        assertThatThrownBy(functionCall::send).isInstanceOf(BlockNumberOutOfRangeException.class);
+        assertThatThrownBy(functionCall::send)
+                .isInstanceOf(BlockNumberOutOfRangeException.class)
+                .hasMessage(UNKNOWN_BLOCK_NUMBER);
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
     }
 
@@ -482,7 +490,8 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
         // Then
         assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
-                .isInstanceOf(MirrorEvmTransactionException.class);
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .hasMessage("Argument must be positive");
         assertGasLimit(serviceParameters);
     }
 
@@ -493,12 +502,16 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
         final var senderEntity = accountPersist();
         final var senderAddress = getAliasAddressFromEntity(senderEntity);
-        final var serviceParameters = getContractExecutionParametersWithValue(
-                Bytes.EMPTY, senderAddress, receiverAddress, senderEntity.getBalance() + 5L);
+        final var value = senderEntity.getBalance() + 5L;
+        final var serviceParameters =
+                getContractExecutionParametersWithValue(Bytes.EMPTY, senderAddress, receiverAddress, value);
 
         // Then
         assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
-                .isInstanceOf(MirrorEvmTransactionException.class);
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .hasMessage(
+                        "Cannot remove %s wei from account, balance is only %s",
+                        toHexWith64LeadingZeros(value), toHexWith64LeadingZeros(senderEntity.getBalance()));
         assertGasLimit(serviceParameters);
     }
 
@@ -963,5 +976,12 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
             assertThat(result).isEqualTo(HEX_PREFIX);
             assertGasLimit(serviceParameters);
         }
+    }
+
+    private static String toHexWith64LeadingZeros(final Long value) {
+        final String result;
+        final var paddedHexString = String.format("%064x", value);
+        result = "0x" + paddedHexString;
+        return result;
     }
 }

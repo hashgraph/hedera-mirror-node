@@ -99,7 +99,9 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var functionCall = contract.call_hrcIsAssociated(getAddressFromEntity(token));
 
         // Then
-        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+        assertThatThrownBy(functionCall::send)
+                .isInstanceOf(PrecompileNotSupportedException.class)
+                .hasMessage("HRC isAssociated() precompile is not supported.");
     }
 
     @Test
