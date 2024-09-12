@@ -93,7 +93,7 @@ global.pool = pool;
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
 const app = addAsync(express());
 const {apiPrefix} = constants;
-const applicationCacheEnabled = config.response.cache.enabled && config.redis.enabled;
+const applicationCacheEnabled = config.cache.response.enabled && config.redis.enabled;
 
 app.disable('x-powered-by');
 app.set('trust proxy', true);
@@ -130,65 +130,88 @@ if (config.metrics.enabled) {
 
 // Check for cached response
 if (applicationCacheEnabled) {
+  logger.info('Response caching is enabled');
   app.use(responseCacheCheckHandler);
 }
 
+// Aggregate API endpoints and response handling
+const apiEndpoints = addAsync(express.Router());
+
+apiEndpoints.use((req, res, next) => {
+  // If the request was satisfied from the cache upstream then skip API endpoint processing.
+  if (res.headersSent) {
+    next('router');
+  }
+  next();
+});
+
 // accounts routes
-app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
-app.getAsync(`${apiPrefix}/accounts/:${constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS}`, accounts.getOneAccount);
-app.useAsync(`${apiPrefix}/${AccountRoutes.resource}`, AccountRoutes.router);
+apiEndpoints.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
+apiEndpoints.getAsync(
+  `${apiPrefix}/accounts/:${constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS}`,
+  accounts.getOneAccount
+);
+apiEndpoints.useAsync(`${apiPrefix}/${AccountRoutes.resource}`, AccountRoutes.router);
 
 // balances routes
-app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
+apiEndpoints.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 
 // contracts routes
-app.useAsync(`${apiPrefix}/${ContractRoutes.resource}`, ContractRoutes.router);
+apiEndpoints.useAsync(`${apiPrefix}/${ContractRoutes.resource}`, ContractRoutes.router);
 
 // network routes
-app.useAsync(`${apiPrefix}/${NetworkRoutes.resource}`, NetworkRoutes.router);
+apiEndpoints.useAsync(`${apiPrefix}/${NetworkRoutes.resource}`, NetworkRoutes.router);
 
 // block routes
-app.useAsync(`${apiPrefix}/${BlockRoutes.resource}`, BlockRoutes.router);
+apiEndpoints.useAsync(`${apiPrefix}/${BlockRoutes.resource}`, BlockRoutes.router);
 
 // schedules routes
-app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
-app.getAsync(`${apiPrefix}/schedules/:scheduleId`, schedules.getScheduleById);
+apiEndpoints.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
+apiEndpoints.getAsync(`${apiPrefix}/schedules/:scheduleId`, schedules.getScheduleById);
 
 // stateproof route
 if (config.stateproof.enabled || isTestEnv()) {
   logger.info('stateproof REST API is enabled, install handler');
-  app.getAsync(`${apiPrefix}/transactions/:transactionId/stateproof`, stateproof.getStateProofForTransaction);
+  apiEndpoints.getAsync(`${apiPrefix}/transactions/:transactionId/stateproof`, stateproof.getStateProofForTransaction);
 } else {
   logger.info('stateproof REST API is disabled');
 }
 
 // tokens routes
-app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
-app.getAsync(`${apiPrefix}/tokens/:tokenId`, tokens.getTokenInfoRequest);
-app.getAsync(`${apiPrefix}/tokens/:tokenId/balances`, tokens.getTokenBalances);
-app.getAsync(`${apiPrefix}/tokens/:tokenId/nfts`, tokens.getNftTokensRequest);
-app.getAsync(`${apiPrefix}/tokens/:tokenId/nfts/:serialNumber`, tokens.getNftTokenInfoRequest);
-app.getAsync(`${apiPrefix}/tokens/:tokenId/nfts/:serialNumber/transactions`, tokens.getNftTransferHistoryRequest);
+apiEndpoints.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
+apiEndpoints.getAsync(`${apiPrefix}/tokens/:tokenId`, tokens.getTokenInfoRequest);
+apiEndpoints.getAsync(`${apiPrefix}/tokens/:tokenId/balances`, tokens.getTokenBalances);
+apiEndpoints.getAsync(`${apiPrefix}/tokens/:tokenId/nfts`, tokens.getNftTokensRequest);
+apiEndpoints.getAsync(`${apiPrefix}/tokens/:tokenId/nfts/:serialNumber`, tokens.getNftTokenInfoRequest);
+apiEndpoints.getAsync(
+  `${apiPrefix}/tokens/:tokenId/nfts/:serialNumber/transactions`,
+  tokens.getNftTransferHistoryRequest
+);
 
 // topics routes
-app.getAsync(`${apiPrefix}/topics/:topicId/messages`, topicmessage.getTopicMessages);
-app.getAsync(`${apiPrefix}/topics/:topicId/messages/:sequenceNumber`, topicmessage.getMessageByTopicAndSequenceRequest);
-app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
+apiEndpoints.getAsync(`${apiPrefix}/topics/:topicId/messages`, topicmessage.getTopicMessages);
+apiEndpoints.getAsync(
+  `${apiPrefix}/topics/:topicId/messages/:sequenceNumber`,
+  topicmessage.getMessageByTopicAndSequenceRequest
+);
+apiEndpoints.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
 
 // transactions routes
-app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
-app.getAsync(`${apiPrefix}/transactions/:transactionIdOrHash`, transactions.getTransactionsByIdOrHash);
+apiEndpoints.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
+apiEndpoints.getAsync(`${apiPrefix}/transactions/:transactionIdOrHash`, transactions.getTransactionsByIdOrHash);
+
+// response data handling middleware
+apiEndpoints.useAsync(responseHandler);
+
+if (applicationCacheEnabled) {
+  apiEndpoints.useAsync(responseCacheUpdateHandler);
+}
+
+app.useAsync(apiEndpoints);
 
 // record ip metrics if enabled
 if (config.metrics.ipMetrics) {
   app.useAsync(recordIpAndEndpoint);
-}
-
-// response data handling middleware
-app.useAsync(responseHandler);
-
-if (applicationCacheEnabled) {
-  app.useAsync(responseCacheUpdateHandler);
 }
 
 // response error handling middleware

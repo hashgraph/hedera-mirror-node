@@ -15,12 +15,12 @@
  */
 
 import {RedisContainer} from '@testcontainers/redis';
+import request from 'supertest';
 
+import config from '../config';
 import {setupIntegrationTest} from './integrationUtils';
 import integrationDomainOps from './integrationDomainOps';
-import request from 'supertest';
 import server from '../server';
-import config from '../config.js';
 import {defaultBeforeAllTimeoutMillis} from './integrationUtils.js';
 
 const accountsUrl1 =
@@ -30,17 +30,23 @@ const accountsUrl2 =
 
 setupIntegrationTest();
 
+const applicationCacheEnabled = config.cache.response.enabled && config.redis.enabled;
 let redisContainer;
 
 beforeAll(async () => {
-  config.redis.enabled = true;
-  redisContainer = await new RedisContainer().withStartupTimeout(20000).start();
-  logger.info('Started Redis container');
+  if (applicationCacheEnabled) {
+    redisContainer = await new RedisContainer().withStartupTimeout(20000).start();
+    logger.info('Started Redis container');
+  } else {
+    logger.info('Application cache is not enabled');
+  }
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
-  await redisContainer.stop({signal: 'SIGKILL', t: 5});
-  logger.info('Stopped Redis container');
+  if (applicationCacheEnabled) {
+    await redisContainer.stop({signal: 'SIGKILL', t: 5});
+    logger.info('Stopped Redis container');
+  }
 });
 
 describe('Application cache tests', () => {

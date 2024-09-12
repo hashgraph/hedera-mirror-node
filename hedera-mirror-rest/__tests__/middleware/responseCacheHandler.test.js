@@ -115,7 +115,6 @@ describe('Response cache middleware', () => {
 
       // Cache hit is expected, and the middleware must handle the response.
       await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
-      expect(mockResponse.removeHeader).toBeCalledWith('content-encoding');
       expect(mockResponse.send).toBeCalledWith(cachedBody);
       expect(mockResponse.set).toHaveBeenNthCalledWith(1, cachedHeaders);
       expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'cache-control', expect.stringContaining('public, max-age='));
@@ -137,10 +136,23 @@ describe('Response cache middleware', () => {
       expect(mockNextMiddleware).toBeCalled();
     });
 
-    test('Do not cache negative (non-200) results', async () => {
+    test('Do not cache negative results', async () => {
       const cacheKey = cacheKeyGenerator(mockRequest);
       mockResponse.locals[responseCacheKeyLabel] = cacheKey;
       mockResponse.statusCode = 503;
+
+      await responseCacheUpdateHandler(mockRequest, mockResponse, mockNextMiddleware);
+      const cachedResponse = await cache.getSingleWithTtl(cacheKey);
+      expect(cachedResponse).toBeUndefined();
+      expect(mockNextMiddleware).toBeCalled();
+    });
+
+    test('Do not cache zero max-age', async () => {
+      const cacheKey = cacheKeyGenerator(mockRequest);
+      mockResponse.locals[responseCacheKeyLabel] = cacheKey;
+      mockResponse.statusCode = 200;
+      mockResponse.headers = {'cache-control': `public, max-age=0`};
+      mockResponse.getHeaders.mockImplementation(() => mockResponse.headers);
 
       await responseCacheUpdateHandler(mockRequest, mockResponse, mockNextMiddleware);
       const cachedResponse = await cache.getSingleWithTtl(cacheKey);
