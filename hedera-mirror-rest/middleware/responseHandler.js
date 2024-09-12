@@ -15,7 +15,13 @@
  */
 
 import config from '../config';
-import {requestPathLabel, requestStartTime, responseContentType, responseDataLabel} from '../constants';
+import {
+  requestPathLabel,
+  requestStartTime,
+  responseContentType,
+  responseDataLabel,
+  responseHeadersLabel,
+} from '../constants';
 import {NotFoundError} from '../errors';
 import {JSONStringify} from '../utils';
 
@@ -37,10 +43,12 @@ const responseHandler = async (req, res, next) => {
     throw new NotFoundError();
   } else {
     const path = res.locals[requestPathLabel] ?? req.route.path;
-    if (!res.get('cache-control')) {
-      res.set(headers.default);
-      res.set(headers.path[path]);
-    }
+    const mergedHeaders = {
+      ...headers.default,
+      ...(headers.path[path] ?? {}),
+      ...(res.locals[responseHeadersLabel] ?? {}),
+    };
+    res.set(mergedHeaders);
 
     const code = res.locals.statusCode;
     const contentType = res.locals[responseContentType] || APPLICATION_JSON;

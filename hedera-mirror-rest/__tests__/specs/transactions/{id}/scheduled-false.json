@@ -74,6 +74,9 @@
   },
   "url": "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=false",
   "responseStatus": 200,
+  "responseHeaders": {
+    "cache-control": "public, max-age=5"
+  },
   "responseJson": {
     "transactions": [
       {

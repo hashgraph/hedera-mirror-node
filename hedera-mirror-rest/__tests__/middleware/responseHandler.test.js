@@ -40,7 +40,6 @@ describe('Response middleware', () => {
       },
     };
     mockResponse = {
-      get: jest.fn(),
       locals: {
         responseData: responseData,
         statusCode: 200,
@@ -60,8 +59,7 @@ describe('Response middleware', () => {
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(2, headers.path[mockRequest.route.path]);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(3, 'Content-Type', 'application/json; charset=utf-8');
+    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'Content-Type', 'application/json; charset=utf-8');
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
@@ -69,9 +67,8 @@ describe('Response middleware', () => {
     mockRequest.route.path = '/api/v1/accounts';
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
-    expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(2, headers.path[mockRequest.route.path]);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(3, 'Content-Type', 'application/json; charset=utf-8');
+    expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.path[mockRequest.route.path]);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'Content-Type', 'application/json; charset=utf-8');
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
@@ -81,8 +78,7 @@ describe('Response middleware', () => {
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(mockResponse.locals.responseData);
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(2, headers.path[mockRequest.route.path]);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(3, 'Content-Type', mockResponse.locals.responseContentType);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'Content-Type', mockResponse.locals.responseContentType);
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
@@ -91,11 +87,11 @@ describe('Response middleware', () => {
     mockResponse.locals.responseData.links.next = MOCK_URL;
     const assertNextValue = `<${MOCK_URL}>; rel=\"next\"`;
     await responseHandler(mockRequest, mockResponse, null);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(4, 'Link', assertNextValue);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(3, 'Link', assertNextValue);
   });
 
   test('should NOT set the Link next header and confirm it exists', async () => {
     await responseHandler(mockRequest, mockResponse, null);
-    expect(mockResponse.set).toHaveBeenCalledTimes(3);
+    expect(mockResponse.set).toHaveBeenCalledTimes(2);
   });
 });

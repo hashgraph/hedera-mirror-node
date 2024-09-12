@@ -105,6 +105,8 @@ const requestStartTime = 'requestStartTime';
 const responseContentType = 'responseContentType';
 const responseDataLabel = 'responseData';
 
+const responseHeadersLabel = 'responseHeaders';
+
 const orderFilterValues = {
   ASC: 'asc',
   DESC: 'desc',
@@ -252,6 +254,7 @@ export {
   requestStartTime,
   responseContentType,
   responseDataLabel,
+  responseHeadersLabel,
   tokenTypeFilter,
   transactionResultFilter,
   zeroRandomPageCostQueryHint,
