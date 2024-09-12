@@ -978,7 +978,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         }
     }
 
-    public static String toHexWith64LeadingZeros(final Long value) {
+    private static String toHexWith64LeadingZeros(final Long value) {
         final String result;
         final var paddedHexString = String.format("%064x", value);
         result = "0x" + paddedHexString;
