@@ -207,6 +207,17 @@ tasks.register<Copy>("moveAndCleanTestHistoricalFiles") {
     dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
 }
 
+val deleteWeb3jJars =
+    tasks.register<Delete>("deleteWeb3jJars") {
+        description = "Deletes the web3 jars after they are no longer needed"
+        group = "historical"
+
+        val web3Jars = fileTree("build/libs") { include("web3*-${historicalSolidityVersion}*.jar") }
+        delete(web3Jars)
+
+        mustRunAfter(processTestHistoricalResources)
+    }
+
 afterEvaluate { tasks.named("resolveSolidity") { dependsOn("extractContracts") } }
 
 tasks.compileTestJava {
@@ -221,3 +232,5 @@ tasks.assemble {
     dependsOn(tasks.processTestResources)
     dependsOn(processTestHistoricalResources)
 }
+
+tasks.dockerBuild { dependsOn(deleteWeb3jJars) }
