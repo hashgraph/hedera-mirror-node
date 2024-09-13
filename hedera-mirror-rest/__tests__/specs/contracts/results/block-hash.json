@@ -144,14 +144,11 @@
     },
     {
       "url": "/api/v1/contracts/results?block.hash=f39e30719c53716e35d25963e204b7ab840315c8b3f3a4df1ab1b3ad9d5bc7b9",
-      "responseStatus": 404,
+      "responseStatus": 200,
       "responseJson": {
-        "_status": {
-          "messages": [
-            {
-              "message": "Block not found"
-            }
-          ]
+        "results": [],
+        "links": {
+          "next": null
         }
       }
     }

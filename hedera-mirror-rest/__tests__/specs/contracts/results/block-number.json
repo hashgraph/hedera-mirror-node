@@ -284,14 +284,11 @@
     },
     {
       "url": "/api/v1/contracts/results?block.number=99",
-      "responseStatus": 404,
+      "responseStatus": 200,
       "responseJson": {
-        "_status": {
-          "messages": [
-            {
-              "message": "Block not found"
-            }
-          ]
+        "results": [],
+        "links": {
+          "next": null
         }
       }
     }
