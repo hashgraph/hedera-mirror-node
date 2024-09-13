@@ -77,6 +77,8 @@ spec:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
       worker:
+        config:
+          shared_buffers: "8GB"
         overrides:
           - index: 0
             pods:
