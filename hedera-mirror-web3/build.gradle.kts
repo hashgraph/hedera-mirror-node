@@ -138,7 +138,7 @@ tasks.register("resolveSolidityHistorical", SolidityResolve::class) {
     group = "historical"
     description = "Resolves the historical solidity version $historicalSolidityVersion"
     sources = fileTree("src/testHistorical/solidity")
-    allowPaths = setOf("src/testHistorical/solidity")
+    setAllowPaths(setOf("src/testHistorical/solidity"))
 
     val packageJsonFile = "./build/node_modules/@openzeppelin/contracts/package.json"
     packageJson = file(packageJsonFile)
@@ -153,6 +153,7 @@ afterEvaluate {
         version = historicalSolidityVersion
         source = fileTree("src/testHistorical/solidity") { include("*.sol") }
         dependsOn("extractContracts")
+        dependsOn("resolveSolidityHistorical")
     }
 }
 
