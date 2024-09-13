@@ -423,7 +423,7 @@ class ContractController extends BaseController {
    *
    * @param {[]} filters parsed and validated filters
    * @param {string} contractId encoded contract ID
-   * @return {Promise<{conditions: [], params: [], order: 'asc'|'desc', limit: number}>}
+   * @return {Promise<{conditions: [], params: [], order: 'asc'|'desc', limit: number, skip: boolean}>}
    */
   extractContractResultsByIdQuery = async (filters, contractId = undefined) => {
     let limit = defaultLimit;
@@ -510,7 +510,7 @@ class ContractController extends BaseController {
           {key: filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: blockData.consensusEnd}
         );
       } else {
-        throw new NotFoundError('Block not found');
+        return {skip: true};
       }
     }
 
@@ -866,30 +866,34 @@ class ContractController extends BaseController {
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
-    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, contractId);
-
-    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
-      results: rows.map((row) => new ContractResultViewModel(row)),
+      results: [],
       links: {
         next: null,
       },
     };
-
-    if (!_.isEmpty(response.results)) {
-      const lastRow = _.last(response.results);
-      const lastContractResultTimestamp = lastRow.timestamp;
-      response.links.next = utils.getPaginationLink(
-        req,
-        response.results.length !== limit,
-        {
-          [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
-        },
-        order
-      );
+    res.locals[responseDataLabel] = response;
+    const {conditions, params, order, limit, skip} = await this.extractContractResultsByIdQuery(filters, contractId);
+    if (skip) {
+      return;
     }
 
-    res.locals[responseDataLabel] = response;
+    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
+    if (rows.length === 0) {
+      return;
+    }
+
+    response.results = rows.map((row) => new ContractResultViewModel(row));
+    const lastRow = _.last(response.results);
+    const lastContractResultTimestamp = lastRow.timestamp;
+    response.links.next = utils.getPaginationLink(
+      req,
+      response.results.length !== limit,
+      {
+        [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
+      },
+      order
+    );
   };
 
   async extractContractStateByIdQuery(filters, contractId) {
@@ -1047,9 +1051,6 @@ class ContractController extends BaseController {
       contractResultsFilterValidityChecks
     );
 
-    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters);
-
-    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
       results: [],
       links: {
@@ -1057,6 +1058,12 @@ class ContractController extends BaseController {
       },
     };
     res.locals[responseDataLabel] = response;
+    const {conditions, params, order, limit, skip} = await this.extractContractResultsByIdQuery(filters);
+    if (skip) {
+      return;
+    }
+
+    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     if (rows.length === 0) {
       return;
     }
