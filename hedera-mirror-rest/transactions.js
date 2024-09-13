@@ -462,8 +462,8 @@ const extractSqlFromTransactionsRequest = (filters) => {
   }
 
   if (resultType) {
-    const operator = resultType === constants.transactionResultFilter.SUCCESS ? '=' : '<>';
-    resultTypeQuery = `t.result ${operator} $${params.push(utils.resultSuccess)}`;
+    const operator = resultType === constants.transactionResultFilter.SUCCESS ? 'in' : 'not in';
+    resultTypeQuery = `t.result ${operator} (${utils.resultSuccess})`;
   }
 
   const transactionTypeQuery = getQueryWithEqualValues('type', params, transactionTypes);

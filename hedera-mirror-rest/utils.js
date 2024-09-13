@@ -35,7 +35,7 @@ import {Entity, FeeSchedule, TransactionResult, TransactionType} from './model';
 const JSONBig = JSONBigFactory({useNativeBigInt: true});
 
 const responseLimit = config.response.limit;
-const resultSuccess = TransactionResult.getSuccessProtoId();
+const resultSuccess = _.join(TransactionResult.getSuccessProtoIds(), ', ');
 
 const opsMap = {
   lt: ' < ',
