@@ -73,7 +73,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
 
     @ParameterizedTest
     @EnumSource(Direction.class)
-    void conditionalClauses(Direction order) {
+    void conditionalClausesByDirection(Direction order) {
         var sender = domainBuilder.entity().get();
         var receiver = domainBuilder.entity().get();
         var tokenId = 5000L;

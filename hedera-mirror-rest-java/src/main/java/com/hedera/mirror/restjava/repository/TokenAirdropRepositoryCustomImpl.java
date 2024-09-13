@@ -44,9 +44,9 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
 
     @Override
     public Collection<TokenAirdrop> findAllOutstanding(TokenAirdropRequest request, EntityId accountId) {
-        var fieldBound = getFieldBound(request, true);
+        var fieldBounds = getFieldBound(request, true);
         var condition = getBaseCondition(accountId, true)
-                .and(getBoundCondition(fieldBound))
+                .and(getBoundCondition(fieldBounds))
                 // Exclude NFTs
                 .and(TOKEN_AIRDROP.SERIAL_NUMBER.eq(0L));
 
@@ -59,32 +59,11 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
                 .fetchInto(TokenAirdrop.class);
     }
 
-    private FieldBound getFieldBound(TokenAirdropRequest request, boolean outstanding) {
-        if (outstanding) {
-            return (request.getEntityIds() == null || request.getEntityIds().isEmpty())
-                    ? new FieldBound(
-                            TOKEN_AIRDROP.TOKEN_ID,
-                            TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID,
-                            request.getTokenIds(),
-                            request.getEntityIds())
-                    : new FieldBound(
-                            TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID,
-                            TOKEN_AIRDROP.TOKEN_ID,
-                            request.getEntityIds(),
-                            request.getTokenIds());
-        } else {
-            return (request.getEntityIds() == null || request.getEntityIds().isEmpty())
-                    ? new FieldBound(
-                            TOKEN_AIRDROP.TOKEN_ID,
-                            TOKEN_AIRDROP.SENDER_ACCOUNT_ID,
-                            request.getTokenIds(),
-                            request.getEntityIds())
-                    : new FieldBound(
-                            TOKEN_AIRDROP.SENDER_ACCOUNT_ID,
-                            TOKEN_AIRDROP.TOKEN_ID,
-                            request.getEntityIds(),
-                            request.getTokenIds());
-        }
+    private ConditionalFieldBounds getFieldBound(TokenAirdropRequest request, boolean outstanding) {
+        var primaryField = outstanding ? TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID : TOKEN_AIRDROP.SENDER_ACCOUNT_ID;
+        var primary = new FieldBound(primaryField, request.getEntityIds());
+        var secondary = new FieldBound(TOKEN_AIRDROP.TOKEN_ID, request.getTokenIds());
+        return new ConditionalFieldBounds(primary, secondary);
     }
 
     private Condition getBaseCondition(EntityId accountId, boolean outstanding) {
