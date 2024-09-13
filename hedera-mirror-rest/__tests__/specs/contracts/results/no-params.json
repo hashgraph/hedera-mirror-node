@@ -1,6 +1,10 @@
 {
   "description": "Contract results api call for all contracts",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": 187700
+    },
     "contracts": [
       {
         "created_timestamp": "987654999123200",
@@ -119,7 +123,7 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/results"],
+  "url": "/api/v1/contracts/results",
   "responseStatus": 200,
   "responseJson": {
     "results": [

@@ -46,10 +46,6 @@ class EntityService extends BaseService {
   static multipleAliasMatch = `Multiple alive entities matching alias`;
   static multipleEvmAddressMatch = `Multiple alive entities matching evm address`;
 
-  constructor() {
-    super();
-  }
-
   /**
    * Retrieves the entity containing matching the given alias
    *
@@ -117,15 +113,12 @@ class EntityService extends BaseService {
    * @return {Promise<BigInt|Number>}
    */
   async getEntityIdFromEvmAddress(evmAddress, requireResult = true) {
-    const rows = await this.getRows(
-      EntityService.entityFromEvmAddressQuery,
-      Buffer.from(evmAddress, 'hex'),
-      'getEntityIdFromEvmAddress'
-    );
+    const rows = await this.getRows(EntityService.entityFromEvmAddressQuery, Buffer.from(evmAddress, 'hex'));
     if (rows.length === 0) {
       if (requireResult) {
         throw new NotFoundError();
       }
+
       return null;
     } else if (rows.length > 1) {
       logger.error(`Incorrect db state: ${rows.length} alive entities matching evm address ${evmAddress}`);
