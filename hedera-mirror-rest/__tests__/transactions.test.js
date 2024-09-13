@@ -674,14 +674,14 @@ describe('extractSqlFromTransactionsRequest', () => {
     test('single value', () => {
       const expected = {
         ...defaultExpected,
-        limitQuery: 'limit $2',
-        params: ['22', 25],
-        resultTypeQuery: 't.result = $1',
+        limitQuery: 'limit $1',
+        params: [25],
+        resultTypeQuery: `t.result in (${utils.resultSuccess})`,
       };
       const filters = [{key: constants.filterKeys.RESULT, operator: utils.opsMap.eq, value: 'success'}];
       expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
 
-      expected.resultTypeQuery = 't.result <> $1';
+      expected.resultTypeQuery = `t.result not in (${utils.resultSuccess})`;
       filters[0].value = 'fail';
       expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
     });
@@ -689,9 +689,9 @@ describe('extractSqlFromTransactionsRequest', () => {
     test('multiple values', () => {
       const expected = {
         ...defaultExpected,
-        limitQuery: 'limit $2',
-        params: ['22', 25],
-        resultTypeQuery: 't.result = $1',
+        limitQuery: 'limit $1',
+        params: [25],
+        resultTypeQuery: `t.result in (${utils.resultSuccess})`,
       };
       const filters = [
         {key: constants.filterKeys.RESULT, operator: utils.opsMap.eq, value: 'success'},
@@ -700,7 +700,7 @@ describe('extractSqlFromTransactionsRequest', () => {
       ];
       expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
 
-      expected.resultTypeQuery = 't.result <> $1';
+      expected.resultTypeQuery = `t.result not in (${utils.resultSuccess})`;
       filters[2].value = 'fail';
       expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
     });
@@ -740,11 +740,11 @@ describe('extractSqlFromTransactionsRequest', () => {
       accountQuery: 'ctl.entity_id = $1',
       creditDebitQuery: 'ctl.amount > 0',
       limit: 30,
-      limitQuery: 'limit $4',
+      limitQuery: 'limit $3',
       order: 'asc',
-      params: [123, '22', '14', 30],
-      resultTypeQuery: 't.result = $2',
-      transactionTypeQuery: 'type = $3',
+      params: [123, '14', 30],
+      resultTypeQuery: `t.result in (${utils.resultSuccess})`,
+      transactionTypeQuery: 'type = $2',
     };
     const filters = [
       {key: constants.filterKeys.ACCOUNT_ID, operator: utils.opsMap.eq, value: 123},

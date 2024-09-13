@@ -29,7 +29,7 @@ import * as utils from '../utils';
  */
 class ContractResultDetailsViewModel extends ContractResultViewModel {
   static _LEGACY_TYPE = 0;
-  static _SUCCESS_PROTO_ID = Number.parseInt(TransactionResult.getSuccessProtoId());
+  static _SUCCESS_PROTO_IDS = TransactionResult.getSuccessProtoIds();
   static _SUCCESS_RESULT = '0x1';
   static _FAIL_RESULT = '0x0';
 
@@ -64,8 +64,9 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     if (!_.isNil(contractStateChanges)) {
       this.state_changes = contractStateChanges.map((csc) => new ContractResultStateChangeViewModel(csc));
     }
-    const isTransactionSuccessful =
-      contractResult.transactionResult === ContractResultDetailsViewModel._SUCCESS_PROTO_ID;
+    const isTransactionSuccessful = ContractResultDetailsViewModel._SUCCESS_PROTO_IDS.includes(
+      contractResult.transactionResult
+    );
     this.status = isTransactionSuccessful
       ? ContractResultDetailsViewModel._SUCCESS_RESULT
       : ContractResultDetailsViewModel._FAIL_RESULT;

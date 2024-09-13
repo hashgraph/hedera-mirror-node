@@ -55,6 +55,16 @@
         "recipientAccountId": "0.0.9",
         "amount": 40,
         "nodeAccountId": "0.0.3",
+        "result": 104,
+        "treasuryAccountId": "0.0.98"
+      },
+      {
+        "consensus_timestamp": "1565779777711927001",
+        "payerAccountId": "0.0.2",
+        "recipientAccountId": "0.0.9",
+        "amount": 50,
+        "nodeAccountId": "0.0.3",
+        "result": 220,
         "treasuryAccountId": "0.0.98"
       }
     ]
@@ -65,12 +75,50 @@
     "transactions": [
       {
         "bytes": "Ynl0ZXM=",
+        "consensus_timestamp": "1565779777.711927001",
+        "entity_id": null,
+        "valid_start_timestamp": "1565779777.711927000",
+        "charged_tx_fee": 7,
+        "memo_base64": null,
+        "result": "SUCCESS_BUT_MISSING_EXPECTED_OPERATION",
+        "scheduled": false,
+        "staking_reward_transfers": [],
+        "token_transfers": [],
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
+        "name": "CRYPTOTRANSFER",
+        "nft_transfers": [],
+        "node": "0.0.3",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "transaction_id": "0.0.2-1565779777-711927000",
+        "valid_duration_seconds": "11",
+        "max_fee": "33",
+        "transfers": [
+          {
+            "account": "0.0.2",
+            "amount": -51,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.9",
+            "amount": 50,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1,
+            "is_approval": false
+          }
+        ]
+      },
+      {
+        "bytes": "Ynl0ZXM=",
         "consensus_timestamp": "1565779666.711927001",
         "entity_id": null,
         "valid_start_timestamp": "1565779666.711927000",
         "charged_tx_fee": 7,
         "memo_base64": null,
-        "result": "SUCCESS",
+        "result": "FEE_SCHEDULE_FILE_PART_UPLOADED",
         "scheduled": false,
         "staking_reward_transfers": [],
         "token_transfers": [],
