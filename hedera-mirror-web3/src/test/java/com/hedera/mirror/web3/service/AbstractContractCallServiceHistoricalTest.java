@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KEY;
 
 import com.google.common.collect.Range;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -37,15 +38,16 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hyperledger.besu.datatypes.Address;
 
 public abstract class AbstractContractCallServiceHistoricalTest extends AbstractContractCallServiceTest {
 
     protected Range<Long> setUpHistoricalContext(final long blockNumber) {
-        final var recordFile = persistRecordFile(blockNumber);
+        final var recordFile = recordFilePersist(blockNumber);
         return setupHistoricalStateInService(blockNumber, recordFile);
     }
 
-    protected RecordFile persistRecordFile(final long blockNumber) {
+    protected RecordFile recordFilePersist(final long blockNumber) {
         return domainBuilder.recordFile().customize(f -> f.index(blockNumber)).persist();
     }
 
@@ -61,24 +63,7 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         testWeb3jService.setHistoricalRange(timestampRange);
     }
 
-    protected Pair<Entity, Entity> persistAccountTokenRelationshipHistorical(
-            final boolean isFrozen, final Range<Long> historicalRange) {
-        final var account = persistAccountEntityHistoricalWithAlias(historicalRange);
-        final var tokenEntity = persistTokenEntityHistorical(historicalRange);
-        persistFungibleTokenHistorical(tokenEntity, historicalRange);
-        domainBuilder
-                .tokenAccountHistory()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .freezeStatus(isFrozen ? TokenFreezeStatusEnum.FROZEN : TokenFreezeStatusEnum.UNFROZEN)
-                        .associated(true)
-                        .timestampRange(historicalRange))
-                .persist();
-        return Pair.of(account, tokenEntity);
-    }
-
-    protected void persistTokenAccountFrozenRelationshipHistorical(
+    protected void tokenAccountFrozenRelationshipPersistHistorical(
             final Entity tokenEntity, final Entity accountEntity, final Range<Long> historicalRange) {
         domainBuilder
                 .tokenAccountHistory()
@@ -91,7 +76,7 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .persist();
     }
 
-    protected Entity persistAccountEntityHistorical(final Range<Long> timestampRange) {
+    protected Entity accountEntityPersistHistorical(final Range<Long> timestampRange) {
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
@@ -102,7 +87,24 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .persist();
     }
 
-    protected Entity persistAccountEntityNoEvmAddressHistorical(final Range<Long> timestampRange) {
+    protected Pair<Entity, Entity> accountTokenAndFrozenRelationshipPersistHistorical(
+            final Range<Long> historicalRange) {
+        final var account = accountEntityWithAliasPersistHistorical(historicalRange);
+        final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
+        fungibleTokenPersistHistorical(tokenEntity, historicalRange);
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(account.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                        .associated(true)
+                        .timestampRange(historicalRange))
+                .persist();
+        return Pair.of(account, tokenEntity);
+    }
+
+    protected Entity accountEntityNoEvmAddressPersistHistorical(final Range<Long> timestampRange) {
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
@@ -114,32 +116,37 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .persist();
     }
 
-    protected Entity persistAccountEntityHistoricalWithAlias(final Range<Long> timestampRange) {
+    protected Entity accountEntityWithAliasPersistHistorical(final Range<Long> timestampRange) {
+        return accountEntityWithAliasPersistHistorical(SENDER_ALIAS, SENDER_PUBLIC_KEY, timestampRange);
+    }
+
+    protected Entity accountEntityWithAliasPersistHistorical(
+            final Address evmAddress, final ByteString alias, final Range<Long> timestampRange) {
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
-                        .alias(SENDER_PUBLIC_KEY.toByteArray())
+                        .alias(alias.toByteArray())
                         .deleted(false)
-                        .evmAddress(SENDER_ALIAS.toArray())
+                        .evmAddress(evmAddress.toArray())
                         .balance(1_000_000_000_000L)
                         .createdTimestamp(timestampRange.lowerEndpoint())
                         .timestampRange(timestampRange))
                 .persist();
     }
 
-    protected Entity persistAccountWithBalanceHistorical(final long balance, final Range<Long> timestampRange) {
+    protected Entity accountWithBalancePersistHistorical(final long balance, final Range<Long> timestampRange) {
         final var entity = domainBuilder
                 .entity()
                 .customize(e -> e.balance(balance)
                         .timestampRange(timestampRange)
                         .createdTimestamp(timestampRange.lowerEndpoint()))
                 .persist();
-        persistAccountBalanceHistorical(entity.toEntityId(), balance, timestampRange);
+        accountBalancePersistHistorical(entity.toEntityId(), balance, timestampRange);
 
         return entity;
     }
 
-    protected void persistAccountBalanceHistorical(
+    protected void accountBalancePersistHistorical(
             final EntityId entityId, final long balance, final Range<Long> timestampRange) {
         // There needs to be an entry for account 0.0.2 in order for the account balance query to return the correct
         // result
@@ -155,7 +162,7 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .persist();
     }
 
-    protected void persistTokenBalanceHistorical(
+    protected void tokenBalancePersistHistorical(
             final EntityId accountId, final EntityId tokenId, final long balance, final Range<Long> timestampRange) {
         // There needs to be an entry for account 0.0.2 in order for the token balance query to return the correct
         // result
@@ -171,14 +178,14 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .persist();
     }
 
-    protected Entity persistTokenEntityHistorical(final Range<Long> timestampRange) {
+    protected Entity tokenEntityPersistHistorical(final Range<Long> timestampRange) {
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.TOKEN).timestampRange(timestampRange))
                 .persist();
     }
 
-    protected void persistFungibleTokenHistorical(Entity tokenEntity, final Range<Long> timestampRange) {
+    protected void fungibleTokenPersistHistorical(Entity tokenEntity, final Range<Long> timestampRange) {
         domainBuilder
                 .tokenHistory()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -188,14 +195,14 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .persist();
     }
 
-    protected Entity persistFungibleTokenHistorical(final Range<Long> timestampRange) {
-        final var entity = persistTokenEntityHistorical(timestampRange);
-        persistFungibleTokenHistorical(entity, timestampRange);
+    protected Entity fungibleTokenPersistHistorical(final Range<Long> timestampRange) {
+        final var entity = tokenEntityPersistHistorical(timestampRange);
+        fungibleTokenPersistHistorical(entity, timestampRange);
         return entity;
     }
 
-    protected Entity persistNftHistorical(final Range<Long> timestampRange) {
-        final var tokenEntity = persistTokenEntityHistorical(timestampRange);
+    protected Entity nftPersistHistorical(final Range<Long> timestampRange) {
+        final var tokenEntity = tokenEntityPersistHistorical(timestampRange);
         domainBuilder
                 .tokenHistory()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -210,35 +217,32 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         return tokenEntity;
     }
 
-    protected void persistTokenAllowanceHistorical(
-            final Entity tokenEntity,
-            final Entity owner,
-            final Entity spender,
-            final long amount,
-            final Range<Long> timestampRange) {
+    protected void tokenAllowancePersistHistorical(
+            final Entity tokenEntity, final Entity owner, final Entity spender, final Range<Long> timestampRange) {
         domainBuilder
                 .tokenAllowanceHistory()
                 .customize(a -> a.tokenId(tokenEntity.getId())
-                        .owner(owner.getNum())
-                        .spender(spender.getNum())
-                        .amount(amount)
-                        .amountGranted(amount)
+                        .owner(owner.getId())
+                        .spender(spender.getId())
+                        .amount(50L)
+                        .amountGranted(50L)
                         .timestampRange(timestampRange))
                 .persist();
     }
 
-    protected void persistNftAllowanceHistorical(
+    protected void nftAllowancePersistHistorical(
             final Entity tokenEntity, final Entity owner, final Entity spender, final Range<Long> timestampRange) {
         domainBuilder
                 .nftAllowanceHistory()
                 .customize(a -> a.tokenId(tokenEntity.getId())
-                        .owner(owner.getNum())
-                        .spender(spender.getNum())
+                        .owner(owner.getId())
+                        .spender(spender.getId())
+                        .approvedForAll(true)
                         .timestampRange(timestampRange))
                 .persist();
     }
 
-    protected void persistCryptoAllowanceHistorical(
+    protected void cryptoAllowancePersistHistorical(
             final Entity owner, final EntityId spender, final long amount, final Range<Long> timestampRange) {
         domainBuilder
                 .cryptoAllowanceHistory()
@@ -251,7 +255,7 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .persist();
     }
 
-    protected AbstractCustomFee persistCustomFeesWithFeeCollectorHistorical(
+    protected AbstractCustomFee customFeesWithFeeCollectorPersistHistorical(
             final Entity feeCollector,
             final Entity tokenEntity,
             final TokenTypeEnum tokenType,
