@@ -26,10 +26,6 @@ const ETAG_HEADER = 'etag';
 const VARY_HEADER = 'vary';
 const DEFAULT_REDIS_EXPIRY = 1;
 
-const {
-  response: {headers},
-} = config;
-
 let cache = new Cache('apiResponse:');
 
 // Response middleware that checks for and returns cached response.
@@ -62,7 +58,7 @@ const responseCacheCheckHandler = async (req, res, next) => {
 const responseCacheUpdateHandler = async (req, res, next) => {
   const responseCacheKey = res.locals[responseCacheKeyLabel];
   // Cache only positive outcomes
-  if (responseCacheKey && (res.statusCode === 200 || res.statusCode === 304)) {
+  if (responseCacheKey && res.statusCode === 200) {
     const cacheControlHeaderExpiry = getCacheControlExpiry(res.getHeaders()[CACHE_CONTROL_HEADER]);
     const redisExpiry = _.isNull(cacheControlHeaderExpiry) ? DEFAULT_REDIS_EXPIRY : cacheControlHeaderExpiry;
     if (redisExpiry > 0) {
@@ -72,6 +68,7 @@ const responseCacheUpdateHandler = async (req, res, next) => {
       delete headers[CONTENT_ENCODING_HEADER];
       delete headers[ETAG_HEADER];
       delete headers[VARY_HEADER];
+
       const cachedResponse = new CachedApiResponse(res.statusCode, headers, res.locals[responseBodyLabel]);
       await cache.setSingle(responseCacheKey, redisExpiry, cachedResponse);
     }

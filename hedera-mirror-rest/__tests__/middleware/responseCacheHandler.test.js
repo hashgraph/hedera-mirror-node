@@ -89,7 +89,6 @@ describe('Response cache middleware', () => {
       expect(cacheKey).toEqual(expectedCacheKey);
 
       // Middleware must not have handled the response directly.
-      expect(mockResponse.removeHeader).not.toBeCalled();
       expect(mockResponse.send).not.toBeCalled();
       expect(mockResponse.set).not.toBeCalled();
       expect(mockResponse.status).not.toBeCalled();
@@ -102,9 +101,7 @@ describe('Response cache middleware', () => {
       const cacheControlMaxAge = 60;
       const cachedHeaders = {
         'cache-control': `public, max-age=${cacheControlMaxAge}`,
-        'content-encoding': 'gzip',
-        etag: 'W/"5c35-Gld7z2oXbbJUpCcZpRCrhYePM04',
-        vary: 'accept-encoding',
+        'content-type': 'application/json; charset=utf-8',
       };
       const cachedStatusCode = 200;
 
@@ -136,7 +133,7 @@ describe('Response cache middleware', () => {
       expect(mockNextMiddleware).toBeCalled();
     });
 
-    test('Do not cache negative results', async () => {
+    test('Do not cache negative (non-200) results', async () => {
       const cacheKey = cacheKeyGenerator(mockRequest);
       mockResponse.locals[responseCacheKeyLabel] = cacheKey;
       mockResponse.statusCode = 503;
@@ -160,7 +157,7 @@ describe('Response cache middleware', () => {
       expect(mockNextMiddleware).toBeCalled();
     });
 
-    test('Cache valid response', async () => {
+    test('Cache successful response', async () => {
       const cacheKey = cacheKeyGenerator(mockRequest);
       const expectedBody = JSONStringify({a: 'b'});
       const cacheControlMaxAge = 60;
