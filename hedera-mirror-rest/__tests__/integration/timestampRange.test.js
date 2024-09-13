@@ -21,7 +21,7 @@ import config from '../../config';
 import {NANOSECONDS_PER_MILLISECOND, orderFilterValues} from '../../constants';
 import integrationDomainOps from '../integrationDomainOps';
 import {setupIntegrationTest} from '../integrationUtils';
-import transactions from '../../transactions';
+import testExports, {bindTimestampRange} from '../../timestampRange';
 
 setupIntegrationTest();
 
@@ -77,7 +77,7 @@ describe('bindTimestampRange', () => {
       }
     ];
     test.each(spec)('$name', async ({expected, range, order = DESC}) => {
-      await expect(transactions.bindTimestampRange(range, order)).resolves.toEqual(expected);
+      await expect(bindTimestampRange(range, order)).resolves.toEqual(expected);
     });
   });
 
@@ -89,14 +89,14 @@ describe('bindTimestampRange', () => {
       {name: 'closed range', range: Range(1500n, 3000n)},
     ];
     test.each(spec)('$name', async ({range, order = DESC}) => {
-      await expect(transactions.bindTimestampRange(range, order)).resolves.toEqual(range);
+      await expect(bindTimestampRange(range, order)).resolves.toEqual(range);
     });
   });
 });
 
 describe('getFirstTransactionTimestamp', () => {
   test('no transaction expect 0n', async () => {
-    await expect(transactions.getFirstTransactionTimestamp()).resolves.toEqual(0n);
+    await expect(testExports.getFirstTransactionTimestamp()).resolves.toEqual(0n);
   });
 
   test('first transaction timestamp', async () => {
@@ -104,6 +104,6 @@ describe('getFirstTransactionTimestamp', () => {
       {consensus_timestamp: 1606123456000111222n, payerAccountId: 2000},
       {consensus_timestamp: 1606137065111222333n, payerAccountId: 2000},
     ]);
-    await expect(transactions.getFirstTransactionTimestamp()).resolves.toEqual(1606123456000111222n);
+    await expect(testExports.getFirstTransactionTimestamp()).resolves.toEqual(1606123456000111222n);
   });
 });

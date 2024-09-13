@@ -18,7 +18,7 @@ import _ from 'lodash';
 
 import BaseService from './baseService';
 import {getResponseLimit} from '../config';
-import {filterKeys, orderFilterValues} from '../constants';
+import {MAX_LONG, filterKeys, orderFilterValues} from '../constants';
 import EntityId from '../entityId';
 import {NotFoundError} from '../errors';
 import {OrderSpec} from '../sql';
@@ -31,7 +31,6 @@ import {
   ContractStateChange,
   ContractTransactionHash,
   Entity,
-  RecordFile,
   EthereumTransaction,
 } from '../model';
 import ContractTransaction from '../model/contractTransaction';
@@ -202,9 +201,7 @@ class ContractService extends BaseService {
   static ethereumTransactionByPayerAndTimestampArrayQuery = `select
         encode(${EthereumTransaction.ACCESS_LIST}, 'hex') ${EthereumTransaction.ACCESS_LIST},
         encode(${EthereumTransaction.CHAIN_ID}, 'hex') ${EthereumTransaction.CHAIN_ID},
-        ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} ${
-    EthereumTransaction.CONSENSUS_TIMESTAMP
-  },
+        ${EthereumTransaction.CONSENSUS_TIMESTAMP},
         encode(${EthereumTransaction.GAS_PRICE}, 'hex') ${EthereumTransaction.GAS_PRICE},
         encode(${EthereumTransaction.MAX_FEE_PER_GAS}, 'hex') ${EthereumTransaction.MAX_FEE_PER_GAS},
         encode(${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS}, 'hex') ${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS},
@@ -216,13 +213,11 @@ class ContractService extends BaseService {
         ${EthereumTransaction.RECOVERY_ID},
         encode(${EthereumTransaction.TO_ADDRESS}, 'hex') ${EthereumTransaction.TO_ADDRESS},
         encode(${EthereumTransaction.VALUE}, 'hex') ${EthereumTransaction.VALUE}
-      from (select * from unnest($1::bigint[], $2::bigint[]) as tmp (payer_account_id, consensus_timestamp)) as t
-      join ${EthereumTransaction.tableName} as ${EthereumTransaction.tableAlias}
-        on t.payer_account_id = ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)} and
-          t.consensus_timestamp = ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)}
-      where ${EthereumTransaction.getFullName(
-        EthereumTransaction.CONSENSUS_TIMESTAMP
-      )} >= $3 and ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} <= $4`;
+      from ${EthereumTransaction.tableName}
+      where ${EthereumTransaction.PAYER_ACCOUNT_ID} = any($1)
+        and ${EthereumTransaction.CONSENSUS_TIMESTAMP} = any($2)
+        and ${EthereumTransaction.CONSENSUS_TIMESTAMP} >= $3
+        and ${EthereumTransaction.CONSENSUS_TIMESTAMP} <= $4`;
 
   static transactionHashDetailsQuery = `select ${ContractTransactionHash.HASH}, 
                                               ${ContractTransactionHash.PAYER_ACCOUNT_ID}, 
@@ -237,9 +232,6 @@ class ContractService extends BaseService {
                                           ${ContractTransaction.CONSENSUS_TIMESTAMP}
                    from ${ContractTransaction.tableName}
                    where ${ContractTransaction.CONSENSUS_TIMESTAMP} = $1 and ${ContractTransaction.ENTITY_ID} = $2`;
-  constructor() {
-    super();
-  }
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
@@ -594,11 +586,23 @@ class ContractService extends BaseService {
       return transactionMap;
     }
 
-    const rows = await super.getRows(
-      ContractService.ethereumTransactionByPayerAndTimestampArrayQuery,
-      [payers, timestamps, _.min(timestamps), _.max(timestamps)],
-      'getEthereumTransactionsByPayerAndTimestampArray'
-    );
+    let maxTimestamp = -1n;
+    let minTimestamp = MAX_LONG;
+    timestamps.forEach((timestamp) => {
+      if (timestamp > maxTimestamp) {
+        maxTimestamp = timestamp;
+      }
+      if (timestamp < minTimestamp) {
+        minTimestamp = timestamp;
+      }
+    });
+
+    const rows = await super.getRows(ContractService.ethereumTransactionByPayerAndTimestampArrayQuery, [
+      payers,
+      timestamps,
+      minTimestamp,
+      maxTimestamp,
+    ]);
 
     rows.forEach((row) => transactionMap.set(row.consensus_timestamp, new EthereumTransaction(row)));
 

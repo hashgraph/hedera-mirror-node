@@ -1,5 +1,6 @@
 {
   "description": "Contract results api call for all contracts with invalid account id contract results",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "contracts": [
       {

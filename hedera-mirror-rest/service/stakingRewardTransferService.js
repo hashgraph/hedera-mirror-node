@@ -22,10 +22,6 @@ import {OrderSpec} from '../sql';
  * Staking Reward Transfer retrieval business logic
  */
 class StakingRewardTransferService extends BaseService {
-  constructor() {
-    super();
-  }
-
   static listStakingRewardsByAccountIdQuery = `
     select ${StakingRewardTransfer.getFullName(StakingRewardTransfer.ACCOUNT_ID)},
     ${StakingRewardTransfer.getFullName(StakingRewardTransfer.AMOUNT)},

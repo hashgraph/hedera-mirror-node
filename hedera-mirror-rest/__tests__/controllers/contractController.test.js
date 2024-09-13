@@ -342,8 +342,8 @@ describe('getLastNonceParamValue', () => {
 describe('extractContractResultsByIdQuery', () => {
   const defaultContractId = 1;
   const defaultExpected = {
-    conditions: [primaryContractFilter, 'cr.transaction_nonce = $2'],
-    params: [defaultContractId, 0],
+    conditions: [primaryContractFilter, 'cr.transaction_nonce = 0'],
+    params: [defaultContractId],
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
   };
@@ -412,13 +412,8 @@ describe('extractContractResultsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [
-          primaryContractFilter,
-          'cr.sender_id > $2',
-          'cr.transaction_nonce = $3',
-          'cr.sender_id in ($4,$5)',
-        ],
-        params: [defaultContractId, '1000', 0, '1001', '1002'],
+        conditions: [primaryContractFilter, 'cr.sender_id > $2', 'cr.sender_id in ($3,$4)', 'cr.transaction_nonce = 0'],
+        params: [defaultContractId, '1000', '1001', '1002'],
       },
     },
     {
@@ -448,10 +443,10 @@ describe('extractContractResultsByIdQuery', () => {
         conditions: [
           primaryContractFilter,
           'cr.consensus_timestamp > $2',
-          'cr.transaction_nonce = $3',
-          'cr.consensus_timestamp in ($4,$5)',
+          'cr.consensus_timestamp in ($3,$4)',
+          'cr.transaction_nonce = 0',
         ],
-        params: [defaultContractId, '1000', 0, '1001', '1002'],
+        params: [defaultContractId, '1000', '1001', '1002'],
       },
     },
   ];
