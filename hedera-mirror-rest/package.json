@@ -28,7 +28,7 @@
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "express-http-context": "^1.2.4",
-    "express-openapi-validator": "^5.3.5",
+    "express-openapi-validator": "^5.3.6",
     "extend": "^3.0.2",
     "ioredis": "^5.4.1",
     "ip-anonymize": "^0.1.0",
@@ -76,12 +76,9 @@
   },
   "baseUrlPath": "/api/v1",
   "overrides": {
-    "express-openapi-validator": {
-      "path-to-regexp": "^8.1.0"
-    },
     "micromatch": "^4.0.8",
     "swagger-stats": {
-      "path-to-regexp": "^8.1.0",
+      "path-to-regexp": "^6.3.0",
       "send": "^0.19.0"
     }
   },
