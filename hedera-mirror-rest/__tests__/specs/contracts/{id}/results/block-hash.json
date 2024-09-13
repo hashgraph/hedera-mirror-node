@@ -55,40 +55,64 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.5001/results?block.hash=eq:0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
-    "/api/v1/contracts/0.0.5001/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
-    "/api/v1/contracts/0.0.5001/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
-    "/api/v1/contracts/0.0.5001/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
-    "/api/v1/contracts/0.0.5001/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305"
-  ],
-  "responseStatus": 200,
-  "responseJson": {
-    "results": [
-      {
-        "address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
-        "amount": 20,
-        "bloom": "0x0101",
-        "call_result": "0x0202",
-        "contract_id": "0.0.5001",
-        "created_contract_ids": [],
-        "error_message": null,
-        "from": "0x0000000000000000000000000000000000000065",
-        "function_parameters": "0x010102020303",
-        "gas_consumed": null,
-        "gas_limit": 1000,
-        "gas_used": 100,
-        "hash": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
-        "timestamp": "187654.000123456",
-        "to": "0x0000000000000000000000000000000000001389"
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/contracts/0.0.5001/results?block.hash=eq:0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+        "/api/v1/contracts/0.0.5001/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+        "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+        "/api/v1/contracts/0.0.5001/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
+        "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
+        "/api/v1/contracts/0.0.5001/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+        "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+        "/api/v1/contracts/0.0.5001/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
+        "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "results": [
+          {
+            "address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
+            "amount": 20,
+            "bloom": "0x0101",
+            "call_result": "0x0202",
+            "contract_id": "0.0.5001",
+            "created_contract_ids": [],
+            "error_message": null,
+            "from": "0x0000000000000000000000000000000000000065",
+            "function_parameters": "0x010102020303",
+            "gas_consumed": null,
+            "gas_limit": 1000,
+            "gas_used": 100,
+            "hash": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+            "timestamp": "187654.000123456",
+            "to": "0x0000000000000000000000000000000000001389"
+          }
+        ],
+        "links": {
+          "next": null
+        }
       }
-    ],
-    "links": {
-      "next": null
+    },
+    {
+      "urls": [
+        "/api/v1/contracts/0.0.5001/results?block.hash=eq:0x94810cb7affd56b2e31d405faa456d04f4d53f3c34b8270715a31d4447004e579f48599f3c793786d62fb3e5aec298c4",
+        "/api/v1/contracts/0.0.5001/results?block.hash=0x94810cb7affd56b2e31d405faa456d04f4d53f3c34b8270715a31d4447004e579f48599f3c793786d62fb3e5aec298c4",
+        "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=0x94810cb7affd56b2e31d405faa456d04f4d53f3c34b8270715a31d4447004e579f48599f3c793786d62fb3e5aec298c4",
+        "/api/v1/contracts/0.0.5001/results?block.hash=0x94810cb7affd56b2e31d405faa456d04f4d53f3c34b8270715a31d4447004e57",
+        "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=0x94810cb7affd56b2e31d405faa456d04f4d53f3c34b8270715a31d4447004e57",
+        "/api/v1/contracts/0.0.5001/results?block.hash=94810cb7affd56b2e31d405faa456d04f4d53f3c34b8270715a31d4447004e57",
+        "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=94810cb7affd56b2e31d405faa456d04f4d53f3c34b8270715a31d4447004e579f48599f3c793786d62fb3e5aec298c4",
+        "/api/v1/contracts/0.0.5001/results?block.hash=94810cb7affd56b2e31d405faa456d04f4d53f3c34b8270715a31d4447004e57",
+        "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=94810cb7affd56b2e31d405faa456d04f4d53f3c34b8270715a31d4447004e57"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "results": [],
+        "links": {
+          "next": null
+        }
+      }
     }
-  }
+  ]
 }
