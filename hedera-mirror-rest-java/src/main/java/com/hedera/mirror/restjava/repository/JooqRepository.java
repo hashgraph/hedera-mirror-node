@@ -46,22 +46,18 @@ interface JooqRepository {
         var primaryBound = fieldBounds.primary.bound();
         var primaryLower = primaryBound.getLower();
         var primaryUpper = primaryBound.getUpper();
-        if (!primaryBound.isEmpty()) {
+        if (!primaryBound.isEmpty() && primaryBound.hasEqualBounds()) {
             // If the primary param has a range with a single value, rewrite it to EQ
-            if (primaryBound.hasEqualBounds()) {
-                primaryLower = new EntityIdRangeParameter(EQ, EntityId.of(primaryBound.adjustLowerBound()));
-                primaryUpper = null;
-            }
+            primaryLower = new EntityIdRangeParameter(EQ, EntityId.of(primaryBound.adjustLowerBound()));
+            primaryUpper = null;
         }
 
         var secondaryBound = fieldBounds.secondary().bound();
         var secondaryLower = secondaryBound.getLower();
         var secondaryUpper = secondaryBound.getUpper();
-        if (!secondaryBound.isEmpty()) {
+        if (!secondaryBound.isEmpty() && (secondaryLower != null && secondaryLower.operator() == EQ)) {
             // If the secondary param operator is EQ, set the secondary upper bound to the same
-            if (secondaryLower != null && secondaryLower.operator() == EQ) {
-                secondaryUpper = secondaryLower;
-            }
+            secondaryUpper = secondaryLower;
         }
 
         var primaryField = fieldBounds.primary().field();
