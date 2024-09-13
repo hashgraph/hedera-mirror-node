@@ -204,9 +204,12 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
 });
 
 describe('RecordFileService.getRecordFileBlockDetailsFromTimestampArray tests', () => {
+  test('Empty input', async () => {
+    await expect(RecordFileService.getRecordFileBlockDetailsFromTimestampArray([])).resolves.toEqual(new Map());
+  });
+
   test('No match', async () => {
-    const expected = new Map();
-    await expect(RecordFileService.getRecordFileBlockDetailsFromTimestampArray([1, 2])).resolves.toEqual(expected);
+    await expect(RecordFileService.getRecordFileBlockDetailsFromTimestampArray([1, 2])).resolves.toEqual(new Map());
   });
 
   test('All match', async () => {

@@ -16,6 +16,8 @@
 
 import java.net.HttpURLConnection
 import java.net.URI
+import org.web3j.solidity.gradle.plugin.SolidityCompile
+import org.web3j.solidity.gradle.plugin.SolidityResolve
 
 description = "Hedera Mirror Node Web3"
 
@@ -55,32 +57,25 @@ dependencies {
 }
 
 web3j {
-    excludedContracts =
-        listOf("DynamicEthCallsHistorical", "EthCallHistorical", "EvmCodesHistorical")
     generateBoth = true
     generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
     useNativeJavaTypes = true
 }
 
-sourceSets { test { solidity { version = "0.8.24" } } }
+val historicalSolidityVersion = "0.8.7"
+val latestSolidityVersion = "0.8.24"
 
-tasks.bootRun { jvmArgs = listOf("--enable-preview") }
-
-tasks.compileJava { options.compilerArgs.add("--enable-preview") }
-
-tasks.test { jvmArgs = listOf("--enable-preview") }
-
-val homeDir = System.getenv("HOME")
-val web3jLink = file("$homeDir/.web3j/web3j")
-
-val downloadWeb3j =
-    tasks.register<Exec>("downloadWeb3j") {
-        description = "Download and install Web3j CLI"
-        group = "historical"
-
-        commandLine("bash", "-c", "curl -L get.web3j.io | sh")
-        onlyIf { !web3jLink.exists() }
+// Define "testHistorical" source set needed for the test historical solidity contracts and web3j
+sourceSets {
+    val testHistorical by creating {
+        java { setSrcDirs(listOf("src/testHistorical/java", "src/testHistorical/solidity")) }
+        resources { setSrcDirs(listOf("src/testHistorical/resources")) }
+        compileClasspath += sourceSets["test"].output + configurations["testRuntimeClasspath"]
+        runtimeClasspath += sourceSets["test"].output + configurations["testRuntimeClasspath"]
+        solidity { version = historicalSolidityVersion }
     }
+    test { solidity { version = latestSolidityVersion } }
+}
 
 // Tasks to download OpenZeppelin contracts
 val openZeppelinVersion = "4.9.3"
@@ -88,8 +83,8 @@ val openZeppelinFile = layout.buildDirectory.file("openzeppelin.zip").get().asFi
 val openZeppelinDir =
     layout.projectDirectory.asFile
         .resolve("src")
-        .resolve("test")
-        .resolve("solidity_historical")
+        .resolve("testHistorical")
+        .resolve("solidity")
         .resolve("openzeppelin")
 
 val downloadOpenZeppelin =
@@ -97,6 +92,10 @@ val downloadOpenZeppelin =
         description = "Download OpenZeppelin contracts"
         group = "historical"
         doLast {
+            val buildDir = layout.buildDirectory.asFile.get()
+            if (!buildDir.exists()) {
+                mkdir(buildDir)
+            }
             openZeppelinDir.mkdirs()
             val openZeppelinUrl =
                 "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/v${openZeppelinVersion}.zip"
@@ -121,31 +120,104 @@ val extractOpenZeppelin =
         }
     }
 
-// Task to compile Solidity contracts and generate Java files
-val compileHistoricalSolidityContracts =
-    tasks.register<Exec>("compileHistoricalSolidityContracts") {
-        description = "Compiles the historical solidity contracts to java files using web3j-cli"
-        group = "historical"
-        mustRunAfter(tasks.named("generateTestContractWrappers"))
-        dependsOn(downloadWeb3j)
-        dependsOn(extractOpenZeppelin)
-        dependsOn(tasks.named("compileTestSolidity"))
-        val scriptPath = file("./src/main/resources/scripts/compile_solidity.sh").absolutePath
-        doFirst { file(scriptPath).setExecutable(true) }
-        commandLine("bash", scriptPath)
-    }
+tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
-tasks.assemble { dependsOn(tasks.processTestResources) }
+tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 
-tasks.compileTestJava {
-    options.compilerArgs.add("--enable-preview")
-    options.compilerArgs.removeIf { it == "-Werror" }
-    dependsOn(compileHistoricalSolidityContracts)
-}
+tasks.test { jvmArgs = listOf("--enable-preview") }
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
 tasks.processTestResources {
     dependsOn(tasks.named("generateTestContractWrappers"))
-    dependsOn(compileHistoricalSolidityContracts)
+    dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
+    dependsOn(tasks.named("moveAndCleanTestHistoricalFiles"))
+}
+
+tasks.register("resolveSolidityHistorical", SolidityResolve::class) {
+    group = "historical"
+    description = "Resolves the historical solidity version $historicalSolidityVersion"
+    version = historicalSolidityVersion
+    sources = fileTree("src/testHistorical/solidity")
+    allowPaths = setOf("src/testHistorical/solidity")
+
+    val packageJsonFile = "./build/node_modules/@openzeppelin/contracts/package.json"
+    packageJson = file(packageJsonFile)
+    dependsOn("extractContracts")
+}
+
+afterEvaluate {
+    tasks.named("compileTestHistoricalSolidity", SolidityCompile::class.java).configure {
+        group = "historical"
+        allowPaths = setOf("src/testHistorical/solidity/openzeppelin")
+        ignoreMissing = true
+        version = historicalSolidityVersion
+        source = fileTree("src/testHistorical/solidity") { include("*.sol") }
+        dependsOn("extractContracts")
+    }
+}
+
+afterEvaluate {
+    tasks.named("generateTestHistoricalContractWrappers") {
+        dependsOn(tasks.named("generateTestContractWrappers"))
+        dependsOn(extractOpenZeppelin)
+        dependsOn(tasks.named("resolveSolidityHistorical"))
+    }
+}
+
+val processTestHistoricalResources =
+    tasks.named("processTestHistoricalResources") {
+        group = "historical"
+
+        dependsOn(tasks.named("generateTestContractWrappers"))
+        dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
+        dependsOn(tasks.named("moveAndCleanTestHistoricalFiles"))
+    }
+
+tasks.register<Copy>("moveAndCleanTestHistoricalFiles") {
+    description =
+        "Move files from testHistorical to test and then clean up the testHistorical directory."
+    group = "historical"
+
+    // Define source and destination directories
+    val srcDir =
+        layout.buildDirectory
+            .dir(
+                "generated/sources/web3j/testHistorical/java/com/hedera/mirror/web3/web3j/generated"
+            )
+            .get()
+            .asFile
+    val destDir =
+        layout.buildDirectory
+            .dir("generated/sources/web3j/test/java/com/hedera/mirror/web3/web3j/generated")
+            .get()
+            .asFile
+
+    // Copy only files that match the pattern "*Historical.java"
+    from(srcDir) { include("**/*Historical.java") }
+    into(destDir)
+
+    doLast {
+        val testHistoricalDir =
+            layout.buildDirectory.dir("generated/sources/web3j/testHistorical").get().asFile
+        testHistoricalDir.deleteRecursively()
+    }
+
+    dependsOn(tasks.named("generateTestContractWrappers"))
+    dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
+}
+
+afterEvaluate { tasks.named("resolveSolidity") { dependsOn("extractContracts") } }
+
+tasks.compileTestJava {
+    options.compilerArgs.add("--enable-preview")
+    options.compilerArgs.removeIf { it == "-Werror" }
+    dependsOn("moveAndCleanTestHistoricalFiles")
+}
+
+tasks.named("compileTestHistoricalJava") { group = "historical" }
+
+tasks.assemble {
+    dependsOn(tasks.processTestResources)
+    dependsOn(processTestHistoricalResources)
 }

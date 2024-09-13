@@ -35,6 +35,10 @@ grpc:
   priorityClassName: medium
   prometheusRules:
     enabled: true
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 1024Mi
   serviceMonitor:
     enabled: true
 

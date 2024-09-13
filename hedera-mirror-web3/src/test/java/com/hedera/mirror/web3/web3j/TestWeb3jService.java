@@ -30,6 +30,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
+import com.hedera.mirror.web3.utils.RuntimeBytecodeExtractor;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
@@ -90,6 +91,7 @@ public class TestWeb3jService implements Web3jService {
     private byte[] contractRuntime;
     private BlockType blockType = BlockType.LATEST;
     private Range historicalRange;
+    private boolean useContractCallDeploy;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -116,6 +118,7 @@ public class TestWeb3jService implements Web3jService {
         this.sender = Address.fromHexString("");
         this.blockType = BlockType.LATEST;
         this.historicalRange = null;
+        this.useContractCallDeploy = false;
     }
 
     @SneakyThrows(Exception.class)
@@ -161,10 +164,16 @@ public class TestWeb3jService implements Web3jService {
     private EthSendTransaction sendTopLevelContractCreate(
             RawTransaction rawTransaction, String transactionHash, Request request) {
         final var res = new EthSendTransaction();
-        var serviceParameters = serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
-        final var mirrorNodeResult = contractExecutionService.processCall(serviceParameters);
+        String runtimeCode;
+        if (useContractCallDeploy) {
+            var serviceParameters =
+                    serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
+            runtimeCode = contractExecutionService.processCall(serviceParameters);
+        } else {
+            runtimeCode = RuntimeBytecodeExtractor.extractRuntimeBytecode(rawTransaction.getData());
+        }
         try {
-            final var contractInstance = deployInternal(mirrorNodeResult, persistContract);
+            final var contractInstance = deployInternal(runtimeCode, persistContract);
             res.setResult(transactionHash);
             res.setRawResponse(contractInstance.toHexString());
             res.setId(request.getId());

@@ -15,9 +15,11 @@
  */
 
 import _ from 'lodash';
+
 import BaseService from './baseService';
+import config from '../config';
 import {RecordFile} from '../model';
-import {orderFilterValues} from '../constants.js';
+import {orderFilterValues} from '../constants';
 
 const buildWhereSqlStatement = (whereQuery) => {
   let where = '';
@@ -34,10 +36,6 @@ const buildWhereSqlStatement = (whereQuery) => {
  * RecordFile retrieval business logic
  */
 class RecordFileService extends BaseService {
-  constructor() {
-    super();
-  }
-
   static recordFileBlockDetailsFromTimestampArrayQuery = `select
       ${RecordFile.CONSENSUS_END},
       ${RecordFile.CONSENSUS_START},
@@ -47,10 +45,18 @@ class RecordFileService extends BaseService {
     from ${RecordFile.tableName}
     where ${RecordFile.CONSENSUS_END} in (
       select
-       (select ${RecordFile.CONSENSUS_END} from ${RecordFile.tableName} where ${RecordFile.CONSENSUS_END} >= timestamp order by ${RecordFile.CONSENSUS_END} limit 1) as consensus_end
+       (
+         select ${RecordFile.CONSENSUS_END}
+         from ${RecordFile.tableName}
+         where ${RecordFile.CONSENSUS_END} >= timestamp and
+           ${RecordFile.CONSENSUS_END} >= $2 and
+           ${RecordFile.CONSENSUS_END} <= $3
+         order by ${RecordFile.CONSENSUS_END}
+         limit 1
+       ) as consensus_end
     from (select unnest($1::bigint[]) as timestamp) as tmp
       group by consensus_end
-    )`;
+    ) and ${RecordFile.CONSENSUS_END} >= $2 and ${RecordFile.CONSENSUS_END} <= $3`;
 
   static recordFileBlockDetailsFromTimestampQuery = `select
     ${RecordFile.CONSENSUS_END}, ${RecordFile.GAS_USED}, ${RecordFile.HASH}, ${RecordFile.INDEX}
@@ -101,11 +107,16 @@ class RecordFileService extends BaseService {
    */
   async getRecordFileBlockDetailsFromTimestampArray(timestamps) {
     const recordFileMap = new Map();
-    const timestampOrder = this.getTimestampOrder(timestamps);
-    let query = RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery;
-    query += ` order by consensus_end ${timestampOrder}`;
+    if (timestamps.length === 0) {
+      return recordFileMap;
+    }
 
-    const rows = await super.getRows(query, [timestamps], 'getRecordFileBlockDetailsFromTimestampArray');
+    const {maxTimestamp, minTimestamp, order} = this.getTimestampArrayContext(timestamps);
+    const query = `${RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery}
+      order by consensus_end ${order}`;
+    const params = [timestamps, minTimestamp, BigInt(maxTimestamp) + config.query.maxRecordFileCloseIntervalNs];
+
+    const rows = await super.getRows(query, params);
 
     let index = 0;
     for (const row of rows) {
@@ -113,11 +124,11 @@ class RecordFileService extends BaseService {
       const {consensusEnd, consensusStart} = recordFile;
       for (; index < timestamps.length; index++) {
         const timestamp = timestamps[index];
-        if (consensusEnd >= timestamp && consensusStart <= timestamp) {
+        if (consensusStart <= timestamp && consensusEnd >= timestamp) {
           recordFileMap.set(timestamp, recordFile);
         } else if (
-          (timestampOrder === orderFilterValues.ASC && timestamp > consensusEnd) ||
-          (timestampOrder === orderFilterValues.DESC && timestamp < consensusStart)
+          (order === orderFilterValues.ASC && timestamp > consensusEnd) ||
+          (order === orderFilterValues.DESC && timestamp < consensusStart)
         ) {
           break;
         }
@@ -182,14 +193,26 @@ class RecordFileService extends BaseService {
     return row ? new RecordFile(row) : null;
   }
 
-  getTimestampOrder(timestamps) {
-    if (timestamps.length === 0) {
-      return orderFilterValues.ASC;
-    }
-
+  /**
+   * Gets the timestamp context from a sorted timestamp array. Note the timestamps array must not be empty.
+   *
+   * @param timestamps
+   * @returns {{maxTimestamp: *, minTimestamp: *, order: string}
+   */
+  getTimestampArrayContext(timestamps) {
     const first = timestamps[0];
     const last = timestamps[timestamps.length - 1];
-    return first > last ? orderFilterValues.DESC : orderFilterValues.ASC;
+    return first > last
+      ? {
+          maxTimestamp: first,
+          minTimestamp: last,
+          order: orderFilterValues.DESC,
+        }
+      : {
+          maxTimestamp: last,
+          minTimestamp: first,
+          order: orderFilterValues.ASC,
+        };
   }
 }
 
