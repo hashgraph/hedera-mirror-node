@@ -103,17 +103,16 @@ const serveSwaggerDocs = (app) => {
 };
 
 const openApiValidator = (app) => {
-  // Temporarily disable until express-openapi-validator updates vulnerable path-to-regexp dependency
-  // app.use(
-  //   OpenApiValidator.middleware({
-  //     apiSpec: path.resolve(process.cwd(), getSpecPath(1)),
-  //     ignoreUndocumented: true,
-  //     validateRequests: false,
-  //     validateResponses: {
-  //       allErrors: true,
-  //     },
-  //   })
-  // );
+  app.use(
+    OpenApiValidator.middleware({
+      apiSpec: path.resolve(process.cwd(), getSpecPath(1)),
+      ignoreUndocumented: true,
+      validateRequests: false,
+      validateResponses: {
+        allErrors: true,
+      },
+    })
+  );
 };
 
 export {getV1OpenApiObject, openApiValidator, serveSwaggerDocs};
