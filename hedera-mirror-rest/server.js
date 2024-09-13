@@ -19,7 +19,6 @@ import express from 'express';
 
 import {createTerminus} from '@godaddy/terminus';
 import {addAsync} from '@awaitjs/express';
-import bodyParser from 'body-parser';
 import cors from 'cors';
 import httpContext from 'express-http-context';
 import fs from 'fs';
@@ -107,11 +106,11 @@ if (isTestEnv()) {
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(
-  bodyParser.urlencoded({
+  express.urlencoded({
     extended: false,
   })
 );
-app.use(bodyParser.json());
+app.use(express.json());
 app.use(cors());
 
 if (config.response.compression) {
