@@ -1,5 +1,6 @@
 {
   "description": "Contract results api call for all contracts with specified order",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "contracts": [
       {

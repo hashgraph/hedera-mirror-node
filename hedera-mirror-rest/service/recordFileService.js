@@ -36,10 +36,6 @@ const buildWhereSqlStatement = (whereQuery) => {
  * RecordFile retrieval business logic
  */
 class RecordFileService extends BaseService {
-  constructor() {
-    super();
-  }
-
   static recordFileBlockDetailsFromTimestampArrayQuery = `select
       ${RecordFile.CONSENSUS_END},
       ${RecordFile.CONSENSUS_START},

@@ -1,6 +1,10 @@
 {
   "description": "Contract results api call for all contracts with from specified as payer and sender",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": 1676540099
+    },
     "accounts": [
       {
         "num": 5999,
