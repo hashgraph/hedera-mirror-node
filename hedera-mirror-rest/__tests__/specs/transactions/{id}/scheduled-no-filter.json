@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for a specific transaction using transaction id and repeated valid params and schedule false",
+  "description": "Transaction api calls for a specific transaction using transaction id with scheduled transaction but scheduled flag is not provided",
   "setup": {
     "accounts": [
       {
@@ -24,7 +24,7 @@
         "consensus_timestamp": "1234567890000000002",
         "valid_start_timestamp": "1234567890000000001",
         "name": "SCHEDULECREATE",
-        "type": "42",
+        "type": 42,
         "transfers": [
           {
             "account": "0.0.9",
@@ -32,30 +32,11 @@
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": true
           }
         ],
         "entity_id": "0.0.1000"
-      },
-      {
-        "charged_tx_fee": 7,
-        "payerAccountId": "0.0.10",
-        "nodeAccountId": "0.0.4",
-        "consensus_timestamp": "1234567890000000040",
-        "valid_start_timestamp": "1234567890000000001",
-        "name": "CRYPTOTRANSFER",
-        "result": 11,
-        "type": 14,
-        "transfers": [
-          {
-            "account": "0.0.9",
-            "amount": 100
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          }
-        ]
       }
     ],
     "cryptotransfers": [
@@ -71,15 +52,15 @@
       }
     ]
   },
-  "url": "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=true&scheduled=true&scheduled=false",
+  "url": "/api/v1/transactions/0.0.10-1234567890-000000001",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
       {
         "bytes": "Ynl0ZXM=",
-        "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000002",
         "entity_id": "0.0.1000",
+        "charged_tx_fee": 7,
         "max_fee": "33",
         "memo_base64": null,
         "name": "SCHEDULECREATE",
@@ -102,7 +83,7 @@
           {
             "account": "0.0.98",
             "amount": 1,
-            "is_approval": false
+            "is_approval": true
           }
         ],
         "valid_duration_seconds": "11",
@@ -111,17 +92,17 @@
       {
         "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 7,
-        "consensus_timestamp": "1234567890.000000040",
+        "consensus_timestamp": "1234567890.000000003",
         "entity_id": null,
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
         "nft_transfers": [],
-        "node": "0.0.4",
+        "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
-        "result": "DUPLICATE_TRANSACTION",
-        "scheduled": false,
+        "result": "SUCCESS",
+        "scheduled": true,
         "staking_reward_transfers": [],
         "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
@@ -129,7 +110,12 @@
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 100,
+            "amount": 10,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.10",
+            "amount": -11,
             "is_approval": false
           },
           {

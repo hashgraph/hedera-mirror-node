@@ -21,6 +21,7 @@ import {Cache} from './cache';
 import config from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
+import * as math from 'mathjs';
 import {NotFoundError} from './errors';
 import {getTransactionHash, isValidTransactionHash} from './transactionHash';
 import TransactionId from './transactionId';
@@ -50,6 +51,9 @@ const cache = new Cache();
 
 const scheduleCreate = 'SCHEDULECREATE';
 const SHORTER_CACHE_CONTROL_HEADER = {'cache-control': `public, max-age=5`};
+const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
+const successMissingOperationTransactionResult = TransactionResult.getProtoId('SUCCESS_BUT_MISSING_EXPECTED_OPERATION');
+const successFeeSchedulePartUploadedTransactionResult = TransactionResult.getProtoId('FEE_SCHEDULE_FILE_PART_UPLOADED');
 
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,
@@ -833,14 +837,40 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   return {query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')), params};
 };
 
-function getTransactionsByIdOrHashCacheControlHeader(transactions) {
+function isTransactionSuccessful(result) {
+  return (
+    result === successTransactionResult ||
+    result === successFeeSchedulePartUploadedTransactionResult ||
+    result === successMissingOperationTransactionResult
+  );
+}
+
+function getTransactionsByIdOrHashCacheControlHeader(transactions, transactionIdOrHash, filters) {
   let hasScheduleCreate = false;
   let scheduleExecuted = false;
+  const currSecs = Math.floor(new Date().getTime() / 1000);
+  let timestamp = 0;
+  if (filters.some((f) => f.key === constants.filterKeys.SCHEDULED) || isValidTransactionHash(transactionIdOrHash)) {
+    return {}; // no override
+  }
+
   for (const transaction of transactions) {
     if (transaction.name === scheduleCreate) {
+      if (!isTransactionSuccessful(TransactionResult.getProtoId(transaction.result))) {
+        // If all duplicate SCHEDULECREATE transactions_t fail, the cache max-age will not be shortened.
+        continue;
+      }
+
+      timestamp = math.subtract(currSecs, math.bignumber(transaction.consensus_timestamp).toNumber());
       hasScheduleCreate = true;
     } else if (transaction.scheduled === true) {
       scheduleExecuted = true;
+    } else if (
+      timestamp > Number(config.query.maxTransactionConsensusTimestampRangeNs / 1_000_000_000n) &&
+      !transaction.scheduled
+    ) {
+      //If the scheduled transaction never executes in the given timeframe , the cache max-age will not be shortened
+      return {};
     }
   }
   if (hasScheduleCreate && !scheduleExecuted) {
@@ -866,7 +896,11 @@ const getTransactionsByIdOrHash = async (req, res) => {
 
   const transactions = await formatTransactionRows(rows);
 
-  res.locals[constants.responseHeadersLabel] = getTransactionsByIdOrHashCacheControlHeader(transactions);
+  res.locals[constants.responseHeadersLabel] = getTransactionsByIdOrHashCacheControlHeader(
+    transactions,
+    req.params.transactionIdOrHash,
+    filters
+  );
 
   logger.debug(`getTransactionsByIdOrHash returning ${transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
