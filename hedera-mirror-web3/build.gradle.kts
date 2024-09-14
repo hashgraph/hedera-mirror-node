@@ -137,7 +137,6 @@ tasks.processTestResources {
 tasks.register("resolveSolidityHistorical", SolidityResolve::class) {
     group = "historical"
     description = "Resolves the historical solidity version $historicalSolidityVersion"
-    version = historicalSolidityVersion
     sources = fileTree("src/testHistorical/solidity")
     allowPaths = setOf("src/testHistorical/solidity")
 
