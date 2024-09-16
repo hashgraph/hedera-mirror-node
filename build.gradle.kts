@@ -36,7 +36,7 @@ extra.apply {
     set("jooq.version", "3.19.6")
     set("mapStructVersion", "1.6.0")
     set("nodeJsVersion", "18.18.0")
-    set("protobufVersion", "3.25.3")
+    set("protobufVersion", "4.28.1")
     set("reactorGrpcVersion", "1.2.4")
     set("spring-framework.version", "6.1.13")
     set("vertxVersion", "4.5.10")
