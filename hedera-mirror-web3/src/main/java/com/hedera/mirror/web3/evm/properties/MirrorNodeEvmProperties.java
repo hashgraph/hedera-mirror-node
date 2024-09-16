@@ -21,7 +21,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_3
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
-import static com.hedera.mirror.web3.evm.utils.EvmVersionsComparator.compareTo;
+import static com.hedera.mirror.web3.evm.utils.EvmVersionsComparator.compare;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -204,7 +204,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean allowCallsToNonContractAccounts() {
-        return compareTo(getSemanticEvmVersion(), EVM_VERSION_0_46) >= 0;
+        return compare(getSemanticEvmVersion(), EVM_VERSION_0_46) >= 0;
     }
 
     @Override
@@ -214,7 +214,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean callsToNonExistingEntitiesEnabled(Address target) {
-        return !(compareTo(getSemanticEvmVersion(), EVM_VERSION_0_46) < 0
+        return !(compare(getSemanticEvmVersion(), EVM_VERSION_0_46) < 0
                 || !allowCallsToNonContractAccounts()
                 || grandfatherContracts().contains(target));
     }

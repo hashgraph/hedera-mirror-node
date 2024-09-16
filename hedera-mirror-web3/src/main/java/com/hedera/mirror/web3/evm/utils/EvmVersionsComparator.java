@@ -21,7 +21,7 @@ import java.util.Comparator;
 
 public class EvmVersionsComparator {
 
-    public static int compareTo(final SemanticVersion version1, final SemanticVersion version2) {
+    public static int compare(final SemanticVersion version1, final SemanticVersion version2) {
         if (version1 == version2) {
             return 0;
         }

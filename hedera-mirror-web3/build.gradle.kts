@@ -28,11 +28,6 @@ plugins {
     id("spring-conventions")
 }
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-}
-
 configurations { all { exclude(group = "io.netty", module = "netty-transport-native-epoll") } }
 
 dependencies {
