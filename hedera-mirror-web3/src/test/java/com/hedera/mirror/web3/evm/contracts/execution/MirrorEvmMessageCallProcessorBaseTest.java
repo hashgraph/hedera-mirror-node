@@ -40,7 +40,6 @@ import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContr
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
 import java.util.Map;
@@ -61,8 +60,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public abstract class MirrorEvmMessageCallProcessorBaseTest {
 
-    private static final Hash WELL_KNOWN_HASH = new Hash(CommonUtils.unhex(
-            "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300"));
+    private static final byte[] WELL_KNOWN_HASH = CommonUtils.unhex(
+            "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300");
 
     private static MockedStatic<ContractCallContext> contextMockedStatic;
 
@@ -121,7 +120,7 @@ public abstract class MirrorEvmMessageCallProcessorBaseTest {
 
     final PrngSystemPrecompiledContract prngSystemPrecompiledContract = new PrngSystemPrecompiledContract(
             gasCalculatorHederaV22,
-            new PrngLogic(WELL_KNOWN_HASH::getValue),
+            new PrngLogic(() -> WELL_KNOWN_HASH),
             new LivePricesSource(
                     new BasicHbarCentExchange(ratesAndFeesLoader), new BasicFcfsUsagePrices(ratesAndFeesLoader)),
             precompilePricingUtils);

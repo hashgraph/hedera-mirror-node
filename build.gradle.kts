@@ -69,6 +69,7 @@ dependencies {
         api("com.hedera.evm:hedera-evm:0.48.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.54.0")
         api("com.hedera.hashgraph:sdk:2.39.0")
+        api("com.hedera.hashgraph:app:0.53.5")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.8")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
@@ -108,8 +109,6 @@ dependencies {
         api("software.amazon.awssdk:bom:2.28.1")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
         api("org.web3j:core:4.12.0")
-        api("com.hedera.hashgraph:app:0.55.0")
-        api("io.netty:netty-handler:4.1.110.Final")
     }
 }
 
@@ -158,7 +157,6 @@ node {
 repositories {
     gradlePluginPortal()
     mavenCentral()
-    mavenLocal()
 }
 
 spotless {

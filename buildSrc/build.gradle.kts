@@ -20,17 +20,10 @@ repositories {
     gradlePluginPortal()
     mavenCentral()
     maven("https://jitpack.io")
-    mavenLocal()
     maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven")
         content { includeGroupByRegex("org\\.hyperledger\\..*") }
     }
-    maven { url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel") }
-    maven { url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-commits") }
-    maven { url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-adhoc-commits") }
-    maven { url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-daily-snapshots") }
-    maven { url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots") }
-    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
 }
 
 configurations { all { exclude(group = "io.netty", module = "netty-transport-native-epoll") } }
@@ -67,26 +60,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.3")
     implementation("org.testcontainers:postgresql:1.20.1")
     implementation("com.github.kselveliev:web3j-gradle-plugin:4.12.0")
-    implementation("com.hedera.hashgraph:app:0.55.0")
-    runtimeOnly("io.netty:netty-transport-native-epoll:4.1.110.Final") {
-        attributes {
-            attribute(
-                Attribute.of("org.gradle.native.operatingSystem", String::class.java),
-                "linux"
-            )
-            attribute(Attribute.of("org.gradle.native.architecture", String::class.java), "x86_64")
-        }
-    }
-
-    runtimeOnly("io.netty:netty-transport-native-epoll:4.1.110.Final") {
-        attributes {
-            attribute(
-                Attribute.of("org.gradle.native.operatingSystem", String::class.java),
-                "linux"
-            )
-            attribute(Attribute.of("org.gradle.native.architecture", String::class.java), "aarch64")
-        }
-    }
+    implementation("com.hedera.hashgraph:app:0.53.5")
+    implementation("org.hyperledger.besu:besu-datatypes:24.3.3")
 }
 
 val gitHook =

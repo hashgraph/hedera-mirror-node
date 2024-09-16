@@ -25,10 +25,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties.HederaNetwork;
-import com.swirlds.common.utility.SemanticVersion;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -66,6 +66,18 @@ class MirrorNodeEvmPropertiesTest {
         evmVersions.put(50L, EVM_VERSION_0_34);
         evmVersions.put(100L, EVM_VERSION_0_38);
         evmVersions.put(150L, EVM_VERSION_0_46);
+        return Collections.unmodifiableNavigableMap(evmVersions);
+    }
+
+    private static NavigableMap<Long, String> createEvmVersionsMapCustomStrings() {
+        NavigableMap<Long, String> evmVersions = new TreeMap<>();
+        evmVersions.put(0L, EVM_VERSION_0_30.major() + "." + EVM_VERSION_0_30.minor() + "." + EVM_VERSION_0_30.patch());
+        evmVersions.put(
+                50L, EVM_VERSION_0_34.major() + "." + EVM_VERSION_0_34.minor() + "." + EVM_VERSION_0_34.patch());
+        evmVersions.put(
+                100L, EVM_VERSION_0_38.major() + "." + EVM_VERSION_0_38.minor() + "." + EVM_VERSION_0_38.patch());
+        evmVersions.put(
+                150L, EVM_VERSION_0_46.major() + "." + EVM_VERSION_0_46.minor() + "." + EVM_VERSION_0_46.patch());
         return Collections.unmodifiableNavigableMap(evmVersions);
     }
 
@@ -152,7 +164,7 @@ class MirrorNodeEvmPropertiesTest {
         var recordFile = new RecordFile();
         recordFile.setIndex(blockNumber);
         given(contractCallContext.getRecordFile()).willReturn(recordFile);
-        properties.setEvmVersions(createEvmVersionsMapCustom());
+        properties.setEvmVersions(createEvmVersionsMapCustomStrings());
         assertThat(properties.evmVersion()).isEqualTo(expectedEvmVersion.toString());
     }
 
@@ -163,16 +175,16 @@ class MirrorNodeEvmPropertiesTest {
         properties.setNetwork(HederaNetwork.MAINNET);
 
         var result = properties.getEvmVersionForBlock(blockNumber);
-        assertThat(result).isEqualByComparingTo(expectedEvmVersion);
+        assertThat(result.equals(expectedEvmVersion)).isTrue();
     }
 
     @ParameterizedTest
     @MethodSource("blockNumberToEvmVersionProviderCustom")
     void getEvmVersionForBlockFromConfig(Long blockNumber, SemanticVersion expectedEvmVersion) {
         // given
-        properties.setEvmVersions(createEvmVersionsMapCustom());
+        properties.setEvmVersions(createEvmVersionsMapCustomStrings());
 
         var result = properties.getEvmVersionForBlock(blockNumber);
-        assertThat(result).isEqualByComparingTo(expectedEvmVersion);
+        assertThat(result.equals(expectedEvmVersion)).isTrue();
     }
 }

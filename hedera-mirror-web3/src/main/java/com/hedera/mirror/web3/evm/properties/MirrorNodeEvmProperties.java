@@ -21,12 +21,14 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_3
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
+import static com.hedera.mirror.web3.evm.utils.EvmVersionsComparator.compareTo;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.swirlds.common.utility.SemanticVersion;
+import com.hedera.node.config.converter.SemanticVersionConverter;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -79,7 +81,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     private SemanticVersion evmVersion = EVM_VERSION;
 
-    private NavigableMap<Long, SemanticVersion> evmVersions = new TreeMap<>();
+    private NavigableMap<Long, String> evmVersions = new TreeMap<>();
+    private NavigableMap<Long, SemanticVersion> evmVersionsParsed = new TreeMap<>();
 
     @Getter
     @NotNull
@@ -170,6 +173,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     private int feesTokenTransferUsageMultiplier = 380;
 
+    private static final SemanticVersionConverter semanticVersionConverter = new SemanticVersionConverter();
+
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
     }
@@ -199,7 +204,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean allowCallsToNonContractAccounts() {
-        return getSemanticEvmVersion().compareTo(EVM_VERSION_0_46) >= 0;
+        return compareTo(getSemanticEvmVersion(), EVM_VERSION_0_46) >= 0;
     }
 
     @Override
@@ -209,7 +214,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean callsToNonExistingEntitiesEnabled(Address target) {
-        return !(getSemanticEvmVersion().compareTo(EVM_VERSION_0_46) < 0
+        return !(compareTo(getSemanticEvmVersion(), EVM_VERSION_0_46) < 0
                 || !allowCallsToNonContractAccounts()
                 || grandfatherContracts().contains(target));
     }
@@ -270,7 +275,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
      */
     public NavigableMap<Long, SemanticVersion> getEvmVersions() {
         if (!CollectionUtils.isEmpty(evmVersions)) {
-            return evmVersions;
+            evmVersions.forEach((key, value) -> evmVersionsParsed.put(key, semanticVersionConverter.convert(value)));
+            return evmVersionsParsed;
         }
 
         if (!CollectionUtils.isEmpty(network.evmVersions)) {

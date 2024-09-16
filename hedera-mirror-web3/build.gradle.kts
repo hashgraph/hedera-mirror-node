@@ -33,6 +33,8 @@ repositories {
     mavenCentral()
 }
 
+configurations { all { exclude(group = "io.netty", module = "netty-transport-native-epoll") } }
+
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
