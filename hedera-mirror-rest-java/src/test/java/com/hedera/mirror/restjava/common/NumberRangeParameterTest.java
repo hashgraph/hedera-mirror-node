@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -60,16 +61,15 @@ class NumberRangeParameterTest {
 
     @ParameterizedTest
     @EnumSource(RangeOperator.class)
-    void testGte(RangeOperator operator) {
+    void testRangeOperator(RangeOperator operator) {
         assertThat(new NumberRangeParameter(operator, 2000L))
                 .isEqualTo(NumberRangeParameter.valueOf(operator + ":2000"));
     }
 
-    @Test
-    void testEmpty() {
-        assertThat(NumberRangeParameter.EMPTY)
-                .isEqualTo(NumberRangeParameter.valueOf(""))
-                .isEqualTo(NumberRangeParameter.valueOf(null));
+    @ParameterizedTest
+    @NullAndEmptySource
+    void testEmpty(String input) {
+        assertThat(NumberRangeParameter.valueOf(input)).isEqualTo(NumberRangeParameter.EMPTY);
     }
 
     @ParameterizedTest

@@ -166,7 +166,7 @@ paths:
     get:
       summary: Get get outstanding fungible token airdrops sent by an account
       description: |
-        Returns outstanding fungible token airdrops that have been sent by an account. NFT airdrops will not be included in the response.
+        Returns outstanding fungible token airdrops that have been sent by an account. This API is currently under development. Support for NFT airdrops will be added in a future release.
       operationId: getOutstandingTokenAirdrops
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"

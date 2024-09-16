@@ -47,6 +47,7 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
         var fieldBounds = getFieldBound(request, true);
         var condition = getBaseCondition(accountId, true)
                 .and(getBoundCondition(fieldBounds))
+                .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING))
                 // Exclude NFTs
                 .and(TOKEN_AIRDROP.SERIAL_NUMBER.eq(0L));
 
@@ -68,9 +69,8 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
 
     private Condition getBaseCondition(EntityId accountId, boolean outstanding) {
         return getCondition(
-                        outstanding ? TOKEN_AIRDROP.SENDER_ACCOUNT_ID : TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID,
-                        EQ,
-                        accountId.getId())
-                .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING));
+                outstanding ? TOKEN_AIRDROP.SENDER_ACCOUNT_ID : TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID,
+                EQ,
+                accountId.getId());
     }
 }
