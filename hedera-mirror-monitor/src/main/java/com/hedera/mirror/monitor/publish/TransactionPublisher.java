@@ -157,6 +157,7 @@ public class TransactionPublisher implements AutoCloseable {
         Client client = Client.forNetwork(nodes);
         client.setNodeMaxBackoff(publishProperties.getNodeMaxBackoff());
         client.setOperator(operatorId, operatorPrivateKey);
+        client.setVerifyCertificates(false); // SDK doesn't support setting a custom address book with cert hash
         return client;
     }
 }

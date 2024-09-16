@@ -19,7 +19,10 @@ package com.hedera.mirror.monitor;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
+import java.util.function.Predicate;
 import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.time.DurationMax;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
@@ -27,6 +30,8 @@ import org.springframework.validation.annotation.Validated;
 @Data
 @Validated
 public class NodeValidationProperties {
+
+    private static final int TLS_PORT = 50212;
 
     private boolean enabled = true;
 
@@ -61,4 +66,16 @@ public class NodeValidationProperties {
     private Duration requestTimeout = Duration.ofSeconds(15L);
 
     private boolean retrieveAddressBook = true;
+
+    private TlsMode tls = TlsMode.PLAINTEXT;
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum TlsMode {
+        BOTH(n -> true),
+        PLAINTEXT(n -> n.getPort() != TLS_PORT),
+        TLS(n -> n.getPort() == TLS_PORT);
+
+        private final Predicate<NodeProperties> predicate;
+    }
 }
