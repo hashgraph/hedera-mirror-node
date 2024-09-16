@@ -36,11 +36,11 @@ import {
   ContractState,
   ContractStateChange,
   Entity,
-  RecordFile,
   TransactionResult,
   TransactionType,
 } from '../model';
 import {ContractService, EntityService, FileDataService, RecordFileService, TransactionService} from '../service';
+import {bindTimestampRange} from '../timestampRange';
 import {getTransactionHash} from '../transactionHash';
 import TransactionId from '../transactionId';
 import * as utils from '../utils';
@@ -397,20 +397,40 @@ const extractContractIdAndFiltersFromValidatedRequest = (req, acceptedParameters
   };
 };
 
+const optimizeTimestampFilters = async (timestampFilters, order) => {
+  const filters = [];
+
+  const {range, eqValues, neValues} = utils.parseTimestampFilters(timestampFilters, false, true, true, false, false);
+  const optimizedRange = eqValues.length === 0 ? await bindTimestampRange(range, order) : range;
+
+  if (optimizedRange?.begin) {
+    filters.push({key: filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: optimizedRange.begin});
+  }
+
+  if (optimizedRange?.end) {
+    filters.push({key: filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: optimizedRange.end});
+  }
+
+  eqValues.forEach((value) => filters.push({key: filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value}));
+  neValues.forEach((value) => filters.push({key: filterKeys.TIMESTAMP, operator: utils.opsMap.ne, value}));
+
+  return filters;
+};
+
 class ContractController extends BaseController {
   /**
    * Extracts SQL where conditions, params, order, and limit
    *
    * @param {[]} filters parsed and validated filters
    * @param {string} contractId encoded contract ID
-   * @return {Promise<{conditions: [], params: [], order: 'asc'|'desc', limit: number}>}
+   * @return {Promise<{conditions: [], params: [], order: 'asc'|'desc', limit: number, skip: boolean}>}
    */
-  extractContractResultsByIdQuery = async (filters, contractId) => {
+  extractContractResultsByIdQuery = async (filters, contractId = undefined) => {
     let limit = defaultLimit;
     let order = orderFilterValues.DESC;
     const conditions = [];
     const params = [];
-    if (contractId !== '') {
+    if (contractId) {
       conditions.push(`${ContractResult.getFullName(ContractResult.CONTRACT_ID)} = $1`);
       params.push(contractId);
     }
@@ -427,6 +447,7 @@ class ContractController extends BaseController {
     const transactionIndexInValues = [];
 
     let blockFilter;
+    const timestampFilters = [];
 
     for (const filter of filters) {
       switch (filter.key) {
@@ -451,15 +472,7 @@ class ContractController extends BaseController {
           order = filter.value;
           break;
         case filterKeys.TIMESTAMP:
-          // handle repeated values
-          this.updateConditionsAndParamsWithInValues(
-            filter,
-            contractResultTimestampInValues,
-            params,
-            conditions,
-            contractResultTimestampFullName,
-            conditions.length + 1
-          );
+          timestampFilters.push(filter);
           break;
         case filterKeys.BLOCK_NUMBER:
         case filterKeys.BLOCK_HASH:
@@ -483,11 +496,6 @@ class ContractController extends BaseController {
       }
     }
 
-    if (!internal) {
-      params.push(0);
-      conditions.push(`${ContractResult.getFullName(ContractResult.TRANSACTION_NONCE)} = $${params.length}`);
-    }
-
     if (blockFilter) {
       let blockData;
       if (blockFilter.key === filterKeys.BLOCK_NUMBER) {
@@ -497,28 +505,26 @@ class ContractController extends BaseController {
       }
 
       if (blockData) {
-        const conStartColName = _.camelCase(RecordFile.CONSENSUS_START);
-        const conEndColName = _.camelCase(RecordFile.CONSENSUS_END);
-
-        this.updateConditionsAndParamsWithInValues(
-          {key: filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: blockData[conStartColName]},
-          contractResultTimestampInValues,
-          params,
-          conditions,
-          contractResultTimestampFullName,
-          conditions.length + 1
-        );
-        this.updateConditionsAndParamsWithInValues(
-          {key: filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: blockData[conEndColName]},
-          contractResultTimestampInValues,
-          params,
-          conditions,
-          contractResultTimestampFullName,
-          conditions.length + 1
+        timestampFilters.push(
+          {key: filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: blockData.consensusStart},
+          {key: filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: blockData.consensusEnd}
         );
       } else {
-        throw new NotFoundError();
+        return {skip: true};
       }
+    }
+
+    const optimizedTimestampFilters =
+      contractId === undefined ? await optimizeTimestampFilters(timestampFilters, order) : timestampFilters;
+    for (const filter of optimizedTimestampFilters) {
+      this.updateConditionsAndParamsWithInValues(
+        filter,
+        contractResultTimestampInValues,
+        params,
+        conditions,
+        contractResultTimestampFullName,
+        conditions.length + 1
+      );
     }
 
     // update query with repeated values
@@ -530,6 +536,10 @@ class ContractController extends BaseController {
       contractResultTimestampFullName
     );
     this.updateQueryFiltersWithInValues(params, conditions, transactionIndexInValues, transactionIndexFullName);
+
+    if (!internal) {
+      conditions.push(`${ContractResult.getFullName(ContractResult.TRANSACTION_NONCE)} = 0`);
+    }
 
     return {
       conditions,
@@ -577,7 +587,7 @@ class ContractController extends BaseController {
    * @param {string|undefined} contractId encoded contract ID
    * @return {{bounds: {string: Bound}, lower: *[], inner: *[], upper: *[], conditions: [], limit: number, order: 'asc'|'desc', params: [], transactionHash: Buffer}}
    */
-  extractContractLogsMultiUnionQuery = async (filters, contractId) => {
+  extractContractLogsMultiUnionQuery = async (filters, contractId = undefined) => {
     const conditions = [];
     const params = [];
 
@@ -673,6 +683,13 @@ class ContractController extends BaseController {
 
       bounds.primary = new Bound(filterKeys.TIMESTAMP);
       bounds.primary.parse({key: filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: rows[0].consensus_timestamp});
+    } else if (contractId === undefined) {
+      // Optimize timestamp filters only when there is no transaction hash and transaction id
+      const timestampFilters = await optimizeTimestampFilters(bounds.primary.getAllFilters(), order);
+      bounds.primary = new Bound(filterKeys.TIMESTAMP);
+      for (const filter of timestampFilters) {
+        bounds.primary.parse(filter);
+      }
     }
 
     // update query with repeated values
@@ -849,30 +866,34 @@ class ContractController extends BaseController {
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
-    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, contractId);
-
-    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
-      results: rows.map((row) => new ContractResultViewModel(row)),
+      results: [],
       links: {
         next: null,
       },
     };
-
-    if (!_.isEmpty(response.results)) {
-      const lastRow = _.last(response.results);
-      const lastContractResultTimestamp = lastRow.timestamp;
-      response.links.next = utils.getPaginationLink(
-        req,
-        response.results.length !== limit,
-        {
-          [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
-        },
-        order
-      );
+    res.locals[responseDataLabel] = response;
+    const {conditions, params, order, limit, skip} = await this.extractContractResultsByIdQuery(filters, contractId);
+    if (skip) {
+      return;
     }
 
-    res.locals[responseDataLabel] = response;
+    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
+    if (rows.length === 0) {
+      return;
+    }
+
+    response.results = rows.map((row) => new ContractResultViewModel(row));
+    const lastRow = _.last(response.results);
+    const lastContractResultTimestamp = lastRow.timestamp;
+    response.links.next = utils.getPaginationLink(
+      req,
+      response.results.length !== limit,
+      {
+        [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
+      },
+      order
+    );
   };
 
   async extractContractStateByIdQuery(filters, contractId) {
@@ -1030,9 +1051,6 @@ class ContractController extends BaseController {
       contractResultsFilterValidityChecks
     );
 
-    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
-
-    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
       results: [],
       links: {
@@ -1040,6 +1058,12 @@ class ContractController extends BaseController {
       },
     };
     res.locals[responseDataLabel] = response;
+    const {conditions, params, order, limit, skip} = await this.extractContractResultsByIdQuery(filters);
+    if (skip) {
+      return;
+    }
+
+    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     if (rows.length === 0) {
       return;
     }

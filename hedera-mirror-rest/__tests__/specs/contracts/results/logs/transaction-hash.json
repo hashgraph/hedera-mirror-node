@@ -1,5 +1,6 @@
 {
   "description": "Contracts logs api calls with transaction.hash query parameter",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "recordFiles": [
       {
