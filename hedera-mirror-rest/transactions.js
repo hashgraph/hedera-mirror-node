@@ -51,9 +51,6 @@ const cache = new Cache();
 
 const scheduleCreate = 'SCHEDULECREATE';
 const SHORTER_CACHE_CONTROL_HEADER = {'cache-control': `public, max-age=5`};
-const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
-const successMissingOperationTransactionResult = TransactionResult.getProtoId('SUCCESS_BUT_MISSING_EXPECTED_OPERATION');
-const successFeeSchedulePartUploadedTransactionResult = TransactionResult.getProtoId('FEE_SCHEDULE_FILE_PART_UPLOADED');
 
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,
@@ -705,8 +702,10 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   const mainConditions = [];
   const commonConditions = [];
   const params = [];
+  const isTransactionHash = isValidTransactionHash(transactionIdOrHash);
+  let scheduled;
 
-  if (isValidTransactionHash(transactionIdOrHash)) {
+  if (isTransactionHash) {
     const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
     if (transactionIdOrHash.length === Transaction.HEX_HASH_WITH_PREFIX_SIZE) {
       transactionIdOrHash = transactionIdOrHash.substring(2);
@@ -748,7 +747,6 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
 
     // only parse nonce and scheduled query filters if the path parameter is transaction id
     let nonce;
-    let scheduled;
     for (const filter of filters) {
       // honor the last for both nonce and scheduled
       switch (filter.key) {
@@ -773,46 +771,35 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   }
 
   mainConditions.unshift(...commonConditions);
-  return {query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')), params};
+  return {
+    query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')),
+    params,
+    scheduled: scheduled,
+    isTransactionHash: isTransactionHash,
+  };
 };
 
-function isTransactionSuccessful(result) {
-  return (
-    result === successTransactionResult ||
-    result === successFeeSchedulePartUploadedTransactionResult ||
-    result === successMissingOperationTransactionResult
-  );
-}
-
-function getTransactionsByIdOrHashCacheControlHeader(transactions, transactionIdOrHash, filters) {
-  let hasScheduleCreate = false;
-  let scheduleExecuted = false;
-  const currSecs = Math.floor(new Date().getTime() / 1000);
-  let timestamp = 0;
-  if (filters.some((f) => f.key === constants.filterKeys.SCHEDULED) || isValidTransactionHash(transactionIdOrHash)) {
+function getTransactionsByIdOrHashCacheControlHeader(transactions, isTransactionHash, scheduled) {
+  if (scheduled || isTransactionHash) {
     return {}; // no override
   }
 
+  let successScheduleCreateTimestamp;
+
   for (const transaction of transactions) {
     if (transaction.name === scheduleCreate) {
-      if (!isTransactionSuccessful(TransactionResult.getProtoId(transaction.result))) {
-        // If all duplicate SCHEDULECREATE transactions_t fail, the cache max-age will not be shortened.
-        continue;
+      if (TransactionResult.isSuccessful(transaction.result)) {
+        successScheduleCreateTimestamp = successScheduleCreateTimestamp =
+          BigInt(math.bignumber(transaction.consensus_timestamp).toNumber()) * constants.NANOSECONDS_PER_SECOND;
+      } else if (transaction.scheduled) {
+        return SHORTER_CACHE_CONTROL_HEADER;
       }
-
-      timestamp = math.subtract(currSecs, math.bignumber(transaction.consensus_timestamp).toNumber());
-      hasScheduleCreate = true;
-    } else if (transaction.scheduled === true) {
-      scheduleExecuted = true;
-    } else if (
-      timestamp > Number(config.query.maxTransactionConsensusTimestampRangeNs / 1_000_000_000n) &&
-      !transaction.scheduled
-    ) {
-      //If the scheduled transaction never executes in the given timeframe , the cache max-age will not be shortened
-      return {};
     }
   }
-  if (hasScheduleCreate && !scheduleExecuted) {
+  if (
+    successScheduleCreateTimestamp !== undefined &&
+    utils.nowInNs() - successScheduleCreateTimestamp < maxTransactionConsensusTimestampRangeNs
+  ) {
     return SHORTER_CACHE_CONTROL_HEADER;
   }
   return {}; // no override
@@ -825,7 +812,10 @@ function getTransactionsByIdOrHashCacheControlHeader(transactions, transactionId
  */
 const getTransactionsByIdOrHash = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleTransactionParameters);
-  const {query, params} = await extractSqlFromTransactionsByIdOrHashRequest(req.params.transactionIdOrHash, filters);
+  const {query, params, scheduled, isTransactionHash} = await extractSqlFromTransactionsByIdOrHashRequest(
+    req.params.transactionIdOrHash,
+    filters
+  );
 
   // Execute query
   const {rows} = await pool.queryQuietly(query, params);
@@ -837,8 +827,8 @@ const getTransactionsByIdOrHash = async (req, res) => {
 
   res.locals[constants.responseHeadersLabel] = getTransactionsByIdOrHashCacheControlHeader(
     transactions,
-    req.params.transactionIdOrHash,
-    filters
+    isTransactionHash,
+    scheduled
   );
 
   logger.debug(`getTransactionsByIdOrHash returning ${transactions.length} entries`);

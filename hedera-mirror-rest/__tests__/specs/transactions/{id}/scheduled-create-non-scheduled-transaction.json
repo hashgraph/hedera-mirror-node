@@ -48,7 +48,7 @@
         "amount": 10,
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
-        "scheduled": false
+        "scheduled": true
       }
     ]
   },
@@ -105,7 +105,7 @@
         "nonce": 0,
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
-        "scheduled": false,
+        "scheduled": true,
         "staking_reward_transfers": [],
         "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
