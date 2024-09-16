@@ -19,18 +19,19 @@ package com.hedera.mirror.restjava.controller;
 import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
 import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
+import static com.hedera.mirror.restjava.common.Constants.RECEIVER_ID;
 import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
 
 import com.google.common.collect.ImmutableSortedMap;
-import com.hedera.mirror.rest.model.NftAllowance;
-import com.hedera.mirror.rest.model.NftAllowancesResponse;
+import com.hedera.mirror.rest.model.TokenAirdrop;
+import com.hedera.mirror.rest.model.TokenAirdropsResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.LinkFactory;
-import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
-import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
+import com.hedera.mirror.restjava.mapper.TokenAirdropMapper;
 import com.hedera.mirror.restjava.service.Bound;
-import com.hedera.mirror.restjava.service.NftAllowanceService;
+import com.hedera.mirror.restjava.service.TokenAirdropService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -48,50 +49,37 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @CustomLog
-@RequestMapping("/api/v1/accounts/{id}/allowances")
+@RequestMapping("/api/v1/accounts/{id}/airdrops")
 @RequiredArgsConstructor
 @RestController
-public class AllowancesController {
-
-    private static final Map<Boolean, Function<NftAllowance, Map<String, String>>> EXTRACTORS = Map.of(
-            true,
-            nftAllowance -> ImmutableSortedMap.of(
-                    ACCOUNT_ID, nftAllowance.getSpender(),
-                    TOKEN_ID, nftAllowance.getTokenId()),
-            false,
-            nftAllowance -> ImmutableSortedMap.of(
-                    ACCOUNT_ID, nftAllowance.getOwner(),
-                    TOKEN_ID, nftAllowance.getTokenId()));
+public class TokenAirdropsController {
+    private static final Function<TokenAirdrop, Map<String, String>> EXTRACTOR = tokenAirdrop -> ImmutableSortedMap.of(
+            RECEIVER_ID, tokenAirdrop.getReceiverId(),
+            TOKEN_ID, tokenAirdrop.getTokenId());
 
     private final LinkFactory linkFactory;
-    private final NftAllowanceService service;
-    private final NftAllowanceMapper nftAllowanceMapper;
+    private final TokenAirdropMapper tokenAirdropMapper;
+    private final TokenAirdropService service;
 
-    @GetMapping(value = "/nfts")
-    NftAllowancesResponse getNftAllowances(
+    @GetMapping(value = "/outstanding")
+    TokenAirdropsResponse getOutstandingAirdrops(
             @PathVariable EntityIdParameter id,
-            @RequestParam(name = ACCOUNT_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> accountIds,
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") Sort.Direction order,
-            @RequestParam(defaultValue = "true") boolean owner,
+            @RequestParam(name = RECEIVER_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> receiverIds,
             @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
-
-        var request = NftAllowanceRequest.builder()
+        var request = TokenAirdropRequest.builder()
                 .accountId(id)
-                .isOwner(owner)
+                .entityIds(new Bound(receiverIds, true, ACCOUNT_ID))
                 .limit(limit)
                 .order(order)
-                .ownerOrSpenderIds(new Bound(accountIds, true, ACCOUNT_ID))
                 .tokenIds(new Bound(tokenIds, false, TOKEN_ID))
                 .build();
-
-        var serviceResponse = service.getNftAllowances(request);
-        var allowances = nftAllowanceMapper.map(serviceResponse);
-
-        var sort = Sort.by(order, ACCOUNT_ID, TOKEN_ID);
+        var response = service.getOutstandingAirdrops(request);
+        var airdrops = tokenAirdropMapper.map(response);
+        var sort = Sort.by(order, RECEIVER_ID, TOKEN_ID);
         var pageable = PageRequest.of(0, limit, sort);
-        var links = linkFactory.create(allowances, pageable, EXTRACTORS.get(owner));
-
-        return new NftAllowancesResponse().allowances(allowances).links(links);
+        var links = linkFactory.create(airdrops, pageable, EXTRACTOR);
+        return new TokenAirdropsResponse().airdrops(airdrops).links(links);
     }
 }

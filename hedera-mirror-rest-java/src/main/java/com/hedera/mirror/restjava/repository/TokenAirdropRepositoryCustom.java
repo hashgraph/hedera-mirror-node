@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.repository;
 
-import lombok.experimental.UtilityClass;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
+import jakarta.validation.constraints.NotNull;
+import java.util.Collection;
 
-@UtilityClass
-public class ParameterNames {
+public interface TokenAirdropRepositoryCustom extends JooqRepository {
 
-    public static final String ACCOUNT_ID = "account.id";
-    public static final String TOKEN_ID = "token.id";
+    @NotNull
+    Collection<TokenAirdrop> findAllOutstanding(TokenAirdropRequest request, EntityId accountId);
 }

@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.mapper;
+package com.hedera.mirror.restjava.common;
 
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import lombok.experimental.UtilityClass;
 
-@Mapper(config = MapperConfiguration.class)
-public interface NftAllowanceMapper extends CollectionMapper<NftAllowance, com.hedera.mirror.rest.model.NftAllowance> {
+@UtilityClass
+public class Constants {
 
-    @Mapping(source = "timestampRange", target = "timestamp")
-    com.hedera.mirror.rest.model.NftAllowance map(NftAllowance source);
+    public static final String ACCOUNT_ID = "account.id";
+    public static final String RECEIVER_ID = "receiver.id";
+    public static final String SENDER_ID = "sender.id";
+    public static final String SERIAL_NUMBER = "serialnumber";
+    public static final String TOKEN_ID = "token.id";
+
+    public static final int MAX_LIMIT = 100;
+    public static final String DEFAULT_LIMIT = "25";
 }
