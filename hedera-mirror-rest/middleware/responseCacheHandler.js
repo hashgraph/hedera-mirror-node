@@ -18,7 +18,6 @@ import {Cache} from '../cache';
 import CachedApiResponse from '../model/cachedApiResponse';
 import {responseBodyLabel, responseCacheKeyLabel} from '../constants';
 import _ from 'lodash';
-import config from '../config.js';
 
 const CACHE_CONTROL_HEADER = 'cache-control';
 const CONTENT_ENCODING_HEADER = 'content-encoding';
