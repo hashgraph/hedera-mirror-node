@@ -61,7 +61,6 @@ dependencies {
     implementation("org.testcontainers:postgresql:1.20.1")
     implementation("com.github.kselveliev:web3j-gradle-plugin:4.12.0")
     implementation("com.hedera.hashgraph:app:0.53.5")
-    implementation("org.hyperledger.besu:besu-datatypes:24.3.3")
 }
 
 val gitHook =
