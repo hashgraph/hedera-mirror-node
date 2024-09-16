@@ -153,6 +153,7 @@ afterEvaluate {
         version = historicalSolidityVersion
         source = fileTree("src/testHistorical/solidity") { include("*.sol") }
         dependsOn("extractContracts")
+        dependsOn("resolveSolidityHistorical")
     }
 }
 

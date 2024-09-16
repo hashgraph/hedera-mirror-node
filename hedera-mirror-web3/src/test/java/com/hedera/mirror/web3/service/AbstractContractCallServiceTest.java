@@ -183,24 +183,22 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 value);
     }
 
-    protected Entity persistAccountEntity() {
+    protected Entity tokenEntityPersist() {
+        return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+    }
+
+    protected Entity accountEntityPersist() {
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).balance(1_000_000_000_000L))
                 .persist();
     }
 
-    protected void persistAssociation(final Entity token, final Entity account) {
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(token.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+    protected void tokenAccountPersist(final Entity token, final Entity account) {
+        tokenAccountPersist(token, account.toEntityId().getId());
     }
 
-    protected void persistAssociation(final Entity token, final Long accountId) {
+    protected void tokenAccountPersist(final Entity token, final Long accountId) {
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(token.getId())
