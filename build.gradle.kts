@@ -96,7 +96,7 @@ dependencies {
         api("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2")
         api("org.gaul:s3proxy:2.2.0")
         api("org.hyperledger.besu:secp256k1:0.8.2")
-        api("org.hyperledger.besu:evm:23.10.2")
+        api("org.hyperledger.besu:evm:24.3.3")
         api("org.jetbrains:annotations:24.1.0")
         api("org.mapstruct:mapstruct:$mapStructVersion")
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
@@ -108,6 +108,8 @@ dependencies {
         api("software.amazon.awssdk:bom:2.28.1")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
         api("org.web3j:core:4.12.0")
+        api("com.hedera.hashgraph:app:0.55.0")
+        api("io.netty:netty-handler:4.1.110.Final")
     }
 }
 
@@ -156,6 +158,7 @@ node {
 repositories {
     gradlePluginPortal()
     mavenCentral()
+    mavenLocal()
 }
 
 spotless {

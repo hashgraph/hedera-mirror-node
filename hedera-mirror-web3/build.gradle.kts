@@ -28,6 +28,11 @@ plugins {
     id("spring-conventions")
 }
 
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
@@ -47,6 +52,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
+    implementation("com.hedera.hashgraph:app")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("io.vertx:vertx-core")
