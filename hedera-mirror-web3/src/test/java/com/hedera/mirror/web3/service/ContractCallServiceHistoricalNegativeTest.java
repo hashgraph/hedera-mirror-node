@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_34_BLOCK;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_38_BLOCK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -55,7 +56,9 @@ class ContractCallServiceHistoricalNegativeTest extends AbstractContractCallServ
         final var functionCall = contract.call_isTokenAddress(getAddressFromEntity(tokenEntity));
 
         // Then
-        assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+        assertThatThrownBy(functionCall::send)
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .hasMessage(INVALID_TRANSACTION.name());
     }
 
     // Tests TokenRepository and NftRepository
