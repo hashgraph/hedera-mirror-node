@@ -22,4 +22,9 @@ contract EvmCodesHistorical {
     function getLatestBlockHash() public view returns (bytes32) {
         return blockhash(block.number);
     }
+
+    // External view function that retrieves the hbar balance of a given account
+    function getAccountBalance(address _owner) external view returns (uint) {
+        return _owner.balance;
+    }
 }

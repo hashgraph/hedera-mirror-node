@@ -15,7 +15,6 @@
  */
 
 import _ from 'lodash';
-import {Range} from 'pg-range';
 
 import {Cache} from './cache';
 import config from './config';
@@ -23,6 +22,7 @@ import * as constants from './constants';
 import EntityId from './entityId';
 import * as math from 'mathjs';
 import {NotFoundError} from './errors';
+import {bindTimestampRange} from './timestampRange';
 import {getTransactionHash, isValidTransactionHash} from './transactionHash';
 import TransactionId from './transactionId';
 import * as utils from './utils';
@@ -287,67 +287,6 @@ const convertStakingRewardTransfers = (rows) => {
 };
 
 /**
- * Get the first transaction's consensus timestamp from the database. Note the db query runs once and the timestamp is
- * cached for subsequent calls.
- *
- * @return {Promise<bigint>} the first transaction's consensus timestamp
- */
-const getFirstTransactionTimestamp = (() => {
-  let timestamp;
-
-  const func = async () => {
-    if (timestamp === undefined) {
-      const {rows} = await pool.queryQuietly(`select consensus_timestamp
-                                              from transaction
-                                              order by consensus_timestamp
-                                              limit 1`);
-      if (rows.length !== 1) {
-        return 0n; // fallback to 0
-      }
-
-      timestamp = rows[0].consensus_timestamp;
-      logger.info(`First transaction's consensus timestamp is ${timestamp}`);
-    }
-
-    return timestamp;
-  };
-
-  if (utils.isTestEnv()) {
-    func.reset = () => (timestamp = undefined);
-  }
-
-  return func;
-})();
-
-/**
- * If enabled in config, ensure the returned timestamp range is fully bound; contains both a begin
- * and end timestamp value. The provided Range is not modified. If changes are made a copy is returned.
- *
- * @param {Range} range timestamp range, typically based on query parameters. Note the bounds should be '[]'
- * @param {string} order the order in the http request
- * @return {Range} fully bound timestamp range
- */
-const bindTimestampRange = async (range, order) => {
-  const {bindTimestampRange, maxTransactionsTimestampRangeNs} = config.query;
-  if (!bindTimestampRange) {
-    return range;
-  }
-
-  const boundRange = Range(range?.begin ?? (await getFirstTransactionTimestamp()), range?.end ?? utils.nowInNs(), '[]');
-  if (boundRange.end - boundRange.begin + 1n <= maxTransactionsTimestampRangeNs) {
-    return boundRange;
-  }
-
-  if (order === constants.orderFilterValues.DESC) {
-    boundRange.begin = boundRange.end - maxTransactionsTimestampRangeNs + 1n;
-  } else {
-    boundRange.end = boundRange.begin + maxTransactionsTimestampRangeNs - 1n;
-  }
-
-  return boundRange;
-};
-
-/**
  * Build the where clause from an array of query conditions
  *
  * @param {string} conditions Query conditions
@@ -469,8 +408,8 @@ const extractSqlFromTransactionsRequest = (filters) => {
   }
 
   if (resultType) {
-    const operator = resultType === constants.transactionResultFilter.SUCCESS ? '=' : '<>';
-    resultTypeQuery = `t.result ${operator} $${params.push(utils.resultSuccess)}`;
+    const operator = resultType === constants.transactionResultFilter.SUCCESS ? 'in' : 'not in';
+    resultTypeQuery = `t.result ${operator} (${utils.resultSuccess})`;
   }
 
   const transactionTypeQuery = getQueryWithEqualValues('type', params, transactionTypes);
@@ -928,7 +867,6 @@ const acceptedSingleTransactionParameters = new Set([constants.filterKeys.NONCE,
 
 if (utils.isTestEnv()) {
   Object.assign(transactions, {
-    bindTimestampRange,
     buildWhereClause,
     convertStakingRewardTransfers,
     createAssessedCustomFeeList,
@@ -939,7 +877,6 @@ if (utils.isTestEnv()) {
     extractSqlFromTransactionsByIdOrHashRequest,
     extractSqlFromTransactionsRequest,
     formatTransactionRows,
-    getFirstTransactionTimestamp,
     getStakingRewardTimestamps,
     isValidTransactionHash,
   });

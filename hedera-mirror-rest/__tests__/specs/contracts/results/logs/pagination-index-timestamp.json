@@ -1,6 +1,10 @@
 {
   "description": "Contracts logs api calls with index gt/gte, lt/lte and timestamp gte,lte",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": 187700
+    },
     "recordFiles": [
       {
         "index": 1,
@@ -48,6 +52,17 @@
         "topic1": [11],
         "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
         "transaction_index": 2
+      }
+    ],
+    "transactions": [
+      {
+        "charged_tx_fee": 0,
+        "payerAccountId": "0.0.9",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": 1639010102000000000,
+        "name": "CRYPTOUPDATEACCOUNT",
+        "type": "15",
+        "entity_id": "0.0.8"
       }
     ]
   },

@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.google.common.collect.Range.closedOpen;
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_34_BLOCK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -38,7 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServiceTest {
+public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServiceHistoricalTest {
     private RecordFile recordFileAfterEvm34;
 
     @BeforeEach
@@ -102,16 +100,8 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
     }
 
     private void senderPersistHistorical(RecordFile recordFileHistorical) {
-        final var senderHistorical = domainBuilder
-                .entity()
-                .customize(e -> e.type(ACCOUNT)
-                        .deleted(false)
-                        .balance(10000 * 100_000_000L)
-                        .createdTimestamp(recordFileHistorical.getConsensusStart())
-                        .timestampRange(closedOpen(
-                                recordFileHistorical.getConsensusStart(), recordFileHistorical.getConsensusEnd())))
-                .persist();
-
+        final var senderHistorical = accountEntityPersistHistorical(
+                Range.closedOpen(recordFileHistorical.getConsensusStart(), recordFileHistorical.getConsensusEnd()));
         testWeb3jService.setSender(toAddress(senderHistorical.toEntityId()).toHexString());
     }
 }
