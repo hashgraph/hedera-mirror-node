@@ -1,6 +1,10 @@
 {
   "description": "Contract results api with a legacy ethereum transaction with proper signature_v",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": 987700
+    },
     "contracts": [
       {
         "created_timestamp": "987654999123200",

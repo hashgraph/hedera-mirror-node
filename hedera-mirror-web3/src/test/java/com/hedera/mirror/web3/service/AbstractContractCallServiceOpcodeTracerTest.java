@@ -50,7 +50,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.web3j.tx.Contract;
 
-abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContractCallServiceTest {
+abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContractCallServiceHistoricalTest {
 
     @Resource
     protected ContractDebugService contractDebugService;

@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
+import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
+import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
+import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
+import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
 
 import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.rest.model.NftAllowance;
@@ -51,7 +53,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AllowancesController {
 
-    private static final String DEFAULT_LIMIT = "25";
     private static final Map<Boolean, Function<NftAllowance, Map<String, String>>> EXTRACTORS = Map.of(
             true,
             nftAllowance -> ImmutableSortedMap.of(
@@ -61,7 +62,6 @@ public class AllowancesController {
             nftAllowance -> ImmutableSortedMap.of(
                     ACCOUNT_ID, nftAllowance.getOwner(),
                     TOKEN_ID, nftAllowance.getTokenId()));
-    private static final int MAX_LIMIT = 100;
 
     private final LinkFactory linkFactory;
     private final NftAllowanceService service;

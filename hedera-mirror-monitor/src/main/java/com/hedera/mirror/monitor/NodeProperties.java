@@ -17,6 +17,7 @@
 package com.hedera.mirror.monitor;
 
 import com.hedera.hashgraph.sdk.AccountId;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
@@ -42,6 +43,7 @@ public class NodeProperties {
     private String host;
 
     @Min(0)
+    @Max(65535)
     private int port = 50211;
 
     public NodeProperties(String accountId, String host) {

@@ -1,5 +1,6 @@
 {
   "description": "Contracts logs api calls across many contracts with limit",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "config": {
       "response": {

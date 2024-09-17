@@ -27,9 +27,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -46,7 +44,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallGetApprovedEmptySpenderStatic() throws Exception {
         final var treasuryEntityId = accountPersist();
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -70,7 +68,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallGetApprovedEmptySpenderNonStatic() throws Exception {
         final var treasuryEntityId = accountPersist();
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -338,7 +336,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallGetDecimalsStatic() throws Exception {
         final var decimals = 12;
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(ta -> ta.tokenId(tokenEntity.getId()).decimals(decimals))
@@ -354,7 +352,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallGetDecimalsNonStatic() throws Exception {
         final var decimals = 12;
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(ta -> ta.tokenId(tokenEntity.getId()).decimals(decimals))
@@ -371,7 +369,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallGetTotalSupplyStatic() throws Exception {
         final var totalSupply = 12345L;
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -390,7 +388,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallGetTotalSupplyNonStatic() throws Exception {
         final var totalSupply = 12345L;
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -409,7 +407,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallSymbolStatic() throws Exception {
         final var symbol = "HBAR";
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -427,7 +425,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallSymbolNonStatic() throws Exception {
         final var symbol = "HBAR";
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -530,7 +528,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallNameStatic() throws Exception {
         final var tokenName = "Hbars";
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -548,7 +546,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallNameNonStatic() throws Exception {
         final var tokenName = "Hbars";
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -619,7 +617,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var ownerEntity = accountPersist();
         final byte[] kycKey = domainBuilder.key();
         final var metadata = "NFT_METADATA_URI";
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
 
         domainBuilder
                 .token()
@@ -649,7 +647,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var ownerEntity = accountPersist();
         final byte[] kycKey = domainBuilder.key();
         final var metadata = "NFT_METADATA_URI";
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
 
         domainBuilder
                 .token()
@@ -677,7 +675,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallGetApprovedEmptySpenderRedirect() {
         final var treasuryEntityId = accountPersist();
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -797,7 +795,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallGetDecimalsRedirect() {
         final var decimals = 12;
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(ta -> ta.tokenId(tokenEntity.getId()).decimals(decimals))
@@ -811,7 +809,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallGetTotalSupplyRedirect() {
         final var totalSupply = 12345L;
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -828,7 +826,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallSymbolRedirect() {
         final var symbol = "HBAR";
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -880,7 +878,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallNameRedirect() {
         final var tokenName = "Hbars";
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -917,7 +915,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var ownerEntity = accountPersist();
         final byte[] kycKey = domainBuilder.key();
         final var metadata = "NFT_METADATA_URI";
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
 
         domainBuilder
                 .token()
@@ -1069,7 +1067,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     private Token nftPersist() {
-        final var tokenEntity = persistTokenEntity();
+        final var tokenEntity = tokenEntityPersist();
         final var token = domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
@@ -1120,9 +1118,5 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                         .serialNumber(1))
                 .persist();
         return token;
-    }
-
-    private Entity persistTokenEntity() {
-        return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
     }
 }

@@ -28,6 +28,8 @@ import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
+import com.hedera.mirror.rest.model.NetworkNode;
+import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
 import java.security.SecureRandom;
@@ -101,10 +103,12 @@ public class NodeSupplier {
                         r.totalRetries() + 1,
                         r.failure().getMessage()));
 
+        var predicate = monitorProperties.getNodeValidation().getTls().getPredicate();
         return Flux.fromIterable(monitorProperties.getNodes())
                 .doOnSubscribe(s -> log.info("Refreshing node list"))
                 .switchIfEmpty(Flux.defer(this::getAddressBook))
                 .switchIfEmpty(Flux.fromIterable(monitorProperties.getNetwork().getNodes()))
+                .filter(predicate)
                 .retryWhen(retrySpec)
                 .switchIfEmpty(Flux.error(new IllegalArgumentException("Nodes must not be empty")))
                 .doOnNext(n -> {
@@ -123,10 +127,22 @@ public class NodeSupplier {
 
         return Flux.defer(restApiClient::getNodes)
                 .filter(n -> !CollectionUtils.isEmpty(n.getServiceEndpoints()))
-                .map(n -> new NodeProperties(
-                        n.getNodeAccountId(), n.getServiceEndpoints().get(0).getIpAddressV4()))
+                .flatMap(this::toNodeProperties)
                 .doOnNext(n -> count.incrementAndGet())
                 .doOnComplete(() -> log.info("Retrieved {} nodes from address book", count));
+    }
+
+    private Flux<NodeProperties> toNodeProperties(NetworkNode networkNode) {
+        return Flux.fromStream(networkNode.getServiceEndpoints().stream().map(serviceEndpoint -> {
+            var host = StringUtils.isNotBlank(serviceEndpoint.getDomainName())
+                    ? serviceEndpoint.getDomainName()
+                    : serviceEndpoint.getIpAddressV4();
+            var nodeProperties = new NodeProperties();
+            nodeProperties.setAccountId(networkNode.getNodeAccountId());
+            nodeProperties.setHost(host);
+            nodeProperties.setPort(serviceEndpoint.getPort());
+            return nodeProperties;
+        }));
     }
 
     private Client toClient(Map<String, AccountId> nodes) {
@@ -142,6 +158,7 @@ public class NodeSupplier {
         client.setMinBackoff(validationProperties.getMinBackoff());
         client.setOperator(operatorId, operatorPrivateKey);
         client.setRequestTimeout(validationProperties.getRequestTimeout());
+        client.setVerifyCertificates(false);
         return client;
     }
 
