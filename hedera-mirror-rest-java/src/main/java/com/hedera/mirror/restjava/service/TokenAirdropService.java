@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.mapper;
+package com.hedera.mirror.restjava.service;
 
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
+import java.util.Collection;
 
-@Mapper(config = MapperConfiguration.class)
-public interface NftAllowanceMapper extends CollectionMapper<NftAllowance, com.hedera.mirror.rest.model.NftAllowance> {
+public interface TokenAirdropService {
 
-    @Mapping(source = "timestampRange", target = "timestamp")
-    com.hedera.mirror.rest.model.NftAllowance map(NftAllowance source);
+    Collection<TokenAirdrop> getOutstandingAirdrops(TokenAirdropRequest request);
 }

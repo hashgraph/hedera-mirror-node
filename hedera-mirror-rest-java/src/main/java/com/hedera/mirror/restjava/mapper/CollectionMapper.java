@@ -16,13 +16,25 @@
 
 package com.hedera.mirror.restjava.mapper;
 
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
-@Mapper(config = MapperConfiguration.class)
-public interface NftAllowanceMapper extends CollectionMapper<NftAllowance, com.hedera.mirror.rest.model.NftAllowance> {
+public interface CollectionMapper<S, T> {
 
-    @Mapping(source = "timestampRange", target = "timestamp")
-    com.hedera.mirror.rest.model.NftAllowance map(NftAllowance source);
+    T map(S source);
+
+    default List<T> map(Collection<S> sources) {
+        if (sources == null) {
+            return Collections.emptyList();
+        }
+
+        List<T> list = new ArrayList<>(sources.size());
+        for (S source : sources) {
+            list.add(map(source));
+        }
+
+        return list;
+    }
 }
