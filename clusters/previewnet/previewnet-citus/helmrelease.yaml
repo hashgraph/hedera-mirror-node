@@ -44,7 +44,10 @@ spec:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "PREVIEWNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
+    grpc:
+      enabled: false
     monitor:
+      enabled: false
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "PREVIEWNET"
         HEDERA_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "false"
@@ -56,8 +59,13 @@ spec:
           enabled: false
         MonitorSubscribeLatency:
           enabled: false
+    rest:
+      enabled: false
+    restjava:
+      enabled: false
     test:
-      enabled: true
+      enabled: false
     web3:
+      enabled: false
       env:
         HEDERA_MIRROR_WEB3_EVM_NETWORK: PREVIEWNET
