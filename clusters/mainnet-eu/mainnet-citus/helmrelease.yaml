@@ -52,7 +52,7 @@ spec:
         HEDERA_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
-      enabled: true
+      enabled: false
       env:
         HEDERA_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "true"
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
@@ -100,7 +100,7 @@ spec:
                 feature:
                   rejectToken: false
       cucumberTags: "@critical and not @nft"
-      enabled: true
+      enabled: false
     web3:
       ingress:
         enabled: true
