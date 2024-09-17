@@ -355,12 +355,16 @@ const getProtoId = (name) => {
   return nameToProto[name];
 };
 
-const getSuccessProtoId = () => {
-  return getProtoId(SUCCESS);
+const getSuccessProtoIds = () => {
+  return [
+    Number.parseInt(getProtoId(SUCCESS)),
+    Number.parseInt(getProtoId('FEE_SCHEDULE_FILE_PART_UPLOADED')),
+    Number.parseInt(getProtoId('SUCCESS_BUT_MISSING_EXPECTED_OPERATION')),
+  ];
 };
 
 export default {
   getName,
   getProtoId,
-  getSuccessProtoId,
+  getSuccessProtoIds,
 };
