@@ -20,18 +20,18 @@ spec:
       persistentVolume: {{ .Values.stackgres.coordinator.persistentVolume | toYaml | nindent 8 }}
       resources:
         disableResourcesRequestsSplitFromTotal: {{ .Values.stackgres.dedicatedResourcesRequests }}
-      {{- if eq ((.Values.stackgres.coordinator.persistentVolume).storageClass) "zfs" }}
       scheduling:
+        priorityClassName: {{ .Values.stackgres.priorityClassName }}
+        {{- if eq ((.Values.stackgres.coordinator.persistentVolume).storageClass) "zfs" }}
         nodeSelector:
           citus-role: coordinator
           csi-type: zfs
-        priorityClassName: {{ .Values.stackgres.priorityClassName }}
         tolerations:
           - key: zfs
             operator: Equal
             value: "true"
             effect: NoSchedule
-      {{- end }}
+        {{- end }}
     sgInstanceProfile: {{ include "hedera-mirror.stackgres" . }}-coordinator
   database: {{ .Values.db.name }}
   nonProductionOptions:
@@ -60,18 +60,18 @@ spec:
       persistentVolume: {{ .Values.stackgres.worker.persistentVolume | toYaml | nindent 8 }}
       resources:
         disableResourcesRequestsSplitFromTotal: {{ .Values.stackgres.dedicatedResourcesRequests }}
-      {{- if eq ((.Values.stackgres.worker.persistentVolume).storageClass) "zfs" }}
       scheduling:
+        priorityClassName: {{ .Values.stackgres.priorityClassName }}
+        {{- if eq ((.Values.stackgres.worker.persistentVolume).storageClass) "zfs" }}
         nodeSelector:
           citus-role: worker
           csi-type: zfs
-        priorityClassName: {{ .Values.stackgres.priorityClassName }}
         tolerations:
           - key: zfs
             operator: Equal
             value: "true"
             effect: NoSchedule
-      {{- end }}
+        {{- end }}
     sgInstanceProfile: {{ include "hedera-mirror.stackgres" . }}-worker
   type: citus
 {{- end -}}
