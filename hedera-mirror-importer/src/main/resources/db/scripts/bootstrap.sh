@@ -95,7 +95,7 @@ log() {
   echo "$timestamp - $level - $msg" | tee -a "$LOG_FILE"
 }
 
-# Function to kill a process and its descendants
+# Kill a process and its descendants
 kill_descendants() {
   local pid="$1"
   local children
@@ -106,7 +106,7 @@ kill_descendants() {
   kill -TERM "$pid" 2>/dev/null
 }
 
-# Function to handle script termination
+# Handle script termination
 cleanup() {
   log "Script interrupted. Terminating background jobs..." "ERROR"
   # Ignore further signals during cleanup
@@ -125,7 +125,7 @@ cleanup() {
 # Trap signals
 trap 'cleanup' SIGINT SIGTERM
 
-# Function to safely write to tracking file with lock
+# Safely write to tracking file with lock
 write_tracking_file() {
   local file="$1"
   local status="$2"
@@ -141,13 +141,13 @@ write_tracking_file() {
   ) 200>"$LOCK_FILE"
 }
 
-# Function to read status from tracking file
+# Read status from tracking file
 read_tracking_status() {
   local file="$1"
   grep "^$file " "$TRACKING_FILE" 2>/dev/null | awk '{print $2}'
 }
 
-# Function to collect all import tasks
+# Collect all import tasks
 collect_import_tasks() {
   find "$IMPORT_DIR" -type f -name "*.csv.gz"
 }
@@ -177,7 +177,7 @@ overall_success=0
 export -f import_file log kill_descendants write_tracking_file read_tracking_status
 export IMPORT_DIR LOG_FILE TRACKING_FILE LOCK_FILE PGUSER PGPASSWORD PGHOST PGDATABASE
 
-# Function to import a single file
+# Import a single file
 import_file() {
   local file="$1"
   local table
