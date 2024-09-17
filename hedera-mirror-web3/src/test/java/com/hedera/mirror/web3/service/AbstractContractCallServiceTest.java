@@ -19,11 +19,13 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
+import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
@@ -181,24 +183,22 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 value);
     }
 
-    protected Entity persistAccountEntity() {
+    protected Entity tokenEntityPersist() {
+        return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+    }
+
+    protected Entity accountEntityPersist() {
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).balance(1_000_000_000_000L))
                 .persist();
     }
 
-    protected void persistAssociation(final Entity token, final Entity account) {
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(token.getId())
-                        .accountId(account.getId())
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
-                .persist();
+    protected void tokenAccountPersist(final Entity token, final Entity account) {
+        tokenAccountPersist(token, account.toEntityId().getId());
     }
 
-    protected void persistAssociation(final Entity token, final Long accountId) {
+    protected void tokenAccountPersist(final Entity token, final Long accountId) {
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(token.getId())
@@ -238,6 +238,15 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .contractAddress(contractAddress)
                 .sender(senderAddress)
                 .build();
+    }
+
+    protected String getAddressFromEntityId(final EntityId entity) {
+        return HEX_PREFIX
+                + EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
+    }
+
+    protected String getAddressFromEvmAddress(final byte[] evmAddress) {
+        return Address.wrap(Bytes.wrap(evmAddress)).toHexString();
     }
 
     public enum KeyType {

@@ -28,10 +28,6 @@ const {maxTransactionConsensusTimestampRangeNs} = config.query;
  * Transaction retrieval business logic
  */
 class TransactionService extends BaseService {
-  constructor() {
-    super();
-  }
-
   static transactionDetailsFromTransactionIdQuery = `
     select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.NONCE},
            ${Transaction.SCHEDULED}, ${Transaction.TYPE},

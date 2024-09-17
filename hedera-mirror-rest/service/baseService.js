@@ -66,11 +66,7 @@ class BaseService {
   }
 
   async getRows(query, params) {
-    const {rows} = await pool.queryQuietly(query, params);
-    if (logger.isTraceEnabled()) {
-      logger.trace(`Query returned ${rows.length} entries`);
-    }
-    return rows;
+    return (await pool.queryQuietly(query, params)).rows;
   }
 
   async getSingleRow(query, params) {

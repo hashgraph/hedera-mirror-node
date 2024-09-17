@@ -97,8 +97,15 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         store.wrap();
         if (store.getAccount(params.getSender().canonicalAddress(), OnMissing.DONT_THROW)
                 .isEmptyAccount()) {
-            final var senderAccount =
-                    Account.getDummySenderAccount(params.getSender().canonicalAddress());
+
+            final Account senderAccount;
+            if (isMirror(params.getSender().canonicalAddress())) {
+                senderAccount = Account.getDummySenderAccount(params.getSender().canonicalAddress());
+            } else {
+                senderAccount = Account.getDummySenderAccountWithAlias(
+                        params.getSender().canonicalAddress());
+            }
+
             store.updateAccount(senderAccount);
         }
         Address receiverAddress = determineReceiverAddress(params.getReceiver());
@@ -165,5 +172,9 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         } else {
             return canonical;
         }
+    }
+
+    private boolean isMirror(final Address address) {
+        return address == null || address.equals(Address.ZERO) || aliasManager.isMirror(address);
     }
 }

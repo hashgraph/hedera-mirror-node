@@ -327,7 +327,7 @@ stackgres:
       version: "1.6"
   nameOverride: citus
   podAntiAffinity: true
-  postgresVersion: 16
+  postgresVersion: "16.2"
   worker:
     config:
       autovacuum_max_workers: "2"

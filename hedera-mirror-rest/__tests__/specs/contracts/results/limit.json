@@ -1,6 +1,10 @@
 {
   "description": "Contract results api call for all contracts with specified limit",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": 987700
+    },
     "contracts": [
       {
         "created_timestamp": "987654999123200",
@@ -67,7 +71,7 @@
         "name": "2022-04-27T12_09_24.499938763Z.rcd",
         "prev_hash": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "consensus_start": 987654000123456,
-        "consensus_end": 1676540001234490000,
+        "consensus_end": 987656000123456,
         "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
         "gas_used": 400000
       }
@@ -88,7 +92,7 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/results?limit=1"],
+  "url": "/api/v1/contracts/results?limit=1",
   "responseStatus": 200,
   "responseJson": {
     "results": [

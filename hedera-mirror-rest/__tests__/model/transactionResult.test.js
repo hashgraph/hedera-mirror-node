@@ -46,7 +46,7 @@ describe('transactionResults getters work as expected', () => {
     expect(TransactionResult.getProtoId('XYZ')).toBeFalsy();
   });
 
-  test('getSuccessProtoId', () => {
-    expect(TransactionResult.getSuccessProtoId()).toEqual('22');
+  test('getSuccessProtoIds', () => {
+    expect(TransactionResult.getSuccessProtoIds()).toEqual([22, 104, 220]);
   });
 });
