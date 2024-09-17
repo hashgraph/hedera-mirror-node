@@ -30,8 +30,8 @@ public class TokenAirdropServiceImpl implements TokenAirdropService {
     private final EntityService entityService;
     private final TokenAirdropRepository repository;
 
-    public Collection<TokenAirdrop> getOutstandingAirdrops(TokenAirdropRequest request) {
+    public Collection<TokenAirdrop> getAirdrops(TokenAirdropRequest request) {
         var id = entityService.lookup(request.getAccountId());
-        return repository.findAllOutstanding(request, id);
+        return repository.findAll(request, id);
     }
 }
