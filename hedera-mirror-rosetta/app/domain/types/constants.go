@@ -345,7 +345,7 @@ var transactionResults = map[int32]string{
 	331: "ACCOUNT_IS_IMMUTABLE",
 }
 
-var TransactionTypes = map[int32]string{
+var transactionTypes = map[int32]string{
 	0:  "UNKNOWN",
 	7:  "CONTRACTCALL",
 	8:  "CONTRACTCREATEINSTANCE",
@@ -432,4 +432,17 @@ func GetTransactionResult(code int32) string {
 
 func GetTransactionResults() map[int32]string {
 	return transactionResults
+}
+
+func GetTransactionType(code int32) string {
+	transactionType, ok := transactionTypes[code]
+	if !ok {
+		// If transactionType does not exist default to UNKNOWN
+		transactionType = "UNKNOWN"
+	}
+	return transactionType
+}
+
+func GetTransactionTypes() map[int32]string {
+	return transactionTypes
 }

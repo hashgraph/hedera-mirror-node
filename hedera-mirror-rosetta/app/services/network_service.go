@@ -112,7 +112,7 @@ func NewNetworkAPIService(
 	network *rTypes.NetworkIdentifier,
 	version *rTypes.Version,
 ) server.NetworkAPIServicer {
-	operationTypes := tools.GetStringValuesFromInt32StringMap(types.TransactionTypes)
+	operationTypes := tools.GetStringValuesFromInt32StringMap(types.GetTransactionTypes())
 	operationTypes = append(operationTypes, types.OperationTypeFee)
 	return &networkAPIService{
 		BaseService:          baseService,

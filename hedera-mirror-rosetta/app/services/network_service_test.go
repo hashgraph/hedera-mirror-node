@@ -86,7 +86,7 @@ type offlineNetworkServiceSuite struct {
 }
 
 func (suite *offlineNetworkServiceSuite) SetupSuite() {
-	suite.operationTypes = tools.GetStringValuesFromInt32StringMap(types.TransactionTypes)
+	suite.operationTypes = tools.GetStringValuesFromInt32StringMap(types.GetTransactionTypes())
 	suite.operationTypes = append(suite.operationTypes, types.OperationTypeFee)
 }
 

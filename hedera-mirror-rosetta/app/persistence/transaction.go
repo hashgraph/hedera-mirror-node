@@ -235,7 +235,7 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 	operations := make(types.OperationSlice, 0)
 	result := &types.Transaction{Hash: firstTransaction.getHashString(), Memo: firstTransaction.Memo}
 	success := types.GetTransactionResult(transactionResultSuccess)
-	transactionType := types.TransactionTypes[int32(firstTransaction.Type)]
+	transactionType := types.GetTransactionType(int32(firstTransaction.Type))
 
 	for _, transaction := range sameHashTransactions {
 		cryptoTransfers := make([]hbarTransfer, 0)

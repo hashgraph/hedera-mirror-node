@@ -55,12 +55,13 @@ func TestGetTransactionResultGeneralError(t *testing.T) {
 func TestTransactionTypesUpToDate(t *testing.T) {
 	sdkTransactionTypes := getSdkTransactionTypes()
 	for protoId, name := range sdkTransactionTypes {
-		assert.Equal(t, name, TransactionTypes[protoId], "Expected %s for proto id %d", name, protoId)
+		assert.Equal(t, name, GetTransactionType(protoId), "Expected %s for proto id %d", name, protoId)
 	}
 }
 
 func TestUnknownTransactionType(t *testing.T) {
-	assert.Equal(t, "UNKNOWN", TransactionTypes[0])
+	assert.Equal(t, "UNKNOWN", GetTransactionType(0))
+	assert.Equal(t, "UNKNOWN", GetTransactionType(1000))
 }
 
 func getSdkTransactionTypes() map[int32]string {
