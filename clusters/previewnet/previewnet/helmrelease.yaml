@@ -36,13 +36,13 @@ spec:
       name: mirror
   values:
     grpc:
-      enabled: false
+      enabled: true
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "PREVIEWNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
     monitor:
-      enabled: false
+      enabled: true
       env:
         HEDERA_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "false"
         HEDERA_MIRROR_MONITOR_NETWORK: "PREVIEWNET"
@@ -57,13 +57,13 @@ spec:
     postgresql:
       enabled: false
     rest:
-      enabled: false
+      enabled: true
     restjava:
-      enabled: false
+      enabled: true
     test:
-      enabled: false
+      enabled: true
     web3:
-      enabled: false
+      enabled: true
       env:
         HEDERA_MIRROR_WEB3_EVM_NETWORK: "PREVIEWNET"
 
