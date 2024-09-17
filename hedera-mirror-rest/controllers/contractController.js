@@ -401,7 +401,7 @@ const optimizeTimestampFilters = async (timestampFilters, order) => {
   const filters = [];
 
   const {range, eqValues, neValues} = utils.parseTimestampFilters(timestampFilters, false, true, true, false, false);
-  const optimizedRange = eqValues.length === 0 ? await bindTimestampRange(range, order) : range;
+  const {range: optimizedRange, next} = eqValues.length === 0 ? await bindTimestampRange(range, order) : {range};
 
   if (optimizedRange?.begin) {
     filters.push({key: filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: optimizedRange.begin});
@@ -414,7 +414,7 @@ const optimizeTimestampFilters = async (timestampFilters, order) => {
   eqValues.forEach((value) => filters.push({key: filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value}));
   neValues.forEach((value) => filters.push({key: filterKeys.TIMESTAMP, operator: utils.opsMap.ne, value}));
 
-  return filters;
+  return {filters, next};
 };
 
 class ContractController extends BaseController {
@@ -514,8 +514,8 @@ class ContractController extends BaseController {
       }
     }
 
-    const optimizedTimestampFilters =
-      contractId === undefined ? await optimizeTimestampFilters(timestampFilters, order) : timestampFilters;
+    const {filters: optimizedTimestampFilters, next} =
+      contractId === undefined ? await optimizeTimestampFilters(timestampFilters, order) : {filters: timestampFilters};
     for (const filter of optimizedTimestampFilters) {
       this.updateConditionsAndParamsWithInValues(
         filter,
@@ -546,6 +546,7 @@ class ContractController extends BaseController {
       params,
       order,
       limit,
+      next,
     };
   };
 
@@ -685,8 +686,9 @@ class ContractController extends BaseController {
       bounds.primary.parse({key: filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: rows[0].consensus_timestamp});
     } else if (contractId === undefined) {
       // Optimize timestamp filters only when there is no transaction hash and transaction id
-      const timestampFilters = await optimizeTimestampFilters(bounds.primary.getAllFilters(), order);
+      const {filters: timestampFilters, next} = await optimizeTimestampFilters(bounds.primary.getAllFilters(), order);
       bounds.primary = new Bound(filterKeys.TIMESTAMP);
+      bounds.next = next;
       for (const filter of timestampFilters) {
         bounds.primary.parse(filter);
       }
@@ -1058,7 +1060,7 @@ class ContractController extends BaseController {
       },
     };
     res.locals[responseDataLabel] = response;
-    const {conditions, params, order, limit, skip} = await this.extractContractResultsByIdQuery(filters);
+    const {conditions, params, order, limit, skip, next} = await this.extractContractResultsByIdQuery(filters);
     if (skip) {
       return;
     }
@@ -1088,11 +1090,12 @@ class ContractController extends BaseController {
         )
     );
 
+    const isEnd = response.results.length !== limit;
     const lastRow = _.last(response.results);
-    const lastContractResultTimestamp = lastRow.timestamp;
+    const lastContractResultTimestamp = !isEnd ? lastRow.timestamp : next;
     response.links.next = utils.getPaginationLink(
       req,
-      response.results.length !== limit,
+      isEnd && !next,
       {
         [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
       },

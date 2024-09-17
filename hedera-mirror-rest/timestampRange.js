@@ -18,7 +18,7 @@ import {Range} from 'pg-range';
 
 import {orderFilterValues} from './constants';
 import config from './config';
-import {isTestEnv, nowInNs} from './utils';
+import {isTestEnv, nowInNs, nsToSecNs} from './utils';
 
 const queryConfig = config.query;
 
@@ -28,26 +28,29 @@ const queryConfig = config.query;
  *
  * @param {Range} range timestamp range, typically based on query parameters. Note the bounds should be '[]'
  * @param {string} order the order in the http request
- * @return {Range} fully bound timestamp range
+ * @return {Object} fully bound timestamp range and next timestamp
  */
 const bindTimestampRange = async (range, order) => {
   if (!queryConfig.bindTimestampRange) {
-    return range;
+    return {range};
   }
 
   const {maxTransactionsTimestampRangeNs} = queryConfig;
   const boundRange = Range(range?.begin ?? (await getFirstTransactionTimestamp()), range?.end ?? nowInNs(), '[]');
   if (boundRange.end - boundRange.begin + 1n <= maxTransactionsTimestampRangeNs) {
-    return boundRange;
+    return {range: boundRange};
   }
 
+  let next;
   if (order === orderFilterValues.DESC) {
-    boundRange.begin = boundRange.end - maxTransactionsTimestampRangeNs + 1n;
+    next = boundRange.end - maxTransactionsTimestampRangeNs;
+    boundRange.begin = next + 1n;
   } else {
-    boundRange.end = boundRange.begin + maxTransactionsTimestampRangeNs - 1n;
+    next = boundRange.begin + maxTransactionsTimestampRangeNs;
+    boundRange.end = next - 1n;
   }
 
-  return boundRange;
+  return {range: boundRange, next: nsToSecNs(next)};
 };
 
 /**

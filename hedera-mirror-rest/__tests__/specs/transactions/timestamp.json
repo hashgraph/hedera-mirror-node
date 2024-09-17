@@ -194,7 +194,8 @@
     {
       "extendedDescription": [
         "when binding timestamp range, order=desc, and no upper bound in request, expect empty response, because there",
-        "are no transactions after the timestamp of 7 days before the fake time"
+        "are no transactions after the timestamp of 7 days before the fake time. Next link will be populated to query",
+        "the next 60 day period"
       ],
       "url": "/api/v1/transactions?timestamp=gte:1565779209.711927001&order=desc&limit=1",
       "responseStatus": 200,
@@ -247,7 +248,53 @@
         "bindTimestampRange=true": {
           "transactions": [],
           "links": {
+            "next": "/api/v1/transactions?timestamp=gte:1565779209.711927001&timestamp=lt:1565866200.000000000&order=desc&limit=1"
+          }
+        }
+      }
+    },
+    {
+      "extendedDescription": [
+        "when binding timestamp range, order=desc, and no upper bound in request, expect empty response, because there",
+        "are no transactions after the timestamp of 7 days before the fake time. Next link will not be populated since",
+        "the timestamp range falls within 60 days."
+      ],
+      "url": "/api/v1/transactions?timestamp=gt:1565866200.000000000&order=desc&limit=1",
+      "responseStatus": 200,
+      "responseJson": {
+        "transactions": [],
+        "links": {
+          "next": null
+        }
+      },
+      "responseJsonMatrix": {
+        "bindTimestampRange=true": {
+          "transactions": [],
+          "links": {
             "next": null
+          }
+        }
+      }
+    },
+    {
+      "extendedDescription": [
+        "when binding timestamp range, order=asc, and no upper bound in request, expect empty response, because there",
+        "are no transactions after the timestamp of 7 days before the fake time. Next link will be populated to query",
+        "the next 60 day period"
+      ],
+      "url": "/api/v1/transactions?timestamp=gt:1565779333.711927001&order=asc&limit=1",
+      "responseStatus": 200,
+      "responseJson": {
+        "transactions": [],
+        "links": {
+          "next": null
+        }
+      },
+      "responseJsonMatrix": {
+        "bindTimestampRange=true": {
+          "transactions": [],
+          "links": {
+            "next": "/api/v1/transactions?order=asc&limit=1&timestamp=gt:1570963333.711927002"
           }
         }
       }
