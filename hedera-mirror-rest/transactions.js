@@ -789,11 +789,11 @@ function getTransactionsByIdOrHashCacheControlHeader(transactions, isTransaction
   for (const transaction of transactions) {
     if (transaction.name === scheduleCreate) {
       if (TransactionResult.isSuccessful(transaction.result)) {
-        successScheduleCreateTimestamp = successScheduleCreateTimestamp =
+        successScheduleCreateTimestamp =
           BigInt(math.bignumber(transaction.consensus_timestamp).toNumber()) * constants.NANOSECONDS_PER_SECOND;
-      } else if (transaction.scheduled) {
-        return SHORTER_CACHE_CONTROL_HEADER;
       }
+    } else if (transaction.scheduled) {
+      return {};
     }
   }
   if (
