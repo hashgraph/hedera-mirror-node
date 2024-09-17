@@ -51,7 +51,9 @@ const responseHandler = async (req, res, next) => {
     res.set(mergedHeaders);
 
     const code = res.locals.statusCode;
-    const contentType = res.locals[responseContentType] || APPLICATION_JSON;
+    const headerLabel = res.locals[responseHeadersLabel]
+    const contentType = (headerLabel === undefined || typeof headerLabel === 'object') ? APPLICATION_JSON : headerLabel ;
+
     const linksNext = res.locals.responseData.links?.next;
     res.status(code);
     res.set(CONTENT_TYPE_HEADER, contentType);
