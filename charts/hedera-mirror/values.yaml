@@ -290,10 +290,10 @@ stackgres:
       max_wal_size: "24GB"
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
-      shared_buffers: "9GB"
+      shared_buffers: "7GB"
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
-      work_mem: "16MB"
+      work_mem: "12MB"
     enableMetricsExporter: false
     enablePostgresUtil: true
     instances: 1
@@ -328,6 +328,7 @@ stackgres:
   nameOverride: citus
   podAntiAffinity: true
   postgresVersion: "16.2"
+  priorityClassName: ""
   worker:
     config:
       autovacuum_max_workers: "2"
@@ -344,7 +345,7 @@ stackgres:
       shared_buffers: "12GB"
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
-      work_mem: "16MB"
+      work_mem: "12MB"
     enableMetricsExporter: false
     enablePostgresUtil: true
     instances: 1

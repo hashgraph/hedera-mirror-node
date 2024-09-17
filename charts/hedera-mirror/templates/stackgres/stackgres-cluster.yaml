@@ -25,6 +25,7 @@ spec:
         nodeSelector:
           citus-role: coordinator
           csi-type: zfs
+        priorityClassName: {{ .Values.stackgres.priorityClassName }}
         tolerations:
           - key: zfs
             operator: Equal
@@ -64,6 +65,7 @@ spec:
         nodeSelector:
           citus-role: worker
           csi-type: zfs
+        priorityClassName: {{ .Values.stackgres.priorityClassName }}
         tolerations:
           - key: zfs
             operator: Equal
