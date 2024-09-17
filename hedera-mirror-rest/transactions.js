@@ -48,7 +48,7 @@ const {
 
 const cache = new Cache();
 
-const scheduleCreate = 'SCHEDULECREATE';
+const scheduleCreateProtoId = 42;
 const SHORTER_CACHE_CONTROL_HEADER = {'cache-control': `public, max-age=5`};
 
 const transactionFields = [
@@ -789,7 +789,8 @@ function getTransactionsByIdOrHashCacheControlHeader(transactionsRows, isTransac
   let successScheduleCreateTimestamp;
 
   for (const transaction of transactionsRows) {
-    if (TransactionType.getName(transaction.type) === scheduleCreate) {
+
+    if (transaction.type === scheduleCreateProtoId) {
       if (TransactionResult.isSuccessful(transaction.result)) {
         successScheduleCreateTimestamp = transaction.consensus_timestamp;
       }
@@ -797,12 +798,12 @@ function getTransactionsByIdOrHashCacheControlHeader(transactionsRows, isTransac
       return {};
     }
   }
-  if (
-    successScheduleCreateTimestamp !== undefined &&
-    utils.nowInNs() - successScheduleCreateTimestamp < maxTransactionConsensusTimestampRangeNs
-  ) {
+
+  if (successScheduleCreateTimestamp !== undefined
+      && (utils.nowInNs() - successScheduleCreateTimestamp) < maxTransactionConsensusTimestampRangeNs ) {
     return SHORTER_CACHE_CONTROL_HEADER;
   }
+
   return {}; // no override
 }
 

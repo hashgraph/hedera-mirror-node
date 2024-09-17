@@ -87,7 +87,8 @@ hedera:
       response:
         compression: true
         headers:
-          default: { "cache-control": "public, max-age=1" }
+          default: { "cache-control": "public, max-age=1",
+          "Content-type": "application/json; charset=utf-8"}
           path:
             /api/v1/accounts: { "cache-control": "public, max-age=10" }
             /api/v1/accounts/:idOrAliasOrEvmAddress:

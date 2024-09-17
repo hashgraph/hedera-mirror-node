@@ -20,6 +20,7 @@ import config from '../../config';
 import {NotFoundError} from '../../errors';
 import {responseHandler} from '../../middleware';
 import {JSONStringify} from '../../utils';
+import {responseHeadersLabel} from "../../constants.js";
 
 const {
   response: {headers},
@@ -67,18 +68,17 @@ describe('Response middleware', () => {
     mockRequest.route.path = '/api/v1/accounts';
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
-    expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.path[mockRequest.route.path]);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'Content-Type', 'application/json; charset=utf-8');
+    expect(mockResponse.set).toHaveBeenCalledWith({'Content-type': 'application/json; charset=utf-8'},headers.path[mockRequest.route.path]);
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
   test('Custom Content-Type', async () => {
-    mockResponse.locals.responseHeadersLabel = 'text/plain';
+    mockResponse.locals[responseHeadersLabel] = {'Content-type' : 'text/plain; charset=utf-8'};
     mockResponse.locals.responseData = '123';
+    const cacheControl = 'cache-control';
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(mockResponse.locals.responseData);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'Content-Type', mockResponse.locals.responseHeadersLabel);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(1,mockResponse.locals[responseHeadersLabel],{'cache-control' : headers.default[cacheControl]});
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
