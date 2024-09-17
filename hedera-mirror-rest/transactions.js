@@ -20,7 +20,6 @@ import {Cache} from './cache';
 import config from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
-import * as math from 'mathjs';
 import {NotFoundError} from './errors';
 import {bindTimestampRange} from './timestampRange';
 import {getTransactionHash, isValidTransactionHash} from './transactionHash';
@@ -703,7 +702,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   const commonConditions = [];
   const params = [];
   const isTransactionHash = isValidTransactionHash(transactionIdOrHash);
-  let scheduled;
+  let scheduledParamExists = false;
 
   if (isTransactionHash) {
     const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
@@ -747,6 +746,8 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
 
     // only parse nonce and scheduled query filters if the path parameter is transaction id
     let nonce;
+    let scheduled;
+
     for (const filter of filters) {
       // honor the last for both nonce and scheduled
       switch (filter.key) {
@@ -755,6 +756,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
           break;
         case constants.filterKeys.SCHEDULED:
           scheduled = filter.value;
+          scheduledParamExists = true;
           break;
       }
     }
@@ -774,23 +776,22 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   return {
     query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')),
     params,
-    scheduled: scheduled,
+    scheduledParamExists: scheduledParamExists,
     isTransactionHash: isTransactionHash,
   };
 };
 
-function getTransactionsByIdOrHashCacheControlHeader(transactions, isTransactionHash, scheduled) {
+function getTransactionsByIdOrHashCacheControlHeader(transactionsRows, isTransactionHash, scheduled) {
   if (scheduled || isTransactionHash) {
     return {}; // no override
   }
 
   let successScheduleCreateTimestamp;
 
-  for (const transaction of transactions) {
-    if (transaction.name === scheduleCreate) {
+  for (const transaction of transactionsRows) {
+    if (TransactionType.getName(transaction.type) === scheduleCreate) {
       if (TransactionResult.isSuccessful(transaction.result)) {
-        successScheduleCreateTimestamp =
-          BigInt(math.bignumber(transaction.consensus_timestamp).toNumber()) * constants.NANOSECONDS_PER_SECOND;
+        successScheduleCreateTimestamp = transaction.consensus_timestamp;
       }
     } else if (transaction.scheduled) {
       return {};
@@ -826,7 +827,7 @@ const getTransactionsByIdOrHash = async (req, res) => {
   const transactions = await formatTransactionRows(rows);
 
   res.locals[constants.responseHeadersLabel] = getTransactionsByIdOrHashCacheControlHeader(
-    transactions,
+    rows,
     isTransactionHash,
     scheduled
   );

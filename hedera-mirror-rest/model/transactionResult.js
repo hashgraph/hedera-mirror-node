@@ -364,7 +364,7 @@ const getSuccessProtoIds = () => {
 };
 
 const isSuccessful = (result) => {
-  return getSuccessProtoIds().includes(Number.parseInt(getProtoId(result)));
+  return getSuccessProtoIds().includes(result);
 };
 
 export default {
