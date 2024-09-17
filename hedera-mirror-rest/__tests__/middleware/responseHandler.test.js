@@ -73,12 +73,12 @@ describe('Response middleware', () => {
   });
 
   test('Custom Content-Type', async () => {
-    mockResponse.locals.responseContentType = 'text/plain';
+    mockResponse.locals.responseHeadersLabel = 'text/plain';
     mockResponse.locals.responseData = '123';
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(mockResponse.locals.responseData);
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'Content-Type', mockResponse.locals.responseContentType);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'Content-Type', mockResponse.locals.responseHeadersLabel);
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
