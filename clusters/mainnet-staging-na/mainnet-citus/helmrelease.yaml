@@ -14,7 +14,7 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.113.2'
+      version: '0.114.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -87,7 +87,10 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
+      coordinator:
+        enableMetricsExporter: true
       worker:
+        enableMetricsExporter: true
         overrides:
           - index: 0
             pods:
@@ -110,7 +113,7 @@ spec:
                 network: MAINNET
                 feature:
                   rejectToken: false
-      cucumberTags: "@critical and not @nft"
+      cucumberTags: "@critical"
       enabled: false
     web3:
       env:
