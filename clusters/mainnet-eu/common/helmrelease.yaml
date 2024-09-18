@@ -62,7 +62,7 @@ spec:
             limits:
               memory: 12Gi
             requests:
-              memory: 6Gi
+              memory: 10Gi
     stackgres:
       enabled: true
     traefik:
