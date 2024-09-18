@@ -28,7 +28,7 @@ const {
 
 describe('Response middleware', () => {
   let mockRequest, mockResponse, responseData;
-
+  const cacheControl = 'cache-control';
   beforeEach(() => {
     responseData = {transactions: [], links: {next: null}};
     mockRequest = {
@@ -68,17 +68,16 @@ describe('Response middleware', () => {
     mockRequest.route.path = '/api/v1/accounts';
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
-    expect(mockResponse.set).toHaveBeenCalledWith({'Content-type': 'application/json; charset=utf-8'},headers.path[mockRequest.route.path]);
+    expect(mockResponse.set).toBeCalledWith({'Content-type': 'application/json; charset=utf-8','cache-control' : headers.path[mockRequest.route.path][cacheControl] });
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
   test('Custom Content-Type', async () => {
     mockResponse.locals[responseHeadersLabel] = {'Content-type' : 'text/plain; charset=utf-8'};
     mockResponse.locals.responseData = '123';
-    const cacheControl = 'cache-control';
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(mockResponse.locals.responseData);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(1,mockResponse.locals[responseHeadersLabel],{'cache-control' : headers.default[cacheControl]});
+    expect(mockResponse.set).toHaveBeenNthCalledWith(1,{'Content-type' : mockResponse.locals[responseHeadersLabel]['Content-type'],'cache-control' : headers.default[cacheControl]});
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
