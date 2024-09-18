@@ -26,7 +26,7 @@ import org.springframework.core.convert.converter.Converter;
 public class SemanticVersionConvertor implements Converter<String, SemanticVersion> {
     @Override
     public SemanticVersion convert(String source) {
-        //        return SemanticVersion.parse(source);
-        return SemanticVersion.DEFAULT;
+        final var versions = source.split("\\.");
+        return new SemanticVersion(0, Integer.parseInt(versions[1]), 0, "", "");
     }
 }
