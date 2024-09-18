@@ -31,7 +31,6 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
 import java.util.Optional;
@@ -52,8 +51,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PrngSystemPrecompiledContractTest {
     private static final byte[] WELL_KNOWN_HASH_BYTE_ARRAY = CommonUtils.unhex(
             "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d6163");
-    private static final Hash WELL_KNOWN_HASH = new Hash(CommonUtils.unhex(
-            "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300"));
     private final Instant consensusNow = Instant.ofEpochSecond(123456789L);
 
     @Mock
