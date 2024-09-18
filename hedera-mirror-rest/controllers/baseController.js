@@ -198,7 +198,7 @@ class BaseController {
    *
    * @param {Request} req
    * @param {*[]} rows
-   * @param {Bound}}[] bounds
+   * @param {Bound} bounds
    * @param {number} limit
    * @param {string} order
    * @return {string|null}
@@ -206,8 +206,9 @@ class BaseController {
   getPaginationLink(req, rows, bounds, limit, order) {
     const primaryBound = bounds.primary;
     const secondaryBound = bounds.secondary;
+    const isEnd = rows.length < limit;
 
-    if (rows.length < limit || (primaryBound.hasEqual() && secondaryBound.hasEqual())) {
+    if (!bounds.next && (isEnd || (primaryBound.hasEqual() && secondaryBound.hasEqual()))) {
       // fetched all matching rows or the query is for a specific combination
       return null;
     }
@@ -218,7 +219,7 @@ class BaseController {
       // the primary param has bound or no primary param at all
       // primary param should be exclusive when the secondary operator is eq
       lastValues[primaryBound.filterKey] = {
-        value: lastRow[primaryBound.viewModelKey],
+        value: !isEnd ? lastRow[primaryBound.viewModelKey] : bounds.next,
         inclusive: !secondaryBound.hasEqual(),
       };
     }
