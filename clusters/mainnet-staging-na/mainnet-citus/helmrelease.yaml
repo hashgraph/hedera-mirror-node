@@ -111,8 +111,6 @@ spec:
             test:
               acceptance:
                 network: MAINNET
-                feature:
-                  rejectToken: false
       cucumberTags: "@critical"
       enabled: false
     web3:
