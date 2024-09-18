@@ -76,7 +76,7 @@ const getFirstTransactionTimestamp = (() => {
       logger.info(`First transaction's consensus timestamp is ${timestamp}`);
     }
 
-    return timestamp;
+    return BigInt(timestamp);
   };
 
   if (isTestEnv()) {

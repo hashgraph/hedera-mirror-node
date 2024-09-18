@@ -22,6 +22,7 @@ import {NANOSECONDS_PER_MILLISECOND, orderFilterValues} from '../../constants';
 import integrationDomainOps from '../integrationDomainOps';
 import {setupIntegrationTest} from '../integrationUtils';
 import testExports, {bindTimestampRange} from '../../timestampRange';
+import * as util from '../../utils';
 
 setupIntegrationTest();
 
@@ -52,28 +53,28 @@ describe('bindTimestampRange', () => {
     const spec = [
       {
         name: 'empty and desc',
-        expected: Range(nowInNs - maxTransactionsTimestampRangeNs + 1n, nowInNs),
+        expected: {next: util.nsToSecNs(nowInNs - maxTransactionsTimestampRangeNs), range: Range(nowInNs - maxTransactionsTimestampRangeNs + 1n, nowInNs)},
       },
       {
         name: 'empty and asc',
         order: ASC,
-        expected: Range(1606123456000111222n, 1606123456000111222n + maxTransactionsTimestampRangeNs - 1n),
+        expected: {next: util.nsToSecNs(1606123456000111222n + maxTransactionsTimestampRangeNs), range: Range(1606123456000111222n, 1606123456000111222n + maxTransactionsTimestampRangeNs - 1n)},
       },
       {
         name: 'no adjustment',
         range: Range(1000n, maxTransactionsTimestampRangeNs + 999n),
-        expected: Range(1000n, maxTransactionsTimestampRangeNs + 999n)
+        expected: {range: Range(1000n, maxTransactionsTimestampRangeNs + 999n)}
       },
       {
         name: 'adjust lower bound',
         range: Range(1000n, 1000n + maxTransactionsTimestampRangeNs),
-        expected: Range(1001n, 1000n + maxTransactionsTimestampRangeNs),
+        expected: {next: util.nsToSecNs(1000n), range: Range(1001n, 1000n + maxTransactionsTimestampRangeNs)},
       },
       {
         name: 'adjust upper bound',
         range: Range(1000n, 1000n + maxTransactionsTimestampRangeNs),
         order: ASC,
-        expected: Range(1000n, 999n + maxTransactionsTimestampRangeNs),
+        expected: {next: util.nsToSecNs(1000n + maxTransactionsTimestampRangeNs), range: Range(1000n, 999n + maxTransactionsTimestampRangeNs)},
       }
     ];
     test.each(spec)('$name', async ({expected, range, order = DESC}) => {
@@ -83,13 +84,13 @@ describe('bindTimestampRange', () => {
 
   describe('bindTimestampRange=false', () => {
     const spec = [
-      {name: 'null', range: null},
-      {name: 'no lower bound', range: Range(undefined, 1500n)},
-      {name: 'no upper bound', range: Range(1500n, undefined)},
-      {name: 'closed range', range: Range(1500n, 3000n)},
+      {name: 'null', expected: {range: null}},
+      {name: 'no lower bound', expected: {range: Range(undefined, 1500n)}},
+      {name: 'no upper bound', expected: {range: Range(1500n, undefined)}},
+      {name: 'closed range', expected: {range: Range(1500n, 3000n)}},
     ];
-    test.each(spec)('$name', async ({range, order = DESC}) => {
-      await expect(bindTimestampRange(range, order)).resolves.toEqual(range);
+    test.each(spec)('$name', async ({expected, order = DESC}) => {
+      await expect(bindTimestampRange(expected.range, order)).resolves.toEqual(expected);
     });
   });
 });
