@@ -20,7 +20,10 @@ import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
 import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.RECEIVER_ID;
+import static com.hedera.mirror.restjava.common.Constants.SENDER_ID;
 import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
+import static com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType.OUTSTANDING;
+import static com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType.PENDING;
 
 import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.rest.model.TokenAirdrop;
@@ -29,6 +32,7 @@ import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.LinkFactory;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType;
 import com.hedera.mirror.restjava.mapper.TokenAirdropMapper;
 import com.hedera.mirror.restjava.service.Bound;
 import com.hedera.mirror.restjava.service.TokenAirdropService;
@@ -55,6 +59,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TokenAirdropsController {
     private static final Function<TokenAirdrop, Map<String, String>> EXTRACTOR = tokenAirdrop -> ImmutableSortedMap.of(
             RECEIVER_ID, tokenAirdrop.getReceiverId(),
+            SENDER_ID, tokenAirdrop.getSenderId(),
             TOKEN_ID, tokenAirdrop.getTokenId());
 
     private final LinkFactory linkFactory;
@@ -68,16 +73,41 @@ public class TokenAirdropsController {
             @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(name = RECEIVER_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> receiverIds,
             @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
+        var entityIdsBound = new Bound(receiverIds, true, ACCOUNT_ID);
+        return processRequest(id, entityIdsBound, limit, order, tokenIds, OUTSTANDING, RECEIVER_ID);
+    }
+
+    @GetMapping(value = "/pending")
+    TokenAirdropsResponse getPendingAirdrops(
+            @PathVariable EntityIdParameter id,
+            @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
+            @RequestParam(defaultValue = "asc") Sort.Direction order,
+            @RequestParam(name = SENDER_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> senderIds,
+            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
+        var entityIdsBound = new Bound(senderIds, true, ACCOUNT_ID);
+        return processRequest(id, entityIdsBound, limit, order, tokenIds, PENDING, SENDER_ID);
+    }
+
+    private TokenAirdropsResponse processRequest(
+            EntityIdParameter id,
+            Bound entityIdsBound,
+            int limit,
+            Sort.Direction order,
+            List<EntityIdRangeParameter> tokenIds,
+            AirdropRequestType type,
+            String primarySortField) {
         var request = TokenAirdropRequest.builder()
                 .accountId(id)
-                .entityIds(new Bound(receiverIds, true, ACCOUNT_ID))
+                .entityIds(entityIdsBound)
                 .limit(limit)
                 .order(order)
                 .tokenIds(new Bound(tokenIds, false, TOKEN_ID))
+                .type(type)
                 .build();
-        var response = service.getOutstandingAirdrops(request);
+
+        var response = service.getAirdrops(request);
         var airdrops = tokenAirdropMapper.map(response);
-        var sort = Sort.by(order, RECEIVER_ID, TOKEN_ID);
+        var sort = Sort.by(order, primarySortField, TOKEN_ID);
         var pageable = PageRequest.of(0, limit, sort);
         var links = linkFactory.create(airdrops, pageable, EXTRACTOR);
         return new TokenAirdropsResponse().airdrops(airdrops).links(links);
