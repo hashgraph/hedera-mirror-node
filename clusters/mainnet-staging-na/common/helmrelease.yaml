@@ -46,6 +46,11 @@ spec:
           externalLabels:
             cluster: mainnet-staging-na
           replicaExternalLabelName: __replica__
+          resources:
+            limits:
+              memory: 12Gi
+            requests:
+              memory: 10Gi
     testkube:
       enabled: true
       test:
