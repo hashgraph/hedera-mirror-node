@@ -76,7 +76,12 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
+      coordinator:
+        enableMetricsExporter: true
       worker:
+        config:
+          shared_buffers: "20GB"
+        enableMetricsExporter: true
         overrides:
           - index: 0
             pods:
@@ -90,6 +95,13 @@ spec:
             pods:
               persistentVolume:
                 size: 3200Gi
+        resources:
+          cpu: "15"
+          memory: 84Gi
+          requests:
+            containers:
+              patroni:
+                cpu: "15"
     test:
       config:
         hedera:
@@ -100,7 +112,7 @@ spec:
                 feature:
                   rejectToken: false
       cucumberTags: "@critical and not @nft"
-      enabled: true
+      enabled: false
     web3:
       ingress:
         enabled: true
