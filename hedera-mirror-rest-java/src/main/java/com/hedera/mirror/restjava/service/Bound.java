@@ -22,9 +22,12 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 public class Bound {
+
+    public static final Bound EMPTY = new Bound(null, false, StringUtils.EMPTY);
 
     @Getter
     private EntityIdRangeParameter lower;

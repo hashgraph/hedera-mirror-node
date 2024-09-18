@@ -31,6 +31,7 @@ class Bound {
     this.viewModelKey = !_.isNil(viewModelKey) ? viewModelKey : filterKey;
     this.equal = null;
     this.lower = null;
+    this.next = null;
     this.upper = null;
   }
 

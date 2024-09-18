@@ -426,7 +426,7 @@ const extractSqlFromTransactionsRequest = (filters) => {
 /**
  * @param filters The filters from the http request
  * @param timestampRange the timestamp range object
- * @return {Promise} the Promise for obtaining the results of the query
+ * @return {Object} the object for obtaining the results of the query
  */
 const getTransactionTimestamps = async (filters, timestampRange) => {
   if (timestampRange.eqValues.length > 1 || timestampRange.range?.isEmpty()) {
@@ -440,8 +440,11 @@ const getTransactionTimestamps = async (filters, timestampRange) => {
   const {accountQuery, creditDebitQuery, limit, limitQuery, order, resultTypeQuery, transactionTypeQuery, params} =
     result;
 
+  let nextTimestamp;
   if (timestampRange.eqValues.length === 0) {
-    timestampRange.range = await bindTimestampRange(timestampRange.range, order);
+    const {range, next} = await bindTimestampRange(timestampRange.range, order);
+    timestampRange.range = range;
+    nextTimestamp = next;
   }
 
   let [timestampQuery, timestampParams] = utils.buildTimestampQuery('t.consensus_timestamp', timestampRange);
@@ -459,7 +462,7 @@ const getTransactionTimestamps = async (filters, timestampRange) => {
   );
   const {rows} = await pool.queryQuietly(query, params);
 
-  return {limit, order, rows};
+  return {limit, order, nextTimestamp, rows};
 };
 
 /**
@@ -641,17 +644,25 @@ const keyMapper = (key) => {
  * @returns {Promise<{links: {next: String}, transactions: *}>}
  */
 const doGetTransactions = async (filters, req, timestampRange) => {
-  const {limit, order, rows: payerAndTimestamps} = await getTransactionTimestamps(filters, timestampRange);
+  const {
+    limit,
+    order,
+    nextTimestamp,
+    rows: payerAndTimestamps,
+  } = await getTransactionTimestamps(filters, timestampRange);
 
   const loader = (keys) => getTransactionsDetails(keys, order).then((result) => formatTransactionRows(result.rows));
 
   const transactions = await cache.get(payerAndTimestamps, loader, keyMapper);
 
+  const isEnd = transactions.length !== limit;
   const next = utils.getPaginationLink(
     req,
-    transactions.length !== limit,
+    isEnd && !nextTimestamp,
     {
-      [constants.filterKeys.TIMESTAMP]: transactions[transactions.length - 1]?.consensus_timestamp,
+      [constants.filterKeys.TIMESTAMP]: !isEnd
+        ? transactions[transactions.length - 1]?.consensus_timestamp
+        : nextTimestamp,
     },
     order
   );
