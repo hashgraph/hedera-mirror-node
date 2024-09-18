@@ -24,6 +24,7 @@ import static com.hedera.mirror.restjava.common.Constants.SENDER_ID;
 import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
 import static com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType.OUTSTANDING;
 import static com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType.PENDING;
+import static com.hedera.mirror.restjava.jooq.domain.Tables.TOKEN_AIRDROP;
 
 import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.rest.model.TokenAirdrop;
@@ -73,7 +74,7 @@ public class TokenAirdropsController {
             @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(name = RECEIVER_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> receiverIds,
             @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
-        var entityIdsBound = new Bound(receiverIds, true, ACCOUNT_ID);
+        var entityIdsBound = new Bound(receiverIds, true, ACCOUNT_ID, TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID);
         return processRequest(id, entityIdsBound, limit, order, tokenIds, OUTSTANDING, RECEIVER_ID);
     }
 
@@ -84,7 +85,7 @@ public class TokenAirdropsController {
             @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(name = SENDER_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> senderIds,
             @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
-        var entityIdsBound = new Bound(senderIds, true, ACCOUNT_ID);
+        var entityIdsBound = new Bound(senderIds, true, ACCOUNT_ID, TOKEN_AIRDROP.SENDER_ACCOUNT_ID);
         return processRequest(id, entityIdsBound, limit, order, tokenIds, PENDING, SENDER_ID);
     }
 
@@ -101,7 +102,7 @@ public class TokenAirdropsController {
                 .entityIds(entityIdsBound)
                 .limit(limit)
                 .order(order)
-                .tokenIds(new Bound(tokenIds, false, TOKEN_ID))
+                .tokenIds(new Bound(tokenIds, false, TOKEN_ID, TOKEN_AIRDROP.TOKEN_ID))
                 .type(type)
                 .build();
 

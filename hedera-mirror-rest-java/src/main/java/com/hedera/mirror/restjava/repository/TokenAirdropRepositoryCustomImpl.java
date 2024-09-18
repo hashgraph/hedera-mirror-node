@@ -26,6 +26,7 @@ import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType;
 import com.hedera.mirror.restjava.jooq.domain.enums.AirdropState;
+import com.hedera.mirror.restjava.service.Bound;
 import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.List;
@@ -56,9 +57,9 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
     @Override
     public Collection<TokenAirdrop> findAll(TokenAirdropRequest request, EntityId accountId) {
         var type = request.getType();
-        var fieldBounds = getFieldBound(request);
+        var bounds = getBounds(request);
         var condition = getBaseCondition(accountId, type.getBaseField())
-                .and(getBoundCondition(fieldBounds))
+                .and(getBoundCondition(bounds))
                 .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING))
                 // Exclude NFTs
                 .and(TOKEN_AIRDROP.SERIAL_NUMBER.eq(0L));
@@ -72,11 +73,10 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
                 .fetchInto(TokenAirdrop.class);
     }
 
-    private ConditionalFieldBounds getFieldBound(TokenAirdropRequest request) {
-        var primaryField = request.getType().getPrimaryField();
-        var primary = new FieldBound(primaryField, request.getEntityIds());
-        var secondary = new FieldBound(TOKEN_AIRDROP.TOKEN_ID, request.getTokenIds());
-        return new ConditionalFieldBounds(primary, secondary);
+    private List<Bound> getBounds(TokenAirdropRequest request) {
+        var secondaryBound = request.getTokenIds() == null ? Bound.EMPTY : request.getTokenIds();
+        var primaryBound = request.getEntityIds() == null ? secondaryBound : request.getEntityIds();
+        return List.of(primaryBound, secondaryBound);
     }
 
     private Condition getBaseCondition(EntityId accountId, Field<Long> baseField) {

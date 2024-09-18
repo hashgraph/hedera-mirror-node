@@ -22,24 +22,33 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
+import org.jooq.Field;
 import org.springframework.util.CollectionUtils;
 
 public class Bound {
 
-    public static final Bound EMPTY = new Bound(null, false, StringUtils.EMPTY);
+    public static final Bound EMPTY = new Bound(null, false, StringUtils.EMPTY, null);
 
     @Getter
+    private final Field<Long> field;
+
+    @Getter
+    @Setter
     private EntityIdRangeParameter lower;
 
     @Getter
+    @Setter
     private EntityIdRangeParameter upper;
 
     private final String parameterName;
 
     private final EnumMap<RangeOperator, Integer> cardinality = new EnumMap<>(RangeOperator.class);
 
-    public Bound(List<EntityIdRangeParameter> params, boolean primarySortField, String parameterName) {
+    public Bound(
+            List<EntityIdRangeParameter> params, boolean primarySortField, String parameterName, Field<Long> field) {
+        this.field = field;
         this.parameterName = parameterName;
 
         if (CollectionUtils.isEmpty(params)) {

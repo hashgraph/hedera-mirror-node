@@ -22,6 +22,7 @@ import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
+import com.hedera.mirror.restjava.service.Bound;
 import jakarta.inject.Named;
 import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
@@ -50,8 +51,8 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
     @Override
     public Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId accountId) {
         boolean byOwner = request.isOwner();
-        var fieldBounds = getFieldBounds(request, byOwner);
-        var condition = getBaseCondition(accountId, byOwner).and(getBoundCondition(fieldBounds));
+        var bounds = getBounds(request);
+        var condition = getBaseCondition(accountId, byOwner).and(getBoundCondition(bounds));
         return dslContext
                 .selectFrom(NFT_ALLOWANCE)
                 .where(condition)
@@ -65,11 +66,10 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
                 .and(APPROVAL_CONDITION);
     }
 
-    private ConditionalFieldBounds getFieldBounds(NftAllowanceRequest request, boolean byOwner) {
-        var field = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
-        return new ConditionalFieldBounds(
-                new FieldBound(field, request.getOwnerOrSpenderIds()),
-                new FieldBound(NFT_ALLOWANCE.TOKEN_ID, request.getTokenIds()));
+    private List<Bound> getBounds(NftAllowanceRequest request) {
+        var secondaryBound = request.getTokenIds() == null ? Bound.EMPTY : request.getTokenIds();
+        var primaryBound = request.getOwnerOrSpenderIds() == null ? secondaryBound : request.getOwnerOrSpenderIds();
+        return List.of(primaryBound, secondaryBound);
     }
 
     private record OrderSpec(boolean byOwner, Direction direction) {}

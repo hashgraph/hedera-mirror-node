@@ -25,12 +25,13 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.service.Bound;
+import java.util.List;
 import org.jooq.Condition;
 import org.jooq.Field;
 
 interface JooqRepository {
 
-    default Condition getCondition(Field<Long> field, EntityIdRangeParameter param) {
+    default Condition getCondition(EntityIdRangeParameter param, Field<Long> field) {
         if (param == null || param == EntityIdRangeParameter.EMPTY) {
             return noCondition();
         }
@@ -42,39 +43,60 @@ interface JooqRepository {
         return operator.getFunction().apply(field, value);
     }
 
-    default Condition getBoundCondition(ConditionalFieldBounds fieldBounds) {
-        var primaryBound = fieldBounds.primary.bound();
-        var primaryLower = primaryBound.getLower();
-        var primaryUpper = primaryBound.getUpper();
-        if (!primaryBound.isEmpty() && primaryBound.hasEqualBounds()) {
+    default Condition getConditions(List<Bound> bounds, boolean upper) {
+        if (bounds.isEmpty()) {
+            return noCondition();
+        }
+
+        var firstBound = bounds.getFirst();
+        var firstParam = upper ? firstBound.getUpper() : firstBound.getLower();
+        var condition = getCondition(firstParam, firstBound.getField());
+        for (int i = 1; i < bounds.size(); i++) {
+            var bound = bounds.get(i);
+            var param = upper ? bound.getUpper() : bound.getLower();
+            condition.and(getCondition(param, bound.getField()));
+        }
+        return condition;
+    }
+
+    default Condition getBoundCondition(List<Bound> bounds) {
+        if (bounds == null || bounds.isEmpty()) {
+            return noCondition();
+        }
+
+        var primary = bounds.getFirst();
+        var secondaryBounds = bounds.subList(1, bounds.size());
+        if (primary.isEmpty() && secondaryBounds.isEmpty()) {
+            return noCondition();
+        }
+
+        if (!primary.isEmpty() && primary.hasEqualBounds()) {
             // If the primary param has a range with a single value, rewrite it to EQ
-            primaryLower = new EntityIdRangeParameter(EQ, EntityId.of(primaryBound.adjustLowerBound()));
-            primaryUpper = null;
+            var primaryLower = new EntityIdRangeParameter(EQ, EntityId.of(primary.adjustLowerBound()));
+            primary.setLower(primaryLower);
+            primary.setUpper(null);
         }
 
-        var secondaryBound = fieldBounds.secondary().bound();
-        var secondaryLower = secondaryBound.getLower();
-        var secondaryUpper = secondaryBound.getUpper();
-        if (!secondaryBound.isEmpty() && (secondaryLower != null && secondaryLower.operator() == EQ)) {
-            // If the secondary param operator is EQ, set the secondary upper bound to the same
-            secondaryUpper = secondaryLower;
+        for (var bound : secondaryBounds) {
+            if (!bound.isEmpty()) {
+                var secondaryLower = bound.getLower();
+                if (secondaryLower != null && secondaryLower.operator() == EQ) {
+                    // If the secondary param operator is EQ, set the secondary upper bound to the same
+                    bound.setUpper(secondaryLower);
+                }
+            }
         }
 
-        var primaryField = fieldBounds.primary().field();
-        var secondaryField = fieldBounds.secondary().field();
-        var lowerCondition = getOuterBoundCondition(primaryLower, secondaryLower, primaryField, secondaryField);
-        var middleCondition = getMiddleCondition(primaryLower, secondaryLower, primaryField, secondaryField)
-                .and(getMiddleCondition(primaryUpper, secondaryUpper, primaryField, secondaryField));
-        var upperCondition = getOuterBoundCondition(primaryUpper, secondaryUpper, primaryField, secondaryField);
+        var lowerCondition = getOuterBoundCondition(primary, secondaryBounds, false);
+        var middleCondition = getMiddleCondition(primary, secondaryBounds, false)
+                .and(getMiddleCondition(primary, secondaryBounds, true));
+        var upperCondition = getOuterBoundCondition(primary, secondaryBounds, true);
 
         return lowerCondition.or(middleCondition).or(upperCondition);
     }
 
-    private Condition getOuterBoundCondition(
-            EntityIdRangeParameter primaryParam,
-            EntityIdRangeParameter secondaryParam,
-            Field<Long> primaryField,
-            Field<Long> secondaryField) {
+    private Condition getOuterBoundCondition(Bound primary, List<Bound> secondaryBounds, boolean upper) {
+        var primaryParam = upper ? primary.getUpper() : primary.getLower();
         // No outer bound condition if there is no primary parameter, or the operator is EQ. For EQ, everything should
         // go into the middle condition
         if (primaryParam == null
@@ -83,9 +105,12 @@ interface JooqRepository {
             return noCondition();
         }
 
-        // If the secondary param operator is EQ, there should only have the middle condition
-        if (secondaryParam != null && secondaryParam.operator() == EQ) {
-            return noCondition();
+        for (var secondaryBound : secondaryBounds) {
+            var secondaryParam = upper ? secondaryBound.getUpper() : secondaryBound.getLower();
+            // If the secondary param operator is EQ, there should only have the middle condition
+            if (secondaryParam != null && secondaryParam.operator() == EQ) {
+                return noCondition();
+            }
         }
 
         long value = primaryParam.value().getId();
@@ -95,39 +120,30 @@ interface JooqRepository {
             value -= 1L;
         }
 
-        return getCondition(primaryField, EQ, value).and(getCondition(secondaryField, secondaryParam));
+        return getCondition(primary.getField(), EQ, value).and(getConditions(secondaryBounds, upper));
     }
 
-    private Condition getMiddleCondition(
-            EntityIdRangeParameter primaryParam,
-            EntityIdRangeParameter secondaryParam,
-            Field<Long> primaryField,
-            Field<Long> secondaryField) {
+    private Condition getMiddleCondition(Bound primary, List<Bound> secondaryBounds, boolean upper) {
+        var primaryParam = upper ? primary.getUpper() : primary.getLower();
         if (primaryParam == null) {
-            return getCondition(secondaryField, secondaryParam);
+            return getConditions(secondaryBounds, upper);
         }
 
+        var lastBound = secondaryBounds.isEmpty() ? null : secondaryBounds.getLast();
+        EntityIdRangeParameter lastParam = null;
+        if (lastBound != null) {
+            lastParam = upper ? lastBound.getUpper() : lastBound.getLower();
+        }
+
+        var primaryField = primary.getField();
         // When the primary param operator is EQ, or the secondary param operator is EQ, don't adjust the value for the
         // primary param.
-        if (primaryParam.operator() == EQ || (secondaryParam != null && secondaryParam.operator() == EQ)) {
-            return getCondition(primaryField, primaryParam).and(getCondition(secondaryField, secondaryParam));
+        if (primaryParam.operator() == EQ || (lastParam != null && lastParam.operator() == EQ)) {
+            return getCondition(primaryParam, primaryField).and(getConditions(secondaryBounds, upper));
         }
 
         long value = primaryParam.value().getId();
         value += primaryParam.hasLowerBound() ? 1L : -1L;
         return getCondition(primaryField, primaryParam.operator(), value);
-    }
-
-    record ConditionalFieldBounds(FieldBound primary, FieldBound secondary) {}
-
-    record FieldBound(Field<Long> field, Bound bound) {
-        public FieldBound {
-            if (field == null) {
-                throw new IllegalArgumentException("Conditional field cannot be null");
-            }
-            if (bound == null) {
-                bound = Bound.EMPTY;
-            }
-        }
     }
 }

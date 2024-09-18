@@ -20,6 +20,7 @@ import static com.hedera.mirror.common.domain.token.TokenTypeEnum.FUNGIBLE_COMMO
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType.OUTSTANDING;
 import static com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType.PENDING;
+import static com.hedera.mirror.restjava.jooq.domain.tables.TokenAirdrop.TOKEN_AIRDROP;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -82,7 +83,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         List.of(new EntityIdRangeParameter(
                                 RangeOperator.GT, EntityId.of(tokenAirdrop.getReceiverAccountId()))),
                         true,
-                        Constants.ACCOUNT_ID))
+                        Constants.ACCOUNT_ID,
+                        TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID))
                 .build();
         assertThat(repository.findAll(request, entityId)).isEmpty();
     }
@@ -170,9 +172,13 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         var entityIds = new Bound(
                 List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(entity.getId()))),
                 true,
-                Constants.ACCOUNT_ID);
+                Constants.ACCOUNT_ID,
+                type == OUTSTANDING ? TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID : TOKEN_AIRDROP.SENDER_ACCOUNT_ID);
         var tokenIds = new Bound(
-                List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(tokenId))), true, Constants.TOKEN_ID);
+                List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(tokenId))),
+                true,
+                Constants.TOKEN_ID,
+                TOKEN_AIRDROP.TOKEN_ID);
 
         var expectedResult = type == OUTSTANDING ? allOutstandingAirdrops : allPendingAirdrops;
         expectedResult = order.isAscending() ? expectedResult : expectedResult.reversed();
