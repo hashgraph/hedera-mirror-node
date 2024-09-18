@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.113.0-rc2'
+      version: '0.114.0-rc1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -46,6 +46,11 @@ spec:
           externalLabels:
             cluster: mainnet-staging-na
           replicaExternalLabelName: __replica__
+          resources:
+            limits:
+              memory: 12Gi
+            requests:
+              memory: 10Gi
     testkube:
       enabled: true
       test:
@@ -95,8 +100,6 @@ spec:
             SPENDER_ADDRESS: "0000000000000000000000000000000000000000000000000000000000429f77"
             TOKEN_ADDRESS: "0000000000000000000000000000000000000000000000000000000000429f74"
         targets:
-          - namespace: mainnet
-            release: mirror
           - namespace: mainnet-citus
             release: mirror
       trigger:
