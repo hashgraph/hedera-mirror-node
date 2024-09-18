@@ -158,12 +158,13 @@ stackgres:
     persistentVolume:
       size: 256Gi
       storageClass: zfs
+  priorityClassName: critical
   worker:
     instances: 3
     replicasPerInstance: 1
     resources:
       cpu: 9500m
-      memory: 34Gi
+      memory: 40Gi
       requests:
         containers:
           cluster-controller:
