@@ -38,6 +38,7 @@ spec:
     grpc:
       enabled: false
     importer:
+      enabled: false
       env:
         HEDERA_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "0"
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"

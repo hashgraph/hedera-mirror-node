@@ -60,7 +60,9 @@ spec:
           replicaExternalLabelName: __replica__
           resources:
             limits:
-              memory: 6Gi
+              memory: 12Gi
+            requests:
+              memory: 10Gi
     stackgres:
       enabled: true
     traefik:
