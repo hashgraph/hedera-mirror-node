@@ -43,11 +43,9 @@ const bindTimestampRange = async (range, order) => {
 
   let next;
   if (order === orderFilterValues.DESC) {
-    next = boundRange.end - maxTransactionsTimestampRangeNs;
-    boundRange.begin = next + 1n;
+    next = boundRange.begin = boundRange.end - maxTransactionsTimestampRangeNs + 1n;
   } else {
-    next = boundRange.begin + maxTransactionsTimestampRangeNs;
-    boundRange.end = next - 1n;
+    next = boundRange.end = boundRange.begin + maxTransactionsTimestampRangeNs - 1n;
   }
 
   return {range: boundRange, next: nsToSecNs(next)};

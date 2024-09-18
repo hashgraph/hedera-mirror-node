@@ -270,7 +270,7 @@
         }
       ],
       "links": {
-        "next": "/api/v1/contracts/results?order=asc&timestamp=gt:5371654.000123456"
+        "next": "/api/v1/contracts/results?order=asc&timestamp=gt:5371654.000123455"
       }
     }
   }

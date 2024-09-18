@@ -53,32 +53,37 @@ describe('bindTimestampRange', () => {
     const spec = [
       {
         name: 'empty and desc',
-        expected: {next: util.nsToSecNs(nowInNs - maxTransactionsTimestampRangeNs), range: Range(nowInNs - maxTransactionsTimestampRangeNs + 1n, nowInNs)},
+        expected: Range(nowInNs - maxTransactionsTimestampRangeNs + 1n, nowInNs),
       },
       {
         name: 'empty and asc',
         order: ASC,
-        expected: {next: util.nsToSecNs(1606123456000111222n + maxTransactionsTimestampRangeNs), range: Range(1606123456000111222n, 1606123456000111222n + maxTransactionsTimestampRangeNs - 1n)},
+        expected: Range(1606123456000111222n, 1606123456000111222n + maxTransactionsTimestampRangeNs - 1n),
       },
       {
         name: 'no adjustment',
+        hasNext: false,
         range: Range(1000n, maxTransactionsTimestampRangeNs + 999n),
-        expected: {range: Range(1000n, maxTransactionsTimestampRangeNs + 999n)}
+        expected: Range(1000n, maxTransactionsTimestampRangeNs + 999n)
       },
       {
         name: 'adjust lower bound',
         range: Range(1000n, 1000n + maxTransactionsTimestampRangeNs),
-        expected: {next: util.nsToSecNs(1000n), range: Range(1001n, 1000n + maxTransactionsTimestampRangeNs)},
+        expected: Range(1001n, 1000n + maxTransactionsTimestampRangeNs),
       },
       {
         name: 'adjust upper bound',
         range: Range(1000n, 1000n + maxTransactionsTimestampRangeNs),
         order: ASC,
-        expected: {next: util.nsToSecNs(1000n + maxTransactionsTimestampRangeNs), range: Range(1000n, 999n + maxTransactionsTimestampRangeNs)},
+        expected: Range(1000n, 999n + maxTransactionsTimestampRangeNs),
       }
     ];
-    test.each(spec)('$name', async ({expected, range, order = DESC}) => {
-      await expect(bindTimestampRange(range, order)).resolves.toEqual(expected);
+    test.each(spec)('$name', async ({hasNext = true, expected, range, order = DESC}) => {
+      const expectedWithNext = {range: expected};
+      if (hasNext) {
+        expectedWithNext.next = util.nsToSecNs(order === DESC ? expected.begin : expected.end);
+      }
+      await expect(bindTimestampRange(range, order)).resolves.toEqual(expectedWithNext);
     });
   });
 

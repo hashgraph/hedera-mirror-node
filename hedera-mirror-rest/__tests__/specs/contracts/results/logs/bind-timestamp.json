@@ -1,0 +1,116 @@
+{
+  "description": "Contracts logs api calls with bindTimestampRange=true",
+  "matrix": "bindTimestampRangeMatrix.js",
+  "setup": {
+    "recordFiles": [
+      {
+        "index": 1,
+        "consensus_start": 1639010141000000000,
+        "consensus_end": 1639010141500000000,
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1a"
+      }
+    ],
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 0,
+        "topic0": [10],
+        "topic1": [11],
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98",
+        "transaction_index": 1
+      }
+    ],
+    "transactions": [
+      {
+        "charged_tx_fee": 0,
+        "payerAccountId": "0.0.9",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": 1369010102000000000,
+        "name": "CRYPTOUPDATEACCOUNT",
+        "type": "15",
+        "entity_id": "0.0.8"
+      }
+    ]
+  },
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/contracts/results/logs?timestamp=gte:1639010141.000000000&order=asc"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1a",
+            "block_number": 1,
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 0,
+            "root_contract_id": null,
+            "timestamp": "1639010141.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98",
+            "transaction_index": 1
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      },
+      "responseJsonMatrix": {
+        "bindTimestampRange=true": {
+          "links": {
+            "next": "/api/v1/contracts/results/logs?order=asc&timestamp=gte:1644194140.999999999&index=gt:0"
+          }
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/contracts/results/logs?timestamp=lte:1639010141.000000000&order=desc"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1a",
+            "block_number": 1,
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 0,
+            "root_contract_id": null,
+            "timestamp": "1639010141.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98",
+            "transaction_index": 1
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      },
+      "responseJsonMatrix": {
+        "bindTimestampRange=true": {
+          "links": {
+            "next": "/api/v1/contracts/results/logs?order=desc&timestamp=lte:1633826141.000000001&index=lt:0"
+          }
+        }
+      }
+    }
+  ]
+}

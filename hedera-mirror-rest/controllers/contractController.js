@@ -688,7 +688,7 @@ class ContractController extends BaseController {
       // Optimize timestamp filters only when there is no transaction hash and transaction id
       const {filters: timestampFilters, next} = await optimizeTimestampFilters(bounds.primary.getAllFilters(), order);
       bounds.primary = new Bound(filterKeys.TIMESTAMP);
-      bounds.next = next;
+      query.bounds.next = next;
       for (const filter of timestampFilters) {
         bounds.primary.parse(filter);
       }

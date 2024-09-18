@@ -248,7 +248,7 @@
         "bindTimestampRange=true": {
           "transactions": [],
           "links": {
-            "next": "/api/v1/transactions?timestamp=gte:1565779209.711927001&timestamp=lt:1565866200.000000000&order=desc&limit=1"
+            "next": "/api/v1/transactions?timestamp=gte:1565779209.711927001&timestamp=lt:1565866200.000000001&order=desc&limit=1"
           }
         }
       }
@@ -294,7 +294,7 @@
         "bindTimestampRange=true": {
           "transactions": [],
           "links": {
-            "next": "/api/v1/transactions?order=asc&limit=1&timestamp=gt:1570963333.711927002"
+            "next": "/api/v1/transactions?order=asc&limit=1&timestamp=gt:1570963333.711927001"
           }
         }
       }
