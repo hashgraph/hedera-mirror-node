@@ -41,9 +41,6 @@ spec:
   values:
     global:
       hostname: "*.mirrornode.hedera.com"
-    grpc:
-      ingress:
-        enabled: false
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "0"
@@ -52,7 +49,6 @@ spec:
         HEDERA_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
-      enabled: false
       env:
         HEDERA_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "true"
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
@@ -64,21 +60,14 @@ spec:
         MonitorSubscribeLatency:
           enabled: false
     rest:
-      ingress:
-        enabled: false
       env:
         HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
         HEDERA_MIRROR_REST_STATEPROOF_STREAMS_NETWORK: MAINNET
-    restjava:
-      ingress:
-        enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
       worker:
-        config:
-          shared_buffers: "8GB"
         overrides:
           - index: 0
             pods:
@@ -102,9 +91,7 @@ spec:
                 feature:
                   rejectToken: false
       cucumberTags: "@critical and not @nft"
-      enabled: false
+      enabled: true
     web3:
-      ingress:
-        enabled: false
       env:
         HEDERA_MIRROR_WEB3_EVM_NETWORK: MAINNET
