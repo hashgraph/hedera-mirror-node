@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.113.1'
+      version: '0.113.2'
   dependsOn:
     - name: mirror
       namespace: common
@@ -36,7 +36,7 @@ spec:
     global:
       hostname: "*.mirrornode.hedera.com"
     grpc:
-      enabled: true
+      enabled: false
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "0"
@@ -45,7 +45,7 @@ spec:
         HEDERA_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
-      enabled: true
+      enabled: false
       env:
         HEDERA_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "true"
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
@@ -61,12 +61,12 @@ spec:
     redis:
       enabled: false
     rest:
-      enabled: true
+      enabled: false
       env:
         HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
         HEDERA_MIRROR_REST_STATEPROOF_STREAMS_NETWORK: MAINNET
     restjava:
-      enabled: true
+      enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
@@ -80,8 +80,8 @@ spec:
                 feature:
                   rejectToken: false
       cucumberTags: "@critical and not @nft"
-      enabled: true
+      enabled: false
     web3:
-      enabled: true
+      enabled: false
       env:
         HEDERA_MIRROR_WEB3_EVM_NETWORK: MAINNET
