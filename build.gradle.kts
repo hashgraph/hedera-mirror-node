@@ -38,7 +38,6 @@ extra.apply {
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
-    set("spring-framework.version", "6.1.13")
     set("vertxVersion", "4.5.10")
     set("tuweniVersion", "2.3.1")
 }
