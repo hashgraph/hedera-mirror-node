@@ -17,11 +17,14 @@
 package com.hedera.mirror.restjava.repository;
 
 import static com.hedera.mirror.restjava.common.RangeOperator.EQ;
+import static com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType.OUTSTANDING;
+import static com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType.PENDING;
 import static com.hedera.mirror.restjava.jooq.domain.Tables.TOKEN_AIRDROP;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
+import com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType;
 import com.hedera.mirror.restjava.jooq.domain.enums.AirdropState;
 import jakarta.inject.Named;
 import java.util.Collection;
@@ -30,6 +33,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.jooq.SortField;
 import org.springframework.data.domain.Sort.Direction;
 
@@ -38,20 +42,28 @@ import org.springframework.data.domain.Sort.Direction;
 class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
 
     private final DSLContext dslContext;
-    private static final Map<Direction, List<SortField<?>>> OUTSTANDING_SORT_ORDERS = Map.of(
-            Direction.ASC, List.of(TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID.asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
-            Direction.DESC, List.of(TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID.desc(), TOKEN_AIRDROP.TOKEN_ID.desc()));
+    private static final Map<AirdropRequestType, Map<Direction, List<SortField<?>>>> SORT_ORDERS = Map.of(
+            OUTSTANDING,
+                    Map.of(
+                            Direction.ASC, List.of(OUTSTANDING.getPrimaryField().asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
+                            Direction.DESC,
+                                    List.of(OUTSTANDING.getPrimaryField().desc(), TOKEN_AIRDROP.TOKEN_ID.desc())),
+            PENDING,
+                    Map.of(
+                            Direction.ASC, List.of(PENDING.getPrimaryField().asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
+                            Direction.DESC, List.of(PENDING.getPrimaryField().desc(), TOKEN_AIRDROP.TOKEN_ID.desc())));
 
     @Override
-    public Collection<TokenAirdrop> findAllOutstanding(TokenAirdropRequest request, EntityId accountId) {
-        var fieldBounds = getFieldBound(request, true);
-        var condition = getBaseCondition(accountId, true)
+    public Collection<TokenAirdrop> findAll(TokenAirdropRequest request, EntityId accountId) {
+        var type = request.getType();
+        var fieldBounds = getFieldBound(request);
+        var condition = getBaseCondition(accountId, type.getBaseField())
                 .and(getBoundCondition(fieldBounds))
                 .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING))
                 // Exclude NFTs
                 .and(TOKEN_AIRDROP.SERIAL_NUMBER.eq(0L));
 
-        var order = OUTSTANDING_SORT_ORDERS.get(request.getOrder());
+        var order = SORT_ORDERS.get(type).get(request.getOrder());
         return dslContext
                 .selectFrom(TOKEN_AIRDROP)
                 .where(condition)
@@ -60,17 +72,14 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
                 .fetchInto(TokenAirdrop.class);
     }
 
-    private ConditionalFieldBounds getFieldBound(TokenAirdropRequest request, boolean outstanding) {
-        var primaryField = outstanding ? TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID : TOKEN_AIRDROP.SENDER_ACCOUNT_ID;
+    private ConditionalFieldBounds getFieldBound(TokenAirdropRequest request) {
+        var primaryField = request.getType().getPrimaryField();
         var primary = new FieldBound(primaryField, request.getEntityIds());
         var secondary = new FieldBound(TOKEN_AIRDROP.TOKEN_ID, request.getTokenIds());
         return new ConditionalFieldBounds(primary, secondary);
     }
 
-    private Condition getBaseCondition(EntityId accountId, boolean outstanding) {
-        return getCondition(
-                outstanding ? TOKEN_AIRDROP.SENDER_ACCOUNT_ID : TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID,
-                EQ,
-                accountId.getId());
+    private Condition getBaseCondition(EntityId accountId, Field<Long> baseField) {
+        return getCondition(baseField, EQ, accountId.getId());
     }
 }

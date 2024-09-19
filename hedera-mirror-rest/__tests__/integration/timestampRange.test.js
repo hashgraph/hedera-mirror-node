@@ -22,6 +22,7 @@ import {NANOSECONDS_PER_MILLISECOND, orderFilterValues} from '../../constants';
 import integrationDomainOps from '../integrationDomainOps';
 import {setupIntegrationTest} from '../integrationUtils';
 import testExports, {bindTimestampRange} from '../../timestampRange';
+import * as util from '../../utils';
 
 setupIntegrationTest();
 
@@ -61,6 +62,7 @@ describe('bindTimestampRange', () => {
       },
       {
         name: 'no adjustment',
+        hasNext: false,
         range: Range(1000n, maxTransactionsTimestampRangeNs + 999n),
         expected: Range(1000n, maxTransactionsTimestampRangeNs + 999n)
       },
@@ -76,20 +78,24 @@ describe('bindTimestampRange', () => {
         expected: Range(1000n, 999n + maxTransactionsTimestampRangeNs),
       }
     ];
-    test.each(spec)('$name', async ({expected, range, order = DESC}) => {
-      await expect(bindTimestampRange(range, order)).resolves.toEqual(expected);
+    test.each(spec)('$name', async ({hasNext = true, expected, range, order = DESC}) => {
+      const expectedWithNext = {range: expected};
+      if (hasNext) {
+        expectedWithNext.next = util.nsToSecNs(order === DESC ? expected.begin : expected.end);
+      }
+      await expect(bindTimestampRange(range, order)).resolves.toEqual(expectedWithNext);
     });
   });
 
   describe('bindTimestampRange=false', () => {
     const spec = [
-      {name: 'null', range: null},
-      {name: 'no lower bound', range: Range(undefined, 1500n)},
-      {name: 'no upper bound', range: Range(1500n, undefined)},
-      {name: 'closed range', range: Range(1500n, 3000n)},
+      {name: 'null', expected: {range: null}},
+      {name: 'no lower bound', expected: {range: Range(undefined, 1500n)}},
+      {name: 'no upper bound', expected: {range: Range(1500n, undefined)}},
+      {name: 'closed range', expected: {range: Range(1500n, 3000n)}},
     ];
-    test.each(spec)('$name', async ({range, order = DESC}) => {
-      await expect(bindTimestampRange(range, order)).resolves.toEqual(range);
+    test.each(spec)('$name', async ({expected, order = DESC}) => {
+      await expect(bindTimestampRange(expected.range, order)).resolves.toEqual(expected);
     });
   });
 });

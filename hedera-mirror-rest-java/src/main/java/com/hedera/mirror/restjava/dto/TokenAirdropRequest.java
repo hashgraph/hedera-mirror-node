@@ -16,10 +16,15 @@
 
 package com.hedera.mirror.restjava.dto;
 
+import static com.hedera.mirror.restjava.jooq.domain.Tables.TOKEN_AIRDROP;
+
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.service.Bound;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.jooq.Field;
 import org.springframework.data.domain.Sort;
 
 @Data
@@ -39,4 +44,24 @@ public class TokenAirdropRequest {
     private Bound entityIds;
 
     private Bound tokenIds;
+
+    @Builder.Default
+    private AirdropRequestType type = AirdropRequestType.OUTSTANDING;
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum AirdropRequestType {
+        OUTSTANDING(TOKEN_AIRDROP.SENDER_ACCOUNT_ID, TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID),
+        PENDING(TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID, TOKEN_AIRDROP.SENDER_ACCOUNT_ID);
+
+        // The base field is the conditional clause for the base DB query.
+        // The base field is the path parameter accountId, which is Sender Id for Outstanding Airdrops and Receiver Id
+        // for Pending Airdrops
+        private final Field<Long> baseField;
+
+        // The primary field is the primary sort field for the DB query.
+        // The primary field is the optional query parameter 'entityIds', which is Receiver Id for Outstanding Airdrops
+        // and Sender Id for Pending Airdrops
+        private final Field<Long> primaryField;
+    }
 }
