@@ -29,6 +29,7 @@ const {
 describe('Response middleware', () => {
   let mockRequest, mockResponse, responseData;
   const cacheControl = 'cache-control';
+  const contentType = 'content-type';
   beforeEach(() => {
     responseData = {transactions: [], links: {next: null}};
     mockRequest = {
@@ -45,6 +46,7 @@ describe('Response middleware', () => {
         responseData: responseData,
         statusCode: 200,
       },
+      get: jest.fn(),
       send: jest.fn(),
       set: jest.fn(),
       status: jest.fn(),
@@ -57,27 +59,28 @@ describe('Response middleware', () => {
   });
 
   test('Custom headers', async () => {
+    mockResponse.get.mockReturnValue('application/json; charset=utf-8');
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'Content-Type', 'application/json; charset=utf-8');
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
   test('Default headers', async () => {
     mockRequest.route.path = '/api/v1/accounts';
+    mockResponse.get.mockReturnValue('application/json; charset=utf-8');
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
-    expect(mockResponse.set).toBeCalledWith({'Content-type': 'application/json; charset=utf-8','cache-control' : headers.path[mockRequest.route.path][cacheControl] });
+    expect(mockResponse.set).toHaveBeenCalledWith({'cache-control' : headers.path[mockRequest.route.path][cacheControl],'content-type': 'application/json; charset=utf-8'});
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
   test('Custom Content-Type', async () => {
-    mockResponse.locals[responseHeadersLabel] = {'Content-type' : 'text/plain; charset=utf-8'};
+    mockResponse.locals[responseHeadersLabel] = {'content-type' : 'text/plain; charset=utf-8'};
     mockResponse.locals.responseData = '123';
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(mockResponse.locals.responseData);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(1,{'Content-type' : mockResponse.locals[responseHeadersLabel]['Content-type'],'cache-control' : headers.default[cacheControl]});
+    expect(mockResponse.set).toHaveBeenNthCalledWith(1,{'cache-control' : headers.default[cacheControl],'content-type' : mockResponse.locals[responseHeadersLabel][contentType]});
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
@@ -86,11 +89,11 @@ describe('Response middleware', () => {
     mockResponse.locals.responseData.links.next = MOCK_URL;
     const assertNextValue = `<${MOCK_URL}>; rel=\"next\"`;
     await responseHandler(mockRequest, mockResponse, null);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(3, 'Link', assertNextValue);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(2, 'Link', assertNextValue);
   });
 
   test('should NOT set the Link next header and confirm it exists', async () => {
     await responseHandler(mockRequest, mockResponse, null);
-    expect(mockResponse.set).toHaveBeenCalledTimes(2);
+    expect(mockResponse.set).toHaveBeenCalledTimes(1);
   });
 });

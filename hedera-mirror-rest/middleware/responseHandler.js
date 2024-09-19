@@ -18,7 +18,6 @@ import config from '../config';
 import {
   requestPathLabel,
   requestStartTime,
-  responseContentType,
   responseDataLabel,
   responseHeadersLabel,
 } from '../constants';
@@ -29,7 +28,7 @@ const {
   response: {headers},
 } = config;
 
-const CONTENT_TYPE_HEADER = 'Content-Type';
+const CONTENT_TYPE_HEADER = 'content-type';
 const APPLICATION_JSON = 'application/json; charset=utf-8';
 const LINK_NEXT_HEADER = 'Link';
 const linkNextHeaderValue = (linksNext) => `<${linksNext}>; rel="next"`;
@@ -51,15 +50,13 @@ const responseHandler = async (req, res, next) => {
     res.set(mergedHeaders);
 
     const code = res.locals.statusCode;
-    const contentType = mergedHeaders['Content-type'];
-
     const linksNext = res.locals.responseData.links?.next;
-    res.status(code);
-    res.set(CONTENT_TYPE_HEADER, contentType);
+    res.status(code)
 
     if (linksNext) {
       res.set(LINK_NEXT_HEADER, linkNextHeaderValue(linksNext));
     }
+    const contentType = res.get(CONTENT_TYPE_HEADER);
 
     if (contentType === APPLICATION_JSON) {
       res.send(JSONStringify(responseData));

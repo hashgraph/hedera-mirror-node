@@ -363,13 +363,8 @@ const getSuccessProtoIds = () => {
   ];
 };
 
-const isSuccessful = (result) => {
-  return getSuccessProtoIds().includes(result);
-};
-
 export default {
   getName,
   getProtoId,
   getSuccessProtoIds,
-  isSuccessful,
 };

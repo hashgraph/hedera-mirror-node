@@ -39,6 +39,8 @@ import {
 
 import {AssessedCustomFeeViewModel, NftTransferViewModel} from './viewmodel';
 
+const _SUCCESS_PROTO_IDS = TransactionResult.getSuccessProtoIds();
+
 const {
   query: {maxTransactionConsensusTimestampRangeNs},
   response: {
@@ -788,31 +790,31 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
     query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')),
     params,
     scheduledParamExists: scheduledParamExists,
-    isTransactionHash: isTransactionHash,
   };
 };
 
-function getTransactionsByIdOrHashCacheControlHeader(transactionsRows, isTransactionHash, scheduled) {
-  if (scheduled || isTransactionHash) {
+function getTransactionsByIdOrHashCacheControlHeader(transactionsRows, scheduledParamExists) {
+  if (scheduledParamExists || transactionsRows.length < 2) {
+    // Checking for transactionsRows.length indicates it is a transactionsByHash call
     return {}; // no override
   }
 
   let successScheduleCreateTimestamp;
 
   for (const transaction of transactionsRows) {
-
-    if (transaction.type === scheduleCreateProtoId) {
-      if (TransactionResult.isSuccessful(transaction.result)) {
-        successScheduleCreateTimestamp = transaction.consensus_timestamp;
-      }
+    if (transaction.type === scheduleCreateProtoId && _SUCCESS_PROTO_IDS.includes(transaction.result)) {
+      // SCHEDULECREATE transaction cannot be scheduled
+      successScheduleCreateTimestamp = transaction.consensus_timestamp;
     } else if (transaction.scheduled) {
       return {};
     }
   }
 
-  if (successScheduleCreateTimestamp !== undefined
-      && (utils.nowInNs() - successScheduleCreateTimestamp) < maxTransactionConsensusTimestampRangeNs ) {
-    return SHORTER_CACHE_CONTROL_HEADER;
+  if (successScheduleCreateTimestamp) {
+    const elapsed = utils.nowInNs() - successScheduleCreateTimestamp;
+    if (elapsed < maxTransactionConsensusTimestampRangeNs) {
+      return SHORTER_CACHE_CONTROL_HEADER;
+    }
   }
 
   return {}; // no override
