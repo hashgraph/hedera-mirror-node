@@ -36,7 +36,7 @@ extra.apply {
     set("jooq.version", "3.19.6")
     set("mapStructVersion", "1.6.1")
     set("nodeJsVersion", "18.18.0")
-    set("protobufVersion", "3.25.3")
+    set("protobufVersion", "3.25.5")
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.10")
     set("tuweniVersion", "2.3.1")
@@ -62,6 +62,9 @@ dependencies {
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.6.0")
         api("com.google.guava:guava:33.3.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
+        api(
+            "com.google.protobuf:protobuf-util:$protobufVersion"
+        ) // Temporary until new spring-cloud-gcp-starter-pubsub
         api("com.graphql-java-generator:graphql-java-client-runtime:2.8")
         api("com.graphql-java:graphql-java-extended-scalars:22.0")
         api("com.graphql-java:graphql-java-extended-validation:22.0")
