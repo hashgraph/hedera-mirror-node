@@ -34,15 +34,11 @@ const keyMapper = (key) => `k${key}`;
 
 describe('Redis disabled', () => {
   test('get', async () => {
-    config.redis.enabled = false;
     const values = await cache.get(['1', '2', '3'], loader, keyMapper);
     expect(values).toEqual(['v1', 'v2', 'v3']);
   });
 
   test('getSingleWithTtl', async () => {
-    config.redis.enabled = false;
-    cache = new Cache();
-
     const key = 'myKey';
     const value = await cache.getSingleWithTtl(key);
     expect(value).toBeUndefined();
