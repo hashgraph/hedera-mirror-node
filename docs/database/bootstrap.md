@@ -244,7 +244,7 @@ The import script is designed to efficiently import the Mirror Node data into yo
 
 ---
 
-## Mirror Node Version Compatibility
+## Version Compatibility
 
 Before initializing your Mirror Node with the imported database, it's crucial to ensure version compatibility.
 
