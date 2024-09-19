@@ -19,68 +19,81 @@ import config from './config';
 import _ from 'lodash';
 import {JSONParse, JSONStringify} from './utils';
 
+const {redis: redisConfig} = config;
+const {enabled, sentinel, uri} = redisConfig;
+
+const createRedisConnection = () => {
+  const sentinelOptions = sentinel.enabled
+    ? {
+        name: sentinel.name,
+        sentinelPassword: sentinel.password,
+        sentinels: [{host: sentinel.host, port: sentinel.port}],
+      }
+    : {};
+
+  const options = {
+    commandTimeout: redisConfig.commandTimeout,
+    connectTimeout: redisConfig.connectTimeout,
+    enableAutoPipelining: true,
+    enableOfflineQueue: true,
+    enableReadyCheck: true,
+    keepAlive: 30000,
+    lazyConnect: !enabled,
+    maxRetriesPerRequest: redisConfig.maxRetriesPerRequest,
+    retryStrategy: (attempt) => {
+      this.ready = false;
+
+      if (!enabled) {
+        return null;
+      }
+
+      return Math.min(attempt * 2000, redisConfig.maxBackoff);
+    },
+    ...sentinelOptions,
+  };
+  const uriSanitized = uri.replaceAll(RegExp('(?<=//).*:.+@', 'g'), '***:***@');
+  let ready = false;
+
+  const redis = new Redis(uri, options)
+    .on('connect', () => logger.info(`Connected to ${uriSanitized}`))
+    .on('error', (err) => logger.error(`Error connecting to ${uriSanitized}: ${err.message}`))
+    .on('ready', () => {
+      setConfig('maxmemory', redisConfig.maxMemory);
+      setConfig('maxmemory-policy', redisConfig.maxMemoryPolicy);
+      ready = true;
+    });
+
+  const setConfig = function (key, value) {
+    redis.config('SET', key, value).catch((e) => logger.warn(`Unable to set Redis ${key} to ${value}: ${e.message}`));
+  };
+
+  return {
+    getRedis: () => redis,
+    isReady: () => ready,
+    stop: async () => redis.quit(),
+  };
+};
+
+let redisConnection;
 export class Cache {
-  constructor(keyPrefix = '') {
-    const {redis: redisConfig} = config;
-    const {enabled, sentinel, uri} = redisConfig;
-    const sentinelOptions = sentinel.enabled
-      ? {
-          name: sentinel.name,
-          sentinelPassword: sentinel.password,
-          sentinels: [{host: sentinel.host, port: sentinel.port}],
-        }
-      : {};
-    const options = {
-      commandTimeout: redisConfig.commandTimeout,
-      connectTimeout: redisConfig.connectTimeout,
-      enableAutoPipelining: true,
-      enableOfflineQueue: true,
-      enableReadyCheck: true,
-      keepAlive: 30000,
-      keyPrefix: keyPrefix,
-      lazyConnect: !enabled,
-      maxRetriesPerRequest: redisConfig.maxRetriesPerRequest,
-      retryStrategy: (attempt) => {
-        this.ready = false;
-
-        if (!enabled) {
-          return null;
-        }
-
-        return Math.min(attempt * 2000, redisConfig.maxBackoff);
-      },
-      ...sentinelOptions,
-    };
-    const uriSanitized = uri.replaceAll(RegExp('(?<=//).*:.+@', 'g'), '***:***@');
-    this.ready = false;
-
-    this.redis = new Redis(uri, options)
-      .on('connect', () => logger.info(`Connected to ${uriSanitized}`))
-      .on('error', (err) => logger.error(`Error connecting to ${uriSanitized}: ${err.message}`))
-      .on('ready', () => {
-        this.#setConfig('maxmemory', redisConfig.maxMemory);
-        this.#setConfig('maxmemory-policy', redisConfig.maxMemoryPolicy);
-        this.ready = true;
-      });
-  }
-
-  #setConfig(key, value) {
-    this.redis
-      .config('SET', key, value)
-      .catch((e) => logger.warn(`Unable to set Redis ${key} to ${value}: ${e.message}`));
+  constructor() {
+    if (redisConnection === undefined) {
+      redisConnection = createRedisConnection();
+    }
   }
 
   async clear() {
-    return this.redis.flushall();
+    return redisConnection.getRedis().flushall();
   }
 
   async getSingleWithTtl(key) {
-    if (!this.ready) {
+    if (!redisConnection.isReady()) {
       return undefined;
     }
 
     let valueWithTtl = undefined; // Cache miss to caller
-    await this.redis
+    await redisConnection
+      .getRedis()
       .multi()
       .ttl(key)
       .get(key)
@@ -100,11 +113,12 @@ export class Cache {
   }
 
   async setSingle(key, expiry, value) {
-    if (!this.ready) {
+    if (!redisConnection.isReady()) {
       return undefined;
     }
 
-    return this.redis
+    return redisConnection
+      .getRedis()
       .setex(key, expiry, JSONStringify(value))
       .catch((err) => logger.warn(`Redis error during set: ${err.message}`));
   }
@@ -113,12 +127,13 @@ export class Cache {
     if (_.isEmpty(keys)) {
       return [];
     }
-    if (!this.ready) {
+    if (!redisConnection.isReady()) {
       return loader(keys);
     }
 
     const buffers =
-      (await this.redis
+      (await redisConnection
+        .getRedis()
         .mgetBuffer(_.map(keys, keyMapper))
         .catch((err) => logger.warn(`Redis error during mget: ${err.message}`))) || new Array(keys.length);
     const values = buffers.map((t) => JSONParse(t));
@@ -143,7 +158,10 @@ export class Cache {
         }
       });
 
-      this.redis.mset(newValues).catch((err) => logger.warn(`Redis error during mset: ${err.message}`));
+      redisConnection
+        .getRedis()
+        .mset(newValues)
+        .catch((err) => logger.warn(`Redis error during mset: ${err.message}`));
     }
 
     if (logger.isDebugEnabled()) {
@@ -155,6 +173,6 @@ export class Cache {
   }
 
   async stop() {
-    return this.redis.quit();
+    return redisConnection.stop();
   }
 }

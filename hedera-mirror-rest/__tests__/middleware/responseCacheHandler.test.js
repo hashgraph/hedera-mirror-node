@@ -35,6 +35,7 @@ beforeAll(async () => {
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
+  await cache.stop();
   await redisContainer.stop({signal: 'SIGKILL', t: 5});
   logger.info('Stopped Redis container');
 });
@@ -44,10 +45,6 @@ beforeEach(async () => {
   cache = new Cache();
   setCache(cache);
   await cache.clear();
-});
-
-afterEach(async () => {
-  await cache.stop();
 });
 
 describe('Response cache middleware', () => {

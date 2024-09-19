@@ -46,7 +46,7 @@ const {
   },
 } = config;
 
-const cache = new Cache('transaction:');
+const cache = new Cache();
 
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,

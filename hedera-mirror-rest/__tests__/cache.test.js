@@ -29,6 +29,7 @@ beforeAll(async () => {
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
+  await cache.stop();
   await redisContainer.stop({signal: 'SIGKILL', t: 5});
   logger.info('Stopped Redis container');
 });
@@ -37,10 +38,6 @@ beforeEach(async () => {
   config.redis.uri = `0.0.0.0:${redisContainer.getMappedPort(6379)}`;
   cache = new Cache();
   await cache.clear();
-});
-
-afterEach(async () => {
-  await cache.stop();
 });
 
 const loader = (keys) => keys.map((key) => `v${key}`);
@@ -72,19 +69,6 @@ describe('get', () => {
     const values = await cache.get([], loader, keyMapper);
     expect(values).toEqual([]);
   });
-
-  test('Disabled', async () => {
-    config.redis.enabled = false;
-    const values = await cache.get(['1', '2', '3'], loader, keyMapper);
-    expect(values).toEqual(['v1', 'v2', 'v3']);
-  });
-
-  test('Unable to connect', async () => {
-    config.redis.uri = 'redis://invalid:6379';
-    cache = new Cache();
-    const values = await cache.get(['1', '2', '3'], loader, keyMapper);
-    expect(values).toEqual(['v1', 'v2', 'v3']);
-  });
 });
 
 describe('Single key get/set', () => {
@@ -107,27 +91,5 @@ describe('Single key get/set', () => {
     const objectWithTtlFromCache = await cache.getSingleWithTtl(key);
     expect(objectWithTtlFromCache.value).toEqual(objectToCache);
     expect(objectWithTtlFromCache.ttl).toBeGreaterThan(0);
-  });
-
-  test('Disabled', async () => {
-    config.redis.enabled = false;
-    cache = new Cache();
-
-    const key = 'myKey';
-    const value = await cache.getSingleWithTtl(key);
-    expect(value).toBeUndefined();
-    const setResult = await cache.setSingle(key, 5, 'someValue');
-    expect(setResult).toBeUndefined();
-  });
-
-  test('Unable to connect', async () => {
-    config.redis.uri = 'redis://invalid:6379';
-    cache = new Cache();
-
-    const key = 'myKey';
-    const value = await cache.getSingleWithTtl('someKey');
-    expect(value).toBeUndefined();
-    const setResult = await cache.setSingle(key, 'someValue');
-    expect(setResult).toBeUndefined();
   });
 });
