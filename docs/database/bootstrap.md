@@ -16,7 +16,6 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
   - [1. Download the Database Export Data](#1-download-the-database-export-data)
   - [2. Download the Import Script](#2-download-the-import-script)
   - [3. Run the Import Script](#3-run-the-import-script)
-- [Mirror Node Version Compatibility](#mirror-node-version-compatibility)
 - [Handling Failed Imports](#handling-failed-imports)
   - [Steps to Handle Failed Imports:](#steps-to-handle-failed-imports)
 - [Additional Notes](#additional-notes)
@@ -26,9 +25,35 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 
 ## Prerequisites
 
-- **PostgreSQL 16** installed and running.
-- Access to a machine where you can run the initialization and import scripts and connect to the PostgreSQL database.
-- A Google Cloud Platform (GCP) account with a valid billing account attached (required for downloading data from a Requester Pays bucket).
+1. **Version Compatibility**
+
+   Before initializing your Mirror Node with the imported database, it's crucial to ensure version compatibility.
+
+   **MIRRORNODE_VERSION File:**
+
+   - In the database export data, there is a file named `MIRRORNODE_VERSION`.
+   - This file contains the version of the Mirror Node at the time of the database export.
+
+   **Importance:**
+
+   - Your Mirror Node instance must be initialized with the **same version** as specified in the `MIRRORNODE_VERSION` file.
+   - Using a different version may lead to compatibility issues and/or schema mismatches.
+
+   **Action Required:**
+
+   1. **Check the Mirror Node Version:**
+
+      - Open the `MIRRORNODE_VERSION` file:
+
+        ```bash
+        cat /path/to/db_export/MIRRORNODE_VERSION
+        ```
+
+      - Note the version number specified.
+
+2. **PostgreSQL 16** installed and running.
+3. Access to a machine where you can run the initialization and import scripts and connect to the PostgreSQL database.
+4. A Google Cloud Platform (GCP) account with a valid billing account attached (required for downloading data from a Requester Pays bucket).
 
 ---
 
@@ -54,6 +79,8 @@ export PGPORT="DB_PORT"
 - `PGHOST`: The IP address or hostname of your PostgreSQL database server.
 - `PGPORT`: The database server port number (`5432` by default).
 
+
+
 **Database User Password Variables:**
 
 Set the following environment variables to define passwords for the various database users that will be created during initialization.
@@ -70,6 +97,8 @@ export WEB3_PASSWORD="SET_PASSWORD"
 ```
 
 - Replace `SET_PASSWORD` with strong, unique passwords for each respective user.
+
+- **Security Note:** Ensure that the passwords set in the environment variables are kept secure and not exposed in logs or command history.
 
 ### 2. Important Note for Google Cloud SQL Users
 
@@ -244,34 +273,6 @@ The import script is designed to efficiently import the Mirror Node data into yo
 
 ---
 
-## Version Compatibility
-
-Before initializing your Mirror Node with the imported database, it's crucial to ensure version compatibility.
-
-**MIRRORNODE_VERSION File:**
-
-- In the database export data, there is a file named `MIRRORNODE_VERSION`.
-- This file contains the version of the Mirror Node at the time of the database export.
-
-**Importance:**
-
-- Your Mirror Node instance must be initialized with the **same version** as specified in the `MIRRORNODE_VERSION` file.
-- Using a different version may lead to compatibility issues and/or schema mismatches.
-
-**Action Required:**
-
-1. **Check the Mirror Node Version:**
-
-   - Open the `MIRRORNODE_VERSION` file:
-
-     ```bash
-     cat /path/to/db_export/MIRRORNODE_VERSION
-     ```
-
-   - Note the version number specified.
-
----
-
 ## Handling Failed Imports
 
 During the import process, the script generates a file named `import_tracking.txt`, which logs the status of each file import. Each line in this file contains the path and name of a file, followed by its import status: `NOT_STARTED`, `IN_PROGRESS`, `IMPORTED`, or `FAILED_TO_IMPORT`.
@@ -294,63 +295,29 @@ During the import process, the script generates a file named `import_tracking.tx
 
 ### Steps to Handle Failed Imports:
 
-1. **Identify Files to Re-import:**
+1. **Re-run the Import Script:**
 
-   - Open the `import_tracking.txt` file.
-   - Look for files with the status `FAILED_TO_IMPORT` or `NOT_STARTED`.
-   - These files either failed to import or were not processed due to interruption.
-
-2. **Re-run the Import Script:**
-
-   - You can re-run the import script; it will skip files marked as `IMPORTED` and attempt to import files with statuses `NOT_STARTED`, `IN_PROGRESS`, or `FAILED_TO_IMPORT`.
-
+   - Simply re-run the import script; it will automatically skip files marked as `IMPORTED` and attempt to import files with statuses `NOT_STARTED`, `IN_PROGRESS`, or `FAILED_TO_IMPORT`.
+   
      ```bash
-     ./bootstrap.sh 8 /path/to/db_export/
+     ./your_import_script.sh 8 /path/to/db_export/
      ```
+   
+   - The script manages the import process, ensuring that only the necessary files are processed without manual intervention.
 
-   - The script will resume importing where it left off.
-
-3. **Alternatively, Collect Specific Files to Re-import:**
-
-   - Create a new directory to hold the files to be re-imported:
-
-     ```bash
-     mkdir -p /path/to/reimport_files
-     ```
-
-   - Copy the failed and not started files to the new directory:
-
-     ```bash
-     grep -E "FAILED_TO_IMPORT|NOT_STARTED" import_tracking.txt | awk '{print $1}' | xargs -I {} cp "{}" /path/to/reimport_files/
-     ```
-
-   - Run the import script, pointing it to the new directory:
-
-     ```bash
-     ./bootstrap.sh 8 /path/to/reimport_files/
-     ```
-
-4. **Verify the Imports:**
+2. **Verify the Imports:**
 
    - Check the `import_tracking.txt` and `import.log` files to ensure that all files have been imported successfully.
+   
    - If files continue to fail, review the error messages in `import.log` for troubleshooting.
 
-**Note on Data Consistency:**
-
-- When a file import fails, the database transaction ensures that **no partial data** is committed.
-- This means that when you re-run the import script, you can safely re-import failed files without worrying about duplicates or inconsistencies.
-- The database tables remain in the same state as before the failed import attempt.
-
----
-
-## Additional Notes
-
-- **Data Integrity:** The import script ensures data integrity by using transactions. If an error occurs during the import of a file, that file's data will not be committed to the database.
+**Notes on Data Consistency:**
+  
 - **System Resources:** Adjust the number of CPU cores used (`8` in the example) based on your system's capabilities to prevent overloading the server.
-- **Security:** Ensure that the passwords set in the environment variables are kept secure and not exposed in logs or command history.
+
+- **Data Integrity:** When a file import fails, the database transaction ensures that **no partial data** is committed. This means that when you re-run the import script, you can safely re-import failed files without worrying about duplicates or inconsistencies; The database tables remain in the same state as before the failed import attempt.
+  
 - **Concurrent Write Safety:** The script uses file locking (`flock`) to safely handle concurrent writes to `import_tracking.txt`. This prevents race conditions and ensures the tracking file remains consistent.
-- **Resuming Imports:** The script maintains the status of all files in `import_tracking.txt`, allowing you to resume imports after an interruption without re-importing already imported files.
-- **Required Tools:** Ensure that all required tools (`psql`, `gunzip`, `realpath`, `flock`) are installed on your system.
 
 ---
 
@@ -373,15 +340,5 @@ During the import process, the script generates a file named `import_tracking.tx
   - Upon restarting the script, it will:
     - Skip files marked as `IMPORTED`.
     - Attempt to import files with statuses `NOT_STARTED`, `IN_PROGRESS`, or `FAILED_TO_IMPORT`.
-
-- **Bash Version Compatibility:**
-
-  - The import script requires Bash version 4.3 or higher. Check your Bash version with:
-
-    ```bash
-    bash --version
-    ```
-
-  - If using an older version of Bash, consider updating to the minimum required version.
 
 ---

@@ -3,6 +3,51 @@
 # Enable job control
 set -m
 
+####################################
+# Variables
+####################################
+
+# Define minimum required Bash version
+REQUIRED_BASH_MAJOR=4
+REQUIRED_BASH_MINOR=3
+
+# PostgreSQL environment variables
+export PGUSER=${PGUSER:-"DB_OWNER"}
+export PGPASSWORD=${PGPASSWORD:-"DB_PASSWORD"}
+export PGHOST=${PGHOST:-"DB_ADDRESS"}
+export PGPORT="${PGPORT:-5432}"  # Added PGPORT with default value
+export PGDATABASE=${PGDATABASE:-"DB_NAME"}
+
+# Import script arguments
+DB_CPU_CORES="$1"
+IMPORT_DIR="$2"
+
+# Convert IMPORT_DIR to an absolute path
+IMPORT_DIR="$(realpath "$IMPORT_DIR")"
+
+# Calculate available CPU cores
+AVAILABLE_CORES=$(( $(nproc) - 1 ))          # Leave one core free for the local system
+DB_AVAILABLE_CORES=$((DB_CPU_CORES - 1))     # Leave one core free for the DB instance
+
+if [[ $AVAILABLE_CORES -lt $DB_AVAILABLE_CORES ]]; then
+  DB_AVAILABLE_CORES=$AVAILABLE_CORES
+fi
+
+max_jobs="$DB_AVAILABLE_CORES"
+
+# Logging and tracking files
+LOG_FILE="import.log"
+TRACKING_FILE="import_tracking.txt"
+LOCK_FILE="import_tracking.lock"
+
+# Required tools
+REQUIRED_TOOLS=("psql" "gunzip" "realpath" "flock")
+
+####################################
+# Functions
+####################################
+
+# display help message
 show_help() {
   echo "Usage: $0 [OPTIONS] DB_CPU_CORES IMPORT_DIR"
   echo
@@ -20,72 +65,19 @@ show_help() {
   echo
 }
 
-# Parse options
-if [[ $# -eq 0 ]]; then
-  echo "No arguments provided. Use --help or -h for usage information."
-  exit 1
-fi
-
-while [[ "$#" -gt 0 ]]; do
-  case $1 in
-    -h|--help|-H)
-      show_help
-      exit 0
-      ;;
-    *)
-      break
-      ;;
-  esac
-done
-
-# Check if required arguments are supplied
-if [[ -z "$1" || -z "$2" ]]; then
-  echo "Error: Both DB_CPU_CORES and IMPORT_DIR must be provided."
-  echo "Use --help or -h for usage information."
-  exit 1
-fi
-
-DB_CPU_CORES="$1"
-IMPORT_DIR="$2"
-
-# Convert IMPORT_DIR to an absolute path
-IMPORT_DIR="$(realpath "$IMPORT_DIR")"
-
-# Check if IMPORT_DIR exists and is a directory
-if [[ ! -d "$IMPORT_DIR" ]]; then
-  echo "Error: IMPORT_DIR '$IMPORT_DIR' does not exist or is not a directory."
-  exit 1
-fi
-
-AVAILABLE_CORES=$(( $(nproc) - 1 ))  # Leave one core free for the local system
-DB_AVAILABLE_CORES=$((DB_CPU_CORES - 1))  # Leave one core free for the DB instance
-
-if [[ $AVAILABLE_CORES -lt $DB_AVAILABLE_CORES ]]; then
-  DB_AVAILABLE_CORES=$AVAILABLE_CORES
-fi
-
-max_jobs="$DB_AVAILABLE_CORES"
-
-# Set PostgreSQL environment variables
-export PGUSER=${PGUSER:-"DB_OWNER"}
-export PGPASSWORD=${PGPASSWORD:-"DB_PASSWORD"}
-export PGHOST=${PGHOST:-"DB_ADDRESS"}
-export PGDATABASE=${PGDATABASE:-"DB_NAME"}
-
-LOG_FILE="import.log"
-TRACKING_FILE="import_tracking.txt"
-LOCK_FILE="import_tracking.lock"
-
-# Check if required tools are installed
-REQUIRED_TOOLS=("psql" "gunzip" "realpath" "flock")
-for tool in "${REQUIRED_TOOLS[@]}"; do
-  if ! command -v "$tool" &> /dev/null; then
-    echo "Error: $tool is not installed. Please install it to continue."
+# check Bash version
+check_bash_version() {
+  local current_major=${BASH_VERSINFO[0]}
+  local current_minor=${BASH_VERSINFO[1]}
+  
+  if (( current_major < REQUIRED_BASH_MAJOR )) || \
+     (( current_major == REQUIRED_BASH_MAJOR && current_minor < REQUIRED_BASH_MINOR )); then
+    echo "Error: Bash version ${REQUIRED_BASH_MAJOR}.${REQUIRED_BASH_MINOR}+ is required. Current version is ${BASH_VERSION}."
     exit 1
   fi
-done
+}
 
-# Log using UTC times
+# log messages with UTC timestamps
 log() {
   local msg="$1"
   local level="${2:-INFO}"
@@ -95,7 +87,7 @@ log() {
   echo "$timestamp - $level - $msg" | tee -a "$LOG_FILE"
 }
 
-# Kill a process and its descendants
+# kill a process and its descendants
 kill_descendants() {
   local pid="$1"
   local children
@@ -106,7 +98,7 @@ kill_descendants() {
   kill -TERM "$pid" 2>/dev/null
 }
 
-# Handle script termination
+# handle script termination
 cleanup() {
   log "Script interrupted. Terminating background jobs..." "ERROR"
   # Ignore further signals during cleanup
@@ -122,10 +114,7 @@ cleanup() {
   exit 1
 }
 
-# Trap signals
-trap 'cleanup' SIGINT SIGTERM
-
-# Safely write to tracking file with lock
+# safely write to the tracking file with a lock
 write_tracking_file() {
   local file="$1"
   local status="$2"
@@ -141,43 +130,18 @@ write_tracking_file() {
   ) 200>"$LOCK_FILE"
 }
 
-# Read status from tracking file
+# read status from the tracking file
 read_tracking_status() {
   local file="$1"
   grep "^$file " "$TRACKING_FILE" 2>/dev/null | awk '{print $2}'
 }
 
-# Collect all import tasks
+# collect all import tasks (compressed CSV files)
 collect_import_tasks() {
   find "$IMPORT_DIR" -type f -name "*.csv.gz"
 }
 
-# Main script execution
-log "Starting DB import."
-
-# Get the list of files to import
-mapfile -t files < <(collect_import_tasks)
-
-# Initialize the tracking file with all files as NOT_STARTED
-(
-  flock -x 200
-  for file in "${files[@]}"; do
-    # Only add if not already in tracking file
-    if ! grep -q "^$file " "$TRACKING_FILE" 2>/dev/null; then
-      echo "$file NOT_STARTED" >> "$TRACKING_FILE"
-    fi
-  done
-) 200>"$LOCK_FILE"
-
-# Initialize variables
-pids=()
-overall_success=0
-
-# Export necessary functions and variables
-export -f import_file log kill_descendants write_tracking_file read_tracking_status
-export IMPORT_DIR LOG_FILE TRACKING_FILE LOCK_FILE PGUSER PGPASSWORD PGHOST PGDATABASE
-
-# Import a single file
+# import a single file into the database
 import_file() {
   local file="$1"
   local table
@@ -210,6 +174,90 @@ import_file() {
     return 1
   fi
 }
+
+####################################
+# Execution
+####################################
+
+# Perform the Bash version check
+check_bash_version
+
+# display help if no arguments are provided
+if [[ $# -eq 0 ]]; then
+  echo "No arguments provided. Use --help or -h for usage information."
+  exit 1
+fi
+
+# Parse options
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    -h|--help|-H)
+      show_help
+      exit 0
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+# Check if required arguments are supplied
+if [[ -z "$DB_CPU_CORES" || -z "$IMPORT_DIR" ]]; then
+  echo "Error: Both DB_CPU_CORES and IMPORT_DIR must be provided."
+  echo "Use --help or -h for usage information."
+  exit 1
+fi
+
+# Check if IMPORT_DIR exists and is a directory
+if [[ ! -d "$IMPORT_DIR" ]]; then
+  echo "Error: IMPORT_DIR '$IMPORT_DIR' does not exist or is not a directory."
+  exit 1
+fi
+
+# Check if required tools are installed
+missing_tools=()
+for tool in "${REQUIRED_TOOLS[@]}"; do
+  if ! command -v "$tool" &> /dev/null; then
+    missing_tools+=("$tool")
+  fi
+done
+
+if [[ ${#missing_tools[@]} -gt 0 ]]; then
+  echo "Error: The following required tools are not installed:"
+  for tool in "${missing_tools[@]}"; do
+    echo "  - $tool"
+  done
+  echo "Please install them to continue."
+  exit 1
+fi
+
+# Trap signals for cleanup
+trap 'cleanup' SIGINT SIGTERM
+
+# Log the start of the import process
+log "Starting DB import."
+
+# Get the list of files to import
+mapfile -t files < <(collect_import_tasks)
+
+# Initialize the tracking file with all files as NOT_STARTED
+(
+  flock -x 200
+  for file in "${files[@]}"; do
+    # Only add if not already in tracking file
+    if ! grep -q "^$file " "$TRACKING_FILE" 2>/dev/null; then
+      echo "$file NOT_STARTED" >> "$TRACKING_FILE"
+    fi
+  done
+) 200>"$LOCK_FILE"
+
+# Initialize variables for background processes
+pids=()
+overall_success=0
+
+# Export necessary functions and variables for subshells
+export -f import_file log kill_descendants write_tracking_file read_tracking_status
+export IMPORT_DIR LOG_FILE TRACKING_FILE LOCK_FILE PGUSER PGPASSWORD PGHOST PGDATABASE
 
 # Loop through files and manage parallel execution
 for file in "${files[@]}"; do
@@ -249,6 +297,7 @@ for pid in "${pids[@]}"; do
   fi
 done
 
+# Log the final status of the import process
 if [[ $overall_success -eq 0 ]]; then
   log "DB import completed successfully."
 else
