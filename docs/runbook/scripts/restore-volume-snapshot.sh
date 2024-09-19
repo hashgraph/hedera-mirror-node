@@ -52,54 +52,66 @@ function configureAndValidate() {
 
   CITUS_CLUSTERS=$(kubectl get sgclusters.stackgres.io -A -o json |
     jq -r '.items|
-                     map(
-                       .metadata as $metadata|
-                       .spec.postgres.version as $pgVersion|
-                       ((.metadata.labels["stackgres.io/coordinator"] // "false")| test("true")) as $isCoordinator |
-                       .spec.configurations.patroni.initialConfig.citus.group as $citusGroup|
-                       .status.podStatuses[]|
-                         {
-                           citusGroup: $citusGroup,
-                           clusterName: $metadata.name,
-                           isCoordinator: $isCoordinator,
-                           namespace: $metadata.namespace,
-                           pgVersion: $pgVersion,
-                           podName: .name,
-                           pvcName: "\($metadata.name)-data-\(.name)",
-                           primary: .primary,
-                           shardedClusterName: $metadata.ownerReferences[0].name
-                         }
-                     )')
+           map(
+             .metadata as $metadata|
+             .spec.postgres.version as $pgVersion|
+             ((.metadata.labels["stackgres.io/coordinator"] // "false")| test("true")) as $isCoordinator |
+             .spec.configurations.patroni.initialConfig.citus.group as $citusGroup|
+             .status.podStatuses[]|
+               {
+                 citusGroup: $citusGroup,
+                 clusterName: $metadata.name,
+                 isCoordinator: $isCoordinator,
+                 namespace: $metadata.namespace,
+                 pgVersion: $pgVersion,
+                 podName: .name,
+                 pvcName: "\($metadata.name)-data-\(.name)",
+                 primary: .primary,
+                 shardedClusterName: $metadata.ownerReferences[0].name
+               }
+           )')
 
   ZFS_VOLUMES=$(kubectl get pv -o json |
     jq -r --arg CITUS_CLUSTERS "${CITUS_CLUSTERS}" \
-      '.items|map(select(.metadata.annotations."pv.kubernetes.io/provisioned-by"=="zfs.csi.openebs.io" and .status.phase == "Bound")|
-                  (.spec.claimRef.name) as $pvcName |
-                  (.spec.claimRef.namespace) as $pvcNamespace |
-                  {
-                    namespace: ($pvcNamespace),
-                    volumeName: (.metadata.name),
-                    pvcName: ($pvcName),
-                    pvcSize: (.spec.capacity.storage),
-                    nodeId: (.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]),
-                    citusCluster: ($CITUS_CLUSTERS | fromjson | map(select(.pvcName == $pvcName and .namespace == $pvcNamespace))|first)
-                  })')
+      '.items|
+       map(select(.metadata.annotations."pv.kubernetes.io/provisioned-by"=="zfs.csi.openebs.io" and
+                  .status.phase == "Bound")|
+          (.spec.claimRef.name) as $pvcName |
+          (.spec.claimRef.namespace) as $pvcNamespace |
+          {
+            namespace: ($pvcNamespace),
+            volumeName: (.metadata.name),
+            pvcName: ($pvcName),
+            pvcSize: (.spec.capacity.storage),
+            nodeId: (.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]),
+            citusCluster: ($CITUS_CLUSTERS | fromjson | map(select(.pvcName == $pvcName and
+                                                            .namespace == $pvcNamespace))|first)
+          }
+      )')
 
   NAMESPACES=($(echo $ZFS_VOLUMES | jq -r '.[].namespace' | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
   NODE_ID_MAP=$(echo -e "${SNAPSHOTS_TO_RESTORE}\n${ZFS_VOLUMES}" |
     jq -s '.[0] as $snapshots |
-                          .[1] as $volumes |
-                          $volumes | group_by(.nodeId) |
-                          map((.[0].nodeId) as $nodeId |
-                              map(.)|sort_by(.volumeName) as $pvcs |
-                              $pvcs | map({pvcName: .pvcName, namespace: .namespace, pgVersion: .citusCluster.pgVersion}) as $pvcMatchData|
-                             {
-                               ($nodeId) :  {
-                                  pvcs: ($pvcs),
-                                  snapshot: ($snapshots | map(select(.description|contains($pvcMatchData))))
-                               }
-                             })|add')
+           .[1] as $volumes |
+           $volumes | group_by(.nodeId) |
+           map((.[0].nodeId) as $nodeId |
+             map(.)|sort_by(.volumeName) as $pvcs |
+             $pvcs |
+             map(
+               {
+                 pvcName: .pvcName,
+                 namespace: .namespace,
+                 pgVersion: .citusCluster.pgVersion
+               }
+             ) as $pvcMatchData|
+             {
+               ($nodeId) :  {
+                  pvcs: ($pvcs),
+                  snapshot: ($snapshots | map(select(.description|contains($pvcMatchData))))
+               }
+             }
+          )|add')
 
   UNIQUE_NODE_IDS=($(echo "${NODE_ID_MAP}" | jq -r 'keys[]'))
   for nodeId in "${UNIQUE_NODE_IDS[@]}"; do
@@ -235,8 +247,13 @@ function renameZfsVolumes() {
   local zfsNodes=$(kubectl get zfsnodes.zfs.openebs.io -A -o json | jq -r '.items|map({nodeId: .metadata.name, node: .metadata.ownerReferences[0].name})')
   local nodeIdToPodMap=$(echo -e "${zfsNodePods}\n${zfsNodes}" |
     jq -s '.[0] as $zfsPods |
-                              .[1] |
-                              map(.node as $nodeName | {(.nodeId) :  ($zfsPods[] | select(.node == $nodeName).podName)})|add')
+           .[1] |
+           map(.node as $nodeName |
+               {
+                 (.nodeId) :  ($zfsPods[] | select(.node == $nodeName).podName)
+               }
+           )|
+           add')
 
   echo "Renaming zfs datasets"
   for nodeId in "${UNIQUE_NODE_IDS[@]}"; do
@@ -288,7 +305,7 @@ function configurePersistentVolumeOverrides() {
   local namespace="${3}"
 
   local coordinatorPvcSize=$(echo "${pvcsInNamespace}" |
-      jq -r 'map(select(.snapshotPrimary and .citusCluster.isCoordinator))|
+    jq -r 'map(select(.snapshotPrimary and .citusCluster.isCoordinator))|
                                   map(.snapshotPvcSize)|first')
   local workerPvcOverrides=$(echo "${pvcsInNamespace}" |
     jq -r 'map(select(.snapshotPrimary and .citusCluster.isCoordinator == false))|
@@ -298,19 +315,19 @@ function configurePersistentVolumeOverrides() {
   local shardedClusterPatch=$(echo "${workerPvcOverrides}" |
     jq -r --arg coordinatorPvcSize "${coordinatorPvcSize}" \
       '{
-                            spec: {
-                              coordinator: {
-                                pods: {
-                                  persistentVolume: {
-                                    size: $coordinatorPvcSize
-                                  }
-                                }
-                              },
-                              shards: {
-                                overrides: (.)
-                              }
-                           }
-                         }')
+          spec: {
+            coordinator: {
+              pods: {
+                persistentVolume: {
+                  size: $coordinatorPvcSize
+                }
+              }
+            },
+            shards: {
+              overrides: (.)
+            }
+         }
+       }')
   echo "Patching sharded cluster ${shardedClusterName} in namespace ${namespace} with ${shardedClusterPatch}"
   kubectl patch sgshardedclusters.stackgres.io -n "${namespace}" "${shardedClusterName}" --type merge -p "${shardedClusterPatch}"
   echo "
@@ -332,17 +349,21 @@ function markAndConfigurePrimaries() {
   local shardedClusterName="${4}"
 
   local clusterGroups=$(echo "${pvcsInNamespace}" |
-        jq -r 'group_by(.citusCluster.clusterName)|
-                     map({(.[0].citusCluster.clusterName):
-                          .|sort_by(.citusCluster.podName)|
-                          map({
+    jq -r 'group_by(.citusCluster.clusterName)|
+                     map({
+                           (.[0].citusCluster.clusterName):
+                           .|sort_by(.citusCluster.podName)|
+                           map(
+                             {
                                 group: .citusCluster.citusGroup,
                                 isCoordinator: .citusCluster.isCoordinator,
                                 name: .citusCluster.podName,
                                 primary: .snapshotPrimary,
                                 shardedClusterName: .citusCluster.shardedClusterName
-                            })
-                         })|add')
+                             }
+                          )
+                        }
+                    )|add')
   local clusterNames=($(echo "${clusterGroups}" | jq -r 'keys[]'))
 
   for clusterName in "${clusterNames[@]}"; do
@@ -378,17 +399,18 @@ group ${citusGroup}. Will failover"
 function patchCitusClusters() {
   local pvcsByNamespace=$(echo -e "${SNAPSHOTS_TO_RESTORE}\n${ZFS_VOLUMES}" |
     jq -s '(.[0] | map(.description)| flatten) as $snapshots|
-                                   .[1] as $volumes|
-                                   $volumes | group_by(.namespace)|
-                                   map((.[0].namespace) as $namespace |
-                                      {
-                                        ($namespace):
-                                           map(. as $pvc |
-                                               $snapshots[]|
-                                               select(.pvcName == $pvc.pvcName and .namespace == $pvc.namespace) as $snapshotPvc|
-                                            $pvc + {snapshotPvcSize: $snapshotPvc.pvcSize, snapshotPrimary: $snapshotPvc.primary})
-                                      })|
-                                  add')
+            .[1] as $volumes|
+            $volumes | group_by(.namespace)|
+            map((.[0].namespace) as $namespace |
+              {
+                ($namespace):
+                   map(. as $pvc |
+                       $snapshots[]|
+                       select(.pvcName == $pvc.pvcName and .namespace == $pvc.namespace) as $snapshotPvc|
+                    $pvc + {snapshotPvcSize: $snapshotPvc.pvcSize, snapshotPrimary: $snapshotPvc.primary})
+              }
+            )|
+            add')
   for namespace in "${NAMESPACES[@]}"; do
     local pvcsInNamespace=$(echo "${pvcsByNamespace}" | jq -r --arg namespace "${namespace}" '.[$namespace]')
     local primaryCoordinator=$(echo "${pvcsInNamespace}" |
@@ -427,7 +449,7 @@ function patchCitusClusters() {
     local web3Username=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_USERNAME')
     local web3Password=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_PASSWORD')
     local sqlCommands=(
-    "insert into pg_dist_authinfo(nodeid, rolename, authinfo)
+      "insert into pg_dist_authinfo(nodeid, rolename, authinfo)
     values (0, '${superuserUsername}', 'password=${superuserPassword}'),
            (0, '${graphqlUsername}', 'password=${graphqlPassword}'),
            (0, '${grpcUsername}', 'password=${grpcPassword}'),
@@ -454,52 +476,52 @@ function patchCitusClusters() {
            do update set authinfo = excluded.authinfo;
     \$cmd\$
     );"
-    "SELECT run_command_on_workers(\$cmd\$
+      "SELECT run_command_on_workers(\$cmd\$
     alter user ${graphqlUsername} with password '${graphqlPassword}';
     \$cmd\$
     );"
-    "SELECT run_command_on_workers(\$cmd\$
+      "SELECT run_command_on_workers(\$cmd\$
     alter user ${grpcUsername} with password '${grpcPassword}';
     \$cmd\$
     );"
-    "SELECT run_command_on_workers(\$cmd\$
+      "SELECT run_command_on_workers(\$cmd\$
     alter user ${importerUsername} with password '${importerPassword}';
     \$cmd\$
     );"
-    "SELECT run_command_on_workers(\$cmd\$
+      "SELECT run_command_on_workers(\$cmd\$
     alter user ${restUsername} with password '${restPassword}';
     \$cmd\$
     );"
-    "SELECT run_command_on_workers(\$cmd\$
+      "SELECT run_command_on_workers(\$cmd\$
     alter user ${restJavaUsername} with password '${restJavaPassword}';
     \$cmd\$
     );"
-    "SELECT run_command_on_workers(\$cmd\$
+      "SELECT run_command_on_workers(\$cmd\$
     alter user ${rosettaUsername} with password '${rosettaPassword}';
     \$cmd\$
     );"
-    "SELECT run_command_on_workers(\$cmd\$
+      "SELECT run_command_on_workers(\$cmd\$
     alter user ${web3Username} with password '${web3Password}';
     \$cmd\$
     );"
-    "SELECT run_command_on_workers(\$cmd\$
+      "SELECT run_command_on_workers(\$cmd\$
     alter user ${replicationUsername} with password '${replicationPassword}';
     \$cmd\$
     );"
-    "SELECT run_command_on_workers(\$cmd\$
+      "SELECT run_command_on_workers(\$cmd\$
     alter user ${authenticatorUsername} with password '${authenticatorPassword}';
     \$cmd\$
     );"
-    "alter user ${graphqlUsername} with password '${graphqlPassword}';"
-    "alter user ${grpcUsername} with password '${grpcPassword}';"
-    "alter user ${importerUsername} with password '${importerPassword}';"
-    "alter user ${ownerUsername} with password '${ownerPassword}';"
-    "alter user ${restUsername} with password '${restPassword}';"
-    "alter user ${restJavaUsername} with password '${restJavaPassword}';"
-    "alter user ${rosettaUsername} with password '${rosettaPassword}';"
-    "alter user ${web3Username} with password '${web3Password}';"
-    "alter user ${replicationUsername} with password '${replicationPassword}';"
-    "alter user ${authenticatorUsername} with password '${authenticatorPassword}';")
+      "alter user ${graphqlUsername} with password '${graphqlPassword}';"
+      "alter user ${grpcUsername} with password '${grpcPassword}';"
+      "alter user ${importerUsername} with password '${importerPassword}';"
+      "alter user ${ownerUsername} with password '${ownerPassword}';"
+      "alter user ${restUsername} with password '${restPassword}';"
+      "alter user ${restJavaUsername} with password '${restJavaPassword}';"
+      "alter user ${rosettaUsername} with password '${rosettaPassword}';"
+      "alter user ${web3Username} with password '${web3Password}';"
+      "alter user ${replicationUsername} with password '${replicationPassword}';"
+      "alter user ${authenticatorUsername} with password '${authenticatorPassword}';")
 
     local primaryCoordinatorPod=$(echo "${primaryCoordinator}" | jq -r '.citusCluster.podName')
     local shardedClusterName=$(echo "${pvcsInNamespace}" | jq -r '.[0].citusCluster.shardedClusterName')
