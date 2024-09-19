@@ -457,6 +457,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery(),
           params: defaultParams,
+          scheduledParamExists: false,
         },
       },
       {
@@ -468,6 +469,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('nonce = $4'),
           params: [...defaultParams, 1],
+          scheduledParamExists: false,
         },
       },
       {
@@ -482,6 +484,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('nonce = $4'),
           params: [...defaultParams, 2],
+          scheduledParamExists: false,
         },
       },
       {
@@ -493,6 +496,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('scheduled = $4'),
           params: [...defaultParams, true],
+          scheduledParamExists: true,
         },
       },
       {
@@ -507,6 +511,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('scheduled = $4'),
           params: [...defaultParams, false],
+          scheduledParamExists: true,
         },
       },
       {
@@ -521,6 +526,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('nonce = $4 and scheduled = $5'),
           params: [...defaultParams, 1, true],
+          scheduledParamExists: true,
         },
       },
       {
@@ -539,6 +545,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('nonce = $4 and scheduled = $5'),
           params: [...defaultParams, 3, false],
+          scheduledParamExists: true,
         },
       },
     ];
@@ -552,6 +559,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
 
         testutils.assertSqlQueryEqual(actual.query, testSpec.expected.query);
         expect(actual.params).toStrictEqual(testSpec.expected.params);
+        expect(actual.scheduledParamExists).toEqual(testSpec.expected.scheduledParamExists);
       });
     }
   });

@@ -827,7 +827,7 @@ const getTransactionsByIdOrHashCacheControlHeader = (transactionsRows, scheduled
  */
 const getTransactionsByIdOrHash = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleTransactionParameters);
-  const {query, params, scheduled, isTransactionHash} = await extractSqlFromTransactionsByIdOrHashRequest(
+  const {query, params, scheduled} = await extractSqlFromTransactionsByIdOrHashRequest(
     req.params.transactionIdOrHash,
     filters
   );
@@ -842,7 +842,6 @@ const getTransactionsByIdOrHash = async (req, res) => {
 
   res.locals[constants.responseHeadersLabel] = getTransactionsByIdOrHashCacheControlHeader(
     rows,
-    isTransactionHash,
     scheduled
   );
 
