@@ -1,34 +1,32 @@
 # Database Bootstrap Guide
 
-This guide provides step-by-step instructions for setting up a fresh PostgreSQL 14 database and importing Mirror Node data into it. The process involves initializing the database, configuring environment variables, and running the import script. The data import is a long-running process, so it's recommended to run it within a `screen` or `tmux` session.
+This guide provides step-by-step instructions for setting up a fresh PostgreSQL database and importing Mirror Node data into it. The process involves initializing the database, configuring environment variables, and running the import script. The data import is a long-running process, so it's recommended to run it within a `screen` or `tmux` session.
 
 ---
 
 ## Table of Contents
 
-- [Mirror Node Database Bootstrap Guide](#mirror-node-database-bootstrap-guide)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisites](#prerequisites)
-  - [Database Initialization](#database-initialization)
-    - [1. Configure Environment Variables](#1-configure-environment-variables)
-    - [2. Important Note for Google Cloud SQL Users](#2-important-note-for-google-cloud-sql-users)
-    - [3. Run the Initialization Script](#3-run-the-initialization-script)
-    - [4. Import the Database Schema](#4-import-the-database-schema)
-  - [Data Import Process](#data-import-process)
-    - [1. Download the Database Export Data](#1-download-the-database-export-data)
-    - [2. Download the Import Script](#2-download-the-import-script)
-    - [3. Run the Import Script](#3-run-the-import-script)
-  - [Mirror Node Version Compatibility](#mirror-node-version-compatibility)
-  - [Handling Failed Imports](#handling-failed-imports)
-    - [Steps to Handle Failed Imports:](#steps-to-handle-failed-imports)
-  - [Additional Notes](#additional-notes)
-  - [Troubleshooting](#troubleshooting)
+- [Prerequisites](#prerequisites)
+- [Database Initialization](#database-initialization)
+  - [1. Configure Environment Variables](#1-configure-environment-variables)
+  - [2. Important Note for Google Cloud SQL Users](#2-important-note-for-google-cloud-sql-users)
+  - [3. Run the Initialization Script](#3-run-the-initialization-script)
+  - [4. Import the Database Schema](#4-import-the-database-schema)
+- [Data Import Process](#data-import-process)
+  - [1. Download the Database Export Data](#1-download-the-database-export-data)
+  - [2. Download the Import Script](#2-download-the-import-script)
+  - [3. Run the Import Script](#3-run-the-import-script)
+- [Mirror Node Version Compatibility](#mirror-node-version-compatibility)
+- [Handling Failed Imports](#handling-failed-imports)
+  - [Steps to Handle Failed Imports:](#steps-to-handle-failed-imports)
+- [Additional Notes](#additional-notes)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Prerequisites
 
-- **PostgreSQL 14** installed and running.
+- **PostgreSQL 16** installed and running.
 - Access to a machine where you can run the initialization and import scripts and connect to the PostgreSQL database.
 - A Google Cloud Platform (GCP) account with a valid billing account attached (required for downloading data from a Requester Pays bucket).
 
@@ -47,12 +45,14 @@ export PGUSER="postgres"
 export PGPASSWORD="YOUR_POSTGRES_PASSWORD"
 export PGDATABASE="postgres"
 export PGHOST="DB_IP_ADDRESS"
+export PGPORT="DB_PORT"
 ```
 
 - `PGUSER`: The PostgreSQL superuser with administrative privileges (typically `postgres`).
 - `PGPASSWORD`: Password for the PostgreSQL superuser.
 - `PGDATABASE`: The default database to connect to (`postgres` by default).
 - `PGHOST`: The IP address or hostname of your PostgreSQL database server.
+- `PGPORT`: The database server port number (`5432` by default).
 
 **Database User Password Variables:**
 
