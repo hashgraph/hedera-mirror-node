@@ -73,32 +73,15 @@ export WEB3_PASSWORD="SET_PASSWORD"
 
 ### 2. Important Note for Google Cloud SQL Users
 
-If you are using **Google Cloud SQL** for your PostgreSQL database, an additional step is required before running the `init.sh` script to ensure proper initialization.
-
-**Add the Following Line to the Initialization Script:**
-
-Before running the `init.sh` script, you need to grant the `mirror_node` role to the `postgres` user. This is necessary because Google Cloud SQL restricts certain permissions for the `postgres` user.
-
-Add the following line **before** running the `init.sh` script:
-
-```sql
-GRANT mirror_node TO postgres;
+If you are using **Google Cloud SQL** for your PostgreSQL database, you'll need to set an additional environment variable:
+```bash
+export IS_GCP_CLOUD_SQL="true"
 ```
-
-**Revised Section of `init.sh`:**
-
-```sql
--- Create database & owner
-CREATE USER :ownerUsername WITH LOGIN PASSWORD :'ownerPassword';
-GRANT mirror_node TO postgres;
-CREATE DATABASE :dbName WITH OWNER :ownerUsername;
-```
-
-- This adjustment ensures that the `postgres` user has the necessary permissions to execute the initialization script correctly on Google Cloud SQL.
+*Note*: For non-Google Cloud SQL environments, you do not need to set this variable, as it defaults to false.
 
 ### 3. Run the Initialization Script
 
-Download the initialization script `init.sh` from the repository:
+Download the initialization script [`init.sh`](../../hedera-mirror-importer/src/main/resources/db/scripts/init.sh) from the repository:
 
 ```bash
 curl -O https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/main/hedera-mirror-importer/src/main/resources/db/scripts/init.sh
