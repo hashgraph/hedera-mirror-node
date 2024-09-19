@@ -1,4 +1,4 @@
-# Mirror Node Database Bootstrap Guide
+# Database Bootstrap Guide
 
 This guide provides step-by-step instructions for setting up a fresh PostgreSQL 14 database and importing Mirror Node data into it. The process involves initializing the database, configuring environment variables, and running the import script. The data import is a long-running process, so it's recommended to run it within a `screen` or `tmux` session.
 
