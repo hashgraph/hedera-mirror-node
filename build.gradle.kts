@@ -62,9 +62,8 @@ dependencies {
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.6.0")
         api("com.google.guava:guava:33.3.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
-        api(
-            "com.google.protobuf:protobuf-util:$protobufVersion"
-        ) // Temporary until new spring-cloud-gcp-starter-pubsub
+        // Temporary until new spring-cloud-gcp-starter-pubsub
+        api("com.google.protobuf:protobuf-java-util:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.8")
         api("com.graphql-java:graphql-java-extended-scalars:22.0")
         api("com.graphql-java:graphql-java-extended-validation:22.0")
