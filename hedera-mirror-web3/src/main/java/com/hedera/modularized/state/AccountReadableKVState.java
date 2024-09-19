@@ -40,8 +40,6 @@ import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
-import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
-import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -52,11 +50,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.extern.java.Log;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * This class serves as a repository layer between hedera app services read only state and the Postgres database in mirror-node
+ *
+ * The object, which is read from DB is converted to the PBJ generated format, so that it can properly be utilized by the hedera app components
+ * */
 @Named
 @Log
 public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Account> {
@@ -72,9 +74,6 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
     private final TokenAccountRepository tokenAccountRepository;
     private final AccountBalanceRepository accountBalanceRepository;
 
-    /**
-     * Create a new AccountReadableKVState.
-     */
     public AccountReadableKVState(
             CommonEntityAccessor commonEntityAccessor,
             NftAllowanceRepository nftAllowanceRepository,
@@ -113,11 +112,11 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         return 0;
     }
 
-    private com.hedera.hapi.node.state.token.Account accountFromEntity(Entity entity, final Optional<Long> timestamp) {
+    private Account accountFromEntity(Entity entity, final Optional<Long> timestamp) {
         var tokenAccountBalances = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId(), timestamp);
 
-        return new com.hedera.hapi.node.state.token.Account(
-                new com.hedera.hapi.node.base.AccountID(
+        return new Account(
+                new AccountID(
                         entity.getShard(),
                         entity.getRealm(),
                         new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getNum())),
@@ -140,9 +139,9 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                 getOwnedNfts(entity.getId(), timestamp),
                 Optional.ofNullable(entity.getMaxAutomaticTokenAssociations()).orElse(0),
                 0,
-                tokenAccountBalances.get().all(),
+                tokenAccountBalances.all(),
                 CONTRACT.equals(entity.getType()),
-                tokenAccountBalances.get().positive(),
+                tokenAccountBalances.positive(),
                 entity.getEthereumNonce() != null ? entity.getEthereumNonce() : 0L,
                 0L,
                 new com.hedera.hapi.node.base.AccountID(
@@ -195,7 +194,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                 ? cryptoAllowanceRepository.findByOwnerAndTimestamp(ownerId, timestamp.get())
                 : cryptoAllowanceRepository.findByOwner(ownerId);
 
-        return cryptoAllowances.stream().map(this::convertCryptoAllowance).collect(Collectors.toList());
+        return cryptoAllowances.stream().map(this::convertCryptoAllowance).toList();
     }
 
     private AccountCryptoAllowance convertCryptoAllowance(final CryptoAllowance cryptoAllowance) {
@@ -211,7 +210,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                 ? tokenAllowanceRepository.findByOwnerAndTimestamp(ownerId, timestamp.get())
                 : tokenAllowanceRepository.findByOwner(ownerId);
 
-        return fungibleAllowances.stream().map(this::convertFungibleAllowance).collect(Collectors.toList());
+        return fungibleAllowances.stream().map(this::convertFungibleAllowance).toList();
     }
 
     private AccountFungibleTokenAllowance convertFungibleAllowance(final TokenAllowance tokenAllowance) {
@@ -237,7 +236,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                         0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, nftAllowance.getSpender())));
     }
 
-    private Supplier<TokenAccountBalances> getNumberOfAllAndPositiveBalanceTokenAssociations(
+    private TokenAccountBalances getNumberOfAllAndPositiveBalanceTokenAssociations(
             long accountId, final Optional<Long> timestamp) {
         var counts = timestamp
                 .map(t -> tokenAccountRepository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
@@ -247,7 +246,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         int all = 0;
         int positive = 0;
 
-        for (TokenAccountAssociationsCount count : counts) {
+        for (final var count : counts) {
             if (count.getIsPositiveBalance()) {
                 positive = count.getTokenCount();
             }
@@ -257,10 +256,10 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         final var allAggregated = all;
         final var positiveAggregated = positive;
 
-        return Suppliers.memoize(() -> new TokenAccountBalances(allAggregated, positiveAggregated));
+        return new TokenAccountBalances(allAggregated, positiveAggregated);
     }
 
-    private com.hedera.hapi.node.base.Key parseKey(Entity entity) {
+    private Key parseKey(Entity entity) {
         final byte[] keyBytes = entity.getKey();
 
         try {
