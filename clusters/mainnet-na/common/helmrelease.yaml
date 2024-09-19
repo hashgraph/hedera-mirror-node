@@ -36,6 +36,9 @@ spec:
       singleBinary:
         persistence:
           size: 350Gi
+        resources:
+          limits:
+            memory: 1Gi
     prometheus:
       prometheus:
         defaultRules:
@@ -63,6 +66,8 @@ spec:
           replicaExternalLabelName: __replica__
           resources:
             limits:
+              memory: 12Gi
+            requests:
               memory: 6Gi
     stackgres:
       enabled: true
