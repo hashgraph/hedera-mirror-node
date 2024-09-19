@@ -25,5 +25,5 @@ import java.util.Collection;
 public interface TokenAirdropRepositoryCustom extends JooqRepository {
 
     @NotNull
-    Collection<TokenAirdrop> findAllOutstanding(TokenAirdropRequest request, EntityId accountId);
+    Collection<TokenAirdrop> findAll(TokenAirdropRequest request, EntityId accountId);
 }
