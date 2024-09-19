@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.config;
 import static org.hyperledger.besu.evm.internal.EvmConfiguration.WorldUpdaterMode.JOURNALED;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
@@ -48,7 +49,6 @@ import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV
 import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV046;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
-import com.swirlds.common.utility.SemanticVersion;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -107,10 +107,10 @@ public class EvmConfiguration {
     public static final String CACHE_NAME_TOKEN_ACCOUNT = "tokenAccount";
     public static final String CACHE_NAME_TOKEN_ACCOUNT_COUNT = "tokenAccountCount";
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
-    public static final SemanticVersion EVM_VERSION_0_30 = SemanticVersion.parse("0.30.0");
-    public static final SemanticVersion EVM_VERSION_0_34 = SemanticVersion.parse("0.34.0");
-    public static final SemanticVersion EVM_VERSION_0_38 = SemanticVersion.parse("0.38.0");
-    public static final SemanticVersion EVM_VERSION_0_46 = SemanticVersion.parse("0.46.0");
+    public static final SemanticVersion EVM_VERSION_0_30 = new SemanticVersion(0, 30, 0, "", "");
+    public static final SemanticVersion EVM_VERSION_0_34 = new SemanticVersion(0, 34, 0, "", "");
+    public static final SemanticVersion EVM_VERSION_0_38 = new SemanticVersion(0, 38, 0, "", "");
+    public static final SemanticVersion EVM_VERSION_0_46 = new SemanticVersion(0, 46, 0, "", "");
     public static final SemanticVersion EVM_VERSION = EVM_VERSION_0_46;
     private final CacheProperties cacheProperties;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
