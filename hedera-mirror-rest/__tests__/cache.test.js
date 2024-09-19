@@ -25,6 +25,7 @@ let redisContainer;
 beforeAll(async () => {
   config.redis.enabled = true;
   redisContainer = await new RedisContainer().withStartupTimeout(20000).start();
+  config.redis.uri = `0.0.0.0:${redisContainer.getMappedPort(6379)}`;
   logger.info('Started Redis container');
 }, defaultBeforeAllTimeoutMillis);
 
@@ -35,7 +36,6 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  config.redis.uri = `0.0.0.0:${redisContainer.getMappedPort(6379)}`;
   cache = new Cache();
   await cache.clear();
 });
