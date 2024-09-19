@@ -793,7 +793,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   };
 };
 
-function getTransactionsByIdOrHashCacheControlHeader(transactionsRows, scheduledParamExists) {
+const getTransactionsByIdOrHashCacheControlHeader = (transactionsRows, scheduledParamExists) => {
   if (scheduledParamExists || transactionsRows.length < 2) {
     // Checking for transactionsRows.length indicates it is a transactionsByHash call
     return {}; // no override
