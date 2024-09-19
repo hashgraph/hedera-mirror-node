@@ -2,11 +2,11 @@
 
 GCP_PROJECT="${GCP_PROJECT}"
 SNAPSHOT_ID="${SNAPSHOT_ID}"
-GCP_K8S_CLUSTER_NAME="${GCP_K8S_CLUSTER_NAME-snapshot-restore}"
-GCP_CLUSTER_REGION="${GCP_CLUSTER_REGION:-us-east1}"
-GCP_COORDINATOR_POOL_NAME="${GCP_COORDINATOR_POOL_NAME-citus-coordinator}"
-GCP_WORKER_POOL_NAME="${GCP_WORKER_POOL_NAME-citus-worker}"
-GCP_SNAPSHOT_PROJECT="${GCP_SNAPSHOT_PROJECT-$GCP_PROJECT}"
+GCP_K8S_CLUSTER_NAME="${GCP_K8S_CLUSTER_NAME}"
+GCP_K8S_CLUSTER_REGION="${GCP_K8S_CLUSTER_REGION}"
+GCP_COORDINATOR_POOL_NAME="${GCP_COORDINATOR_POOL_NAME:-citus-coordinator}"
+GCP_WORKER_POOL_NAME="${GCP_WORKER_POOL_NAME:-citus-worker}"
+GCP_SNAPSHOT_PROJECT="${GCP_SNAPSHOT_PROJECT:-$GCP_PROJECT}"
 HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
 COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
 REPLACE_DISKS="${REPLACE_DISKS:-true}"
@@ -193,8 +193,8 @@ function resizeCitusNodePools() {
   for project ${GCP_PROJECT} to ${numNodes} nodes per zone"
 
   if [[ "${numNodes}" -gt 0 ]]; then
-    gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_COORDINATOR_POOL_NAME}" --num-nodes "${numNodes}" --location "${GCP_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
-    gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_WORKER_POOL_NAME}" --num-nodes "${numNodes}" --location "${GCP_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
+    gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_COORDINATOR_POOL_NAME}" --num-nodes "${numNodes}" --location "${GCP_K8S_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
+    gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_WORKER_POOL_NAME}" --num-nodes "${numNodes}" --location "${GCP_K8S_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
     echo "Waiting for nodes to be ready"
     wait
     kubectl wait --for=condition=Ready node -l'citus-role=coordinator' --timeout=-1s
@@ -205,7 +205,7 @@ function resizeCitusNodePools() {
       echo "No coordinator nodes found"
     else
       echo "Scaling down coordinator nodes ${coordinatorNodes}"
-      gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_COORDINATOR_POOL_NAME}" --num-nodes 0 --location "${GCP_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
+      gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_COORDINATOR_POOL_NAME}" --num-nodes 0 --location "${GCP_K8S_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
     fi
 
     local workerNodes=$(kubectl get nodes -l'citus-role=worker' -o 'jsonpath={.items[*].metadata.name}')
@@ -213,7 +213,7 @@ function resizeCitusNodePools() {
       echo "No worker nodes found"
     else
       echo "Scaling down worker nodes ${workerNodes}"
-      gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_WORKER_POOL_NAME}" --num-nodes 0 --location "${GCP_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
+      gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_WORKER_POOL_NAME}" --num-nodes 0 --location "${GCP_K8S_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
     fi
     echo "Waiting for nodes to be deleted"
     wait

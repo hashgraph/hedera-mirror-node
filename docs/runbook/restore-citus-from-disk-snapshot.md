@@ -36,7 +36,7 @@ Need to restore Citus cluster from disk snapshots
    `gcloud compute snapshots list --project "${GCP_SNAPSHOT_PROJECT}" --format="table(name, diskSizeGb, sourceDisk, description)"`
 6. Run script and follow along with all prompts
    <br>
-   `SNAPSHOT_ID=${SNAPSHOT_EPOCH} GCP_PROJECT=${TARGET_CLUSTER_PROJECT} ./restore-volume-snapshot.sh`
+   `SNAPSHOT_ID=${SNAPSHOT_EPOCH} GCP_PROJECT=${TARGET_CLUSTER_PROJECT} GCP_K8S_CLUSTER_NAME=${TARGET_CLUSTER_NAME} GCP_K8S_CLUSTER_REGION=${TARGET_CLUSTER_REGION} GCP_SNAPSHOT_PROJECT=${GCP_SNAPSHOT_PROJECT} ./restore-volume-snapshot.sh`
 7. Verify cluster health by running queries
    <br>
    `kubectl exec -it -n {clusterNamespace} {releaseName}-citus-coord-0 -- psql -U mirror_rest -d mirror_node -c "select * from transaction limit 10"`
