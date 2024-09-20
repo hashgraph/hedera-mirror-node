@@ -17,10 +17,10 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
@@ -38,7 +38,6 @@ import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.pbj.runtime.OneOf;
-import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
@@ -59,7 +58,6 @@ import lombok.extern.java.Log;
 @Named
 @Log
 public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Account> {
-    private static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
     private static final String KEY = "ACCOUNTS";
     private static final Long ZERO_BALANCE = 0L;
 
@@ -72,13 +70,13 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
     private final AccountBalanceRepository accountBalanceRepository;
 
     public AccountReadableKVState(
-            CommonEntityAccessor commonEntityAccessor,
-            NftAllowanceRepository nftAllowanceRepository,
-            NftRepository nftRepository,
-            TokenAllowanceRepository tokenAllowanceRepository,
-            CryptoAllowanceRepository cryptoAllowanceRepository,
-            TokenAccountRepository tokenAccountRepository,
-            AccountBalanceRepository accountBalanceRepository) {
+            @Nonnull CommonEntityAccessor commonEntityAccessor,
+            @Nonnull NftAllowanceRepository nftAllowanceRepository,
+            @Nonnull NftRepository nftRepository,
+            @Nonnull TokenAllowanceRepository tokenAllowanceRepository,
+            @Nonnull CryptoAllowanceRepository cryptoAllowanceRepository,
+            @Nonnull TokenAccountRepository tokenAccountRepository,
+            @Nonnull AccountBalanceRepository accountBalanceRepository) {
         super(KEY);
         this.commonEntityAccessor = commonEntityAccessor;
         this.nftAllowanceRepository = nftAllowanceRepository;
@@ -120,7 +118,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                         entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
                                 ? Bytes.wrap(entity.getEvmAddress())
                                 : Bytes.EMPTY)
-                .key(parseKey(entity))
+                .key(Utils.parseKey(entity.getKey(), entity.getId()))
                 .expirationSecond(TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS))
                 .tinybarBalance(getAccountBalance(entity, timestamp))
                 .memo(entity.getMemo())
@@ -244,20 +242,6 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         final var positiveAggregated = positive;
 
         return new TokenAccountBalances(allAggregated, positiveAggregated);
-    }
-
-    private Key parseKey(Entity entity) {
-        final byte[] keyBytes = entity.getKey();
-
-        try {
-            if (keyBytes != null && keyBytes.length > 0) {
-                return Key.PROTOBUF.parse(Bytes.wrap(keyBytes));
-            }
-        } catch (final ParseException e) {
-            log.warning("Failed to parse key for account " + entity.getId());
-        }
-
-        return Key.DEFAULT;
     }
 
     private record TokenAccountBalances(int all, int positive) {}
