@@ -48,7 +48,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import lombok.extern.java.Log;
 
 /**
@@ -125,7 +124,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                 .tinybarBalance(getAccountBalance(entity, timestamp))
                 .memo(entity.getMemo())
                 .deleted(Optional.ofNullable(entity.getDeleted()).orElse(false))
-                .receiverSigRequired(entity.getReceiverSigRequired() != null ? entity.getReceiverSigRequired() : false)
+                .receiverSigRequired(entity.getReceiverSigRequired() != null && entity.getReceiverSigRequired())
                 .numberOwnedNfts(getOwnedNfts(entity.getId(), timestamp))
                 .maxAutoAssociations(Optional.ofNullable(entity.getMaxAutomaticTokenAssociations())
                         .orElse(0))
@@ -213,7 +212,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                 ? nftAllowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(ownerId, timestamp.get())
                 : nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId);
 
-        return nftAllowances.stream().map(this::convertNftAllowance).collect(Collectors.toList());
+        return nftAllowances.stream().map(this::convertNftAllowance).toList();
     }
 
     private AccountApprovalForAllAllowance convertNftAllowance(final NftAllowance nftAllowance) {
