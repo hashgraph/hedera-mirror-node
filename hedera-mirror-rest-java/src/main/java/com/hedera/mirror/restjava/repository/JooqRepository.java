@@ -33,7 +33,7 @@ import org.jooq.Field;
 interface JooqRepository {
 
     default Condition getCondition(RangeParameter<Long> param, Field<Long> field) {
-        if (param == null || param == RangeParameter.EMPTY) {
+        if (param == null || param.isEmpty()) {
             return noCondition();
         }
 
@@ -101,7 +101,7 @@ interface JooqRepository {
         var primaryParam = upper ? primary.getUpper() : primary.getLower();
         // No outer bound condition if there is no primary parameter, or the operator is EQ. For EQ, everything should
         // go into the middle condition
-        if (primaryParam == null || primaryParam.equals(RangeParameter.EMPTY) || primaryParam.operator() == EQ) {
+        if (primaryParam == null || primaryParam.isEmpty() || primaryParam.operator() == EQ) {
             return noCondition();
         }
 

@@ -18,18 +18,6 @@ package com.hedera.mirror.restjava.common;
 
 public interface RangeParameter<T> {
 
-    RangeParameter<?> EMPTY = new RangeParameter<>() {
-        @Override
-        public RangeOperator operator() {
-            return null;
-        }
-
-        @Override
-        public Object value() {
-            return null;
-        }
-    };
-
     RangeOperator operator();
 
     T value();
@@ -45,5 +33,9 @@ public interface RangeParameter<T> {
 
     default boolean hasLTorGT() {
         return operator() == RangeOperator.LT || operator() == RangeOperator.GT;
+    }
+
+    default boolean isEmpty() {
+        return operator() == null && value() == null;
     }
 }
