@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.113.2'
+      version: '0.113.3'
   dependsOn:
     - name: mirror
       namespace: common
@@ -78,9 +78,7 @@ spec:
             test:
               acceptance:
                 network: MAINNET
-                feature:
-                  rejectToken: false
-      cucumberTags: "@critical and not @nft"
+      cucumberTags: "@critical"
       enabled: false
     web3:
       enabled: false
