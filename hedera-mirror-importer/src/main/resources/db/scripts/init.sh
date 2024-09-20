@@ -120,4 +120,9 @@ ${DB_SPECIFIC_EXTENSION_SQL}
 -- Alter search path
 \connect postgres postgres
 alter database :dbName set search_path = :dbSchema, public, :tempSchema;
+
+-- Conditional REVOKE statement for Google Cloud SQL
+\if :isGcpCloudSql
+  revoke mirror_node from :pgUser;
+\endif
 __SQL__

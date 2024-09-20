@@ -157,13 +157,7 @@ import_file() {
   write_tracking_file "$file" "IN_PROGRESS"
   log "Importing table $table from $file"
 
-  if {
-    echo "BEGIN;"
-    echo "\\copy $table FROM STDIN WITH CSV HEADER;"
-    gunzip -c "$file"
-    echo "\."
-    echo "COMMIT;"
-  } | psql -q -v ON_ERROR_STOP=1; then
+  if gunzip -c "$file" | psql -q -v ON_ERROR_STOP=1 -c "\COPY $table FROM STDIN WITH CSV HEADER"; then
     log "Successfully imported $file into $table"
     # Update the status to IMPORTED
     write_tracking_file "$file" "IMPORTED"
