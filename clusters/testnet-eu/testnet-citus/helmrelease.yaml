@@ -68,6 +68,10 @@ spec:
       enabled: true
       ingress:
         enabled: true
+      monitor:
+        config:
+          contract:
+            contractId: "0.0.2664875"
     restjava:
       enabled: true
       ingress:
