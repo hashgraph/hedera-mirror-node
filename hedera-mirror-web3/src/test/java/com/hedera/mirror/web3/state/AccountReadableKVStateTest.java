@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.modularized.state;
+package com.hedera.mirror.web3.state;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;

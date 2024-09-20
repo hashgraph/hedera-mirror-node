@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.modularized.state;
+package com.hedera.mirror.web3.state;
 
 import static com.hedera.services.utils.EntityIdUtils.entityIdFromId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;

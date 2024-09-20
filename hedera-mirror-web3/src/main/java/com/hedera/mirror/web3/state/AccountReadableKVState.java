@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.modularized.state;
+package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 
@@ -41,6 +41,7 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
+import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
@@ -49,7 +50,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.extern.java.Log;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * This class serves as a repository layer between hedera app services read only state and the Postgres database in mirror-node
@@ -90,9 +90,8 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
     }
 
     @Override
-    protected Account readFromDataSource(@NotNull AccountID key) {
-        final var timestampValue = ContractCallContext.get().getTimestamp();
-        final Optional<Long> timestamp = timestampValue != 0 ? Optional.of(timestampValue) : Optional.empty();
+    protected Account readFromDataSource(@Nonnull AccountID key) {
+        final var timestamp = ContractCallContext.get().getTimestamp();
         return commonEntityAccessor
                 .get(key, timestamp)
                 .map(entity -> accountFromEntity(entity, timestamp))
@@ -100,7 +99,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
     }
 
     @Override
-    protected @NotNull Iterator<AccountID> iterateFromDataSource() {
+    protected @Nonnull Iterator<AccountID> iterateFromDataSource() {
         return Collections.emptyIterator();
     }
 
