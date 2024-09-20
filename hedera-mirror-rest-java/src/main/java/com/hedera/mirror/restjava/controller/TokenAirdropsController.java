@@ -21,6 +21,7 @@ import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.RECEIVER_ID;
 import static com.hedera.mirror.restjava.common.Constants.SENDER_ID;
+import static com.hedera.mirror.restjava.common.Constants.SERIAL_NUMBER;
 import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
 import static com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType.OUTSTANDING;
 import static com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType.PENDING;
@@ -32,6 +33,7 @@ import com.hedera.mirror.rest.model.TokenAirdropsResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.LinkFactory;
+import com.hedera.mirror.restjava.common.NumberRangeParameter;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest;
 import com.hedera.mirror.restjava.dto.TokenAirdropRequest.AirdropRequestType;
 import com.hedera.mirror.restjava.mapper.TokenAirdropMapper;
@@ -40,7 +42,6 @@ import com.hedera.mirror.restjava.service.TokenAirdropService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import lombok.CustomLog;
@@ -72,10 +73,11 @@ public class TokenAirdropsController {
             @PathVariable EntityIdParameter id,
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") Sort.Direction order,
-            @RequestParam(name = RECEIVER_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> receiverIds,
-            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
+            @RequestParam(name = RECEIVER_ID, required = false) @Size(max = 2) EntityIdRangeParameter[] receiverIds,
+            @RequestParam(name = SERIAL_NUMBER, required = false) @Size(max = 2) NumberRangeParameter[] serialNumbers,
+            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) EntityIdRangeParameter[] tokenIds) {
         var entityIdsBound = new Bound(receiverIds, true, ACCOUNT_ID, TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID);
-        return processRequest(id, entityIdsBound, limit, order, tokenIds, OUTSTANDING, RECEIVER_ID);
+        return processRequest(id, entityIdsBound, limit, order, serialNumbers, tokenIds, OUTSTANDING, RECEIVER_ID);
     }
 
     @GetMapping(value = "/pending")
@@ -83,10 +85,11 @@ public class TokenAirdropsController {
             @PathVariable EntityIdParameter id,
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") Sort.Direction order,
-            @RequestParam(name = SENDER_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> senderIds,
-            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
+            @RequestParam(name = SENDER_ID, required = false) @Size(max = 2) EntityIdRangeParameter[] senderIds,
+            @RequestParam(name = SERIAL_NUMBER, required = false) @Size(max = 2) NumberRangeParameter[] serialNumbers,
+            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) EntityIdRangeParameter[] tokenIds) {
         var entityIdsBound = new Bound(senderIds, true, ACCOUNT_ID, TOKEN_AIRDROP.SENDER_ACCOUNT_ID);
-        return processRequest(id, entityIdsBound, limit, order, tokenIds, PENDING, SENDER_ID);
+        return processRequest(id, entityIdsBound, limit, order, serialNumbers, tokenIds, PENDING, SENDER_ID);
     }
 
     private TokenAirdropsResponse processRequest(
@@ -94,7 +97,8 @@ public class TokenAirdropsController {
             Bound entityIdsBound,
             int limit,
             Sort.Direction order,
-            List<EntityIdRangeParameter> tokenIds,
+            NumberRangeParameter[] serialNumbers,
+            EntityIdRangeParameter[] tokenIds,
             AirdropRequestType type,
             String primarySortField) {
         var request = TokenAirdropRequest.builder()
@@ -102,6 +106,7 @@ public class TokenAirdropsController {
                 .entityIds(entityIdsBound)
                 .limit(limit)
                 .order(order)
+                .serialNumbers(new Bound(serialNumbers, false, SERIAL_NUMBER, TOKEN_AIRDROP.SERIAL_NUMBER))
                 .tokenIds(new Bound(tokenIds, false, TOKEN_ID, TOKEN_AIRDROP.TOKEN_ID))
                 .type(type)
                 .build();

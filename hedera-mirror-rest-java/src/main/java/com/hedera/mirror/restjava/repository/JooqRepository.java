@@ -22,8 +22,9 @@ import static com.hedera.mirror.restjava.common.RangeOperator.LT;
 import static org.jooq.impl.DSL.noCondition;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
+import com.hedera.mirror.restjava.common.NumberRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
+import com.hedera.mirror.restjava.common.RangeParameter;
 import com.hedera.mirror.restjava.service.Bound;
 import java.util.List;
 import org.jooq.Condition;
@@ -31,12 +32,12 @@ import org.jooq.Field;
 
 interface JooqRepository {
 
-    default Condition getCondition(EntityIdRangeParameter param, Field<Long> field) {
-        if (param == null || param == EntityIdRangeParameter.EMPTY) {
+    default Condition getCondition(RangeParameter<Long> param, Field<Long> field) {
+        if (param == null || param == RangeParameter.EMPTY) {
             return noCondition();
         }
 
-        return getCondition(field, param.operator(), param.value().getId());
+        return getCondition(field, param.operator(), param.value());
     }
 
     default Condition getCondition(Field<Long> field, RangeOperator operator, Long value) {
@@ -54,7 +55,7 @@ interface JooqRepository {
         for (int i = 1; i < bounds.size(); i++) {
             var bound = bounds.get(i);
             var param = upper ? bound.getUpper() : bound.getLower();
-            condition.and(getCondition(param, bound.getField()));
+            condition = condition.and(getCondition(param, bound.getField()));
         }
         return condition;
     }
@@ -72,7 +73,8 @@ interface JooqRepository {
 
         if (!primary.isEmpty() && primary.hasEqualBounds()) {
             // If the primary param has a range with a single value, rewrite it to EQ
-            var primaryLower = new EntityIdRangeParameter(EQ, EntityId.of(primary.adjustLowerBound()));
+            var primaryLower = new NumberRangeParameter(
+                    EQ, EntityId.of(primary.adjustLowerBound()).getId());
             primary.setLower(primaryLower);
             primary.setUpper(null);
         }
@@ -99,9 +101,7 @@ interface JooqRepository {
         var primaryParam = upper ? primary.getUpper() : primary.getLower();
         // No outer bound condition if there is no primary parameter, or the operator is EQ. For EQ, everything should
         // go into the middle condition
-        if (primaryParam == null
-                || primaryParam.equals(EntityIdRangeParameter.EMPTY)
-                || primaryParam.operator() == EQ) {
+        if (primaryParam == null || primaryParam.equals(RangeParameter.EMPTY) || primaryParam.operator() == EQ) {
             return noCondition();
         }
 
@@ -113,7 +113,7 @@ interface JooqRepository {
             }
         }
 
-        long value = primaryParam.value().getId();
+        long value = primaryParam.value();
         if (primaryParam.operator() == GT) {
             value += 1L;
         } else if (primaryParam.operator() == LT) {
@@ -130,7 +130,7 @@ interface JooqRepository {
         }
 
         var lastBound = secondaryBounds.isEmpty() ? null : secondaryBounds.getLast();
-        EntityIdRangeParameter lastParam = null;
+        RangeParameter<Long> lastParam = null;
         if (lastBound != null) {
             lastParam = upper ? lastBound.getUpper() : lastBound.getLower();
         }
@@ -142,8 +142,11 @@ interface JooqRepository {
             return getCondition(primaryParam, primaryField).and(getConditions(secondaryBounds, upper));
         }
 
-        long value = primaryParam.value().getId();
-        value += primaryParam.hasLowerBound() ? 1L : -1L;
+        long value = primaryParam.value();
+        if (!primaryParam.hasLTorGT()) {
+            value += primaryParam.hasLowerBound() ? 1L : -1L;
+        }
+
         return getCondition(primaryField, primaryParam.operator(), value);
     }
 }

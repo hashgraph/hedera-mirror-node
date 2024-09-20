@@ -20,6 +20,7 @@ import static com.hedera.mirror.restjava.jooq.domain.Tables.TOKEN_AIRDROP;
 
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.service.Bound;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -43,6 +44,8 @@ public class TokenAirdropRequest {
     // Receiver Id for Outstanding Airdrops, Sender Id for Pending Airdrops
     private Bound entityIds;
 
+    private Bound serialNumbers;
+
     private Bound tokenIds;
 
     @Builder.Default
@@ -63,5 +66,12 @@ public class TokenAirdropRequest {
         // The primary field is the optional query parameter 'entityIds', which is Receiver Id for Outstanding Airdrops
         // and Sender Id for Pending Airdrops
         private final Field<Long> primaryField;
+    }
+
+    public List<Bound> getBounds() {
+        var tertiaryBound = serialNumbers == null ? Bound.EMPTY : serialNumbers;
+        var secondaryBound = tokenIds == null ? tertiaryBound : tokenIds;
+        var primaryBound = entityIds == null ? secondaryBound : entityIds;
+        return List.of(primaryBound, secondaryBound, tertiaryBound);
     }
 }

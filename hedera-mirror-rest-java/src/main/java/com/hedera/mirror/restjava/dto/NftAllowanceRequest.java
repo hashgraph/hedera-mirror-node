@@ -18,6 +18,7 @@ package com.hedera.mirror.restjava.dto;
 
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.service.Bound;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Sort;
@@ -40,4 +41,10 @@ public class NftAllowanceRequest {
     private Bound ownerOrSpenderIds;
 
     private Bound tokenIds;
+
+    public List<Bound> getBounds() {
+        var secondaryBound = tokenIds == null ? Bound.EMPTY : tokenIds;
+        var primaryBound = ownerOrSpenderIds == null ? secondaryBound : ownerOrSpenderIds;
+        return List.of(primaryBound, secondaryBound);
+    }
 }

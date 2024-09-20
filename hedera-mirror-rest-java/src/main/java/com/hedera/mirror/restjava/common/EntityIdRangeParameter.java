@@ -24,9 +24,13 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
-public record EntityIdRangeParameter(RangeOperator operator, EntityId value) implements RangeParameter<EntityId> {
+public record EntityIdRangeParameter(RangeOperator operator, Long value) implements RangeParameter<Long> {
 
-    public static final EntityIdRangeParameter EMPTY = new EntityIdRangeParameter(null, null);
+    public static final EntityIdRangeParameter EMPTY = new EntityIdRangeParameter(null, EntityId.EMPTY);
+
+    public EntityIdRangeParameter(RangeOperator operator, EntityId entityId) {
+        this(operator, entityId.getId());
+    }
 
     public static EntityIdRangeParameter valueOf(String entityIdRangeParam) {
         if (StringUtils.isBlank(entityIdRangeParam)) {
@@ -42,7 +46,7 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
         };
     }
 
-    private static EntityId getEntityId(String entityId) {
+    private static Long getEntityId(String entityId) {
 
         List<Long> parts = Splitter.on('.')
                 .splitToStream(Objects.requireNonNullElse(entityId, ""))
@@ -55,9 +59,9 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
         }
 
         return switch (parts.size()) {
-            case 1 -> EntityId.of(DEFAULT_SHARD, 0, parts.get(0));
-            case 2 -> EntityId.of(DEFAULT_SHARD, parts.get(0), parts.get(1));
-            case 3 -> EntityId.of(parts.get(0), parts.get(1), parts.get(2));
+            case 1 -> EntityId.of(DEFAULT_SHARD, 0, parts.get(0)).getId();
+            case 2 -> EntityId.of(DEFAULT_SHARD, parts.get(0), parts.get(1)).getId();
+            case 3 -> EntityId.of(parts.get(0), parts.get(1), parts.get(2)).getId();
             default -> throw new IllegalArgumentException("Invalid entity ID: " + entityId);
         };
     }

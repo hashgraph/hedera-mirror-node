@@ -16,16 +16,14 @@
 
 package com.hedera.mirror.restjava.service;
 
-import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
+import com.hedera.mirror.restjava.common.RangeParameter;
 import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.jooq.Field;
-import org.springframework.util.CollectionUtils;
 
 public class Bound {
 
@@ -36,22 +34,21 @@ public class Bound {
 
     @Getter
     @Setter
-    private EntityIdRangeParameter lower;
+    private RangeParameter<Long> lower;
 
     @Getter
     @Setter
-    private EntityIdRangeParameter upper;
+    private RangeParameter<Long> upper;
 
     private final String parameterName;
 
     private final EnumMap<RangeOperator, Integer> cardinality = new EnumMap<>(RangeOperator.class);
 
-    public Bound(
-            List<EntityIdRangeParameter> params, boolean primarySortField, String parameterName, Field<Long> field) {
+    public Bound(RangeParameter<Long>[] params, boolean primarySortField, String parameterName, Field<Long> field) {
         this.field = field;
         this.parameterName = parameterName;
 
-        if (CollectionUtils.isEmpty(params)) {
+        if (params == null || params.length == 0) {
             return;
         }
 
@@ -76,7 +73,7 @@ public class Bound {
             return Long.MAX_VALUE;
         }
 
-        long upperBound = this.upper.value().getId();
+        long upperBound = this.upper.value();
         if (this.upper.operator() == RangeOperator.LT) {
             upperBound--;
         }
@@ -89,7 +86,7 @@ public class Bound {
             return 0;
         }
 
-        long lowerBound = this.lower.value().getId();
+        long lowerBound = this.lower.value();
         if (this.lower.operator() == RangeOperator.GT) {
             lowerBound++;
         }
