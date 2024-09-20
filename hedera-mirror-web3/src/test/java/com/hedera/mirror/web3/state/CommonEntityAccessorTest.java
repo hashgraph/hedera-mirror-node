@@ -38,7 +38,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CommonEntityAccessorTest {
-    private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final String ALIAS_HEX = "0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69";
     private static final Address ALIAS_ADDRESS = Address.fromHexString(ALIAS_HEX);
     private static final AccountID ACCOUNT_ALIAS =
