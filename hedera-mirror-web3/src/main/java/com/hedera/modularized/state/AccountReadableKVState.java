@@ -16,14 +16,11 @@
 
 package com.hedera.modularized.state;
 
-import static com.hedera.hapi.node.state.token.codec.AccountProtoCodec.STAKED_ID_UNSET;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
@@ -115,48 +112,39 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
     private Account accountFromEntity(Entity entity, final Optional<Long> timestamp) {
         var tokenAccountBalances = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId(), timestamp);
 
-        return new Account(
-                new AccountID(
+        return Account.newBuilder()
+                .accountId(new AccountID(
                         entity.getShard(),
                         entity.getRealm(),
-                        new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getNum())),
-                entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
-                        ? Bytes.wrap(entity.getEvmAddress())
-                        : Bytes.EMPTY,
-                parseKey(entity),
-                TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
-                getAccountBalance(entity, timestamp),
-                entity.getMemo(),
-                Optional.ofNullable(entity.getDeleted()).orElse(false),
-                0L,
-                0L,
-                STAKED_ID_UNSET,
-                true,
-                entity.getReceiverSigRequired() != null ? entity.getReceiverSigRequired() : false,
-                TokenID.DEFAULT,
-                NftID.DEFAULT,
-                0L,
-                getOwnedNfts(entity.getId(), timestamp),
-                Optional.ofNullable(entity.getMaxAutomaticTokenAssociations()).orElse(0),
-                0,
-                tokenAccountBalances.all(),
-                CONTRACT.equals(entity.getType()),
-                tokenAccountBalances.positive(),
-                entity.getEthereumNonce() != null ? entity.getEthereumNonce() : 0L,
-                0L,
-                new com.hedera.hapi.node.base.AccountID(
+                        new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getNum())))
+                .alias(
+                        entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
+                                ? Bytes.wrap(entity.getEvmAddress())
+                                : Bytes.EMPTY)
+                .key(parseKey(entity))
+                .expirationSecond(TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS))
+                .tinybarBalance(getAccountBalance(entity, timestamp))
+                .memo(entity.getMemo())
+                .deleted(Optional.ofNullable(entity.getDeleted()).orElse(false))
+                .receiverSigRequired(entity.getReceiverSigRequired() != null ? entity.getReceiverSigRequired() : false)
+                .numberOwnedNfts(getOwnedNfts(entity.getId(), timestamp))
+                .maxAutoAssociations(Optional.ofNullable(entity.getMaxAutomaticTokenAssociations())
+                        .orElse(0))
+                .numberAssociations(tokenAccountBalances.all())
+                .smartContract(CONTRACT.equals(entity.getType()))
+                .numberPositiveBalances(tokenAccountBalances.positive())
+                .ethereumNonce(entity.getEthereumNonce() != null ? entity.getEthereumNonce() : 0L)
+                .autoRenewAccountId(new AccountID(
                         entity.getShard(),
                         entity.getRealm(),
-                        new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getAutoRenewAccountId())),
-                entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : DEFAULT_AUTO_RENEW_PERIOD,
-                0,
-                getCryptoAllowances(entity.getId(), timestamp),
-                getApproveForAllNfts(entity.getId(), timestamp),
-                getFungibleTokenAllowances(entity.getId(), timestamp),
-                0,
-                false,
-                Bytes.EMPTY,
-                PendingAirdropId.DEFAULT);
+                        new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getAutoRenewAccountId())))
+                .autoRenewSeconds(
+                        entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : DEFAULT_AUTO_RENEW_PERIOD)
+                .cryptoAllowances(getCryptoAllowances(entity.getId(), timestamp))
+                .approveForAllNftAllowances(getApproveForAllNfts(entity.getId(), timestamp))
+                .tokenAllowances(getFungibleTokenAllowances(entity.getId(), timestamp))
+                .expiredAndPendingRemoval(false)
+                .build();
     }
 
     private Long getOwnedNfts(Long accountId, final Optional<Long> timestamp) {
