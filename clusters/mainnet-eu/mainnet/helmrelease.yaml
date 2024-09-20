@@ -78,9 +78,7 @@ spec:
             test:
               acceptance:
                 network: MAINNET
-                feature:
-                  rejectToken: false
-      cucumberTags: "@critical and not @nft"
+      cucumberTags: "@critical"
       enabled: false
     web3:
       enabled: false
