@@ -78,8 +78,8 @@ Set the following environment variables on the machine from which you will run t
 export PGUSER="postgres"
 export PGPASSWORD="YOUR_POSTGRES_PASSWORD"
 export PGDATABASE="postgres"
-export PGHOST="DB_IP_ADDRESS"
-export PGPORT="DB_PORT"
+export PGHOST="127.0.0.1"
+export PGPORT="5432"
 ```
 
 - `PGUSER`: The PostgreSQL superuser with administrative privileges (typically `postgres`).
