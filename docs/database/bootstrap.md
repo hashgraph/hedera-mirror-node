@@ -119,7 +119,7 @@ export IS_GCP_CLOUD_SQL="true"
 
 ### 3. Run the Initialization Script
 
-Download the initialization script [`init.sh`](../../hedera-mirror-importer/src/main/resources/db/scripts/init.sh) from the repository:
+Download the initialization script [`init.sh`](/hedera-mirror-importer/src/main/resources/db/scripts/init.sh) from the repository:
 
 ```bash
 curl -O https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/main/hedera-mirror-importer/src/main/resources/db/scripts/init.sh
