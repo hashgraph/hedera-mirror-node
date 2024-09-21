@@ -947,7 +947,6 @@ describe('getStakingRewardTimestamps', () => {
 
 describe('getTransactionsByIdOrHashCacheControlHeader', () => {
   test(' longer max-age for SCHEDULECREATE', async () => {
-
     const scheduledTransactionsExecuted = [
       {
         consensus_timestamp: 1,
@@ -995,7 +994,6 @@ describe('getTransactionsByIdOrHashCacheControlHeader', () => {
     expect(await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsExecuted, true)).toEqual({});
   });
   test(' shorter max-age for SCHEDULECREATE', async () => {
-
     const expected = {'cache-control': `public, max-age=5`};
     const scheduledTransactionsNotYetExecuted = [
       {
@@ -1039,10 +1037,11 @@ describe('getTransactionsByIdOrHashCacheControlHeader', () => {
       },
     ];
 
-    expect(await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsNotYetExecuted, false)).toEqual(expected);
+    expect(
+      await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsNotYetExecuted, false)
+    ).toEqual(expected);
   });
   test(' longer max-age for failed SCHEDULECREATE', async () => {
-
     const scheduledTransactionsExecuted = [
       {
         consensus_timestamp: 1,
@@ -1086,5 +1085,5 @@ describe('getTransactionsByIdOrHashCacheControlHeader', () => {
     ];
 
     expect(await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsExecuted, false)).toEqual({});
-   });
+  });
 });

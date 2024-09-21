@@ -15,12 +15,7 @@
  */
 
 import config from '../config';
-import {
-  requestPathLabel,
-  requestStartTime,
-  responseDataLabel,
-  responseHeadersLabel,
-} from '../constants';
+import {requestPathLabel, requestStartTime, responseDataLabel, responseHeadersLabel} from '../constants';
 import {NotFoundError} from '../errors';
 import {JSONStringify} from '../utils';
 
@@ -51,7 +46,7 @@ const responseHandler = async (req, res, next) => {
 
     const code = res.locals.statusCode;
     const linksNext = res.locals.responseData.links?.next;
-    res.status(code)
+    res.status(code);
 
     if (linksNext) {
       res.set(LINK_NEXT_HEADER, linkNextHeaderValue(linksNext));

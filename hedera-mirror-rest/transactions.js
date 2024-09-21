@@ -790,7 +790,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
     query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')),
     params,
     scheduledParamExists: scheduledParamExists,
-    isTransactionHash: isTransactionHash
+    isTransactionHash: isTransactionHash,
   };
 };
 
@@ -819,7 +819,7 @@ const getTransactionsByIdOrHashCacheControlHeader = (isTransactionHash, transact
   }
 
   return {}; // no override
-}
+};
 
 /**
  * Handler function for /transactions/:transactionIdOrHash API.
@@ -842,7 +842,7 @@ const getTransactionsByIdOrHash = async (req, res) => {
   const transactions = await formatTransactionRows(rows);
 
   res.locals[constants.responseHeadersLabel] = getTransactionsByIdOrHashCacheControlHeader(
-      isTransactionHash,
+    isTransactionHash,
     rows,
     scheduled
   );

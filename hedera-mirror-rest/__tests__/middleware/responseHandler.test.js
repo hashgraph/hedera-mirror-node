@@ -20,7 +20,7 @@ import config from '../../config';
 import {NotFoundError} from '../../errors';
 import {responseHandler} from '../../middleware';
 import {JSONStringify} from '../../utils';
-import {responseHeadersLabel} from "../../constants.js";
+import {contentTypeHeader, responseHeadersLabel} from '../../constants.js';
 
 const {
   response: {headers},
@@ -29,7 +29,7 @@ const {
 describe('Response middleware', () => {
   let mockRequest, mockResponse, responseData;
   const cacheControl = 'cache-control';
-  const contentType = 'content-type';
+
   beforeEach(() => {
     responseData = {transactions: [], links: {next: null}};
     mockRequest = {
@@ -71,16 +71,22 @@ describe('Response middleware', () => {
     mockResponse.get.mockReturnValue('application/json; charset=utf-8');
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
-    expect(mockResponse.set).toHaveBeenCalledWith({'cache-control' : headers.path[mockRequest.route.path][cacheControl],'content-type': 'application/json; charset=utf-8'});
+    expect(mockResponse.set).toHaveBeenCalledWith({
+      [cacheControl]: headers.path[mockRequest.route.path][cacheControl],
+      [contentTypeHeader]: 'application/json; charset=utf-8',
+    });
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
   test('Custom Content-Type', async () => {
-    mockResponse.locals[responseHeadersLabel] = {'content-type' : 'text/plain; charset=utf-8'};
+    mockResponse.locals[responseHeadersLabel] = {[contentTypeHeader]: 'text/plain; charset=utf-8'};
     mockResponse.locals.responseData = '123';
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(mockResponse.locals.responseData);
-    expect(mockResponse.set).toHaveBeenNthCalledWith(1,{'cache-control' : headers.default[cacheControl],'content-type' : mockResponse.locals[responseHeadersLabel][contentType]});
+    expect(mockResponse.set).toHaveBeenNthCalledWith(1, {
+      [cacheControl]: headers.default[cacheControl],
+      [contentTypeHeader]: mockResponse.locals[responseHeadersLabel][contentTypeHeader],
+    });
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 

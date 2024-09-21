@@ -19,11 +19,13 @@ import BaseController from './baseController';
 import config from '../config';
 import {
   DECIMALS_IN_HBARS,
+  contentTypeHeader,
   filterKeys,
   networkSupplyCurrencyFormatType,
   networkSupplyQuery,
   orderFilterValues,
-  responseDataLabel, responseHeadersLabel,
+  responseDataLabel,
+  responseHeadersLabel,
 } from '../constants';
 import {InvalidArgumentError, NotFoundError} from '../errors';
 import {AddressBookEntry, FileData} from '../model';
@@ -41,7 +43,7 @@ const networkNodesDefaultSize = 10;
 const networkNodesMaxSize = 25;
 
 class NetworkController extends BaseController {
-  static contentTypeTextPlain = {'Content-type' : 'text/plain; charset=utf-8'};
+  static contentTypeTextPlain = 'text/plain; charset=utf-8';
   acceptedExchangeRateParameters = new Set([filterKeys.TIMESTAMP]);
   acceptedFeesParameters = new Set([filterKeys.ORDER, filterKeys.TIMESTAMP]);
   acceptedNodeParameters = new Set([filterKeys.FILE_ID, filterKeys.LIMIT, filterKeys.NODE_ID, filterKeys.ORDER]);
@@ -340,7 +342,7 @@ class NetworkController extends BaseController {
       const valueInTinyCoins = q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
       const valueInCurrencyFormat = this.convertToCurrencyFormat(valueInTinyCoins, config.network.currencyFormat);
       res.locals[responseDataLabel] = valueInCurrencyFormat;
-      res.locals[responseHeadersLabel] = NetworkController.contentTypeTextPlain;
+      res.locals[responseHeadersLabel] = {[contentTypeHeader]: NetworkController.contentTypeTextPlain};
     } else {
       res.locals[responseDataLabel] = viewModel;
     }
