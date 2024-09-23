@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Write the script's own PID to bootstrap.pid
+echo $$ > bootstrap.pid
+
 # Enable job control
 set -m
 
@@ -11,14 +14,18 @@ set -m
 REQUIRED_BASH_MAJOR=4
 REQUIRED_BASH_MINOR=3
 
-# PostgreSQL environment variables
-export PGUSER=${PGUSER:-"DB_OWNER"}
-export PGPASSWORD=${PGPASSWORD:-"DB_PASSWORD"}
-export PGHOST=${PGHOST:-"DB_ADDRESS"}
-export PGPORT="${PGPORT:-5432}"  # Added PGPORT with default value
-export PGDATABASE=${PGDATABASE:-"DB_NAME"}
+# Logging and tracking files
+LOG_FILE="bootstrap.log"
+TRACKING_FILE="bootstrap_tracking.txt"
+LOCK_FILE="bootstrap_tracking.lock"
 
-# Import script arguments
+# Required tools
+REQUIRED_TOOLS=("psql" "gunzip" "realpath" "flock" "curl")
+
+# Flag file to skip database initialization
+FLAG_FILE="SKIP_DB_INIT"
+
+# Assign script arguments
 DB_CPU_CORES="$1"
 IMPORT_DIR="$2"
 
@@ -29,25 +36,21 @@ IMPORT_DIR="$(realpath "$IMPORT_DIR")"
 AVAILABLE_CORES=$(( $(nproc) - 1 ))          # Leave one core free for the local system
 DB_AVAILABLE_CORES=$((DB_CPU_CORES - 1))     # Leave one core free for the DB instance
 
-if [[ $AVAILABLE_CORES -lt $DB_AVAILABLE_CORES ]]; then
-  DB_AVAILABLE_CORES=$AVAILABLE_CORES
-fi
-
-max_jobs="$DB_AVAILABLE_CORES"
-
-# Logging and tracking files
-LOG_FILE="import.log"
-TRACKING_FILE="import_tracking.txt"
-LOCK_FILE="import_tracking.lock"
-
-# Required tools
-REQUIRED_TOOLS=("psql" "gunzip" "realpath" "flock")
-
 ####################################
 # Functions
 ####################################
 
-# display help message
+# Log messages with UTC timestamps
+log() {
+  local msg="$1"
+  local level="${2:-INFO}"
+  local timestamp
+  timestamp=$(date -u '+%Y-%m-%d %H:%M:%S')
+
+  echo "$timestamp - $level - $msg" >> "$LOG_FILE"
+}
+
+# Display help message
 show_help() {
   echo "Usage: $0 [OPTIONS] DB_CPU_CORES IMPORT_DIR"
   echo
@@ -65,11 +68,11 @@ show_help() {
   echo
 }
 
-# check Bash version
+# Check Bash version
 check_bash_version() {
   local current_major=${BASH_VERSINFO[0]}
   local current_minor=${BASH_VERSINFO[1]}
-  
+
   if (( current_major < REQUIRED_BASH_MAJOR )) || \
      (( current_major == REQUIRED_BASH_MAJOR && current_minor < REQUIRED_BASH_MINOR )); then
     echo "Error: Bash version ${REQUIRED_BASH_MAJOR}.${REQUIRED_BASH_MINOR}+ is required. Current version is ${BASH_VERSION}."
@@ -77,17 +80,7 @@ check_bash_version() {
   fi
 }
 
-# log messages with UTC timestamps
-log() {
-  local msg="$1"
-  local level="${2:-INFO}"
-  local timestamp
-  timestamp=$(date -u '+%Y-%m-%d %H:%M:%S')
-
-  echo "$timestamp - $level - $msg" | tee -a "$LOG_FILE"
-}
-
-# kill a process and its descendants
+# Kill a process and its descendants
 kill_descendants() {
   local pid="$1"
   local children
@@ -98,7 +91,7 @@ kill_descendants() {
   kill -TERM "$pid" 2>/dev/null
 }
 
-# handle script termination
+# Handle script termination
 cleanup() {
   log "Script interrupted. Terminating background jobs..." "ERROR"
   # Ignore further signals during cleanup
@@ -114,7 +107,7 @@ cleanup() {
   exit 1
 }
 
-# safely write to the tracking file with a lock
+# Safely write to the tracking file with a lock
 write_tracking_file() {
   local file="$1"
   local status="$2"
@@ -130,18 +123,91 @@ write_tracking_file() {
   ) 200>"$LOCK_FILE"
 }
 
-# read status from the tracking file
+# Read status from the tracking file
 read_tracking_status() {
   local file="$1"
   grep "^$file " "$TRACKING_FILE" 2>/dev/null | awk '{print $2}'
 }
 
-# collect all import tasks (compressed CSV files)
+# Collect all import tasks (compressed CSV files)
 collect_import_tasks() {
   find "$IMPORT_DIR" -type f -name "*.csv.gz"
 }
 
-# import a single file into the database
+# Initialize the database using init.sh
+initialize_database() {
+  # Declare the bootstrap environment file as a local variable
+  local BOOTSTRAP_ENV_FILE="bootstrap.env"
+
+  # Source the bootstrap.env file
+  if [[ -f "$BOOTSTRAP_ENV_FILE" ]]; then
+    log "Sourcing $BOOTSTRAP_ENV_FILE to set environment variables."
+    set -a  # Automatically export all variables
+    source "$BOOTSTRAP_ENV_FILE"
+    set +a
+  else
+    log "Error: $BOOTSTRAP_ENV_FILE file not found." "ERROR"
+    exit 1
+  fi
+
+  # Check for MIRRORNODE_VERSION in $IMPORT_DIR
+  if [[ -f "$IMPORT_DIR/MIRRORNODE_VERSION" ]]; then
+    MIRRORNODE_VERSION=$(cat "$IMPORT_DIR/MIRRORNODE_VERSION")
+    log "Found MIRRORNODE_VERSION: $MIRRORNODE_VERSION"
+  else
+    log "Error: MIRRORNODE_VERSION file not found in $IMPORT_DIR" "ERROR"
+    exit 1
+  fi
+
+  # Construct the URL for init.sh
+  INIT_SH_URL="https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/refs/tags/v$MIRRORNODE_VERSION/hedera-mirror-importer/src/main/resources/db/scripts/init.sh"
+
+  # Download init.sh
+  log "Downloading init.sh from $INIT_SH_URL"
+
+  if curl -fSLs -o "init.sh" "$INIT_SH_URL"; then
+    log "Successfully downloaded init.sh"
+  else
+    log "Error: Failed to download init.sh" "ERROR"
+    exit 1
+  fi
+
+  # Make init.sh executable
+  chmod +x init.sh
+
+  # Run init.sh to initialize the database
+  log "Initializing the database using init.sh"
+
+  if ./init.sh; then
+    log "Database initialized successfully"
+  else
+    log "Error: Database initialization failed" "ERROR"
+    exit 1
+  fi
+
+  # Update PostgreSQL environment variables to connect to 'mirror_node' database as 'mirror_node' user
+  export PGUSER="mirror_node"
+  export PGDATABASE="mirror_node"
+  export PGPASSWORD="$OWNER_PASSWORD"
+
+  log "Updated PostgreSQL environment variables to connect to 'mirror_node' database as user 'mirror_node'"
+
+  # Set up the schema in the database
+  if [[ -f "$IMPORT_DIR/schema.sql" ]]; then
+    log "Executing schema.sql from $IMPORT_DIR"
+    if psql -f "$IMPORT_DIR/schema.sql"; then
+      log "schema.sql executed successfully"
+    else
+      log "Error: Failed to execute schema.sql" "ERROR"
+      exit 1
+    fi
+  else
+    log "Error: schema.sql not found in $IMPORT_DIR" "ERROR"
+    exit 1
+  fi
+}
+
+# Import a single file into the database
 import_file() {
   local file="$1"
   local table
@@ -157,7 +223,8 @@ import_file() {
   write_tracking_file "$file" "IN_PROGRESS"
   log "Importing table $table from $file"
 
-  if gunzip -c "$file" | psql -q -v ON_ERROR_STOP=1 -c "\COPY $table FROM STDIN WITH CSV HEADER"; then
+  # Execute the import within a transaction
+  if gunzip -c "$file" | psql -q -v ON_ERROR_STOP=1 -c "BEGIN; COPY $table FROM STDIN WITH CSV HEADER; COMMIT"; then
     log "Successfully imported $file into $table"
     # Update the status to IMPORTED
     write_tracking_file "$file" "IMPORTED"
@@ -176,7 +243,7 @@ import_file() {
 # Perform the Bash version check
 check_bash_version
 
-# display help if no arguments are provided
+# Display help if no arguments are provided
 if [[ $# -eq 0 ]]; then
   echo "No arguments provided. Use --help or -h for usage information."
   exit 1
@@ -225,11 +292,51 @@ if [[ ${#missing_tools[@]} -gt 0 ]]; then
   exit 1
 fi
 
+# Adjust max_jobs based on system limits
+if [[ $AVAILABLE_CORES -lt $DB_AVAILABLE_CORES ]]; then
+  max_jobs="$AVAILABLE_CORES"
+else
+  max_jobs="$DB_AVAILABLE_CORES"
+fi
+
 # Trap signals for cleanup
 trap 'cleanup' SIGINT SIGTERM
 
 # Log the start of the import process
 log "Starting DB import."
+
+# Initialize the database unless the flag file exists
+if [[ ! -f "$FLAG_FILE" ]]; then
+  initialize_database
+  touch "$FLAG_FILE" # Create a flag to skip subsequent runs from running db init after it succeeded once
+else
+  # Source the bootstrap.env to set OWNER_PASSWORD
+  BOOTSTRAP_ENV_FILE="bootstrap.env"
+  if [[ -f "$BOOTSTRAP_ENV_FILE" ]]; then
+    log "Sourcing $BOOTSTRAP_ENV_FILE to set environment variables."
+    set -a
+    source "$BOOTSTRAP_ENV_FILE"
+    set +a
+  else
+    log "Error: $BOOTSTRAP_ENV_FILE file not found." "ERROR"
+    exit 1
+  fi
+
+  # Set PostgreSQL environment variables
+  export PGUSER="mirror_node"
+  export PGDATABASE="mirror_node"
+  export PGPASSWORD="$OWNER_PASSWORD"
+
+  log "Set PGUSER, PGDATABASE, and PGPASSWORD for PostgreSQL."
+
+  # Validate that the database is already initialized
+  if psql -U mirror_node -d mirror_node -c "\q" 2>/dev/null; then
+    log "Skipping database initialization as '$FLAG_FILE' exists."
+  else
+    log "Error: Database is not initialized. Cannot skip database initialization." "ERROR"
+    exit 1
+  fi
+fi
 
 # Get the list of files to import
 mapfile -t files < <(collect_import_tasks)
@@ -251,7 +358,7 @@ overall_success=0
 
 # Export necessary functions and variables for subshells
 export -f import_file log kill_descendants write_tracking_file read_tracking_status
-export IMPORT_DIR LOG_FILE TRACKING_FILE LOCK_FILE PGUSER PGPASSWORD PGHOST PGDATABASE
+export IMPORT_DIR LOG_FILE TRACKING_FILE LOCK_FILE
 
 # Loop through files and manage parallel execution
 for file in "${files[@]}"; do
@@ -298,3 +405,6 @@ else
   log "DB import completed with errors" "ERROR"
   exit 1
 fi
+
+# After successful completion of all import tasks
+rm -f bootstrap.pid

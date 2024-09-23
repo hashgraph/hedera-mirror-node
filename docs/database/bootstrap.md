@@ -1,23 +1,24 @@
 # Database Bootstrap Guide
 
-This guide provides step-by-step instructions for setting up a fresh PostgreSQL database and importing Mirror Node data into it. The process involves initializing the database, configuring environment variables, and running the import script. The data import is a long-running process, so it's recommended to run it within a `screen` or `tmux` session.
+This guide provides step-by-step instructions for setting up a fresh PostgreSQL database and importing Mirror Node data into it using the `bootstrap.sh` script and `bootstrap.env` configuration file. The process involves initializing the database, configuring environment variables, and running the import script. The data import is a long-running process, so it's important to ensure it continues running even if your SSH session is terminated.
 
 ---
 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Database Initialization](#database-initialization)
-  - [1. Configure Environment Variables](#1-configure-environment-variables)
-  - [2. Important Note for Google Cloud SQL Users](#2-important-note-for-google-cloud-sql-users)
-  - [3. Run the Initialization Script](#3-run-the-initialization-script)
-  - [4. Import the Database Schema](#4-import-the-database-schema)
-- [Data Import Process](#data-import-process)
-  - [1. Download the Database Export Data](#1-download-the-database-export-data)
-  - [2. Download the Import Script](#2-download-the-import-script)
-  - [3. Run the Import Script](#3-run-the-import-script)
+- [Database Initialization and Data Import](#database-initialization-and-data-import)
+  - [1. Download the Required Scripts and Configuration File](#1-download-the-required-scripts-and-configuration-file)
+  - [2. Edit the `bootstrap.env` Configuration File](#2-edit-the-bootstrapenv-configuration-file)
+  - [3. Download the Database Export Data](#3-download-the-database-export-data)
+    - [3.1. Set Your Default GCP Project](#31-set-your-default-gcp-project)
+    - [3.2. List Available Versions](#32-list-available-versions)
+    - [3.3. Select a Version](#33-select-a-version)
+    - [3.4. Download the Data](#34-download-the-data)
+  - [4. Check Version Compatibility](#4-check-version-compatibility)
+  - [5. Run the Bootstrap Script](#5-run-the-bootstrap-script)
+  - [6. Monitoring and Managing the Import Process](#6-monitoring-and-managing-the-import-process)
 - [Handling Failed Imports](#handling-failed-imports)
-  - [Steps to Handle Failed Imports:](#steps-to-handle-failed-imports)
 - [Additional Notes](#additional-notes)
 - [Troubleshooting](#troubleshooting)
 
@@ -25,141 +26,100 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 
 ## Prerequisites
 
-1. **Version Compatibility**
+1. **PostgreSQL 16** installed and running.
 
-   Before initializing your Mirror Node with the imported database, it's crucial to ensure version compatibility.
+2. Access to a machine where you can run the initialization and import scripts and connect to the PostgreSQL database.
 
-   **MIRRORNODE_VERSION File:**
+3. Ensure the following tools are installed on your machine:
 
-   - In the database export data, there is a file named `MIRRORNODE_VERSION`.
-   - This file contains the version of the Mirror Node at the time of the database export.
+   - `psql`
+   - `gunzip`
+   - `realpath`
+   - `flock`
+   - `curl`
 
-   **Importance:**
+4. Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install), then authenticate:
 
-   - Your Mirror Node instance must be initialized with the **same version** as specified in the `MIRRORNODE_VERSION` file.
-   - Using a different version may lead to compatibility issues and/or schema mismatches.
+   ```bash
+   gcloud auth login
+   ```
 
-   **Action Required:**
-
-   1. **Check the Mirror Node Version:**
-
-      - Open the `MIRRORNODE_VERSION` file:
-
-        ```bash
-        cat /path/to/db_export/MIRRORNODE_VERSION
-        ```
-
-      - Note the version number specified.
-
-2. **PostgreSQL 16** installed and running.
-3. Access to a machine where you can run the initialization and import scripts and connect to the PostgreSQL database.
-4. Ensure the following tools are installed on your machine:
-    - psql
-    - gunzip
-    - realpath
-    - flock
-5. Install [Google Cloud SDK](https://cloud.google.com/sdk/docs/install), then authenticate:
-    ```
-    gcloud auth login
-    ```
-6. A Google Cloud Platform (GCP) account with a valid billing account attached (required for downloading data from a Requester Pays bucket).
+5. A Google Cloud Platform (GCP) account with a valid billing account attached (required for downloading data from a Requester Pays bucket). For detailed instructions on obtaining the necessary GCP information, refer to [Hedera's documentation](https://docs.hedera.com/hedera/core-concepts/mirror-nodes/run-your-own-beta-mirror-node/run-your-own-mirror-node-gcs#id-1.-obtain-google-cloud-platform-requester-pay-information).
 
 ---
 
-## Database Initialization
+## Database Initialization and Data Import
 
-### 1. Configure Environment Variables
+### 1. Download the Required Scripts and Configuration File
 
-Set the following environment variables on the machine from which you will run the initialization and import scripts. These variables allow for database connectivity and authentication.
+Download the `bootstrap.sh` script and the `bootstrap.env` configuration file. The `bootstrap.env` file comes with default values and needs to be edited to set your specific configurations.
 
-**Database Connection Variables:**
+**Steps:**
 
-```bash
-export PGUSER="postgres"
-export PGPASSWORD="YOUR_POSTGRES_PASSWORD"
-export PGDATABASE="postgres"
-export PGHOST="127.0.0.1"
-export PGPORT="5432"
-```
+1. **Download `bootstrap.sh` and `bootstrap.env`:**
 
-- `PGUSER`: The PostgreSQL superuser with administrative privileges (typically `postgres`).
-- `PGPASSWORD`: Password for the PostgreSQL superuser.
-- `PGDATABASE`: The default database to connect to (`postgres` by default).
-- `PGHOST`: The IP address or hostname of your PostgreSQL database server.
-- `PGPORT`: The database server port number (`5432` by default).
+   ```bash
+   curl -O https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/main/hedera-mirror-importer/src/main/resources/db/scripts/bootstrap.sh \
+        -O https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/main/hedera-mirror-importer/src/main/resources/db/scripts/bootstrap.env
+   
+   chmod +x bootstrap.sh
+   ```
 
+### 2. Edit the `bootstrap.env` Configuration File
 
+Edit the `bootstrap.env` file to set your own credentials and passwords for database users during initialization.
 
-**Database User Password Variables:**
+**Instructions:**
 
-Set the following environment variables to define passwords for the various database users that will be created during initialization.
+- **Set PostgreSQL Environment Variables:**
 
-```bash
-export GRAPHQL_PASSWORD="SET_PASSWORD"
-export GRPC_PASSWORD="SET_PASSWORD"
-export IMPORTER_PASSWORD="SET_PASSWORD"
-export OWNER_PASSWORD="SET_PASSWORD"
-export REST_PASSWORD="SET_PASSWORD"
-export REST_JAVA_PASSWORD="SET_PASSWORD"
-export ROSETTA_PASSWORD="SET_PASSWORD"
-export WEB3_PASSWORD="SET_PASSWORD"
-```
+  ```bash
+  # PostgreSQL environment variables
+  export PGUSER="postgres"
+  export PGPASSWORD="your_postgres_password"
+  export PGDATABASE="postgres"
+  export PGHOST="127.0.0.1"
+  export PGPORT="5432"
+  ```
 
-- Replace `SET_PASSWORD` with strong, unique passwords for each respective user.
+  - Replace `your_postgres_password` with the password for the PostgreSQL superuser (`postgres`).
+  - `PGHOST` should be set to the IP address or hostname of your PostgreSQL server.
 
-- **Security Note:** Ensure that the passwords set in the environment variables are kept secure and not exposed in logs or command history.
+- **Set the `IS_GCP_CLOUD_SQL` variable to `true` if you are using a GCP Cloud SQL database:**
 
-### 2. Important Note for Google Cloud SQL Users
+  ```bash
+  # Is the DB a GCP Cloud SQL instance?
+  export IS_GCP_CLOUD_SQL="true"
+  ```
 
-If you are using **Google Cloud SQL** for your PostgreSQL database, you'll need to set an additional environment variable:
-```bash
-export IS_GCP_CLOUD_SQL="true"
-```
-*Note*: For non-Google Cloud SQL environments, you do not need to set this variable, as it defaults to false.
+  - Otherwise, leave it as `false`.
 
-### 3. Run the Initialization Script
+- **Set Database User Passwords:**
 
-Download the initialization script [`init.sh`](/hedera-mirror-importer/src/main/resources/db/scripts/init.sh) from the repository:
+  ```bash
+  # Set DB users' passwords
+  export GRAPHQL_PASSWORD="SET_PASSWORD"
+  export GRPC_PASSWORD="SET_PASSWORD"
+  export IMPORTER_PASSWORD="SET_PASSWORD"
+  export OWNER_PASSWORD="SET_PASSWORD"
+  export REST_PASSWORD="SET_PASSWORD"
+  export REST_JAVA_PASSWORD="SET_PASSWORD"
+  export ROSETTA_PASSWORD="SET_PASSWORD"
+  export WEB3_PASSWORD="SET_PASSWORD"
+  ```
 
-```bash
-curl -O https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/main/hedera-mirror-importer/src/main/resources/db/scripts/init.sh
-chmod +x init.sh
-```
+  - Replace each `SET_PASSWORD` with a strong, unique password for each respective database user.
 
-Run the initialization script:
+- **Save and Secure the `bootstrap.env` File:**
 
-```bash
-./init.sh
-echo "EXIT STATUS: $?"
-```
+  - After editing, save the file.
+  - Ensure that the `bootstrap.env` file is secured and not accessible to unauthorized users, as it contains sensitive information.
 
-- The exit status `0` indicates the script executed successfully.
-- The script will create the `mirror_node` database, along with all necessary roles, users, and permissions within your PostgreSQL database, using the passwords specified in the environment variables.
+    ```bash
+    chmod 600 bootstrap.env
+    ```
 
-### 4. Import the Database Schema
-
-After the initialization script completes successfully, update the environment variables to connect using the `mirror_node` user and database:
-
-```bash
-export PGUSER="mirror_node"
-export PGPASSWORD="$OWNER_PASSWORD"  # Use the password set for OWNER_PASSWORD
-export PGDATABASE="mirror_node"
-```
-
-Import the database schema:
-
-```bash
-psql -f schema.sql
-echo "EXIT STATUS: $?"
-```
-
-- Ensure the exit status is `0` to confirm the schema was imported successfully.
-
----
-
-## Data Import Process
-
-### 1. Download the Database Export Data
+### 3. Download the Database Export Data
 
 The Mirror Node database export data is available in a Google Cloud Storage (GCS) bucket:
 
@@ -168,117 +128,177 @@ The Mirror Node database export data is available in a Google Cloud Storage (GCS
 **Important Notes:**
 
 - The bucket is **read-only** to the public.
-- It is configured as **Requester Pays**, meaning you need a GCP account with a valid billing account attached to download the data.
+- It is configured as **Requester Pays**, meaning you need a GCP account with a valid billing account attached to download the data. For detailed instructions, refer to [Hedera's documentation on GCS](https://docs.hedera.com/hedera/core-concepts/mirror-nodes/run-your-own-beta-mirror-node/run-your-own-mirror-node-gcs#id-1.-obtain-google-cloud-platform-requester-pay-information).
 - You will be billed for the data transfer fees incurred during the download.
 
-**Download Instructions:**
-
-1. **Download the Data:**
-
-   Create an empty directory to store the data and download all files and subdirectories:
-
-   ```bash
-   mkdir -p /path/to/db_export
-   gsutil -u YOUR_GCP_PROJECT_ID -m cp -r gs://mirrornode-db-export/<$VERSION_NUMBER>/* /path/to/db_export/
-   ```
-
-   - Replace `/path/to/db_export` with your desired directory path.
-   - Ensure all files and subdirectories are downloaded into this single parent directory.
-   - **Note:** The `-m` flag enables parallel downloads to speed up the process.
-
-### 2. Download the Import Script
-
-Download the import script `bootstrap.sh` from the repository:
+#### 3.1. Set Your Default GCP Project
 
 ```bash
-curl -O https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/main/hedera-mirror-importer/src/main/resources/db/scripts/bootstrap.sh
-chmod +x bootstrap.sh
+gcloud config set project YOUR_GCP_PROJECT_ID
+```
+- Replace YOUR_GCP_PROJECT_ID with your actual GCP project ID.
+
+#### 3.2. List Available Versions
+
+To see the available versions of the database export, list the contents of the bucket:
+
+```bash
+gsutil -m ls gs://mirrornode-db-export/
 ```
 
-### 3. Run the Import Script
+This will display the available version directories.
 
-The import script is designed to efficiently import the Mirror Node data into your PostgreSQL database. It handles compressed CSV files and uses parallel processing to speed up the import.
+#### 3.3. Select a Version
 
-**Script Summary:**
+- **Select the latest available version** from the output of the previous command.
 
-- **Name:** `bootstrap.sh`
-- **Functionality:** Imports data from compressed CSV files into the PostgreSQL database using parallel processing. It processes multiple tables concurrently based on the number of CPU cores specified.
-- **Requirements:** Ensure that the environment variables for database connectivity are set (`PGUSER`, `PGPASSWORD`, `PGDATABASE`, `PGHOST`).
+  - Legacy versions will be removed from the bucket shortly after a newer version's export data becomes available.
+
+- **Ensure Compatibility:**
+
+  - The mirror node must be initially deployed and started against the same version of the database export.
+  - Be aware that using mismatched versions may lead to compatibility issues and schema mismatches.
+
+#### 3.4. Download the Data
+
+Create a directory to store the data and download all files and subdirectories for the selected version:
+
+```bash
+mkdir -p /path/to/db_export
+gsutil -m cp -r gs://mirrornode-db-export/<VERSION_NUMBER>/* /path/to/db_export/
+```
+
+- Replace `/path/to/db_export` with your desired directory path.
+- Replace `<VERSION_NUMBER>` with the version you selected (e.g., `0.111.0`).
+- Ensure all files and subdirectories are downloaded into this single parent directory.
+- **Note:** The `-m` flag enables parallel downloads to speed up the process.
+
+### 4. Check Version Compatibility
+
+After downloading the data, it's crucial to ensure version compatibility between the database export and the Mirror Node you're setting up.
+
+**Steps:**
+
+1. **Locate the `MIRRORNODE_VERSION` File:**
+
+   - The downloaded data should include a file named `MIRRORNODE_VERSION` in the root of the `/path/to/db_export` directory.
+
+2. **Check the Mirror Node Version:**
+
+   ```bash
+   cat /path/to/db_export/MIRRORNODE_VERSION
+   ```
+
+3. **Ensure Version Compatibility:**
+
+   - The version number in the `MIRRORNODE_VERSION` file should match the name of the directory from which you downloaded the data, and should also be the version of the Mirror Node you are initializing with this export's data.
+
+### 5. Run the Bootstrap Script
+
+The `bootstrap.sh` script initializes the database and imports the data. It is designed to be a one-stop solution for setting up your Mirror Node database.
 
 **Instructions:**
 
-1. **Ensure Environment Variables are Set:**
-
-   The environment variables should still be set from the previous steps. Verify them:
+1. **Ensure You Have `bootstrap.sh` and `bootstrap.env` in the Same Directory:**
 
    ```bash
-   echo $PGUSER     # Should output 'mirror_node'
-   echo $PGPASSWORD # Should output the password you set for OWNER_PASSWORD
-   echo $PGDATABASE # Should output 'mirror_node'
-   echo $PGHOST     # Should be set to your DB IP address
+   ls -l bootstrap.*
+   # Should list bootstrap.sh and bootstrap.env
    ```
 
-2. **Run the Import Script within a `screen` or `tmux` Session:**
+2. **Run the Bootstrap Script Using `nohup` and Redirect Output to `bootstrap.log`:**
 
-   It's recommended to run the import script within a `screen` or `tmux` session, as the import process may take several hours to complete.
-
-   **Using `screen`:**
+   To ensure the script continues running even if your SSH session is terminated, run it using `nohup`, redirect stdout and stderr to `bootstrap.log`, and save its process ID (PID) to a file.
 
    ```bash
-   screen -S db_import
+   nohup setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log &
    ```
 
-   **Run the Import Script:**
-
-   ```bash
-   ./bootstrap.sh 8 /path/to/db_export/
-   ```
-
+   - The script handles logging internally to `bootstrap.log`, and the execution command will also append stdout/stderr of the script itself to the log file.
    - `8` refers to the number of CPU cores to use for parallel processing. Adjust this number based on your system's resources.
-   - `/path/to/db_export/` is the directory where you downloaded the database export data.
+   - `/path/to/db_export` is the directory where you downloaded the database export data.
+   - `bootstrap.pid` stores the PID of the running script for later use.
 
-   **Detach from the `screen` Session:**
+   - **Important**: The SKIP_DB_INIT flag file is automatically created by the script after a successful database initialization. Do not manually create or delete this file. If you need to force the script to reinitialize the database in future runs, remove the flag file using:
 
-   Press `Ctrl+A` then `D`.
+      ```bash
+        rm -f SKIP_DB_INIT
+      ```
 
-   - This allows the import process to continue running in the background.
-
-   **Reattach to the `screen` Session Later:**
-
-   ```bash
-   screen -r db_import
-   ```
-
-3. **Monitor the Import Process:**
-
-   - The script will output logs indicating the progress of the import.
-   - Check the `import.log` file for detailed logs and any error messages.
-
-4. **Check the Exit Status:**
-
-   After the script completes, check the exit status:
+3. **Verify the Script is Running:**
 
    ```bash
-   echo "EXIT STATUS: $?"
+   tail -f bootstrap.log
    ```
 
-   - An exit status of `0` indicates the import completed successfully.
-   - If the exit status is not `0`, refer to the `import.log` file and `import_tracking.txt` for troubleshooting.
+   - Monitor the progress and check for any errors.
+
+4. **Disconnect Your SSH Session (Optional):**
+
+   You can safely close your SSH session. The script will continue running in the background.
+
+### 6. Monitoring and Managing the Import Process
+
+#### **Monitoring the Import Process:**
+
+- **Check the Log File:**
+
+  ```bash
+  tail -f bootstrap.log
+  ```
+
+  - The script logs all activity to `bootstrap.log`.
+  - Note that the script processes files in parallel and asynchronously. Activities are logged as they occur, so log entries may appear in an arbitrary order.
+
+- **Check the Tracking File:**
+
+  ```bash
+  cat bootstrap_tracking.txt
+  ```
+
+  - This file tracks the status of each file being imported.
+
+#### **Stopping the Script**
+
+If you need to stop the script before it completes:
+
+1. **Gracefully Terminate the Script and All Child Processes:**
+
+   ```bash
+   kill -TERM -- -$(cat bootstrap.pid)
+   ```
+
+   - Sends the `SIGTERM` signal to the entire process group.
+   - Allows the script and all its background processes to perform cleanup and exit gracefully.
+
+2. **If the Script Doesn't Stop, Force Termination of the Process Group:**
+
+   ```bash
+   kill -KILL -$(cat bootstrap.pid)
+   ```
+
+   - Sends the `SIGKILL` signal to the entire process group.
+   - Immediately terminates the script, however may leave some background jobs running; It is recommended to use the first method.
+
+**Note:** Ensure that `bootstrap.sh` is designed to handle termination signals and clean up its child processes appropriately.
+
+#### **Resuming the Import Process**
+
+- **Re-run the Bootstrap Script:**
+
+  ```bash
+  nohup setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log & echo $! > bootstrap.pid
+  ```
+
+  - The script will resume where it left off, skipping files that have already been imported successfully.
 
 ---
 
 ## Handling Failed Imports
 
-During the import process, the script generates a file named `import_tracking.txt`, which logs the status of each file import. Each line in this file contains the path and name of a file, followed by its import status: `NOT_STARTED`, `IN_PROGRESS`, `IMPORTED`, or `FAILED_TO_IMPORT`.
+During the import process, the script generates a file named `bootstrap_tracking.txt`, which logs the status of each file import. Each line in this file contains the path and name of a file, followed by its import status: `NOT_STARTED`, `IN_PROGRESS`, `IMPORTED`, or `FAILED_TO_IMPORT`.
 
-**Statuses:**
-
-- `NOT_STARTED`: The file has not yet been processed.
-- `IN_PROGRESS`: The file is currently being imported.
-- `IMPORTED`: The file was successfully imported.
-- `FAILED_TO_IMPORT`: The file failed to import.
-
-**Example of `import_tracking.txt`:**
+**Example of `bootstrap_tracking.txt`:**
 
 ```
 /path/to/db_export/record_file.csv.gz IMPORTED
@@ -288,12 +308,29 @@ During the import process, the script generates a file named `import_tracking.tx
 ```
 
 **Notes on Data Consistency:**
-  
-- **System Resources:** Adjust the number of CPU cores used (`8` in the example) based on your system's capabilities to prevent overloading the server.
 
-- **Data Integrity:** When a file import fails, the database transaction ensures that **no partial data** is committed. This means that when you re-run the import script, you can safely re-import failed files without worrying about duplicates or inconsistencies; The database tables remain in the same state as before the failed import attempt.
-  
-- **Concurrent Write Safety:** The script uses file locking (`flock`) to safely handle concurrent writes to `import_tracking.txt`. This prevents race conditions and ensures the tracking file remains consistent.
+- **Automatic Retry:** When you re-run the `bootstrap.sh` script, it will automatically attempt to import files marked as `NOT_STARTED`, `IN_PROGRESS`, or `FAILED_TO_IMPORT`.
+
+- **Data Integrity:** The script ensures that no partial data is committed in case of an import failure.
+
+- **Concurrent Write Safety:** The script uses file locking (`flock`) to safely handle concurrent writes to `bootstrap_tracking.txt`.
+
+---
+
+## Additional Notes
+
+- **System Resources:**
+
+  - Adjust the number of CPU cores used (`8` in the example) based on your system's capabilities.
+  - Monitor system resources during the import process to ensure optimal performance.
+
+- **Security Considerations:**
+
+  - Secure your `bootstrap.env` file and any other files containing sensitive information.
+
+- **Environment Variables:**
+
+  - Ensure `bootstrap.env` is in the same directory as `bootstrap.sh`.
 
 ---
 
@@ -301,31 +338,31 @@ During the import process, the script generates a file named `import_tracking.tx
 
 - **Connection Errors:**
 
-  - Confirm that `PGHOST` is correctly set to the IP address or hostname of your database server.
+  - Confirm that `PGHOST` in `bootstrap.env` is correctly set.
   - Ensure that the database server allows connections from your client machine.
+  - Verify that the database port (`PGPORT`) is correct and accessible.
 
 - **Import Failures:**
 
-   - Simply re-run the import script; it will automatically skip files marked as `IMPORTED` and attempt to import files with statuses `NOT_STARTED`, `IN_PROGRESS`, or `FAILED_TO_IMPORT`.
-   
-     ```bash
-     ./bootstrap.sh 8 /path/to/db_export/
-     ```
-   
-   - The script manages the import process, ensuring that only the necessary files are processed without manual intervention.
+  - Review `bootstrap.log` for detailed error messages.
+  - Check `bootstrap_tracking.txt` to identify which files failed to import.
+  - Re-run the `bootstrap.sh` script to retry importing failed files.
 
-  - Verify the Imports:
+- **Permission Denied Errors:**
 
-     - Check the `import_tracking.txt` and `import.log` files to ensure that all files have been imported successfully.
-     
-     - If files continue to fail, review the error messages in `import.log` for troubleshooting.
+  - Ensure that the user specified in `PGUSER` has the necessary permissions to create databases and roles.
+  - Verify that file permissions allow the script to read and write to the necessary directories and files.
 
-- **Interruption Handling:**
+- **Environment Variable Issues:**
 
-  - If the import process is interrupted (e.g., due to a network issue or manual cancellation), the script updates the statuses in `import_tracking.txt` accordingly.
-    - Files that were in progress will be marked as `IN_PROGRESS` or remain as `NOT_STARTED` if they had not begun.
-  - Upon restarting the script, it will:
-    - Skip files marked as `IMPORTED`.
-    - Attempt to import files with statuses `NOT_STARTED`, `IN_PROGRESS`, or `FAILED_TO_IMPORT`.
+  - Double-check that all required variables in `bootstrap.env` are correctly set and exported.
+  - Ensure there are no typos or missing variables.
 
----
+- **Script Does Not Continue After SSH Disconnect:**
+
+  - Ensure you used `nohup` when running the script.
+  - Confirm that the script is running by checking the process list:
+
+    ```bash
+    ps -p $(cat bootstrap.pid)
+    ```
