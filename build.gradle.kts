@@ -76,7 +76,7 @@ dependencies {
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
-        api("commons-io:commons-io:2.16.1")
+        api("commons-io:commons-io:2.17.0")
         api("io.cucumber:cucumber-bom:7.18.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
