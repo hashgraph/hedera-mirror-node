@@ -337,6 +337,8 @@ public class TestWeb3jService implements Web3jService {
                 .customize(e -> e.type(CONTRACT)
                         .id(entityId)
                         .num(entityId)
+                        .alias(null)
+                        .evmAddress(null)
                         .key(domainBuilder.key(KeyCase.ED25519))
                         .balance(3000L))
                 .persist();

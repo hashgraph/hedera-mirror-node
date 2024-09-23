@@ -206,8 +206,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var hollowAccount = domainBuilder
                 .entity()
                 .customize(e -> e.key(null).maxAutomaticTokenAssociations(10))
-                .persist()
-                .toEntityId();
+                .persist();
 
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -220,7 +219,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var functionCall = contract.send_transferFrom(
                 toAddress(token.getId()).toHexString(),
                 toAddress(owner).toHexString(),
-                toAddress(hollowAccount.getId()).toHexString(),
+                getAliasFromEntity(hollowAccount),
                 BigInteger.valueOf(amount));
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
@@ -501,8 +500,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var hollowAccount = domainBuilder
                 .entity()
                 .customize(e -> e.key(null).maxAutomaticTokenAssociations(10))
-                .persist()
-                .toEntityId();
+                .persist();
 
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -515,7 +513,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var functionCall = contract.send_transferFromRedirect(
                 toAddress(tokenEntity.getId()).toHexString(),
                 toAddress(owner).toHexString(),
-                toAddress(hollowAccount.getId()).toHexString(),
+                getAliasFromEntity(hollowAccount),
                 BigInteger.valueOf(amount));
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);

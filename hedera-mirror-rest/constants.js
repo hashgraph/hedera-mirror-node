@@ -99,13 +99,15 @@ const keyTypes = {
   PROTOBUF: 'ProtobufEncoded',
 };
 
+const contentTypeHeader = 'content-type';
 const requestIdLabel = 'requestId';
 const requestPathLabel = 'requestPath';
 const requestStartTime = 'requestStartTime';
-const responseContentType = 'responseContentType';
 const responseBodyLabel = 'responseBody';
 const responseCacheKeyLabel = 'responseCacheKey';
 const responseDataLabel = 'responseData';
+
+const responseHeadersLabel = 'responseHeaders';
 
 const orderFilterValues = {
   ASC: 'asc',
@@ -235,6 +237,7 @@ export {
   apiPrefix,
   characterEncoding,
   cloudProviders,
+  contentTypeHeader,
   cryptoTransferType,
   defaultBucketNames,
   defaultCloudProviderEndpoints,
@@ -254,8 +257,8 @@ export {
   requestStartTime,
   responseBodyLabel,
   responseCacheKeyLabel,
-  responseContentType,
   responseDataLabel,
+  responseHeadersLabel,
   tokenTypeFilter,
   transactionResultFilter,
   zeroRandomPageCostQueryHint,
