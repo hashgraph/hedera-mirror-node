@@ -15,7 +15,13 @@
  */
 
 import config from '../config';
-import {requestPathLabel, requestStartTime, responseDataLabel, responseHeadersLabel} from '../constants';
+import {
+  contentTypeHeader,
+  requestPathLabel,
+  requestStartTime,
+  responseDataLabel,
+  responseHeadersLabel,
+} from '../constants';
 import {NotFoundError} from '../errors';
 import {JSONStringify} from '../utils';
 
@@ -23,7 +29,6 @@ const {
   response: {headers},
 } = config;
 
-const CONTENT_TYPE_HEADER = 'content-type';
 const APPLICATION_JSON = 'application/json; charset=utf-8';
 const LINK_NEXT_HEADER = 'Link';
 const linkNextHeaderValue = (linksNext) => `<${linksNext}>; rel="next"`;
@@ -51,7 +56,7 @@ const responseHandler = async (req, res, next) => {
     if (linksNext) {
       res.set(LINK_NEXT_HEADER, linkNextHeaderValue(linksNext));
     }
-    const contentType = res.get(CONTENT_TYPE_HEADER);
+    const contentType = res.get(contentTypeHeader);
 
     if (contentType === APPLICATION_JSON) {
       res.send(JSONStringify(responseData));
