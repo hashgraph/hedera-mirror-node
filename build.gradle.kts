@@ -36,7 +36,7 @@ extra.apply {
     set("jooq.version", "3.19.6")
     set("mapStructVersion", "1.6.2")
     set("nodeJsVersion", "18.18.0")
-    set("protobufVersion", "3.25.5")
+    set("protobufVersion", "4.28.2")
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.10")
     set("tuweniVersion", "2.3.1")
