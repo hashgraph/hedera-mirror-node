@@ -710,8 +710,8 @@ github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0/go.mod h1:hgWBS7lorOAVIJEQMi4Zs
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3/go.mod h1:o//XUCC/F+yRGJoPO/VU0GSB0f8Nhgmxx0VIRUvaC0w=
 github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20240910141930-3e9d10484c9a h1:pevBrJ/CTxZlKOYfOP3UU2pNStEeP7deGXQOfX+ivKA=
 github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20240910141930-3e9d10484c9a/go.mod h1:vN4EAg6FOvgRjeqR7tYBqv9lxT0wqImRh/FVxBUHOkM=
-github.com/hashgraph/hedera-sdk-go/v2 v2.45.0 h1:ibtF6lstqGBKvGeesYrr/uAKYpWNWzvqrAzaXvCzQro=
-github.com/hashgraph/hedera-sdk-go/v2 v2.45.0/go.mod h1:Cm8BZp48EAnrEReZoySXaElWDuryZH3fW7cT0KPUYJ8=
+github.com/hashgraph/hedera-sdk-go/v2 v2.46.0 h1:x5wev9iLD82NHTuw6wgIgVNd4LBhFARa6OPNtxw5L8g=
+github.com/hashgraph/hedera-sdk-go/v2 v2.46.0/go.mod h1:Cm8BZp48EAnrEReZoySXaElWDuryZH3fW7cT0KPUYJ8=
 github.com/hashicorp/go-immutable-radix v1.3.0/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=
 github.com/hashicorp/go-immutable-radix v1.3.1 h1:DKHmCUm2hRBK510BaiZlwvpD40f8bJFeZnpfm2KLowc=
 github.com/hashicorp/go-immutable-radix v1.3.1/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=

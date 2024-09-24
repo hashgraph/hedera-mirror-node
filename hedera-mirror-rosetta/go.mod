@@ -10,7 +10,7 @@ require (
 	github.com/ethereum/go-ethereum v1.14.9
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20240910141930-3e9d10484c9a
-	github.com/hashgraph/hedera-sdk-go/v2 v2.45.0
+	github.com/hashgraph/hedera-sdk-go/v2 v2.46.0
 	github.com/hellofresh/health-go/v4 v4.7.0
 	github.com/jackc/pgtype v1.14.3
 	github.com/lib/pq v1.10.9
