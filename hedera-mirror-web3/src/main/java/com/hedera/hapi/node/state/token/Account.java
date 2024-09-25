@@ -18,14 +18,16 @@ package com.hedera.hapi.node.state.token;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.*;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.mirror.web3.utils.Suppliers;
-import com.hedera.pbj.runtime.*;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.*;
-import com.hedera.pbj.runtime.io.buffer.*;
-import com.hedera.pbj.runtime.io.stream.*;
-import edu.umd.cs.findbugs.annotations.*;
+import com.hedera.pbj.runtime.JsonCodec;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
@@ -121,7 +123,7 @@ public record Account(
         boolean deleted,
         long stakedToMe,
         long stakePeriodStart,
-        OneOf<Account.StakedIdOneOfType> stakedId,
+        OneOf<StakedIdOneOfType> stakedId,
         boolean declineReward,
         boolean receiverSigRequired,
         @Nullable TokenID headTokenId,
@@ -187,7 +189,7 @@ public record Account(
         if (expirationSecond != DEFAULT.expirationSecond) {
             result = 31 * result + Long.hashCode(expirationSecond);
         }
-        if (tinybarBalance != DEFAULT.tinybarBalance) {
+        if (!tinybarBalance.equals(DEFAULT.tinybarBalance)) {
             result = 31 * result + Long.hashCode(tinybarBalance);
         }
         if (memo != null && !memo.equals(DEFAULT.memo)) {
@@ -220,7 +222,7 @@ public record Account(
         if (headNftSerialNumber != DEFAULT.headNftSerialNumber) {
             result = 31 * result + Long.hashCode(headNftSerialNumber);
         }
-        if (numberOwnedNfts != DEFAULT.numberOwnedNfts) {
+        if (!numberOwnedNfts.equals(DEFAULT.numberOwnedNfts)) {
             result = 31 * result + Long.hashCode(numberOwnedNfts);
         }
         if (maxAutoAssociations != DEFAULT.maxAutoAssociations) {
@@ -253,34 +255,28 @@ public record Account(
         if (contractKvPairsNumber != DEFAULT.contractKvPairsNumber) {
             result = 31 * result + Integer.hashCode(contractKvPairsNumber);
         }
-        java.util.List<AccountCryptoAllowance> list$cryptoAllowances = cryptoAllowances;
-        if (list$cryptoAllowances != null) {
-            for (Object o : list$cryptoAllowances) {
-                if (o != null) {
-                    result = 31 * result + o.hashCode();
-                } else {
-                    result = 31 * result;
-                }
+        java.util.List<AccountCryptoAllowance> cryptoAllowancesValue = cryptoAllowances;
+        for (Object o : cryptoAllowancesValue) {
+            if (o != null) {
+                result = 31 * result + o.hashCode();
+            } else {
+                result = 31 * result;
             }
         }
-        java.util.List<AccountApprovalForAllAllowance> list$approveForAllNftAllowances = approveForAllNftAllowances;
-        if (list$approveForAllNftAllowances != null) {
-            for (Object o : list$approveForAllNftAllowances) {
-                if (o != null) {
-                    result = 31 * result + o.hashCode();
-                } else {
-                    result = 31 * result;
-                }
+        java.util.List<AccountApprovalForAllAllowance> approveForAllNftAllowancesValue = approveForAllNftAllowances;
+        for (Object o : approveForAllNftAllowancesValue) {
+            if (o != null) {
+                result = 31 * result + o.hashCode();
+            } else {
+                result = 31 * result;
             }
         }
-        java.util.List<AccountFungibleTokenAllowance> list$tokenAllowances = tokenAllowances;
-        if (list$tokenAllowances != null) {
-            for (Object o : list$tokenAllowances) {
-                if (o != null) {
-                    result = 31 * result + o.hashCode();
-                } else {
-                    result = 31 * result;
-                }
+        java.util.List<AccountFungibleTokenAllowance> tokenAllowancesValue = tokenAllowances;
+        for (Object o : tokenAllowancesValue) {
+            if (o != null) {
+                result = 31 * result + o.hashCode();
+            } else {
+                result = 31 * result;
             }
         }
         if (numberTreasuryTitles != DEFAULT.numberTreasuryTitles) {
@@ -1016,21 +1012,21 @@ public record Account(
 
         @NonNull
         private Supplier<List<AccountCryptoAllowance>> cryptoAllowancesSupplier =
-                Suppliers.memoize(() -> Collections.emptyList());
+                Suppliers.memoize(Collections::emptyList);
 
         @NonNull
         private List<AccountApprovalForAllAllowance> approveForAllNftAllowances = Collections.emptyList();
 
         @NonNull
         private Supplier<List<AccountApprovalForAllAllowance>> approveForAllNftAllowancesSupplier =
-                Suppliers.memoize(() -> Collections.emptyList());
+                Suppliers.memoize(Collections::emptyList);
 
         @NonNull
         private List<AccountFungibleTokenAllowance> tokenAllowances = Collections.emptyList();
 
         @NonNull
         private Supplier<List<AccountFungibleTokenAllowance>> tokenAllowancesSupplier =
-                Suppliers.memoize(() -> Collections.emptyList());
+                Suppliers.memoize(Collections::emptyList);
 
         private int numberTreasuryTitles = 0;
         private boolean expiredAndPendingRemoval = false;
@@ -1119,6 +1115,7 @@ public record Account(
          *                             This value SHALL NOT be empty if this account is "sender" for any
          *                             pending airdrop, and SHALL be empty otherwise.
          */
+        @SuppressWarnings("java:S107")
         public Builder(
                 AccountID accountId,
                 Bytes alias,
