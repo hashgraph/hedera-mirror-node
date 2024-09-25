@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Redirect stderr to bootstrap.log in case the script itself fails
+# Redirect stdout to /dev/null since the script uses the log() function to write all output to bootstrap.log
+exec 1>/dev/null 2>>bootstrap.log
+
 # Write the script's own PID to bootstrap.pid
 echo $$ > bootstrap.pid
 

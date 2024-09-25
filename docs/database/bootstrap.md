@@ -211,7 +211,7 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
    To ensure the script continues running even if your SSH session is terminated, run it using `nohup`, redirect stdout and stderr to `bootstrap.log`, and save its process ID (PID) to a file.
 
    ```bash
-   nohup setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log &
+   nohup setsid ./bootstrap.sh 8 /path/to/db_export &
    ```
 
    - The script handles logging internally to `bootstrap.log`, and the execution command will also append stdout/stderr of the script itself to the log file.
@@ -287,7 +287,7 @@ If you need to stop the script before it completes:
 - **Re-run the Bootstrap Script:**
 
   ```bash
-  nohup setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log
+  nohup setsid ./bootstrap.sh 8 /path/to/db_export &
   ```
 
   - The script will resume where it left off, skipping files that have already been imported successfully.
