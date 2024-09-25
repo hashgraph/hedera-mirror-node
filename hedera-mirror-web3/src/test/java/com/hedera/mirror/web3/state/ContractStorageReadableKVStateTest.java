@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ContractID.ContractOneOfType;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.pbj.runtime.OneOf;
@@ -43,10 +44,10 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ContractStorageDatabaseReadableKVStateTest {
+public class ContractStorageReadableKVStateTest {
 
     @InjectMocks
-    private ContractStorageDatabaseReadableKVState contractStorageDatabaseReadableKVState;
+    private ContractStorageReadableKVState contractStorageReadableKVState;
 
     @Mock
     private ContractStateRepository contractStateRepository;
@@ -57,9 +58,11 @@ public class ContractStorageDatabaseReadableKVStateTest {
     private static MockedStatic<ContractCallContext> contextMockedStatic;
 
     private static final ContractID CONTRACT_ID =
-            new ContractID(0L, 0L, new OneOf<>(ContractOneOfType.CONTRACT_NUM, 1L));
+            new ContractID(1L, 0L, new OneOf<>(ContractOneOfType.CONTRACT_NUM, 1L));
     private static final Bytes BYTES = Bytes.fromBase64("123456");
     private static final SlotKey SLOT_KEY = new SlotKey(CONTRACT_ID, BYTES);
+    private static final EntityId ENTITY_ID =
+            EntityId.of(CONTRACT_ID.shardNum(), CONTRACT_ID.realmNum(), CONTRACT_ID.contractNum());
 
     @BeforeAll
     static void initStaticMocks() {
@@ -79,8 +82,9 @@ public class ContractStorageDatabaseReadableKVStateTest {
     @Test
     void whenTimestampIsNullReturnsLatestSlot() {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(contractStateRepository.findStorage(1L, BYTES.toByteArray())).thenReturn(Optional.of(BYTES.toByteArray()));
-        assertThat(contractStorageDatabaseReadableKVState.get(SLOT_KEY))
+        when(contractStateRepository.findStorage(ENTITY_ID.getId(), BYTES.toByteArray()))
+                .thenReturn(Optional.of(BYTES.toByteArray()));
+        assertThat(contractStorageReadableKVState.get(SLOT_KEY))
                 .satisfies(slotValue -> assertThat(slotValue).returns(BYTES, SlotValue::value));
     }
 
@@ -88,27 +92,28 @@ public class ContractStorageDatabaseReadableKVStateTest {
     void whenTimestampIsNotNullReturnsHistoricalSlot() {
         final var blockTimestamp = 1234567L;
         when(contractCallContext.getTimestamp()).thenReturn(Optional.of(blockTimestamp));
-        when(contractStateRepository.findStorageByBlockTimestamp(1L, BYTES.toByteArray(), blockTimestamp))
+        when(contractStateRepository.findStorageByBlockTimestamp(
+                        ENTITY_ID.getId(), BYTES.toByteArray(), blockTimestamp))
                 .thenReturn(Optional.of(BYTES.toByteArray()));
-        assertThat(contractStorageDatabaseReadableKVState.get(SLOT_KEY))
+        assertThat(contractStorageReadableKVState.get(SLOT_KEY))
                 .satisfies(slotValue -> assertThat(slotValue).returns(BYTES, SlotValue::value));
     }
 
     @Test
-    void whenSlotNotFoundReturnsDefaultValueForLatestBlock() {
+    void whenSlotNotFoundReturnsNullForLatestBlock() {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(contractStateRepository.findStorage(anyLong(), any())).thenReturn(Optional.empty());
-        assertThat(contractStorageDatabaseReadableKVState.get(SLOT_KEY))
-                .satisfies(slotValue -> assertThat(slotValue).isEqualTo(SlotValue.DEFAULT));
+        assertThat(contractStorageReadableKVState.get(SLOT_KEY))
+                .satisfies(slotValue -> assertThat(slotValue).isNull());
     }
 
     @Test
-    void whenSlotNotFoundReturnsDefaultValueForHistoricalBlock() {
+    void whenSlotNotFoundReturnsNullForHistoricalBlock() {
         final var blockTimestamp = 1234567L;
         when(contractCallContext.getTimestamp()).thenReturn(Optional.of(blockTimestamp));
         when(contractStateRepository.findStorageByBlockTimestamp(anyLong(), any(), anyLong()))
                 .thenReturn(Optional.empty());
-        assertThat(contractStorageDatabaseReadableKVState.get(SLOT_KEY))
-                .satisfies(slotValue -> assertThat(slotValue).isEqualTo(SlotValue.DEFAULT));
+        assertThat(contractStorageReadableKVState.get(SLOT_KEY))
+                .satisfies(slotValue -> assertThat(slotValue).isNull());
     }
 }

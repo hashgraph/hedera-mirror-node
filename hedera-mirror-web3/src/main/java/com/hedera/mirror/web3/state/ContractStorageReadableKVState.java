@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.state;
 
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -26,30 +27,32 @@ import java.util.Collections;
 import java.util.Iterator;
 import org.jetbrains.annotations.NotNull;
 
-public class ContractStorageDatabaseReadableKVState extends ReadableKVStateBase<SlotKey, SlotValue> {
+public class ContractStorageReadableKVState extends ReadableKVStateBase<SlotKey, SlotValue> {
 
     private static final String KEY = "STORAGE";
     private final ContractStateRepository contractStateRepository;
 
-    protected ContractStorageDatabaseReadableKVState(final ContractStateRepository contractStateRepository) {
+    protected ContractStorageReadableKVState(final ContractStateRepository contractStateRepository) {
         super(KEY);
         this.contractStateRepository = contractStateRepository;
     }
 
     @Override
-    protected SlotValue readFromDataSource(@NotNull SlotKey key) {
-        if (!key.hasContractID()) {
-            return SlotValue.DEFAULT;
+    protected SlotValue readFromDataSource(@NotNull SlotKey slotKey) {
+        if (!slotKey.hasContractID()) {
+            return null;
         }
 
         final var timestamp = ContractCallContext.get().getTimestamp();
+        final var contractID = slotKey.contractID();
+        final var entityId = EntityId.of(contractID.shardNum(), contractID.realmNum(), contractID.contractNum());
         return timestamp
                 .map(t -> contractStateRepository.findStorageByBlockTimestamp(
-                        key.contractID().contractNum(), key.key().toByteArray(), t))
+                        entityId.getId(), slotKey.key().toByteArray(), t))
                 .orElse(contractStateRepository.findStorage(
-                        key.contractID().contractNum(), key.key().toByteArray()))
+                        entityId.getId(), slotKey.key().toByteArray()))
                 .map(byteArr -> new SlotValue(Bytes.wrap(byteArr), Bytes.EMPTY, Bytes.EMPTY))
-                .orElse(SlotValue.DEFAULT);
+                .orElse(null);
     }
 
     @NotNull
