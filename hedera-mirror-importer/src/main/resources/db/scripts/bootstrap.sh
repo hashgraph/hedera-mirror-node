@@ -228,7 +228,7 @@ import_file() {
   log "Importing table $table from $file"
 
   # Execute the import within a transaction
-  if gunzip -c "$file" | psql -q -v ON_ERROR_STOP=1 -c "BEGIN; COPY $table FROM STDIN WITH CSV HEADER; COMMIT"; then
+  if gunzip -c "$file" | psql -q -v ON_ERROR_STOP=1 --single-transaction -c "COPY $table FROM STDIN WITH CSV HEADER;"; then
     log "Successfully imported $file into $table"
     # Update the status to IMPORTED
     write_tracking_file "$file" "IMPORTED"
