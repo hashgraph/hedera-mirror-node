@@ -35,7 +35,7 @@ spec:
             external_url: https://mirrornode.grafana.net
       singleBinary:
         persistence:
-          size: 350Gi
+          size: 400Gi
         resources:
           limits:
             memory: 1Gi
@@ -66,9 +66,9 @@ spec:
           replicaExternalLabelName: __replica__
           resources:
             limits:
-              memory: 10Gi
+              memory: 10752Mi
             requests:
-              memory: 6Gi
+              memory: 10752Mi
     stackgres:
       enabled: true
     traefik:
