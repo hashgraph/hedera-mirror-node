@@ -43,7 +43,7 @@ public class Utils {
             log.warn("Failed to parse key for account " + id);
         }
 
-        return Key.DEFAULT;
+        return null;
     }
 
     public static AccountID convertCanonicalAccountIdFromEntity(final Entity entity) {

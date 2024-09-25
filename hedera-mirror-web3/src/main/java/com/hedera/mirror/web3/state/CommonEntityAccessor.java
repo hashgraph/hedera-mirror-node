@@ -17,14 +17,12 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.web3.state.Utils.convertCanonicalAccountIdFromEntity;
-import static com.hedera.services.utils.EntityIdUtils.entityIdFromId;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
-import com.hedera.services.store.models.Id;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -38,8 +36,7 @@ public class CommonEntityAccessor {
     public @Nonnull Optional<Entity> get(@Nonnull AccountID accountID, final Optional<Long> timestamp) {
         if (accountID.hasAccountNum()) {
             return getEntityByMirrorAddressAndTimestamp(
-                    entityIdFromId(new Id(accountID.shardNum(), accountID.realmNum(), accountID.accountNum())),
-                    timestamp);
+                    EntityId.of(accountID.shardNum(), accountID.realmNum(), accountID.accountNum()), timestamp);
         } else {
             return getEntityByEvmAddressAndTimestamp(accountID.alias().toByteArray(), timestamp);
         }
@@ -47,7 +44,7 @@ public class CommonEntityAccessor {
 
     public @Nonnull Optional<Entity> get(@Nonnull TokenID tokenID, final Optional<Long> timestamp) {
         return getEntityByMirrorAddressAndTimestamp(
-                entityIdFromId(new Id(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum())), timestamp);
+                EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum()), timestamp);
     }
 
     public AccountID getAccountWithCanonicalAddress(EntityId entityId, final Optional<Long> timestamp) {

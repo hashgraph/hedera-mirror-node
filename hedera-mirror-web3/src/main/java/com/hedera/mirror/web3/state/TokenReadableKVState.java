@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
-import static com.hedera.mirror.web3.state.Utils.convertCanonicalAccountIdFromEntity;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Fraction;
@@ -153,7 +152,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
         return timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(autoRenewAccountId, t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(autoRenewAccountId))
-                .map(autoRenewAccount -> convertCanonicalAccountIdFromEntity(autoRenewAccount))
+                .map(Utils::convertCanonicalAccountIdFromEntity)
                 .orElse(AccountID.DEFAULT);
     }
 
@@ -164,7 +163,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
         return timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId()))
-                .map(entity -> convertCanonicalAccountIdFromEntity(entity))
+                .map(Utils::convertCanonicalAccountIdFromEntity)
                 .orElse(AccountID.DEFAULT);
     }
 
@@ -174,7 +173,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
                 .orElseGet(() -> customFeeRepository.findById(tokenId))
                 .map(customFee -> convertCustomFees(customFee, timestamp));
 
-        return Collections.unmodifiableList(customFees.get());
+        return Collections.unmodifiableList(customFees.orElse(new ArrayList<>()));
     }
 
     private List<CustomFee> convertCustomFees(
