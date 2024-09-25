@@ -116,4 +116,10 @@ class ContractStorageReadableKVStateTest {
         assertThat(contractStorageReadableKVState.get(SLOT_KEY))
                 .satisfies(slotValue -> assertThat(slotValue).isNull());
     }
+
+    @Test
+    void whenSlotKeyIsNullReturnNull() {
+        assertThat(contractStorageReadableKVState.get(new SlotKey(null, BYTES)))
+                .satisfies(slotValue -> assertThat(slotValue).isNull());
+    }
 }
