@@ -30,11 +30,11 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.66.0")
+    set("grpcVersion", "1.68.0")
     // Override jooq version since the official gradle plugin is on in 3.19.x, remove if not needed
     // with the next springboot release
     set("jooq.version", "3.19.6")
-    set("mapStructVersion", "1.6.1")
+    set("mapStructVersion", "1.6.2")
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.5")
     set("reactorGrpcVersion", "1.2.4")
@@ -59,7 +59,7 @@ dependencies {
         api("com.github.vertical-blank:sql-formatter:2.0.5")
         api("org.bouncycastle:bcprov-jdk18on:1.78.1")
         api("com.bucket4j:bucket4j-core:8.10.1")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:5.6.0")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:5.6.1")
         api("com.google.guava:guava:33.3.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         // Temporary until new spring-cloud-gcp-starter-pubsub
@@ -76,8 +76,8 @@ dependencies {
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
-        api("commons-io:commons-io:2.16.1")
-        api("io.cucumber:cucumber-bom:7.18.1")
+        api("commons-io:commons-io:2.17.0")
+        api("io.cucumber:cucumber-bom:7.19.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-63:3.8.2")
@@ -107,7 +107,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.3")
         api("org.testcontainers:junit-jupiter:1.20.1")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.28.1")
+        api("software.amazon.awssdk:bom:2.28.6")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
         api("org.web3j:core:4.12.0")
     }
