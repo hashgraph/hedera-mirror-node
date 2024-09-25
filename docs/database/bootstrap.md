@@ -287,7 +287,7 @@ If you need to stop the script before it completes:
 - **Re-run the Bootstrap Script:**
 
   ```bash
-  nohup setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log & echo $! > bootstrap.pid
+  nohup setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log
   ```
 
   - The script will resume where it left off, skipping files that have already been imported successfully.
