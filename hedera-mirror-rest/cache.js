@@ -23,6 +23,8 @@ const {redis: redisConfig} = config;
 const {enabled, sentinel, uri} = redisConfig;
 
 const createRedisConnection = () => {
+  let connectionReady = false;
+
   const sentinelOptions = sentinel.enabled
     ? {
         name: sentinel.name,
@@ -41,7 +43,7 @@ const createRedisConnection = () => {
     lazyConnect: !enabled,
     maxRetriesPerRequest: redisConfig.maxRetriesPerRequest,
     retryStrategy: (attempt) => {
-      this.ready = false;
+      connectionReady = false;
 
       if (!enabled) {
         return null;
@@ -52,7 +54,6 @@ const createRedisConnection = () => {
     ...sentinelOptions,
   };
   const uriSanitized = uri.replaceAll(RegExp('(?<=//).*:.+@', 'g'), '***:***@');
-  let ready = false;
 
   const redis = new Redis(uri, options)
     .on('connect', () => logger.info(`Connected to ${uriSanitized}`))
@@ -60,7 +61,7 @@ const createRedisConnection = () => {
     .on('ready', () => {
       setConfig('maxmemory', redisConfig.maxMemory);
       setConfig('maxmemory-policy', redisConfig.maxMemoryPolicy);
-      ready = true;
+      connectionReady = true;
     });
 
   const setConfig = function (key, value) {
@@ -69,7 +70,7 @@ const createRedisConnection = () => {
 
   return {
     getRedis: () => redis,
-    isReady: () => ready,
+    isReady: () => connectionReady,
     stop: async () => redis.quit(),
   };
 };
@@ -77,6 +78,7 @@ const createRedisConnection = () => {
 let redisConnection;
 export class Cache {
   constructor() {
+    // Instead when createRedisConnection() is IIFE it initializes too early for tests to influence environment/config.
     if (redisConnection === undefined) {
       redisConnection = createRedisConnection();
     }
@@ -172,6 +174,7 @@ export class Cache {
     return values;
   }
 
+  // NOTE: Stops the connection for all instances of this class
   async stop() {
     return redisConnection.stop();
   }
