@@ -23,6 +23,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
+import org.hyperledger.besu.datatypes.Address;
 
 @CustomLog
 @UtilityClass
@@ -51,5 +52,10 @@ public class Utils {
     public static Timestamp convertToTimestamp(final long timestamp) {
         var instant = Instant.ofEpochMilli(timestamp);
         return new Timestamp(instant.getEpochSecond(), instant.getNano());
+    }
+
+    public static Address convertPbjBytesToBesuAddress(final Bytes bytes) {
+        final var evmAddressBytes = bytes.toByteArray();
+        return Address.wrap(org.apache.tuweni.bytes.Bytes.wrap(evmAddressBytes));
     }
 }

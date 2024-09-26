@@ -16,39 +16,43 @@
 
 package com.hedera.mirror.web3.state;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
+import static com.hedera.mirror.web3.state.Utils.convertPbjBytesToBesuAddress;
+
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 
 public class ContractBytecodeReadableKVState extends ReadableKVStateBase<ContractID, Bytecode> {
 
     private static final String KEY = "BYTECODE";
 
-    private final CommonEntityAccessor commonEntityAccessor;
     private final ContractRepository contractRepository;
 
-    protected ContractBytecodeReadableKVState(
-            final CommonEntityAccessor commonEntityAccessor, final ContractRepository contractRepository) {
+    protected ContractBytecodeReadableKVState(final ContractRepository contractRepository) {
         super(KEY);
-        this.commonEntityAccessor = commonEntityAccessor;
         this.contractRepository = contractRepository;
     }
 
     @Override
     protected Bytecode readFromDataSource(@NotNull ContractID contractID) {
-        final var contractEntity = commonEntityAccessor.get(contractID, Optional.empty());
-        if (contractEntity.isEmpty()) {
+        EntityId entityId;
+        if (contractID.hasContractNum()) {
+            entityId = EntityId.of(contractID.shardNum(), contractID.realmNum(), contractID.contractNum());
+        } else if (contractID.hasEvmAddress()) {
+            final var evmAddress = convertPbjBytesToBesuAddress(contractID.evmAddress());
+            entityId = EntityId.of(entityIdNumFromEvmAddress(evmAddress));
+        } else {
             return null;
         }
 
-        final var runtimeCode =
-                contractRepository.findRuntimeBytecode(contractEntity.get().getId());
+        final var runtimeCode = contractRepository.findRuntimeBytecode(entityId.getId());
         final var runtimeBytes = runtimeCode.map(Bytes::wrap).orElse(null);
         return runtimeBytes == null ? null : new Bytecode(runtimeBytes);
     }
