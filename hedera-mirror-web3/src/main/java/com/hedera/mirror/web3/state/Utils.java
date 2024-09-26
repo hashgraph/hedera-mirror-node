@@ -36,13 +36,13 @@ public class Utils {
 
     public static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
 
-    public static Key parseKey(final byte[] keyBytes, final Long id) {
+    public static Key parseKey(final byte[] keyBytes) {
         try {
             if (keyBytes != null && keyBytes.length > 0) {
                 return Key.PROTOBUF.parse(Bytes.wrap(keyBytes));
             }
         } catch (final ParseException e) {
-            log.warn("Failed to parse key for account " + id);
+            return null;
         }
 
         return null;

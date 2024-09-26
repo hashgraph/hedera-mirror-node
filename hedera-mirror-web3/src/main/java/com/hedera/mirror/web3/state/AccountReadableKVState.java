@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
 import static com.hedera.mirror.web3.state.Utils.convertCanonicalAccountIdFromEntity;
 import static com.hedera.mirror.web3.state.Utils.convertEncodedEntityIdToAccountID;
 import static com.hedera.mirror.web3.state.Utils.convertEncodedEntityIdToTokenID;
+import static com.hedera.mirror.web3.state.Utils.parseKey;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
@@ -116,7 +117,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                         entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
                                 ? Bytes.wrap(entity.getEvmAddress())
                                 : Bytes.EMPTY)
-                .key(Utils.parseKey(entity.getKey(), entity.getId()))
+                .key(parseKey(entity.getKey()))
                 .expirationSecond(TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS))
                 .tinybarBalance(getAccountBalance(entity, timestamp))
                 .memo(entity.getMemo())
