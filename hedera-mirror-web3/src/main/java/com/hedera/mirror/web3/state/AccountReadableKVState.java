@@ -17,12 +17,13 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
 import static com.hedera.mirror.web3.state.Utils.convertCanonicalAccountIdFromEntity;
 import static com.hedera.mirror.web3.state.Utils.convertEncodedEntityIdToAccountID;
 import static com.hedera.mirror.web3.state.Utils.convertEncodedEntityIdToTokenID;
+import static com.hedera.mirror.web3.state.Utils.parseKey;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -39,7 +40,6 @@ import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.utils.Suppliers;
-import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
@@ -60,7 +60,6 @@ import lombok.extern.java.Log;
 @Named
 @Log
 public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Account> {
-    private static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
     private static final String KEY = "ACCOUNTS";
     private static final Long ZERO_BALANCE = 0L;
 
@@ -118,7 +117,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                         entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
                                 ? Bytes.wrap(entity.getEvmAddress())
                                 : Bytes.EMPTY)
-                .key(parseKey(entity))
+                .key(parseKey(entity.getKey()))
                 .expirationSecond(TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS))
                 .tinybarBalance(getAccountBalance(entity, timestamp))
                 .memo(entity.getMemo())
@@ -240,20 +239,6 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         return new AccountApprovalForAllAllowance(
                 convertEncodedEntityIdToTokenID(nftAllowance.getTokenId()),
                 convertEncodedEntityIdToAccountID(nftAllowance.getSpender()));
-    }
-
-    private Key parseKey(Entity entity) {
-        final byte[] keyBytes = entity.getKey();
-
-        try {
-            if (keyBytes != null && keyBytes.length > 0) {
-                return Key.PROTOBUF.parse(Bytes.wrap(keyBytes));
-            }
-        } catch (final ParseException e) {
-            log.warning("Failed to parse key for account " + entity.getId());
-        }
-
-        return Key.DEFAULT;
     }
 
     private record TokenAccountBalances(int all, int positive) {}
