@@ -19,8 +19,13 @@ package com.hedera.mirror.web3.state;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.pbj.runtime.ParseException;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
+
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
+import jakarta.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 import org.hyperledger.besu.datatypes.Address;
@@ -57,5 +62,16 @@ public class Utils {
     public static Address convertPbjBytesToBesuAddress(final Bytes bytes) {
         final var evmAddressBytes = bytes.toByteArray();
         return Address.wrap(org.apache.tuweni.bytes.Bytes.wrap(evmAddressBytes));
+    }
+
+    @Nullable
+    public static EntityId convertContractIDToEntityId(final ContractID contractID) {
+        if (contractID.hasContractNum()) {
+            return EntityId.of(contractID.shardNum(), contractID.realmNum(), contractID.contractNum());
+        } else if (contractID.hasEvmAddress()) {
+            final var evmAddress = convertPbjBytesToBesuAddress(contractID.evmAddress());
+            return EntityId.of(entityIdNumFromEvmAddress(evmAddress));
+        }
+        return null;
     }
 }

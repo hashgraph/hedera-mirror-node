@@ -16,12 +16,10 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
-import static com.hedera.mirror.web3.state.Utils.convertPbjBytesToBesuAddress;
+import static com.hedera.mirror.web3.state.Utils.convertContractIDToEntityId;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
@@ -42,13 +40,8 @@ public class ContractBytecodeReadableKVState extends ReadableKVStateBase<Contrac
 
     @Override
     protected Bytecode readFromDataSource(@NotNull ContractID contractID) {
-        EntityId entityId;
-        if (contractID.hasContractNum()) {
-            entityId = EntityId.of(contractID.shardNum(), contractID.realmNum(), contractID.contractNum());
-        } else if (contractID.hasEvmAddress()) {
-            final var evmAddress = convertPbjBytesToBesuAddress(contractID.evmAddress());
-            entityId = EntityId.of(entityIdNumFromEvmAddress(evmAddress));
-        } else {
+        final var entityId = convertContractIDToEntityId(contractID);
+        if (entityId == null) {
             return null;
         }
 
