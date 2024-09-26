@@ -36,6 +36,7 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
+import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
@@ -46,6 +47,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.springframework.util.CollectionUtils;
 
 public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
@@ -133,47 +135,47 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
                 .build();
     }
 
-    private Long getTotalSupply(
+    private Supplier<Long> getTotalSupply(
             final com.hedera.mirror.common.domain.token.Token token, final Optional<Long> timestamp) {
-        return timestamp
+        return Suppliers.memoize(() -> timestamp
                 .map(t -> getTotalSupplyHistorical(token.getTokenId(), t))
                 .or(() -> Optional.ofNullable(token.getTotalSupply()))
-                .orElse(0L);
+                .orElse(0L));
     }
 
     private Long getTotalSupplyHistorical(long tokenId, long timestamp) {
         return tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(tokenId, timestamp);
     }
 
-    private AccountID getAutoRenewAccount(Long autoRenewAccountId, final Optional<Long> timestamp) {
+    private Supplier<AccountID> getAutoRenewAccount(Long autoRenewAccountId, final Optional<Long> timestamp) {
         if (autoRenewAccountId == null) {
-            return AccountID.DEFAULT;
+            return null;
         }
-        return timestamp
+        return Suppliers.memoize(() -> timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(autoRenewAccountId, t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(autoRenewAccountId))
                 .map(Utils::convertCanonicalAccountIdFromEntity)
-                .orElse(AccountID.DEFAULT);
+                .orElse(null));
     }
 
-    private AccountID getTreasury(EntityId treasuryId, final Optional<Long> timestamp) {
+    private Supplier<AccountID> getTreasury(EntityId treasuryId, final Optional<Long> timestamp) {
         if (treasuryId == null) {
-            return AccountID.DEFAULT;
+            return null;
         }
-        return timestamp
+        return Suppliers.memoize(() -> timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId()))
                 .map(Utils::convertCanonicalAccountIdFromEntity)
-                .orElse(AccountID.DEFAULT);
+                .orElse(null));
     }
 
-    private List<CustomFee> getCustomFees(Long tokenId, final Optional<Long> timestamp) {
+    private Supplier<List<CustomFee>> getCustomFees(Long tokenId, final Optional<Long> timestamp) {
         final var customFees = timestamp
                 .map(t -> customFeeRepository.findByTokenIdAndTimestamp(tokenId, t))
                 .orElseGet(() -> customFeeRepository.findById(tokenId))
                 .map(customFee -> convertCustomFees(customFee, timestamp));
 
-        return Collections.unmodifiableList(customFees.orElse(new ArrayList<>()));
+        return Suppliers.memoize(() -> Collections.unmodifiableList(customFees.orElse(new ArrayList<>())));
     }
 
     private List<CustomFee> convertCustomFees(
