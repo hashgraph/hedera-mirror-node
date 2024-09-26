@@ -28,8 +28,8 @@ import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.JsonCodec;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -114,12 +114,12 @@ import java.util.function.Supplier;
  */
 public record Account(
         @Nullable AccountID accountId,
-        @NonNull Bytes alias,
+        @Nonnull Bytes alias,
         @Nullable Key key,
         long expirationSecond,
         Long tinybarBalance,
         Supplier<Long> tinybarBalanceSupplier,
-        @NonNull String memo,
+        @Nonnull String memo,
         boolean deleted,
         long stakedToMe,
         long stakePeriodStart,
@@ -143,15 +143,15 @@ public record Account(
         @Nullable AccountID autoRenewAccountId,
         long autoRenewSeconds,
         int contractKvPairsNumber,
-        @NonNull List<AccountCryptoAllowance> cryptoAllowances,
-        @NonNull Supplier<List<AccountCryptoAllowance>> cryptoAllowancesSupplier,
-        @NonNull List<AccountApprovalForAllAllowance> approveForAllNftAllowances,
-        @NonNull Supplier<List<AccountApprovalForAllAllowance>> approveForAllNftAllowancesSupplier,
-        @NonNull List<AccountFungibleTokenAllowance> tokenAllowances,
-        @NonNull Supplier<List<AccountFungibleTokenAllowance>> tokenAllowancesSupplier,
+        @Nonnull List<AccountCryptoAllowance> cryptoAllowances,
+        @Nonnull Supplier<List<AccountCryptoAllowance>> cryptoAllowancesSupplier,
+        @Nonnull List<AccountApprovalForAllAllowance> approveForAllNftAllowances,
+        @Nonnull Supplier<List<AccountApprovalForAllAllowance>> approveForAllNftAllowancesSupplier,
+        @Nonnull List<AccountFungibleTokenAllowance> tokenAllowances,
+        @Nonnull Supplier<List<AccountFungibleTokenAllowance>> tokenAllowancesSupplier,
         int numberTreasuryTitles,
         boolean expiredAndPendingRemoval,
-        @NonNull Bytes firstContractStorageKey,
+        @Nonnull Bytes firstContractStorageKey,
         @Nullable PendingAirdropId headPendingAirdropId) {
     /** Protobuf codec for reading and writing in protobuf format */
     public static final Codec<Account> PROTOBUF = new com.hedera.hapi.node.state.token.codec.AccountProtoCodec();
@@ -255,24 +255,21 @@ public record Account(
         if (contractKvPairsNumber != DEFAULT.contractKvPairsNumber) {
             result = 31 * result + Integer.hashCode(contractKvPairsNumber);
         }
-        java.util.List<AccountCryptoAllowance> cryptoAllowancesValue = cryptoAllowances;
-        for (Object o : cryptoAllowancesValue) {
+        for (Object o : cryptoAllowances) {
             if (o != null) {
                 result = 31 * result + o.hashCode();
             } else {
                 result = 31 * result;
             }
         }
-        java.util.List<AccountApprovalForAllAllowance> approveForAllNftAllowancesValue = approveForAllNftAllowances;
-        for (Object o : approveForAllNftAllowancesValue) {
+        for (Object o : approveForAllNftAllowances) {
             if (o != null) {
                 result = 31 * result + o.hashCode();
             } else {
                 result = 31 * result;
             }
         }
-        java.util.List<AccountFungibleTokenAllowance> tokenAllowancesValue = tokenAllowances;
-        for (Object o : tokenAllowancesValue) {
+        for (Object o : tokenAllowances) {
             if (o != null) {
                 result = 31 * result + o.hashCode();
             } else {
@@ -285,7 +282,7 @@ public record Account(
         if (expiredAndPendingRemoval != DEFAULT.expiredAndPendingRemoval) {
             result = 31 * result + Boolean.hashCode(expiredAndPendingRemoval);
         }
-        if (firstContractStorageKey != null && !firstContractStorageKey.equals(DEFAULT.firstContractStorageKey)) {
+        if (!firstContractStorageKey.equals(DEFAULT.firstContractStorageKey)) {
             result = 31 * result + firstContractStorageKey.hashCode();
         }
         if (headPendingAirdropId != null && !headPendingAirdropId.equals(DEFAULT.headPendingAirdropId)) {
@@ -324,7 +321,7 @@ public record Account(
         if (alias == null && thatObj.alias != null) {
             return false;
         }
-        if (alias != null && !alias.equals(thatObj.alias)) {
+        if (!alias.equals(thatObj.alias)) {
             return false;
         }
         if (key == null && thatObj.key != null) {
@@ -421,7 +418,7 @@ public record Account(
             return false;
         }
 
-        if (this.cryptoAllowances != null && !cryptoAllowances.equals(thatObj.cryptoAllowances)) {
+        if (!cryptoAllowances.equals(thatObj.cryptoAllowances)) {
             return false;
         }
         if (this.approveForAllNftAllowances == null && thatObj.approveForAllNftAllowances != null) {
@@ -473,7 +470,7 @@ public record Account(
      * @param defaultValue the default value to return if accountId is null
      * @return the value for accountId if it has a value, or else returns the default value
      */
-    public AccountID accountIdOrElse(@NonNull final AccountID defaultValue) {
+    public AccountID accountIdOrElse(@Nonnull final AccountID defaultValue) {
         return hasAccountId() ? accountId : defaultValue;
     }
 
@@ -484,7 +481,7 @@ public record Account(
      * @return the value for accountId if it has a value
      * @throws NullPointerException if accountId is null
      */
-    public @NonNull AccountID accountIdOrThrow() {
+    public @Nonnull AccountID accountIdOrThrow() {
         return requireNonNull(accountId, "Field accountId is null");
     }
 
@@ -493,7 +490,7 @@ public record Account(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifAccountId(@NonNull final Consumer<AccountID> ifPresent) {
+    public void ifAccountId(@Nonnull final Consumer<AccountID> ifPresent) {
         if (hasAccountId()) {
             ifPresent.accept(accountId);
         }
@@ -515,7 +512,7 @@ public record Account(
      * @param defaultValue the default value to return if key is null
      * @return the value for key if it has a value, or else returns the default value
      */
-    public Key keyOrElse(@NonNull final Key defaultValue) {
+    public Key keyOrElse(@Nonnull final Key defaultValue) {
         return hasKey() ? key : defaultValue;
     }
 
@@ -526,7 +523,7 @@ public record Account(
      * @return the value for key if it has a value
      * @throws NullPointerException if key is null
      */
-    public @NonNull Key keyOrThrow() {
+    public @Nonnull Key keyOrThrow() {
         return requireNonNull(key, "Field key is null");
     }
 
@@ -535,7 +532,7 @@ public record Account(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifKey(@NonNull final Consumer<Key> ifPresent) {
+    public void ifKey(@Nonnull final Consumer<Key> ifPresent) {
         if (hasKey()) {
             ifPresent.accept(key);
         }
@@ -557,7 +554,7 @@ public record Account(
      * @param defaultValue the default value to return if headTokenId is null
      * @return the value for headTokenId if it has a value, or else returns the default value
      */
-    public TokenID headTokenIdOrElse(@NonNull final TokenID defaultValue) {
+    public TokenID headTokenIdOrElse(@Nonnull final TokenID defaultValue) {
         return hasHeadTokenId() ? headTokenId : defaultValue;
     }
 
@@ -568,7 +565,7 @@ public record Account(
      * @return the value for headTokenId if it has a value
      * @throws NullPointerException if headTokenId is null
      */
-    public @NonNull TokenID headTokenIdOrThrow() {
+    public @Nonnull TokenID headTokenIdOrThrow() {
         return requireNonNull(headTokenId, "Field headTokenId is null");
     }
 
@@ -577,7 +574,7 @@ public record Account(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifHeadTokenId(@NonNull final Consumer<TokenID> ifPresent) {
+    public void ifHeadTokenId(@Nonnull final Consumer<TokenID> ifPresent) {
         if (hasHeadTokenId()) {
             ifPresent.accept(headTokenId);
         }
@@ -599,7 +596,7 @@ public record Account(
      * @param defaultValue the default value to return if headNftId is null
      * @return the value for headNftId if it has a value, or else returns the default value
      */
-    public NftID headNftIdOrElse(@NonNull final NftID defaultValue) {
+    public NftID headNftIdOrElse(@Nonnull final NftID defaultValue) {
         return hasHeadNftId() ? headNftId : defaultValue;
     }
 
@@ -610,7 +607,7 @@ public record Account(
      * @return the value for headNftId if it has a value
      * @throws NullPointerException if headNftId is null
      */
-    public @NonNull NftID headNftIdOrThrow() {
+    public @Nonnull NftID headNftIdOrThrow() {
         return requireNonNull(headNftId, "Field headNftId is null");
     }
 
@@ -619,7 +616,7 @@ public record Account(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifHeadNftId(@NonNull final Consumer<NftID> ifPresent) {
+    public void ifHeadNftId(@Nonnull final Consumer<NftID> ifPresent) {
         if (hasHeadNftId()) {
             ifPresent.accept(headNftId);
         }
@@ -641,7 +638,7 @@ public record Account(
      * @param defaultValue the default value to return if autoRenewAccountId is null
      * @return the value for autoRenewAccountId if it has a value, or else returns the default value
      */
-    public AccountID autoRenewAccountIdOrElse(@NonNull final AccountID defaultValue) {
+    public AccountID autoRenewAccountIdOrElse(@Nonnull final AccountID defaultValue) {
         return hasAutoRenewAccountId() ? autoRenewAccountId : defaultValue;
     }
 
@@ -652,7 +649,7 @@ public record Account(
      * @return the value for autoRenewAccountId if it has a value
      * @throws NullPointerException if autoRenewAccountId is null
      */
-    public @NonNull AccountID autoRenewAccountIdOrThrow() {
+    public @Nonnull AccountID autoRenewAccountIdOrThrow() {
         return requireNonNull(autoRenewAccountId, "Field autoRenewAccountId is null");
     }
 
@@ -661,7 +658,7 @@ public record Account(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifAutoRenewAccountId(@NonNull final Consumer<AccountID> ifPresent) {
+    public void ifAutoRenewAccountId(@Nonnull final Consumer<AccountID> ifPresent) {
         if (hasAutoRenewAccountId()) {
             ifPresent.accept(autoRenewAccountId);
         }
@@ -683,7 +680,7 @@ public record Account(
      * @param defaultValue the default value to return if headPendingAirdropId is null
      * @return the value for headPendingAirdropId if it has a value, or else returns the default value
      */
-    public PendingAirdropId headPendingAirdropIdOrElse(@NonNull final PendingAirdropId defaultValue) {
+    public PendingAirdropId headPendingAirdropIdOrElse(@Nonnull final PendingAirdropId defaultValue) {
         return hasHeadPendingAirdropId() ? headPendingAirdropId : defaultValue;
     }
 
@@ -694,7 +691,7 @@ public record Account(
      * @return the value for headPendingAirdropId if it has a value
      * @throws NullPointerException if headPendingAirdropId is null
      */
-    public @NonNull PendingAirdropId headPendingAirdropIdOrThrow() {
+    public @Nonnull PendingAirdropId headPendingAirdropIdOrThrow() {
         return requireNonNull(headPendingAirdropId, "Field headPendingAirdropId is null");
     }
 
@@ -703,7 +700,7 @@ public record Account(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifHeadPendingAirdropId(@NonNull final Consumer<PendingAirdropId> ifPresent) {
+    public void ifHeadPendingAirdropId(@Nonnull final Consumer<PendingAirdropId> ifPresent) {
         if (hasHeadPendingAirdropId()) {
             ifPresent.accept(headPendingAirdropId);
         }
@@ -734,7 +731,7 @@ public record Account(
      * @param defaultValue the default value to return if stakedAccountId is null
      * @return the value for stakedAccountId if it has a value, or else returns the default value
      */
-    public AccountID stakedAccountIdOrElse(@NonNull final AccountID defaultValue) {
+    public AccountID stakedAccountIdOrElse(@Nonnull final AccountID defaultValue) {
         return hasStakedAccountId() ? stakedAccountId() : defaultValue;
     }
 
@@ -744,7 +741,7 @@ public record Account(
      * @return the value for stakedAccountId if it has a value
      * @throws NullPointerException if stakedAccountId is null
      */
-    public @NonNull AccountID stakedAccountIdOrThrow() {
+    public @Nonnull AccountID stakedAccountIdOrThrow() {
         return requireNonNull(stakedAccountId(), "Field stakedAccountId is null");
     }
 
@@ -773,7 +770,7 @@ public record Account(
      * @param defaultValue the default value to return if stakedNodeId is null
      * @return the value for stakedNodeId if it has a value, or else returns the default value
      */
-    public Long stakedNodeIdOrElse(@NonNull final Long defaultValue) {
+    public Long stakedNodeIdOrElse(@Nonnull final Long defaultValue) {
         return hasStakedNodeId() ? stakedNodeId() : defaultValue;
     }
 
@@ -783,7 +780,7 @@ public record Account(
      * @return the value for stakedNodeId if it has a value
      * @throws NullPointerException if stakedNodeId is null
      */
-    public @NonNull Long stakedNodeIdOrThrow() {
+    public @Nonnull Long stakedNodeIdOrThrow() {
         return requireNonNull(stakedNodeId(), "Field stakedNodeId is null");
     }
 
@@ -961,7 +958,7 @@ public record Account(
         @Nullable
         private AccountID accountId = null;
 
-        @NonNull
+        @Nonnull
         private Bytes alias = Bytes.EMPTY;
 
         @Nullable
@@ -971,7 +968,7 @@ public record Account(
         private long tinybarBalance = 0L;
         private Supplier<Long> tinybarBalanceSupplier = Suppliers.memoize(() -> 0L);
 
-        @NonNull
+        @Nonnull
         private String memo = "";
 
         private boolean deleted = false;
@@ -1007,31 +1004,31 @@ public record Account(
         private long autoRenewSeconds = 0;
         private int contractKvPairsNumber = 0;
 
-        @NonNull
+        @Nonnull
         private List<AccountCryptoAllowance> cryptoAllowances = Collections.emptyList();
 
-        @NonNull
+        @Nonnull
         private Supplier<List<AccountCryptoAllowance>> cryptoAllowancesSupplier =
                 Suppliers.memoize(Collections::emptyList);
 
-        @NonNull
+        @Nonnull
         private List<AccountApprovalForAllAllowance> approveForAllNftAllowances = Collections.emptyList();
 
-        @NonNull
+        @Nonnull
         private Supplier<List<AccountApprovalForAllAllowance>> approveForAllNftAllowancesSupplier =
                 Suppliers.memoize(Collections::emptyList);
 
-        @NonNull
+        @Nonnull
         private List<AccountFungibleTokenAllowance> tokenAllowances = Collections.emptyList();
 
-        @NonNull
+        @Nonnull
         private Supplier<List<AccountFungibleTokenAllowance>> tokenAllowancesSupplier =
                 Suppliers.memoize(Collections::emptyList);
 
         private int numberTreasuryTitles = 0;
         private boolean expiredAndPendingRemoval = false;
 
-        @NonNull
+        @Nonnull
         private Bytes firstContractStorageKey = Bytes.EMPTY;
 
         @Nullable
@@ -1277,8 +1274,8 @@ public record Account(
          * @param alias value to set
          * @return builder to continue building with
          */
-        public Builder alias(@NonNull Bytes alias) {
-            this.alias = alias != null ? alias : Bytes.EMPTY;
+        public Builder alias(@Nonnull Bytes alias) {
+            this.alias = alias;
             return this;
         }
 
@@ -1336,8 +1333,8 @@ public record Account(
          * @param memo value to set
          * @return builder to continue building with
          */
-        public Builder memo(@NonNull String memo) {
-            this.memo = memo != null ? memo : "";
+        public Builder memo(@Nonnull String memo) {
+            this.memo = memo;
             return this;
         }
 
@@ -1638,7 +1635,7 @@ public record Account(
          * @param cryptoAllowancesSupplier value to set
          * @return builder to continue building with
          */
-        public Builder cryptoAllowances(@NonNull Supplier<List<AccountCryptoAllowance>> cryptoAllowancesSupplier) {
+        public Builder cryptoAllowances(@Nonnull Supplier<List<AccountCryptoAllowance>> cryptoAllowancesSupplier) {
             this.cryptoAllowancesSupplier = cryptoAllowancesSupplier;
             return this;
         }
@@ -1653,7 +1650,7 @@ public record Account(
          * @return builder to continue building with
          */
         public Builder approveForAllNftAllowances(
-                @NonNull Supplier<List<AccountApprovalForAllAllowance>> approveForAllNftAllowancesSupplier) {
+                @Nonnull Supplier<List<AccountApprovalForAllAllowance>> approveForAllNftAllowancesSupplier) {
             this.approveForAllNftAllowancesSupplier = approveForAllNftAllowancesSupplier;
             return this;
         }
@@ -1666,7 +1663,7 @@ public record Account(
          * @param tokenAllowancesSupplier value to set
          * @return builder to continue building with
          */
-        public Builder tokenAllowances(@NonNull Supplier<List<AccountFungibleTokenAllowance>> tokenAllowancesSupplier) {
+        public Builder tokenAllowances(@Nonnull Supplier<List<AccountFungibleTokenAllowance>> tokenAllowancesSupplier) {
             this.tokenAllowancesSupplier = tokenAllowancesSupplier;
             return this;
         }
@@ -1705,8 +1702,8 @@ public record Account(
          * @param firstContractStorageKey value to set
          * @return builder to continue building with
          */
-        public Builder firstContractStorageKey(@NonNull Bytes firstContractStorageKey) {
-            this.firstContractStorageKey = firstContractStorageKey != null ? firstContractStorageKey : Bytes.EMPTY;
+        public Builder firstContractStorageKey(@Nonnull Bytes firstContractStorageKey) {
+            this.firstContractStorageKey = firstContractStorageKey;
             return this;
         }
 
