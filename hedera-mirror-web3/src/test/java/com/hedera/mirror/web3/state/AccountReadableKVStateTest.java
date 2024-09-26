@@ -72,6 +72,7 @@ class AccountReadableKVStateTest {
     private static final long NUM = 1252L;
     private static final AccountID ACCOUNT_ID =
             new AccountID(SHARD, REALM, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, NUM));
+    private static final EntityId AUTO_RENEW_ACCOUNT_ID = EntityId.of(SHARD, REALM, NUM + 1);
     private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final long BALANCE = 3L;
     private static final long AUTO_RENEW_PERIOD = 4_000_000_000L;
@@ -156,6 +157,7 @@ class AccountReadableKVStateTest {
         entity.setDeleted(false);
         entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD);
         entity.setProxyAccountId(PROXY_ACCOUNT_ID);
+        entity.setAutoRenewAccountId(AUTO_RENEW_ACCOUNT_ID.getId());
         entity.setMaxAutomaticTokenAssociations(MAX_AUTOMATIC_TOKEN_ASSOCIATIONS);
         entity.setType(EntityType.ACCOUNT);
 
@@ -356,7 +358,6 @@ class AccountReadableKVStateTest {
         secondAllowance.setSpender(234L);
         secondAllowance.setOwner(entity.getId());
         secondAllowance.setAmount(60L);
-
         when(cryptoAllowanceRepository.findByOwnerAndTimestamp(entity.getId(), timestamp.get()))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 

@@ -1300,6 +1300,17 @@ public record Account(
         /**
          * <b>(5)</b> The balance of the account, in tiny-bars.
          *
+         * @param tinybarBalance value to set
+         * @return builder to continue building with
+         */
+        public Builder tinybarBalance(long tinybarBalance) {
+            this.tinybarBalance = tinybarBalance;
+            return this;
+        }
+
+        /**
+         * <b>(6)</b> The balance of the account, in tiny-bars.
+         *
          * @param tinybarBalanceSupplier value to set
          * @return builder to continue building with
          */
@@ -1309,7 +1320,7 @@ public record Account(
         }
 
         /**
-         * <b>(6)</b> An optional description of the account with UTF-8 encoding up to 100 bytes.
+         * <b>(7)</b> An optional description of the account with UTF-8 encoding up to 100 bytes.
          *
          * @param memo value to set
          * @return builder to continue building with
@@ -1320,7 +1331,7 @@ public record Account(
         }
 
         /**
-         * <b>(7)</b> A boolean marking if the account has been deleted.
+         * <b>(8)</b> A boolean marking if the account has been deleted.
          *
          * @param deleted value to set
          * @return builder to continue building with
@@ -1331,7 +1342,7 @@ public record Account(
         }
 
         /**
-         * <b>(8)</b> The amount of hbars staked to the account.
+         * <b>(9)</b> The amount of hbars staked to the account.
          *
          * @param stakedToMe value to set
          * @return builder to continue building with
@@ -1342,7 +1353,7 @@ public record Account(
         }
 
         /**
-         * <b>(9)</b> If this account stakes to another account, its value will be -1. It will
+         * <b>(10)</b> If this account stakes to another account, its value will be -1. It will
          * be set to the time when the account starts staking to a node.
          *
          * @param stakePeriodStart value to set
@@ -1354,7 +1365,7 @@ public record Account(
         }
 
         /**
-         * <b>(10)</b> ID of the new account to which this account is staking. If set to the sentinel <code>0.0.0</code> AccountID,
+         * <b>(11)</b> ID of the new account to which this account is staking. If set to the sentinel <code>0.0.0</code> AccountID,
          * this field removes this account's staked account ID.
          *
          * @param stakedAccountId value to set
@@ -1366,7 +1377,7 @@ public record Account(
         }
 
         /**
-         * <b>(10)</b> ID of the new account to which this account is staking. If set to the sentinel <code>0.0.0</code> AccountID,
+         * <b>(11)</b> ID of the new account to which this account is staking. If set to the sentinel <code>0.0.0</code> AccountID,
          * this field removes this account's staked account ID.
          *
          * @param builder A pre-populated builder
@@ -1378,7 +1389,7 @@ public record Account(
         }
 
         /**
-         * <b>(11)</b> ID of the new node this account is staked to. If set to the sentinel <code>-1</code>, this field
+         * <b>(12)</b> ID of the new node this account is staked to. If set to the sentinel <code>-1</code>, this field
          * removes this account's staked node ID.
          *
          * @param stakedNodeId value to set
@@ -1390,7 +1401,7 @@ public record Account(
         }
 
         /**
-         * <b>(12)</b> A boolean marking if the account declines rewards.
+         * <b>(13)</b> A boolean marking if the account declines rewards.
          *
          * @param declineReward value to set
          * @return builder to continue building with
@@ -1401,7 +1412,7 @@ public record Account(
         }
 
         /**
-         * <b>(13)</b> A boolean marking if the account requires a receiver signature.
+         * <b>(14)</b> A boolean marking if the account requires a receiver signature.
          *
          * @param receiverSigRequired value to set
          * @return builder to continue building with
@@ -1412,7 +1423,7 @@ public record Account(
         }
 
         /**
-         * <b>(14)</b> The token ID of the head of the linked list from token relations map for the account.
+         * <b>(15)</b> The token ID of the head of the linked list from token relations map for the account.
          *
          * @param headTokenId value to set
          * @return builder to continue building with
@@ -1423,7 +1434,7 @@ public record Account(
         }
 
         /**
-         * <b>(14)</b> The token ID of the head of the linked list from token relations map for the account.
+         * <b>(15)</b> The token ID of the head of the linked list from token relations map for the account.
          *
          * @param builder A pre-populated builder
          * @return builder to continue building with
@@ -1434,7 +1445,7 @@ public record Account(
         }
 
         /**
-         * <b>(15)</b> The NftID of the head of the linked list from unique tokens map for the account.
+         * <b>(16)</b> The NftID of the head of the linked list from unique tokens map for the account.
          *
          * @param headNftId value to set
          * @return builder to continue building with
@@ -1445,7 +1456,7 @@ public record Account(
         }
 
         /**
-         * <b>(15)</b> The NftID of the head of the linked list from unique tokens map for the account.
+         * <b>(16)</b> The NftID of the head of the linked list from unique tokens map for the account.
          *
          * @param builder A pre-populated builder
          * @return builder to continue building with
@@ -1456,7 +1467,7 @@ public record Account(
         }
 
         /**
-         * <b>(16)</b> The serial number of the head NftID of the linked list from unique tokens map for the account.
+         * <b>(17)</b> The serial number of the head NftID of the linked list from unique tokens map for the account.
          *
          * @param headNftSerialNumber value to set
          * @return builder to continue building with
@@ -1467,7 +1478,7 @@ public record Account(
         }
 
         /**
-         * <b>(17)</b> The number of NFTs owned by the account.
+         * <b>(18)</b> The number of NFTs owned by the account.
          *
          * @param numberOwnedNftsSupplier value to set
          * @return builder to continue building with
@@ -1478,7 +1489,7 @@ public record Account(
         }
 
         /**
-         * <b>(18)</b> The maximum number of tokens that can be auto-associated with the account.
+         * <b>(19)</b> The maximum number of tokens that can be auto-associated with the account.
          *
          * @param maxAutoAssociations value to set
          * @return builder to continue building with
@@ -1489,7 +1500,7 @@ public record Account(
         }
 
         /**
-         * <b>(19)</b> The number of used auto-association slots.
+         * <b>(20)</b> The number of used auto-association slots.
          *
          * @param usedAutoAssociations value to set
          * @return builder to continue building with
@@ -1500,7 +1511,19 @@ public record Account(
         }
 
         /**
-         * <b>(20)</b> The number of tokens associated with the account. This number is used for
+         * <b>(21)</b> The number of tokens associated with the account. This number is used for
+         * fee calculation during renewal of the account.
+         *
+         * @param numberAssociations value to set
+         * @return builder to continue building with
+         */
+        public Builder numberAssociations(int numberAssociations) {
+            this.numberAssociations = numberAssociations;
+            return this;
+        }
+
+        /**
+         * <b>(22)</b> The number of tokens associated with the account. This number is used for
          * fee calculation during renewal of the account.
          *
          * @param numberAssociationsSupplier value to set
@@ -1512,7 +1535,7 @@ public record Account(
         }
 
         /**
-         * <b>(21)</b> A boolean marking if the account is a smart contract.
+         * <b>(23)</b> A boolean marking if the account is a smart contract.
          *
          * @param smartContract value to set
          * @return builder to continue building with
@@ -1523,7 +1546,19 @@ public record Account(
         }
 
         /**
-         * <b>(22)</b> The number of tokens with a positive balance associated with the account.
+         * <b>(24)</b> The number of tokens with a positive balance associated with the account.
+         * If the account has positive balance in a token, it can not be deleted.
+         *
+         * @param numberPositiveBalances value to set
+         * @return builder to continue building with
+         */
+        public Builder numberPositiveBalances(int numberPositiveBalances) {
+            this.numberPositiveBalances = numberPositiveBalances;
+            return this;
+        }
+
+        /**
+         * <b>(25)</b> The number of tokens with a positive balance associated with the account.
          * If the account has positive balance in a token, it can not be deleted.
          *
          * @param numberPositiveBalancesSupplier value to set
@@ -1535,7 +1570,7 @@ public record Account(
         }
 
         /**
-         * <b>(23)</b> The nonce of the account, used for Ethereum interoperability.
+         * <b>(26)</b> The nonce of the account, used for Ethereum interoperability.
          *
          * @param ethereumNonce value to set
          * @return builder to continue building with
@@ -1546,7 +1581,7 @@ public record Account(
         }
 
         /**
-         * <b>(24)</b> The amount of hbars staked to the account at the start of the last rewarded period.
+         * <b>(27)</b> The amount of hbars staked to the account at the start of the last rewarded period.
          *
          * @param stakeAtStartOfLastRewardedPeriod value to set
          * @return builder to continue building with
@@ -1557,7 +1592,7 @@ public record Account(
         }
 
         /**
-         * <b>(25)</b> (Optional) The id of an auto-renew account, in the same shard and realm as the account, that
+         * <b>(28)</b> (Optional) The id of an auto-renew account, in the same shard and realm as the account, that
          * has signed a transaction allowing the network to use its balance to automatically extend the account's
          * expiration time when it passes.
          *
@@ -1570,7 +1605,7 @@ public record Account(
         }
 
         /**
-         * <b>(25)</b> (Optional) The id of an auto-renew account, in the same shard and realm as the account, that
+         * <b>(28)</b> (Optional) The id of an auto-renew account, in the same shard and realm as the account, that
          * has signed a transaction allowing the network to use its balance to automatically extend the account's
          * expiration time when it passes.
          *
@@ -1583,7 +1618,7 @@ public record Account(
         }
 
         /**
-         * <b>(26)</b> The number of seconds the network should automatically extend the account's expiration by, if the
+         * <b>(29)</b> The number of seconds the network should automatically extend the account's expiration by, if the
          * account has a valid auto-renew account, and is not deleted upon expiration.
          * If this is not provided in an allowed range on account creation, the transaction will fail with INVALID_AUTO_RENEWAL_PERIOD.
          * The default values for the minimum period and maximum period are 30 days and 90 days, respectively.
@@ -1597,7 +1632,7 @@ public record Account(
         }
 
         /**
-         * <b>(27)</b> If this account is a smart-contract, number of key-value pairs stored on the contract.
+         * <b>(30)</b> If this account is a smart-contract, number of key-value pairs stored on the contract.
          * This is used to determine the storage rent for the contract.
          *
          * @param contractKvPairsNumber value to set
@@ -1609,7 +1644,20 @@ public record Account(
         }
 
         /**
-         * <b>(28)</b> (Optional) List of crypto allowances approved by the account.
+         * <b>(31)</b> (Optional) List of crypto allowances approved by the account.
+         * It contains account number for which the allowance is approved to and
+         * the amount approved for that account.
+         *
+         * @param cryptoAllowances value to set
+         * @return builder to continue building with
+         */
+        public Builder cryptoAllowances(@Nonnull List<AccountCryptoAllowance> cryptoAllowances) {
+            this.cryptoAllowances = cryptoAllowances;
+            return this;
+        }
+
+        /**
+         * <b>(32)</b> (Optional) List of crypto allowances approved by the account.
          * It contains account number for which the allowance is approved to and
          * the amount approved for that account.
          *
@@ -1622,7 +1670,22 @@ public record Account(
         }
 
         /**
-         * <b>(29)</b> (Optional) List of non-fungible token allowances approved for all by the account.
+         * <b>(33)</b> (Optional) List of non-fungible token allowances approved for all by the account.
+         * It contains account number approved for spending all serial numbers for the given
+         * NFT token number using approved_for_all flag.
+         * Allowances for a specific serial number is stored in the NFT itself in state.
+         *
+         * @param approveForAllNftAllowances value to set
+         * @return builder to continue building with
+         */
+        public Builder approveForAllNftAllowances(
+                @Nonnull List<AccountApprovalForAllAllowance> approveForAllNftAllowances) {
+            this.approveForAllNftAllowances = approveForAllNftAllowances;
+            return this;
+        }
+
+        /**
+         * <b>(34)</b> (Optional) List of non-fungible token allowances approved for all by the account.
          * It contains account number approved for spending all serial numbers for the given
          * NFT token number using approved_for_all flag.
          * Allowances for a specific serial number is stored in the NFT itself in state.
@@ -1637,7 +1700,20 @@ public record Account(
         }
 
         /**
-         * <b>(30)</b> (Optional) List of fungible token allowances approved by the account.
+         * <b>(35)</b> (Optional) List of fungible token allowances approved by the account.
+         * It contains account number for which the allowance is approved to and  the token number.
+         * It also contains and the amount approved for that account.
+         *
+         * @param tokenAllowances value to set
+         * @return builder to continue building with
+         */
+        public Builder tokenAllowances(@Nonnull List<AccountFungibleTokenAllowance> tokenAllowances) {
+            this.tokenAllowances = tokenAllowances;
+            return this;
+        }
+
+        /**
+         * <b>(36)</b> (Optional) List of fungible token allowances approved by the account.
          * It contains account number for which the allowance is approved to and  the token number.
          * It also contains and the amount approved for that account.
          *
@@ -1650,7 +1726,7 @@ public record Account(
         }
 
         /**
-         * <b>(31)</b> The number of tokens for which this account is treasury
+         * <b>(37)</b> The number of tokens for which this account is treasury
          *
          * @param numberTreasuryTitles value to set
          * @return builder to continue building with
@@ -1661,7 +1737,7 @@ public record Account(
         }
 
         /**
-         * <b>(32)</b> A flag indicating if the account is expired and pending removal.
+         * <b>(38)</b> A flag indicating if the account is expired and pending removal.
          * Only the entity expiration system task toggles this flag when it reaches this account
          * and finds it expired. Before setting the flag the system task checks if the account has
          * an auto-renew account with balance. This is done to prevent a zero-balance account with a funded
@@ -1677,7 +1753,7 @@ public record Account(
         }
 
         /**
-         * <b>(33)</b> The first key in the doubly-linked list of this contract's storage mappings;
+         * <b>(39)</b> The first key in the doubly-linked list of this contract's storage mappings;
          * It will be null if if the account is not a contract or the contract has no storage mappings.
          *
          * @param firstContractStorageKey value to set
@@ -1689,7 +1765,7 @@ public record Account(
         }
 
         /**
-         * <b>(34)</b> A pending airdrop ID at the head of the linked list for this account
+         * <b>(40)</b> A pending airdrop ID at the head of the linked list for this account
          * from the account airdrops map.<br/>
          * The account airdrops are connected by including the "next" and "previous"
          * `PendingAirdropID` in each `AccountAirdrop` message.
@@ -1706,7 +1782,7 @@ public record Account(
         }
 
         /**
-         * <b>(34)</b> A pending airdrop ID at the head of the linked list for this account
+         * <b>(40)</b> A pending airdrop ID at the head of the linked list for this account
          * from the account airdrops map.<br/>
          * The account airdrops are connected by including the "next" and "previous"
          * `PendingAirdropID` in each `AccountAirdrop` message.

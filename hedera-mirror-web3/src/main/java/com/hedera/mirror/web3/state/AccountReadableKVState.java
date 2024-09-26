@@ -18,10 +18,11 @@ package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
+import static com.hedera.mirror.web3.state.Utils.convertCanonicalAccountIdFromEntity;
+import static com.hedera.mirror.web3.state.Utils.convertEncodedEntityIdToAccountID;
+import static com.hedera.mirror.web3.state.Utils.convertEncodedEntityIdToTokenID;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -38,7 +39,6 @@ import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.utils.Suppliers;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
@@ -111,10 +111,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         var tokenAccountBalances = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId(), timestamp);
 
         return Account.newBuilder()
-                .accountId(new AccountID(
-                        entity.getShard(),
-                        entity.getRealm(),
-                        new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getNum())))
+                .accountId(convertCanonicalAccountIdFromEntity(entity))
                 .alias(
                         entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
                                 ? Bytes.wrap(entity.getEvmAddress())
@@ -132,10 +129,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                 .smartContract(CONTRACT.equals(entity.getType()))
                 .numberPositiveBalances(() -> tokenAccountBalances.get().positive())
                 .ethereumNonce(entity.getEthereumNonce() != null ? entity.getEthereumNonce() : 0L)
-                .autoRenewAccountId(new AccountID(
-                        entity.getShard(),
-                        entity.getRealm(),
-                        new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getAutoRenewAccountId())))
+                .autoRenewAccountId(convertEncodedEntityIdToAccountID(entity.getAutoRenewAccountId()))
                 .autoRenewSeconds(
                         entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : DEFAULT_AUTO_RENEW_PERIOD)
                 .cryptoAllowances(getCryptoAllowances(entity.getId(), timestamp))
@@ -230,24 +224,20 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
 
     private AccountFungibleTokenAllowance convertFungibleAllowance(final TokenAllowance tokenAllowance) {
         return new AccountFungibleTokenAllowance(
-                new TokenID(0L, 0L, tokenAllowance.getTokenId()),
-                new com.hedera.hapi.node.base.AccountID(
-                        0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, tokenAllowance.getSpender())),
+                convertEncodedEntityIdToTokenID(tokenAllowance.getTokenId()),
+                convertEncodedEntityIdToAccountID(tokenAllowance.getSpender()),
                 tokenAllowance.getAmount());
     }
 
     private AccountCryptoAllowance convertCryptoAllowance(final CryptoAllowance cryptoAllowance) {
         return new AccountCryptoAllowance(
-                new com.hedera.hapi.node.base.AccountID(
-                        0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, cryptoAllowance.getSpender())),
-                cryptoAllowance.getAmount());
+                convertEncodedEntityIdToAccountID(cryptoAllowance.getSpender()), cryptoAllowance.getAmount());
     }
 
     private AccountApprovalForAllAllowance convertNftAllowance(final NftAllowance nftAllowance) {
         return new AccountApprovalForAllAllowance(
-                new TokenID(0L, 0L, nftAllowance.getTokenId()),
-                new com.hedera.hapi.node.base.AccountID(
-                        0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, nftAllowance.getSpender())));
+                convertEncodedEntityIdToTokenID(nftAllowance.getTokenId()),
+                convertEncodedEntityIdToAccountID(nftAllowance.getSpender()));
     }
 
     private record TokenAccountBalances(int all, int positive) {}
