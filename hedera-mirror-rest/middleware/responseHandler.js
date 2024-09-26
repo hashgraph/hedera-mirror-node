@@ -15,7 +15,13 @@
  */
 
 import config from '../config';
-import {requestPathLabel, requestStartTime, responseContentType, responseDataLabel} from '../constants';
+import {
+  contentTypeHeader,
+  requestPathLabel,
+  requestStartTime,
+  responseDataLabel,
+  responseHeadersLabel,
+} from '../constants';
 import {NotFoundError} from '../errors';
 import {JSONStringify} from '../utils';
 
@@ -23,7 +29,6 @@ const {
   response: {headers},
 } = config;
 
-const CONTENT_TYPE_HEADER = 'Content-Type';
 const APPLICATION_JSON = 'application/json; charset=utf-8';
 const LINK_NEXT_HEADER = 'Link';
 const linkNextHeaderValue = (linksNext) => `<${linksNext}>; rel="next"`;
@@ -37,18 +42,21 @@ const responseHandler = async (req, res, next) => {
     throw new NotFoundError();
   } else {
     const path = res.locals[requestPathLabel] ?? req.route.path;
-    res.set(headers.default);
-    res.set(headers.path[path]);
+    const mergedHeaders = {
+      ...headers.default,
+      ...(headers.path[path] ?? {}),
+      ...(res.locals[responseHeadersLabel] ?? {}),
+    };
+    res.set(mergedHeaders);
 
     const code = res.locals.statusCode;
-    const contentType = res.locals[responseContentType] || APPLICATION_JSON;
     const linksNext = res.locals.responseData.links?.next;
     res.status(code);
-    res.set(CONTENT_TYPE_HEADER, contentType);
 
     if (linksNext) {
       res.set(LINK_NEXT_HEADER, linkNextHeaderValue(linksNext));
     }
+    const contentType = res.get(contentTypeHeader);
 
     if (contentType === APPLICATION_JSON) {
       res.send(JSONStringify(responseData));

@@ -37,6 +37,7 @@ import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
+import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
@@ -47,7 +48,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
 import lombok.extern.java.Log;
 
 /**
@@ -123,13 +124,13 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                 .tinybarBalance(getAccountBalance(entity, timestamp))
                 .memo(entity.getMemo())
                 .deleted(Optional.ofNullable(entity.getDeleted()).orElse(false))
-                .receiverSigRequired(entity.getReceiverSigRequired() != null ? entity.getReceiverSigRequired() : false)
+                .receiverSigRequired(entity.getReceiverSigRequired() != null && entity.getReceiverSigRequired())
                 .numberOwnedNfts(getOwnedNfts(entity.getId(), timestamp))
                 .maxAutoAssociations(Optional.ofNullable(entity.getMaxAutomaticTokenAssociations())
                         .orElse(0))
-                .numberAssociations(tokenAccountBalances.all())
+                .numberAssociations(() -> tokenAccountBalances.get().all())
                 .smartContract(CONTRACT.equals(entity.getType()))
-                .numberPositiveBalances(tokenAccountBalances.positive())
+                .numberPositiveBalances(() -> tokenAccountBalances.get().positive())
                 .ethereumNonce(entity.getEthereumNonce() != null ? entity.getEthereumNonce() : 0L)
                 .autoRenewAccountId(new AccountID(
                         entity.getShard(),
@@ -144,10 +145,10 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                 .build();
     }
 
-    private Long getOwnedNfts(Long accountId, final Optional<Long> timestamp) {
-        return timestamp
-                .map(aLong -> nftRepository.countByAccountIdAndTimestampNotDeleted(accountId, aLong))
-                .orElseGet(() -> nftRepository.countByAccountIdNotDeleted(accountId));
+    private Supplier<Long> getOwnedNfts(Long accountId, final Optional<Long> timestamp) {
+        return Suppliers.memoize(() -> timestamp
+                .map(t -> nftRepository.countByAccountIdAndTimestampNotDeleted(accountId, t))
+                .orElseGet(() -> nftRepository.countByAccountIdNotDeleted(accountId)));
     }
 
     /**
@@ -159,69 +160,52 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
      * If the entity creation is after the passed timestamp - return 0L (the entity was not created)
      * Else get the balance from the historical query `findHistoricalAccountBalanceUpToTimestamp`
      */
-    private Long getAccountBalance(Entity entity, final Optional<Long> timestamp) {
-        if (timestamp.isPresent()) {
-            Long createdTimestamp = entity.getCreatedTimestamp();
-            if (createdTimestamp == null || timestamp.get() >= createdTimestamp) {
-                return accountBalanceRepository
-                        .findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get())
-                        .orElse(ZERO_BALANCE);
-            } else {
-                return ZERO_BALANCE;
-            }
-        }
-
-        return entity.getBalance() != null ? entity.getBalance() : ZERO_BALANCE;
+    private Supplier<Long> getAccountBalance(final Entity entity, final Optional<Long> timestamp) {
+        return Suppliers.memoize(() -> timestamp
+                .map(t -> {
+                    Long createdTimestamp = entity.getCreatedTimestamp();
+                    if (createdTimestamp == null || t >= createdTimestamp) {
+                        return accountBalanceRepository
+                                .findHistoricalAccountBalanceUpToTimestamp(entity.getId(), t)
+                                .orElse(ZERO_BALANCE);
+                    } else {
+                        return ZERO_BALANCE;
+                    }
+                })
+                .orElseGet(() -> Optional.ofNullable(entity.getBalance()).orElse(ZERO_BALANCE)));
     }
 
-    private List<AccountCryptoAllowance> getCryptoAllowances(Long ownerId, final Optional<Long> timestamp) {
-        final var cryptoAllowances = timestamp.isPresent()
-                ? cryptoAllowanceRepository.findByOwnerAndTimestamp(ownerId, timestamp.get())
-                : cryptoAllowanceRepository.findByOwner(ownerId);
-
-        return cryptoAllowances.stream().map(this::convertCryptoAllowance).toList();
+    private Supplier<List<AccountCryptoAllowance>> getCryptoAllowances(
+            final Long ownerId, final Optional<Long> timestamp) {
+        return Suppliers.memoize(() -> timestamp
+                .map(t -> cryptoAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
+                .orElseGet(() -> cryptoAllowanceRepository.findByOwner(ownerId))
+                .stream()
+                .map(this::convertCryptoAllowance)
+                .toList());
     }
 
-    private AccountCryptoAllowance convertCryptoAllowance(final CryptoAllowance cryptoAllowance) {
-        return new AccountCryptoAllowance(
-                new com.hedera.hapi.node.base.AccountID(
-                        0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, cryptoAllowance.getSpender())),
-                cryptoAllowance.getAmount());
+    private Supplier<List<AccountFungibleTokenAllowance>> getFungibleTokenAllowances(
+            final Long ownerId, final Optional<Long> timestamp) {
+        return Suppliers.memoize(() -> timestamp
+                .map(t -> tokenAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
+                .orElseGet(() -> tokenAllowanceRepository.findByOwner(ownerId))
+                .stream()
+                .map(this::convertFungibleAllowance)
+                .toList());
     }
 
-    private List<AccountFungibleTokenAllowance> getFungibleTokenAllowances(
-            Long ownerId, final Optional<Long> timestamp) {
-        final var fungibleAllowances = timestamp.isPresent()
-                ? tokenAllowanceRepository.findByOwnerAndTimestamp(ownerId, timestamp.get())
-                : tokenAllowanceRepository.findByOwner(ownerId);
-
-        return fungibleAllowances.stream().map(this::convertFungibleAllowance).toList();
+    private Supplier<List<AccountApprovalForAllAllowance>> getApproveForAllNfts(
+            final Long ownerId, final Optional<Long> timestamp) {
+        return Suppliers.memoize(() -> timestamp
+                .map(t -> nftAllowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(ownerId, t))
+                .orElseGet(() -> nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId))
+                .stream()
+                .map(this::convertNftAllowance)
+                .toList());
     }
 
-    private AccountFungibleTokenAllowance convertFungibleAllowance(final TokenAllowance tokenAllowance) {
-        return new AccountFungibleTokenAllowance(
-                new TokenID(0L, 0L, tokenAllowance.getTokenId()),
-                new com.hedera.hapi.node.base.AccountID(
-                        0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, tokenAllowance.getSpender())),
-                tokenAllowance.getAmount());
-    }
-
-    private List<AccountApprovalForAllAllowance> getApproveForAllNfts(Long ownerId, final Optional<Long> timestamp) {
-        final var nftAllowances = timestamp.isPresent()
-                ? nftAllowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(ownerId, timestamp.get())
-                : nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId);
-
-        return nftAllowances.stream().map(this::convertNftAllowance).collect(Collectors.toList());
-    }
-
-    private AccountApprovalForAllAllowance convertNftAllowance(final NftAllowance nftAllowance) {
-        return new AccountApprovalForAllAllowance(
-                new TokenID(0L, 0L, nftAllowance.getTokenId()),
-                new com.hedera.hapi.node.base.AccountID(
-                        0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, nftAllowance.getSpender())));
-    }
-
-    private TokenAccountBalances getNumberOfAllAndPositiveBalanceTokenAssociations(
+    private Supplier<TokenAccountBalances> getNumberOfAllAndPositiveBalanceTokenAssociations(
             long accountId, final Optional<Long> timestamp) {
         var counts = timestamp
                 .map(t -> tokenAccountRepository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
@@ -241,7 +225,29 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         final var allAggregated = all;
         final var positiveAggregated = positive;
 
-        return new TokenAccountBalances(allAggregated, positiveAggregated);
+        return Suppliers.memoize(() -> new TokenAccountBalances(allAggregated, positiveAggregated));
+    }
+
+    private AccountFungibleTokenAllowance convertFungibleAllowance(final TokenAllowance tokenAllowance) {
+        return new AccountFungibleTokenAllowance(
+                new TokenID(0L, 0L, tokenAllowance.getTokenId()),
+                new com.hedera.hapi.node.base.AccountID(
+                        0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, tokenAllowance.getSpender())),
+                tokenAllowance.getAmount());
+    }
+
+    private AccountCryptoAllowance convertCryptoAllowance(final CryptoAllowance cryptoAllowance) {
+        return new AccountCryptoAllowance(
+                new com.hedera.hapi.node.base.AccountID(
+                        0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, cryptoAllowance.getSpender())),
+                cryptoAllowance.getAmount());
+    }
+
+    private AccountApprovalForAllAllowance convertNftAllowance(final NftAllowance nftAllowance) {
+        return new AccountApprovalForAllAllowance(
+                new TokenID(0L, 0L, nftAllowance.getTokenId()),
+                new com.hedera.hapi.node.base.AccountID(
+                        0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, nftAllowance.getSpender())));
     }
 
     private record TokenAccountBalances(int all, int positive) {}

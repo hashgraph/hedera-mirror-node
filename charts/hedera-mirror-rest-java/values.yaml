@@ -79,6 +79,8 @@ ingress:
       paths:
         # the rest of /api/v1/* is still handled by the Node.js based REST API logic, except for these paths
         - path: "/api/v1/accounts/{id}/allowances/nfts"
+        - path: "/api/v1/accounts/{id}/airdrops/outstanding"
+        - path: "/api/v1/accounts/{id}/airdrops/pending"
         - path: "/api/v1/topics/{id}"
           type: Exact
   tls:
