@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import lombok.extern.java.Log;
 
 /**
  * This class serves as a repository layer between hedera app services read only state and the Postgres database in mirror-node
@@ -58,7 +57,6 @@ import lombok.extern.java.Log;
  * The object, which is read from DB is converted to the PBJ generated format, so that it can properly be utilized by the hedera app components
  * */
 @Named
-@Log
 public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Account> {
     private static final String KEY = "ACCOUNTS";
     private static final Long ZERO_BALANCE = 0L;
