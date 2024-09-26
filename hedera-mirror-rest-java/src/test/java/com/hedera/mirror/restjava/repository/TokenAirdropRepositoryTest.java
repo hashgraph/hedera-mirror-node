@@ -53,10 +53,9 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
     private final TokenAirdropRepository repository;
 
     // Setup objects for triple condition test
-    private Map<TokenAirdropRepositoryTest.Tuple, TokenAirdrop> airdrops;
+    private Map<ExpectedIndex, TokenAirdrop> airdrops;
 
-    private record TestSpec(
-            TokenAirdropRequest request, List<TokenAirdropRepositoryTest.Tuple> expected, String description) {}
+    private record TestSpec(TokenAirdropRequest request, List<ExpectedIndex> expected, String description) {}
 
     private List<TokenAirdropRepositoryTest.TestSpec> testSpecs;
     private Long receiver = 100L;
@@ -265,6 +264,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
 
     private void setupTripleConditionAirdrops() {
         // Set up 3 (senders) x 3 (tokens) x 3 (serial number) airdrops
+        // Receiver is always the same, so these are tested with Pending type Token Airdrop Requests
         var entityIds =
                 IntStream.range(0, 9).mapToLong(x -> domainBuilder.id()).boxed().toList();
         senders = entityIds.subList(0, 3);
@@ -285,7 +285,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                     .serialNumber(serial)
                                     .tokenId(tokenId))
                             .persist();
-                    airdrops.put(new Tuple(senderIndex, tokenIndex, serialIndex), airdrop);
+                    airdrops.put(new ExpectedIndex(senderIndex, tokenIndex, serialIndex), airdrop);
                 }
             }
         }
@@ -315,7 +315,11 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(0, 0, 0), new Tuple(0, 0, 1), new Tuple(0, 0, 2), new Tuple(0, 1, 0)),
+                        List.of(
+                                new ExpectedIndex(0, 0, 0),
+                                new ExpectedIndex(0, 0, 1),
+                                new ExpectedIndex(0, 0, 2),
+                                new ExpectedIndex(0, 1, 0)),
                         "given sender >= 0, token >=0, serial >=0, limit 4, expect (0, 0, 0), (0, 0, 1), (0, 0, 2), and, (0, 1, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -339,7 +343,11 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(0, 0, 2), new Tuple(0, 1, 2), new Tuple(0, 2, 2), new Tuple(1, 0, 0)),
+                        List.of(
+                                new ExpectedIndex(0, 0, 2),
+                                new ExpectedIndex(0, 1, 2),
+                                new ExpectedIndex(0, 2, 2),
+                                new ExpectedIndex(1, 0, 0)),
                         "given sender >=0, token >=0, serial >=2, limit 4, expect (0, 0, 2), (0, 1, 2), (0, 2, 2), and, (1, 0, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -363,7 +371,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(2, 2, 2)),
+                        List.of(new ExpectedIndex(2, 2, 2)),
                         "given sender >=2, token >=2, serial >=2, limit 4, expect (2, 2, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -387,7 +395,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(2, 0, 2), new Tuple(2, 1, 2), new Tuple(2, 2, 2)),
+                        List.of(new ExpectedIndex(2, 0, 2), new ExpectedIndex(2, 1, 2), new ExpectedIndex(2, 2, 2)),
                         "given sender >=2, token >=0, serial >=2, limit 4, expect (2, 0, 2), (2, 1, 2), and, (2, 2, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -411,7 +419,11 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(1, 0, 2), new Tuple(1, 1, 2), new Tuple(1, 2, 2), new Tuple(2, 0, 0)),
+                        List.of(
+                                new ExpectedIndex(1, 0, 2),
+                                new ExpectedIndex(1, 1, 2),
+                                new ExpectedIndex(1, 2, 2),
+                                new ExpectedIndex(2, 0, 0)),
                         "given sender >=1, token >=0, serial >=2, limit 4, expect (1, 0, 2), (1, 1, 2), (1, 2, 2), and, (2, 0, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -435,7 +447,11 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(1, 2, 1), new Tuple(1, 2, 2), new Tuple(2, 0, 0), new Tuple(2, 0, 1)),
+                        List.of(
+                                new ExpectedIndex(1, 2, 1),
+                                new ExpectedIndex(1, 2, 2),
+                                new ExpectedIndex(2, 0, 0),
+                                new ExpectedIndex(2, 0, 1)),
                         "given sender >=1, token >=2, serial >=1, limit 4, expect (1, 2, 1), (1, 2, 2), (2, 0, 0), and, (2, 0, 1)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -459,7 +475,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(1, 2, 0), new Tuple(2, 2, 0)),
+                        List.of(new ExpectedIndex(1, 2, 0), new ExpectedIndex(2, 2, 0)),
                         "given sender >=1, token >=2, serial =0, limit 4, expect (1, 2, 0) and, (2, 2, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -484,7 +500,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(2, 2, 0), new Tuple(1, 2, 0)),
+                        List.of(new ExpectedIndex(2, 2, 0), new ExpectedIndex(1, 2, 0)),
                         "given order = desc, sender >=1, token >=2, serial =0, limit 4, expect (2, 2, 0) and (1, 2, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -508,7 +524,11 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(0, 1, 0), new Tuple(0, 1, 1), new Tuple(0, 1, 2), new Tuple(0, 2, 0)),
+                        List.of(
+                                new ExpectedIndex(0, 1, 0),
+                                new ExpectedIndex(0, 1, 1),
+                                new ExpectedIndex(0, 1, 2),
+                                new ExpectedIndex(0, 2, 0)),
                         "given sender >=0, token >=1, serial >=0, limit 4, expect (0, 1, 0), (0, 1, 1), (0, 1, 2), and, (0, 2, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -532,12 +552,12 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                 .type(PENDING)
                                 .build(),
                         List.of(
-                                new Tuple(0, 1, 0),
-                                new Tuple(0, 1, 1),
-                                new Tuple(0, 1, 2),
-                                new Tuple(0, 2, 0),
-                                new Tuple(0, 2, 1),
-                                new Tuple(0, 2, 2)),
+                                new ExpectedIndex(0, 1, 0),
+                                new ExpectedIndex(0, 1, 1),
+                                new ExpectedIndex(0, 1, 2),
+                                new ExpectedIndex(0, 2, 0),
+                                new ExpectedIndex(0, 2, 1),
+                                new ExpectedIndex(0, 2, 2)),
                         "given sender =0, token >=1, serial >=0, expect (0, 1, 0), (0, 1, 1), (0, 1, 2), (0, 2, 0), (0, 2, 1), and, (0, 2, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -560,7 +580,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(0, 1, 1), new Tuple(0, 1, 2)),
+                        List.of(new ExpectedIndex(0, 1, 1), new ExpectedIndex(0, 1, 2)),
                         "given sender <1, token =1, serial >=1, expect (0, 1, 1), and, (0, 1, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -579,7 +599,11 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(0, 1, 1), new Tuple(0, 1, 2), new Tuple(1, 1, 1), new Tuple(1, 1, 2)),
+                        List.of(
+                                new ExpectedIndex(0, 1, 1),
+                                new ExpectedIndex(0, 1, 2),
+                                new ExpectedIndex(1, 1, 1),
+                                new ExpectedIndex(1, 1, 2)),
                         "given token =1, serial >=1, expect (0, 1, 1), (0, 1, 2), (1, 1, 1), and, (1, 1, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -598,7 +622,11 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(0, 0, 0), new Tuple(0, 0, 1), new Tuple(0, 0, 2), new Tuple(0, 1, 0)),
+                        List.of(
+                                new ExpectedIndex(0, 0, 0),
+                                new ExpectedIndex(0, 0, 1),
+                                new ExpectedIndex(0, 0, 2),
+                                new ExpectedIndex(0, 1, 0)),
                         "given sender <1, serial >=1, limit 4, expect (0, 0, 0), (0, 0, 1), (0, 0, 2), and (0, 1, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -626,7 +654,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(1, 1, 1), new Tuple(1, 1, 2)),
+                        List.of(new ExpectedIndex(1, 1, 1), new ExpectedIndex(1, 1, 2)),
                         "given 0 < sender < 2 , 0 < token <= 1, 1 <= serial <= 2, expect (1, 1, 1), (1, 1, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
@@ -652,8 +680,97 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new Tuple(0, 2, 1), new Tuple(0, 2, 2)),
-                        "given 0 <= sender <1, token =1, 1 <= serial <=2, expect (0, 2, 1), and, (0, 2, 2)"));
+                        List.of(new ExpectedIndex(0, 2, 1), new ExpectedIndex(0, 2, 2)),
+                        "given 0 <= sender <1, token =1, 1 <= serial <=2, expect (0, 2, 1), and, (0, 2, 2)"),
+                new TokenAirdropRepositoryTest.TestSpec(
+                        TokenAirdropRequest.builder()
+                                .accountId(accountId)
+                                .entityIds(new Bound(
+                                        paramToArray(new EntityIdRangeParameter(RangeOperator.LT, senders.get(2))),
+                                        true,
+                                        Constants.ACCOUNT_ID,
+                                        TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
+                                .limit(4)
+                                .tokenIds(new Bound(
+                                        paramToArray(new EntityIdRangeParameter(RangeOperator.LTE, tokenIds.get(1))),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        TOKEN_AIRDROP.TOKEN_ID))
+                                .serialNumbers(new Bound(
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GT, serialNumbers.get(0))),
+                                        false,
+                                        Constants.SERIAL_NUMBER,
+                                        TOKEN_AIRDROP.SERIAL_NUMBER))
+                                .type(PENDING)
+                                .build(),
+                        List.of(
+                                new ExpectedIndex(0, 0, 1),
+                                new ExpectedIndex(0, 0, 2),
+                                new ExpectedIndex(0, 1, 1),
+                                new ExpectedIndex(0, 1, 2)),
+                        "given sender <2, token <=1, serial >0, limit 4, expect (0, 0, 1), (0, 0, 2), (0, 1, 1), and, (0, 1, 2)"),
+                new TokenAirdropRepositoryTest.TestSpec(
+                        TokenAirdropRequest.builder()
+                                .accountId(accountId)
+                                .limit(8)
+                                .type(PENDING)
+                                .build(),
+                        List.of(
+                                new ExpectedIndex(0, 0, 0),
+                                new ExpectedIndex(0, 0, 1),
+                                new ExpectedIndex(0, 0, 2),
+                                new ExpectedIndex(0, 1, 0),
+                                new ExpectedIndex(0, 1, 1),
+                                new ExpectedIndex(0, 1, 2),
+                                new ExpectedIndex(0, 2, 0),
+                                new ExpectedIndex(0, 2, 1)),
+                        "given limit 8, expect (0, 0, 0), (0, 0, 1), (0, 0, 2), (0, 1, 0), (0, 1, 1), (0, 1, 2), (0, 2, 0), and, (0, 2, 1)"),
+                new TokenAirdropRepositoryTest.TestSpec(
+                        TokenAirdropRequest.builder()
+                                .accountId(accountId)
+                                .limit(8)
+                                .order(Direction.DESC)
+                                .type(PENDING)
+                                .build(),
+                        List.of(
+                                new ExpectedIndex(2, 2, 2),
+                                new ExpectedIndex(2, 2, 1),
+                                new ExpectedIndex(2, 2, 0),
+                                new ExpectedIndex(2, 1, 2),
+                                new ExpectedIndex(2, 1, 1),
+                                new ExpectedIndex(2, 1, 0),
+                                new ExpectedIndex(2, 0, 2),
+                                new ExpectedIndex(2, 0, 1)),
+                        "given limit 8, order desc expect (2, 2, 2), (2, 2, 1), (2, 2, 0), (2, 1, 2), (2, 1, 1), (2, 1, 0), (2, 0, 2), and, (2, 0, 1)"),
+                new TokenAirdropRepositoryTest.TestSpec(
+                        TokenAirdropRequest.builder()
+                                .accountId(accountId)
+                                .entityIds(new Bound(
+                                        paramToArray(new EntityIdRangeParameter(RangeOperator.LT, senders.get(1))),
+                                        true,
+                                        Constants.ACCOUNT_ID,
+                                        TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
+                                .limit(4)
+                                .tokenIds(new Bound(
+                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GT, tokenIds.get(1))),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        TOKEN_AIRDROP.TOKEN_ID))
+                                .serialNumbers(new Bound(
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, serialNumbers.get(2))),
+                                        false,
+                                        Constants.SERIAL_NUMBER,
+                                        TOKEN_AIRDROP.SERIAL_NUMBER))
+                                .type(PENDING)
+                                .build(),
+                        List.of(
+                                new ExpectedIndex(0, 0, 0),
+                                new ExpectedIndex(0, 0, 1),
+                                new ExpectedIndex(0, 0, 2),
+                                new ExpectedIndex(0, 1, 0)),
+                        "given sender <1, token >1, serial >=2, limit 4, expect (0, 0, 0), (0, 0, 1), (0, 0, 2), and, (0, 1, 0)"));
     }
 
     private void assertTokenAirdrop() {
@@ -678,5 +795,5 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                 Arguments.of(Direction.DESC, PENDING));
     }
 
-    private record Tuple(int senderIndex, int tokenIndex, int serialIndex) {}
+    private record ExpectedIndex(int senderIndex, int tokenIndex, int serialIndex) {}
 }

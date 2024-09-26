@@ -45,18 +45,12 @@ interface JooqRepository {
     }
 
     default Condition getConditions(List<Bound> bounds, boolean upper) {
-        if (bounds.isEmpty()) {
-            return noCondition();
-        }
-
-        var firstBound = bounds.getFirst();
-        var firstParam = upper ? firstBound.getUpper() : firstBound.getLower();
-        var condition = getCondition(firstParam, firstBound.getField());
-        for (int i = 1; i < bounds.size(); i++) {
-            var bound = bounds.get(i);
+        var condition = noCondition();
+        for (var bound : bounds) {
             var param = upper ? bound.getUpper() : bound.getLower();
             condition = condition.and(getCondition(param, bound.getField()));
         }
+
         return condition;
     }
 
