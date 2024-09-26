@@ -53,7 +53,7 @@ type Db struct {
 	Password         string
 	Pool             Pool
 	Port             uint16
-	StatementTimeout uint `yaml:"statementTimeout"`
+	StatementTimeout int `yaml:"statementTimeout"`
 	Username         string
 }
 

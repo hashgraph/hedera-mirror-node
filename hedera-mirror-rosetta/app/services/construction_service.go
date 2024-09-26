@@ -476,7 +476,11 @@ func (c *constructionAPIService) getSdkPayerAccountId(payerAccountId types.Accou
 	_ *rTypes.Error,
 ) {
 	if !payerAccountId.HasAlias() {
-		return payerAccountId.ToSdkAccountId(), nil
+		accountId, err := payerAccountId.ToSdkAccountId()
+		if err != nil {
+			return zero, errors.ErrInvalidAccount
+		}
+		return accountId, nil
 	}
 
 	// if it's an alias account, look up the account map metadata for its `shard.realm.num` account id
