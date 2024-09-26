@@ -19,9 +19,13 @@ package com.hedera.mirror.web3.state;
 import static com.hedera.services.utils.EntityIdUtils.entityIdFromId;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.store.models.Id;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
@@ -32,6 +36,40 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CommonEntityAccessor {
     private final EntityRepository entityRepository;
+
+    public TokenID convertEncodedEntityIdToTokenID(final Long entityId) {
+        final var decodedEntityId = EntityId.of(entityId);
+
+        return new TokenID(decodedEntityId.getShard(), decodedEntityId.getRealm(), decodedEntityId.getNum());
+    }
+
+    public AccountID convertEntityToAccountID(final Entity entity) {
+        if (entity.getEvmAddress() != null && entity.getEvmAddress().length > 0) {
+            return new AccountID(
+                    entity.getShard(),
+                    entity.getRealm(),
+                    new OneOf<>(AccountOneOfType.ALIAS, Bytes.wrap(entity.getEvmAddress())));
+        }
+
+        if (entity.getAlias() != null && entity.getAlias().length > 0) {
+            return new AccountID(
+                    entity.getShard(),
+                    entity.getRealm(),
+                    new OneOf<>(AccountOneOfType.ALIAS, Bytes.wrap(entity.getAlias())));
+        }
+
+        return new AccountID(
+                entity.getShard(), entity.getRealm(), new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getNum()));
+    }
+
+    public AccountID convertEncodedEntityIdToAccountID(final Long entityId) {
+        final var decodedEntityId = EntityId.of(entityId);
+
+        return new AccountID(
+                decodedEntityId.getShard(),
+                decodedEntityId.getRealm(),
+                new OneOf<>(AccountOneOfType.ACCOUNT_NUM, decodedEntityId.getNum()));
+    }
 
     public @Nonnull Optional<Entity> get(@Nonnull AccountID accountID, final Optional<Long> timestamp) {
         if (accountID.hasAccountNum()) {

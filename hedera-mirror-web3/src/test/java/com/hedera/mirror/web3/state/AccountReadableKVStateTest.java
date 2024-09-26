@@ -72,6 +72,9 @@ class AccountReadableKVStateTest {
     private static final long NUM = 1252L;
     private static final AccountID ACCOUNT_ID =
             new AccountID(SHARD, REALM, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, NUM));
+    private static final EntityId AUTO_RENEW_ACCOUNT_ID = EntityId.of(SHARD, REALM, NUM + 1);
+    private static final AccountID AUTO_RENEW_ACCOUNT_ID_ACCOUNT_ID =
+            new AccountID(SHARD, REALM, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, NUM + 1));
     private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final long BALANCE = 3L;
     private static final long AUTO_RENEW_PERIOD = 4_000_000_000L;
@@ -156,6 +159,7 @@ class AccountReadableKVStateTest {
         entity.setDeleted(false);
         entity.setAutoRenewPeriod(AUTO_RENEW_PERIOD);
         entity.setProxyAccountId(PROXY_ACCOUNT_ID);
+        entity.setAutoRenewAccountId(AUTO_RENEW_ACCOUNT_ID.getId());
         entity.setMaxAutomaticTokenAssociations(MAX_AUTOMATIC_TOKEN_ASSOCIATIONS);
         entity.setType(EntityType.ACCOUNT);
 
@@ -166,6 +170,7 @@ class AccountReadableKVStateTest {
     void accountFieldsMatchEntityFields() {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+        when(commonEntityAccessor.convertEntityToAccountID(entity)).thenReturn(ACCOUNT_ID);
         assertThat(accountReadableKVState.get(ACCOUNT_ID)).satisfies(account -> assertThat(account)
                 .returns(
                         new AccountID(
@@ -314,8 +319,10 @@ class AccountReadableKVStateTest {
 
     @Test
     void cryptoAllowancesMatchValuesFromRepository() {
+        allowanceSetup();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+        when(commonEntityAccessor.convertEntityToAccountID(entity)).thenReturn(ACCOUNT_ID);
         CryptoAllowance firstAllowance = new CryptoAllowance();
         firstAllowance.setSpender(123L);
         firstAllowance.setOwner(entity.getId());
@@ -345,8 +352,10 @@ class AccountReadableKVStateTest {
 
     @Test
     void cryptoAllowancesMatchValuesFromRepositoryHistorical() {
+        allowanceSetup();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
+        when(commonEntityAccessor.convertEntityToAccountID(entity)).thenReturn(ACCOUNT_ID);
         CryptoAllowance firstAllowance = new CryptoAllowance();
         firstAllowance.setSpender(123L);
         firstAllowance.setOwner(entity.getId());
@@ -356,7 +365,6 @@ class AccountReadableKVStateTest {
         secondAllowance.setSpender(234L);
         secondAllowance.setOwner(entity.getId());
         secondAllowance.setAmount(60L);
-
         when(cryptoAllowanceRepository.findByOwnerAndTimestamp(entity.getId(), timestamp.get()))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 
@@ -376,8 +384,10 @@ class AccountReadableKVStateTest {
 
     @Test
     void fungibleTokenAllowancesMatchValuesFromRepository() {
+        allowanceSetup();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+        when(commonEntityAccessor.convertEntityToAccountID(entity)).thenReturn(ACCOUNT_ID);
         TokenAllowance firstAllowance = new TokenAllowance();
         firstAllowance.setOwner(entity.getId());
         firstAllowance.setTokenId(15L);
@@ -402,6 +412,10 @@ class AccountReadableKVStateTest {
                 new TokenID(0L, 0L, secondAllowance.getTokenId()),
                 getAccountId(secondAllowance.getSpender()),
                 secondAllowance.getAmount()));
+        when(commonEntityAccessor.convertEncodedEntityIdToTokenID(firstAllowance.getTokenId()))
+                .thenReturn(new TokenID(0L, 0L, firstAllowance.getTokenId()));
+        when(commonEntityAccessor.convertEncodedEntityIdToTokenID(secondAllowance.getTokenId()))
+                .thenReturn(new TokenID(0L, 0L, secondAllowance.getTokenId()));
 
         verify(tokenAllowanceRepository, never()).findByOwner(entity.getId());
 
@@ -413,8 +427,10 @@ class AccountReadableKVStateTest {
 
     @Test
     void fungibleTokenAllowancesMatchValuesFromRepositoryHistorical() {
+        allowanceSetup();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
+        when(commonEntityAccessor.convertEntityToAccountID(entity)).thenReturn(ACCOUNT_ID);
         TokenAllowance firstAllowance = new TokenAllowance();
         firstAllowance.setOwner(entity.getId());
         firstAllowance.setTokenId(15L);
@@ -439,6 +455,10 @@ class AccountReadableKVStateTest {
                 new TokenID(0L, 0L, secondAllowance.getTokenId()),
                 getAccountId(secondAllowance.getSpender()),
                 secondAllowance.getAmount()));
+        when(commonEntityAccessor.convertEncodedEntityIdToTokenID(firstAllowance.getTokenId()))
+                .thenReturn(new TokenID(0L, 0L, firstAllowance.getTokenId()));
+        when(commonEntityAccessor.convertEncodedEntityIdToTokenID(secondAllowance.getTokenId()))
+                .thenReturn(new TokenID(0L, 0L, secondAllowance.getTokenId()));
 
         verify(tokenAllowanceRepository, never()).findByOwnerAndTimestamp(entity.getId(), timestamp.get());
 
@@ -450,8 +470,10 @@ class AccountReadableKVStateTest {
 
     @Test
     void approveForAllNftsMatchValuesFromRepository() {
+        allowanceSetup();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+        when(commonEntityAccessor.convertEntityToAccountID(entity)).thenReturn(ACCOUNT_ID);
         NftAllowance firstAllowance = new NftAllowance();
         firstAllowance.setOwner(entity.getId());
         firstAllowance.setTokenId(15L);
@@ -470,6 +492,10 @@ class AccountReadableKVStateTest {
                 new TokenID(0L, 0L, firstAllowance.getTokenId()), getAccountId(firstAllowance.getSpender())));
         approveForAllAllowances.add(new AccountApprovalForAllAllowance(
                 new TokenID(0L, 0L, secondAllowance.getTokenId()), getAccountId(secondAllowance.getSpender())));
+        when(commonEntityAccessor.convertEncodedEntityIdToTokenID(firstAllowance.getTokenId()))
+                .thenReturn(new TokenID(0L, 0L, firstAllowance.getTokenId()));
+        when(commonEntityAccessor.convertEncodedEntityIdToTokenID(secondAllowance.getTokenId()))
+                .thenReturn(new TokenID(0L, 0L, secondAllowance.getTokenId()));
 
         verify(nftAllowanceRepository, never()).findByOwnerAndApprovedForAllIsTrue(entity.getId());
 
@@ -498,5 +524,14 @@ class AccountReadableKVStateTest {
 
         verify(tokenAccountRepository, times(1))
                 .countByAccountIdAndAssociatedGroupedByBalanceIsPositive(entity.getId());
+    }
+
+    private void allowanceSetup() {
+        when(commonEntityAccessor.convertEncodedEntityIdToAccountID(123L))
+                .thenReturn(new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 123L)));
+        when(commonEntityAccessor.convertEncodedEntityIdToAccountID(234L))
+                .thenReturn(new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 234L)));
+        when(commonEntityAccessor.convertEncodedEntityIdToAccountID(entity.getAutoRenewAccountId()))
+                .thenReturn(AUTO_RENEW_ACCOUNT_ID_ACCOUNT_ID);
     }
 }
