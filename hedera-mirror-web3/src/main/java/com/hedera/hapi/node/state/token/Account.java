@@ -180,7 +180,7 @@ public record Account(
         if (accountId != null && !accountId.equals(DEFAULT.accountId)) {
             result = 31 * result + accountId.hashCode();
         }
-        if (alias != null && !alias.equals(DEFAULT.alias)) {
+        if (!alias.equals(DEFAULT.alias)) {
             result = 31 * result + alias.hashCode();
         }
         if (key != null && !key.equals(DEFAULT.key)) {
@@ -192,7 +192,7 @@ public record Account(
         if (!tinybarBalance.equals(DEFAULT.tinybarBalance)) {
             result = 31 * result + Long.hashCode(tinybarBalance);
         }
-        if (memo != null && !memo.equals(DEFAULT.memo)) {
+        if (!memo.equals(DEFAULT.memo)) {
             result = 31 * result + memo.hashCode();
         }
         if (deleted != DEFAULT.deleted) {
@@ -318,9 +318,6 @@ public record Account(
         if (accountId != null && !accountId.equals(thatObj.accountId)) {
             return false;
         }
-        if (alias == null && thatObj.alias != null) {
-            return false;
-        }
         if (!alias.equals(thatObj.alias)) {
             return false;
         }
@@ -333,13 +330,10 @@ public record Account(
         if (expirationSecond != thatObj.expirationSecond) {
             return false;
         }
-        if (tinybarBalance != thatObj.tinybarBalance) {
+        if (!tinybarBalance.equals(thatObj.tinybarBalance)) {
             return false;
         }
-        if (memo == null && thatObj.memo != null) {
-            return false;
-        }
-        if (memo != null && !memo.equals(thatObj.memo)) {
+        if (!memo.equals(thatObj.memo)) {
             return false;
         }
         if (deleted != thatObj.deleted) {
@@ -378,7 +372,7 @@ public record Account(
         if (headNftSerialNumber != thatObj.headNftSerialNumber) {
             return false;
         }
-        if (numberOwnedNfts != thatObj.numberOwnedNfts) {
+        if (!numberOwnedNfts.equals(thatObj.numberOwnedNfts)) {
             return false;
         }
         if (maxAutoAssociations != thatObj.maxAutoAssociations) {
@@ -414,26 +408,16 @@ public record Account(
         if (contractKvPairsNumber != thatObj.contractKvPairsNumber) {
             return false;
         }
-        if (this.cryptoAllowances == null && thatObj.cryptoAllowances != null) {
-            return false;
-        }
 
         if (!cryptoAllowances.equals(thatObj.cryptoAllowances)) {
             return false;
         }
-        if (this.approveForAllNftAllowances == null && thatObj.approveForAllNftAllowances != null) {
+
+        if (!approveForAllNftAllowances.equals(thatObj.approveForAllNftAllowances)) {
             return false;
         }
 
-        if (this.approveForAllNftAllowances != null
-                && !approveForAllNftAllowances.equals(thatObj.approveForAllNftAllowances)) {
-            return false;
-        }
-        if (this.tokenAllowances == null && thatObj.tokenAllowances != null) {
-            return false;
-        }
-
-        if (this.tokenAllowances != null && !tokenAllowances.equals(thatObj.tokenAllowances)) {
+        if (!tokenAllowances.equals(thatObj.tokenAllowances)) {
             return false;
         }
         if (numberTreasuryTitles != thatObj.numberTreasuryTitles) {
@@ -442,10 +426,7 @@ public record Account(
         if (expiredAndPendingRemoval != thatObj.expiredAndPendingRemoval) {
             return false;
         }
-        if (firstContractStorageKey == null && thatObj.firstContractStorageKey != null) {
-            return false;
-        }
-        if (firstContractStorageKey != null && !firstContractStorageKey.equals(thatObj.firstContractStorageKey)) {
+        if (!firstContractStorageKey.equals(thatObj.firstContractStorageKey)) {
             return false;
         }
         if (headPendingAirdropId == null && thatObj.headPendingAirdropId != null) {
