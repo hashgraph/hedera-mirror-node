@@ -68,11 +68,11 @@ spec:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     stackgres:
       coordinator:
-        enableMetricsExporter: false
+        enableMetricsExporter: true
       worker:
         config:
           shared_buffers: "20GB"
-        enableMetricsExporter: false
+        enableMetricsExporter: true
         overrides:
           - index: 0
             pods:
