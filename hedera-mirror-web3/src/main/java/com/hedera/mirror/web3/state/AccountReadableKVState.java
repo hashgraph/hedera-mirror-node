@@ -17,6 +17,9 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.web3.state.Utils.convertCanonicalAccountIdFromEntity;
+import static com.hedera.mirror.web3.state.Utils.convertEncodedEntityIdToAccountID;
+import static com.hedera.mirror.web3.state.Utils.convertEncodedEntityIdToTokenID;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -110,7 +113,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         var tokenAccountBalances = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId(), timestamp);
 
         return Account.newBuilder()
-                .accountId(commonEntityAccessor.convertEntityToAccountID(entity))
+                .accountId(convertCanonicalAccountIdFromEntity(entity))
                 .alias(
                         entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
                                 ? Bytes.wrap(entity.getEvmAddress())
@@ -128,8 +131,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                 .smartContract(CONTRACT.equals(entity.getType()))
                 .numberPositiveBalances(() -> tokenAccountBalances.get().positive())
                 .ethereumNonce(entity.getEthereumNonce() != null ? entity.getEthereumNonce() : 0L)
-                .autoRenewAccountId(
-                        commonEntityAccessor.convertEncodedEntityIdToAccountID(entity.getAutoRenewAccountId()))
+                .autoRenewAccountId(convertEncodedEntityIdToAccountID(entity.getAutoRenewAccountId()))
                 .autoRenewSeconds(
                         entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : DEFAULT_AUTO_RENEW_PERIOD)
                 .cryptoAllowances(getCryptoAllowances(entity.getId(), timestamp))
@@ -224,21 +226,20 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
 
     private AccountFungibleTokenAllowance convertFungibleAllowance(final TokenAllowance tokenAllowance) {
         return new AccountFungibleTokenAllowance(
-                commonEntityAccessor.convertEncodedEntityIdToTokenID(tokenAllowance.getTokenId()),
-                commonEntityAccessor.convertEncodedEntityIdToAccountID(tokenAllowance.getSpender()),
+                convertEncodedEntityIdToTokenID(tokenAllowance.getTokenId()),
+                convertEncodedEntityIdToAccountID(tokenAllowance.getSpender()),
                 tokenAllowance.getAmount());
     }
 
     private AccountCryptoAllowance convertCryptoAllowance(final CryptoAllowance cryptoAllowance) {
         return new AccountCryptoAllowance(
-                commonEntityAccessor.convertEncodedEntityIdToAccountID(cryptoAllowance.getSpender()),
-                cryptoAllowance.getAmount());
+                convertEncodedEntityIdToAccountID(cryptoAllowance.getSpender()), cryptoAllowance.getAmount());
     }
 
     private AccountApprovalForAllAllowance convertNftAllowance(final NftAllowance nftAllowance) {
         return new AccountApprovalForAllAllowance(
-                commonEntityAccessor.convertEncodedEntityIdToTokenID(nftAllowance.getTokenId()),
-                commonEntityAccessor.convertEncodedEntityIdToAccountID(nftAllowance.getSpender()));
+                convertEncodedEntityIdToTokenID(nftAllowance.getTokenId()),
+                convertEncodedEntityIdToAccountID(nftAllowance.getSpender()));
     }
 
     private Key parseKey(Entity entity) {
