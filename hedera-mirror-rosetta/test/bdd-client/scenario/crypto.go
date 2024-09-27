@@ -18,6 +18,7 @@ package scenario
 
 import (
 	"context"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/cucumber/godog"
@@ -259,7 +260,15 @@ func (c *cryptoFeature) generateKey() error {
 	}
 	c.newAccountKey = &sk
 	operatorAccountId := testClient.GetOperator(0).Id
-	c.aliasAccountId, err = types2.NewAccountIdFromPublicKeyBytes(sk.PublicKey().BytesRaw(), int64(operatorAccountId.Shard), int64(operatorAccountId.Realm))
+	shard, err := tools.CastToInt64(operatorAccountId.Shard)
+	if err != nil {
+		return err
+	}
+	realm, err := tools.CastToInt64(operatorAccountId.Realm)
+	if err != nil {
+		return err
+	}
+	c.aliasAccountId, err = types2.NewAccountIdFromPublicKeyBytes(sk.PublicKey().BytesRaw(), shard, realm)
 	if err != nil {
 		return err
 	}

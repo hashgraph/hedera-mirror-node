@@ -72,13 +72,28 @@ func (a AccountId) ToRosetta() *types.AccountIdentifier {
 	return &types.AccountIdentifier{Address: a.String()}
 }
 
-func (a AccountId) ToSdkAccountId() hedera.AccountID {
-	return hedera.AccountID{
-		Shard:    uint64(a.accountId.ShardNum),
-		Realm:    uint64(a.accountId.RealmNum),
-		Account:  uint64(a.accountId.EntityNum),
-		AliasKey: a.aliasKey,
+func (a AccountId) ToSdkAccountId() (zero hedera.AccountID, err error) {
+	shard, err := tools.CastToUint64(a.accountId.ShardNum)
+	if err != nil {
+		return zero, err
 	}
+
+	realm, err := tools.CastToUint64(a.accountId.RealmNum)
+	if err != nil {
+		return zero, err
+	}
+
+	account, err := tools.CastToUint64(a.accountId.EntityNum)
+	if err != nil {
+		return zero, err
+	}
+
+	return hedera.AccountID{
+		Shard:    shard,
+		Realm:    realm,
+		Account:  account,
+		AliasKey: a.aliasKey,
+	}, nil
 }
 
 func NewAccountIdFromAlias(alias []byte, shard, realm int64) (zero AccountId, _ error) {
@@ -151,11 +166,17 @@ func NewAccountIdFromSdkAccountId(accountId hedera.AccountID) (zero AccountId, _
 	var entityId domain.EntityId
 	var err error
 	var curveType types.CurveType
+
+	shard, realm, account, err := castFromSdkAccountId(accountId)
+	if err != nil {
+		return zero, err
+	}
+
 	if accountId.AliasKey != nil {
-		entityId = domain.EntityId{ShardNum: int64(accountId.Shard), RealmNum: int64(accountId.Realm)}
+		entityId = domain.EntityId{ShardNum: shard, RealmNum: realm}
 		alias, curveType, err = PublicKey{*accountId.AliasKey}.ToAlias()
 	} else {
-		entityId, err = domain.EntityIdOf(int64(accountId.Shard), int64(accountId.Realm), int64(accountId.Account))
+		entityId, err = domain.EntityIdOf(shard, realm, account)
 	}
 
 	if err != nil {
@@ -191,4 +212,25 @@ func NewAccountIdFromString(address string, shard, realm int64) (zero AccountId,
 	}
 
 	return NewAccountIdFromAlias(alias, shard, realm)
+}
+
+func castFromSdkAccountId(accountId hedera.AccountID) (shard, realm, account int64, err error) {
+	shard, err = tools.CastToInt64(accountId.Shard)
+	if err != nil {
+		return
+	}
+
+	realm, err = tools.CastToInt64(accountId.Realm)
+	if err != nil {
+		return
+	}
+
+	if accountId.AliasKey == nil {
+		account, err = tools.CastToInt64(accountId.Account)
+		if err != nil {
+			return
+		}
+	}
+
+	return
 }

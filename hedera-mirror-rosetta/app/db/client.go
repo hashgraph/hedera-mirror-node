@@ -26,7 +26,7 @@ import (
 
 type client struct {
 	db               *gorm.DB
-	statementTimeout uint
+	statementTimeout int
 }
 
 func (d *client) GetDb() *gorm.DB {
@@ -34,7 +34,7 @@ func (d *client) GetDb() *gorm.DB {
 }
 
 func (d *client) GetDbWithContext(ctx context.Context) (*gorm.DB, context.CancelFunc) {
-	if d.statementTimeout == 0 {
+	if d.statementTimeout <= 0 {
 		db := d.db
 		if ctx != nil {
 			db = db.WithContext(ctx)
@@ -50,7 +50,7 @@ func (d *client) GetDbWithContext(ctx context.Context) (*gorm.DB, context.Cancel
 	return d.db.WithContext(childCtx), cancel
 }
 
-func NewDbClient(db *gorm.DB, statementTimeout uint) interfaces.DbClient {
+func NewDbClient(db *gorm.DB, statementTimeout int) interfaces.DbClient {
 	return &client{db: db, statementTimeout: statementTimeout}
 }
 
