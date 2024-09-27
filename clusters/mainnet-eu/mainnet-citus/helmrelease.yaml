@@ -14,7 +14,7 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.113.3'
+      version: '0.114.1'
   dependsOn:
     - name: mirror
       namespace: common
