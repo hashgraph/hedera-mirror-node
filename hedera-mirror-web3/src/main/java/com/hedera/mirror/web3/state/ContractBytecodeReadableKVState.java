@@ -45,9 +45,11 @@ public class ContractBytecodeReadableKVState extends ReadableKVStateBase<Contrac
             return null;
         }
 
-        final var runtimeCode = contractRepository.findRuntimeBytecode(entityId.getId());
-        final var runtimeBytes = runtimeCode.map(Bytes::wrap).orElse(null);
-        return runtimeBytes == null ? null : new Bytecode(runtimeBytes);
+        return contractRepository
+                .findRuntimeBytecode(entityId.getId())
+                .map(Bytes::wrap)
+                .map(Bytecode::new)
+                .orElse(null);
     }
 
     @NotNull
