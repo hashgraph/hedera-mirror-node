@@ -25,7 +25,7 @@ const ETAG_HEADER = 'etag';
 const VARY_HEADER = 'vary';
 const DEFAULT_REDIS_EXPIRY = 1;
 
-let cache = new Cache('apiResponse:');
+let cache = new Cache();
 
 // Response middleware that checks for and returns cached response.
 const responseCacheCheckHandler = async (req, res, next) => {
