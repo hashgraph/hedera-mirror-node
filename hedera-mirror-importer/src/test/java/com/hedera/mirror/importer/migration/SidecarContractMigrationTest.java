@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TreeSet;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -97,10 +98,12 @@ class SidecarContractMigrationTest extends ImporterIntegrationTest {
         var contractBytecodesMap = new HashMap<Long, ContractBytecode>();
         var contractBytecodeBuilder = ContractBytecode.newBuilder();
         var contractIdBuilder = ContractID.newBuilder();
+        var expected = new TreeSet<Long>();
 
         for (int i = 0; i < 66000; i++) {
             var entity = domainBuilder.entity().get();
             var entityId = entity.getId();
+            expected.add(entityId);
 
             entities.add(entity);
             contracts.add(
@@ -128,13 +131,15 @@ class SidecarContractMigrationTest extends ImporterIntegrationTest {
                 .containsOnly(CONTRACT);
 
         var contractsIterator = contractRepository.findAll().iterator();
+        var ids = new TreeSet<Long>();
         contractsIterator.forEachRemaining(savedContract -> {
-            var contractBytecode = contractBytecodesMap.remove(savedContract.getId());
+            ids.add(savedContract.getId());
+            var contractBytecode = contractBytecodesMap.get(savedContract.getId());
             assertThat(DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()))
                     .isEqualTo(savedContract.getRuntimeBytecode());
         });
         assertThat(contractsIterator).isExhausted();
-        assertThat(contractBytecodesMap).isEmpty();
+        assertThat(ids).isEqualTo(expected);
     }
 
     // These persist methods are not functionally necessary but greatly speed up bulk insertion.

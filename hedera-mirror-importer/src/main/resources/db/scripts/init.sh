@@ -4,7 +4,9 @@ set -e
 export PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-3}"
 export PGDATABASE="${POSTGRES_DB:-postgres}"
 export PGHOST="${PGHOST}"
+export PGPORT="${PGPORT:-5432}"
 export PGUSER="${POSTGRES_USER:-postgres}"
+export IS_GCP_CLOUD_SQL="${IS_GCP_CLOUD_SQL:-false}"
 
 DB_SPECIFIC_EXTENSION_SQL="create extension btree_gist;
                            create extension pg_trgm;"
@@ -47,10 +49,18 @@ psql --set ON_ERROR_STOP=1 \
   --set "rosettaUsername=${ROSETTA_USERNAME:-mirror_rosetta}" \
   --set "web3Password=${WEB3_PASSWORD:-mirror_web3_pass}" \
   --set "web3Username=${WEB3_USERNAME:-mirror_web3}" \
-  --set "tempSchema=${DB_TEMPSCHEMA:-temporary}" <<__SQL__
+  --set "tempSchema=${DB_TEMPSCHEMA:-temporary}" \
+  --set "isGcpCloudSql=${IS_GCP_CLOUD_SQL}" \
+  --set "pgUser=${PGUSER}" <<__SQL__
 
 -- Create database & owner
 create user :ownerUsername with login password :'ownerPassword';
+
+-- Conditional GRANT statement for Google Cloud SQL
+\if :isGcpCloudSql
+  grant mirror_node to :pgUser;
+\endif
+
 create database :dbName with owner :ownerUsername;
 
 -- Add extensions
@@ -110,4 +120,9 @@ ${DB_SPECIFIC_EXTENSION_SQL}
 -- Alter search path
 \connect postgres postgres
 alter database :dbName set search_path = :dbSchema, public, :tempSchema;
+
+-- Conditional REVOKE statement for Google Cloud SQL
+\if :isGcpCloudSql
+  revoke mirror_node from :pgUser;
+\endif
 __SQL__

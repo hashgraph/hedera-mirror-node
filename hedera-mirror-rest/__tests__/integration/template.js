@@ -91,8 +91,8 @@ const getResponseHeadersFromFileOrDefault = (specPath) => {
 
 const getResponseHeaders = (spec, specPath) => {
   spec.responseHeaders = {
-    ...(spec.responseHeaders ?? {}),
     ...getResponseHeadersFromFileOrDefault(specPath),
+    ...(spec.responseHeaders ?? {}),
   };
 };
 

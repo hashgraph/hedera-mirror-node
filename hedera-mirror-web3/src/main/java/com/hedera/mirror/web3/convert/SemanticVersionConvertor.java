@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.convert;
 
-import com.swirlds.common.utility.SemanticVersion;
+import com.hedera.hapi.node.base.SemanticVersion;
 import jakarta.inject.Named;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.core.convert.converter.Converter;
@@ -24,8 +24,12 @@ import org.springframework.core.convert.converter.Converter;
 @Named
 @ConfigurationPropertiesBinding
 public class SemanticVersionConvertor implements Converter<String, SemanticVersion> {
+
+    private final com.hedera.node.config.converter.SemanticVersionConverter delegate =
+            new com.hedera.node.config.converter.SemanticVersionConverter();
+
     @Override
     public SemanticVersion convert(String source) {
-        return SemanticVersion.parse(source);
+        return delegate.convert(source);
     }
 }

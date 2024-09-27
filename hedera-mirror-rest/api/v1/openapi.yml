@@ -164,7 +164,7 @@ paths:
         - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}/airdrops/outstanding:
     get:
-      summary: Get get outstanding fungible token airdrops sent by an account
+      summary: Get outstanding fungible token airdrops sent by an account
       description: |
         Returns outstanding fungible token airdrops that have been sent by an account. This API is currently under development. Support for NFT airdrops will be added in a future release.
       operationId: getOutstandingTokenAirdrops
@@ -173,6 +173,31 @@ paths:
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/orderQueryParam"
         - $ref: "#/components/parameters/receiverIdQueryParam"
+        - $ref: "#/components/parameters/tokenIdQueryParam"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenAirdropsResponse"
+        400:
+          $ref: "#/components/responses/InvalidParameterError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+      tags:
+        - airdrops
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/airdrops/pending:
+    get:
+      summary: Get pending fungible token airdrops received by an account
+      description: |
+        Returns pending fungible token airdrops that have been received by an account. This API is currently under development. Support for NFT airdrops will be added in a future release.
+      operationId: getPendingTokenAirdrops
+      parameters:
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/senderIdQueryParam"
         - $ref: "#/components/parameters/tokenIdQueryParam"
       responses:
         200:
@@ -1366,7 +1391,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.The tokens list endpoint is cached and not updated as frequently as the token lookup by a specific ID.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.114.0-SNAPSHOT
+  version: 0.115.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -4556,6 +4581,40 @@ components:
         idLteOperator:
           summary: Example of id less than or equals operator
           value: lte:0.0.700
+      schema:
+        $ref: "#/components/schemas/EntityIdQuery"
+    senderIdQueryParam:
+      name: sender.id
+      description: The ID of the sender to return information for
+      in: query
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+        idGtOperator:
+          summary: Example of id greather than operator
+          value: gt:0.0.200
+        idGteOperator:
+          summary: Example of id greather than or equal to operator
+          value: gte:0.0.200
+        idLtOperator:
+          summary: Example of id less than operator
+          value: lt:0.0.200
+        idLteOperator:
+          summary: Example of id less than or equal to operator
+          value: lte:0.0.200
       schema:
         $ref: "#/components/schemas/EntityIdQuery"
     serialNumberPathParam:

@@ -285,9 +285,9 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // When
         final var functionCall = single
                 ? contract.call_dissociateTokenExternal(
-                        getAddressFromEntity(associatedAccount), getAddressFromEntity(tokenEntity))
+                        getAliasFromEntity(associatedAccount), getAddressFromEntity(tokenEntity))
                 : contract.call_dissociateTokensExternal(
-                        getAddressFromEntity(associatedAccount), List.of(getAddressFromEntity(tokenEntity)));
+                        getAliasFromEntity(associatedAccount), List.of(getAddressFromEntity(tokenEntity)));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);

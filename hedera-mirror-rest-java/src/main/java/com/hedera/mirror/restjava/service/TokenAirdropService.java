@@ -22,5 +22,5 @@ import java.util.Collection;
 
 public interface TokenAirdropService {
 
-    Collection<TokenAirdrop> getOutstandingAirdrops(TokenAirdropRequest request);
+    Collection<TokenAirdrop> getAirdrops(TokenAirdropRequest request);
 }

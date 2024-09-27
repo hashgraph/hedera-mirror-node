@@ -304,3 +304,7 @@ is expected to migrate full mainnet data in 10 days.
 ## Citus Backup and Restore
 
 Please refer to this [document](/docs/database/citus.md) for the steps.
+
+## Bootstrap a DB from exported data
+
+Please refer to this [document](/docs/database/bootstrap.md) for instructions.
