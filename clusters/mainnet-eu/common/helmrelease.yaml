@@ -67,6 +67,12 @@ spec:
               memory: 10Gi
             requests:
               memory: 6Gi
+          storageSpec:
+            volumeClaimTemplate:
+              spec:
+                resources:
+                  requests:
+                    storage: 250Gi
     stackgres:
       enabled: true
     traefik:
