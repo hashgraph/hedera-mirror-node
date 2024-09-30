@@ -129,18 +129,19 @@ interface JooqRepository {
             lastParam = upper ? lastBound.getUpper() : lastBound.getLower();
         }
 
+        var primaryOperator = primaryParam.operator();
         var primaryField = primary.getField();
         // When the primary param operator is EQ, or the secondary param operator is EQ, don't adjust the value for the
         // primary param.
-        if (primaryParam.operator() == EQ || (lastParam != null && lastParam.operator() == EQ)) {
+        if (primaryOperator == EQ || (lastParam != null && lastParam.operator() == EQ)) {
             return getCondition(primaryParam, primaryField).and(getConditions(secondaryBounds, upper));
         }
 
         long value = primaryParam.value();
-        if (primaryParam.isInclusive()) {
+        if (primaryOperator.isInclusive()) {
             value += primaryParam.hasLowerBound() ? 1L : -1L;
         }
 
-        return getCondition(primaryField, primaryParam.operator(), value);
+        return getCondition(primaryField, primaryOperator, value);
     }
 }

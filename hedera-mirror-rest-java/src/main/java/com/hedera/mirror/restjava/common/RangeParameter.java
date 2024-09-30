@@ -31,10 +31,6 @@ public interface RangeParameter<T> {
         return operator() == RangeOperator.LT || operator() == RangeOperator.LTE;
     }
 
-    default boolean isInclusive() {
-        return operator().isInclusive();
-    }
-
     default boolean isEmpty() {
         return operator() == null && value() == null;
     }
