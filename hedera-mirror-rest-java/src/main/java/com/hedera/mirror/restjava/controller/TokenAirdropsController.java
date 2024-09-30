@@ -42,6 +42,7 @@ import com.hedera.mirror.restjava.service.TokenAirdropService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import lombok.CustomLog;
@@ -59,10 +60,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 public class TokenAirdropsController {
-    private static final Function<TokenAirdrop, Map<String, String>> EXTRACTOR = tokenAirdrop -> ImmutableSortedMap.of(
-            RECEIVER_ID, tokenAirdrop.getReceiverId(),
-            SENDER_ID, tokenAirdrop.getSenderId(),
-            TOKEN_ID, tokenAirdrop.getTokenId());
+
+    private static final String DEFAULT_SERIAL_NUMBER = "0L";
+    private static final Function<TokenAirdrop, Map<String, String>> EXTRACTOR = (tokenAirdrop) -> {
+        var serialNumber = tokenAirdrop.getSerialNumber();
+        return ImmutableSortedMap.of(
+                RECEIVER_ID, tokenAirdrop.getReceiverId(),
+                SENDER_ID, tokenAirdrop.getSenderId(),
+                SERIAL_NUMBER, serialNumber == null ? DEFAULT_SERIAL_NUMBER : serialNumber.toString(),
+                TOKEN_ID, tokenAirdrop.getTokenId());
+    };
 
     private final LinkFactory linkFactory;
     private final TokenAirdropMapper tokenAirdropMapper;
@@ -113,9 +120,21 @@ public class TokenAirdropsController {
 
         var response = service.getAirdrops(request);
         var airdrops = tokenAirdropMapper.map(response);
-        var sort = Sort.by(order, primarySortField, TOKEN_ID);
+        var sort = getSort(airdrops, order, primarySortField);
         var pageable = PageRequest.of(0, limit, sort);
         var links = linkFactory.create(airdrops, pageable, EXTRACTOR);
         return new TokenAirdropsResponse().airdrops(airdrops).links(links);
+    }
+
+    private Sort getSort(List<TokenAirdrop> airdrops, Sort.Direction order, String primarySortField) {
+        if (!airdrops.isEmpty()) {
+            var lastSerial = airdrops.getLast().getSerialNumber();
+            if (lastSerial == null || lastSerial == 0L) {
+                // If no serial present, the next link should be based off of the token id
+                return Sort.by(order, primarySortField, TOKEN_ID);
+            }
+        }
+
+        return Sort.by(order, primarySortField, TOKEN_ID, SERIAL_NUMBER);
     }
 }
