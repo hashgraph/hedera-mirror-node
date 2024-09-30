@@ -32,7 +32,7 @@ public interface RangeParameter<T> {
     }
 
     default boolean isInclusive() {
-        return RangeOperator.isInclusive(operator());
+        return operator().isInclusive();
     }
 
     default boolean isEmpty() {

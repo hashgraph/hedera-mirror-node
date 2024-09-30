@@ -137,7 +137,7 @@ interface JooqRepository {
         }
 
         long value = primaryParam.value();
-        if (!primaryParam.isInclusive()) {
+        if (primaryParam.isInclusive()) {
             value += primaryParam.hasLowerBound() ? 1L : -1L;
         }
 
