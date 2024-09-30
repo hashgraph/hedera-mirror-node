@@ -31,8 +31,8 @@ public interface RangeParameter<T> {
         return operator() == RangeOperator.LT || operator() == RangeOperator.LTE;
     }
 
-    default boolean hasLTorGT() {
-        return operator() == RangeOperator.LT || operator() == RangeOperator.GT;
+    default boolean isInclusive() {
+        return RangeOperator.isInclusive(operator());
     }
 
     default boolean isEmpty() {

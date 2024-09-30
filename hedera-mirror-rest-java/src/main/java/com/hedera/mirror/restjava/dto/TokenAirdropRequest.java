@@ -42,11 +42,14 @@ public class TokenAirdropRequest {
     private Sort.Direction order = Sort.Direction.ASC;
 
     // Receiver Id for Outstanding Airdrops, Sender Id for Pending Airdrops
-    private Bound entityIds;
+    @Builder.Default
+    private Bound entityIds = Bound.EMPTY;
 
-    private Bound serialNumbers;
+    @Builder.Default
+    private Bound serialNumbers = Bound.EMPTY;
 
-    private Bound tokenIds;
+    @Builder.Default
+    private Bound tokenIds = Bound.EMPTY;
 
     @Builder.Default
     private AirdropRequestType type = AirdropRequestType.OUTSTANDING;
@@ -69,9 +72,16 @@ public class TokenAirdropRequest {
     }
 
     public List<Bound> getBounds() {
-        var tertiaryBound = serialNumbers == null ? Bound.EMPTY : serialNumbers;
-        var secondaryBound = tokenIds == null ? tertiaryBound : tokenIds;
-        var primaryBound = entityIds == null ? secondaryBound : entityIds;
-        return List.of(primaryBound, secondaryBound, tertiaryBound);
+        var primaryBound = !entityIds.isEmpty() ? entityIds : tokenIds;
+        if (primaryBound.isEmpty()) {
+            return List.of(serialNumbers);
+        }
+
+        var secondaryBound = !tokenIds.isEmpty() ? tokenIds : serialNumbers;
+        if (secondaryBound.isEmpty()) {
+            return List.of(primaryBound);
+        }
+
+        return List.of(primaryBound, secondaryBound, serialNumbers);
     }
 }
