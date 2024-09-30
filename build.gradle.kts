@@ -96,7 +96,7 @@ dependencies {
         api("org.apache.tuweni:tuweni-units:$tuweniVersion")
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2")
-        api("org.gaul:s3proxy:2.2.0")
+        api("org.gaul:s3proxy:2.3.0")
         api("org.hyperledger.besu:secp256k1:0.8.2")
         api("org.hyperledger.besu:evm:23.10.2")
         api("org.jetbrains:annotations:24.1.0")
