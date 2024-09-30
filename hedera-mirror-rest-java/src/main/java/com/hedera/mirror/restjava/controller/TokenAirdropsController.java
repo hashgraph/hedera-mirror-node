@@ -92,6 +92,7 @@ public class TokenAirdropsController {
         return processRequest(id, entityIdsBound, limit, order, serialNumbers, tokenIds, PENDING, SENDER_ID);
     }
 
+    @SuppressWarnings("java:S107")
     private TokenAirdropsResponse processRequest(
             EntityIdParameter id,
             Bound entityIdsBound,
