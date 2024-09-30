@@ -153,7 +153,11 @@ func (c *cryptoTransferTransactionConstructor) preprocess(operations types.Opera
 			return nil, nil, errors.ErrInvalidOperationsAmount
 		}
 
-		transfers = append(transfers, transfer{account: accountId.ToSdkAccountId(), amount: amount})
+		sdkAccountId, err := accountId.ToSdkAccountId()
+		if err != nil {
+			return nil, nil, errors.ErrInvalidAccount
+		}
+		transfers = append(transfers, transfer{account: sdkAccountId, amount: amount})
 
 		if amount.GetValue() < 0 {
 			senderMap[accountId.String()] = accountId
