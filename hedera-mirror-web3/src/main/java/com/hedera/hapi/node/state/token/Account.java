@@ -194,6 +194,9 @@ public record Account(
         if (!tinybarBalance.equals(DEFAULT.tinybarBalance)) {
             result = 31 * result + Long.hashCode(tinybarBalance);
         }
+        if (!tinybarBalanceSupplier.equals(DEFAULT.tinybarBalanceSupplier)) {
+            result = 31 * result + Long.hashCode(tinybarBalanceSupplier.get());
+        }
         if (!memo.equals(DEFAULT.memo)) {
             result = 31 * result + memo.hashCode();
         }
@@ -227,6 +230,9 @@ public record Account(
         if (!numberOwnedNfts.equals(DEFAULT.numberOwnedNfts)) {
             result = 31 * result + Long.hashCode(numberOwnedNfts);
         }
+        if (!numberOwnedNftsSupplier.equals(DEFAULT.numberOwnedNftsSupplier)) {
+            result = 31 * result + Long.hashCode(numberOwnedNftsSupplier.get());
+        }
         if (maxAutoAssociations != DEFAULT.maxAutoAssociations) {
             result = 31 * result + Integer.hashCode(maxAutoAssociations);
         }
@@ -236,11 +242,17 @@ public record Account(
         if (numberAssociations != DEFAULT.numberAssociations) {
             result = 31 * result + Integer.hashCode(numberAssociations);
         }
+        if (numberAssociationsSupplier != DEFAULT.numberAssociationsSupplier) {
+            result = 31 * result + Integer.hashCode(numberAssociationsSupplier.get());
+        }
         if (smartContract != DEFAULT.smartContract) {
             result = 31 * result + Boolean.hashCode(smartContract);
         }
         if (numberPositiveBalances != DEFAULT.numberPositiveBalances) {
             result = 31 * result + Integer.hashCode(numberPositiveBalances);
+        }
+        if (numberPositiveBalancesSupplier != DEFAULT.numberPositiveBalancesSupplier) {
+            result = 31 * result + Integer.hashCode(numberPositiveBalancesSupplier.get());
         }
         if (ethereumNonce != DEFAULT.ethereumNonce) {
             result = 31 * result + Long.hashCode(ethereumNonce);
@@ -264,6 +276,13 @@ public record Account(
                 result = 31 * result;
             }
         }
+        for (Object o : cryptoAllowancesSupplier.get()) {
+            if (o != null) {
+                result = 31 * result + o.hashCode();
+            } else {
+                result = 31 * result;
+            }
+        }
         for (Object o : approveForAllNftAllowances) {
             if (o != null) {
                 result = 31 * result + o.hashCode();
@@ -271,7 +290,21 @@ public record Account(
                 result = 31 * result;
             }
         }
+        for (Object o : approveForAllNftAllowancesSupplier.get()) {
+            if (o != null) {
+                result = 31 * result + o.hashCode();
+            } else {
+                result = 31 * result;
+            }
+        }
         for (Object o : tokenAllowances) {
+            if (o != null) {
+                result = 31 * result + o.hashCode();
+            } else {
+                result = 31 * result;
+            }
+        }
+        for (Object o : tokenAllowancesSupplier.get()) {
             if (o != null) {
                 result = 31 * result + o.hashCode();
             } else {
@@ -335,6 +368,9 @@ public record Account(
         if (!tinybarBalance.equals(thatObj.tinybarBalance)) {
             return false;
         }
+        if (!tinybarBalanceSupplier.equals(thatObj.tinybarBalanceSupplier)) {
+            return false;
+        }
         if (!memo.equals(thatObj.memo)) {
             return false;
         }
@@ -377,6 +413,9 @@ public record Account(
         if (!numberOwnedNfts.equals(thatObj.numberOwnedNfts)) {
             return false;
         }
+        if (!numberOwnedNftsSupplier.equals(thatObj.numberOwnedNftsSupplier)) {
+            return false;
+        }
         if (maxAutoAssociations != thatObj.maxAutoAssociations) {
             return false;
         }
@@ -386,10 +425,16 @@ public record Account(
         if (numberAssociations != thatObj.numberAssociations) {
             return false;
         }
+        if (numberAssociationsSupplier != thatObj.numberAssociationsSupplier) {
+            return false;
+        }
         if (smartContract != thatObj.smartContract) {
             return false;
         }
         if (numberPositiveBalances != thatObj.numberPositiveBalances) {
+            return false;
+        }
+        if (numberPositiveBalancesSupplier != thatObj.numberPositiveBalancesSupplier) {
             return false;
         }
         if (ethereumNonce != thatObj.ethereumNonce) {
@@ -410,16 +455,22 @@ public record Account(
         if (contractKvPairsNumber != thatObj.contractKvPairsNumber) {
             return false;
         }
-
         if (!cryptoAllowances.equals(thatObj.cryptoAllowances)) {
             return false;
         }
-
+        if (!cryptoAllowancesSupplier.equals(thatObj.cryptoAllowancesSupplier)) {
+            return false;
+        }
         if (!approveForAllNftAllowances.equals(thatObj.approveForAllNftAllowances)) {
             return false;
         }
-
+        if (!approveForAllNftAllowancesSupplier.equals(thatObj.approveForAllNftAllowancesSupplier)) {
+            return false;
+        }
         if (!tokenAllowances.equals(thatObj.tokenAllowances)) {
+            return false;
+        }
+        if (!tokenAllowancesSupplier.equals(thatObj.tokenAllowancesSupplier)) {
             return false;
         }
         if (numberTreasuryTitles != thatObj.numberTreasuryTitles) {

@@ -31,7 +31,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -217,5 +219,106 @@ class EntityIdUtilsTest {
                 .build();
 
         assertEquals("0000000000000000000000000000000000000003", EntityIdUtils.asHexedEvmAddress(accountId));
+    }
+
+    @Test
+    void toEntityIdFromAccountId() {
+        final var accountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(3)
+                .build();
+
+        assertEquals(EntityId.of(1, 2, 3), EntityIdUtils.toEntityId(accountId));
+    }
+
+    @Test
+    void toAccountIdFromEntityId() {
+        final var entityId = EntityId.of(1, 2, 3);
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(3)
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(entityId));
+    }
+
+    @Test
+    void toAccountIdFromId() {
+        final var id = EntityId.of(1, 2, 3).getId();
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(3)
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(id));
+    }
+
+    @Test
+    void toAccountIdFromEntityWithNoAlias() {
+        final var domainBuilder = new DomainBuilder();
+        final var entity = domainBuilder.entity().get();
+        entity.setEvmAddress(null);
+        entity.setAlias(null);
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entity.getShard())
+                .realmNum(entity.getRealm())
+                .accountNum(entity.getNum())
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(entity));
+    }
+
+    @Test
+    void toAccountIdFromEntityWithEvmAddress() {
+        final var domainBuilder = new DomainBuilder();
+        final var entity = domainBuilder.entity().get();
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entity.getShard())
+                .realmNum(entity.getRealm())
+                .alias(Bytes.wrap(entity.getEvmAddress()))
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(entity));
+    }
+
+    @Test
+    void toAccountIdFromEntityWithAlias() {
+        final var domainBuilder = new DomainBuilder();
+        final var entity = domainBuilder.entity().get();
+        entity.setEvmAddress(null);
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entity.getShard())
+                .realmNum(entity.getRealm())
+                .alias(Bytes.wrap(entity.getAlias()))
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(entity));
+    }
+
+    @Test
+    void toTokenIdFromId() {
+        final var id = EntityId.of(1, 2, 3).getId();
+
+        final var expectedTokenId = com.hedera.hapi.node.base.TokenID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .tokenNum(3)
+                .build();
+        assertEquals(expectedTokenId, EntityIdUtils.toTokenId(id));
+    }
+
+    @Test
+    void toTokenIdFromEntityId() {
+        final var entityId = EntityId.of(1, 2, 3);
+
+        final var expectedTokenId = com.hedera.hapi.node.base.TokenID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .tokenNum(3)
+                .build();
+        assertEquals(expectedTokenId, EntityIdUtils.toTokenId(entityId));
     }
 }

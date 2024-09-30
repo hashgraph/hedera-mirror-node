@@ -480,10 +480,6 @@ class AccountReadableKVStateTest {
         verify(nftAllowanceRepository).findByOwnerAndApprovedForAllIsTrue(entity.getId());
     }
 
-    private AccountID getAccountId(final Long num) {
-        return new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, num));
-    }
-
     @Test
     void numTokenAssociationsAndNumPositiveBalancesMatchValuesFromRepository() {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
@@ -499,5 +495,14 @@ class AccountReadableKVStateTest {
 
         verify(tokenAccountRepository, times(1))
                 .countByAccountIdAndAssociatedGroupedByBalanceIsPositive(entity.getId());
+    }
+
+    @Test
+    void sizeIsAlwaysEmpty() {
+        assertThat(accountReadableKVState.size()).isZero();
+    }
+
+    private AccountID getAccountId(final Long num) {
+        return new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, num));
     }
 }

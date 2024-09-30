@@ -60,16 +60,15 @@ import java.util.function.Supplier;
  * */
 @Named
 public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Account> {
-    private static final String KEY = "ACCOUNTS";
     private static final Long ZERO_BALANCE = 0L;
 
+    private final AccountBalanceRepository accountBalanceRepository;
     private final CommonEntityAccessor commonEntityAccessor;
+    private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftRepository nftRepository;
-    private final TokenAllowanceRepository tokenAllowanceRepository;
-    private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final TokenAccountRepository tokenAccountRepository;
-    private final AccountBalanceRepository accountBalanceRepository;
+    private final TokenAllowanceRepository tokenAllowanceRepository;
 
     public AccountReadableKVState(
             CommonEntityAccessor commonEntityAccessor,
@@ -79,14 +78,14 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
             CryptoAllowanceRepository cryptoAllowanceRepository,
             TokenAccountRepository tokenAccountRepository,
             AccountBalanceRepository accountBalanceRepository) {
-        super(KEY);
+        super("ACCOUNTS");
+        this.accountBalanceRepository = accountBalanceRepository;
         this.commonEntityAccessor = commonEntityAccessor;
+        this.cryptoAllowanceRepository = cryptoAllowanceRepository;
         this.nftAllowanceRepository = nftAllowanceRepository;
         this.nftRepository = nftRepository;
-        this.tokenAllowanceRepository = tokenAllowanceRepository;
-        this.cryptoAllowanceRepository = cryptoAllowanceRepository;
         this.tokenAccountRepository = tokenAccountRepository;
-        this.accountBalanceRepository = accountBalanceRepository;
+        this.tokenAllowanceRepository = tokenAllowanceRepository;
     }
 
     @Override
@@ -110,13 +109,16 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
 
     private Account accountFromEntity(Entity entity, final Optional<Long> timestamp) {
         var tokenAccountBalances = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId(), timestamp);
+        byte[] alias = new byte[0];
+        if (entity.getEvmAddress() != null && entity.getEvmAddress().length > 0) {
+            alias = entity.getEvmAddress();
+        } else if (entity.getAlias() != null && entity.getAlias().length > 0) {
+            alias = entity.getAlias();
+        }
 
         return Account.newBuilder()
                 .accountId(EntityIdUtils.toAccountId(entity))
-                .alias(
-                        entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
-                                ? Bytes.wrap(entity.getEvmAddress())
-                                : Bytes.wrap(entity.getAlias()))
+                .alias(Bytes.wrap(alias))
                 .approveForAllNftAllowances(getApproveForAllNfts(entity.getId(), timestamp))
                 .autoRenewAccountId(toAccountId(entity.getAutoRenewAccountId()))
                 .autoRenewSeconds(Objects.requireNonNullElse(entity.getAutoRenewPeriod(), DEFAULT_AUTO_RENEW_PERIOD))
