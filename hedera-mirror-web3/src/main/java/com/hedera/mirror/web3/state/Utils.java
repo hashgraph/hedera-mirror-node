@@ -16,15 +16,7 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
-
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import lombok.CustomLog;
@@ -46,46 +38,5 @@ public class Utils {
         }
 
         return null;
-    }
-
-    public static AccountID convertCanonicalAccountIdFromEntity(final Entity entity) {
-        if (entity == null) {
-            return AccountID.DEFAULT;
-        }
-
-        if (entity.getEvmAddress() != null) {
-            return new AccountID(
-                    entity.getShard(),
-                    entity.getRealm(),
-                    new OneOf<>(
-                            AccountOneOfType.ALIAS,
-                            com.hedera.pbj.runtime.io.buffer.Bytes.wrap(entity.getEvmAddress())));
-        }
-
-        if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
-            return new AccountID(
-                    entity.getShard(),
-                    entity.getRealm(),
-                    new OneOf<>(
-                            AccountOneOfType.ALIAS, com.hedera.pbj.runtime.io.buffer.Bytes.wrap(entity.getAlias())));
-        }
-
-        return new AccountID(
-                entity.getShard(), entity.getRealm(), new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getNum()));
-    }
-
-    public static TokenID convertEncodedEntityIdToTokenID(final Long entityId) {
-        final var decodedEntityId = EntityId.of(entityId);
-
-        return new TokenID(decodedEntityId.getShard(), decodedEntityId.getRealm(), decodedEntityId.getNum());
-    }
-
-    public static AccountID convertEncodedEntityIdToAccountID(final Long entityId) {
-        final var decodedEntityId = EntityId.of(entityId);
-
-        return new AccountID(
-                decodedEntityId.getShard(),
-                decodedEntityId.getRealm(),
-                new OneOf<>(AccountOneOfType.ACCOUNT_NUM, decodedEntityId.getNum()));
     }
 }

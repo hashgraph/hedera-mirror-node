@@ -18,10 +18,9 @@ package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
-import static com.hedera.mirror.web3.state.Utils.convertCanonicalAccountIdFromEntity;
-import static com.hedera.mirror.web3.state.Utils.convertEncodedEntityIdToAccountID;
-import static com.hedera.mirror.web3.state.Utils.convertEncodedEntityIdToTokenID;
 import static com.hedera.mirror.web3.state.Utils.parseKey;
+import static com.hedera.services.utils.EntityIdUtils.toAccountId;
+import static com.hedera.services.utils.EntityIdUtils.toTokenId;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
@@ -39,14 +38,17 @@ import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
+import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -110,31 +112,29 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         var tokenAccountBalances = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId(), timestamp);
 
         return Account.newBuilder()
-                .accountId(convertCanonicalAccountIdFromEntity(entity))
+                .accountId(EntityIdUtils.toAccountId(entity))
                 .alias(
                         entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
                                 ? Bytes.wrap(entity.getEvmAddress())
-                                : Bytes.EMPTY)
-                .key(parseKey(entity.getKey()))
-                .expirationSecond(TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS))
-                .tinybarBalance(getAccountBalance(entity, timestamp))
-                .memo(entity.getMemo())
-                .deleted(Optional.ofNullable(entity.getDeleted()).orElse(false))
-                .receiverSigRequired(entity.getReceiverSigRequired() != null && entity.getReceiverSigRequired())
-                .numberOwnedNfts(getOwnedNfts(entity.getId(), timestamp))
-                .maxAutoAssociations(Optional.ofNullable(entity.getMaxAutomaticTokenAssociations())
-                        .orElse(0))
-                .numberAssociations(() -> tokenAccountBalances.get().all())
-                .smartContract(CONTRACT.equals(entity.getType()))
-                .numberPositiveBalances(() -> tokenAccountBalances.get().positive())
-                .ethereumNonce(entity.getEthereumNonce() != null ? entity.getEthereumNonce() : 0L)
-                .autoRenewAccountId(convertEncodedEntityIdToAccountID(entity.getAutoRenewAccountId()))
-                .autoRenewSeconds(
-                        entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : DEFAULT_AUTO_RENEW_PERIOD)
-                .cryptoAllowances(getCryptoAllowances(entity.getId(), timestamp))
+                                : Bytes.wrap(entity.getAlias()))
                 .approveForAllNftAllowances(getApproveForAllNfts(entity.getId(), timestamp))
-                .tokenAllowances(getFungibleTokenAllowances(entity.getId(), timestamp))
+                .autoRenewAccountId(toAccountId(entity.getAutoRenewAccountId()))
+                .autoRenewSeconds(Objects.requireNonNullElse(entity.getAutoRenewPeriod(), DEFAULT_AUTO_RENEW_PERIOD))
+                .cryptoAllowances(getCryptoAllowances(entity.getId(), timestamp))
+                .deleted(Objects.requireNonNullElse(entity.getDeleted(), false))
+                .ethereumNonce(Objects.requireNonNullElse(entity.getEthereumNonce(), 0L))
+                .expirationSecond(TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS))
                 .expiredAndPendingRemoval(false)
+                .key(parseKey(entity.getKey()))
+                .maxAutoAssociations(Objects.requireNonNullElse(entity.getMaxAutomaticTokenAssociations(), 0))
+                .memo(entity.getMemo())
+                .numberAssociations(() -> tokenAccountBalances.get().all())
+                .numberOwnedNfts(getOwnedNfts(entity.getId(), timestamp))
+                .numberPositiveBalances(() -> tokenAccountBalances.get().positive())
+                .receiverSigRequired(entity.getReceiverSigRequired() != null && entity.getReceiverSigRequired())
+                .smartContract(CONTRACT.equals(entity.getType()))
+                .tinybarBalance(getAccountBalance(entity, timestamp))
+                .tokenAllowances(getFungibleTokenAllowances(entity.getId(), timestamp))
                 .build();
     }
 
@@ -165,7 +165,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                         return ZERO_BALANCE;
                     }
                 })
-                .orElseGet(() -> Optional.ofNullable(entity.getBalance()).orElse(ZERO_BALANCE)));
+                .orElseGet(() -> Objects.requireNonNullElse(entity.getBalance(), ZERO_BALANCE)));
     }
 
     private Supplier<List<AccountCryptoAllowance>> getCryptoAllowances(
@@ -200,11 +200,16 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
 
     private Supplier<TokenAccountBalances> getNumberOfAllAndPositiveBalanceTokenAssociations(
             long accountId, final Optional<Long> timestamp) {
-        var counts = timestamp
+        return Suppliers.memoize(() -> getTokenAccountBalances(timestamp
                 .map(t -> tokenAccountRepository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
                         accountId, t))
-                .orElseGet(() ->
-                        tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId));
+                .orElseGet(
+                        () -> tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId))
+                .stream()
+                .toList()));
+    }
+
+    private TokenAccountBalances getTokenAccountBalances(final List<TokenAccountAssociationsCount> counts) {
         int all = 0;
         int positive = 0;
 
@@ -218,25 +223,23 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         final var allAggregated = all;
         final var positiveAggregated = positive;
 
-        return Suppliers.memoize(() -> new TokenAccountBalances(allAggregated, positiveAggregated));
+        return new TokenAccountBalances(allAggregated, positiveAggregated);
     }
 
     private AccountFungibleTokenAllowance convertFungibleAllowance(final TokenAllowance tokenAllowance) {
         return new AccountFungibleTokenAllowance(
-                convertEncodedEntityIdToTokenID(tokenAllowance.getTokenId()),
-                convertEncodedEntityIdToAccountID(tokenAllowance.getSpender()),
+                toTokenId(tokenAllowance.getTokenId()),
+                toAccountId(tokenAllowance.getSpender()),
                 tokenAllowance.getAmount());
     }
 
     private AccountCryptoAllowance convertCryptoAllowance(final CryptoAllowance cryptoAllowance) {
-        return new AccountCryptoAllowance(
-                convertEncodedEntityIdToAccountID(cryptoAllowance.getSpender()), cryptoAllowance.getAmount());
+        return new AccountCryptoAllowance(toAccountId(cryptoAllowance.getSpender()), cryptoAllowance.getAmount());
     }
 
     private AccountApprovalForAllAllowance convertNftAllowance(final NftAllowance nftAllowance) {
         return new AccountApprovalForAllAllowance(
-                convertEncodedEntityIdToTokenID(nftAllowance.getTokenId()),
-                convertEncodedEntityIdToAccountID(nftAllowance.getSpender()));
+                toTokenId(nftAllowance.getTokenId()), toAccountId(nftAllowance.getSpender()));
     }
 
     private record TokenAccountBalances(int all, int positive) {}

@@ -16,6 +16,7 @@
 
 package com.hedera.services.utils;
 
+import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.web3.evm.account.AccountAccessorImpl.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_SECP256K1_ALIAS_SIZE;
 import static com.hedera.services.utils.BitPackUtils.numFromCode;
@@ -23,7 +24,10 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -143,6 +147,63 @@ public final class EntityIdUtils {
                 .setShardNum(id.shard())
                 .setRealmNum(id.realm())
                 .setAccountNum(id.num())
+                .build();
+    }
+
+    public static EntityId toEntityId(final com.hedera.hapi.node.base.AccountID accountID) {
+        return EntityId.of(accountID.shardNum(), accountID.realmNum(), accountID.accountNum());
+    }
+
+    public static com.hedera.hapi.node.base.AccountID toAccountId(final EntityId entityId) {
+        return com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entityId.getShard())
+                .realmNum(entityId.getRealm())
+                .accountNum(entityId.getNum())
+                .build();
+    }
+
+    public static com.hedera.hapi.node.base.AccountID toAccountId(final Long id) {
+        final var decodedEntityId = EntityId.of(id);
+
+        return toAccountId(decodedEntityId);
+    }
+
+    public static com.hedera.hapi.node.base.AccountID toAccountId(final Entity entity) {
+        if (entity == null) {
+            return com.hedera.hapi.node.base.AccountID.DEFAULT;
+        }
+
+        if (entity.getEvmAddress() != null) {
+            return new com.hedera.hapi.node.base.AccountID(
+                    entity.getShard(),
+                    entity.getRealm(),
+                    new OneOf<>(
+                            AccountOneOfType.ALIAS,
+                            com.hedera.pbj.runtime.io.buffer.Bytes.wrap(entity.getEvmAddress())));
+        }
+
+        if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
+            return new com.hedera.hapi.node.base.AccountID(
+                    entity.getShard(),
+                    entity.getRealm(),
+                    new OneOf<>(
+                            AccountOneOfType.ALIAS, com.hedera.pbj.runtime.io.buffer.Bytes.wrap(entity.getAlias())));
+        }
+
+        return toAccountId(entity.toEntityId());
+    }
+
+    public static com.hedera.hapi.node.base.TokenID toTokenId(final Long entityId) {
+        final var decodedEntityId = EntityId.of(entityId);
+
+        return toTokenId(decodedEntityId);
+    }
+
+    public static com.hedera.hapi.node.base.TokenID toTokenId(final EntityId entityId) {
+        return com.hedera.hapi.node.base.TokenID.newBuilder()
+                .shardNum(entityId.getShard())
+                .realmNum(entityId.getRealm())
+                .tokenNum(entityId.getNum())
                 .build();
     }
 

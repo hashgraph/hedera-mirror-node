@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.JsonCodec;
 import com.hedera.pbj.runtime.OneOf;
@@ -160,6 +159,9 @@ public record Account(
 
     /** Default instance with all fields set to default values */
     public static final Account DEFAULT = newBuilder().build();
+
+    private static final Supplier<Long> DEFAULT_LONG_SUPPLIER = () -> 0L;
+    private static final Supplier<Integer> DEFAULT_INTEGER_SUPPLIER = () -> 0;
 
     /**
      * Return a new builder for building a model object. This is just a shortcut for <code>new Model.Builder()</code>.
@@ -947,7 +949,7 @@ public record Account(
 
         private long expirationSecond = 0;
         private long tinybarBalance = 0L;
-        private Supplier<Long> tinybarBalanceSupplier = Suppliers.memoize(() -> 0L);
+        private Supplier<Long> tinybarBalanceSupplier = DEFAULT_LONG_SUPPLIER;
 
         @Nonnull
         private String memo = "";
@@ -968,14 +970,14 @@ public record Account(
 
         private long headNftSerialNumber = 0;
         private long numberOwnedNfts = 0L;
-        private Supplier<Long> numberOwnedNftsSupplier = Suppliers.memoize(() -> 0L);
+        private Supplier<Long> numberOwnedNftsSupplier = DEFAULT_LONG_SUPPLIER;
         private int maxAutoAssociations = 0;
         private int usedAutoAssociations = 0;
         private int numberAssociations = 0;
-        private Supplier<Integer> numberAssociationsSupplier = Suppliers.memoize(() -> 0);
+        private Supplier<Integer> numberAssociationsSupplier = DEFAULT_INTEGER_SUPPLIER;
         private boolean smartContract = false;
         private int numberPositiveBalances = 0;
-        private Supplier<Integer> numberPositiveBalancesSupplier = Suppliers.memoize(() -> 0);
+        private Supplier<Integer> numberPositiveBalancesSupplier = DEFAULT_INTEGER_SUPPLIER;
         private long ethereumNonce = 0;
         private long stakeAtStartOfLastRewardedPeriod = 0;
 
@@ -989,22 +991,20 @@ public record Account(
         private List<AccountCryptoAllowance> cryptoAllowances = Collections.emptyList();
 
         @Nonnull
-        private Supplier<List<AccountCryptoAllowance>> cryptoAllowancesSupplier =
-                Suppliers.memoize(Collections::emptyList);
+        private Supplier<List<AccountCryptoAllowance>> cryptoAllowancesSupplier = Collections::emptyList;
 
         @Nonnull
         private List<AccountApprovalForAllAllowance> approveForAllNftAllowances = Collections.emptyList();
 
         @Nonnull
         private Supplier<List<AccountApprovalForAllAllowance>> approveForAllNftAllowancesSupplier =
-                Suppliers.memoize(Collections::emptyList);
+                Collections::emptyList;
 
         @Nonnull
         private List<AccountFungibleTokenAllowance> tokenAllowances = Collections.emptyList();
 
         @Nonnull
-        private Supplier<List<AccountFungibleTokenAllowance>> tokenAllowancesSupplier =
-                Suppliers.memoize(Collections::emptyList);
+        private Supplier<List<AccountFungibleTokenAllowance>> tokenAllowancesSupplier = Collections::emptyList;
 
         private int numberTreasuryTitles = 0;
         private boolean expiredAndPendingRemoval = false;
@@ -1166,12 +1166,16 @@ public record Account(
             this.autoRenewSeconds = autoRenewSeconds;
             this.contractKvPairsNumber = contractKvPairsNumber;
             this.cryptoAllowances = cryptoAllowances == null ? Collections.emptyList() : cryptoAllowances;
-            this.cryptoAllowancesSupplier = cryptoAllowancesSupplier;
+            this.cryptoAllowancesSupplier =
+                    cryptoAllowancesSupplier == null ? Collections::emptyList : cryptoAllowancesSupplier;
             this.approveForAllNftAllowances =
                     approveForAllNftAllowances == null ? Collections.emptyList() : approveForAllNftAllowances;
-            this.approveForAllNftAllowancesSupplier = approveForAllNftAllowancesSupplier;
+            this.approveForAllNftAllowancesSupplier = approveForAllNftAllowancesSupplier == null
+                    ? Collections::emptyList
+                    : approveForAllNftAllowancesSupplier;
             this.tokenAllowances = tokenAllowances == null ? Collections.emptyList() : tokenAllowances;
-            this.tokenAllowancesSupplier = tokenAllowancesSupplier;
+            this.tokenAllowancesSupplier =
+                    tokenAllowancesSupplier == null ? Collections::emptyList : tokenAllowancesSupplier;
             this.numberTreasuryTitles = numberTreasuryTitles;
             this.expiredAndPendingRemoval = expiredAndPendingRemoval;
             this.firstContractStorageKey = firstContractStorageKey != null ? firstContractStorageKey : Bytes.EMPTY;

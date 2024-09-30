@@ -16,13 +16,12 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.services.utils.EntityIdUtils.entityIdFromId;
+import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
-import com.hedera.services.store.models.Id;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -35,9 +34,7 @@ public class CommonEntityAccessor {
 
     public @Nonnull Optional<Entity> get(@Nonnull AccountID accountID, final Optional<Long> timestamp) {
         if (accountID.hasAccountNum()) {
-            return getEntityByMirrorAddressAndTimestamp(
-                    entityIdFromId(new Id(accountID.shardNum(), accountID.realmNum(), accountID.accountNum())),
-                    timestamp);
+            return getEntityByMirrorAddressAndTimestamp(toEntityId(accountID), timestamp);
         } else {
             return getEntityByEvmAddressAndTimestamp(accountID.alias().toByteArray(), timestamp);
         }
