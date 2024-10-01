@@ -20,6 +20,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
@@ -30,7 +32,9 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.utils.EntityIdUtils;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
@@ -48,7 +52,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class NftReadableKVStateTest {
 
-    private static final TokenID TOKEN_ID = TokenID.newBuilder().shardNum(0L).realmNum(0L).tokenNum(1252L).build();
+    private static final TokenID TOKEN_ID =
+            TokenID.newBuilder().shardNum(0L).realmNum(0L).tokenNum(1252L).build();
     private static final Optional<Long> timestamp = Optional.of(1726231985623004672L);
     private static final EntityId spender = EntityId.of(1L, 2L, 3L);
     private static final NftID NFT_ID = new NftID(TOKEN_ID, 1L);
@@ -82,9 +87,10 @@ public class NftReadableKVStateTest {
     @BeforeEach
     void setup() {
         domainBuilder = new DomainBuilder();
-        entity = domainBuilder.entity().customize(e -> e.id(TOKEN_ID.tokenNum())
-                .type(EntityType.TOKEN)
-                .createdTimestamp(timestamp.get())).get();
+        entity = domainBuilder
+                .entity()
+                .customize(e -> e.id(TOKEN_ID.tokenNum()).type(EntityType.TOKEN).createdTimestamp(timestamp.get()))
+                .get();
         contextMockedStatic.when(ContractCallContext::get).thenReturn(contractCallContext);
     }
 
@@ -93,17 +99,20 @@ public class NftReadableKVStateTest {
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         Nft nftDomain = setupNft(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
-        assertThat(nftReadableKVState.readFromDataSource(NFT_ID)).satisfies(
-                nft -> assertThat(nft).returns(NFT_ID, com.hedera.hapi.node.state.token.Nft::nftId)
-                        .returns(Utils.convertEntityIdToAccountID(nftDomain.getAccountId()),
-                                com.hedera.hapi.node.state.token.Nft::ownerId)
-                        .returns(Utils.convertEntityIdToAccountID(nftDomain.getSpender()),
-                                com.hedera.hapi.node.state.token.Nft::spenderId)
-                        .returns(convertToTimestamp(nftDomain.getCreatedTimestamp()),
-                                com.hedera.hapi.node.state.token.Nft::mintTime)
-                        .returns(Bytes.wrap(nftDomain.getMetadata()), com.hedera.hapi.node.state.token.Nft::metadata)
-                        .returns(null, com.hedera.hapi.node.state.token.Nft::ownerPreviousNftId)
-                        .returns(null, com.hedera.hapi.node.state.token.Nft::ownerNextNftId));
+        assertThat(nftReadableKVState.readFromDataSource(NFT_ID)).satisfies(nft -> assertThat(nft)
+                .returns(NFT_ID, com.hedera.hapi.node.state.token.Nft::nftId)
+                .returns(
+                        EntityIdUtils.toAccountId(nftDomain.getAccountId()),
+                        com.hedera.hapi.node.state.token.Nft::ownerId)
+                .returns(
+                        EntityIdUtils.toAccountId(nftDomain.getSpender()),
+                        com.hedera.hapi.node.state.token.Nft::spenderId)
+                .returns(
+                        convertToTimestamp(nftDomain.getCreatedTimestamp()),
+                        com.hedera.hapi.node.state.token.Nft::mintTime)
+                .returns(Bytes.wrap(nftDomain.getMetadata()), com.hedera.hapi.node.state.token.Nft::metadata)
+                .returns(null, com.hedera.hapi.node.state.token.Nft::ownerPreviousNftId)
+                .returns(null, com.hedera.hapi.node.state.token.Nft::ownerNextNftId));
     }
 
     @Test
@@ -111,17 +120,20 @@ public class NftReadableKVStateTest {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         Nft nftDomain = setupNft(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
-        assertThat(nftReadableKVState.readFromDataSource(NFT_ID)).satisfies(
-                nft -> assertThat(nft).returns(NFT_ID, com.hedera.hapi.node.state.token.Nft::nftId)
-                        .returns(Utils.convertEntityIdToAccountID(nftDomain.getAccountId()),
-                                com.hedera.hapi.node.state.token.Nft::ownerId)
-                        .returns(Utils.convertEntityIdToAccountID(nftDomain.getSpender()),
-                                com.hedera.hapi.node.state.token.Nft::spenderId)
-                        .returns(convertToTimestamp(nftDomain.getCreatedTimestamp()),
-                                com.hedera.hapi.node.state.token.Nft::mintTime)
-                        .returns(Bytes.wrap(nftDomain.getMetadata()), com.hedera.hapi.node.state.token.Nft::metadata)
-                        .returns(null, com.hedera.hapi.node.state.token.Nft::ownerPreviousNftId)
-                        .returns(null, com.hedera.hapi.node.state.token.Nft::ownerNextNftId));
+        assertThat(nftReadableKVState.readFromDataSource(NFT_ID)).satisfies(nft -> assertThat(nft)
+                .returns(NFT_ID, com.hedera.hapi.node.state.token.Nft::nftId)
+                .returns(
+                        EntityIdUtils.toAccountId(nftDomain.getAccountId()),
+                        com.hedera.hapi.node.state.token.Nft::ownerId)
+                .returns(
+                        EntityIdUtils.toAccountId(nftDomain.getSpender()),
+                        com.hedera.hapi.node.state.token.Nft::spenderId)
+                .returns(
+                        convertToTimestamp(nftDomain.getCreatedTimestamp()),
+                        com.hedera.hapi.node.state.token.Nft::mintTime)
+                .returns(Bytes.wrap(nftDomain.getMetadata()), com.hedera.hapi.node.state.token.Nft::metadata)
+                .returns(null, com.hedera.hapi.node.state.token.Nft::ownerPreviousNftId)
+                .returns(null, com.hedera.hapi.node.state.token.Nft::ownerNextNftId));
     }
 
     @Test
@@ -148,18 +160,20 @@ public class NftReadableKVStateTest {
     }
 
     private Nft setupNft(Optional<Long> timestamp) {
-        Nft databaseNft = domainBuilder.nft()
+        Nft databaseNft = domainBuilder
+                .nft()
                 .customize(t -> t.tokenId(entity.getId())
                         .serialNumber(NFT_ID.serialNumber())
-                        .spender(spender)).get();
+                        .spender(spender))
+                .get();
 
         if (timestamp.isPresent()) {
             databaseNft.setCreatedTimestamp(timestamp.get());
-            when(nftRepository.findActiveByIdAndTimestamp(entity.getId(), NFT_ID.serialNumber(),
-                    timestamp.get())).thenReturn(Optional.of(databaseNft));
+            when(nftRepository.findActiveByIdAndTimestamp(entity.getId(), NFT_ID.serialNumber(), timestamp.get()))
+                    .thenReturn(Optional.of(databaseNft));
         } else {
-            when(nftRepository.findActiveById(entity.getId(), NFT_ID.serialNumber())).thenReturn(
-                    Optional.ofNullable(databaseNft));
+            when(nftRepository.findActiveById(entity.getId(), NFT_ID.serialNumber()))
+                    .thenReturn(Optional.ofNullable(databaseNft));
         }
         return databaseNft;
     }
@@ -167,5 +181,10 @@ public class NftReadableKVStateTest {
     private Timestamp convertToTimestamp(long timestamp) {
         var instant = Instant.ofEpochMilli(timestamp);
         return new Timestamp(instant.getEpochSecond(), instant.getNano());
+    }
+
+    private AccountID convertEntityIdToAccountID(EntityId entityId) {
+        return new AccountID(
+                entityId.getShard(), entityId.getRealm(), new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entityId.getNum()));
     }
 }

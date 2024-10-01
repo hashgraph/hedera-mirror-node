@@ -23,6 +23,7 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
@@ -87,8 +88,8 @@ public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
         return new Nft(
                 new NftID(
                         new TokenID(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum()), nft.getSerialNumber()),
-                Utils.convertEncodedEntityIdToAccountID(nft.getAccountId().getId()),
-                Utils.convertEncodedEntityIdToAccountID(nft.getSpender().getId()),
+                EntityIdUtils.toAccountId(nft.getAccountId().getId()),
+                EntityIdUtils.toAccountId(nft.getSpender().getId()),
                 convertToTimestamp(nft.getCreatedTimestamp()),
                 Bytes.wrap(nft.getMetadata()),
                 null,
