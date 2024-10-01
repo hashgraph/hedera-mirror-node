@@ -20,8 +20,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
@@ -32,7 +30,6 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.NftRepository;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
 import java.time.Instant;
@@ -181,10 +178,5 @@ public class NftReadableKVStateTest {
     private Timestamp convertToTimestamp(long timestamp) {
         var instant = Instant.ofEpochMilli(timestamp);
         return new Timestamp(instant.getEpochSecond(), instant.getNano());
-    }
-
-    private AccountID convertEntityIdToAccountID(EntityId entityId) {
-        return new AccountID(
-                entityId.getShard(), entityId.getRealm(), new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entityId.getNum()));
     }
 }
