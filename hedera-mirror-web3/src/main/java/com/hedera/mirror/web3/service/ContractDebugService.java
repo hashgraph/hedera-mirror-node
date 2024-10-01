@@ -33,6 +33,7 @@ import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
 import jakarta.validation.Valid;
+import java.util.Optional;
 import lombok.CustomLog;
 import org.springframework.validation.annotation.Validated;
 
@@ -57,7 +58,7 @@ public class ContractDebugService extends ContractCallService {
     public OpcodesProcessingResult processOpcodeCall(
             final @Valid ContractDebugParameters params, final OpcodeTracerOptions opcodeTracerOptions) {
         return ContractCallContext.run(ctx -> {
-            ctx.setTimestamp(params.getConsensusTimestamp() - 1);
+            ctx.setTimestamp(Optional.of(params.getConsensusTimestamp() - 1));
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             ctx.setContractActions(contractActionRepository.findFailedSystemActionsByConsensusTimestamp(
                     params.getConsensusTimestamp()));
