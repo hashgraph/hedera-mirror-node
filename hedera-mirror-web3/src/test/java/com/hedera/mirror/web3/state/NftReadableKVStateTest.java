@@ -47,7 +47,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class NftReadableKVStateTest {
+class NftReadableKVStateTest {
 
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().shardNum(0L).realmNum(0L).tokenNum(1252L).build();
@@ -153,7 +153,7 @@ public class NftReadableKVStateTest {
 
     @Test
     void testSize() {
-        assertThat(nftReadableKVState.size()).isEqualTo(0L);
+        assertThat(nftReadableKVState.size()).isZero();
     }
 
     private Nft setupNft(Optional<Long> timestamp) {
