@@ -138,7 +138,8 @@ public record Account(
         int numberTreasuryTitles,
         boolean expiredAndPendingRemoval,
         @Nonnull Bytes firstContractStorageKey,
-        @Nullable PendingAirdropId headPendingAirdropId) {
+        @Nullable PendingAirdropId headPendingAirdropId,
+        long numberPendingAirdrops) {
     /** Protobuf codec for reading and writing in protobuf format */
     public static final Codec<Account> PROTOBUF = new com.hedera.hapi.node.state.token.codec.AccountProtoCodec();
     /** JSON codec for reading and writing in JSON format */
@@ -183,7 +184,8 @@ public record Account(
             int numberTreasuryTitles,
             boolean expiredAndPendingRemoval,
             Bytes firstContractStorageKey,
-            PendingAirdropId headPendingAirdropId) {
+            PendingAirdropId headPendingAirdropId,
+            long numberPendingAirdrops) {
         this(
                 accountId,
                 alias,
@@ -217,7 +219,8 @@ public record Account(
                 numberTreasuryTitles,
                 expiredAndPendingRemoval,
                 firstContractStorageKey,
-                headPendingAirdropId);
+                headPendingAirdropId,
+                numberPendingAirdrops);
     }
 
     /**
@@ -346,6 +349,9 @@ public record Account(
         }
         if (headPendingAirdropId != null && !headPendingAirdropId.equals(DEFAULT.headPendingAirdropId)) {
             result = 31 * result + headPendingAirdropId.hashCode();
+        }
+        if (numberPendingAirdrops != DEFAULT.numberPendingAirdrops) {
+            result = 31 * result + Long.hashCode(numberPendingAirdrops);
         }
         long hashCode = result;
         // Shifts: 30, 27, 16, 20, 5, 18, 10, 24, 30
@@ -488,7 +494,10 @@ public record Account(
         if (headPendingAirdropId == null && thatObj.headPendingAirdropId != null) {
             return false;
         }
-        return headPendingAirdropId == null || headPendingAirdropId.equals(thatObj.headPendingAirdropId);
+        if (headPendingAirdropId != null && !headPendingAirdropId.equals(thatObj.headPendingAirdropId)) {
+            return false;
+        }
+        return numberPendingAirdrops == thatObj.numberPendingAirdrops;
     }
 
     /**
@@ -861,7 +870,8 @@ public record Account(
                 numberTreasuryTitles,
                 expiredAndPendingRemoval,
                 firstContractStorageKey,
-                headPendingAirdropId);
+                headPendingAirdropId,
+                numberPendingAirdrops);
     }
 
     public Long tinybarBalance() {
@@ -1049,6 +1059,8 @@ public record Account(
         @Nullable
         private PendingAirdropId headPendingAirdropId = null;
 
+        private long numberPendingAirdrops = 0;
+
         /**
          * Create an empty builder
          */
@@ -1120,6 +1132,8 @@ public record Account(
          *                             <p>
          *                             This value SHALL NOT be empty if this account is "sender" for any
          *                             pending airdrop, and SHALL be empty otherwise.
+         * @param numberPendingAirdrops <b>(35)</b> The number of pending airdrops owned by the account. This number is used to collect rent
+         *                              for the account.
          */
         @SuppressWarnings("java:S107")
         public Builder(
@@ -1155,7 +1169,8 @@ public record Account(
                 int numberTreasuryTitles,
                 boolean expiredAndPendingRemoval,
                 Bytes firstContractStorageKey,
-                PendingAirdropId headPendingAirdropId) {
+                PendingAirdropId headPendingAirdropId,
+                long numberPendingAirdrops) {
             this.accountId = accountId;
             this.alias = alias != null ? alias : Bytes.EMPTY;
             this.key = key;
@@ -1193,6 +1208,7 @@ public record Account(
             this.expiredAndPendingRemoval = expiredAndPendingRemoval;
             this.firstContractStorageKey = firstContractStorageKey != null ? firstContractStorageKey : Bytes.EMPTY;
             this.headPendingAirdropId = headPendingAirdropId;
+            this.numberPendingAirdrops = numberPendingAirdrops;
         }
 
         /**
@@ -1234,7 +1250,8 @@ public record Account(
                     numberTreasuryTitles,
                     expiredAndPendingRemoval,
                     firstContractStorageKey,
-                    headPendingAirdropId);
+                    headPendingAirdropId,
+                    numberPendingAirdrops);
         }
 
         /**
@@ -1816,6 +1833,18 @@ public record Account(
          */
         public Builder headPendingAirdropId(PendingAirdropId.Builder builder) {
             this.headPendingAirdropId = builder.build();
+            return this;
+        }
+
+        /**
+         * <b>(35)</b> The number of pending airdrops owned by the account. This number is used to collect rent
+         * for the account.
+         *
+         * @param numberPendingAirdrops value to set
+         * @return builder to continue building with
+         */
+        public Builder numberPendingAirdrops(long numberPendingAirdrops) {
+            this.numberPendingAirdrops = numberPendingAirdrops;
             return this;
         }
     }
