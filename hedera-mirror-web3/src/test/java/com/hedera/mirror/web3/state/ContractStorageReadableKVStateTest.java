@@ -31,6 +31,7 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,6 +47,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ContractStorageReadableKVStateTest {
 
+    private static final ContractID CONTRACT_ID =
+            new ContractID(1L, 0L, new OneOf<>(ContractOneOfType.CONTRACT_NUM, 1L));
+    private static final Bytes BYTES = Bytes.fromBase64("123456");
+    private static final SlotKey SLOT_KEY = new SlotKey(CONTRACT_ID, BYTES);
+    private static final EntityId ENTITY_ID =
+            EntityId.of(CONTRACT_ID.shardNum(), CONTRACT_ID.realmNum(), CONTRACT_ID.contractNum());
+    private static MockedStatic<ContractCallContext> contextMockedStatic;
+
     @InjectMocks
     private ContractStorageReadableKVState contractStorageReadableKVState;
 
@@ -54,15 +63,6 @@ class ContractStorageReadableKVStateTest {
 
     @Spy
     private ContractCallContext contractCallContext;
-
-    private static MockedStatic<ContractCallContext> contextMockedStatic;
-
-    private static final ContractID CONTRACT_ID =
-            new ContractID(1L, 0L, new OneOf<>(ContractOneOfType.CONTRACT_NUM, 1L));
-    private static final Bytes BYTES = Bytes.fromBase64("123456");
-    private static final SlotKey SLOT_KEY = new SlotKey(CONTRACT_ID, BYTES);
-    private static final EntityId ENTITY_ID =
-            EntityId.of(CONTRACT_ID.shardNum(), CONTRACT_ID.realmNum(), CONTRACT_ID.contractNum());
 
     @BeforeAll
     static void initStaticMocks() {
@@ -121,5 +121,15 @@ class ContractStorageReadableKVStateTest {
     void whenSlotKeyIsNullReturnNull() {
         assertThat(contractStorageReadableKVState.get(new SlotKey(null, BYTES)))
                 .satisfies(slotValue -> assertThat(slotValue).isNull());
+    }
+
+    @Test
+    void testIterateFromDataSource() {
+        assertThat(contractStorageReadableKVState.iterateFromDataSource()).isEqualTo(Collections.emptyIterator());
+    }
+
+    @Test
+    void testSize() {
+        assertThat(contractStorageReadableKVState.size()).isZero();
     }
 }

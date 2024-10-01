@@ -18,15 +18,17 @@ package com.hedera.mirror.web3.state;
 
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
+import jakarta.annotation.Nonnull;
+import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
-import org.jetbrains.annotations.NotNull;
 
+@Named
 public class ContractStorageReadableKVState extends ReadableKVStateBase<SlotKey, SlotValue> {
 
     private static final String KEY = "STORAGE";
@@ -38,24 +40,23 @@ public class ContractStorageReadableKVState extends ReadableKVStateBase<SlotKey,
     }
 
     @Override
-    protected SlotValue readFromDataSource(@NotNull SlotKey slotKey) {
+    protected SlotValue readFromDataSource(@Nonnull SlotKey slotKey) {
         if (!slotKey.hasContractID()) {
             return null;
         }
 
         final var timestamp = ContractCallContext.get().getTimestamp();
         final var contractID = slotKey.contractID();
-        final var entityId = EntityId.of(contractID.shardNum(), contractID.realmNum(), contractID.contractNum());
+        final var entityId = EntityIdUtils.entityIdFromContractId(contractID);
+        final var keyBytes = slotKey.key().toByteArray();
         return timestamp
-                .map(t -> contractStateRepository.findStorageByBlockTimestamp(
-                        entityId.getId(), slotKey.key().toByteArray(), t))
-                .orElse(contractStateRepository.findStorage(
-                        entityId.getId(), slotKey.key().toByteArray()))
+                .map(t -> contractStateRepository.findStorageByBlockTimestamp(entityId.getId(), keyBytes, t))
+                .orElse(contractStateRepository.findStorage(entityId.getId(), keyBytes))
                 .map(byteArr -> new SlotValue(Bytes.wrap(byteArr), Bytes.EMPTY, Bytes.EMPTY))
                 .orElse(null);
     }
 
-    @NotNull
+    @Nonnull
     @Override
     protected Iterator<SlotKey> iterateFromDataSource() {
         return Collections.emptyIterator();

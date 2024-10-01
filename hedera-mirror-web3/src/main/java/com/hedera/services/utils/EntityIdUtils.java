@@ -44,7 +44,7 @@ public final class EntityIdUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static byte[] asEvmAddress(final ContractID id) {
+    public static byte[] asEvmAddress(final com.hederahashgraph.api.proto.java.ContractID id) {
         if (isOfEvmAddressSize(id.getEvmAddress())) {
             return id.getEvmAddress().toByteArray();
         } else {
@@ -251,6 +251,13 @@ public final class EntityIdUtils {
             return null;
         }
         return EntityId.of(id.shard(), id.realm(), id.num());
+    }
+
+    public static EntityId entityIdFromContractId(final com.hedera.hapi.node.base.ContractID id) {
+        if (id == null || id.contractNum() == null) {
+            return null;
+        }
+        return EntityId.of(id.shardNum(), id.realmNum(), id.contractNum());
     }
 
     public static Id idFromEntityId(EntityId entityId) {
