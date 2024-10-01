@@ -24,11 +24,19 @@ import static com.hedera.pbj.runtime.ProtoTestTools.STRING_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.UNSIGNED_INTEGER_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.UNSIGNED_LONG_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.generateListArguments;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.test.NoToStringWrapper;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -180,7 +188,7 @@ public class AccountTest {
 
     @SuppressWarnings("EqualsWithItself")
     @Test
-    public void testTestEqualsAndHashCode() throws Exception {
+    void testTestEqualsAndHashCode() {
         if (ARGUMENTS.size() >= 3) {
             final var item1 = ARGUMENTS.get(0);
             final var item2 = ARGUMENTS.get(1);
@@ -196,5 +204,481 @@ public class AccountTest {
             assertNotEquals(item1HashCode, item2HashCode);
             assertNotEquals(item2HashCode, item3HashCode);
         }
+    }
+
+    @Test
+    void testEqualsWithNull() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item2 = ARGUMENTS.get(1);
+        assertNotEquals(item1, null);
+        assertNotEquals(null, item2);
+    }
+
+    @Test
+    void testEqualsWithNullAlias() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithNullAlias = item1.copyBuilder().alias(null).build();
+        assertNotEquals(item1, item1WithNullAlias);
+    }
+
+    @Test
+    void testEqualsWithNullKey() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithNullKey = item1.copyBuilder().key((Key) null).build();
+        assertNotEquals(item1, item1WithNullKey);
+    }
+
+    @Test
+    void testEqualsWithDifferentKey() {
+        final var item2 = ARGUMENTS.get(1);
+
+        final var item1WithDifferentKey = item2.copyBuilder().key(Key.DEFAULT).build();
+        assertNotEquals(item2, item1WithDifferentKey);
+    }
+
+    @Test
+    void testEqualsWithDifferentExpirationSecond() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentExpiration =
+                item1.copyBuilder().expirationSecond(1).build();
+        assertNotEquals(item1, item1WithDifferentExpiration);
+    }
+
+    @Test
+    void testEqualsWithDifferentTinybarBalance() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentTinybarBalance =
+                item1.copyBuilder().tinybarBalance(10).build();
+        assertNotEquals(item1, item1WithDifferentTinybarBalance);
+    }
+
+    @Test
+    void testEqualsWithDifferentMemo() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentMemo = item1.copyBuilder().memo("New Memo").build();
+        assertNotEquals(item1, item1WithDifferentMemo);
+    }
+
+    @Test
+    void testEqualsWithDifferentDeletedStatus() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentDeletedStatus =
+                item1.copyBuilder().deleted(false).build();
+        assertNotEquals(item1, item1WithDifferentDeletedStatus);
+    }
+
+    @Test
+    void testEqualsWithDifferentStakedToMe() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentStakedToMe =
+                item1.copyBuilder().stakedToMe(1001).build();
+        assertNotEquals(item1, item1WithDifferentStakedToMe);
+    }
+
+    @Test
+    void testEqualsWithDifferentStakePeriodStart() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentStakePeriodStart =
+                item1.copyBuilder().stakePeriodStart(113345).build();
+        assertNotEquals(item1, item1WithDifferentStakePeriodStart);
+    }
+
+    @Test
+    void testEqualsWithDifferentStakedId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentStakedId =
+                item1.copyBuilder().stakedNodeId(3).build();
+        assertNotEquals(item1, item1WithDifferentStakedId);
+    }
+
+    @Test
+    void testEqualsWithStakedIdNull() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithStakedIdNull =
+                item1.copyBuilder().stakedAccountId((AccountID) null).build();
+        assertNotEquals(item1, item1WithStakedIdNull);
+    }
+
+    @Test
+    void testEqualsWithDifferentDeclineReward() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentDeclineReward =
+                item1.copyBuilder().declineReward(false).build();
+        assertNotEquals(item1, item1WithDifferentDeclineReward);
+    }
+
+    @Test
+    void testEqualsWithDifferentReceiverSigRequired() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentReceiverSigRequired =
+                item1.copyBuilder().receiverSigRequired(false).build();
+        assertNotEquals(item1, item1WithDifferentReceiverSigRequired);
+    }
+
+    @Test
+    void testEqualsWithNullHeadTokenId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithNullHeadTokenId =
+                item1.copyBuilder().headTokenId((TokenID) null).build();
+        assertNotEquals(item1, item1WithNullHeadTokenId);
+    }
+
+    @Test
+    void testEqualsWithDifferentHeadTokenId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentHeadTokenId =
+                item1.copyBuilder().headTokenId(TokenID.DEFAULT).build();
+        assertNotEquals(item1, item1WithDifferentHeadTokenId);
+    }
+
+    @Test
+    void testEqualsWithNullHeadNftId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithNullHeadNftId =
+                item1.copyBuilder().headNftId((NftID) null).build();
+        assertNotEquals(item1, item1WithNullHeadNftId);
+    }
+
+    @Test
+    void testEqualsWithDifferentHeadNftId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentHeadNftId =
+                item1.copyBuilder().headNftId(NftID.DEFAULT).build();
+        assertNotEquals(item1, item1WithDifferentHeadNftId);
+    }
+
+    @Test
+    void testEqualsWithDifferentHeadNftSerialNumber() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentHeadNftSerialNumber =
+                item1.copyBuilder().headNftSerialNumber(24).build();
+        assertNotEquals(item1, item1WithDifferentHeadNftSerialNumber);
+    }
+
+    @Test
+    void testEqualsWithDifferentNumberOwnedNfts() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentNumberOwnedNfts =
+                item1.copyBuilder().numberOwnedNfts(2).build();
+        assertNotEquals(item1, item1WithDifferentNumberOwnedNfts);
+    }
+
+    @Test
+    void testEqualsWithDifferentMaxAutoAssociations() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentMaxAutoAssociations =
+                item1.copyBuilder().maxAutoAssociations(20005).build();
+        assertNotEquals(item1, item1WithDifferentMaxAutoAssociations);
+    }
+
+    @Test
+    void testEqualsWithDifferentUsedAssociations() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentUsedAssociations =
+                item1.copyBuilder().usedAutoAssociations(2007).build();
+        assertNotEquals(item1, item1WithDifferentUsedAssociations);
+    }
+
+    @Test
+    void testEqualsWithDifferentNumberAssociations() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentNumberAssociations =
+                item1.copyBuilder().numberAssociations(65353).build();
+        assertNotEquals(item1, item1WithDifferentNumberAssociations);
+    }
+
+    @Test
+    void testEqualsWithDifferentSmartContractFlag() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentSmartContractFlag =
+                item1.copyBuilder().smartContract(false).build();
+        assertNotEquals(item1, item1WithDifferentSmartContractFlag);
+    }
+
+    @Test
+    void testEqualsWithDifferentPositiveBalance() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentPositiveBalance =
+                item1.copyBuilder().numberPositiveBalances(1010).build();
+        assertNotEquals(item1, item1WithDifferentPositiveBalance);
+    }
+
+    @Test
+    void testEqualsWithDifferentEthereumNonce() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentEthereumNonce =
+                item1.copyBuilder().ethereumNonce(102).build();
+        assertNotEquals(item1, item1WithDifferentEthereumNonce);
+    }
+
+    @Test
+    void testEqualsWithDifferentStakeAtStartOfLastRewardedPeriod() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentStakeAtStartOfLastRewardedPeriod =
+                item1.copyBuilder().stakeAtStartOfLastRewardedPeriod(204).build();
+        assertNotEquals(item1, item1WithDifferentStakeAtStartOfLastRewardedPeriod);
+    }
+
+    @Test
+    void testEqualsWithDifferentAutoRenewAccountId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentAutoRenewAccountId =
+                item1.copyBuilder().autoRenewAccountId(AccountID.DEFAULT).build();
+        assertNotEquals(item1, item1WithDifferentAutoRenewAccountId);
+    }
+
+    @Test
+    void testEqualsWithNullAutoRenewAccountId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithNullAutoRenewAccountId =
+                item1.copyBuilder().autoRenewAccountId((AccountID) null).build();
+        assertNotEquals(item1, item1WithNullAutoRenewAccountId);
+    }
+
+    @Test
+    void testEqualsWithDifferentAutoRenewSeconds() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentAutoRenewSeconds =
+                item1.copyBuilder().autoRenewSeconds(905535).build();
+        assertNotEquals(item1, item1WithDifferentAutoRenewSeconds);
+    }
+
+    @Test
+    void testEqualsWithDifferentContractKvPairsNumber() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentContractKvPairsNumber =
+                item1.copyBuilder().contractKvPairsNumber(35).build();
+        assertNotEquals(item1, item1WithDifferentContractKvPairsNumber);
+    }
+
+    @Test
+    void testEqualsWithDifferentCryptoAllowances() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentCryptoAllowances =
+                item1.copyBuilder().cryptoAllowances(Collections::emptyList).build();
+        assertNotEquals(item1, item1WithDifferentCryptoAllowances);
+    }
+
+    @Test
+    void testEqualsWithDifferentTokenAllowances() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentTokenAllowances =
+                item1.copyBuilder().tokenAllowances(Collections::emptyList).build();
+        assertNotEquals(item1, item1WithDifferentTokenAllowances);
+    }
+
+    @Test
+    void testEqualsWithDifferentApproveForAllNftAllowances() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentApproveForAllNftAllowances = item1.copyBuilder()
+                .approveForAllNftAllowances(Collections::emptyList)
+                .build();
+        assertNotEquals(item1, item1WithDifferentApproveForAllNftAllowances);
+    }
+
+    @Test
+    void testEqualsWithDifferentNumberTreasuryTitles() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentNumberTreasuryTitles =
+                item1.copyBuilder().numberTreasuryTitles(5353).build();
+        assertNotEquals(item1, item1WithDifferentNumberTreasuryTitles);
+    }
+
+    @Test
+    void testEqualsWithDifferentExpiredAndPendingRemovalStatus() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentExpiredAndPendingRemovalStatus =
+                item1.copyBuilder().expiredAndPendingRemoval(false).build();
+        assertNotEquals(item1, item1WithDifferentExpiredAndPendingRemovalStatus);
+    }
+
+    @Test
+    void testEqualsWithDifferentFirstContractStorageKey() {
+        final var item2 = ARGUMENTS.get(1);
+
+        final var item1WithDifferentFirstContractStorageKey =
+                item2.copyBuilder().firstContractStorageKey(Bytes.EMPTY).build();
+        assertNotEquals(item2, item1WithDifferentFirstContractStorageKey);
+    }
+
+    @Test
+    void testEqualsWithDifferentHeadPendingAirdropId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithDifferentHeadPendingAirdropId = item1.copyBuilder()
+                .headPendingAirdropId(PendingAirdropId.DEFAULT)
+                .build();
+        assertNotEquals(item1, item1WithDifferentHeadPendingAirdropId);
+    }
+
+    @Test
+    void testEqualsWithNullPendingAirdropId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var item1WithNullPendingAirdropId = item1.copyBuilder()
+                .headPendingAirdropId((PendingAirdropId) null)
+                .build();
+        assertNotEquals(item1, item1WithNullPendingAirdropId);
+    }
+
+    @Test
+    void testEqualsWithDifferentNumPendingAirdrops() {
+        final var item2 = ARGUMENTS.get(1);
+
+        final var item1WithDifferentNumPendingAirdrops =
+                item2.copyBuilder().numberPendingAirdrops(0).build();
+        assertNotEquals(item2, item1WithDifferentNumPendingAirdrops);
+    }
+
+    @Test
+    void testAccountIdOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var accountId = item1.accountIdOrThrow();
+        assertThat(accountId).isNotNull();
+    }
+
+    @Test
+    void testIfAccountId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        item1.ifAccountId(a -> item1.copyBuilder().accountId((AccountID) null).build());
+    }
+
+    @Test
+    void testKeyOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var key = item1.keyOrThrow();
+        assertThat(key).isNotNull();
+    }
+
+    @Test
+    void testIfKey() {
+        final var item1 = ARGUMENTS.get(0);
+
+        item1.ifKey(k -> item1.copyBuilder().key((Key) null).build());
+    }
+
+    @Test
+    void testHeadTokenIdOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var headTokenId = item1.headTokenIdOrThrow();
+        assertThat(headTokenId).isNotNull();
+    }
+
+    @Test
+    void testIfHeadTokenId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        item1.ifHeadTokenId(
+                ht -> item1.copyBuilder().headTokenId((TokenID) null).build());
+    }
+
+    @Test
+    void testHeadNftIdOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var headNftId = item1.headNftIdOrThrow();
+        assertThat(headNftId).isNotNull();
+    }
+
+    @Test
+    void testIfHeadNftId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        item1.ifHeadNftId(hn -> item1.copyBuilder().headNftId((NftID) null).build());
+    }
+
+    @Test
+    void testAutoRenewAccountIdOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var autoRenewAccountId = item1.autoRenewAccountIdOrThrow();
+        assertThat(autoRenewAccountId).isNotNull();
+    }
+
+    @Test
+    void testIfAutoRenewAccountId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        item1.ifAutoRenewAccountId(
+                aa -> item1.copyBuilder().autoRenewAccountId((AccountID) null).build());
+    }
+
+    @Test
+    void testHeadPendingAirdropIdOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var headPendingAirdropId = item1.headPendingAirdropIdOrThrow();
+        assertThat(headPendingAirdropId).isNotNull();
+    }
+
+    @Test
+    void testIfHeadPendingAirdropId() {
+        final var item1 = ARGUMENTS.get(0);
+
+        item1.ifHeadPendingAirdropId(ha -> item1.copyBuilder()
+                .headPendingAirdropId((PendingAirdropId) null)
+                .build());
+    }
+
+    @Test
+    void testStakedAccountIdOrThrow() {
+        final var item2 = ARGUMENTS.get(1);
+
+        final var stakedAccountId = item2.stakedAccountIdOrThrow();
+        assertThat(stakedAccountId).isNotNull();
+    }
+
+    @Test
+    void testStakedNodeIdOrThrow() {
+        final var item21 = ARGUMENTS.get(20);
+
+        final var stakedNodeId = item21.stakedNodeIdOrThrow();
+        assertThat(stakedNodeId).isNotNull();
+    }
+
+    @Test
+    void testCopyBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var copy = item1.copyBuilder().build();
+        assertThat(item1).isEqualTo(copy);
     }
 }
