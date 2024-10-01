@@ -33,7 +33,6 @@ import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse.ErrorMessage;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
@@ -67,7 +66,7 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
-            public void addCorsMappings(@NotNull CorsRegistry registry) {
+            public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/v1/contracts/**").allowedOrigins("*");
             }
         };

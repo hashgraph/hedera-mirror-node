@@ -18,8 +18,8 @@ package com.hedera.mirror.web3.utils;
 
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 
+import jakarta.annotation.Nonnull;
 import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A utility class for extracting runtime bytecode from init bytecode of a smart contract.
@@ -47,7 +47,7 @@ public class RuntimeBytecodeExtractor {
         return HEX_PREFIX + runtimeBytecode; // Append "0x" prefix and return
     }
 
-    @NotNull
+    @Nonnull
     private static String getRuntimeBytecode(final String initBytecode) {
         // Find the first occurrence of "CODECOPY" (39)
         int codeCopyIndex = initBytecode.indexOf(CODECOPY);

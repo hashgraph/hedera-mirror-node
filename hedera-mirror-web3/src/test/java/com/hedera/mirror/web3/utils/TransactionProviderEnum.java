@@ -45,8 +45,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 @Getter
 @RequiredArgsConstructor
@@ -64,31 +62,27 @@ public enum TransactionProviderEnum {
     private final byte[] hash = nextBytes(32);
     private final byte[] callData = nextBytes(256);
 
-    @NotNull
     private DomainBuilder domainBuilder = new DomainBuilder();
 
-    @NotNull
     private Consumer<TransactionProviderEnum> customizer = ignored -> {};
 
     @Setter
-    @Nullable
     private EntityId contractId;
 
     @Setter
-    private byte @Nullable [] contractEvmAddress;
+    private byte[] contractEvmAddress;
 
     @Setter
-    private byte @Nullable [] contractAlias;
+    private byte[] contractAlias;
 
     @Setter
-    @Nullable
     private EntityId payerAccountId;
 
     @Setter
-    private byte @Nullable [] payerEvmAddress;
+    private byte[] payerEvmAddress;
 
     @Setter
-    private byte @Nullable [] payerAlias;
+    private byte[] payerAlias;
 
     public TransactionProviderEnum customize(Consumer<TransactionProviderEnum> consumer) {
         this.customizer = consumer;
