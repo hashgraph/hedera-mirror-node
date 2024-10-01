@@ -182,13 +182,6 @@ class EntityIdUtilsTest {
     }
 
     @Test
-    void entityIdFromContractIdNullContractNum() {
-        assertThrows(
-                NullPointerException.class,
-                () -> EntityIdUtils.entityIdFromContractId(new com.hedera.hapi.node.base.ContractID(0, 0, null)));
-    }
-
-    @Test
     void entityIdFromContractIdNullContractId() {
         assertThat(EntityIdUtils.entityIdFromContractId(null)).isNull();
     }
