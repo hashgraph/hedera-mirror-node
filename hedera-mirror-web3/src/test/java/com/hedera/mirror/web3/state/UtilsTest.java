@@ -57,4 +57,13 @@ class UtilsTest {
 
         assertNull(parsedKey);
     }
+
+    @Test
+    void parseThrowsExceptionAndReturnsNull() {
+        byte[] invalidKeyBytes = new byte[] {0x01, 0x02, 0x03, 0x04};
+
+        Key parsedKey = Utils.parseKey(invalidKeyBytes);
+
+        assertNull(parsedKey);
+    }
 }

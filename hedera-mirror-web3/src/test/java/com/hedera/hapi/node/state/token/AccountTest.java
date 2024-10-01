@@ -25,22 +25,28 @@ import static com.hedera.pbj.runtime.ProtoTestTools.UNSIGNED_INTEGER_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.UNSIGNED_LONG_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.generateListArguments;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Account.StakedIdOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.test.NoToStringWrapper;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class AccountTest {
 
@@ -209,9 +215,7 @@ public class AccountTest {
     @Test
     void testEqualsWithNull() {
         final var item1 = ARGUMENTS.get(0);
-        final var item2 = ARGUMENTS.get(1);
-        assertNotEquals(item1, null);
-        assertNotEquals(null, item2);
+        assertNotEquals(null, item1);
     }
 
     @Test
@@ -591,7 +595,10 @@ public class AccountTest {
     void testIfKey() {
         final var item1 = ARGUMENTS.get(0);
 
-        item1.ifKey(k -> item1.copyBuilder().key((Key) null).build());
+        List<Key> listToAcceptKeys = new ArrayList<>();
+        item1.ifKey(k -> listToAcceptKeys.add(k));
+        assertThat(listToAcceptKeys).isNotEmpty();
+        assertThat(listToAcceptKeys.size()).isEqualTo(1);
     }
 
     @Test
@@ -606,8 +613,10 @@ public class AccountTest {
     void testIfHeadTokenId() {
         final var item1 = ARGUMENTS.get(0);
 
-        item1.ifHeadTokenId(
-                ht -> item1.copyBuilder().headTokenId((TokenID) null).build());
+        List<TokenID> listToAcceptTokens = new ArrayList<>();
+        item1.ifHeadTokenId(ht -> listToAcceptTokens.add(ht));
+        assertThat(listToAcceptTokens).isNotEmpty();
+        assertThat(listToAcceptTokens.size()).isEqualTo(1);
     }
 
     @Test
@@ -622,7 +631,10 @@ public class AccountTest {
     void testIfHeadNftId() {
         final var item1 = ARGUMENTS.get(0);
 
-        item1.ifHeadNftId(hn -> item1.copyBuilder().headNftId((NftID) null).build());
+        List<NftID> listToAcceptNfts = new ArrayList<>();
+        item1.ifHeadNftId(hn -> listToAcceptNfts.add(hn));
+        assertThat(listToAcceptNfts).isNotEmpty();
+        assertThat(listToAcceptNfts.size()).isEqualTo(1);
     }
 
     @Test
@@ -637,8 +649,10 @@ public class AccountTest {
     void testIfAutoRenewAccountId() {
         final var item1 = ARGUMENTS.get(0);
 
-        item1.ifAutoRenewAccountId(
-                aa -> item1.copyBuilder().autoRenewAccountId((AccountID) null).build());
+        List<AccountID> listToAcceptAccounts = new ArrayList<>();
+        item1.ifAutoRenewAccountId(aa -> listToAcceptAccounts.add(aa));
+        assertThat(listToAcceptAccounts).isNotEmpty();
+        assertThat(listToAcceptAccounts.size()).isEqualTo(1);
     }
 
     @Test
@@ -653,9 +667,10 @@ public class AccountTest {
     void testIfHeadPendingAirdropId() {
         final var item1 = ARGUMENTS.get(0);
 
-        item1.ifHeadPendingAirdropId(ha -> item1.copyBuilder()
-                .headPendingAirdropId((PendingAirdropId) null)
-                .build());
+        List<PendingAirdropId> listToAcceptPendingAirdrops = new ArrayList<>();
+        item1.ifHeadPendingAirdropId(ha -> listToAcceptPendingAirdrops.add(ha));
+        assertThat(listToAcceptPendingAirdrops).isNotEmpty();
+        assertThat(listToAcceptPendingAirdrops.size()).isEqualTo(1);
     }
 
     @Test
@@ -680,5 +695,175 @@ public class AccountTest {
 
         final var copy = item1.copyBuilder().build();
         assertThat(item1).isEqualTo(copy);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"10, STAKED_ACCOUNT_ID", "11, STAKED_NODE_ID"})
+    void testStakedIdFromProtobufOrdinal(final int ordinal, final StakedIdOneOfType expected) {
+        final var stakedId = Account.StakedIdOneOfType.fromProtobufOrdinal(ordinal);
+        assertThat(stakedId).isEqualTo(expected);
+    }
+
+    @Test
+    void testStakedIdFromProtobufThrowsException() {
+        assertThatThrownBy(() -> Account.StakedIdOneOfType.fromProtobufOrdinal(100))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"STAKED_ACCOUNT_ID, STAKED_ACCOUNT_ID", "STAKED_NODE_ID, STAKED_NODE_ID"})
+    void testStakedIdFromString(final String name, final StakedIdOneOfType expected) {
+        final var stakedId = Account.StakedIdOneOfType.fromString(name);
+        assertThat(stakedId).isEqualTo(expected);
+    }
+
+    @Test
+    void testStakedIdFromStringThrowsException() {
+        assertThatThrownBy(() -> Account.StakedIdOneOfType.fromString("INVALID"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void testKeyBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var contractId = ContractID.DEFAULT;
+        final var copy = item1.copyBuilder()
+                .key(Key.newBuilder().contractID(contractId).build())
+                .build();
+        assertThat(copy.key()).isEqualTo(Key.newBuilder().contractID(contractId).build());
+    }
+
+    @Test
+    void testStakedAccountIdBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var accountId =
+                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(10).build();
+        final var copy = item1.copyBuilder()
+                .stakedAccountId(AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(10))
+                .build();
+        assertThat(copy.stakedAccountId()).isEqualTo(accountId);
+    }
+
+    @Test
+    void testHeadTokenIdBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var tokenId =
+                TokenID.newBuilder().shardNum(0).realmNum(0).tokenNum(10).build();
+        final var copy = item1.copyBuilder()
+                .headTokenId(TokenID.newBuilder().shardNum(0).realmNum(0).tokenNum(10))
+                .build();
+        assertThat(copy.headTokenId()).isEqualTo(tokenId);
+    }
+
+    @Test
+    void testHeadNftIdBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var token =
+                TokenID.newBuilder().shardNum(0).realmNum(0).tokenNum(10).build();
+        final var nft = NftID.newBuilder().tokenId(token).serialNumber(1).build();
+        final var copy = item1.copyBuilder()
+                .headNftId(NftID.newBuilder().tokenId(token).serialNumber(1))
+                .build();
+        assertThat(copy.headNftId()).isEqualTo(nft);
+    }
+
+    @Test
+    void testAutoRenewAccountIdBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var autoRenewAccount =
+                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(10).build();
+        final var copy = item1.copyBuilder()
+                .autoRenewAccountId(
+                        AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(10))
+                .build();
+        assertThat(copy.autoRenewAccountId()).isEqualTo(autoRenewAccount);
+    }
+
+    @Test
+    void testCryptoAllowancesBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var spender =
+                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(10).build();
+        final var cryptoAllowance = AccountCryptoAllowance.newBuilder()
+                .spenderId(spender)
+                .amount(100L)
+                .build();
+        final var copy = item1.copyBuilder()
+                .cryptoAllowances(List.of(AccountCryptoAllowance.newBuilder()
+                        .spenderId(spender)
+                        .amount(100L)
+                        .build()))
+                .build();
+        assertThat(copy.cryptoAllowances()).isEqualTo(List.of(cryptoAllowance));
+    }
+
+    @Test
+    void testTokenAllowancesBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var token =
+                TokenID.newBuilder().shardNum(0).realmNum(0).tokenNum(10).build();
+        final var tokenAllowance = AccountFungibleTokenAllowance.newBuilder()
+                .tokenId(token)
+                .amount(100L)
+                .build();
+        final var copy = item1.copyBuilder()
+                .tokenAllowances(List.of(AccountFungibleTokenAllowance.newBuilder()
+                        .tokenId(token)
+                        .amount(100L)
+                        .build()))
+                .build();
+        assertThat(copy.tokenAllowances()).isEqualTo(List.of(tokenAllowance));
+    }
+
+    @Test
+    void testApproveForAllNftAllowancesBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var spender =
+                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(10).build();
+        final var token =
+                TokenID.newBuilder().shardNum(0).realmNum(0).tokenNum(10).build();
+        final var approveForAllNftAllowance = AccountApprovalForAllAllowance.newBuilder()
+                .tokenId(token)
+                .spenderId(spender)
+                .build();
+        final var copy = item1.copyBuilder()
+                .approveForAllNftAllowances(List.of(AccountApprovalForAllAllowance.newBuilder()
+                        .tokenId(token)
+                        .spenderId(spender)
+                        .build()))
+                .build();
+        assertThat(copy.approveForAllNftAllowances()).isEqualTo(List.of(approveForAllNftAllowance));
+    }
+
+    @Test
+    void testHeadPendingAirdropIdBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+
+        final var token =
+                TokenID.newBuilder().shardNum(0).realmNum(0).tokenNum(10).build();
+        final var receiver =
+                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(10).build();
+        final var sender =
+                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(9).build();
+        final var pendingAirdropId = PendingAirdropId.newBuilder()
+                .senderId(sender)
+                .receiverId(receiver)
+                .fungibleTokenType(token)
+                .build();
+        final var copy = item1.copyBuilder()
+                .headPendingAirdropId(PendingAirdropId.newBuilder()
+                        .senderId(sender)
+                        .receiverId(receiver)
+                        .fungibleTokenType(token))
+                .build();
+        assertThat(copy.headPendingAirdropId()).isEqualTo(pendingAirdropId);
     }
 }
