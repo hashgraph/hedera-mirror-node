@@ -233,6 +233,15 @@ public final class EntityIdUtils {
         return triple;
     }
 
+    private static com.hedera.hapi.node.base.AccountID toAccountId(
+            final Long shard, final Long realm, final byte[] alias) {
+        return com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .alias(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(alias))
+                .build();
+    }
+
     public static String asHexedEvmAddress(final AccountID id) {
         return CommonUtils.hex(asEvmAddress(id.getAccountNum()));
     }

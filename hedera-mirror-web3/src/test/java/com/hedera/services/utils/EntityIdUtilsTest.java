@@ -34,6 +34,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.store.models.Id;
@@ -271,6 +272,13 @@ class EntityIdUtilsTest {
                 .accountNum(entity.getNum())
                 .build();
         assertEquals(expectedAccountId, EntityIdUtils.toAccountId(entity));
+    }
+
+    @Test
+    void toAccountIdWithNullEntity() {
+        final var accountId = EntityIdUtils.toAccountId((Entity) null);
+
+        assertThat(accountId).isEqualTo(com.hedera.hapi.node.base.AccountID.DEFAULT);
     }
 
     @Test
