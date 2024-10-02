@@ -45,7 +45,7 @@ spec:
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
-      enabled: false
+      enabled: true
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_PROPERTIES_TOPICID: "0.0.798453"
@@ -108,7 +108,7 @@ spec:
                 size: 3200Gi
         resources:
           cpu: "15"
-          memory: 84Gi
+          memory: 82Gi
           requests:
             containers:
               patroni:
