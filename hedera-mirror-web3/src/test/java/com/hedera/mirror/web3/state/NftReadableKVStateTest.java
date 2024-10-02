@@ -62,9 +62,6 @@ class NftReadableKVStateTest {
     @Mock
     private NftRepository nftRepository;
 
-    @Mock
-    private CommonEntityAccessor commonEntityAccessor;
-
     private DomainBuilder domainBuilder;
     private Entity entity;
 
