@@ -251,7 +251,9 @@ public record Account(
         if (expirationSecond != DEFAULT.expirationSecond) {
             result = 31 * result + Long.hashCode(expirationSecond);
         }
-        if (!tinybarBalanceSupplier.equals(DEFAULT.tinybarBalanceSupplier)) {
+        if (tinybarBalanceSupplier != null
+                && DEFAULT.tinybarBalanceSupplier != null
+                && !tinybarBalanceSupplier.get().equals(DEFAULT.tinybarBalanceSupplier.get())) {
             result = 31 * result + Long.hashCode(tinybarBalanceSupplier.get());
         }
         if (!memo.equals(DEFAULT.memo)) {
@@ -284,7 +286,9 @@ public record Account(
         if (headNftSerialNumber != DEFAULT.headNftSerialNumber) {
             result = 31 * result + Long.hashCode(headNftSerialNumber);
         }
-        if (!numberOwnedNftsSupplier.equals(DEFAULT.numberOwnedNftsSupplier)) {
+        if (numberOwnedNftsSupplier != null
+                && DEFAULT.numberOwnedNftsSupplier != null
+                && !numberOwnedNftsSupplier.get().equals(DEFAULT.numberOwnedNftsSupplier.get())) {
             result = 31 * result + Long.hashCode(numberOwnedNftsSupplier.get());
         }
         if (maxAutoAssociations != DEFAULT.maxAutoAssociations) {
@@ -293,13 +297,17 @@ public record Account(
         if (usedAutoAssociations != DEFAULT.usedAutoAssociations) {
             result = 31 * result + Integer.hashCode(usedAutoAssociations);
         }
-        if (numberAssociationsSupplier != DEFAULT.numberAssociationsSupplier) {
+        if (numberAssociationsSupplier != null
+                && DEFAULT.numberAssociationsSupplier != null
+                && !numberAssociationsSupplier.get().equals(DEFAULT.numberAssociationsSupplier.get())) {
             result = 31 * result + Integer.hashCode(numberAssociationsSupplier.get());
         }
         if (smartContract != DEFAULT.smartContract) {
             result = 31 * result + Boolean.hashCode(smartContract);
         }
-        if (numberPositiveBalancesSupplier != DEFAULT.numberPositiveBalancesSupplier) {
+        if (numberPositiveBalancesSupplier != null
+                && DEFAULT.numberPositiveBalancesSupplier != null
+                && !numberPositiveBalancesSupplier.get().equals(DEFAULT.numberPositiveBalancesSupplier.get())) {
             result = 31 * result + Integer.hashCode(numberPositiveBalancesSupplier.get());
         }
         if (ethereumNonce != DEFAULT.ethereumNonce) {
@@ -317,6 +325,7 @@ public record Account(
         if (contractKvPairsNumber != DEFAULT.contractKvPairsNumber) {
             result = 31 * result + Integer.hashCode(contractKvPairsNumber);
         }
+
         for (Object o : cryptoAllowancesSupplier.get()) {
             if (o != null) {
                 result = 31 * result + o.hashCode();
@@ -395,7 +404,9 @@ public record Account(
         if (expirationSecond != thatObj.expirationSecond) {
             return false;
         }
-        if (!tinybarBalanceSupplier.equals(thatObj.tinybarBalanceSupplier)) {
+        if (tinybarBalanceSupplier != null
+                && thatObj.tinybarBalanceSupplier != null
+                && !tinybarBalanceSupplier.get().equals(thatObj.tinybarBalanceSupplier.get())) {
             return false;
         }
         if (!memo.equals(thatObj.memo)) {
@@ -437,7 +448,9 @@ public record Account(
         if (headNftSerialNumber != thatObj.headNftSerialNumber) {
             return false;
         }
-        if (!numberOwnedNftsSupplier.equals(thatObj.numberOwnedNftsSupplier)) {
+        if (numberOwnedNftsSupplier != null
+                && thatObj.numberOwnedNftsSupplier != null
+                && !numberOwnedNftsSupplier.get().equals(thatObj.numberOwnedNftsSupplier.get())) {
             return false;
         }
         if (maxAutoAssociations != thatObj.maxAutoAssociations) {
@@ -446,13 +459,17 @@ public record Account(
         if (usedAutoAssociations != thatObj.usedAutoAssociations) {
             return false;
         }
-        if (numberAssociationsSupplier != thatObj.numberAssociationsSupplier) {
+        if (numberAssociationsSupplier != null
+                && thatObj.numberAssociationsSupplier != null
+                && !numberAssociationsSupplier.get().equals(thatObj.numberAssociationsSupplier.get())) {
             return false;
         }
         if (smartContract != thatObj.smartContract) {
             return false;
         }
-        if (numberPositiveBalancesSupplier != thatObj.numberPositiveBalancesSupplier) {
+        if (numberPositiveBalancesSupplier != null
+                && thatObj.numberPositiveBalancesSupplier != null
+                && !numberPositiveBalancesSupplier.get().equals(thatObj.numberPositiveBalancesSupplier.get())) {
             return false;
         }
         if (ethereumNonce != thatObj.ethereumNonce) {
@@ -473,13 +490,13 @@ public record Account(
         if (contractKvPairsNumber != thatObj.contractKvPairsNumber) {
             return false;
         }
-        if (!cryptoAllowancesSupplier.equals(thatObj.cryptoAllowancesSupplier)) {
+        if (!cryptoAllowancesSupplier.get().equals(thatObj.cryptoAllowancesSupplier.get())) {
             return false;
         }
-        if (!approveForAllNftAllowancesSupplier.equals(thatObj.approveForAllNftAllowancesSupplier)) {
+        if (!approveForAllNftAllowancesSupplier.get().equals(thatObj.approveForAllNftAllowancesSupplier.get())) {
             return false;
         }
-        if (!tokenAllowancesSupplier.equals(thatObj.tokenAllowancesSupplier)) {
+        if (!tokenAllowancesSupplier.get().equals(thatObj.tokenAllowancesSupplier.get())) {
             return false;
         }
         if (numberTreasuryTitles != thatObj.numberTreasuryTitles) {

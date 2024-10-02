@@ -40,7 +40,6 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.test.NoToStringWrapper;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -522,8 +521,15 @@ class AccountTest {
     void testEqualsWithDifferentCryptoAllowances() {
         final var item1 = ARGUMENTS.get(0);
 
-        final var item1WithDifferentCryptoAllowances =
-                item1.copyBuilder().cryptoAllowances(Collections::emptyList).build();
+        final var spender =
+                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(10).build();
+        final var cryptoAllowance = AccountCryptoAllowance.newBuilder()
+                .spenderId(spender)
+                .amount(100)
+                .build();
+        final var item1WithDifferentCryptoAllowances = item1.copyBuilder()
+                .cryptoAllowances(() -> List.of(cryptoAllowance))
+                .build();
         assertNotEquals(item1, item1WithDifferentCryptoAllowances);
     }
 
@@ -531,8 +537,18 @@ class AccountTest {
     void testEqualsWithDifferentTokenAllowances() {
         final var item1 = ARGUMENTS.get(0);
 
-        final var item1WithDifferentTokenAllowances =
-                item1.copyBuilder().tokenAllowances(Collections::emptyList).build();
+        final var spender =
+                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(10).build();
+        final var token =
+                TokenID.newBuilder().shardNum(0).realmNum(0).tokenNum(19).build();
+        final var tokenAllowance = AccountFungibleTokenAllowance.newBuilder()
+                .tokenId(token)
+                .spenderId(spender)
+                .amount(100)
+                .build();
+        final var item1WithDifferentTokenAllowances = item1.copyBuilder()
+                .tokenAllowances(() -> List.of(tokenAllowance))
+                .build();
         assertNotEquals(item1, item1WithDifferentTokenAllowances);
     }
 
@@ -540,8 +556,16 @@ class AccountTest {
     void testEqualsWithDifferentApproveForAllNftAllowances() {
         final var item1 = ARGUMENTS.get(0);
 
+        final var spender =
+                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(10).build();
+        final var token =
+                TokenID.newBuilder().shardNum(0).realmNum(0).tokenNum(15).build();
+        final var approveForAllNftAllowance = AccountApprovalForAllAllowance.newBuilder()
+                .spenderId(spender)
+                .tokenId(token)
+                .build();
         final var item1WithDifferentApproveForAllNftAllowances = item1.copyBuilder()
-                .approveForAllNftAllowances(Collections::emptyList)
+                .approveForAllNftAllowances(() -> List.of(approveForAllNftAllowance))
                 .build();
         assertNotEquals(item1, item1WithDifferentApproveForAllNftAllowances);
     }

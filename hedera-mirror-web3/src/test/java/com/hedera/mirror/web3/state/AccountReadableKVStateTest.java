@@ -49,6 +49,7 @@ import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -182,6 +183,50 @@ class AccountReadableKVStateTest {
                 .returns(entity.getBalance(), Account::tinybarBalance)
                 .returns(entity.getAutoRenewPeriod(), Account::autoRenewSeconds)
                 .returns(entity.getMaxAutomaticTokenAssociations(), Account::maxAutoAssociations));
+    }
+
+    @Test
+    void accountFieldsWithEvmAddressAliasMatchEntityFields() {
+        final var evmAddress = "0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb";
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        entity.setEvmAddress(Bytes.wrap(evmAddress).toByteArray());
+        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+        assertThat(accountReadableKVState.get(ACCOUNT_ID)).satisfies(account -> assertThat(account)
+                .returns(
+                        new AccountID(
+                                entity.getShard(),
+                                entity.getRealm(),
+                                new OneOf<>(AccountOneOfType.ALIAS, Bytes.wrap(evmAddress))),
+                        com.hedera.hapi.node.state.token.Account::accountId)
+                .returns(
+                        TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
+                        Account::expirationSecond)
+                .returns(entity.getBalance(), Account::tinybarBalance)
+                .returns(entity.getAutoRenewPeriod(), Account::autoRenewSeconds)
+                .returns(entity.getMaxAutomaticTokenAssociations(), Account::maxAutoAssociations)
+                .returns(Bytes.wrap(entity.getEvmAddress()), Account::alias));
+    }
+
+    @Test
+    void accountFieldsWithPublicKeyAliasMatchEntityFields() {
+        final var ecdsaPublicKey = "0x03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d";
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        entity.setAlias(Bytes.wrap(ecdsaPublicKey).toByteArray());
+        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+        assertThat(accountReadableKVState.get(ACCOUNT_ID)).satisfies(account -> assertThat(account)
+                .returns(
+                        new AccountID(
+                                entity.getShard(),
+                                entity.getRealm(),
+                                new OneOf<>(AccountOneOfType.ALIAS, Bytes.wrap(ecdsaPublicKey))),
+                        com.hedera.hapi.node.state.token.Account::accountId)
+                .returns(
+                        TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
+                        Account::expirationSecond)
+                .returns(entity.getBalance(), Account::tinybarBalance)
+                .returns(entity.getAutoRenewPeriod(), Account::autoRenewSeconds)
+                .returns(entity.getMaxAutomaticTokenAssociations(), Account::maxAutoAssociations)
+                .returns(Bytes.wrap(entity.getAlias()), Account::alias));
     }
 
     @Test
