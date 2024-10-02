@@ -27,9 +27,9 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import graphql.schema.GraphQLScalarType;
+import jakarta.annotation.Nonnull;
 import java.time.Duration;
 import java.util.Locale;
-import org.jetbrains.annotations.NotNull;
 
 public class GraphQlDuration implements Coercing<Duration, String> {
 
@@ -42,10 +42,10 @@ public class GraphQlDuration implements Coercing<Duration, String> {
 
     @Override
     public Duration parseLiteral(
-            @NotNull Value<?> input,
-            @NotNull CoercedVariables variables,
-            @NotNull GraphQLContext graphQLContext,
-            @NotNull Locale locale)
+            @Nonnull Value<?> input,
+            @Nonnull CoercedVariables variables,
+            @Nonnull GraphQLContext graphQLContext,
+            @Nonnull Locale locale)
             throws CoercingParseLiteralException {
         if (input instanceof StringValue str) {
             return Duration.parse(str.getValue());
@@ -54,8 +54,8 @@ public class GraphQlDuration implements Coercing<Duration, String> {
     }
 
     @Override
-    public @NotNull Duration parseValue(
-            @NotNull Object input, @NotNull GraphQLContext graphQLContext, @NotNull Locale locale)
+    public @Nonnull Duration parseValue(
+            @Nonnull Object input, @Nonnull GraphQLContext graphQLContext, @Nonnull Locale locale)
             throws CoercingParseValueException {
         if (input instanceof Duration duration) {
             return duration;
@@ -66,7 +66,7 @@ public class GraphQlDuration implements Coercing<Duration, String> {
     }
 
     @Override
-    public String serialize(@NotNull Object input, @NotNull GraphQLContext graphQLContext, @NotNull Locale locale)
+    public String serialize(@Nonnull Object input, @Nonnull GraphQLContext graphQLContext, @Nonnull Locale locale)
             throws CoercingSerializeException {
         if (input instanceof Duration duration) {
             return duration.toString();
