@@ -53,12 +53,12 @@ public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
         }
 
         final var timestamp = ContractCallContext.get().getTimestamp();
-
+        final var nftId = EntityIdUtils.toEntityId(key.tokenId()).getId();
         return timestamp
-                .map(t -> nftRepository.findActiveByIdAndTimestamp(key.tokenId().tokenNum(), key.serialNumber(), t))
-                .orElseGet(() -> nftRepository.findActiveById(key.tokenId().tokenNum(), key.serialNumber()))
+                .map(t -> nftRepository.findActiveByIdAndTimestamp(nftId, key.serialNumber(), t))
+                .orElseGet(() -> nftRepository.findActiveById(nftId, key.serialNumber()))
                 .map(nft -> mapToNft(nft, key.tokenId()))
-                .get();
+                .orElse(null);
     }
 
     @Nonnull
@@ -73,15 +73,13 @@ public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
     }
 
     private Nft mapToNft(final com.hedera.mirror.common.domain.token.Nft nft, final TokenID tokenID) {
-        return new Nft(
-                new NftID(
-                        new TokenID(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum()), nft.getSerialNumber()),
-                EntityIdUtils.toAccountId(nft.getAccountId().getId()),
-                EntityIdUtils.toAccountId(nft.getSpender().getId()),
-                convertToTimestamp(nft.getCreatedTimestamp()),
-                Bytes.wrap(nft.getMetadata()),
-                null,
-                null);
+        return Nft.newBuilder()
+                .metadata(Bytes.wrap(nft.getMetadata()))
+                .mintTime(convertToTimestamp(nft.getCreatedTimestamp()))
+                .nftId(new NftID(tokenID, nft.getSerialNumber()))
+                .ownerId(EntityIdUtils.toAccountId(nft.getAccountId()))
+                .spenderId(EntityIdUtils.toAccountId(nft.getSpender()))
+                .build();
     }
 
     /**
