@@ -39,15 +39,13 @@ import java.util.Optional;
  */
 @Named
 public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
-
-    private static final String KEY = "NFTS";
-
+    
     private final NftRepository nftRepository;
     private final CommonEntityAccessor commonEntityAccessor;
 
     public NftReadableKVState(
             @Nonnull NftRepository nftRepository, @Nonnull CommonEntityAccessor commonEntityAccessor) {
-        super(KEY);
+        super("NFTS");
         this.nftRepository = nftRepository;
         this.commonEntityAccessor = commonEntityAccessor;
     }
