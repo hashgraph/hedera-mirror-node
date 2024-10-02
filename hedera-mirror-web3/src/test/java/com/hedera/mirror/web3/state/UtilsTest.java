@@ -20,8 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -65,5 +67,22 @@ class UtilsTest {
         Key parsedKey = Utils.parseKey(invalidKeyBytes);
 
         assertNull(parsedKey);
+    }
+
+    @Test
+    void testConvertToTimestamp() {
+        // Given
+        long timestampMillis = 1633024800000L;
+        Instant expectedInstant = Instant.ofEpochMilli(timestampMillis);
+
+        long expectedEpochSecond = expectedInstant.getEpochSecond();
+        int expectedNano = expectedInstant.getNano();
+
+        // When
+        Timestamp result = Utils.convertToTimestamp(timestampMillis);
+
+        // Then
+        assertThat(result.seconds()).isEqualTo(expectedEpochSecond);
+        assertThat(result.nanos()).isEqualTo(expectedNano);
     }
 }

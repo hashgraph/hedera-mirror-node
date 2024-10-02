@@ -16,8 +16,9 @@
 
 package com.hedera.mirror.web3.state;
 
+import static com.hedera.mirror.web3.state.Utils.convertToTimestamp;
+
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.mirror.web3.common.ContractCallContext;
@@ -27,7 +28,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -80,16 +80,5 @@ public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
                 .ownerId(EntityIdUtils.toAccountId(nft.getAccountId()))
                 .spenderId(EntityIdUtils.toAccountId(nft.getSpender()))
                 .build();
-    }
-
-    /**
-     * Converts a timestamp in milliseconds to a PBJ Timestamp object.
-     *
-     * @param timestamp The timestamp in milliseconds.
-     * @return The PBJ Timestamp object.
-     */
-    private Timestamp convertToTimestamp(final long timestamp) {
-        var instant = Instant.ofEpochMilli(timestamp);
-        return new Timestamp(instant.getEpochSecond(), instant.getNano());
     }
 }
