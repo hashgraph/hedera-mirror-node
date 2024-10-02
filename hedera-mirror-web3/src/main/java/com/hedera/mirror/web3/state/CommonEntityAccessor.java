@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.state;
 import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
@@ -51,10 +50,5 @@ public class CommonEntityAccessor {
         return timestamp
                 .map(t -> entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, t))
                 .orElseGet(() -> entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes));
-    }
-
-    public @Nonnull Optional<Entity> get(@Nonnull TokenID tokenID, final Optional<Long> timestamp) {
-        return getEntityByMirrorAddressAndTimestamp(
-                EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum()), timestamp);
     }
 }

@@ -30,7 +30,6 @@ import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Optional;
 
 /**
  * This class serves as a repository layer between hedera app services read only state and the Postgres database in
@@ -39,15 +38,12 @@ import java.util.Optional;
  */
 @Named
 public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
-    
-    private final NftRepository nftRepository;
-    private final CommonEntityAccessor commonEntityAccessor;
 
-    public NftReadableKVState(
-            @Nonnull NftRepository nftRepository, @Nonnull CommonEntityAccessor commonEntityAccessor) {
+    private final NftRepository nftRepository;
+
+    public NftReadableKVState(@Nonnull NftRepository nftRepository) {
         super("NFTS");
         this.nftRepository = nftRepository;
-        this.commonEntityAccessor = commonEntityAccessor;
     }
 
     @Override
@@ -56,15 +52,9 @@ public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
             return null;
         }
 
-        final Optional<Long> optionalTimestamp = ContractCallContext.get().getTimestamp();
-        final var entity =
-                commonEntityAccessor.get(key.tokenId(), optionalTimestamp).orElse(null);
+        final var timestamp = ContractCallContext.get().getTimestamp();
 
-        if (entity == null) {
-            return null;
-        }
-
-        return optionalTimestamp
+        return timestamp
                 .map(t -> nftRepository.findActiveByIdAndTimestamp(key.tokenId().tokenNum(), key.serialNumber(), t))
                 .orElseGet(() -> nftRepository.findActiveById(key.tokenId().tokenNum(), key.serialNumber()))
                 .map(nft -> mapToNft(nft, key.tokenId()))
