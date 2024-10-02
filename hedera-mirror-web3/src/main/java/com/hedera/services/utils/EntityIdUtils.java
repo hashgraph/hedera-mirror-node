@@ -162,13 +162,14 @@ public final class EntityIdUtils {
             return com.hedera.hapi.node.base.AccountID.DEFAULT;
         }
 
-        final var accountIdWithAlis = toAccountIdWithAlias(entity);
-
-        if (accountIdWithAlis.alias() == null || accountIdWithAlis.alias().length() == 0) {
-            return toAccountId(entity.toEntityId());
-        } else {
-            return accountIdWithAlis;
+        com.hedera.hapi.node.base.AccountID accountIdWithAlias = null;
+        if (entity.getEvmAddress() != null && entity.getEvmAddress().length > 0) {
+            accountIdWithAlias = toAccountId(entity.getShard(), entity.getRealm(), entity.getEvmAddress());
+        } else if (entity.getAlias() != null && entity.getAlias().length > 0) {
+            accountIdWithAlias = toAccountId(entity.getShard(), entity.getRealm(), entity.getAlias());
         }
+
+        return accountIdWithAlias != null ? accountIdWithAlias : toAccountId(entity.toEntityId());
     }
 
     public static com.hedera.hapi.node.base.AccountID toAccountId(final EntityId entityId) {
@@ -176,22 +177,6 @@ public final class EntityIdUtils {
                 .shardNum(entityId.getShard())
                 .realmNum(entityId.getRealm())
                 .accountNum(entityId.getNum())
-                .build();
-    }
-
-    public static com.hedera.hapi.node.base.AccountID toAccountIdWithAlias(final Entity entity) {
-        byte[] alias = new byte[0];
-
-        if (entity.getEvmAddress() != null && entity.getEvmAddress().length > 0) {
-            alias = entity.getEvmAddress();
-        } else if (entity.getAlias() != null && entity.getAlias().length > 0) {
-            alias = entity.getAlias();
-        }
-
-        return com.hedera.hapi.node.base.AccountID.newBuilder()
-                .shardNum(entity.getShard())
-                .realmNum(entity.getRealm())
-                .alias(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(alias))
                 .build();
     }
 
