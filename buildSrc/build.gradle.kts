@@ -19,7 +19,6 @@ plugins { `kotlin-dsl` }
 repositories {
     gradlePluginPortal()
     mavenCentral()
-    maven("https://jitpack.io")
 }
 
 dependencies {
@@ -53,7 +52,7 @@ dependencies {
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.1.0.4882")
     implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.4")
     implementation("org.testcontainers:postgresql:1.20.1")
-    implementation("com.github.kselveliev:web3j-gradle-plugin:4.12.0")
+    implementation("org.web3j:web3j-gradle-plugin:4.12.2")
 }
 
 val gitHook =
