@@ -17,8 +17,10 @@
 package com.hedera.mirror.web3.state;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.time.Instant;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 
@@ -38,5 +40,16 @@ public class Utils {
         }
 
         return null;
+    }
+
+    /**
+     * Converts a timestamp in milliseconds to a PBJ Timestamp object.
+     *
+     * @param timestamp The timestamp in milliseconds.
+     * @return The PBJ Timestamp object.
+     */
+    public static Timestamp convertToTimestamp(final long timestamp) {
+        var instant = Instant.ofEpochMilli(timestamp);
+        return new Timestamp(instant.getEpochSecond(), instant.getNano());
     }
 }

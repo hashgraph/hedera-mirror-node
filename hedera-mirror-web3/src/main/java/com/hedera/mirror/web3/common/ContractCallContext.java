@@ -42,9 +42,9 @@ public class ContractCallContext {
     private List<ContractAction> contractActions = List.of();
 
     /**
-     * This is used to determine the contract action index of the current frame.
-     * It starts from {@code -1} because when the tracer receives the initial frame,
-     * it will increment this immediately inside {@link OpcodeTracer#traceContextEnter}.
+     * This is used to determine the contract action index of the current frame. It starts from {@code -1} because when
+     * the tracer receives the initial frame, it will increment this immediately inside
+     * {@link OpcodeTracer#traceContextEnter}.
      */
     @Setter
     private int contractActionIndexOfCurrentFrame = -1;
