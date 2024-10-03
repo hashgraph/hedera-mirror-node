@@ -89,7 +89,7 @@ class ContractBytecodeReadableKVStateTest {
 
     @Test
     void getExpectedSize() {
-        assertThat(contractBytecodeReadableKVState.size()).isEqualTo(0L);
+        assertThat(contractBytecodeReadableKVState.size()).isZero();
     }
 
     @Test
