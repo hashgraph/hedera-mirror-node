@@ -76,8 +76,7 @@ public class TokenAirdropsController {
             @RequestParam(name = RECEIVER_ID, required = false) @Size(max = 2) EntityIdRangeParameter[] receiverIds,
             @RequestParam(name = SERIAL_NUMBER, required = false) @Size(max = 2) NumberRangeParameter[] serialNumbers,
             @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) EntityIdRangeParameter[] tokenIds) {
-        var entityIdsBound = new Bound(receiverIds, true, ACCOUNT_ID, TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID);
-        return processRequest(id, entityIdsBound, limit, order, serialNumbers, tokenIds, OUTSTANDING, RECEIVER_ID);
+        return processRequest(id, receiverIds, limit, order, serialNumbers, tokenIds, OUTSTANDING);
     }
 
     @GetMapping(value = "/pending")
@@ -88,20 +87,19 @@ public class TokenAirdropsController {
             @RequestParam(name = SENDER_ID, required = false) @Size(max = 2) EntityIdRangeParameter[] senderIds,
             @RequestParam(name = SERIAL_NUMBER, required = false) @Size(max = 2) NumberRangeParameter[] serialNumbers,
             @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) EntityIdRangeParameter[] tokenIds) {
-        var entityIdsBound = new Bound(senderIds, true, ACCOUNT_ID, TOKEN_AIRDROP.SENDER_ACCOUNT_ID);
-        return processRequest(id, entityIdsBound, limit, order, serialNumbers, tokenIds, PENDING, SENDER_ID);
+        return processRequest(id, senderIds, limit, order, serialNumbers, tokenIds, PENDING);
     }
 
     @SuppressWarnings("java:S107")
     private TokenAirdropsResponse processRequest(
             EntityIdParameter id,
-            Bound entityIdsBound,
+            EntityIdRangeParameter[] entityIds,
             int limit,
             Sort.Direction order,
             NumberRangeParameter[] serialNumbers,
             EntityIdRangeParameter[] tokenIds,
-            AirdropRequestType type,
-            String primarySortField) {
+            AirdropRequestType type) {
+        var entityIdsBound = new Bound(entityIds, true, ACCOUNT_ID, type.getPrimaryField());
         var request = TokenAirdropRequest.builder()
                 .accountId(id)
                 .entityIds(entityIdsBound)
@@ -114,7 +112,7 @@ public class TokenAirdropsController {
 
         var response = service.getAirdrops(request);
         var airdrops = tokenAirdropMapper.map(response);
-        var sort = Sort.by(order, primarySortField, TOKEN_ID);
+        var sort = Sort.by(order, type.getParameter(), TOKEN_ID);
         var pageable = PageRequest.of(0, limit, sort);
         var links = linkFactory.create(airdrops, pageable, EXTRACTOR);
         return new TokenAirdropsResponse().airdrops(airdrops).links(links);

@@ -73,7 +73,7 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
         var type = request.getType();
         var bounds = request.getBounds();
         var condition = getBaseCondition(accountId, type.getBaseField())
-                .and(getBoundCondition(bounds))
+                .and(getBoundConditions(bounds))
                 .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING));
 
         var order = SORT_ORDERS.get(type).get(request.getOrder());
