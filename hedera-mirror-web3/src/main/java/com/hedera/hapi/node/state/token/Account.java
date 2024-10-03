@@ -404,9 +404,13 @@ public record Account(
         if (expirationSecond != thatObj.expirationSecond) {
             return false;
         }
-        if (tinybarBalanceSupplier != null
-                && thatObj.tinybarBalanceSupplier != null
-                && !tinybarBalanceSupplier.get().equals(thatObj.tinybarBalanceSupplier.get())) {
+        if (tinybarBalanceSupplier == null && thatObj.tinybarBalanceSupplier != null) {
+            return false;
+        }
+        if (tinybarBalanceSupplier != null && thatObj.tinybarBalanceSupplier == null) {
+            return false;
+        }
+        if (!tinybarBalanceSupplier.get().equals(thatObj.tinybarBalanceSupplier.get())) {
             return false;
         }
         if (!memo.equals(thatObj.memo)) {
@@ -448,9 +452,13 @@ public record Account(
         if (headNftSerialNumber != thatObj.headNftSerialNumber) {
             return false;
         }
-        if (numberOwnedNftsSupplier != null
-                && thatObj.numberOwnedNftsSupplier != null
-                && !numberOwnedNftsSupplier.get().equals(thatObj.numberOwnedNftsSupplier.get())) {
+        if (numberOwnedNftsSupplier == null && thatObj.numberOwnedNftsSupplier != null) {
+            return false;
+        }
+        if (numberOwnedNftsSupplier != null && thatObj.numberOwnedNftsSupplier == null) {
+            return false;
+        }
+        if (!numberOwnedNftsSupplier.get().equals(thatObj.numberOwnedNftsSupplier.get())) {
             return false;
         }
         if (maxAutoAssociations != thatObj.maxAutoAssociations) {
@@ -459,17 +467,25 @@ public record Account(
         if (usedAutoAssociations != thatObj.usedAutoAssociations) {
             return false;
         }
-        if (numberAssociationsSupplier != null
-                && thatObj.numberAssociationsSupplier != null
-                && !numberAssociationsSupplier.get().equals(thatObj.numberAssociationsSupplier.get())) {
+        if (numberAssociationsSupplier == null && thatObj.numberAssociationsSupplier != null) {
+            return false;
+        }
+        if (numberAssociationsSupplier != null && thatObj.numberAssociationsSupplier == null) {
+            return false;
+        }
+        if (!numberAssociationsSupplier.get().equals(thatObj.numberAssociationsSupplier.get())) {
             return false;
         }
         if (smartContract != thatObj.smartContract) {
             return false;
         }
-        if (numberPositiveBalancesSupplier != null
-                && thatObj.numberPositiveBalancesSupplier != null
-                && !numberPositiveBalancesSupplier.get().equals(thatObj.numberPositiveBalancesSupplier.get())) {
+        if (numberPositiveBalancesSupplier == null && thatObj.numberPositiveBalancesSupplier != null) {
+            return false;
+        }
+        if (numberPositiveBalancesSupplier != null && thatObj.numberPositiveBalancesSupplier == null) {
+            return false;
+        }
+        if (!numberPositiveBalancesSupplier.get().equals(thatObj.numberPositiveBalancesSupplier.get())) {
             return false;
         }
         if (ethereumNonce != thatObj.ethereumNonce) {
