@@ -27,6 +27,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Collections;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -84,5 +85,15 @@ class ContractBytecodeReadableKVStateTest {
         when(contractRepository.findRuntimeBytecode(ENTITY_ID_WITH_NUM.getId())).thenReturn(Optional.empty());
         assertThat(contractBytecodeReadableKVState.get(CONTRACT_ID_WITH_NUM))
                 .satisfies(bytecode -> assertThat(bytecode).isNull());
+    }
+
+    @Test
+    void getExpectedSize() {
+        assertThat(contractBytecodeReadableKVState.size()).isEqualTo(0L);
+    }
+
+    @Test
+    void iterateFromDataSourceReturnsEmptyIterator() {
+        assertThat(contractBytecodeReadableKVState.iterateFromDataSource()).isEqualTo(Collections.emptyIterator());
     }
 }

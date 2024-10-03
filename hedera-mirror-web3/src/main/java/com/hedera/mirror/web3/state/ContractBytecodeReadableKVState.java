@@ -16,34 +16,31 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.mirror.web3.state.Utils.convertContractIDToEntityId;
+import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
+import jakarta.annotation.Nonnull;
+import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
-import org.jetbrains.annotations.NotNull;
 
+@Named
 public class ContractBytecodeReadableKVState extends ReadableKVStateBase<ContractID, Bytecode> {
-
-    private static final String KEY = "BYTECODE";
 
     private final ContractRepository contractRepository;
 
     protected ContractBytecodeReadableKVState(final ContractRepository contractRepository) {
-        super(KEY);
+        super("BYTECODE");
         this.contractRepository = contractRepository;
     }
 
     @Override
-    protected Bytecode readFromDataSource(@NotNull ContractID contractID) {
-        final var entityId = convertContractIDToEntityId(contractID);
-        if (entityId == null) {
-            return null;
-        }
+    protected Bytecode readFromDataSource(@Nonnull ContractID contractID) {
+        final var entityId = toEntityId(contractID);
 
         return contractRepository
                 .findRuntimeBytecode(entityId.getId())
@@ -52,7 +49,7 @@ public class ContractBytecodeReadableKVState extends ReadableKVStateBase<Contrac
                 .orElse(null);
     }
 
-    @NotNull
+    @Nonnull
     @Override
     protected Iterator<ContractID> iterateFromDataSource() {
         return Collections.emptyIterator();

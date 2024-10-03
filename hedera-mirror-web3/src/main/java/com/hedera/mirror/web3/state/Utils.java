@@ -16,16 +16,16 @@
 
 package com.hedera.mirror.web3.state;
 
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.pbj.runtime.ParseException;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.time.Instant;
 import jakarta.annotation.Nullable;
+import java.time.Instant;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 import org.hyperledger.besu.datatypes.Address;

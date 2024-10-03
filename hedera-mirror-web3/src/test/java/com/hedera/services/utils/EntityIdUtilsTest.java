@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -335,5 +336,51 @@ class EntityIdUtilsTest {
                 .tokenNum(3)
                 .build();
         assertEquals(expectedTokenId, EntityIdUtils.toTokenId(entityId));
+    }
+
+    @Test
+    void toEntityIdFromContractIdWithNum() {
+        final var contractId = com.hedera.hapi.node.base.ContractID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .contractNum(3)
+                .build();
+
+        assertEquals(EntityId.of(1, 2, 3), EntityIdUtils.toEntityId(contractId));
+    }
+
+    @Test
+    void toEntityIdFromContractIdWithEvmAddress() {
+        final var address = Address.fromHexString("0x0000000000000000000000000000000000000001");
+        final var contractId = com.hedera.hapi.node.base.ContractID.newBuilder()
+                .shardNum(0)
+                .realmNum(0)
+                .evmAddress(Bytes.wrap(address.toArrayUnsafe()))
+                .build();
+
+        assertEquals(EntityId.of(0, 0, 1), EntityIdUtils.toEntityId(contractId));
+    }
+
+    @Test
+    void toEntityIdContractIdNull() {
+        assertEquals(EntityId.EMPTY, EntityIdUtils.toEntityId((com.hedera.hapi.node.base.ContractID) null));
+    }
+
+    @Test
+    void toEntityIdContractIdEmpty() {
+        final var contractId = com.hedera.hapi.node.base.ContractID.newBuilder()
+                .shardNum(0)
+                .realmNum(0)
+                .build();
+
+        assertEquals(EntityId.EMPTY, EntityIdUtils.toEntityId(contractId));
+    }
+
+    @Test
+    void toAddressFromPbjBytes() {
+        final var address = Address.fromHexString("0x0000000000000000000000000000000000000001");
+        final var pbjBytes = Bytes.fromHex("0000000000000000000000000000000000000001");
+
+        assertEquals(address, EntityIdUtils.toAddress(pbjBytes));
     }
 }
