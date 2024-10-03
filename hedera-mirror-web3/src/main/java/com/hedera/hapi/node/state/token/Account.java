@@ -410,7 +410,8 @@ public record Account(
         if (tinybarBalanceSupplier != null && thatObj.tinybarBalanceSupplier == null) {
             return false;
         }
-        if (!tinybarBalanceSupplier.get().equals(thatObj.tinybarBalanceSupplier.get())) {
+        if (tinybarBalanceSupplier != null
+                && !tinybarBalanceSupplier.get().equals(thatObj.tinybarBalanceSupplier.get())) {
             return false;
         }
         if (!memo.equals(thatObj.memo)) {
