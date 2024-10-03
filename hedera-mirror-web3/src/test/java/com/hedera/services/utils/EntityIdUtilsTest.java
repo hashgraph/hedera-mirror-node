@@ -26,7 +26,9 @@ import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.IdUtils.asContract;
 import static com.hedera.services.utils.IdUtils.asToken;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -177,6 +179,11 @@ class EntityIdUtilsTest {
     @Test
     void entityIdFromIdNullHandling() {
         assertThat(EntityIdUtils.entityIdFromId(null)).isNull();
+    }
+
+    @Test
+    void entityIdFromContractIdNullContractId() {
+        assertThat(EntityIdUtils.entityIdFromContractId(null)).isNull();
     }
 
     @Test
