@@ -31,11 +31,10 @@ import java.util.Iterator;
 @Named
 public class ContractStorageReadableKVState extends ReadableKVStateBase<SlotKey, SlotValue> {
 
-    private static final String KEY = "STORAGE";
     private final ContractStateRepository contractStateRepository;
 
     protected ContractStorageReadableKVState(final ContractStateRepository contractStateRepository) {
-        super(KEY);
+        super("STORAGE");
         this.contractStateRepository = contractStateRepository;
     }
 
