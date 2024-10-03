@@ -13,9 +13,6 @@ spec:
       namespace: common
     - kind: HelmRelease
       name: '*'
-      namespace: mainnet
-    - kind: HelmRelease
-      name: '*'
       namespace: mainnet-citus
     - kind: Kustomization
       name: '*'
