@@ -17,7 +17,6 @@
 package com.hedera.services.utils;
 
 import static com.hedera.mirror.web3.evm.account.AccountAccessorImpl.EVM_ADDRESS_SIZE;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_SECP256K1_ALIAS_SIZE;
 import static com.hedera.services.utils.BitPackUtils.numFromCode;
 import static java.lang.System.arraycopy;
@@ -202,19 +201,6 @@ public final class EntityIdUtils {
     public static Address toAddress(final com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
         final var evmAddressBytes = bytes.toByteArray();
         return Address.wrap(org.apache.tuweni.bytes.Bytes.wrap(evmAddressBytes));
-    }
-
-    public static EntityId toEntityId(final com.hedera.hapi.node.base.ContractID contractID) {
-        if (contractID == null) {
-            return EntityId.EMPTY;
-        }
-        if (contractID.hasContractNum()) {
-            return EntityId.of(contractID.shardNum(), contractID.realmNum(), contractID.contractNum());
-        } else if (contractID.hasEvmAddress()) {
-            final var evmAddress = toAddress(contractID.evmAddress());
-            return EntityId.of(entityIdNumFromEvmAddress(evmAddress));
-        }
-        return EntityId.EMPTY;
     }
 
     private static long[] parseLongTriple(final String dotDelimited) {

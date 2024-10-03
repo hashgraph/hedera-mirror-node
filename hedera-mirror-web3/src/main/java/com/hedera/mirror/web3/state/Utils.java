@@ -26,6 +26,7 @@ import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import jakarta.annotation.Nullable;
 import java.time.Instant;
+import java.util.Arrays;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 import org.hyperledger.besu.datatypes.Address;
@@ -35,6 +36,9 @@ import org.hyperledger.besu.datatypes.Address;
 public class Utils {
 
     public static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
+    public static final int EVM_ADDRESS_LEN = 20;
+    /* A placeholder to store the 12-byte of zeros prefix that marks an EVM address as a "mirror" address. */
+    private static final byte[] MIRROR_PREFIX = new byte[12];
 
     public static Key parseKey(final byte[] keyBytes) {
         try {
@@ -73,5 +77,17 @@ public class Utils {
             return EntityId.of(entityIdNumFromEvmAddress(evmAddress));
         }
         return null;
+    }
+
+    public boolean isMirror(final Address address) {
+        return isMirror(address.toArrayUnsafe());
+    }
+
+    public static boolean isMirror(final byte[] address) {
+        if (address.length != EVM_ADDRESS_LEN) {
+            return false;
+        }
+
+        return Arrays.equals(MIRROR_PREFIX, 0, 12, address, 0, 12);
     }
 }

@@ -16,10 +16,13 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.services.utils.EntityIdUtils.toEntityId;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
+import static com.hedera.mirror.web3.state.Utils.isMirror;
+import static com.hedera.services.utils.EntityIdUtils.toAddress;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
@@ -27,15 +30,20 @@ import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Optional;
 
 @Named
 public class ContractBytecodeReadableKVState extends ReadableKVStateBase<ContractID, Bytecode> {
 
     private final ContractRepository contractRepository;
 
-    protected ContractBytecodeReadableKVState(final ContractRepository contractRepository) {
+    private final CommonEntityAccessor commonEntityAccessor;
+
+    protected ContractBytecodeReadableKVState(
+            final ContractRepository contractRepository, CommonEntityAccessor commonEntityAccessor) {
         super("BYTECODE");
         this.contractRepository = contractRepository;
+        this.commonEntityAccessor = commonEntityAccessor;
     }
 
     @Override
@@ -58,5 +66,23 @@ public class ContractBytecodeReadableKVState extends ReadableKVStateBase<Contrac
     @Override
     public long size() {
         return 0;
+    }
+
+    private EntityId toEntityId(@Nonnull final com.hedera.hapi.node.base.ContractID contractID) {
+        if (contractID.hasContractNum()) {
+            return EntityId.of(contractID.shardNum(), contractID.realmNum(), contractID.contractNum());
+        } else if (contractID.hasEvmAddress()) {
+            final var evmAddress = toAddress(contractID.evmAddress());
+            if (isMirror(evmAddress)) {
+                return EntityId.of(entityIdNumFromEvmAddress(evmAddress));
+            } else {
+                return commonEntityAccessor
+                        .getEntityByEvmAddressAndTimestamp(
+                                contractID.evmAddress().toByteArray(), Optional.empty())
+                        .get()
+                        .toEntityId();
+            }
+        }
+        return EntityId.EMPTY;
     }
 }
