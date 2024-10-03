@@ -107,7 +107,7 @@ spec:
                 size: 3200Gi
         resources:
           cpu: "15"
-          memory: 84Gi
+          memory: 82Gi
           requests:
             containers:
               patroni:
