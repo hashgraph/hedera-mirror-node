@@ -255,4 +255,105 @@ class EntityRepositoryTest extends Web3IntegrationTest {
                         entityHistory.getId(), entityHistory.getCreatedTimestamp()))
                 .isEmpty();
     }
+
+    @Test
+    void findByAliasAndDeletedIsFalseSuccess() {
+        final var alias = domainBuilder.key();
+        domainBuilder.entity().customize(e -> e.alias(alias)).persist();
+        assertThat(entityRepository.findByAliasAndDeletedIsFalse(alias)).isNotEmpty();
+    }
+
+    @Test
+    void findByAliasAndDeletedIsFalseReturnsEmptyWhenDeletedIsTrue() {
+        final var alias = domainBuilder.key();
+        domainBuilder.entity().customize(e -> e.alias(alias).deleted(true)).persist();
+        assertThat(entityRepository.findByAliasAndDeletedIsFalse(alias)).isEmpty();
+    }
+
+    @Test
+    void findByAliasAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
+        Entity entity = domainBuilder.entity().persist();
+
+        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entity.getTimestampLower() + 1))
+                .get()
+                .isEqualTo(entity);
+    }
+
+    @Test
+    void findByAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
+        Entity entity = domainBuilder.entity().persist();
+
+        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entity.getTimestampLower()))
+                .get()
+                .isEqualTo(entity);
+    }
+
+    @Test
+    void findByAliasAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
+        Entity entity = domainBuilder.entity().persist();
+
+        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entity.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByAliasAndTimestampRangeLessThanBlockTimestampAndDeletedTrueCall() {
+        Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+
+        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entity.getTimestampLower() + 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalEntityByAliasAndTimestampRangeAndDeletedTrueCall() {
+        EntityHistory entityHistory =
+                domainBuilder.entityHistory().customize(e -> e.deleted(true)).persist();
+
+        assertThat(entityRepository.findActiveByAliasAndTimestamp(
+                        entityHistory.getAlias(), entityHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalEntityByAliasAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalse() {
+        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
+        Entity entity = domainBuilder
+                .entity()
+                .customize(e -> e.id(entityHistory.getId()))
+                .persist();
+
+        assertThat(entityRepository.findActiveByAliasAndTimestamp(
+                        entity.getAlias(), entityHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findEntityByAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalse() {
+        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
+
+        // Both entity and entity history will be queried in union but entity record is the latest valid
+        Entity entity = domainBuilder
+                .entity()
+                .customize(e -> e.id(entityHistory.getId()))
+                .persist();
+
+        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entity.getTimestampLower()))
+                .get()
+                .isEqualTo(entity);
+    }
+
+    @Test
+    void findHistoricalEntityByAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalse() {
+        Entity entity = domainBuilder.entity().persist();
+        // Both entity and entity history will be queried in union but entity history record is the latest valid
+        EntityHistory entityHistory = domainBuilder
+                .entityHistory()
+                .customize(e -> e.id(entity.getId()))
+                .persist();
+
+        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entityHistory.getTimestampLower()))
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(entityHistory);
+    }
 }

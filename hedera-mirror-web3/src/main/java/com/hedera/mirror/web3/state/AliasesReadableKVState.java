@@ -27,20 +27,18 @@ import java.util.Iterator;
 
 public class AliasesReadableKVState extends ReadableKVStateBase<ProtoBytes, AccountID> {
 
-    private static final String KEY = "ALIASES";
-
     private final CommonEntityAccessor commonEntityAccessor;
 
     protected AliasesReadableKVState(final CommonEntityAccessor commonEntityAccessor) {
-        super(KEY);
+        super("ALIASES");
         this.commonEntityAccessor = commonEntityAccessor;
     }
 
     @Override
-    protected AccountID readFromDataSource(@NotNull ProtoBytes evmAddress) {
+    protected AccountID readFromDataSource(@NotNull ProtoBytes alias) {
         final var timestamp = ContractCallContext.get().getTimestamp();
-        final var entity = commonEntityAccessor.getEntityByEvmAddressAndTimestamp(
-                evmAddress.value().toByteArray(), timestamp);
+        final var entity =
+                commonEntityAccessor.getEntityByAliasAndTimestamp(alias.value().toByteArray(), timestamp);
         return entity.map(value -> AccountID.newBuilder()
                         .shardNum(value.getShard())
                         .realmNum(value.getRealm())
