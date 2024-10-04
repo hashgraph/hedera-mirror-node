@@ -16,9 +16,11 @@
 
 package com.hedera.mirror.web3.state;
 
+import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
@@ -38,6 +40,22 @@ public class CommonEntityAccessor {
         } else {
             return getEntityByEvmAddressAndTimestamp(accountID.alias().toByteArray(), timestamp);
         }
+    }
+
+    public @Nonnull Optional<Entity> get(@Nonnull TokenID tokenID, final Optional<Long> timestamp) {
+        return getEntityByMirrorAddressAndTimestamp(
+                EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum()), timestamp);
+    }
+
+    public AccountID getAccountWithCanonicalAddress(EntityId entityId, final Optional<Long> timestamp) {
+        final var entity = timestamp
+                .map(t -> entityRepository
+                        .findActiveByIdAndTimestamp(entityId.getId(), t)
+                        .orElse(null))
+                .orElseGet(() -> entityRepository
+                        .findByIdAndDeletedIsFalse(entityId.getId())
+                        .orElse(null));
+        return toAccountId(entity);
     }
 
     private Optional<Entity> getEntityByMirrorAddressAndTimestamp(EntityId entityId, final Optional<Long> timestamp) {

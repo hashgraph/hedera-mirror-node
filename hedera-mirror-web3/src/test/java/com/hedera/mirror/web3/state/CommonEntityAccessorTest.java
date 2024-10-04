@@ -17,13 +17,16 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.services.utils.EntityIdUtils.entityIdFromId;
+import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -71,6 +74,50 @@ class CommonEntityAccessorTest {
 
         assertThat(commonEntityAccessor.get(ACCOUNT_ID, timestamp))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByTokenID() {
+        final var tokenID = new TokenID(0L, 1L, NUM);
+        final var entityId = EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum());
+
+        when(entityRepository.findByIdAndDeletedIsFalse(entityId.getId())).thenReturn(Optional.of(mockEntity));
+
+        assertThat(commonEntityAccessor.get(tokenID, Optional.empty()))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByTokenIDHistorical() {
+        final var tokenID = new TokenID(0L, 1L, NUM);
+        final var entityId = EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum());
+
+        when(entityRepository.findActiveByIdAndTimestamp(entityId.getId(), timestamp.get()))
+                .thenReturn(Optional.of(mockEntity));
+
+        assertThat(commonEntityAccessor.get(tokenID, timestamp))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getAccountWithCanonicalAddress() {
+        final var entityId = EntityId.of(NUM);
+        when(mockEntity.toEntityId()).thenReturn(entityId);
+        when(entityRepository.findByIdAndDeletedIsFalse(entityId.getId())).thenReturn(Optional.of(mockEntity));
+
+        final AccountID accountId = commonEntityAccessor.getAccountWithCanonicalAddress(entityId, Optional.empty());
+        assertThat(accountId).isEqualTo(toAccountId(mockEntity));
+    }
+
+    @Test
+    void getAccountWithCanonicalAddressHistorical() {
+        final var entityId = EntityId.of(NUM);
+        when(mockEntity.toEntityId()).thenReturn(entityId);
+        when(entityRepository.findActiveByIdAndTimestamp(entityId.getId(), timestamp.get()))
+                .thenReturn(Optional.of(mockEntity));
+
+        final AccountID accountId = commonEntityAccessor.getAccountWithCanonicalAddress(entityId, timestamp);
+        assertThat(accountId).isEqualTo(toAccountId(mockEntity));
     }
 
     @Test
