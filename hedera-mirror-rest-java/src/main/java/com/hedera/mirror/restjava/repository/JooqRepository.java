@@ -52,6 +52,32 @@ interface JooqRepository {
         return getBoundConditions(bounds, false, false);
     }
 
+    /**
+     * Produces the bound conditions by recursively iterating through the bounds
+     *
+     * Example:
+     *       Primary Bound:    receiver_account_id: GTE 2000, LTE 3000
+     *       Secondary Bounds: token_id:            GTE 4000, LTE 5000
+     *                         serial_number:       GTE 5,    LTE 100
+     *
+     * Returns:
+     *  [Lower Outer Condition]
+     *  ("receiver_account_id" = 2000 and
+     *       (
+     *           ("token_id" = 4000 and "serial_number" >= 5) or
+     *           "token_id" > 4000
+     *        )
+     *  )
+     *  [Middle Condition]
+     *  or ("receiver_account_id" > 2000 and "receiver_account_id" < 3000)
+     *  [Upper Outer Condition]
+     *  or ("receiver_account_id" = 3000 and
+     *       (
+     *           "token_id" < 5000 or
+     *           ("token_id" = 5000 and "serial_number" <= 100)
+     *       )
+     *  )
+     */
     default Condition getBoundConditions(List<Bound> bounds, boolean lowerProcessed, boolean upperProcessed) {
         if (bounds.isEmpty()) {
             return noCondition();
@@ -83,6 +109,31 @@ interface JooqRepository {
         return lowerCondition.or(middleCondition).or(upperCondition);
     }
 
+    /**
+     * Produces the lower or upper conditions by recursively iterating through the bounds.
+     *
+     * Example:
+     *       Primary Bound:    receiver_account_id: GTE 2000, LTE 3000
+     *       Secondary Bounds: token_id:            GTE 4000, LTE 5000
+     *                         serial_number:       GTE 5,    LTE 100
+     *  Returns this lower outer condition (when isUpper=false):
+     *
+     *  ("receiver_account_id" = 2000 and
+     *       (
+     *           ("token_id" = 4000 and "serial_number" >= 5) or
+     *           "token_id" > 4000
+     *       )
+     *  )
+     *
+     *  Returns this upper outer condition (when isUpper=true):
+     *
+     *  ("receiver_account_id" = 3000 and
+     *       (
+     *           "token_id" < 5000 or
+     *           ("token_id" = 5000 and "serial_number" <= 100)
+     *       )
+     *  )
+     */
     private Condition getOuterCondition(
             Bound primary, List<Bound> secondaryBounds, boolean isUpper, boolean processed) {
         var outerCondition = getPrimaryCondition(primary, isUpper);
@@ -109,6 +160,27 @@ interface JooqRepository {
         }
     }
 
+    /**
+     * Produces the middle conditions by getting the primary condition and cumulating the secondary bounds if any
+     * secondary bound.contains the EQ operator
+     *
+     * Example:
+     *       Primary Bound:    receiver_account_id: GTE 2000, LTE 3000
+     *       Secondary Bounds: token_id:            GTE 4000, LTE 5000
+     *                         serial_number:       GTE 5,    LTE 100
+     *
+     * Returns:
+     *  ("receiver_account_id" > 2000 and "receiver_account_id" < 3000)
+     *
+     * Example:
+     *       Primary Bound:    receiver_account_id: GTE 2000, LTE 3000
+     *       Secondary Bounds: token_id:            EQ 4000,  null
+     *                         serial_number:       EQ 5,     null
+     *
+     * Returns:
+     * ("receiver_account_id" > 2000 and "receiver_account_id" < 3000
+     *   and "token_id" = 4000 and "serial_number" = 5)
+     */
     private Condition getMiddleCondition(Bound primaryBound, List<Bound> secondaryBounds) {
         var primaryLower = primaryBound.getLower();
         var primaryUpper = primaryBound.getUpper();
