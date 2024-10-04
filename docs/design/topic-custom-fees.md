@@ -54,7 +54,7 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
   Add a database migration to backfill `topic` table from `entity` table. Note for consistency, for all existing topics,
   add a `custom_fee` row with empty custom fees and lower timestamp set to topic's created timestamp.
 
-- Add column `amount_per_message` to `cryptp_allowance` and `token_allowance` tables
+- Add column `amount_per_message` to `crypto_allowance` and `token_allowance` tables
 
   ```sql
   alter table if exists crypto_allowance
@@ -130,8 +130,8 @@ Make the following changes to `insertAssessedCustomFees()`
     "allowances": [
       {
         "amount": 75,
-        "amount_per_message": 5,
         "amount_granted": 100,
+        "amount_per_message": 5,
         "owner": "0.0.200",
         "spender": "0.0.300",
         "timestamp": {
@@ -141,8 +141,8 @@ Make the following changes to `insertAssessedCustomFees()`
       },
       {
         "amount": 300,
-        "amount_per_message": null,
         "amount_granted": 300,
+        "amount_per_message": null,
         "owner": "0.0.201",
         "spender": "0.0.305",
         "timestamp": {
@@ -169,8 +169,8 @@ Make the following changes to `insertAssessedCustomFees()`
     "allowances": [
       {
         "amount": 75,
-        "amount_per_message": 5,
         "amount_granted": 100,
+        "amount_per_message": 5,
         "owner": "0.0.200",
         "spender": "0.0.300",
         "timestamp": {
@@ -181,8 +181,8 @@ Make the following changes to `insertAssessedCustomFees()`
       },
       {
         "amount": 300,
-        "amount_per_message": null,
         "amount_granted": 300,
+        "amount_per_message": null,
         "owner": "0.0.200",
         "spender": "0.0.305",
         "timestamp": {
