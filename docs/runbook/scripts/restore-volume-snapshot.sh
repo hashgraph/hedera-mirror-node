@@ -23,6 +23,22 @@ function configureAndValidate() {
     exit 1
   fi
 
+  if [[ -z "${GCP_K8S_CLUSTER_NAME}" ]]; then
+    echo "GCP_K8S_CLUSTER_NAME is not set and is required. Exiting"
+    exit 1
+  fi
+
+  if [[ -z "${GCP_K8S_CLUSTER_REGION}" ]]; then
+    echo "GCP_K8S_CLUSTER_REGION is not set and is required. Exiting"
+    exit 1
+  fi
+
+  local clusterFound=$(gcloud container clusters list --project "${GCP_PROJECT}" --filter="name=${GCP_K8S_CLUSTER_NAME}" --format="json(name)" --region="${GCP_K8S_CLUSTER_REGION}"|jq -r 'length == 1')
+  if [[ "${clusterFound}" == "false" ]]; then
+    echo "Cluster ${GCP_K8S_CLUSTER_NAME} not found in project ${GCP_PROJECT} and region ${GCP_K8S_CLUSTER_REGION}. Exiting"
+    exit 1
+  fi
+
   if [[ -z "${SNAPSHOT_ID}" ]]; then
     echo "SNAPSHOT_ID is not set and is required. Please provide an identifier that is unique across all snapshots. Exiting"
     gcloud compute snapshots list --project "${GCP_SNAPSHOT_PROJECT}" --format="table(name, diskSizeGb, sourceDisk, description)"
@@ -233,6 +249,7 @@ function prepareDiskReplacement() {
 
     # Pause Citus
     pauseCitus "${namespace}"
+
   done
 
   # Spin down existing citus node pools
@@ -299,7 +316,7 @@ function replaceDisks() {
   renameZfsVolumes
 }
 
-function configurePersistentVolumeOverrides() {
+function configureShardedClusterResource() {
   local pvcsInNamespace="${1}"
   local shardedClusterName="${2}"
   local namespace="${3}"
@@ -527,7 +544,7 @@ function patchCitusClusters() {
     local shardedClusterName=$(echo "${pvcsInNamespace}" | jq -r '.[0].citusCluster.shardedClusterName')
     local dbName=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_NAME')
 
-    configurePersistentVolumeOverrides "${pvcsInNamespace}" "${shardedClusterName}" "${namespace}"
+    configureShardedClusterResource "${pvcsInNamespace}" "${shardedClusterName}" "${namespace}"
     unpauseCitus "${namespace}"
     markAndConfigurePrimaries "${pvcsInNamespace}" "${superuserUsername}" "${superuserPassword}" "${shardedClusterName}"
 

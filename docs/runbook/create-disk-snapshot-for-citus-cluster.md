@@ -18,5 +18,5 @@ Need to create disk snapshots for Citus cluster(s)
    <br>
    `gcloud container clusters get-credentials {clusterName} --region {clusterRegion} --project {gcpProjectName}`
 3. Run script and follow along with all prompts
-   `./create-volume-snapshot.sh`
+   `GCP_PROJECT={gcpProjectName} ./volume-snapshot.sh`
 4. Enable traffic to the cluster
