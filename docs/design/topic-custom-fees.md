@@ -119,10 +119,12 @@ Make the following changes to `insertAssessedCustomFees()`
 ## REST API
 
 - `/api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/crypto`
+
   - The endpoint lists allowances set by both `ConsensusApproveAllowance` and `CryptoApproveAllowance` transactions
   - Topic IDs are valid parameters for the `spender.id` field
   - The response will include the new `amount_per_message` field, for allowances created by `CyrptoApproveAllowance` the
     value will be `null`
+
   ```json
   {
     "allowances": [
@@ -154,6 +156,7 @@ Make the following changes to `insertAssessedCustomFees()`
     }
   }
   ```
+
 - `/api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/tokens`
 
   - The endpoint lists allowances set by both `ConsensusApproveAllowance` and `CryptoApproveAllowance` transactions
