@@ -80,12 +80,12 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
       - name: Install Stackgres
         run: |
           helm repo add stackgres https://stackgres.io/downloads/stackgres-k8s/stackgres/helm
-          helm install stackgres stackgres/stackgres-operator --version 1.11.0 --create-namespace -n stackgres
+          helm install stackgres stackgres/stackgres-operator --version 1.13.0 --create-namespace -n stackgres
 
       - name: Install ct
         uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
