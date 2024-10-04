@@ -16,15 +16,10 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
-
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import jakarta.annotation.Nullable;
 import java.time.Instant;
 import java.util.Arrays;
 import lombok.CustomLog;
@@ -61,22 +56,6 @@ public class Utils {
     public static Timestamp convertToTimestamp(final long timestamp) {
         var instant = Instant.ofEpochMilli(timestamp);
         return new Timestamp(instant.getEpochSecond(), instant.getNano());
-    }
-
-    public static Address convertPbjBytesToBesuAddress(final Bytes bytes) {
-        final var evmAddressBytes = bytes.toByteArray();
-        return Address.wrap(org.apache.tuweni.bytes.Bytes.wrap(evmAddressBytes));
-    }
-
-    @Nullable
-    public static EntityId convertContractIDToEntityId(final ContractID contractID) {
-        if (contractID.hasContractNum()) {
-            return EntityId.of(contractID.shardNum(), contractID.realmNum(), contractID.contractNum());
-        } else if (contractID.hasEvmAddress()) {
-            final var evmAddress = convertPbjBytesToBesuAddress(contractID.evmAddress());
-            return EntityId.of(entityIdNumFromEvmAddress(evmAddress));
-        }
-        return null;
     }
 
     public boolean isMirror(final Address address) {
