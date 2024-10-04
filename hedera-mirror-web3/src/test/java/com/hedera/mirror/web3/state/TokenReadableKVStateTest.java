@@ -185,7 +185,7 @@ class TokenReadableKVStateTest {
                 .returns(databaseToken.getDecimals(), Token::decimals)
                 .returns(entity.getAutoRenewPeriod(), Token::autoRenewSeconds);
 
-        assertThat(token.totalSupplySupplier().get()).isEqualTo(0L);
+        assertThat(token.totalSupplySupplier().get()).isZero();
     }
 
     @Test
@@ -525,15 +525,15 @@ class TokenReadableKVStateTest {
 
         final var token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
         var results = token.customFeesSupplier().get();
-        var customFee = results.get(0);
-        var resultFee = customFee.royaltyFee();
+        var fee = results.get(0);
+        var resultFee = fee.royaltyFee();
         assertEquals(
                 royaltyFee.getNumerator(), resultFee.exchangeValueFraction().numerator());
         assertEquals(
                 royaltyFee.getDenominator(), resultFee.exchangeValueFraction().denominator());
         assertEquals(
                 0L, resultFee.fallbackFee() != null ? resultFee.fallbackFee().amount() : 0L);
-        assertEquals(collectorAccountId, customFee.feeCollectorAccountId());
+        assertEquals(collectorAccountId, fee.feeCollectorAccountId());
         assertEquals(
                 TokenID.DEFAULT,
                 resultFee.fallbackFee() != null ? resultFee.fallbackFee().denominatingTokenId() : TokenID.DEFAULT);
@@ -561,15 +561,15 @@ class TokenReadableKVStateTest {
 
         final var token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
         var results = token.customFeesSupplier().get();
-        var customFee = results.get(0);
-        var resultFee = customFee.royaltyFee();
+        var fee = results.get(0);
+        var resultFee = fee.royaltyFee();
         assertEquals(
                 royaltyFee.getNumerator(), resultFee.exchangeValueFraction().numerator());
         assertEquals(
                 royaltyFee.getDenominator(), resultFee.exchangeValueFraction().denominator());
         assertEquals(
                 0L, resultFee.fallbackFee() != null ? resultFee.fallbackFee().amount() : 0L);
-        assertEquals(collectorAccountId, customFee.feeCollectorAccountId());
+        assertEquals(collectorAccountId, fee.feeCollectorAccountId());
         assertEquals(
                 TokenID.DEFAULT,
                 resultFee.fallbackFee() != null ? resultFee.fallbackFee().denominatingTokenId() : TokenID.DEFAULT);
