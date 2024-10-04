@@ -16,13 +16,13 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.mirror.web3.state.Utils.isMirror;
-import static com.hedera.services.utils.EntityIdUtils.toAddress;
+import static com.hedera.services.utils.EntityIdUtils.entityIdFromContractId;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
@@ -70,11 +70,11 @@ public class ContractBytecodeReadableKVState extends ReadableKVStateBase<Contrac
 
     private EntityId toEntityId(@Nonnull final com.hedera.hapi.node.base.ContractID contractID) {
         if (contractID.hasContractNum()) {
-            return EntityId.of(contractID.shardNum(), contractID.realmNum(), contractID.contractNum());
+            return entityIdFromContractId(contractID);
         } else if (contractID.hasEvmAddress()) {
-            final var evmAddress = toAddress(contractID.evmAddress());
+            final var evmAddress = contractID.evmAddress().toByteArray();
             if (isMirror(evmAddress)) {
-                return EntityId.of(entityIdNumFromEvmAddress(evmAddress));
+                return DomainUtils.fromEvmAddress(evmAddress);
             } else {
                 return commonEntityAccessor
                         .getEntityByEvmAddressAndTimestamp(
