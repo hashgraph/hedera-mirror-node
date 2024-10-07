@@ -145,7 +145,7 @@ public class EvmConfiguration {
     @Bean(CACHE_MANAGER_ENTITY)
     CacheManager cacheManagerEntity() {
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME, CACHE_NAME_EVM_ADDRESS));
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME, CACHE_NAME_EVM_ADDRESS, CACHE_NAME_ALIAS));
         caffeineCacheManager.setCacheSpecification(cacheProperties.getEntity());
         return caffeineCacheManager;
     }
