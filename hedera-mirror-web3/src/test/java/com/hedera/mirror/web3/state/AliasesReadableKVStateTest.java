@@ -28,6 +28,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -117,5 +118,15 @@ public class AliasesReadableKVStateTest {
                 .thenReturn(Optional.empty());
         assertThat(aliasesReadableKVState.get(ALIAS_BYTES))
                 .satisfies(accountID -> assertThat(accountID).isNull());
+    }
+
+    @Test
+    void getExpectedSize() {
+        assertThat(aliasesReadableKVState.size()).isZero();
+    }
+
+    @Test
+    void iterateFromDataSourceReturnsEmptyIterator() {
+        assertThat(aliasesReadableKVState.iterateFromDataSource()).isEqualTo(Collections.emptyIterator());
     }
 }
