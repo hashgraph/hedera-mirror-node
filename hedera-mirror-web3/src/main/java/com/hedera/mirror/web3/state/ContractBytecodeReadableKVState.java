@@ -21,6 +21,7 @@ import static com.hedera.services.utils.EntityIdUtils.entityIdFromContractId;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.repository.ContractRepository;
@@ -79,8 +80,8 @@ public class ContractBytecodeReadableKVState extends ReadableKVStateBase<Contrac
                 return commonEntityAccessor
                         .getEntityByEvmAddressAndTimestamp(
                                 contractID.evmAddress().toByteArray(), Optional.empty())
-                        .get()
-                        .toEntityId();
+                        .map(Entity::toEntityId)
+                        .orElse(EntityId.EMPTY);
             }
         }
         return EntityId.EMPTY;
