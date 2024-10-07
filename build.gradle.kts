@@ -31,9 +31,6 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("grpcVersion", "1.68.0")
-    // Override jooq version since the official gradle plugin is on in 3.19.x, remove if not needed
-    // with the next springboot release
-    set("jooq.version", "3.19.6")
     set("mapStructVersion", "1.6.2")
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.5")
@@ -62,8 +59,6 @@ dependencies {
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.7.0")
         api("com.google.guava:guava:33.3.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
-        // Temporary until new spring-cloud-gcp-starter-pubsub
-        api("com.google.protobuf:protobuf-java-util:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.8")
         api("com.graphql-java:graphql-java-extended-scalars:22.0")
         api("com.graphql-java:graphql-java-extended-validation:22.0")

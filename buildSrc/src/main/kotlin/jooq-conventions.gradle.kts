@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.images.builder.Transferable
 
@@ -24,7 +25,8 @@ plugins {
 }
 
 dependencies {
-    val jooqVersion = rootProject.extra["jooq.version"].toString()
+    val dependencyManagement = project.extensions.getByType(DependencyManagementExtension::class)
+    val jooqVersion = dependencyManagement.getManagedVersionsForConfiguration(null)["org.jooq:jooq"]
     implementation("org.jooq:jooq-postgres-extensions:$jooqVersion")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     // add postgres extensions as jooq codegen dependency to support int8range
