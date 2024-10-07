@@ -749,7 +749,7 @@ public class TokenFeature extends AbstractFeature {
         switch (status) {
             case "successful" -> verifySuccessfulAirdrop(tokenId, sender, receiver, amount);
             case "pending" -> verifyPendingAirdrop(tokenId, sender, receiver, amount);
-            case "cancelled" -> verifyCancelledAirdrop(tokenId, sender, receiver, amount);
+            case "cancelled" -> verifyCancelledAirdrop(tokenId, sender, receiver);
             default -> log.warn("Invalid airdrop status");
         }
     }
@@ -1150,24 +1150,20 @@ public class TokenFeature extends AbstractFeature {
         return networkTransactionResponse;
     }
 
-    private TokenAirdrop getPendingAirdropForSpecificToken(TokenId tokenId, AccountId accountId) {
-        var pendingAirdrops = mirrorClient.getPendingAirdrops(accountId).getAirdrops();
-        ;
-
+    private TokenAirdrop getPendingAirdropForSpecificToken(TokenId tokenId, AccountId sender, AccountId receiver) {
+        var pendingAirdrops = mirrorClient.getPendingAirdrops(receiver).getAirdrops();
         for (TokenAirdrop tokenAirdrop : pendingAirdrops) {
-            if (tokenAirdrop.getTokenId().equals(tokenId.toString())) {
+            if (tokenAirdrop.getTokenId().equals(tokenId.toString()) && tokenAirdrop.getSenderId().equals(sender.toString())) {
                 return tokenAirdrop;
             }
         }
         return null;
     }
 
-    private TokenAirdrop getOutstandingAirdropForSpecificToken(TokenId tokenId, AccountId accountId) {
-        var outstandingAirdrops = mirrorClient.getOutstandingAirdrops(accountId).getAirdrops();
-        ;
-
+    private TokenAirdrop getOutstandingAirdropForSpecificToken(TokenId tokenId, AccountId sender, AccountId receiver) {
+        var outstandingAirdrops = mirrorClient.getOutstandingAirdrops(sender).getAirdrops();
         for (TokenAirdrop tokenAirdrop : outstandingAirdrops) {
-            if (tokenAirdrop.getTokenId().equals(tokenId.toString())) {
+            if (tokenAirdrop.getTokenId().equals(tokenId.toString()) && tokenAirdrop.getReceiverId().equals(receiver.toString())) {
                 return tokenAirdrop;
             }
         }
@@ -1192,9 +1188,9 @@ public class TokenFeature extends AbstractFeature {
 
     private void verifySuccessfulAirdrop(
             TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, long amount) {
-        assertThat(getPendingAirdropForSpecificToken(tokenId, receiver.getAccountId()))
+        assertThat(getPendingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId()))
                 .isNull();
-        assertThat(getOutstandingAirdropForSpecificToken(tokenId, sender.getAccountId()))
+        assertThat(getOutstandingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId()))
                 .isNull();
         // Call the REST api to get the token relationship
         var tokenRelationshipReceiver = mirrorClient.getTokenRelationships(receiver.getAccountId(), tokenId);
@@ -1206,11 +1202,11 @@ public class TokenFeature extends AbstractFeature {
     private void verifyPendingAirdrop(
             TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, long amount) {
         // Call the REST API to get the pending airdrops for the receiver
-        var pendingAirdropForToken = getPendingAirdropForSpecificToken(tokenId, receiver.getAccountId());
+        var pendingAirdropForToken = getPendingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId());
         verifyTokenAirdrop(pendingAirdropForToken, sender.getAccountId(), receiver.getAccountId(), tokenId);
         assertThat(pendingAirdropForToken.getAmount()).isEqualTo(amount);
         // Call the REST API to get the outstanding airdrops for the sender
-        var outstandingAirdropForToken = getOutstandingAirdropForSpecificToken(tokenId, sender.getAccountId());
+        var outstandingAirdropForToken = getOutstandingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId());
         verifyTokenAirdrop(outstandingAirdropForToken, sender.getAccountId(), receiver.getAccountId(), tokenId);
         assertThat(outstandingAirdropForToken.getAmount()).isEqualTo(amount);
         // Call the REST api to get the token relationship
@@ -1221,10 +1217,10 @@ public class TokenFeature extends AbstractFeature {
     }
 
     private void verifyCancelledAirdrop(
-            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, long amount) {
-        assertThat(getPendingAirdropForSpecificToken(tokenId, receiver.getAccountId()))
+            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver) {
+        assertThat(getPendingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId()))
                 .isNull();
-        assertThat(getOutstandingAirdropForSpecificToken(tokenId, sender.getAccountId()))
+        assertThat(getOutstandingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId()))
                 .isNull();
         // Call the REST api to get the token relationship
         var tokenRelationshipReceiver = mirrorClient.getTokenRelationships(receiver.getAccountId(), tokenId);
