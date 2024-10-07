@@ -508,10 +508,7 @@ public record Token(
         if (metadataKey == null && thatObj.metadataKey != null) {
             return false;
         }
-        if (metadataKey != null && !metadataKey.equals(thatObj.metadataKey)) {
-            return false;
-        }
-        return true;
+        return metadataKey == null || metadataKey.equals(thatObj.metadataKey);
     }
     /**
      * Convenience method to check if the tokenId has a value
@@ -1706,7 +1703,7 @@ public record Token(
          * @return builder to continue building with
          */
         public Builder metadata(@Nonnull Bytes metadata) {
-            this.metadata = metadata != null ? metadata : Bytes.EMPTY;
+            this.metadata = metadata;
             return this;
         }
 
