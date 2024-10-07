@@ -24,10 +24,14 @@ import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
+import com.hedera.hashgraph.sdk.PendingAirdropId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.TokenAirdropTransaction;
 import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
 import com.hedera.hashgraph.sdk.TokenBurnTransaction;
+import com.hedera.hashgraph.sdk.TokenCancelAirdropTransaction;
+import com.hedera.hashgraph.sdk.TokenClaimAirdropTransaction;
 import com.hedera.hashgraph.sdk.TokenCreateTransaction;
 import com.hedera.hashgraph.sdk.TokenDeleteTransaction;
 import com.hedera.hashgraph.sdk.TokenDissociateTransaction;
@@ -668,6 +672,89 @@ public class TokenClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(tokenRejectTransaction, KeyList.of(owner.getPrivateKey()));
         log.info("Owner {} rejected NFT tokens {} via {}", owner, nftIds, response.getTransactionId());
         return response;
+    }
+
+    public NetworkTransactionResponse executeFungibleTokenAirdrop(
+            TokenId tokenId,
+            ExpandedAccountId sender,
+            AccountId recipient,
+            long amount) {
+        var transaction = getFungibleTokenAirdropTransaction(
+                tokenId, sender.getAccountId(), recipient, amount);
+        var response = executeTransactionAndRetrieveReceipt(
+                transaction, KeyList.of(sender.getPrivateKey()), sender);
+        log.info(
+                "Airdroped {} tokens of {} from {} to {} via {}",
+                amount,
+                tokenId,
+                sender,
+                recipient,
+                response.getTransactionId()
+        );
+        return response;
+    }
+
+    private TokenAirdropTransaction getFungibleTokenAirdropTransaction(
+            TokenId tokenId, AccountId sender, AccountId recipient, long amount) {
+        //Gets the airdrop transaction
+        var airdropTransaction = new TokenAirdropTransaction().setTransactionMemo(getMemo("Airdrop token"));
+        //Subtract the amount from the sender and add it to the recipient
+        airdropTransaction.addTokenTransfer(tokenId, sender, Math.negateExact(amount));
+        //Adds the amount to the recipient
+        airdropTransaction.addTokenTransfer(tokenId, recipient, amount);
+        //Returns the airdrop transaction
+        return airdropTransaction;
+    }
+
+    public NetworkTransactionResponse exeucuteCancelTokenAirdrop(
+            ExpandedAccountId sender,
+            AccountId receiver,
+            TokenId tokenId) {
+
+        var pendingAirdropIds = getPendingAirdropIds(sender.getAccountId(), receiver, tokenId);
+        var transaction = getCancelTokenAirdropTransaction(pendingAirdropIds);
+        var response = executeTransactionAndRetrieveReceipt(
+                transaction, KeyList.of(sender.getPrivateKey()), sender);
+        log.info(
+                "Cancel pending Airdrop from {} to {} via {}",
+                sender,
+                receiver,
+                response.getTransactionId()
+        );
+        return response;
+    }
+
+    public NetworkTransactionResponse exeucuteClaimTokenAirdrop(
+            ExpandedAccountId sender,
+            ExpandedAccountId receiver,
+            TokenId tokenId) {
+
+        var pendingAirdropIds = getPendingAirdropIds(sender.getAccountId(), receiver.getAccountId(), tokenId);
+        var transaction = getClaimTokenAirdropsTransaction(pendingAirdropIds);
+        var response = executeTransactionAndRetrieveReceipt(
+                transaction, KeyList.of(receiver.getPrivateKey()), sender);
+        log.info(
+                "Claim pending Airdrop from {} to {} via {}",
+                sender,
+                receiver,
+                response.getTransactionId()
+        );
+        return response;
+    }
+
+    private PendingAirdropId getPendingAirdropIds(AccountId sender, AccountId receiver, TokenId tokenId) {
+        return new PendingAirdropId().setSender(sender).setReceiver(receiver).setTokenId(tokenId);
+    }
+
+    private TokenCancelAirdropTransaction getCancelTokenAirdropTransaction(PendingAirdropId pendingAirdropId) {
+        //Gets cancel airdrop transaction with added pending airdrop id
+        return new TokenCancelAirdropTransaction().setTransactionMemo("Cancel token airdrop").addPendingAirdrop(pendingAirdropId);
+    }
+
+    private TokenClaimAirdropTransaction getClaimTokenAirdropsTransaction(PendingAirdropId pendingAirdropId) {
+        //Gets claim airdrop transaction with added pending airdrop id
+        return new TokenClaimAirdropTransaction().setTransactionMemo("Claim token airdrop").addPendingAirdrop(pendingAirdropId);
+        //   return tokenAirdropTransaction.addPendingAirdrop(pendingAirdropId);
     }
 
     @RequiredArgsConstructor
