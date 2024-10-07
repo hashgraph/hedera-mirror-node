@@ -139,7 +139,7 @@ abstract class PostgresService : BuildService<PostgresService.Params>, AutoClose
                     .readBytes()
             )
         container =
-            PostgreSQLContainer<Nothing>("postgres:14-alpine").apply {
+            PostgreSQLContainer<Nothing>("postgres:16-alpine").apply {
                 withCopyToContainer(initScript, "/docker-entrypoint-initdb.d/init.sh")
                 withUsername("postgres")
                 start()
