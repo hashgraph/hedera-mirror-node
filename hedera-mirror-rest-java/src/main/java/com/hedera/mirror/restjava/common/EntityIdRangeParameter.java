@@ -46,8 +46,7 @@ public record EntityIdRangeParameter(RangeOperator operator, Long value) impleme
         };
     }
 
-    private static Long getEntityId(String entityId) {
-
+    private static EntityId getEntityId(String entityId) {
         List<Long> parts = Splitter.on('.')
                 .splitToStream(Objects.requireNonNullElse(entityId, ""))
                 .map(Long::valueOf)
@@ -59,9 +58,9 @@ public record EntityIdRangeParameter(RangeOperator operator, Long value) impleme
         }
 
         return switch (parts.size()) {
-            case 1 -> EntityId.of(DEFAULT_SHARD, 0, parts.get(0)).getId();
-            case 2 -> EntityId.of(DEFAULT_SHARD, parts.get(0), parts.get(1)).getId();
-            case 3 -> EntityId.of(parts.get(0), parts.get(1), parts.get(2)).getId();
+            case 1 -> EntityId.of(DEFAULT_SHARD, 0, parts.get(0));
+            case 2 -> EntityId.of(DEFAULT_SHARD, parts.get(0), parts.get(1));
+            case 3 -> EntityId.of(parts.get(0), parts.get(1), parts.get(2));
             default -> throw new IllegalArgumentException("Invalid entity ID: " + entityId);
         };
     }

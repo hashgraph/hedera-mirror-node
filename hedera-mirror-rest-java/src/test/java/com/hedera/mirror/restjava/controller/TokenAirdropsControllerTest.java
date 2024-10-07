@@ -441,6 +441,52 @@ class TokenAirdropsControllerTest extends ControllerTest {
 
         @Test
         void allParametersNft() {
+            var airdrop = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(1000)
+                            .receiverAccountId(2000L)
+                            .tokenId(4000L)
+                            .serialNumber(5))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(1000)
+                            .receiverAccountId(2001L)
+                            .tokenId(4001L)
+                            .serialNumber(100))
+                    .persist();
+            var airdrop3 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(1000)
+                            .receiverAccountId(3000L)
+                            .tokenId(5000L)
+                            .serialNumber(6))
+                    .persist();
+            var serialOutsideRangeAirdrop = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(1000)
+                            .receiverAccountId(2000L)
+                            .tokenId(4001L)
+                            .serialNumber(1))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a ->
+                            a.senderAccountId(1000).receiverAccountId(3001L).tokenId(4001L))
+                    .persist();
+
+            var uriParams =
+                    "?receiver.id=gte:0.0.2000&receiver.id=lte:0.0.3000&token.id=gte:0.0.4000&token.id=lte:0.0.5000&serialnumber=gte:5&serialnumber=lte:100";
+            // When
+            var result = restClient.get().uri(uriParams, 1000).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result)
+                    .isEqualTo(
+                            getExpectedResponse(List.of(airdrop, serialOutsideRangeAirdrop, airdrop2, airdrop3), null));
+        }
+
+        @Test
+        void allParametersNftFollowLink() {
             // Given
             var entity = domainBuilder.entity().persist();
             var airdrop = domainBuilder

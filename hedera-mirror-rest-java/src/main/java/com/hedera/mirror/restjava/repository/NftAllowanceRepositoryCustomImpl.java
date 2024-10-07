@@ -51,7 +51,7 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
     public Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId accountId) {
         boolean byOwner = request.isOwner();
         var bounds = request.getBounds();
-        var condition = getBaseCondition(accountId, byOwner).and(getBoundCondition(bounds));
+        var condition = getBaseCondition(accountId, byOwner).and(getBoundConditions(bounds));
         return dslContext
                 .selectFrom(NFT_ALLOWANCE)
                 .where(condition)

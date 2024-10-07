@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.restjava.dto;
 
+import static com.hedera.mirror.restjava.common.Constants.RECEIVER_ID;
+import static com.hedera.mirror.restjava.common.Constants.SENDER_ID;
 import static com.hedera.mirror.restjava.jooq.domain.Tables.TOKEN_AIRDROP;
 
 import com.hedera.mirror.restjava.common.EntityIdParameter;
@@ -42,11 +44,14 @@ public class TokenAirdropRequest {
     private Sort.Direction order = Sort.Direction.ASC;
 
     // Receiver Id for Outstanding Airdrops, Sender Id for Pending Airdrops
-    private Bound entityIds;
+    @Builder.Default
+    private Bound entityIds = Bound.EMPTY;
 
-    private Bound serialNumbers;
+    @Builder.Default
+    private Bound serialNumbers = Bound.EMPTY;
 
-    private Bound tokenIds;
+    @Builder.Default
+    private Bound tokenIds = Bound.EMPTY;
 
     @Builder.Default
     private AirdropRequestType type = AirdropRequestType.OUTSTANDING;
@@ -54,8 +59,8 @@ public class TokenAirdropRequest {
     @Getter
     @RequiredArgsConstructor
     public enum AirdropRequestType {
-        OUTSTANDING(TOKEN_AIRDROP.SENDER_ACCOUNT_ID, TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID),
-        PENDING(TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID, TOKEN_AIRDROP.SENDER_ACCOUNT_ID);
+        OUTSTANDING(TOKEN_AIRDROP.SENDER_ACCOUNT_ID, TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID, RECEIVER_ID),
+        PENDING(TOKEN_AIRDROP.RECEIVER_ACCOUNT_ID, TOKEN_AIRDROP.SENDER_ACCOUNT_ID, SENDER_ID);
 
         // The base field is the conditional clause for the base DB query.
         // The base field is the path parameter accountId, which is Sender Id for Outstanding Airdrops and Receiver Id
@@ -66,12 +71,22 @@ public class TokenAirdropRequest {
         // The primary field is the optional query parameter 'entityIds', which is Receiver Id for Outstanding Airdrops
         // and Sender Id for Pending Airdrops
         private final Field<Long> primaryField;
+
+        // The primary query parameter
+        private final String parameter;
     }
 
     public List<Bound> getBounds() {
-        var tertiaryBound = serialNumbers == null ? Bound.EMPTY : serialNumbers;
-        var secondaryBound = tokenIds == null ? tertiaryBound : tokenIds;
-        var primaryBound = entityIds == null ? secondaryBound : entityIds;
-        return List.of(primaryBound, secondaryBound, tertiaryBound);
+        var primaryBound = !entityIds.isEmpty() ? entityIds : tokenIds;
+        if (primaryBound.isEmpty()) {
+            return List.of(serialNumbers);
+        }
+
+        var secondaryBound = !tokenIds.isEmpty() ? tokenIds : serialNumbers;
+        if (secondaryBound.isEmpty()) {
+            return List.of(primaryBound);
+        }
+
+        return List.of(primaryBound, secondaryBound, serialNumbers);
     }
 }

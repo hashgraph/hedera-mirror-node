@@ -31,10 +31,6 @@ public interface RangeParameter<T> {
         return operator() == RangeOperator.LT || operator() == RangeOperator.LTE;
     }
 
-    default boolean hasLTorGT() {
-        return operator() == RangeOperator.LT || operator() == RangeOperator.GT;
-    }
-
     default boolean isEmpty() {
         return operator() == null && value() == null;
     }

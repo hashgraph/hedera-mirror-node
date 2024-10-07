@@ -16,6 +16,11 @@
 
 package com.hedera.mirror.restjava.service;
 
+import static com.hedera.mirror.restjava.common.RangeOperator.EQ;
+import static com.hedera.mirror.restjava.common.RangeOperator.GT;
+import static com.hedera.mirror.restjava.common.RangeOperator.LT;
+
+import com.hedera.mirror.restjava.common.NumberRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.common.RangeParameter;
 import java.util.Arrays;
@@ -61,10 +66,21 @@ public class Bound {
             cardinality.merge(param.operator(), 1, Math::addExact);
         }
 
-        long adjustedLower = adjustLowerBound();
+        long adjustedLower = getAdjustedLowerRangeValue();
         long adjustedUpper = adjustUpperBound();
         if (primarySortField && adjustedLower > adjustedUpper) {
             throw new IllegalArgumentException("Invalid range provided for %s".formatted(parameterName));
+        }
+    }
+
+    // A bound with an upper or lower rangeParameter, but not both
+    public Bound(Bound bound, boolean isUpper) {
+        this.field = bound.field;
+        this.parameterName = bound.parameterName;
+        if (isUpper) {
+            this.upper = bound.getUpper();
+        } else {
+            this.lower = bound.getLower();
         }
     }
 
@@ -81,7 +97,17 @@ public class Bound {
         return upperBound;
     }
 
-    public long adjustLowerBound() {
+    public RangeParameter<Long> adjustLowerRange() {
+        if (!this.isEmpty() && this.hasEqualBounds()) {
+            // If the primary param has a range with a single value, rewrite it to EQ
+            this.setLower(new NumberRangeParameter(EQ, this.getAdjustedLowerRangeValue()));
+            this.setUpper(null);
+        }
+
+        return lower;
+    }
+
+    public long getAdjustedLowerRangeValue() {
         if (this.lower == null) {
             return 0;
         }
@@ -92,6 +118,30 @@ public class Bound {
         }
 
         return lowerBound;
+    }
+
+    public void adjustUpperRange() {
+        if (!this.isEmpty() && lower != null && lower.operator() == EQ) {
+            // If the secondary param operator is EQ, set the secondary upper bound to the same
+            this.setUpper(lower);
+        }
+    }
+
+    // Gets a range value if the operator was converted to EQ
+    public long getEqualityRangeValue(boolean upper) {
+        var rangeParameter = upper ? this.getUpper() : this.getLower();
+        var operator = rangeParameter.operator();
+        long value = rangeParameter.value();
+        if (!upper && !this.isEmpty() && this.hasEqualBounds()) {
+            // If the primary param has a range with a single value, use the lower range value
+            value = this.getAdjustedLowerRangeValue();
+        } else if (operator == GT) {
+            value += 1L;
+        } else if (operator == LT) {
+            value -= 1L;
+        }
+
+        return value;
     }
 
     public int getCardinality(RangeOperator... operators) {
@@ -109,7 +159,7 @@ public class Bound {
     }
 
     public boolean hasEqualBounds() {
-        return hasLowerAndUpper() && adjustLowerBound() == adjustUpperBound();
+        return hasLowerAndUpper() && getAdjustedLowerRangeValue() == adjustUpperBound();
     }
 
     public void verifyUnsupported(RangeOperator unsupportedOperator) {

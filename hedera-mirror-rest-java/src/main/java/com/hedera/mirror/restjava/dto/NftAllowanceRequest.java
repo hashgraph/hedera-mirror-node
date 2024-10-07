@@ -38,13 +38,14 @@ public class NftAllowanceRequest {
     @Builder.Default
     private boolean isOwner = true;
 
-    private Bound ownerOrSpenderIds;
+    @Builder.Default
+    private Bound ownerOrSpenderIds = Bound.EMPTY;
 
-    private Bound tokenIds;
+    @Builder.Default
+    private Bound tokenIds = Bound.EMPTY;
 
     public List<Bound> getBounds() {
-        var secondaryBound = tokenIds == null ? Bound.EMPTY : tokenIds;
-        var primaryBound = ownerOrSpenderIds == null ? secondaryBound : ownerOrSpenderIds;
-        return List.of(primaryBound, secondaryBound);
+        var primaryBound = !ownerOrSpenderIds.isEmpty() ? ownerOrSpenderIds : tokenIds;
+        return tokenIds.isEmpty() ? List.of(primaryBound) : List.of(primaryBound, tokenIds);
     }
 }

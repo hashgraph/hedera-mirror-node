@@ -58,11 +58,11 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
     private record TestSpec(TokenAirdropRequest request, List<ExpectedIndex> expected, String description) {}
 
     private List<TokenAirdropRepositoryTest.TestSpec> testSpecs;
-    private Long receiver = 100L;
-    private EntityIdParameter accountId = new EntityIdNumParameter(EntityId.of(receiver));
+    private final Long defaultReceiver = 100L;
+    private final EntityIdParameter defaultAccountId = new EntityIdNumParameter(EntityId.of(defaultReceiver));
     private List<Long> senders;
     private List<Long> serialNumbers;
-    private List<Long> tokenIds;
+    private List<Long> defaultTokenIds;
 
     @Test
     void findById() {
@@ -268,19 +268,19 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         var entityIds =
                 IntStream.range(0, 9).mapToLong(x -> domainBuilder.id()).boxed().toList();
         senders = entityIds.subList(0, 3);
-        tokenIds = entityIds.subList(3, 6);
+        defaultTokenIds = entityIds.subList(3, 6);
         serialNumbers = entityIds.subList(6, 9);
         airdrops = new HashMap<>();
 
         for (int senderIndex = 0; senderIndex < senders.size(); senderIndex++) {
             long sender = senders.get(senderIndex);
-            for (int tokenIndex = 0; tokenIndex < tokenIds.size(); tokenIndex++) {
-                long tokenId = tokenIds.get(tokenIndex);
-                for (int serialIndex = 0; serialIndex < tokenIds.size(); serialIndex++) {
+            for (int tokenIndex = 0; tokenIndex < defaultTokenIds.size(); tokenIndex++) {
+                long tokenId = defaultTokenIds.get(tokenIndex);
+                for (int serialIndex = 0; serialIndex < defaultTokenIds.size(); serialIndex++) {
                     long serial = serialNumbers.get(serialIndex);
                     var airdrop = domainBuilder
                             .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
-                            .customize(a -> a.receiverAccountId(receiver)
+                            .customize(a -> a.receiverAccountId(defaultReceiver)
                                     .senderAccountId(sender)
                                     .serialNumber(serial)
                                     .tokenId(tokenId))
@@ -295,7 +295,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
         testSpecs = List.of(
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, senders.get(0))),
                                         true,
@@ -303,7 +303,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .limit(4)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, tokenIds.get(0))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, defaultTokenIds.get(0))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -323,15 +324,16 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given sender >= 0, token >=0, serial >=0, limit 4, expect (0, 0, 0), (0, 0, 1), (0, 0, 2), and, (0, 1, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, senders.get(0))),
                                         true,
                                         Constants.ACCOUNT_ID,
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
-                                .limit(4)
+                                .limit(8)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, tokenIds.get(0))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, defaultTokenIds.get(0))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -345,13 +347,17 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                 .build(),
                         List.of(
                                 new ExpectedIndex(0, 0, 2),
+                                new ExpectedIndex(0, 1, 0),
+                                new ExpectedIndex(0, 1, 1),
                                 new ExpectedIndex(0, 1, 2),
+                                new ExpectedIndex(0, 2, 0),
+                                new ExpectedIndex(0, 2, 1),
                                 new ExpectedIndex(0, 2, 2),
                                 new ExpectedIndex(1, 0, 0)),
-                        "given sender >=0, token >=0, serial >=2, limit 4, expect (0, 0, 2), (0, 1, 2), (0, 2, 2), and, (1, 0, 0)"),
+                        "given sender >=0, token >=0, serial >=2, limit 8, expect (0, 0, 2), (0, 1, 0), (0, 1, 1), (0, 1, 2), (0, 2, 0), (0, 2, 1), (0, 2, 2), and, (1, 0, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, senders.get(2))),
                                         true,
@@ -359,7 +365,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .limit(4)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, tokenIds.get(2))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, defaultTokenIds.get(2))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -375,7 +382,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given sender >=2, token >=2, serial >=2, limit 4, expect (2, 2, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, senders.get(2))),
                                         true,
@@ -383,7 +390,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .limit(4)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, tokenIds.get(0))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, defaultTokenIds.get(0))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -395,11 +403,15 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new ExpectedIndex(2, 0, 2), new ExpectedIndex(2, 1, 2), new ExpectedIndex(2, 2, 2)),
-                        "given sender >=2, token >=0, serial >=2, limit 4, expect (2, 0, 2), (2, 1, 2), and, (2, 2, 2)"),
+                        List.of(
+                                new ExpectedIndex(2, 0, 2),
+                                new ExpectedIndex(2, 1, 0),
+                                new ExpectedIndex(2, 1, 1),
+                                new ExpectedIndex(2, 1, 2)),
+                        "given sender >=2, token >=0, serial >=2, limit 4, expect (2, 0, 2), (2, 1, 0), (2, 1, 1), and, (2, 1, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, senders.get(1))),
                                         true,
@@ -407,7 +419,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .limit(4)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, tokenIds.get(0))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, defaultTokenIds.get(0))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -421,13 +434,13 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                 .build(),
                         List.of(
                                 new ExpectedIndex(1, 0, 2),
-                                new ExpectedIndex(1, 1, 2),
-                                new ExpectedIndex(1, 2, 2),
-                                new ExpectedIndex(2, 0, 0)),
-                        "given sender >=1, token >=0, serial >=2, limit 4, expect (1, 0, 2), (1, 1, 2), (1, 2, 2), and, (2, 0, 0)"),
+                                new ExpectedIndex(1, 1, 0),
+                                new ExpectedIndex(1, 1, 1),
+                                new ExpectedIndex(1, 1, 2)),
+                        "given sender >=1, token >=0, serial >=2, limit 4, expect (1, 0, 2), (1, 1, 0), (1, 1, 1), and, (1, 1, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, senders.get(1))),
                                         true,
@@ -435,7 +448,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .limit(4)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, tokenIds.get(2))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, defaultTokenIds.get(2))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -455,7 +469,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given sender >=1, token >=2, serial >=1, limit 4, expect (1, 2, 1), (1, 2, 2), (2, 0, 0), and, (2, 0, 1)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, senders.get(1))),
                                         true,
@@ -463,7 +477,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .limit(4)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, tokenIds.get(2))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, defaultTokenIds.get(2))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -475,11 +490,15 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new ExpectedIndex(1, 2, 0), new ExpectedIndex(2, 2, 0)),
-                        "given sender >=1, token >=2, serial =0, limit 4, expect (1, 2, 0) and, (2, 2, 0)"),
+                        List.of(
+                                new ExpectedIndex(1, 2, 0),
+                                new ExpectedIndex(2, 0, 0),
+                                new ExpectedIndex(2, 1, 0),
+                                new ExpectedIndex(2, 2, 0)),
+                        "given sender >=1, token >=2, serial =0, limit 4, expect (1, 2, 0) and (2, 0, 0) and (2, 1, 0) and (2, 2, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, senders.get(1))),
                                         true,
@@ -488,7 +507,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                 .limit(4)
                                 .order(Direction.DESC)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, tokenIds.get(2))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, defaultTokenIds.get(2))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -500,11 +520,15 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new ExpectedIndex(2, 2, 0), new ExpectedIndex(1, 2, 0)),
-                        "given order = desc, sender >=1, token >=2, serial =0, limit 4, expect (2, 2, 0) and (1, 2, 0)"),
+                        List.of(
+                                new ExpectedIndex(2, 2, 0),
+                                new ExpectedIndex(2, 1, 0),
+                                new ExpectedIndex(2, 0, 0),
+                                new ExpectedIndex(1, 2, 0)),
+                        "given order = desc, sender >=1, token >=2, serial =0, limit 4, expect (2, 2, 0) and (2, 1, 0) and (2, 0, 0) and (1, 2, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, senders.get(0))),
                                         true,
@@ -512,7 +536,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .limit(4)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, tokenIds.get(1))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, defaultTokenIds.get(1))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -532,14 +557,15 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given sender >=0, token >=1, serial >=0, limit 4, expect (0, 1, 0), (0, 1, 1), (0, 1, 2), and, (0, 2, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.EQ, senders.get(0))),
                                         true,
                                         Constants.ACCOUNT_ID,
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GTE, tokenIds.get(1))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GTE, defaultTokenIds.get(1))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -561,14 +587,15 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given sender =0, token >=1, serial >=0, expect (0, 1, 0), (0, 1, 1), (0, 1, 2), (0, 2, 0), (0, 2, 1), and, (0, 2, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.LT, senders.get(1))),
                                         true,
                                         Constants.ACCOUNT_ID,
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.EQ, tokenIds.get(1))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.EQ, defaultTokenIds.get(1))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -580,14 +607,15 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SERIAL_NUMBER))
                                 .type(PENDING)
                                 .build(),
-                        List.of(new ExpectedIndex(0, 1, 1), new ExpectedIndex(0, 1, 2)),
-                        "given sender <1, token =1, serial >=1, expect (0, 1, 1), and, (0, 1, 2)"),
+                        List.of(new ExpectedIndex(0, 1, 0), new ExpectedIndex(0, 1, 1), new ExpectedIndex(0, 1, 2)),
+                        "given sender <1, token =1, serial >=1, expect (0, 1, 0), (0, 1, 1), and, (0, 1, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .limit(4)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.EQ, tokenIds.get(1))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.EQ, defaultTokenIds.get(1))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -607,7 +635,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given token =1, serial >=1, expect (0, 1, 1), (0, 1, 2), (1, 1, 1), and, (1, 1, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.LT, senders.get(1))),
                                         true,
@@ -630,7 +658,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given sender <1, serial >=1, limit 4, expect (0, 0, 0), (0, 0, 1), (0, 0, 2), and (0, 1, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(
                                                 new EntityIdRangeParameter(RangeOperator.LT, senders.get(2)),
@@ -640,8 +668,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .tokenIds(new Bound(
                                         paramToArray(
-                                                new EntityIdRangeParameter(RangeOperator.LTE, tokenIds.get(1)),
-                                                new EntityIdRangeParameter(RangeOperator.GT, tokenIds.get(0))),
+                                                new EntityIdRangeParameter(RangeOperator.LTE, defaultTokenIds.get(1)),
+                                                new EntityIdRangeParameter(RangeOperator.GT, defaultTokenIds.get(0))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -658,7 +686,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given 0 < sender < 2 , 0 < token <= 1, 1 <= serial <= 2, expect (1, 1, 1), (1, 1, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(
                                                 new EntityIdRangeParameter(RangeOperator.LT, senders.get(1)),
@@ -667,7 +695,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         Constants.ACCOUNT_ID,
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.EQ, tokenIds.get(2))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.EQ, defaultTokenIds.get(2))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -684,7 +713,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given 0 <= sender <1, token =1, 1 <= serial <=2, expect (0, 2, 1), and, (0, 2, 2)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.LT, senders.get(2))),
                                         true,
@@ -692,7 +721,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .limit(4)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.LTE, tokenIds.get(1))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.LTE, defaultTokenIds.get(1))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
@@ -705,14 +735,14 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                 .type(PENDING)
                                 .build(),
                         List.of(
+                                new ExpectedIndex(0, 0, 0),
                                 new ExpectedIndex(0, 0, 1),
                                 new ExpectedIndex(0, 0, 2),
-                                new ExpectedIndex(0, 1, 1),
-                                new ExpectedIndex(0, 1, 2)),
-                        "given sender <2, token <=1, serial >0, limit 4, expect (0, 0, 1), (0, 0, 2), (0, 1, 1), and, (0, 1, 2)"),
+                                new ExpectedIndex(0, 1, 0)),
+                        "given sender <2, token <=1, serial >0, limit 4, expect (0, 0, 0), (0, 0, 1), (0, 0, 2), and, (0, 1, 0)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .limit(8)
                                 .type(PENDING)
                                 .build(),
@@ -728,7 +758,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given limit 8, expect (0, 0, 0), (0, 0, 1), (0, 0, 2), (0, 1, 0), (0, 1, 1), (0, 1, 2), (0, 2, 0), and, (0, 2, 1)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .limit(8)
                                 .order(Direction.DESC)
                                 .type(PENDING)
@@ -745,7 +775,7 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                         "given limit 8, order desc expect (2, 2, 2), (2, 2, 1), (2, 2, 0), (2, 1, 2), (2, 1, 1), (2, 1, 0), (2, 0, 2), and, (2, 0, 1)"),
                 new TokenAirdropRepositoryTest.TestSpec(
                         TokenAirdropRequest.builder()
-                                .accountId(accountId)
+                                .accountId(defaultAccountId)
                                 .entityIds(new Bound(
                                         paramToArray(new EntityIdRangeParameter(RangeOperator.LT, senders.get(1))),
                                         true,
@@ -753,7 +783,8 @@ class TokenAirdropRepositoryTest extends RestJavaIntegrationTest {
                                         TOKEN_AIRDROP.SENDER_ACCOUNT_ID))
                                 .limit(4)
                                 .tokenIds(new Bound(
-                                        paramToArray(new EntityIdRangeParameter(RangeOperator.GT, tokenIds.get(1))),
+                                        paramToArray(
+                                                new EntityIdRangeParameter(RangeOperator.GT, defaultTokenIds.get(1))),
                                         false,
                                         Constants.TOKEN_ID,
                                         TOKEN_AIRDROP.TOKEN_ID))
