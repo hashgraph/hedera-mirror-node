@@ -387,7 +387,7 @@ public record Token(
         if (totalSupplySupplier != null && thatObj.totalSupplySupplier == null) {
             return false;
         }
-        if (totalSupplySupplier != null && totalSupplySupplier.get().equals(thatObj.totalSupplySupplier.get())) {
+        if (totalSupplySupplier != null && !totalSupplySupplier.get().equals(thatObj.totalSupplySupplier.get())) {
             return false;
         }
         if (treasuryAccountIdSupplier == null && thatObj.treasuryAccountIdSupplier != null) {
@@ -397,7 +397,7 @@ public record Token(
             return false;
         }
         if (treasuryAccountIdSupplier != null
-                && treasuryAccountIdSupplier.get().equals(thatObj.treasuryAccountIdSupplier.get())) {
+                && !treasuryAccountIdSupplier.get().equals(thatObj.treasuryAccountIdSupplier.get())) {
             return false;
         }
         if (adminKey == null && thatObj.adminKey != null) {
@@ -467,7 +467,7 @@ public record Token(
             return false;
         }
         if (autoRenewAccountIdSupplier != null
-                && autoRenewAccountIdSupplier.get().equals(thatObj.autoRenewAccountIdSupplier.get())) {
+                && !autoRenewAccountIdSupplier.get().equals(thatObj.autoRenewAccountIdSupplier.get())) {
             return false;
         }
         if (autoRenewSeconds != thatObj.autoRenewSeconds) {
@@ -1733,5 +1733,39 @@ public record Token(
             this.metadataKey = builder.build();
             return this;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "Token{" + "tokenId="
+                + tokenId + ", name='"
+                + name + '\'' + ", symbol='"
+                + symbol + '\'' + ", decimals="
+                + decimals + ", totalSupplySupplier="
+                + (totalSupplySupplier != null ? totalSupplySupplier.get() : "null") + ", treasuryAccountIdSupplier="
+                + (treasuryAccountIdSupplier != null ? treasuryAccountIdSupplier.get() : "null") + ", adminKey="
+                + adminKey + ", kycKey="
+                + kycKey + ", freezeKey="
+                + freezeKey + ", wipeKey="
+                + wipeKey + ", supplyKey="
+                + supplyKey + ", feeScheduleKey="
+                + feeScheduleKey + ", pauseKey="
+                + pauseKey + ", lastUsedSerialNumber="
+                + lastUsedSerialNumber + ", deleted="
+                + deleted + ", tokenType="
+                + tokenType + ", supplyType="
+                + supplyType + ", autoRenewAccountIdSupplier="
+                + (autoRenewAccountIdSupplier != null ? autoRenewAccountIdSupplier.get() : "null")
+                + ", autoRenewSeconds="
+                + autoRenewSeconds + ", expirationSecond="
+                + expirationSecond + ", memo='"
+                + memo + '\'' + ", maxSupply="
+                + maxSupply + ", paused="
+                + paused + ", accountsFrozenByDefault="
+                + accountsFrozenByDefault + ", accountsKycGrantedByDefault="
+                + accountsKycGrantedByDefault + ", customFeesSupplier="
+                + (customFeesSupplier != null ? customFeesSupplier.get() : "null") + ", metadata="
+                + metadata + ", metadataKey="
+                + metadataKey + '}';
     }
 }
