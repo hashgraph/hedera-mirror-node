@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
-
 plugins { id("org.owasp.dependencycheck") }
 
 repositories { mavenCentral() }
@@ -29,11 +27,8 @@ dependencyCheck {
 
     failBuildOnCVSS = 8f
     suppressionFile = resources.resolve("suppressions.xml").toString()
-    analyzers(
-        closureOf<AnalyzerExtension> {
-            experimentalEnabled = true
-            golangModEnabled =
-                false // Too many vulnerabilities in transitive dependencies currently
-        }
-    )
+    analyzers {
+        experimentalEnabled = true
+        golangModEnabled = false // Too many vulnerabilities in transitive dependencies currently
+    }
 }
