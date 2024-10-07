@@ -22,6 +22,8 @@ import static com.hedera.pbj.runtime.ProtoTestTools.INTEGER_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.LONG_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.STRING_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.generateListArguments;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -33,9 +35,11 @@ import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -423,6 +427,367 @@ public class TokenTest extends AbstractStateTest {
         final var itemDifferentMetadataKey = item1.copyBuilder().metadata(null).build();
         assertNotEquals(itemDifferentMetadataKey, item1);
         assertNotEquals(item1, itemDifferentMetadataKey);
+    }
+
+    @Test
+    void testHasTokenId() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTokenId = item1.copyBuilder().tokenId((TokenID) null).build();
+        assertThat(item1.hasTokenId()).isTrue();
+        assertThat(itemNullTokenId.hasTokenId()).isFalse();
+    }
+
+    @Test
+    void testTokenIdOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTokenId = item1.copyBuilder().tokenId((TokenID) null).build();
+        assertThat(item1.tokenIdOrElse(TokenID.DEFAULT)).isEqualTo(item1.tokenId());
+        assertThat(itemNullTokenId.tokenIdOrElse(TokenID.DEFAULT)).isEqualTo(TokenID.DEFAULT);
+    }
+
+    @Test
+    void testTokenIdOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTokenId = item1.copyBuilder().tokenId((TokenID) null).build();
+        assertThat(item1.tokenIdOrThrow()).isEqualTo(item1.tokenId());
+        assertThatThrownBy(itemNullTokenId::tokenIdOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testIfTokenId() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTokenId = item1.copyBuilder().tokenId((TokenID) null).build();
+        List<TokenID> tokenIds = new ArrayList<>();
+        Consumer<TokenID> tokenIDConsumer = tokenIds::add;
+
+        item1.ifTokenId(tokenIDConsumer);
+        itemNullTokenId.ifTokenId(tokenIDConsumer);
+        assertThat(tokenIds).isNotEmpty().hasSize(1).contains(item1.tokenId());
+    }
+
+    @Test
+    void testHasTreasuryAccountId() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTreasuryIdSupplier = item1.copyBuilder()
+                .treasuryAccountId((Supplier<AccountID>) null)
+                .build();
+        final var itemNullTreasuryIdSupplierValue =
+                item1.copyBuilder().treasuryAccountId((AccountID) null).build();
+
+        assertThat(item1.hasTreasuryAccountId()).isTrue();
+        assertThat(itemNullTreasuryIdSupplier.hasTreasuryAccountId()).isFalse();
+        assertThat(itemNullTreasuryIdSupplierValue.hasTreasuryAccountId()).isFalse();
+    }
+
+    @Test
+    void testIfTreasuryAccountId() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTreasuryIdSupplier = item1.copyBuilder()
+                .treasuryAccountId((Supplier<AccountID>) null)
+                .build();
+        final var itemNullTreasuryIdSupplierValue =
+                item1.copyBuilder().treasuryAccountId((AccountID) null).build();
+
+        List<AccountID> accountIDS = new ArrayList<>();
+        Consumer<AccountID> accountIDConsumerIDConsumer = accountIDS::add;
+
+        item1.ifTreasuryAccountId(accountIDConsumerIDConsumer);
+        itemNullTreasuryIdSupplier.ifTreasuryAccountId(accountIDConsumerIDConsumer);
+        itemNullTreasuryIdSupplierValue.ifTreasuryAccountId(accountIDConsumerIDConsumer);
+        assertThat(accountIDS)
+                .isNotEmpty()
+                .hasSize(1)
+                .contains(item1.treasuryAccountIdSupplier().get());
+    }
+
+    @Test
+    void testTreasuryAccountIdOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTreasuryIdSupplier = item1.copyBuilder()
+                .treasuryAccountId((Supplier<AccountID>) null)
+                .build();
+        final var itemNullTreasuryIdSupplierValue =
+                item1.copyBuilder().treasuryAccountId((AccountID) null).build();
+
+        assertThat(item1.treasuryAccountIdOrElse(AccountID.DEFAULT))
+                .isEqualTo(item1.treasuryAccountIdSupplier().get());
+        assertThat(itemNullTreasuryIdSupplier.treasuryAccountIdOrElse(AccountID.DEFAULT))
+                .isEqualTo(AccountID.DEFAULT);
+        assertThat(itemNullTreasuryIdSupplierValue.treasuryAccountIdOrElse(AccountID.DEFAULT))
+                .isEqualTo(AccountID.DEFAULT);
+    }
+
+    @Test
+    void testTreasuryAccountIdOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTreasuryIdSupplier = item1.copyBuilder()
+                .treasuryAccountId((Supplier<AccountID>) null)
+                .build();
+        final var itemNullTreasuryIdSupplierValue =
+                item1.copyBuilder().treasuryAccountId((AccountID) null).build();
+
+        assertThat(item1.treasuryAccountIdOrThrow())
+                .isEqualTo(item1.treasuryAccountIdSupplier().get());
+        assertThatThrownBy(itemNullTreasuryIdSupplier::treasuryAccountIdOrThrow)
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(itemNullTreasuryIdSupplierValue::treasuryAccountIdOrThrow)
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testHasAdminKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAdminKey = item1.copyBuilder().adminKey((Key) null).build();
+        assertThat(item1.hasAdminKey()).isTrue();
+        assertThat(itemNullAdminKey.hasAdminKey()).isFalse();
+    }
+
+    @Test
+    void testAdminKeyOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAdminKey = item1.copyBuilder().adminKey((Key) null).build();
+        assertThat(item1.adminKeyOrElse(Key.DEFAULT)).isEqualTo(item1.adminKey());
+        assertThat(itemNullAdminKey.adminKeyOrElse(Key.DEFAULT)).isEqualTo(Key.DEFAULT);
+    }
+
+    @Test
+    void testAdminKeyOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAdminKey = item1.copyBuilder().adminKey((Key) null).build();
+        assertThat(item1.adminKeyOrThrow()).isEqualTo(item1.adminKey());
+        assertThatThrownBy(itemNullAdminKey::adminKeyOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testIfAdminKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAdminKey = item1.copyBuilder().adminKey((Key) null).build();
+        List<Key> keys = new ArrayList<>();
+        Consumer<Key> keyConsumer = keys::add;
+
+        item1.ifAdminKey(keyConsumer);
+        itemNullAdminKey.ifAdminKey(keyConsumer);
+        assertThat(keys).isNotEmpty().hasSize(1).contains(item1.adminKey());
+    }
+
+    @Test
+    void testHasKycKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullKycKey = item1.copyBuilder().kycKey((Key) null).build();
+        assertThat(item1.hasKycKey()).isTrue();
+        assertThat(itemNullKycKey.hasKycKey()).isFalse();
+    }
+
+    @Test
+    void testKycKeyOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullKycKey = item1.copyBuilder().kycKey((Key) null).build();
+        assertThat(item1.kycKeyOrElse(Key.DEFAULT)).isEqualTo(item1.kycKey());
+        assertThat(itemNullKycKey.kycKeyOrElse(Key.DEFAULT)).isEqualTo(Key.DEFAULT);
+    }
+
+    @Test
+    void testKycKeyOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullKycKey = item1.copyBuilder().kycKey((Key) null).build();
+        assertThat(item1.kycKeyOrThrow()).isEqualTo(item1.kycKey());
+        assertThatThrownBy(itemNullKycKey::kycKeyOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testIfKycKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullKycKey = item1.copyBuilder().kycKey((Key) null).build();
+        List<Key> keys = new ArrayList<>();
+        Consumer<Key> keyConsumer = keys::add;
+
+        item1.ifKycKey(keyConsumer);
+        itemNullKycKey.ifKycKey(keyConsumer);
+        assertThat(keys).isNotEmpty().hasSize(1).contains(item1.kycKey());
+    }
+
+    @Test
+    void testHasFreezeKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullFreezeKey = item1.copyBuilder().freezeKey((Key) null).build();
+        assertThat(item1.hasFreezeKey()).isTrue();
+        assertThat(itemNullFreezeKey.hasFreezeKey()).isFalse();
+    }
+
+    @Test
+    void testFreezeKeyOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullFreezeKey = item1.copyBuilder().freezeKey((Key) null).build();
+        assertThat(item1.freezeKeyOrElse(Key.DEFAULT)).isEqualTo(item1.freezeKey());
+        assertThat(itemNullFreezeKey.freezeKeyOrElse(Key.DEFAULT)).isEqualTo(Key.DEFAULT);
+    }
+
+    @Test
+    void testFreezeKeyOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullFreezeKey = item1.copyBuilder().freezeKey((Key) null).build();
+        assertThat(item1.freezeKeyOrThrow()).isEqualTo(item1.freezeKey());
+        assertThatThrownBy(itemNullFreezeKey::freezeKeyOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testIfFreezeKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullFreezeKey = item1.copyBuilder().freezeKey((Key) null).build();
+        List<Key> keys = new ArrayList<>();
+        Consumer<Key> keyConsumer = keys::add;
+
+        item1.ifFreezeKey(keyConsumer);
+        itemNullFreezeKey.ifFreezeKey(keyConsumer);
+        assertThat(keys).isNotEmpty().hasSize(1).contains(item1.freezeKey());
+    }
+
+    @Test
+    void testHasWipeKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullWipeKey = item1.copyBuilder().wipeKey((Key) null).build();
+        assertThat(item1.hasWipeKey()).isTrue();
+        assertThat(itemNullWipeKey.hasWipeKey()).isFalse();
+    }
+
+    @Test
+    void testWipeKeyOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullWipeKey = item1.copyBuilder().wipeKey((Key) null).build();
+        assertThat(item1.wipeKeyOrElse(Key.DEFAULT)).isEqualTo(item1.wipeKey());
+        assertThat(itemNullWipeKey.wipeKeyOrElse(Key.DEFAULT)).isEqualTo(Key.DEFAULT);
+    }
+
+    @Test
+    void testWipeKeyOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullWipeKey = item1.copyBuilder().wipeKey((Key) null).build();
+        assertThat(item1.wipeKeyOrThrow()).isEqualTo(item1.wipeKey());
+        assertThatThrownBy(itemNullWipeKey::wipeKeyOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testIfWipeKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullWipeKey = item1.copyBuilder().wipeKey((Key) null).build();
+        List<Key> keys = new ArrayList<>();
+        Consumer<Key> keyConsumer = keys::add;
+
+        item1.ifWipeKey(keyConsumer);
+        itemNullWipeKey.ifWipeKey(keyConsumer);
+        assertThat(keys).isNotEmpty().hasSize(1).contains(item1.wipeKey());
+    }
+
+    @Test
+    void testHasSupplyKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullSupplyKey = item1.copyBuilder().supplyKey((Key) null).build();
+        assertThat(item1.hasSupplyKey()).isTrue();
+        assertThat(itemNullSupplyKey.hasSupplyKey()).isFalse();
+    }
+
+    @Test
+    void testSupplyKeyOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullSupplyKey = item1.copyBuilder().supplyKey((Key) null).build();
+        assertThat(item1.supplyKeyOrElse(Key.DEFAULT)).isEqualTo(item1.supplyKey());
+        assertThat(itemNullSupplyKey.supplyKeyOrElse(Key.DEFAULT)).isEqualTo(Key.DEFAULT);
+    }
+
+    @Test
+    void testSupplyKeyOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullSupplyKey = item1.copyBuilder().supplyKey((Key) null).build();
+        assertThat(item1.supplyKeyOrThrow()).isEqualTo(item1.supplyKey());
+        assertThatThrownBy(itemNullSupplyKey::supplyKeyOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testIfSupplyKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullSupplyKey = item1.copyBuilder().supplyKey((Key) null).build();
+        List<Key> keys = new ArrayList<>();
+        Consumer<Key> keyConsumer = keys::add;
+
+        item1.ifSupplyKey(keyConsumer);
+        itemNullSupplyKey.ifSupplyKey(keyConsumer);
+        assertThat(keys).isNotEmpty().hasSize(1).contains(item1.supplyKey());
+    }
+
+    @Test
+    void testHasFeeScheduleKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullFeeScheduleKey =
+                item1.copyBuilder().feeScheduleKey((Key) null).build();
+        assertThat(item1.hasFeeScheduleKey()).isTrue();
+        assertThat(itemNullFeeScheduleKey.hasFeeScheduleKey()).isFalse();
+    }
+
+    @Test
+    void testFeeScheduleKeyOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullFeeScheduleKey =
+                item1.copyBuilder().feeScheduleKey((Key) null).build();
+        assertThat(item1.feeScheduleKeyOrElse(Key.DEFAULT)).isEqualTo(item1.feeScheduleKey());
+        assertThat(itemNullFeeScheduleKey.feeScheduleKeyOrElse(Key.DEFAULT)).isEqualTo(Key.DEFAULT);
+    }
+
+    @Test
+    void testFeeScheduleKeyOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullFeeScheduleKey =
+                item1.copyBuilder().feeScheduleKey((Key) null).build();
+        assertThat(item1.feeScheduleKeyOrThrow()).isEqualTo(item1.feeScheduleKey());
+        assertThatThrownBy(itemNullFeeScheduleKey::feeScheduleKeyOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testIfFeeScheduleKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullFeeScheduleKey =
+                item1.copyBuilder().feeScheduleKey((Key) null).build();
+        List<Key> keys = new ArrayList<>();
+        Consumer<Key> keyConsumer = keys::add;
+
+        item1.ifFeeScheduleKey(keyConsumer);
+        itemNullFeeScheduleKey.ifFeeScheduleKey(keyConsumer);
+        assertThat(keys).isNotEmpty().hasSize(1).contains(item1.feeScheduleKey());
+    }
+
+    @Test
+    void testHasPauseKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullPauseKey = item1.copyBuilder().pauseKey((Key) null).build();
+        assertThat(item1.hasPauseKey()).isTrue();
+        assertThat(itemNullPauseKey.hasPauseKey()).isFalse();
+    }
+
+    @Test
+    void testPauseKeyOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullPauseKey = item1.copyBuilder().pauseKey((Key) null).build();
+        assertThat(item1.pauseKeyOrElse(Key.DEFAULT)).isEqualTo(item1.pauseKey());
+        assertThat(itemNullPauseKey.pauseKeyOrElse(Key.DEFAULT)).isEqualTo(Key.DEFAULT);
+    }
+
+    @Test
+    void testPauseKeyOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullPauseKey = item1.copyBuilder().pauseKey((Key) null).build();
+        assertThat(item1.pauseKeyOrThrow()).isEqualTo(item1.pauseKey());
+        assertThatThrownBy(itemNullPauseKey::pauseKeyOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testIfPauseKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullPauseKey = item1.copyBuilder().pauseKey((Key) null).build();
+        List<Key> keys = new ArrayList<>();
+        Consumer<Key> keyConsumer = keys::add;
+
+        item1.ifPauseKey(keyConsumer);
+        itemNullPauseKey.ifPauseKey(keyConsumer);
+        assertThat(keys).isNotEmpty().hasSize(1).contains(item1.pauseKey());
     }
 
     /**
