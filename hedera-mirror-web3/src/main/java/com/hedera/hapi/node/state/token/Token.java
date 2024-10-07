@@ -134,7 +134,7 @@ public record Token(
      *                 tokens can be at most a few billions or millions, respectively. For example, it could match
      *                 Bitcoin (21 million whole tokens with 8 decimals) or hbars (50 billion whole tokens with 8 decimals).
      *                 It could even match Bitcoin with milli-satoshis (21 million whole tokens with 11 decimals).
-     * @param totalSupply<b>(5)</b> The total supply of this token wrapped in a Supplier.
+     * @param totalSupply <b>(5)</b> The total supply of this token wrapped in a Supplier.
      * @param treasuryAccountId <b>(6)</b> The treasury account id of this token wrapped in a Supplier.
      * @param adminKey <b>(7)</b> (Optional) The admin key of this token. If this key is set, the token is mutable.
      *                 A mutable token can be modified.
@@ -236,15 +236,6 @@ public record Token(
     }
 
     /**
-     * Return a new builder for building a model object. This is just a shortcut for <code>new Model.Builder()</code>.
-     *
-     * @return a new builder
-     */
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    /**
      * Override the default hashCode method for
      * all other objects to make hashCode
      */
@@ -254,10 +245,10 @@ public record Token(
         if (tokenId != null && !tokenId.equals(DEFAULT.tokenId)) {
             result = 31 * result + tokenId.hashCode();
         }
-        if (!name.equals(DEFAULT.name)) {
+        if (name != null && !name.equals(DEFAULT.name)) {
             result = 31 * result + name.hashCode();
         }
-        if (!symbol.equals(DEFAULT.symbol)) {
+        if (symbol != null && !symbol.equals(DEFAULT.symbol)) {
             result = 31 * result + symbol.hashCode();
         }
         if (decimals != DEFAULT.decimals) {
@@ -317,7 +308,7 @@ public record Token(
         if (expirationSecond != DEFAULT.expirationSecond) {
             result = 31 * result + Long.hashCode(expirationSecond);
         }
-        if (!memo.equals(DEFAULT.memo)) {
+        if (memo != null && !memo.equals(DEFAULT.memo)) {
             result = 31 * result + memo.hashCode();
         }
         if (maxSupply != DEFAULT.maxSupply) {
@@ -339,7 +330,7 @@ public record Token(
                 result = 31 * result;
             }
         }
-        if (!metadata.equals(DEFAULT.metadata)) {
+        if (metadata != null && !metadata.equals(DEFAULT.metadata)) {
             result = 31 * result + metadata.hashCode();
         }
         if (metadataKey != null && !metadataKey.equals(DEFAULT.metadataKey)) {
@@ -375,10 +366,16 @@ public record Token(
         if (tokenId != null && !tokenId.equals(thatObj.tokenId)) {
             return false;
         }
-        if (!name.equals(thatObj.name)) {
+        if (name == null && thatObj.name != null) {
             return false;
         }
-        if (!symbol.equals(thatObj.symbol)) {
+        if (name != null && !name.equals(thatObj.name)) {
+            return false;
+        }
+        if (symbol == null && thatObj.symbol != null) {
+            return false;
+        }
+        if (symbol != null && !symbol.equals(thatObj.symbol)) {
             return false;
         }
         if (decimals != thatObj.decimals) {
@@ -479,7 +476,10 @@ public record Token(
         if (expirationSecond != thatObj.expirationSecond) {
             return false;
         }
-        if (!memo.equals(thatObj.memo)) {
+        if (memo == null && thatObj.memo != null) {
+            return false;
+        }
+        if (memo != null && !memo.equals(thatObj.memo)) {
             return false;
         }
         if (maxSupply != thatObj.maxSupply) {
@@ -499,15 +499,20 @@ public record Token(
             return false;
         }
 
-        if (!metadata.equals(thatObj.metadata)) {
+        if (metadata == null && thatObj.metadata != null) {
+            return false;
+        }
+        if (metadata != null && !metadata.equals(thatObj.metadata)) {
             return false;
         }
         if (metadataKey == null && thatObj.metadataKey != null) {
             return false;
         }
-        return metadataKey == null || metadataKey.equals(thatObj.metadataKey);
+        if (metadataKey != null && !metadataKey.equals(thatObj.metadataKey)) {
+            return false;
+        }
+        return true;
     }
-
     /**
      * Convenience method to check if the tokenId has a value
      *
@@ -1013,6 +1018,14 @@ public record Token(
                 metadataKey);
     }
 
+    /**
+     * Return a new builder for building a model object. This is just a shortcut for <code>new Model.Builder()</code>.
+     *
+     * @return a new builder
+     */
+    public static Builder newBuilder() {
+        return new Builder();
+    }
     /**
      * Builder class for easy creation, ideal for clean code where performance is not critical. In critical performance
      * paths use the constructor directly.
@@ -1526,7 +1539,7 @@ public record Token(
         }
 
         /**
-         * <b>(14)</b> The flag indicating if this token is deleted.
+         * <b>(15)</b> The flag indicating if this token is deleted.
          *
          * @param deleted value to set
          * @return builder to continue building with
@@ -1537,7 +1550,7 @@ public record Token(
         }
 
         /**
-         * <b>(15)</b> The type of this token. A token can be either FUNGIBLE_COMMON or NON_FUNGIBLE_UNIQUE.
+         * <b>(16)</b> The type of this token. A token can be either FUNGIBLE_COMMON or NON_FUNGIBLE_UNIQUE.
          * If it has been omitted during token creation, FUNGIBLE_COMMON type is used.
          *
          * @param tokenType value to set
@@ -1549,7 +1562,7 @@ public record Token(
         }
 
         /**
-         * <b>(16)</b> The supply type of this token.A token can have either INFINITE or FINITE supply type.
+         * <b>(17)</b> The supply type of this token.A token can have either INFINITE or FINITE supply type.
          * If it has been omitted during token creation, INFINITE type is used.
          *
          * @param supplyType value to set
@@ -1561,7 +1574,7 @@ public record Token(
         }
 
         /**
-         * <b>(17)</b> The id of the account (if any) that the network will attempt to charge for the
+         * <b>(18)</b> The id of the account (if any) that the network will attempt to charge for the
          * token's auto-renewal upon expiration.
          *
          * @param autoRenewAccountId value to set
@@ -1573,7 +1586,7 @@ public record Token(
         }
 
         /**
-         * <b>(17)</b> The id of the account (if any) that the network will attempt to charge for the
+         * <b>(18)</b> The id of the account (if any) that the network will attempt to charge for the
          * token's auto-renewal upon expiration.
          *
          * @param autoRenewAccountIdSupplier value to set
@@ -1585,7 +1598,7 @@ public record Token(
         }
 
         /**
-         * <b>(18)</b> The number of seconds the network should automatically extend the token's expiration by, if the
+         * <b>(19)</b> The number of seconds the network should automatically extend the token's expiration by, if the
          * token has a valid auto-renew account, and is not deleted upon expiration.
          * If this is not provided in a allowed range on token creation, the transaction will fail with INVALID_AUTO_RENEWAL_PERIOD.
          * The default values for the minimum period and maximum period are 30 days and 90 days, respectively.
@@ -1599,7 +1612,7 @@ public record Token(
         }
 
         /**
-         * <b>(19)</b> The expiration time of the token, in seconds since the epoch.
+         * <b>(20)</b> The expiration time of the token, in seconds since the epoch.
          *
          * @param expirationSecond value to set
          * @return builder to continue building with
@@ -1610,7 +1623,7 @@ public record Token(
         }
 
         /**
-         * <b>(20)</b> An optional description of the token with UTF-8 encoding up to 100 bytes.
+         * <b>(21)</b> An optional description of the token with UTF-8 encoding up to 100 bytes.
          *
          * @param memo value to set
          * @return builder to continue building with
@@ -1621,7 +1634,7 @@ public record Token(
         }
 
         /**
-         * <b>(21)</b> The maximum supply of this token.
+         * <b>(22)</b> The maximum supply of this token.
          *
          * @param maxSupply value to set
          * @return builder to continue building with
@@ -1632,7 +1645,7 @@ public record Token(
         }
 
         /**
-         * <b>(22)</b> The flag indicating if this token is paused.
+         * <b>(23)</b> The flag indicating if this token is paused.
          *
          * @param paused value to set
          * @return builder to continue building with
@@ -1643,7 +1656,7 @@ public record Token(
         }
 
         /**
-         * <b>(23)</b> The flag indicating if this token has accounts associated to it that are frozen by default.
+         * <b>(24)</b> The flag indicating if this token has accounts associated to it that are frozen by default.
          *
          * @param accountsFrozenByDefault value to set
          * @return builder to continue building with
@@ -1654,7 +1667,7 @@ public record Token(
         }
 
         /**
-         * <b>(24)</b> The flag indicating if this token has accounts associated with it that are KYC granted by default.
+         * <b>(25)</b> The flag indicating if this token has accounts associated with it that are KYC granted by default.
          *
          * @param accountsKycGrantedByDefault value to set
          * @return builder to continue building with
@@ -1665,7 +1678,7 @@ public record Token(
         }
 
         /**
-         * <b>(25)</b> (Optional) The custom fees of this token.
+         * <b>(26)</b> (Optional) The custom fees of this token.
          *
          * @param customFees value to set
          * @return builder to continue building with
@@ -1693,7 +1706,7 @@ public record Token(
          * @return builder to continue building with
          */
         public Builder metadata(@Nonnull Bytes metadata) {
-            this.metadata = metadata;
+            this.metadata = metadata != null ? metadata : Bytes.EMPTY;
             return this;
         }
 
