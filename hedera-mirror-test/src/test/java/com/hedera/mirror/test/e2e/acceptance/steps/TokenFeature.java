@@ -1206,11 +1206,13 @@ public class TokenFeature extends AbstractFeature {
     private void verifyPendingAirdrop(
             TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, long amount) {
         // Call the REST API to get the pending airdrops for the receiver
-        var pendingAirdropForToken = getPendingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId());
+        var pendingAirdropForToken =
+                getPendingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId());
         verifyTokenAirdrop(pendingAirdropForToken, sender.getAccountId(), receiver.getAccountId(), tokenId);
         assertThat(pendingAirdropForToken.getAmount()).isEqualTo(amount);
         // Call the REST API to get the outstanding airdrops for the sender
-        var outstandingAirdropForToken = getOutstandingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId());
+        var outstandingAirdropForToken =
+                getOutstandingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId());
         verifyTokenAirdrop(outstandingAirdropForToken, sender.getAccountId(), receiver.getAccountId(), tokenId);
         assertThat(outstandingAirdropForToken.getAmount()).isEqualTo(amount);
         // Call the REST api to get the token relationship
@@ -1220,8 +1222,7 @@ public class TokenFeature extends AbstractFeature {
         assertThat(tokenRelationshipReceiver.getTokens()).isEmpty();
     }
 
-    private void verifyCancelledAirdrop(
-            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver) {
+    private void verifyCancelledAirdrop(TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver) {
         assertThat(getPendingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId()))
                 .isNull();
         assertThat(getOutstandingAirdropForSpecificToken(tokenId, sender.getAccountId(), receiver.getAccountId()))
