@@ -25,10 +25,18 @@ import static com.hedera.pbj.runtime.ProtoTestTools.generateListArguments;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
@@ -52,6 +60,369 @@ public class TokenTest extends AbstractStateTest {
             assertNotEquals(item1HashCode, item2HashCode);
             assertNotEquals(item2HashCode, item3HashCode);
         }
+    }
+
+    @Test
+    void testEqualsWithNull() {
+        final var item1 = ARGUMENTS.get(0);
+        assertNotEquals(null, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentClass() {
+        final var item1 = ARGUMENTS.get(0);
+        assertNotEquals(item1, new Object());
+    }
+
+    @Test
+    void testEqualsWithNullTokenId() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item1WithNullTokenId =
+                item1.copyBuilder().tokenId((TokenID) null).build();
+        assertNotEquals(item1, item1WithNullTokenId);
+        assertNotEquals(item1WithNullTokenId, item1);
+    }
+
+    @Test
+    void testEqualsWithNullName() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item1WithNullName = item1.copyBuilder().name(null).build();
+        assertNotEquals(item1, item1WithNullName);
+        assertNotEquals(item1WithNullName, item1);
+    }
+
+    @Test
+    void testEqualsWithNullSymbol() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item1WithNullSymbol = item1.copyBuilder().symbol(null).build();
+        assertNotEquals(item1, item1WithNullSymbol);
+        assertNotEquals(item1WithNullSymbol, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentDecimals() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item1WithDifferentDecimals =
+                item1.copyBuilder().decimals(item1.decimals() + 1).build();
+        assertNotEquals(item1, item1WithDifferentDecimals);
+    }
+
+    @Test
+    void testEqualsWithDifferentTotalSupply() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item1WithDifferentTotalSupply = item1.copyBuilder()
+                .totalSupply(item1.totalSupplySupplier().get() + 1)
+                .build();
+        assertNotEquals(item1, item1WithDifferentTotalSupply);
+    }
+
+    @Test
+    void testEqualsWithNullTotalSupply() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTotalSupply = item1.copyBuilder().totalSupply(null).build();
+
+        assertNotEquals(itemNullTotalSupply, item1);
+        assertNotEquals(item1, itemNullTotalSupply);
+    }
+
+    @Test
+    void testEqualsWithDifferentTreasuryAccountId() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item1WithDifferentTreasuryAccountId = item1.copyBuilder()
+                .treasuryAccountId(new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 1L)))
+                .build();
+        assertNotEquals(item1, item1WithDifferentTreasuryAccountId);
+    }
+
+    @Test
+    void testEqualsWithNullTreasuryAccountIdSupplierValue() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTreasuryAccountIdSupplierValue =
+                item1.copyBuilder().treasuryAccountId((AccountID) null).build();
+        assertNotEquals(itemNullTreasuryAccountIdSupplierValue, item1);
+        assertNotEquals(item1, itemNullTreasuryAccountIdSupplierValue);
+    }
+
+    @Test
+    void testEqualsWithNullTreasuryAccountIdSupplier() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTreasuryAccountIdSupplier = item1.copyBuilder()
+                .treasuryAccountId((Supplier<AccountID>) null)
+                .build();
+        assertNotEquals(itemNullTreasuryAccountIdSupplier, item1);
+        assertNotEquals(item1, itemNullTreasuryAccountIdSupplier);
+    }
+
+    @Test
+    void testEqualsWithNullTreasuryAccountIdBoth() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTreasuryAccountId =
+                item1.copyBuilder().treasuryAccountId((AccountID) null).build();
+        final var itemNullTreasuryAccountId2 =
+                item1.copyBuilder().treasuryAccountId((AccountID) null).build();
+        assertEquals(itemNullTreasuryAccountId, itemNullTreasuryAccountId2);
+    }
+
+    @Test
+    void testEqualsWithNullAdminKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAdminKey = item1.copyBuilder().adminKey((Key) null).build();
+
+        assertNotEquals(itemNullAdminKey, item1);
+        assertNotEquals(item1, itemNullAdminKey);
+    }
+
+    @Test
+    void testEqualsWithNullKycKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullKycKey = item1.copyBuilder().kycKey((Key) null).build();
+
+        assertNotEquals(itemNullKycKey, item1);
+        assertNotEquals(item1, itemNullKycKey);
+    }
+
+    @Test
+    void testEqualsWithNullFreezeKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullFreezeKey = item1.copyBuilder().freezeKey((Key) null).build();
+
+        assertNotEquals(itemNullFreezeKey, item1);
+        assertNotEquals(item1, itemNullFreezeKey);
+    }
+
+    @Test
+    void testEqualsWithNullWipeKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullWipeKey = item1.copyBuilder().wipeKey((Key) null).build();
+
+        assertNotEquals(itemNullWipeKey, item1);
+        assertNotEquals(item1, itemNullWipeKey);
+    }
+
+    @Test
+    void testEqualsWithNullSupplyKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullSupplyKey = item1.copyBuilder().supplyKey((Key) null).build();
+
+        assertNotEquals(itemNullSupplyKey, item1);
+        assertNotEquals(item1, itemNullSupplyKey);
+    }
+
+    @Test
+    void testEqualsWithNullFeeScheduleKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullFeeScheduleKey =
+                item1.copyBuilder().feeScheduleKey((Key) null).build();
+
+        assertNotEquals(itemNullFeeScheduleKey, item1);
+        assertNotEquals(item1, itemNullFeeScheduleKey);
+    }
+
+    @Test
+    void testEqualsWithNullPauseKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullPauseKey = item1.copyBuilder().pauseKey((Key) null).build();
+
+        assertNotEquals(itemNullPauseKey, item1);
+        assertNotEquals(item1, itemNullPauseKey);
+    }
+
+    @Test
+    void testEqualsWithDifferentLastUsedSerialNumber() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentLastUsedSerialNumber = item1.copyBuilder()
+                .lastUsedSerialNumber(item1.lastUsedSerialNumber() + 1)
+                .build();
+
+        assertNotEquals(itemDifferentLastUsedSerialNumber, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentDeletedFlag() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentDeletedFlag =
+                item1.copyBuilder().deleted(!item1.deleted()).build();
+
+        assertNotEquals(itemDifferentDeletedFlag, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentTokenType() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentTokenType =
+                item1.copyBuilder().tokenType(TokenType.NON_FUNGIBLE_UNIQUE).build();
+
+        assertNotEquals(itemDifferentTokenType, item1);
+    }
+
+    @Test
+    void testEqualsWithNullTokenType() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullTokenType = item1.copyBuilder().tokenType(null).build();
+        assertNotEquals(itemNullTokenType, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentSupplyType() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentSupplyType =
+                item1.copyBuilder().supplyType(TokenSupplyType.FINITE).build();
+
+        assertNotEquals(itemDifferentSupplyType, item1);
+    }
+
+    @Test
+    void testEqualsWithNullSupplyType() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullSupplyType = item1.copyBuilder().supplyType(null).build();
+        assertNotEquals(itemNullSupplyType, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentAutoRenewAccountId() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item1WithDifferentAutoRenewAccountId = item1.copyBuilder()
+                .autoRenewAccountId(new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 1L)))
+                .build();
+        assertNotEquals(item1, item1WithDifferentAutoRenewAccountId);
+    }
+
+    @Test
+    void testEqualsWithNullAutoRenewAccountIdSupplierValue() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAutoRenewAccountId =
+                item1.copyBuilder().autoRenewAccountId((AccountID) null).build();
+        assertNotEquals(itemNullAutoRenewAccountId, item1);
+        assertNotEquals(item1, itemNullAutoRenewAccountId);
+    }
+
+    @Test
+    void testEqualsWithNullAutoRenewAccountIdSupplier() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAutoRenewAccountId = item1.copyBuilder()
+                .autoRenewAccountId((Supplier<AccountID>) null)
+                .build();
+        assertNotEquals(itemNullAutoRenewAccountId, item1);
+        assertNotEquals(item1, itemNullAutoRenewAccountId);
+    }
+
+    @Test
+    void testEqualsWithNullAutoRenewAccountIdBoth() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAutoRenewAccountId =
+                item1.copyBuilder().autoRenewAccountId((AccountID) null).build();
+        final var itemNullAutoRenewAccountId2 =
+                item1.copyBuilder().autoRenewAccountId((AccountID) null).build();
+        assertEquals(itemNullAutoRenewAccountId, itemNullAutoRenewAccountId2);
+    }
+
+    @Test
+    void testEqualsWithDifferentAutoRenewSeconds() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentAutoRenewSeconds = item1.copyBuilder()
+                .autoRenewSeconds(item1.autoRenewSeconds() + 1)
+                .build();
+        assertNotEquals(itemDifferentAutoRenewSeconds, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentExpirationSeconds() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentExpirationSeconds = item1.copyBuilder()
+                .expirationSecond(item1.expirationSecond() + 1)
+                .build();
+        assertNotEquals(itemDifferentExpirationSeconds, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentMemo() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentMemo =
+                item1.copyBuilder().memo("1" + item1.memo()).build();
+        assertNotEquals(itemDifferentMemo, item1);
+    }
+
+    @Test
+    void testEqualsWithNullMemo() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullMemo = item1.copyBuilder().memo(null).build();
+        assertNotEquals(itemNullMemo, item1);
+        assertNotEquals(item1, itemNullMemo);
+    }
+
+    @Test
+    void testEqualsWithDifferentMaxSupply() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentMaxSupply =
+                item1.copyBuilder().maxSupply(item1.maxSupply() + 1).build();
+        assertNotEquals(itemDifferentMaxSupply, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentPausedFlag() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentPauseFlag =
+                item1.copyBuilder().paused(!item1.paused()).build();
+        assertNotEquals(itemDifferentPauseFlag, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentAccountsFrozenByDefaultFlag() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentAccountsFrozenByDefaultFlag = item1.copyBuilder()
+                .accountsFrozenByDefault(!item1.accountsFrozenByDefault())
+                .build();
+        assertNotEquals(itemDifferentAccountsFrozenByDefaultFlag, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentAccountsKycGrantedByDefaultFlag() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentAccountsKycGrantedByDefaultFlag = item1.copyBuilder()
+                .accountsKycGrantedByDefault(!item1.accountsKycGrantedByDefault())
+                .build();
+        assertNotEquals(itemDifferentAccountsKycGrantedByDefaultFlag, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentCustomFees() {
+        final var item1 = ARGUMENTS.get(1);
+        final var itemDifferentCustomFees =
+                item1.copyBuilder().customFees(Collections.EMPTY_LIST).build();
+        assertNotEquals(itemDifferentCustomFees, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentMetadata() {
+        final var item1 = ARGUMENTS.get(1);
+        final var itemDifferentMetadata =
+                item1.copyBuilder().metadata(Bytes.EMPTY).build();
+        assertNotEquals(itemDifferentMetadata, item1);
+    }
+
+    @Test
+    void testEqualsWithNullMetadata() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentMetadata = item1.copyBuilder().metadata(null).build();
+        assertNotEquals(itemDifferentMetadata, item1);
+        assertNotEquals(item1, itemDifferentMetadata);
+    }
+
+    @Test
+    void testEqualsWithDifferentMetadataKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentMetadataKey = item1.copyBuilder()
+                .metadataKey(new Key(new OneOf<>(Key.KeyOneOfType.CONTRACT_ID, 1L)))
+                .build();
+        assertNotEquals(itemDifferentMetadataKey, item1);
+    }
+
+    @Test
+    void testEqualsWithNullMetadataKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentMetadataKey = item1.copyBuilder().metadata(null).build();
+        assertNotEquals(itemDifferentMetadataKey, item1);
+        assertNotEquals(item1, itemDifferentMetadataKey);
     }
 
     /**

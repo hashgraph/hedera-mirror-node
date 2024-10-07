@@ -260,6 +260,7 @@ public record Token(
             result = 31 * result + Long.hashCode(totalSupplySupplier.get());
         }
         if (treasuryAccountIdSupplier != null
+                && treasuryAccountIdSupplier.get() != null
                 && DEFAULT.treasuryAccountIdSupplier != null
                 && !treasuryAccountIdSupplier.get().equals(DEFAULT.treasuryAccountIdSupplier.get())) {
             result = 31 * result + treasuryAccountIdSupplier.get().hashCode();
@@ -298,6 +299,7 @@ public record Token(
             result = 31 * result + Integer.hashCode(supplyType.protoOrdinal());
         }
         if (autoRenewAccountIdSupplier != null
+                && autoRenewAccountIdSupplier.get() != null
                 && DEFAULT.autoRenewAccountIdSupplier != null
                 && !autoRenewAccountIdSupplier.equals(DEFAULT.autoRenewAccountIdSupplier)) {
             result = 31 * result + autoRenewAccountIdSupplier.get().hashCode();
@@ -396,9 +398,18 @@ public record Token(
         if (treasuryAccountIdSupplier != null && thatObj.treasuryAccountIdSupplier == null) {
             return false;
         }
-        if (treasuryAccountIdSupplier != null
-                && !treasuryAccountIdSupplier.get().equals(thatObj.treasuryAccountIdSupplier.get())) {
-            return false;
+        if (treasuryAccountIdSupplier != null) {
+            AccountID thisAccountId = treasuryAccountIdSupplier.get();
+            AccountID thatAccountId = thatObj.treasuryAccountIdSupplier.get();
+
+            // If both retrieved account IDs are null, continue without returning true
+            if (thisAccountId == null && thatAccountId == null) {
+                // Both are null, but we don't return true yet; we continue checking
+            } else if (thisAccountId == null || thatAccountId == null) {
+                return false; // One is null, and the other is not
+            } else if (!thisAccountId.equals(thatAccountId)) {
+                return false; // They are not equal
+            }
         }
         if (adminKey == null && thatObj.adminKey != null) {
             return false;
@@ -466,9 +477,18 @@ public record Token(
         if (autoRenewAccountIdSupplier != null && thatObj.autoRenewAccountIdSupplier == null) {
             return false;
         }
-        if (autoRenewAccountIdSupplier != null
-                && !autoRenewAccountIdSupplier.get().equals(thatObj.autoRenewAccountIdSupplier.get())) {
-            return false;
+        if (autoRenewAccountIdSupplier != null) {
+            AccountID thisAccountId = autoRenewAccountIdSupplier.get();
+            AccountID thatAccountId = thatObj.autoRenewAccountIdSupplier.get();
+
+            // If both retrieved account IDs are null, continue without returning true
+            if (thisAccountId == null && thatAccountId == null) {
+                // Both are null, but we don't return true yet; we continue checking
+            } else if (thisAccountId == null || thatAccountId == null) {
+                return false; // One is null, and the other is not
+            } else if (!thisAccountId.equals(thatAccountId)) {
+                return false; // They are not equal
+            }
         }
         if (autoRenewSeconds != thatObj.autoRenewSeconds) {
             return false;
@@ -1310,7 +1330,7 @@ public record Token(
          * @param totalSupply value to set
          * @return builder to continue building with
          */
-        public Builder totalSupply(Long totalSupply) {
+        public Builder totalSupply(long totalSupply) {
             this.totalSupplySupplier = () -> totalSupply;
             return this;
         }
