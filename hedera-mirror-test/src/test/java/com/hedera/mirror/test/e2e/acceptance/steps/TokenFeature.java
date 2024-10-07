@@ -1153,7 +1153,9 @@ public class TokenFeature extends AbstractFeature {
     private TokenAirdrop getPendingAirdropForSpecificToken(TokenId tokenId, AccountId sender, AccountId receiver) {
         var pendingAirdrops = mirrorClient.getPendingAirdrops(receiver).getAirdrops();
         for (TokenAirdrop tokenAirdrop : pendingAirdrops) {
-            if (tokenAirdrop.getTokenId().equals(tokenId.toString()) && tokenAirdrop.getSenderId().equals(sender.toString())) {
+            if (tokenAirdrop.getTokenId().equals(tokenId.toString())
+                    && tokenAirdrop.getSenderId().equals(sender.toString())
+                    && tokenAirdrop.getReceiverId().equals(receiver.toString())) {
                 return tokenAirdrop;
             }
         }
@@ -1163,7 +1165,9 @@ public class TokenFeature extends AbstractFeature {
     private TokenAirdrop getOutstandingAirdropForSpecificToken(TokenId tokenId, AccountId sender, AccountId receiver) {
         var outstandingAirdrops = mirrorClient.getOutstandingAirdrops(sender).getAirdrops();
         for (TokenAirdrop tokenAirdrop : outstandingAirdrops) {
-            if (tokenAirdrop.getTokenId().equals(tokenId.toString()) && tokenAirdrop.getReceiverId().equals(receiver.toString())) {
+            if (tokenAirdrop.getTokenId().equals(tokenId.toString())
+                    && tokenAirdrop.getReceiverId().equals(receiver.toString())
+                    && tokenAirdrop.getSenderId().equals(sender.toString())) {
                 return tokenAirdrop;
             }
         }
