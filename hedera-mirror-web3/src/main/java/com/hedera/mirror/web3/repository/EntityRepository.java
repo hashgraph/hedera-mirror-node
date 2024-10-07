@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_ENTITY;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_ALIAS;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_EVM_ADDRESS;
 
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -39,7 +40,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
     Optional<Entity> findByEvmAddressAndDeletedIsFalse(byte[] alias);
 
     @Cacheable(
-            cacheNames = CACHE_NAME_EVM_ADDRESS,
+            cacheNames = CACHE_NAME_ALIAS,
             cacheManager = CACHE_MANAGER_ENTITY,
             key = "T(java.util.Arrays).hashCode(#alias)",
             unless = "#result == null")
