@@ -117,11 +117,25 @@ public class TokenTest extends AbstractStateTest {
     }
 
     @Test
+    void testEqualsWithDifferentName() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item1WithNullName = item1.copyBuilder().name("different").build();
+        assertNotEquals(item1, item1WithNullName);
+    }
+
+    @Test
     void testEqualsWithNullSymbol() {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithNullSymbol = item1.copyBuilder().symbol(null).build();
         assertNotEquals(item1, item1WithNullSymbol);
         assertNotEquals(item1WithNullSymbol, item1);
+    }
+
+    @Test
+    void testEqualsWithDifferentSymbol() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item1WithNullName = item1.copyBuilder().symbol("different").build();
+        assertNotEquals(item1, item1WithNullName);
     }
 
     @Test
@@ -198,12 +212,32 @@ public class TokenTest extends AbstractStateTest {
     }
 
     @Test
+    void testEqualsWithDifferentAdminKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentAdminKey = item1.copyBuilder()
+                .adminKey(new Key(new OneOf<>(Key.KeyOneOfType.CONTRACT_ID, 1L)))
+                .build();
+
+        assertNotEquals(item1, itemDifferentAdminKey);
+    }
+
+    @Test
     void testEqualsWithNullKycKey() {
         final var item1 = ARGUMENTS.get(0);
         final var itemNullKycKey = item1.copyBuilder().kycKey((Key) null).build();
 
         assertNotEquals(itemNullKycKey, item1);
         assertNotEquals(item1, itemNullKycKey);
+    }
+
+    @Test
+    void testEqualsWithDifferentKycKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentKycKey = item1.copyBuilder()
+                .kycKey(new Key(new OneOf<>(Key.KeyOneOfType.CONTRACT_ID, 1L)))
+                .build();
+
+        assertNotEquals(item1, itemDifferentKycKey);
     }
 
     @Test
@@ -216,6 +250,16 @@ public class TokenTest extends AbstractStateTest {
     }
 
     @Test
+    void testEqualsWithDifferentFreezeKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentFreezeKey = item1.copyBuilder()
+                .freezeKey(new Key(new OneOf<>(Key.KeyOneOfType.CONTRACT_ID, 1L)))
+                .build();
+
+        assertNotEquals(item1, itemDifferentFreezeKey);
+    }
+
+    @Test
     void testEqualsWithNullWipeKey() {
         final var item1 = ARGUMENTS.get(0);
         final var itemNullWipeKey = item1.copyBuilder().wipeKey((Key) null).build();
@@ -225,12 +269,32 @@ public class TokenTest extends AbstractStateTest {
     }
 
     @Test
+    void testEqualsWithDifferentWipeKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentWipeKey = item1.copyBuilder()
+                .wipeKey(new Key(new OneOf<>(Key.KeyOneOfType.CONTRACT_ID, 1L)))
+                .build();
+
+        assertNotEquals(item1, itemDifferentWipeKey);
+    }
+
+    @Test
     void testEqualsWithNullSupplyKey() {
         final var item1 = ARGUMENTS.get(0);
         final var itemNullSupplyKey = item1.copyBuilder().supplyKey((Key) null).build();
 
         assertNotEquals(itemNullSupplyKey, item1);
         assertNotEquals(item1, itemNullSupplyKey);
+    }
+
+    @Test
+    void testEqualsWithDifferentSupplyKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentSupplyKey = item1.copyBuilder()
+                .supplyKey(new Key(new OneOf<>(Key.KeyOneOfType.CONTRACT_ID, 1L)))
+                .build();
+
+        assertNotEquals(item1, itemDifferentSupplyKey);
     }
 
     @Test
@@ -244,12 +308,32 @@ public class TokenTest extends AbstractStateTest {
     }
 
     @Test
+    void testEqualsWithDifferentFeeScheduleKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentFeeScheduleKey = item1.copyBuilder()
+                .feeScheduleKey(new Key(new OneOf<>(Key.KeyOneOfType.CONTRACT_ID, 1L)))
+                .build();
+
+        assertNotEquals(item1, itemDifferentFeeScheduleKey);
+    }
+
+    @Test
     void testEqualsWithNullPauseKey() {
         final var item1 = ARGUMENTS.get(0);
         final var itemNullPauseKey = item1.copyBuilder().pauseKey((Key) null).build();
 
         assertNotEquals(itemNullPauseKey, item1);
         assertNotEquals(item1, itemNullPauseKey);
+    }
+
+    @Test
+    void testEqualsWithDifferentPauseKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemDifferentPauseKey = item1.copyBuilder()
+                .pauseKey(new Key(new OneOf<>(Key.KeyOneOfType.CONTRACT_ID, 1L)))
+                .build();
+
+        assertNotEquals(item1, itemDifferentPauseKey);
     }
 
     @Test
@@ -445,7 +529,8 @@ public class TokenTest extends AbstractStateTest {
     @Test
     void testEqualsWithNullMetadataKey() {
         final var item1 = ARGUMENTS.get(0);
-        final var itemDifferentMetadataKey = item1.copyBuilder().metadata(null).build();
+        final var itemDifferentMetadataKey =
+                item1.copyBuilder().metadataKey((Key) null).build();
         assertNotEquals(itemDifferentMetadataKey, item1);
         assertNotEquals(item1, itemDifferentMetadataKey);
     }

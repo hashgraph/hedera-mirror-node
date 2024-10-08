@@ -608,7 +608,6 @@ public record Token(
      * @throws NullPointerException if treasuryAccountId is null
      */
     public @Nonnull AccountID treasuryAccountIdOrThrow() {
-
         return treasuryAccountIdSupplier == null
                 ? requireNonNull(null, "Field treasuryAccountId is null")
                 : requireNonNull(treasuryAccountIdSupplier.get(), "Field treasuryAccountId is null");
