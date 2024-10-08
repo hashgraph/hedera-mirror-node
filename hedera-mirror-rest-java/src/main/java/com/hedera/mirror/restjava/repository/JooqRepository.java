@@ -151,7 +151,7 @@ interface JooqRepository {
         if (rangeParameter == null || rangeParameter.isEmpty() || rangeParameter.operator() == EQ) {
             return noCondition();
         } else {
-            long value = primary.getEqualityRangeValue(isUpper);
+            long value = primary.getInclusiveRangeValue(isUpper);
             return getCondition(primary.getField(), EQ, value);
         }
     }

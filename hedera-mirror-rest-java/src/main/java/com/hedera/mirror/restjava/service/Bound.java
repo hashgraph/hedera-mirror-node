@@ -114,15 +114,12 @@ public class Bound {
         }
     }
 
-    // Gets a range value if the operator was converted to EQ
-    public long getEqualityRangeValue(boolean upper) {
+    // Gets a range value if the operator is converted from GT/LT to EQ/GTE/LTE
+    public long getInclusiveRangeValue(boolean upper) {
         var rangeParameter = upper ? this.getUpper() : this.getLower();
         var operator = rangeParameter.operator();
         long value = rangeParameter.value();
-        if (!upper && !this.isEmpty() && this.hasEqualBounds()) {
-            // If the primary param has a range with a single value, use the lower range value
-            value = this.getAdjustedLowerRangeValue();
-        } else if (operator == GT) {
+        if (operator == GT) {
             value += 1L;
         } else if (operator == LT) {
             value -= 1L;
