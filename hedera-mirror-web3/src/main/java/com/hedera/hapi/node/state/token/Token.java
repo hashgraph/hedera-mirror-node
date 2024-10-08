@@ -259,17 +259,20 @@ public record Token(
             result = 31 * result + Integer.hashCode(decimals);
         }
         if (totalSupplySupplier != null) {
-            if (DEFAULT.totalSupplySupplier == null) {
-                result = 31 * result + Long.hashCode(totalSupplySupplier.get());
-            } else if (!totalSupplySupplier.get().equals(DEFAULT.totalSupplySupplier.get())) {
-                result = 31 * result + Long.hashCode(totalSupplySupplier.get());
+            Long currentValue = totalSupplySupplier.get();
+            Long defaultValue = (DEFAULT.totalSupplySupplier != null) ? DEFAULT.totalSupplySupplier.get() : null;
+
+            if (currentValue != null && !currentValue.equals(defaultValue)) {
+                result = 31 * result + Long.hashCode(currentValue);
             }
         }
         if (treasuryAccountIdSupplier != null && treasuryAccountIdSupplier.get() != null) {
-            if (DEFAULT.treasuryAccountIdSupplier == null) {
-                result = 31 * result + treasuryAccountIdSupplier.get().hashCode();
-            } else if (!treasuryAccountIdSupplier.get().equals(DEFAULT.treasuryAccountIdSupplier.get())) {
-                result = 31 * result + treasuryAccountIdSupplier.get().hashCode();
+            Object currentValue = treasuryAccountIdSupplier.get();
+            Object defaultValue =
+                    DEFAULT.treasuryAccountIdSupplier != null ? DEFAULT.treasuryAccountIdSupplier.get() : null;
+
+            if (!currentValue.equals(defaultValue)) {
+                result = 31 * result + currentValue.hashCode();
             }
         }
         if (adminKey != null && !adminKey.equals(DEFAULT.adminKey)) {
@@ -306,10 +309,12 @@ public record Token(
             result = 31 * result + Integer.hashCode(supplyType.protoOrdinal());
         }
         if (autoRenewAccountIdSupplier != null && autoRenewAccountIdSupplier.get() != null) {
-            if (DEFAULT.autoRenewAccountIdSupplier == null) {
-                result = 31 * result + autoRenewAccountIdSupplier.get().hashCode();
-            } else if (!autoRenewAccountIdSupplier.get().equals(DEFAULT.autoRenewAccountIdSupplier.get())) {
-                result = 31 * result + autoRenewAccountIdSupplier.get().hashCode();
+            Object currentValue = autoRenewAccountIdSupplier.get();
+            Object defaultValue =
+                    DEFAULT.autoRenewAccountIdSupplier != null ? DEFAULT.autoRenewAccountIdSupplier.get() : null;
+
+            if (!currentValue.equals(defaultValue)) {
+                result = 31 * result + currentValue.hashCode();
             }
         }
         if (autoRenewSeconds != DEFAULT.autoRenewSeconds) {
