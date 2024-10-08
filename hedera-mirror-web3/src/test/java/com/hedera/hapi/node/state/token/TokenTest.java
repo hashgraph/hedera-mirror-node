@@ -923,6 +923,34 @@ public class TokenTest extends AbstractStateTest {
         assertThat(keys).isNotEmpty().hasSize(1).contains(item1.metadataKey());
     }
 
+    @Test
+    void testBuilders() {
+        Key.Builder keyBuilder = new Key.Builder();
+        Token.Builder tokenBuilder = new Token.Builder();
+        TokenID.Builder tokenIdBuilder = new TokenID.Builder();
+        Token token = tokenBuilder
+                .tokenId(tokenIdBuilder)
+                .adminKey(keyBuilder)
+                .kycKey(keyBuilder)
+                .freezeKey(keyBuilder)
+                .wipeKey(keyBuilder)
+                .supplyKey(keyBuilder)
+                .feeScheduleKey(keyBuilder)
+                .pauseKey(keyBuilder)
+                .metadataKey(keyBuilder)
+                .build();
+
+        assertThat(token.tokenId()).isNotNull();
+        assertThat(token.adminKey()).isNotNull();
+        assertThat(token.kycKey()).isNotNull();
+        assertThat(token.freezeKey()).isNotNull();
+        assertThat(token.wipeKey()).isNotNull();
+        assertThat(token.supplyKey()).isNotNull();
+        assertThat(token.feeScheduleKey()).isNotNull();
+        assertThat(token.pauseKey()).isNotNull();
+        assertThat(token.metadataKey()).isNotNull();
+    }
+
     /**
      * List of all valid arguments for testing, built as a static list, so we can reuse it.
      */
