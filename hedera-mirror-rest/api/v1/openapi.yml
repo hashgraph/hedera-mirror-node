@@ -164,15 +164,16 @@ paths:
         - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}/airdrops/outstanding:
     get:
-      summary: Get outstanding fungible token airdrops sent by an account
+      summary: Get outstanding token airdrops sent by an account
       description: |
-        Returns outstanding fungible token airdrops that have been sent by an account. This API is currently under development. Support for NFT airdrops will be added in a future release.
+        Returns outstanding token airdrops that have been sent by an account.
       operationId: getOutstandingTokenAirdrops
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/orderQueryParam"
         - $ref: "#/components/parameters/receiverIdQueryParam"
+        - $ref: "#/components/parameters/serialNumberQueryParam"
         - $ref: "#/components/parameters/tokenIdQueryParam"
       responses:
         200:
@@ -189,15 +190,16 @@ paths:
         - airdrops
   /api/v1/accounts/{idOrAliasOrEvmAddress}/airdrops/pending:
     get:
-      summary: Get pending fungible token airdrops received by an account
+      summary: Get pending token airdrops received by an account
       description: |
-        Returns pending fungible token airdrops that have been received by an account. This API is currently under development. Support for NFT airdrops will be added in a future release.
+        Returns pending token airdrops that have been received by an account.
       operationId: getPendingTokenAirdrops
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/orderQueryParam"
         - $ref: "#/components/parameters/senderIdQueryParam"
+        - $ref: "#/components/parameters/serialNumberQueryParam"
         - $ref: "#/components/parameters/tokenIdQueryParam"
       responses:
         200:
