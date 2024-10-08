@@ -71,8 +71,7 @@ public class TokenTest extends AbstractStateTest {
         final var item1 = ARGUMENTS.get(0);
         final var item1Copy = item1.copyBuilder().build();
 
-        assertThat(item1).hasSameHashCodeAs(item1.hashCode());
-        assertThat(item1).hasSameHashCodeAs(item1Copy.hashCode());
+        assertThat(item1).hasSameHashCodeAs(item1Copy);
     }
 
     @Test
