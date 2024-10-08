@@ -30,4 +30,8 @@ public interface RangeParameter<T> {
     default boolean hasUpperBound() {
         return operator() == RangeOperator.LT || operator() == RangeOperator.LTE;
     }
+
+    default boolean isEmpty() {
+        return operator() == null && value() == null;
+    }
 }

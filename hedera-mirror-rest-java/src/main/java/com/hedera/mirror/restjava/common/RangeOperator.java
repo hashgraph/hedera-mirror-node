@@ -36,6 +36,10 @@ public enum RangeOperator {
     private final String operator;
     private final BiFunction<Field, Object, Condition> function;
 
+    public boolean isInclusive() {
+        return this == RangeOperator.EQ || this == RangeOperator.LTE || this == RangeOperator.GTE;
+    }
+
     @Override
     public String toString() {
         return name().toLowerCase();
