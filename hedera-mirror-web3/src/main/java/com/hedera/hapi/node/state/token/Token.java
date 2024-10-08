@@ -1209,6 +1209,7 @@ public record Token(
          * @param metadataKey                 <b>(28)</b> The key which can change the metadata of a token
          *                                    (token definition and individual NFTs).
          */
+        @SuppressWarnings("java:S107")
         public Builder(
                 TokenID tokenId,
                 String name,
