@@ -62,6 +62,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TokenAirdropsController {
 
     private static final String DEFAULT_SERIAL_NUMBER = "0L";
+    private static final long DEFAULT_SERIAL_VALUE = 0L;
     private static final Function<TokenAirdrop, Map<String, String>> EXTRACTOR = (tokenAirdrop) -> {
         var serialNumber = tokenAirdrop.getSerialNumber();
         return ImmutableSortedMap.of(
@@ -128,7 +129,7 @@ public class TokenAirdropsController {
     private Sort getSort(List<TokenAirdrop> airdrops, Sort.Direction order, String primarySortField) {
         if (!airdrops.isEmpty()) {
             var lastSerial = airdrops.getLast().getSerialNumber();
-            if (lastSerial == null || lastSerial == 0L) {
+            if (lastSerial == null || lastSerial == DEFAULT_SERIAL_VALUE) {
                 // If no serial present, the next link should be based off of the token id
                 return Sort.by(order, primarySortField, TOKEN_ID);
             }

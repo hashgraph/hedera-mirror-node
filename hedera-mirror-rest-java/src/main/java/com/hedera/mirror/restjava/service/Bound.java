@@ -26,7 +26,7 @@ import com.hedera.mirror.restjava.common.RangeParameter;
 import java.util.Arrays;
 import java.util.EnumMap;
 import lombok.Getter;
-import lombok.Setter;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jooq.Field;
 
@@ -38,11 +38,9 @@ public class Bound {
     private final Field<Long> field;
 
     @Getter
-    @Setter
     private RangeParameter<Long> lower;
 
     @Getter
-    @Setter
     private RangeParameter<Long> upper;
 
     private final String parameterName;
@@ -53,7 +51,7 @@ public class Bound {
         this.field = field;
         this.parameterName = parameterName;
 
-        if (params == null || params.length == 0) {
+        if (ArrayUtils.isEmpty(params)) {
             return;
         }
 
@@ -73,17 +71,6 @@ public class Bound {
         }
     }
 
-    // A bound with an upper or lower rangeParameter, but not both
-    public Bound(Bound bound, boolean isUpper) {
-        this.field = bound.field;
-        this.parameterName = bound.parameterName;
-        if (isUpper) {
-            this.upper = bound.getUpper();
-        } else {
-            this.lower = bound.getLower();
-        }
-    }
-
     public long adjustUpperBound() {
         if (this.upper == null) {
             return Long.MAX_VALUE;
@@ -98,10 +85,10 @@ public class Bound {
     }
 
     public RangeParameter<Long> adjustLowerRange() {
-        if (!this.isEmpty() && this.hasEqualBounds()) {
+        if (this.hasEqualBounds()) {
             // If the primary param has a range with a single value, rewrite it to EQ
-            this.setLower(new NumberRangeParameter(EQ, this.getAdjustedLowerRangeValue()));
-            this.setUpper(null);
+            lower = new NumberRangeParameter(EQ, this.getAdjustedLowerRangeValue());
+            upper = null;
         }
 
         return lower;
@@ -123,19 +110,16 @@ public class Bound {
     public void adjustUpperRange() {
         if (!this.isEmpty() && lower != null && lower.operator() == EQ) {
             // If the secondary param operator is EQ, set the secondary upper bound to the same
-            this.setUpper(lower);
+            upper = lower;
         }
     }
 
-    // Gets a range value if the operator was converted to EQ
-    public long getEqualityRangeValue(boolean upper) {
+    // Gets a range value if the operator is converted from GT/LT to EQ/GTE/LTE
+    public long getInclusiveRangeValue(boolean upper) {
         var rangeParameter = upper ? this.getUpper() : this.getLower();
         var operator = rangeParameter.operator();
         long value = rangeParameter.value();
-        if (!upper && !this.isEmpty() && this.hasEqualBounds()) {
-            // If the primary param has a range with a single value, use the lower range value
-            value = this.getAdjustedLowerRangeValue();
-        } else if (operator == GT) {
+        if (operator == GT) {
             value += 1L;
         } else if (operator == LT) {
             value -= 1L;
@@ -162,6 +146,16 @@ public class Bound {
         return hasLowerAndUpper() && getAdjustedLowerRangeValue() == adjustUpperBound();
     }
 
+    // Returns a new bound with only a lower rangeParameter
+    public Bound toLower(Bound bound) {
+        return createBound(bound.getLower());
+    }
+
+    // Returns a new bound with only an upper rangeParameter
+    public Bound toUpper(Bound bound) {
+        return createBound(bound.getUpper());
+    }
+
     public void verifyUnsupported(RangeOperator unsupportedOperator) {
         if (getCardinality(unsupportedOperator) > 0) {
             throw new IllegalArgumentException(
@@ -175,19 +169,28 @@ public class Bound {
         verifySingleOccurrence(RangeOperator.LT, RangeOperator.LTE);
     }
 
-    private void verifySingleOccurrence(RangeOperator... rangeOperators) {
-        if (this.getCardinality(rangeOperators) > 1) {
-            throw new IllegalArgumentException(
-                    "Only one range operator from %s is allowed for the given parameter for %s"
-                            .formatted(Arrays.toString(rangeOperators), parameterName));
-        }
-    }
-
     public void verifyEqualOrRange() {
         if (this.getCardinality(RangeOperator.EQ) == 1
                 && (this.getCardinality(RangeOperator.GT, RangeOperator.GTE) != 0
                         || this.getCardinality(RangeOperator.LT, RangeOperator.LTE) != 0)) {
             throw new IllegalArgumentException("Can't support both range and equal for %s".formatted(parameterName));
+        }
+    }
+
+    private Bound createBound(RangeParameter<Long> param) {
+        if (param == null) {
+            return Bound.EMPTY;
+        }
+
+        var params = new NumberRangeParameter[] {new NumberRangeParameter(param.operator(), param.value())};
+        return new Bound(params, false, parameterName, field);
+    }
+
+    private void verifySingleOccurrence(RangeOperator... rangeOperators) {
+        if (this.getCardinality(rangeOperators) > 1) {
+            throw new IllegalArgumentException(
+                    "Only one range operator from %s is allowed for the given parameter for %s"
+                            .formatted(Arrays.toString(rangeOperators), parameterName));
         }
     }
 }

@@ -31,7 +31,11 @@ import org.jooq.Field;
 
 interface JooqRepository {
 
-    default Condition getCondition(RangeParameter<Long> param, Field<Long> field) {
+    default Condition getCondition(Field<Long> field, RangeOperator operator, Long value) {
+        return operator.getFunction().apply(field, value);
+    }
+
+    private Condition getCondition(RangeParameter<Long> param, Field<Long> field) {
         if (param == null || param.isEmpty()) {
             return noCondition();
         }
@@ -39,11 +43,7 @@ interface JooqRepository {
         return getCondition(field, param.operator(), param.value());
     }
 
-    default Condition getCondition(Field<Long> field, RangeOperator operator, Long value) {
-        return operator.getFunction().apply(field, value);
-    }
-
-    default Condition getCondition(Bound bound) {
+    private Condition getCondition(Bound bound) {
         var field = bound.getField();
         return getCondition(bound.getLower(), field).and(getCondition(bound.getUpper(), field));
     }
@@ -78,8 +78,8 @@ interface JooqRepository {
      *       )
      *  )
      */
-    default Condition getBoundConditions(List<Bound> bounds, boolean lowerProcessed, boolean upperProcessed) {
-        if (bounds.isEmpty()) {
+    private Condition getBoundConditions(List<Bound> bounds, boolean lowerProcessed, boolean upperProcessed) {
+        if (bounds == null || bounds.isEmpty()) {
             return noCondition();
         }
 
@@ -89,10 +89,6 @@ interface JooqRepository {
         }
 
         var secondaryBounds = bounds.subList(1, bounds.size());
-        if (primary.isEmpty() && secondaryBounds.isEmpty()) {
-            return noCondition();
-        }
-
         if (!lowerProcessed) {
             for (var bound : secondaryBounds) {
                 // Only secondary bounds should be adjusted
@@ -147,7 +143,7 @@ interface JooqRepository {
 
     // Returns a list of new bounds that have had their lower or upper ranges removed
     private List<Bound> removeRanges(List<Bound> bounds, boolean isUpper) {
-        return bounds.stream().map(b -> new Bound(b, isUpper)).toList();
+        return bounds.stream().map(b -> isUpper ? b.toUpper(b) : b.toLower(b)).toList();
     }
 
     private Condition getPrimaryCondition(Bound primary, boolean isUpper) {
@@ -155,7 +151,7 @@ interface JooqRepository {
         if (rangeParameter == null || rangeParameter.isEmpty() || rangeParameter.operator() == EQ) {
             return noCondition();
         } else {
-            long value = primary.getEqualityRangeValue(isUpper);
+            long value = primary.getInclusiveRangeValue(isUpper);
             return getCondition(primary.getField(), EQ, value);
         }
     }
