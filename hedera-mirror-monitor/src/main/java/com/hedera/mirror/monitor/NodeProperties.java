@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.monitor;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hedera.hashgraph.sdk.AccountId;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -36,11 +37,14 @@ public class NodeProperties {
     private String accountId;
 
     @Getter(lazy = true)
+    @JsonIgnore
     @ToString.Exclude
     private final List<AccountId> accountIds = List.of(AccountId.fromString(getAccountId()));
 
     @NotBlank
     private String host;
+
+    private Long nodeId;
 
     @Min(0)
     @Max(65535)
@@ -57,5 +61,13 @@ public class NodeProperties {
             return host;
         }
         return host + ":" + port;
+    }
+
+    public long getNodeId() {
+        if (nodeId == null) {
+            var nodeAccountId = AccountId.fromString(accountId);
+            return nodeAccountId.num - 3;
+        }
+        return nodeId;
     }
 }

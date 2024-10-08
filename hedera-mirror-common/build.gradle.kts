@@ -31,7 +31,6 @@ dependencies {
     api("org.apache.commons:commons-lang3")
     api("org.apache.tuweni:tuweni-bytes")
     api("org.apache.tuweni:tuweni-units")
-    api("org.jetbrains:annotations")
     api("org.springframework.boot:spring-boot-starter-data-jpa")
     testImplementation("org.hyperledger.besu:evm")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")

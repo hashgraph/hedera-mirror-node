@@ -22,11 +22,12 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_3
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.swirlds.common.utility.SemanticVersion;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -199,7 +200,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean allowCallsToNonContractAccounts() {
-        return getSemanticEvmVersion().compareTo(EVM_VERSION_0_46) >= 0;
+        return SEMANTIC_VERSION_COMPARATOR.compare(getSemanticEvmVersion(), EVM_VERSION_0_46) >= 0;
     }
 
     @Override
@@ -209,7 +210,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean callsToNonExistingEntitiesEnabled(Address target) {
-        return !(getSemanticEvmVersion().compareTo(EVM_VERSION_0_46) < 0
+        return !(SEMANTIC_VERSION_COMPARATOR.compare(getSemanticEvmVersion(), EVM_VERSION_0_46) < 0
                 || !allowCallsToNonContractAccounts()
                 || grandfatherContracts().contains(target));
     }

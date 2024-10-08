@@ -143,7 +143,7 @@ interface JooqRepository {
 
     // Returns a list of new bounds that have had their lower or upper ranges removed
     private List<Bound> removeRanges(List<Bound> bounds, boolean isUpper) {
-        return bounds.stream().map(b -> isUpper ? b.toUpper(b) : b.toLower(b)).toList();
+        return bounds.stream().map(b -> isUpper ? b.toUpper() : b.toLower()).toList();
     }
 
     private Condition getPrimaryCondition(Bound primary, boolean isUpper) {

@@ -39,6 +39,8 @@ import {
 
 import {AssessedCustomFeeViewModel, NftTransferViewModel} from './viewmodel';
 
+const SUCCESS_PROTO_IDS = TransactionResult.getSuccessProtoIds();
+
 const {
   query: {maxTransactionConsensusTimestampRangeNs},
   response: {
@@ -47,6 +49,9 @@ const {
 } = config;
 
 const cache = new Cache();
+
+const scheduleCreateProtoId = 42;
+const SHORTER_CACHE_CONTROL_HEADER = {'cache-control': `public, max-age=5`};
 
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,
@@ -709,8 +714,10 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   const mainConditions = [];
   const commonConditions = [];
   const params = [];
+  const isTransactionHash = isValidTransactionHash(transactionIdOrHash);
+  let scheduledParamExists = false;
 
-  if (isValidTransactionHash(transactionIdOrHash)) {
+  if (isTransactionHash) {
     const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
     if (transactionIdOrHash.length === Transaction.HEX_HASH_WITH_PREFIX_SIZE) {
       transactionIdOrHash = transactionIdOrHash.substring(2);
@@ -753,6 +760,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
     // only parse nonce and scheduled query filters if the path parameter is transaction id
     let nonce;
     let scheduled;
+
     for (const filter of filters) {
       // honor the last for both nonce and scheduled
       switch (filter.key) {
@@ -761,6 +769,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
           break;
         case constants.filterKeys.SCHEDULED:
           scheduled = filter.value;
+          scheduledParamExists = true;
           break;
       }
     }
@@ -777,7 +786,39 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   }
 
   mainConditions.unshift(...commonConditions);
-  return {query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')), params};
+  return {
+    query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')),
+    params,
+    scheduledParamExists: scheduledParamExists,
+    isTransactionHash: isTransactionHash,
+  };
+};
+
+const getTransactionsByIdOrHashCacheControlHeader = (isTransactionHash, transactionsRows, scheduledParamExists) => {
+  if (scheduledParamExists || isTransactionHash) {
+    // If a schedule filter exists or the query uses a transaction hash, we return the longer max_age
+    return {}; // no override
+  }
+
+  let successScheduleCreateTimestamp;
+
+  for (const transaction of transactionsRows) {
+    if (transaction.type === scheduleCreateProtoId && SUCCESS_PROTO_IDS.includes(transaction.result)) {
+      // SCHEDULECREATE transaction cannot be scheduled
+      successScheduleCreateTimestamp = transaction.consensus_timestamp;
+    } else if (transaction.scheduled) {
+      return {};
+    }
+  }
+
+  if (successScheduleCreateTimestamp) {
+    const elapsed = utils.nowInNs() - successScheduleCreateTimestamp;
+    if (elapsed < maxTransactionConsensusTimestampRangeNs) {
+      return SHORTER_CACHE_CONTROL_HEADER;
+    }
+  }
+
+  return {}; // no override
 };
 
 /**
@@ -787,7 +828,10 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
  */
 const getTransactionsByIdOrHash = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleTransactionParameters);
-  const {query, params} = await extractSqlFromTransactionsByIdOrHashRequest(req.params.transactionIdOrHash, filters);
+  const {query, params, scheduled, isTransactionHash} = await extractSqlFromTransactionsByIdOrHashRequest(
+    req.params.transactionIdOrHash,
+    filters
+  );
 
   // Execute query
   const {rows} = await pool.queryQuietly(query, params);
@@ -796,6 +840,12 @@ const getTransactionsByIdOrHash = async (req, res) => {
   }
 
   const transactions = await formatTransactionRows(rows);
+
+  res.locals[constants.responseHeadersLabel] = getTransactionsByIdOrHashCacheControlHeader(
+    isTransactionHash,
+    rows,
+    scheduled
+  );
 
   logger.debug(`getTransactionsByIdOrHash returning ${transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
@@ -834,6 +884,7 @@ if (utils.isTestEnv()) {
     extractSqlFromTransactionsRequest,
     formatTransactionRows,
     getStakingRewardTimestamps,
+    getTransactionsByIdOrHashCacheControlHeader,
     isValidTransactionHash,
   });
 }

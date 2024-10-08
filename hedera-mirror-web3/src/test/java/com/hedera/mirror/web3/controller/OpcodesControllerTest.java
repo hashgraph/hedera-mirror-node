@@ -89,7 +89,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -208,7 +207,7 @@ class OpcodesControllerTest {
                         })))));
     }
 
-    static Stream<Triple<EntityId, byte[], byte[]>> entityAddressCombinations(@Nullable EntityId entityId) {
+    static Stream<Triple<EntityId, byte[], byte[]>> entityAddressCombinations(EntityId entityId) {
         long entityIdNum = entityId == null ? 0L : entityId.getNum();
         // spotless:off
         Supplier<byte[]> validAlias = () -> new byte[]{

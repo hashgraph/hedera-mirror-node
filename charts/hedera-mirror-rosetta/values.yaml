@@ -239,7 +239,7 @@ test:
     pullPolicy: IfNotPresent
     pullSecrets: []
     repository: postman/newman
-    tag: 6.1.1-alpine
+    tag: 6.1.3-alpine
   postman: ""  # Custom postman.json in base64 encoding
   priorityClassName: ""
 

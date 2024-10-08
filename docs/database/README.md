@@ -10,7 +10,7 @@ requirements that the Hedera managed mirror node uses. This is for a database wi
 by many external clients. If operators store less data or only have a few internal clients then potentially some of
 these requirements can be relaxed.
 
-- PostgreSQL 14+
+- PostgreSQL 16+
 - 10 vCPUs
 - 40 GiB memory
 - 1-55 TiB
@@ -304,3 +304,7 @@ is expected to migrate full mainnet data in 10 days.
 ## Citus Backup and Restore
 
 Please refer to this [document](/docs/database/citus.md) for the steps.
+
+## Bootstrap a DB from exported data
+
+Please refer to this [document](/docs/database/bootstrap.md) for instructions.

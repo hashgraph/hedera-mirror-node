@@ -18,6 +18,7 @@ package com.hedera.mirror.monitor.publish;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.platform.commons.util.ReflectionUtils.getDeclaredConstructor;
+import static org.mockito.Mockito.doReturn;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -26,6 +27,8 @@ import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
+import com.hedera.mirror.monitor.NodeProperties;
+import com.hedera.mirror.monitor.publish.PublishMetrics.Tags;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import io.grpc.Status;
 import io.micrometer.core.instrument.Gauge;
@@ -35,7 +38,6 @@ import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Constructor;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.SneakyThrows;
@@ -44,30 +46,41 @@ import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
-@ExtendWith(OutputCaptureExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class PublishMetricsTest {
 
-    private static final String NODE_ACCOUNT_ID = "0.0.3";
     private static final String SCENARIO_NAME = "test";
+
+    @Mock
+    private NodeSupplier nodeSupplier;
 
     private MeterRegistry meterRegistry;
     private PublishMetrics publishMetrics;
     private PublishProperties publishProperties;
     private PublishScenario publishScenario;
+    private NodeProperties node;
 
     @BeforeEach
     void setup() {
         meterRegistry = new SimpleMeterRegistry();
         publishProperties = new PublishProperties();
-        publishMetrics = new PublishMetrics(meterRegistry, publishProperties);
+        publishMetrics = new PublishMetrics(meterRegistry, nodeSupplier, publishProperties);
 
         PublishScenarioProperties publishScenarioProperties = new PublishScenarioProperties();
         publishScenarioProperties.setName(SCENARIO_NAME);
         publishScenarioProperties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
         publishScenario = new PublishScenario(publishScenarioProperties);
+
+        node = new NodeProperties();
+        node.setAccountId("0.0.3");
+        node.setHost("127.0.0.1");
+        node.setNodeId(0L);
+        doReturn(node).when(nodeSupplier).get(node.getAccountId());
     }
 
     @Test
@@ -211,18 +224,19 @@ class PublishMetricsTest {
         return assertThat(meters)
                 .hasSize(1)
                 .first()
-                .returns(NODE_ACCOUNT_ID, t -> t.getId().getTag(PublishMetrics.Tags.TAG_NODE))
-                .returns(SCENARIO_NAME, t -> t.getId().getTag(PublishMetrics.Tags.TAG_SCENARIO))
+                .returns(String.valueOf(node.getNodeId()), t -> t.getId().getTag(Tags.TAG_NODE))
+                .returns(node.getHost(), t -> t.getId().getTag(Tags.TAG_HOST))
+                .returns(String.valueOf(node.getPort()), t -> t.getId().getTag(Tags.TAG_PORT))
+                .returns(SCENARIO_NAME, t -> t.getId().getTag(Tags.TAG_SCENARIO))
                 .returns(TransactionType.CONSENSUS_SUBMIT_MESSAGE.toString(), t -> t.getId()
-                        .getTag(PublishMetrics.Tags.TAG_TYPE));
+                        .getTag(Tags.TAG_TYPE));
     }
 
     private PublishRequest request() {
-        List<AccountId> nodeAccountIds = List.of(AccountId.fromString(NODE_ACCOUNT_ID));
         return PublishRequest.builder()
                 .scenario(publishScenario)
                 .timestamp(Instant.now().minusSeconds(5L))
-                .transaction(new TopicMessageSubmitTransaction().setNodeAccountIds(nodeAccountIds))
+                .transaction(new TopicMessageSubmitTransaction().setNodeAccountIds(node.getAccountIds()))
                 .build();
     }
 

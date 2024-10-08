@@ -19,12 +19,13 @@ import BaseController from './baseController';
 import config from '../config';
 import {
   DECIMALS_IN_HBARS,
+  contentTypeHeader,
   filterKeys,
   networkSupplyCurrencyFormatType,
   networkSupplyQuery,
   orderFilterValues,
-  responseContentType,
   responseDataLabel,
+  responseHeadersLabel,
 } from '../constants';
 import {InvalidArgumentError, NotFoundError} from '../errors';
 import {AddressBookEntry, FileData} from '../model';
@@ -341,7 +342,7 @@ class NetworkController extends BaseController {
       const valueInTinyCoins = q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
       const valueInCurrencyFormat = this.convertToCurrencyFormat(valueInTinyCoins, config.network.currencyFormat);
       res.locals[responseDataLabel] = valueInCurrencyFormat;
-      res.locals[responseContentType] = NetworkController.contentTypeTextPlain;
+      res.locals[responseHeadersLabel] = {[contentTypeHeader]: NetworkController.contentTypeTextPlain};
     } else {
       res.locals[responseDataLabel] = viewModel;
     }

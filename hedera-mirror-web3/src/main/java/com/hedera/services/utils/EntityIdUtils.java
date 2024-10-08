@@ -23,6 +23,7 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -43,7 +44,7 @@ public final class EntityIdUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static byte[] asEvmAddress(final ContractID id) {
+    public static byte[] asEvmAddress(final com.hederahashgraph.api.proto.java.ContractID id) {
         if (isOfEvmAddressSize(id.getEvmAddress())) {
             return id.getEvmAddress().toByteArray();
         } else {
@@ -146,6 +147,62 @@ public final class EntityIdUtils {
                 .build();
     }
 
+    public static EntityId toEntityId(final com.hedera.hapi.node.base.AccountID accountID) {
+        return EntityId.of(accountID.shardNum(), accountID.realmNum(), accountID.accountNum());
+    }
+
+    public static EntityId toEntityId(final com.hedera.hapi.node.base.TokenID tokenID) {
+        return EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum());
+    }
+
+    public static com.hedera.hapi.node.base.AccountID toAccountId(final Long id) {
+        final var decodedEntityId = EntityId.of(id);
+
+        return toAccountId(decodedEntityId);
+    }
+
+    public static com.hedera.hapi.node.base.AccountID toAccountId(final Entity entity) {
+        if (entity == null) {
+            return com.hedera.hapi.node.base.AccountID.DEFAULT;
+        }
+
+        com.hedera.hapi.node.base.AccountID accountIdWithAlias = null;
+        if (entity.getEvmAddress() != null && entity.getEvmAddress().length > 0) {
+            accountIdWithAlias = toAccountId(entity.getShard(), entity.getRealm(), entity.getEvmAddress());
+        } else if (entity.getAlias() != null && entity.getAlias().length > 0) {
+            accountIdWithAlias = toAccountId(entity.getShard(), entity.getRealm(), entity.getAlias());
+        }
+
+        return accountIdWithAlias != null ? accountIdWithAlias : toAccountId(entity.toEntityId());
+    }
+
+    public static com.hedera.hapi.node.base.AccountID toAccountId(final EntityId entityId) {
+        return com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entityId.getShard())
+                .realmNum(entityId.getRealm())
+                .accountNum(entityId.getNum())
+                .build();
+    }
+
+    public static com.hedera.hapi.node.base.TokenID toTokenId(final Long entityId) {
+        final var decodedEntityId = EntityId.of(entityId);
+
+        return toTokenId(decodedEntityId);
+    }
+
+    public static com.hedera.hapi.node.base.TokenID toTokenId(final EntityId entityId) {
+        return com.hedera.hapi.node.base.TokenID.newBuilder()
+                .shardNum(entityId.getShard())
+                .realmNum(entityId.getRealm())
+                .tokenNum(entityId.getNum())
+                .build();
+    }
+
+    public static Address toAddress(final com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
+        final var evmAddressBytes = bytes.toByteArray();
+        return Address.wrap(org.apache.tuweni.bytes.Bytes.wrap(evmAddressBytes));
+    }
+
     private static long[] parseLongTriple(final String dotDelimited) {
         final long[] triple = new long[3];
         int i = 0;
@@ -168,6 +225,15 @@ public final class EntityIdUtils {
         }
         triple[i] = v;
         return triple;
+    }
+
+    private static com.hedera.hapi.node.base.AccountID toAccountId(
+            final Long shard, final Long realm, final byte[] alias) {
+        return com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .alias(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(alias))
+                .build();
     }
 
     public static String asHexedEvmAddress(final AccountID id) {
@@ -194,6 +260,13 @@ public final class EntityIdUtils {
             return null;
         }
         return EntityId.of(id.shard(), id.realm(), id.num());
+    }
+
+    public static EntityId entityIdFromContractId(final com.hedera.hapi.node.base.ContractID id) {
+        if (id == null || id.contractNum() == null) {
+            return null;
+        }
+        return EntityId.of(id.shardNum(), id.realmNum(), id.contractNum());
     }
 
     public static Id idFromEntityId(EntityId entityId) {

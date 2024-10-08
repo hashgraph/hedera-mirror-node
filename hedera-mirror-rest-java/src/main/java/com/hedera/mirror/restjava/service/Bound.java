@@ -147,13 +147,13 @@ public class Bound {
     }
 
     // Returns a new bound with only a lower rangeParameter
-    public Bound toLower(Bound bound) {
-        return createBound(bound.getLower());
+    public Bound toLower() {
+        return createBound(this.getLower());
     }
 
     // Returns a new bound with only an upper rangeParameter
-    public Bound toUpper(Bound bound) {
-        return createBound(bound.getUpper());
+    public Bound toUpper() {
+        return createBound(this.getUpper());
     }
 
     public void verifyUnsupported(RangeOperator unsupportedOperator) {

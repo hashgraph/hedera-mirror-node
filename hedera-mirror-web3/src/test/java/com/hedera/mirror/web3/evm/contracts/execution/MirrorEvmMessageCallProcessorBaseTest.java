@@ -40,7 +40,6 @@ import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContr
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
 import java.util.Map;
@@ -61,13 +60,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public abstract class MirrorEvmMessageCallProcessorBaseTest {
 
-    private static final Hash WELL_KNOWN_HASH = new Hash(CommonUtils.unhex(
-            "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300"));
+    private static final byte[] WELL_KNOWN_HASH_BYTE_ARRAY = CommonUtils.unhex(
+            "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d6163");
 
     private static MockedStatic<ContractCallContext> contextMockedStatic;
-
-    @Spy
-    private ContractCallContext contractCallContext;
 
     @Mock
     AbstractAutoCreationLogic autoCreationLogic;
@@ -105,31 +101,32 @@ public abstract class MirrorEvmMessageCallProcessorBaseTest {
     @Mock
     EvmInfrastructureFactory evmInfrastructureFactory;
 
+    final EvmHTSPrecompiledContract htsPrecompiledContract = new EvmHTSPrecompiledContract(evmInfrastructureFactory);
+
     @Mock
     PrecompilePricingUtils precompilePricingUtils;
 
     @Mock
     RatesAndFeesLoader ratesAndFeesLoader;
 
-    final EvmHTSPrecompiledContract htsPrecompiledContract = new EvmHTSPrecompiledContract(evmInfrastructureFactory);
-
     final ExchangeRatePrecompiledContract exchangeRatePrecompiledContract = new ExchangeRatePrecompiledContract(
             gasCalculatorHederaV22,
             new BasicHbarCentExchange(ratesAndFeesLoader),
             new MirrorNodeEvmProperties(),
             Instant.now());
-
     final PrngSystemPrecompiledContract prngSystemPrecompiledContract = new PrngSystemPrecompiledContract(
             gasCalculatorHederaV22,
-            new PrngLogic(WELL_KNOWN_HASH::getValue),
+            new PrngLogic(() -> WELL_KNOWN_HASH_BYTE_ARRAY),
             new LivePricesSource(
                     new BasicHbarCentExchange(ratesAndFeesLoader), new BasicFcfsUsagePrices(ratesAndFeesLoader)),
             precompilePricingUtils);
-
     final Map<String, PrecompiledContract> hederaPrecompileList = Map.of(
             EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS, htsPrecompiledContract,
             EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS, exchangeRatePrecompiledContract,
             PRNG_PRECOMPILE_ADDRESS, prngSystemPrecompiledContract);
+
+    @Spy
+    private ContractCallContext contractCallContext;
 
     @BeforeAll
     static void initStaticMocks() {
