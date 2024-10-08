@@ -54,7 +54,7 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         verifyRangeId(tokenParams);
 
         if (!ownerOrSpenderParams.hasLowerAndUpper()
-                && tokenParams.adjustLowerBound() > tokenParams.adjustUpperBound()) {
+                && tokenParams.getAdjustedLowerRangeValue() > tokenParams.adjustUpperBound()) {
             throw new IllegalArgumentException("Invalid range provided for %s".formatted(Constants.TOKEN_ID));
         }
 

@@ -20,6 +20,7 @@ import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
 import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
+import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
 
 import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.rest.model.NftAllowance;
@@ -34,7 +35,6 @@ import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import lombok.CustomLog;
@@ -70,19 +70,19 @@ public class AllowancesController {
     @GetMapping(value = "/nfts")
     NftAllowancesResponse getNftAllowances(
             @PathVariable EntityIdParameter id,
-            @RequestParam(name = ACCOUNT_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> accountIds,
+            @RequestParam(name = ACCOUNT_ID, required = false) @Size(max = 2) EntityIdRangeParameter[] accountIds,
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(defaultValue = "true") boolean owner,
-            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
-
+            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) EntityIdRangeParameter[] tokenIds) {
+        var field = owner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
         var request = NftAllowanceRequest.builder()
                 .accountId(id)
                 .isOwner(owner)
                 .limit(limit)
                 .order(order)
-                .ownerOrSpenderIds(new Bound(accountIds, true, ACCOUNT_ID))
-                .tokenIds(new Bound(tokenIds, false, TOKEN_ID))
+                .ownerOrSpenderIds(new Bound(accountIds, true, ACCOUNT_ID, field))
+                .tokenIds(new Bound(tokenIds, false, TOKEN_ID, NFT_ALLOWANCE.TOKEN_ID))
                 .build();
 
         var serviceResponse = service.getNftAllowances(request);
