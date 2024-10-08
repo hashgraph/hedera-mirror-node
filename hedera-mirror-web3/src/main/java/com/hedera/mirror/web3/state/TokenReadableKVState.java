@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
+import static com.hedera.services.utils.EntityIdUtils.toTokenId;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Fraction;
@@ -106,33 +107,33 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
             final com.hedera.mirror.common.domain.token.Token token,
             final Optional<Long> timestamp) {
         return Token.newBuilder()
-                .tokenId(new TokenID(entity.getShard(), entity.getRealm(), entity.getNum()))
-                .name(token.getName())
-                .symbol(token.getSymbol())
-                .decimals(token.getDecimals())
-                .totalSupply(getTotalSupply(token, timestamp))
-                .treasuryAccountId(getTreasury(token.getTreasuryAccountId(), timestamp))
+                .accountsFrozenByDefault(token.getFreezeDefault())
                 .adminKey(Utils.parseKey(entity.getKey()))
-                .kycKey(Utils.parseKey(token.getKycKey()))
-                .freezeKey(Utils.parseKey(token.getFreezeKey()))
-                .wipeKey(Utils.parseKey(token.getWipeKey()))
-                .supplyKey(Utils.parseKey(token.getSupplyKey()))
-                .feeScheduleKey(Utils.parseKey(token.getFeeScheduleKey()))
-                .pauseKey(Utils.parseKey(token.getPauseKey()))
-                .deleted(false)
-                .tokenType(TokenType.valueOf(token.getType().name()))
-                .supplyType(TokenSupplyType.valueOf(token.getSupplyType().name()))
                 .autoRenewAccountId(getAutoRenewAccount(entity.getAutoRenewAccountId(), timestamp))
                 .autoRenewSeconds(
                         entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : DEFAULT_AUTO_RENEW_PERIOD)
+                .decimals(token.getDecimals())
+                .deleted(false)
                 .expirationSecond(TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS))
-                .memo(entity.getMemo())
+                .feeScheduleKey(Utils.parseKey(token.getFeeScheduleKey()))
+                .freezeKey(Utils.parseKey(token.getFreezeKey()))
+                .kycKey(Utils.parseKey(token.getKycKey()))
                 .maxSupply(token.getMaxSupply())
-                .paused(token.getPauseStatus().equals(TokenPauseStatusEnum.PAUSED))
-                .accountsFrozenByDefault(token.getFreezeDefault())
+                .memo(entity.getMemo())
                 .metadata(Bytes.wrap(token.getMetadata()))
                 .metadataKey(Utils.parseKey(token.getMetadataKey()))
+                .name(token.getName())
+                .paused(token.getPauseStatus().equals(TokenPauseStatusEnum.PAUSED))
+                .supplyKey(Utils.parseKey(token.getSupplyKey()))
+                .supplyType(TokenSupplyType.valueOf(token.getSupplyType().name()))
+                .symbol(token.getSymbol())
+                .tokenId(toTokenId(entity.getId()))
+                .tokenType(TokenType.valueOf(token.getType().name()))
+                .totalSupply(getTotalSupply(token, timestamp))
+                .treasuryAccountId(getTreasury(token.getTreasuryAccountId(), timestamp))
                 .customFees(getCustomFees(token.getTokenId(), timestamp))
+                .pauseKey(Utils.parseKey(token.getPauseKey()))
+                .wipeKey(Utils.parseKey(token.getWipeKey()))
                 .build();
     }
 

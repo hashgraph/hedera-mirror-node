@@ -43,8 +43,7 @@ public class CommonEntityAccessor {
     }
 
     public @Nonnull Optional<Entity> get(@Nonnull TokenID tokenID, final Optional<Long> timestamp) {
-        return getEntityByMirrorAddressAndTimestamp(
-                EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum()), timestamp);
+        return getEntityByMirrorAddressAndTimestamp(toEntityId(tokenID), timestamp);
     }
 
     public AccountID getAccountWithCanonicalAddress(EntityId entityId, final Optional<Long> timestamp) {
