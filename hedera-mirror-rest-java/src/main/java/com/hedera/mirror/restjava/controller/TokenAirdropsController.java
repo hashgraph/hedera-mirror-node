@@ -63,7 +63,7 @@ public class TokenAirdropsController {
 
     private static final String DEFAULT_SERIAL_NUMBER = "0L";
     private static final long DEFAULT_SERIAL_VALUE = 0L;
-    private static final Function<TokenAirdrop, Map<String, String>> EXTRACTOR = (tokenAirdrop) -> {
+    private static final Function<TokenAirdrop, Map<String, String>> EXTRACTOR = tokenAirdrop -> {
         var serialNumber = tokenAirdrop.getSerialNumber();
         return ImmutableSortedMap.of(
                 RECEIVER_ID, tokenAirdrop.getReceiverId(),
