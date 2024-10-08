@@ -83,7 +83,7 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
 
 ### Domain
 
-- Add an abstract `AbstractTopic` class. The class implements `Histoy` interface, and has the following fields
+- Add an abstract `AbstractTopic` class. The class implements `History` interface, and has the following fields
 
   - `createdTimestamp`
   - `id`
@@ -122,7 +122,7 @@ Make the following changes to `insertAssessedCustomFees()`
 - In `ConsensusUpdateTopicTransactionHandler`, add logic to create a partial update to the `topic` table only when fee
   exempt key list or fee schedule key or submit key is updated; when custom fees are updated, also add a new entry to
   the `custom_fee` table. It's worth noting that an empty custom fees list in the transaction body clears the custom fee
-  schedule, and the handler should insert a entry with empty custom fees to the `custom_fee` table to reflect so.
+  schedule, and the handler should insert an entry with empty custom fees to the `custom_fee` table to reflect so.
 - Add `ConsensusApproveAllowanceTransactionHandler` to process consensus crypto / token fee schedule allowances
 
 ## REST API
@@ -131,7 +131,7 @@ Make the following changes to `insertAssessedCustomFees()`
 
   - The endpoint lists allowances set by both `ConsensusApproveAllowance` and `CryptoApproveAllowance` transactions
   - Topic IDs are valid parameters for the `spender.id` field
-  - The response will include the new `amount_per_message` field, for allowances created by `CyrptoApproveAllowance` the
+  - The response will include the new `amount_per_message` field, for allowances created by `CryptoApproveAllowance` the
     value will be `null`
 
   ```json
@@ -170,7 +170,7 @@ Make the following changes to `insertAssessedCustomFees()`
 
   - The endpoint lists allowances set by both `ConsensusApproveAllowance` and `CryptoApproveAllowance` transactions
   - Topic IDs are valid parameters for the `spender.id` field
-  - The response will include the new `amount_per_message` field, for allowances created by `CyrptoApproveAllowance` the
+  - The response will include the new `amount_per_message` field, for allowances created by `CryptoApproveAllowance` the
     value will be `null`
 
   ```json
