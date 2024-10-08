@@ -162,8 +162,10 @@ public class RecordItem implements StreamItem {
     public boolean isInvalidIdError() {
         return switch (transactionRecord.getReceipt().getStatus()) {
             case INVALID_ACCOUNT_ID,
+                    INVALID_ALIAS_KEY,
                     INVALID_CONTRACT_ID,
                     INVALID_FILE_ID,
+                    INVALID_NODE_ACCOUNT_ID,
                     INVALID_SCHEDULE_ID,
                     INVALID_TOKEN_ID,
                     INVALID_TOPIC_ID -> true;
