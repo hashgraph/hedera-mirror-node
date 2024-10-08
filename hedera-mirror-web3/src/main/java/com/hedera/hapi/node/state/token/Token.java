@@ -123,7 +123,11 @@ public record Token(
     public static final JsonCodec<Token> JSON = new com.hedera.hapi.node.state.token.codec.TokenJsonCodec();
 
     /** Default instance with all fields set to default values */
-    public static final Token DEFAULT = newBuilder().build();
+    public static final Token DEFAULT = newBuilder()
+            .totalSupply(0L)
+            .autoRenewAccountId((AccountID) null)
+            .treasuryAccountId((AccountID) null)
+            .build();
     /**
      * Create a pre-populated Token.
      *
@@ -254,16 +258,19 @@ public record Token(
         if (decimals != DEFAULT.decimals) {
             result = 31 * result + Integer.hashCode(decimals);
         }
-        if (totalSupplySupplier != null
-                && DEFAULT.totalSupplySupplier != null
-                && !totalSupplySupplier.get().equals(DEFAULT.totalSupplySupplier.get())) {
-            result = 31 * result + Long.hashCode(totalSupplySupplier.get());
+        if (totalSupplySupplier != null) {
+            if (DEFAULT.totalSupplySupplier == null) {
+                result = 31 * result + Long.hashCode(totalSupplySupplier.get());
+            } else if (!totalSupplySupplier.get().equals(DEFAULT.totalSupplySupplier.get())) {
+                result = 31 * result + Long.hashCode(totalSupplySupplier.get());
+            }
         }
-        if (treasuryAccountIdSupplier != null
-                && treasuryAccountIdSupplier.get() != null
-                && DEFAULT.treasuryAccountIdSupplier != null
-                && !treasuryAccountIdSupplier.get().equals(DEFAULT.treasuryAccountIdSupplier.get())) {
-            result = 31 * result + treasuryAccountIdSupplier.get().hashCode();
+        if (treasuryAccountIdSupplier != null && treasuryAccountIdSupplier.get() != null) {
+            if (DEFAULT.treasuryAccountIdSupplier == null) {
+                result = 31 * result + treasuryAccountIdSupplier.get().hashCode();
+            } else if (!treasuryAccountIdSupplier.get().equals(DEFAULT.treasuryAccountIdSupplier.get())) {
+                result = 31 * result + treasuryAccountIdSupplier.get().hashCode();
+            }
         }
         if (adminKey != null && !adminKey.equals(DEFAULT.adminKey)) {
             result = 31 * result + adminKey.hashCode();
@@ -298,11 +305,12 @@ public record Token(
         if (supplyType != null && !supplyType.equals(DEFAULT.supplyType)) {
             result = 31 * result + Integer.hashCode(supplyType.protoOrdinal());
         }
-        if (autoRenewAccountIdSupplier != null
-                && autoRenewAccountIdSupplier.get() != null
-                && DEFAULT.autoRenewAccountIdSupplier != null
-                && !autoRenewAccountIdSupplier.equals(DEFAULT.autoRenewAccountIdSupplier)) {
-            result = 31 * result + autoRenewAccountIdSupplier.get().hashCode();
+        if (autoRenewAccountIdSupplier != null && autoRenewAccountIdSupplier.get() != null) {
+            if (DEFAULT.autoRenewAccountIdSupplier == null) {
+                result = 31 * result + autoRenewAccountIdSupplier.get().hashCode();
+            } else if (!autoRenewAccountIdSupplier.get().equals(DEFAULT.autoRenewAccountIdSupplier.get())) {
+                result = 31 * result + autoRenewAccountIdSupplier.get().hashCode();
+            }
         }
         if (autoRenewSeconds != DEFAULT.autoRenewSeconds) {
             result = 31 * result + Long.hashCode(autoRenewSeconds);

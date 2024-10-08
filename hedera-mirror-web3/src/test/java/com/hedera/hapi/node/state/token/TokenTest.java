@@ -67,6 +67,27 @@ public class TokenTest extends AbstractStateTest {
     }
 
     @Test
+    void testHashCodeConsistency() {
+        final var item1 = ARGUMENTS.get(0);
+        final var item1Copy = item1.copyBuilder().build();
+
+        assertThat(item1.hashCode()).isEqualTo(item1.hashCode());
+        assertThat(item1.hashCode()).isEqualTo(item1Copy.hashCode());
+    }
+
+    @Test
+    void testHashCodeWithCustomSuppliers() {
+        final var item1 = ARGUMENTS.get(1);
+        final var itemCustomSuppliers = item1.copyBuilder()
+                .totalSupply(1)
+                .treasuryAccountId(() -> new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 1L)))
+                .autoRenewAccountId(() -> new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 2L)))
+                .build();
+
+        assertThat(item1.hashCode()).isNotEqualTo(itemCustomSuppliers.hashCode());
+    }
+
+    @Test
     void testEqualsWithNull() {
         final var item1 = ARGUMENTS.get(0);
         assertNotEquals(null, item1);
