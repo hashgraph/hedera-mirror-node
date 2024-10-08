@@ -39,10 +39,10 @@ public class AliasesReadableKVState extends ReadableKVStateBase<ProtoBytes, Acco
         final var timestamp = ContractCallContext.get().getTimestamp();
         final var entity =
                 commonEntityAccessor.getEntityByAliasAndTimestamp(alias.value().toByteArray(), timestamp);
-        return entity.map(value -> AccountID.newBuilder()
-                        .shardNum(value.getShard())
-                        .realmNum(value.getRealm())
-                        .alias(Bytes.wrap(value.getAlias()))
+        return entity.map(e -> AccountID.newBuilder()
+                        .shardNum(e.getShard())
+                        .realmNum(e.getRealm())
+                        .alias(e.getEvmAddress() != null ? Bytes.wrap(e.getEvmAddress()) : alias.value())
                         .build())
                 .orElse(null);
     }
