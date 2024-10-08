@@ -78,8 +78,7 @@ public class ContractBytecodeReadableKVState extends ReadableKVStateBase<Contrac
                 return DomainUtils.fromEvmAddress(evmAddress);
             } else {
                 return commonEntityAccessor
-                        .getEntityByEvmAddressAndTimestamp(
-                                contractID.evmAddress().toByteArray(), Optional.empty())
+                        .getEntityByEvmAddressAndTimestamp(evmAddress, Optional.empty())
                         .map(Entity::toEntityId)
                         .orElse(EntityId.EMPTY);
             }
