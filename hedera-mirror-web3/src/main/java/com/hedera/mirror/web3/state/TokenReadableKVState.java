@@ -172,12 +172,14 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
     }
 
     private Supplier<List<CustomFee>> getCustomFees(Long tokenId, final Optional<Long> timestamp) {
-        final var customFees = timestamp
-                .map(t -> customFeeRepository.findByTokenIdAndTimestamp(tokenId, t))
-                .orElseGet(() -> customFeeRepository.findById(tokenId))
-                .map(customFee -> convertCustomFees(customFee, timestamp));
+        return Suppliers.memoize(() -> {
+            var customFees = timestamp
+                    .map(t -> customFeeRepository.findByTokenIdAndTimestamp(tokenId, t))
+                    .orElseGet(() -> customFeeRepository.findById(tokenId))
+                    .map(customFee -> convertCustomFees(customFee, timestamp));
 
-        return Suppliers.memoize(() -> Collections.unmodifiableList(customFees.orElse(new ArrayList<>())));
+            return Collections.unmodifiableList(customFees.orElseGet(ArrayList::new));
+        });
     }
 
     private List<CustomFee> convertCustomFees(
@@ -201,13 +203,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
                     commonEntityAccessor.getAccountWithCanonicalAddress(f.getCollectorAccountId(), timestamp);
             final var denominatingTokenId = f.getDenominatingTokenId();
 
-            final var fixedFee = new FixedFee(
-                    f.getAmount(),
-                    new TokenID(
-                            denominatingTokenId.getShard(),
-                            denominatingTokenId.getRealm(),
-                            denominatingTokenId.getNum()));
-
+            final var fixedFee = new FixedFee(f.getAmount(), toTokenId(denominatingTokenId));
             var constructed = new CustomFee(
                     new OneOf<>(FeeOneOfType.FIXED_FEE, fixedFee), collector, f.isAllCollectorsAreExempt());
             fixedFees.add(constructed);
@@ -254,12 +250,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
             FixedFee convertedFallbackFee = null;
             if (fallbackFee != null) {
                 final var denominatingTokenId = fallbackFee.getDenominatingTokenId();
-                convertedFallbackFee = new FixedFee(
-                        fallbackFee.getAmount(),
-                        new TokenID(
-                                denominatingTokenId.getShard(),
-                                denominatingTokenId.getRealm(),
-                                denominatingTokenId.getNum()));
+                convertedFallbackFee = new FixedFee(fallbackFee.getAmount(), toTokenId(denominatingTokenId));
             }
             final var royaltyFee =
                     new RoyaltyFee(new Fraction(f.getNumerator(), f.getDenominator()), convertedFallbackFee);
