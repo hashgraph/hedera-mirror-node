@@ -790,6 +790,118 @@ public class TokenTest extends AbstractStateTest {
         assertThat(keys).isNotEmpty().hasSize(1).contains(item1.pauseKey());
     }
 
+    @Test
+    void testHasAutoRenewAccountId() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAutoRenewIdSupplier = item1.copyBuilder()
+                .autoRenewAccountId((Supplier<AccountID>) null)
+                .build();
+        final var itemNullAutoRenewIdSupplierValue =
+                item1.copyBuilder().autoRenewAccountId((AccountID) null).build();
+
+        assertThat(item1.hasAutoRenewAccountId()).isTrue();
+        assertThat(itemNullAutoRenewIdSupplier.hasAutoRenewAccountId()).isFalse();
+        assertThat(itemNullAutoRenewIdSupplierValue.hasAutoRenewAccountId()).isFalse();
+    }
+
+    @Test
+    void testIfAutoRenewAccountId() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAutoRenewIdSupplier = item1.copyBuilder()
+                .autoRenewAccountId((Supplier<AccountID>) null)
+                .build();
+        final var itemNullAutoRenewIdSupplierValue =
+                item1.copyBuilder().autoRenewAccountId((AccountID) null).build();
+
+        List<AccountID> accountIDS = new ArrayList<>();
+        Consumer<AccountID> accountIDConsumer = accountIDS::add;
+
+        item1.ifAutoRenewAccountId(accountIDConsumer);
+        itemNullAutoRenewIdSupplier.ifAutoRenewAccountId(accountIDConsumer);
+        itemNullAutoRenewIdSupplierValue.ifAutoRenewAccountId(accountIDConsumer);
+        assertThat(accountIDS)
+                .isNotEmpty()
+                .hasSize(1)
+                .contains(item1.autoRenewAccountIdSupplier().get());
+    }
+
+    @Test
+    void testAutoRenewAccountIdOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAutoRenewIdSupplier = item1.copyBuilder()
+                .autoRenewAccountId((Supplier<AccountID>) null)
+                .build();
+        final var itemNullAutoRenewIdSupplierValue =
+                item1.copyBuilder().autoRenewAccountId((AccountID) null).build();
+
+        assertThat(item1.autoRenewAccountIdOrElse(AccountID.DEFAULT))
+                .isEqualTo(item1.autoRenewAccountIdSupplier().get());
+        assertThat(itemNullAutoRenewIdSupplier.autoRenewAccountIdOrElse(AccountID.DEFAULT))
+                .isEqualTo(AccountID.DEFAULT);
+        assertThat(itemNullAutoRenewIdSupplierValue.autoRenewAccountIdOrElse(AccountID.DEFAULT))
+                .isEqualTo(AccountID.DEFAULT);
+    }
+
+    @Test
+    void testAutoRenewAccountIdOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullAutoRenewIdSupplier = item1.copyBuilder()
+                .autoRenewAccountId((Supplier<AccountID>) null)
+                .build();
+        final var itemNullAutoRenewIdSupplierValue =
+                item1.copyBuilder().autoRenewAccountId((AccountID) null).build();
+
+        assertThat(item1.autoRenewAccountIdOrThrow())
+                .isEqualTo(item1.autoRenewAccountIdSupplier().get());
+        assertThatThrownBy(itemNullAutoRenewIdSupplier::autoRenewAccountIdOrThrow)
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(itemNullAutoRenewIdSupplierValue::autoRenewAccountIdOrThrow)
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testHasMetadataKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullMetadataKey =
+                item1.copyBuilder().metadataKey((Key) null).build();
+
+        assertThat(item1.hasMetadataKey()).isTrue();
+        assertThat(itemNullMetadataKey.hasMetadataKey()).isFalse();
+    }
+
+    @Test
+    void testMetadataKeyOrElse() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullMetadataKey =
+                item1.copyBuilder().metadataKey((Key) null).build();
+
+        assertThat(item1.metadataKeyOrElse(Key.DEFAULT)).isEqualTo(item1.metadataKey());
+        assertThat(itemNullMetadataKey.metadataKeyOrElse(Key.DEFAULT)).isEqualTo(Key.DEFAULT);
+    }
+
+    @Test
+    void testMetadataKeyOrThrow() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullMetadataKey =
+                item1.copyBuilder().metadataKey((Key) null).build();
+
+        assertThat(item1.metadataKeyOrThrow()).isEqualTo(item1.metadataKey());
+        assertThatThrownBy(itemNullMetadataKey::metadataKeyOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testIfMetadataKey() {
+        final var item1 = ARGUMENTS.get(0);
+        final var itemNullMetadataKey =
+                item1.copyBuilder().metadataKey((Key) null).build();
+        List<Key> keys = new ArrayList<>();
+        Consumer<Key> keyConsumer = keys::add;
+
+        item1.ifMetadataKey(keyConsumer);
+        itemNullMetadataKey.ifMetadataKey(keyConsumer);
+        assertThat(keys).isNotEmpty().hasSize(1).contains(item1.metadataKey());
+    }
+
     /**
      * List of all valid arguments for testing, built as a static list, so we can reuse it.
      */

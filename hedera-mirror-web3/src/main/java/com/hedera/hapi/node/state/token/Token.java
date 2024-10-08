@@ -1122,53 +1122,80 @@ public record Token(
         /**
          * Create a pre-populated Builder.
          *
-         * @param tokenId <b>(1)</b> The unique entity id of this token.
-         * @param name <b>(2)</b> The human-readable name of this token. Need not be unique. Maximum length allowed is 100 bytes.
-         * @param symbol <b>(3)</b> The human-readable symbol for the token. It is not necessarily unique. Maximum length allowed is 100 bytes.
-         * @param decimals <b>(4)</b> The number of decimal places of this token. If decimals are 8 or 11, then the number of whole
-         *                 tokens can be at most a few billions or millions, respectively. For example, it could match
-         *                 Bitcoin (21 million whole tokens with 8 decimals) or hbars (50 billion whole tokens with 8 decimals).
-         *                 It could even match Bitcoin with milli-satoshis (21 million whole tokens with 11 decimals).
-         * @param totalSupplySupplier <b>(5)</b> The total supply of this token wrapped in a Supplier.
-         * @param treasuryAccountIdSupplier <b>(6)</b> The treasury account id of this token wrapped in a Supplier.
-         * @param adminKey <b>(7)</b> (Optional) The admin key of this token. If this key is set, the token is mutable.
-         *                 A mutable token can be modified.
-         *                 If this key is not set on token creation, it cannot be modified.
-         * @param kycKey <b>(8)</b> (Optional) The kyc key of this token.
-         *               If this key is not set on token creation, it can only be set if the token has admin key set.
-         * @param freezeKey <b>(9)</b> (Optional) The freeze key of this token. This key is needed for freezing the token.
-         *                  If this key is not set on token creation, it can only be set if the token has admin key set.
-         * @param wipeKey <b>(10)</b> (Optional) The wipe key of this token. This key is needed for wiping the token.
-         *                If this key is not set on token creation, it can only be set if the token has admin key set.
-         * @param supplyKey <b>(11)</b> (Optional) The supply key of this token. This key is needed for minting or burning token.
-         *                  If this key is not set on token creation, it can only be set if the token has admin key set.
-         * @param feeScheduleKey <b>(12)</b> (Optional) The fee schedule key of this token. This key should be set, in order to make any
-         *                       changes to the custom fee schedule.
-         *                       If this key is not set on token creation, it can only be set if the token has admin key set.
-         * @param pauseKey <b>(13)</b> (Optional) The pause key of this token. This key is needed for pausing the token.
-         *                 If this key is not set on token creation, it can only be set if the token has admin key set.
-         * @param lastUsedSerialNumber <b>(14)</b> The last used serial number of this token.
-         * @param deleted <b>(15)</b> The flag indicating if this token is deleted.
-         * @param tokenType <b>(16)</b> The type of this token. A token can be either FUNGIBLE_COMMON or NON_FUNGIBLE_UNIQUE.
-         *                  If it has been omitted during token creation, FUNGIBLE_COMMON type is used.
-         * @param supplyType <b>(17)</b> The supply type of this token.A token can have either INFINITE or FINITE supply type.
-         *                   If it has been omitted during token creation, INFINITE type is used.
-         * @param autoRenewAccountIdSupplier <b>(18)</b> The id of the account (if any) that the network will attempt to charge for the
-         *  *                           token's auto-renewal upon expiration wrapped in a Supplier.
-         * @param autoRenewSeconds <b>(19)</b> The number of seconds the network should automatically extend the token's expiration by, if the
-         *                         token has a valid auto-renew account, and is not deleted upon expiration.
-         *                         If this is not provided in a allowed range on token creation, the transaction will fail with INVALID_AUTO_RENEWAL_PERIOD.
-         *                         The default values for the minimum period and maximum period are 30 days and 90 days, respectively.
-         * @param expirationSecond <b>(20)</b> The expiration time of the token, in seconds since the epoch.
-         * @param memo <b>(21)</b> An optional description of the token with UTF-8 encoding up to 100 bytes.
-         * @param maxSupply <b>(22)</b> The maximum supply of this token.
-         * @param paused <b>(23)</b> The flag indicating if this token is paused.
-         * @param accountsFrozenByDefault <b>(24)</b> The flag indicating if this token has accounts associated to it that are frozen by default.
-         * @param accountsKycGrantedByDefault <b>(25)</b> The flag indicating if this token has accounts associated with it that are KYC granted by default.
-         * @param customFeesSupplier <b>(26)</b> (Optional) The custom fees of this token wrapped in a Supplier.
-         * @param metadata <b>(27)</b> Metadata of the created token definition
-         * @param metadataKey <b>(28)</b> The key which can change the metadata of a token
-         *                    (token definition and individual NFTs).
+         * @param tokenId                     <b>(1)</b> The unique entity id of this token.
+         * @param name                        <b>(2)</b> The human-readable name of this token. Need not be unique.
+         *                                    Maximum length allowed is 100 bytes.
+         * @param symbol                      <b>(3)</b> The human-readable symbol for the token. It is not necessarily
+         *                                    unique. Maximum length allowed is 100 bytes.
+         * @param decimals                    <b>(4)</b> The number of decimal places of this token. If decimals are 8
+         *                                    or 11, then the number of whole
+         *                                    tokens can be at most a few billions or millions, respectively. For
+         *                                    example, it could match Bitcoin (21 million whole tokens with 8 decimals)
+         *                                    or hbars (50 billion whole tokens with 8 decimals). It could even match
+         *                                    Bitcoin with milli-satoshis (21 million whole tokens with 11 decimals).
+         * @param totalSupplySupplier         <b>(5)</b> The total supply of this token wrapped in a Supplier.
+         * @param treasuryAccountIdSupplier   <b>(6)</b> The treasury account id of this token wrapped in a Supplier.
+         * @param adminKey                    <b>(7)</b> (Optional) The admin key of this token. If this key is set, the
+         *                                    token is mutable.
+         *                                    A mutable token can be modified. If this key is not set on token creation,
+         *                                    it cannot be modified.
+         * @param kycKey                      <b>(8)</b> (Optional) The kyc key of this token.
+         *                                    If this key is not set on token creation, it can only be set if the token
+         *                                    has admin key set.
+         * @param freezeKey                   <b>(9)</b> (Optional) The freeze key of this token. This key is needed for
+         *                                    freezing the token.
+         *                                    If this key is not set on token creation, it can only be set if the token
+         *                                    has admin key set.
+         * @param wipeKey                     <b>(10)</b> (Optional) The wipe key of this token. This key is needed for
+         *                                    wiping the token.
+         *                                    If this key is not set on token creation, it can only be set if the token
+         *                                    has admin key set.
+         * @param supplyKey                   <b>(11)</b> (Optional) The supply key of this token. This key is needed
+         *                                    for minting or burning token.
+         *                                    If this key is not set on token creation, it can only be set if the token
+         *                                    has admin key set.
+         * @param feeScheduleKey              <b>(12)</b> (Optional) The fee schedule key of this token. This key should
+         *                                    be set, in order to make any
+         *                                    changes to the custom fee schedule. If this key is not set on token
+         *                                    creation, it can only be set if the token has admin key set.
+         * @param pauseKey                    <b>(13)</b> (Optional) The pause key of this token. This key is needed for
+         *                                    pausing the token.
+         *                                    If this key is not set on token creation, it can only be set if the token
+         *                                    has admin key set.
+         * @param lastUsedSerialNumber        <b>(14)</b> The last used serial number of this token.
+         * @param deleted                     <b>(15)</b> The flag indicating if this token is deleted.
+         * @param tokenType                   <b>(16)</b> The type of this token. A token can be either FUNGIBLE_COMMON
+         *                                    or NON_FUNGIBLE_UNIQUE.
+         *                                    If it has been omitted during token creation, FUNGIBLE_COMMON type is
+         *                                    used.
+         * @param supplyType                  <b>(17)</b> The supply type of this token.A token can have either INFINITE
+         *                                    or FINITE supply type.
+         *                                    If it has been omitted during token creation, INFINITE type is used.
+         * @param autoRenewAccountIdSupplier  <b>(18)</b> The id of the account (if any) that the network will attempt
+         *                                    to charge for the
+         *                                    *                           token's auto-renewal upon expiration wrapped
+         *                                    in a Supplier.
+         * @param autoRenewSeconds            <b>(19)</b> The number of seconds the network should automatically extend
+         *                                    the token's expiration by, if the
+         *                                    token has a valid auto-renew account, and is not deleted upon expiration.
+         *                                    If this is not provided in a allowed range on token creation, the
+         *                                    transaction will fail with INVALID_AUTO_RENEWAL_PERIOD. The default values
+         *                                    for the minimum period and maximum period are 30 days and 90 days,
+         *                                    respectively.
+         * @param expirationSecond            <b>(20)</b> The expiration time of the token, in seconds since the epoch.
+         * @param memo                        <b>(21)</b> An optional description of the token with UTF-8 encoding up to
+         *                                    100 bytes.
+         * @param maxSupply                   <b>(22)</b> The maximum supply of this token.
+         * @param paused                      <b>(23)</b> The flag indicating if this token is paused.
+         * @param accountsFrozenByDefault     <b>(24)</b> The flag indicating if this token has accounts associated to
+         *                                    it that are frozen by default.
+         * @param accountsKycGrantedByDefault <b>(25)</b> The flag indicating if this token has accounts associated with
+         *                                    it that are KYC granted by default.
+         * @param customFeesSupplier          <b>(26)</b> (Optional) The custom fees of this token wrapped in a
+         *                                    Supplier.
+         * @param metadata                    <b>(27)</b> Metadata of the created token definition
+         * @param metadataKey                 <b>(28)</b> The key which can change the metadata of a token
+         *                                    (token definition and individual NFTs).
          */
         public Builder(
                 TokenID tokenId,
@@ -1300,7 +1327,8 @@ public record Token(
         }
 
         /**
-         * <b>(3)</b> The human-readable symbol for the token. It is not necessarily unique. Maximum length allowed is 100 bytes.
+         * <b>(3)</b> The human-readable symbol for the token. It is not necessarily unique. Maximum length allowed is
+         * 100 bytes.
          *
          * @param symbol value to set
          * @return builder to continue building with
@@ -1312,9 +1340,9 @@ public record Token(
 
         /**
          * <b>(4)</b> The number of decimal places of this token. If decimals are 8 or 11, then the number of whole
-         * tokens can be at most a few billions or millions, respectively. For example, it could match
-         * Bitcoin (21 million whole tokens with 8 decimals) or hbars (50 billion whole tokens with 8 decimals).
-         * It could even match Bitcoin with milli-satoshis (21 million whole tokens with 11 decimals).
+         * tokens can be at most a few billions or millions, respectively. For example, it could match Bitcoin (21
+         * million whole tokens with 8 decimals) or hbars (50 billion whole tokens with 8 decimals). It could even match
+         * Bitcoin with milli-satoshis (21 million whole tokens with 11 decimals).
          *
          * @param decimals value to set
          * @return builder to continue building with
@@ -1348,8 +1376,8 @@ public record Token(
 
         /**
          * <b>(6)</b> The treasury account id of this token. This account receives the initial supply of
-         * tokens as well as the tokens from the Token Mint operation once executed. The balance
-         * of the treasury account is decreased when the Token Burn operation is executed.
+         * tokens as well as the tokens from the Token Mint operation once executed. The balance of the treasury account
+         * is decreased when the Token Burn operation is executed.
          *
          * @param treasuryAccountId value to set
          * @return builder to continue building with
@@ -1361,8 +1389,8 @@ public record Token(
 
         /**
          * <b>(6)</b> The treasury account id of this token. This account receives the initial supply of
-         * tokens as well as the tokens from the Token Mint operation once executed. The balance
-         * of the treasury account is decreased when the Token Burn operation is executed.
+         * tokens as well as the tokens from the Token Mint operation once executed. The balance of the treasury account
+         * is decreased when the Token Burn operation is executed.
          *
          * @param treasuryAccountIdSupplier value to set
          * @return builder to continue building with
@@ -1374,8 +1402,7 @@ public record Token(
 
         /**
          * <b>(7)</b> (Optional) The admin key of this token. If this key is set, the token is mutable.
-         * A mutable token can be modified.
-         * If this key is not set on token creation, it cannot be modified.
+         * A mutable token can be modified. If this key is not set on token creation, it cannot be modified.
          *
          * @param adminKey value to set
          * @return builder to continue building with
@@ -1387,8 +1414,7 @@ public record Token(
 
         /**
          * <b>(7)</b> (Optional) The admin key of this token. If this key is set, the token is mutable.
-         * A mutable token can be modified.
-         * If this key is not set on token creation, it cannot be modified.
+         * A mutable token can be modified. If this key is not set on token creation, it cannot be modified.
          *
          * @param builder A pre-populated builder
          * @return builder to continue building with
@@ -1496,8 +1522,8 @@ public record Token(
 
         /**
          * <b>(12)</b> (Optional) The fee schedule key of this token. This key should be set, in order to make any
-         * changes to the custom fee schedule.
-         * If this key is not set on token creation, it can only be set if the token has admin key set.
+         * changes to the custom fee schedule. If this key is not set on token creation, it can only be set if the token
+         * has admin key set.
          *
          * @param feeScheduleKey value to set
          * @return builder to continue building with
@@ -1509,8 +1535,8 @@ public record Token(
 
         /**
          * <b>(12)</b> (Optional) The fee schedule key of this token. This key should be set, in order to make any
-         * changes to the custom fee schedule.
-         * If this key is not set on token creation, it can only be set if the token has admin key set.
+         * changes to the custom fee schedule. If this key is not set on token creation, it can only be set if the token
+         * has admin key set.
          *
          * @param builder A pre-populated builder
          * @return builder to continue building with
@@ -1616,9 +1642,9 @@ public record Token(
 
         /**
          * <b>(19)</b> The number of seconds the network should automatically extend the token's expiration by, if the
-         * token has a valid auto-renew account, and is not deleted upon expiration.
-         * If this is not provided in a allowed range on token creation, the transaction will fail with INVALID_AUTO_RENEWAL_PERIOD.
-         * The default values for the minimum period and maximum period are 30 days and 90 days, respectively.
+         * token has a valid auto-renew account, and is not deleted upon expiration. If this is not provided in a
+         * allowed range on token creation, the transaction will fail with INVALID_AUTO_RENEWAL_PERIOD. The default
+         * values for the minimum period and maximum period are 30 days and 90 days, respectively.
          *
          * @param autoRenewSeconds value to set
          * @return builder to continue building with
@@ -1684,7 +1710,8 @@ public record Token(
         }
 
         /**
-         * <b>(25)</b> The flag indicating if this token has accounts associated with it that are KYC granted by default.
+         * <b>(25)</b> The flag indicating if this token has accounts associated with it that are KYC granted by
+         * default.
          *
          * @param accountsKycGrantedByDefault value to set
          * @return builder to continue building with
@@ -1750,39 +1777,5 @@ public record Token(
             this.metadataKey = builder.build();
             return this;
         }
-    }
-
-    @Override
-    public String toString() {
-        return "Token{" + "tokenId="
-                + tokenId + ", name='"
-                + name + '\'' + ", symbol='"
-                + symbol + '\'' + ", decimals="
-                + decimals + ", totalSupplySupplier="
-                + (totalSupplySupplier != null ? totalSupplySupplier.get() : "null") + ", treasuryAccountIdSupplier="
-                + (treasuryAccountIdSupplier != null ? treasuryAccountIdSupplier.get() : "null") + ", adminKey="
-                + adminKey + ", kycKey="
-                + kycKey + ", freezeKey="
-                + freezeKey + ", wipeKey="
-                + wipeKey + ", supplyKey="
-                + supplyKey + ", feeScheduleKey="
-                + feeScheduleKey + ", pauseKey="
-                + pauseKey + ", lastUsedSerialNumber="
-                + lastUsedSerialNumber + ", deleted="
-                + deleted + ", tokenType="
-                + tokenType + ", supplyType="
-                + supplyType + ", autoRenewAccountIdSupplier="
-                + (autoRenewAccountIdSupplier != null ? autoRenewAccountIdSupplier.get() : "null")
-                + ", autoRenewSeconds="
-                + autoRenewSeconds + ", expirationSecond="
-                + expirationSecond + ", memo='"
-                + memo + '\'' + ", maxSupply="
-                + maxSupply + ", paused="
-                + paused + ", accountsFrozenByDefault="
-                + accountsFrozenByDefault + ", accountsKycGrantedByDefault="
-                + accountsKycGrantedByDefault + ", customFeesSupplier="
-                + (customFeesSupplier != null ? customFeesSupplier.get() : "null") + ", metadata="
-                + metadata + ", metadataKey="
-                + metadataKey + '}';
     }
 }
