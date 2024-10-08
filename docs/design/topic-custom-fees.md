@@ -34,6 +34,7 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
     id                  bigint    primary key,
     fee_exempt_key_list bytea     null,
     fee_schedule_key    bytea     null,
+    submit_key          bytea     null,
     timestamp_range     int8range not null
   );
 
@@ -54,16 +55,23 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
   Add a database migration to backfill `topic` table from `entity` table. Note for consistency, for all existing topics,
   add a `custom_fee` row with empty custom fees and lower timestamp set to topic's created timestamp.
 
+  The `submit_key` column needs to be dropped from `entity` and `entity_history` table since it's moved to the new
+  table.
+
 - Add column `amount_per_message` to `crypto_allowance` and `token_allowance` tables
 
   ```sql
   alter table if exists crypto_allowance
     add column amount_per_message bigint null;
+  alter table if exists crypto_allowance_history
+    add column amount_per_message bigint null;
   alter table if exists token_allowance
+    add column amount_per_message bigint null;
+  alter table if exists token_allowance_history
     add column amount_per_message bigint null;
   ```
 
-- Rename `token_id` to `entity_id` in `custom_fee` and `custom_fee_history` tables
+- Rename column `token_id` to `entity_id` in `custom_fee` and `custom_fee_history` tables
   ```sql
   alter table if exists custom_fee
     rename column token_id to entity_id;
@@ -112,9 +120,10 @@ Make the following changes to `insertAssessedCustomFees()`
 - In `ConsensusCreateTopicTransactionHandler`, add logic to add a new entry to the `topic` table and a new entry to
   the `custom_fee` table
 - In `ConsensusUpdateTopicTransactionHandler`, add logic to create a partial update to the `topic` table only when fee
-  exempt key list or fee schedule key is updated; when custom fees are updated, also add a new entry to the `custom_fee`
-  table
-- Add `ConsensusApproveALlowanceTransactionhandler` to process consensus crypto / token fee schedule allowances
+  exempt key list or fee schedule key or submit key is updated; when custom fees are updated, also add a new entry to
+  the `custom_fee` table. It's worth noting that an empty custom fees list in the transaction body clears the custom fee
+  schedule, and the handler should insert a entry with empty custom fees to the `custom_fee` table to reflect so.
+- Add `ConsensusApproveAllowanceTransactionHandler` to process consensus crypto / token fee schedule allowances
 
 ## REST API
 
@@ -265,8 +274,11 @@ Refactor the existing test scenario `Validate Topic message submission` with the
 6. BOB submits a message to the topic. Validate mirrornode REST API returns the transaction with correct assessed
    custom fees and the allowances granted by BOB to the topic have updated `amount`. Validate mirrornode REST API
    returns the topic message
-7. Update the topic with new custom fees, fee exempt key list, and fee schedule key. Validate mirrornode REST API returns
+7. Update the topic with empty custom fees, fee exempt key list, and fee schedule key. Validate mirrornode REST API returns
    the updated topic information
+8. BOB submits another message to the topic. Validate mirrornode REST API returns the transaction with no assessed
+   custom fee and the allowances granted by BOB to the topic haven't changed. Validate mirrornode REST API returns the
+   topic message
 
 ## K6 Tests
 
