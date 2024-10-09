@@ -1171,7 +1171,7 @@ public class TokenFeature extends AbstractFeature {
 
     private NetworkTransactionResponse claimTokenAirdrops(
             ExpandedAccountId sender, ExpandedAccountId receiver, TokenId tokenId) {
-        networkTransactionResponse = tokenClient.exeucuteClaimTokenAirdrop(sender, receiver, tokenId);
+        networkTransactionResponse = tokenClient.executeClaimTokenAirdrop(sender, receiver, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
 

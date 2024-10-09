@@ -707,7 +707,7 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
-    public NetworkTransactionResponse exeucuteClaimTokenAirdrop(
+    public NetworkTransactionResponse executeClaimTokenAirdrop(
             ExpandedAccountId sender, ExpandedAccountId receiver, TokenId tokenId) {
         var pendingAirdropIds = getPendingAirdropIds(sender.getAccountId(), receiver.getAccountId(), tokenId);
         var transaction = getClaimTokenAirdropsTransaction(pendingAirdropIds);
