@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -335,5 +336,13 @@ class EntityIdUtilsTest {
                 .tokenNum(3)
                 .build();
         assertEquals(expectedTokenId, EntityIdUtils.toTokenId(entityId));
+    }
+
+    @Test
+    void toAddressFromPbjBytes() {
+        final var address = Address.fromHexString("0x0000000000000000000000000000000000000001");
+        final var pbjBytes = Bytes.fromHex("0000000000000000000000000000000000000001");
+
+        assertEquals(address, EntityIdUtils.toAddress(pbjBytes));
     }
 }

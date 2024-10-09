@@ -21,113 +21,201 @@ import static com.hedera.mirror.restjava.common.RangeOperator.GT;
 import static com.hedera.mirror.restjava.common.RangeOperator.LT;
 import static org.jooq.impl.DSL.noCondition;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
+import com.hedera.mirror.restjava.common.RangeParameter;
 import com.hedera.mirror.restjava.service.Bound;
+import java.util.Arrays;
+import java.util.List;
 import org.jooq.Condition;
 import org.jooq.Field;
 
 interface JooqRepository {
 
-    default Condition getCondition(Field<Long> field, EntityIdRangeParameter param) {
-        if (param == null || param == EntityIdRangeParameter.EMPTY) {
-            return noCondition();
-        }
-
-        return getCondition(field, param.operator(), param.value().getId());
-    }
-
     default Condition getCondition(Field<Long> field, RangeOperator operator, Long value) {
         return operator.getFunction().apply(field, value);
     }
 
-    default Condition getBoundCondition(ConditionalFieldBounds fieldBounds) {
-        var primaryBound = fieldBounds.primary.bound();
-        var primaryLower = primaryBound.getLower();
-        var primaryUpper = primaryBound.getUpper();
-        if (!primaryBound.isEmpty() && primaryBound.hasEqualBounds()) {
-            // If the primary param has a range with a single value, rewrite it to EQ
-            primaryLower = new EntityIdRangeParameter(EQ, EntityId.of(primaryBound.adjustLowerBound()));
-            primaryUpper = null;
+    private Condition getCondition(RangeParameter<Long> param, Field<Long> field) {
+        if (param == null || param.isEmpty()) {
+            return noCondition();
         }
 
-        var secondaryBound = fieldBounds.secondary().bound();
-        var secondaryLower = secondaryBound.getLower();
-        var secondaryUpper = secondaryBound.getUpper();
-        if (!secondaryBound.isEmpty() && (secondaryLower != null && secondaryLower.operator() == EQ)) {
-            // If the secondary param operator is EQ, set the secondary upper bound to the same
-            secondaryUpper = secondaryLower;
+        return getCondition(field, param.operator(), param.value());
+    }
+
+    private Condition getCondition(Bound bound) {
+        var field = bound.getField();
+        return getCondition(bound.getLower(), field).and(getCondition(bound.getUpper(), field));
+    }
+
+    default Condition getBoundConditions(List<Bound> bounds) {
+        return getBoundConditions(bounds, false, false);
+    }
+
+    /**
+     * Produces the bound conditions by recursively iterating through the bounds
+     *
+     * Example:
+     *       Primary Bound:    receiver_account_id: GTE 2000, LTE 3000
+     *       Secondary Bounds: token_id:            GTE 4000, LTE 5000
+     *                         serial_number:       GTE 5,    LTE 100
+     *
+     * Returns:
+     *  [Lower Outer Condition]
+     *  ("receiver_account_id" = 2000 and
+     *       (
+     *           ("token_id" = 4000 and "serial_number" >= 5) or
+     *           "token_id" > 4000
+     *        )
+     *  )
+     *  [Middle Condition]
+     *  or ("receiver_account_id" > 2000 and "receiver_account_id" < 3000)
+     *  [Upper Outer Condition]
+     *  or ("receiver_account_id" = 3000 and
+     *       (
+     *           "token_id" < 5000 or
+     *           ("token_id" = 5000 and "serial_number" <= 100)
+     *       )
+     *  )
+     */
+    private Condition getBoundConditions(List<Bound> bounds, boolean lowerProcessed, boolean upperProcessed) {
+        if (bounds == null || bounds.isEmpty()) {
+            return noCondition();
         }
 
-        var primaryField = fieldBounds.primary().field();
-        var secondaryField = fieldBounds.secondary().field();
-        var lowerCondition = getOuterBoundCondition(primaryLower, secondaryLower, primaryField, secondaryField);
-        var middleCondition = getMiddleCondition(primaryLower, secondaryLower, primaryField, secondaryField)
-                .and(getMiddleCondition(primaryUpper, secondaryUpper, primaryField, secondaryField));
-        var upperCondition = getOuterBoundCondition(primaryUpper, secondaryUpper, primaryField, secondaryField);
+        var primary = bounds.getFirst();
+        if (bounds.size() == 1) {
+            return getCondition(primary);
+        }
+
+        var secondaryBounds = bounds.subList(1, bounds.size());
+        if (!lowerProcessed) {
+            for (var bound : secondaryBounds) {
+                // Only secondary bounds should be adjusted
+                bound.adjustUpperRange();
+            }
+        }
+
+        // Lower conditions need to be discovered before upper conditions because the methods involved update the
+        // primary bound
+        var lowerCondition = getOuterCondition(primary, secondaryBounds, false, lowerProcessed);
+        var middleCondition = getMiddleCondition(primary, secondaryBounds);
+        var upperCondition = getOuterCondition(primary, secondaryBounds, true, upperProcessed);
 
         return lowerCondition.or(middleCondition).or(upperCondition);
     }
 
-    private Condition getOuterBoundCondition(
-            EntityIdRangeParameter primaryParam,
-            EntityIdRangeParameter secondaryParam,
-            Field<Long> primaryField,
-            Field<Long> secondaryField) {
-        // No outer bound condition if there is no primary parameter, or the operator is EQ. For EQ, everything should
-        // go into the middle condition
-        if (primaryParam == null
-                || primaryParam.equals(EntityIdRangeParameter.EMPTY)
-                || primaryParam.operator() == EQ) {
-            return noCondition();
+    /**
+     * Produces the lower or upper conditions by recursively iterating through the bounds.
+     *
+     * Example:
+     *       Primary Bound:    receiver_account_id: GTE 2000, LTE 3000
+     *       Secondary Bounds: token_id:            GTE 4000, LTE 5000
+     *                         serial_number:       GTE 5,    LTE 100
+     *  Returns this lower outer condition (when isUpper=false):
+     *
+     *  ("receiver_account_id" = 2000 and
+     *       (
+     *           ("token_id" = 4000 and "serial_number" >= 5) or
+     *           "token_id" > 4000
+     *       )
+     *  )
+     *
+     *  Returns this upper outer condition (when isUpper=true):
+     *
+     *  ("receiver_account_id" = 3000 and
+     *       (
+     *           "token_id" < 5000 or
+     *           ("token_id" = 5000 and "serial_number" <= 100)
+     *       )
+     *  )
+     */
+    private Condition getOuterCondition(
+            Bound primary, List<Bound> secondaryBounds, boolean isUpper, boolean processed) {
+        var outerCondition = getPrimaryCondition(primary, isUpper);
+        if (outerCondition != noCondition()) {
+            var outerBounds = processed ? secondaryBounds : removeRanges(secondaryBounds, isUpper);
+            outerCondition = outerCondition.and(getBoundConditions(outerBounds, true, isUpper));
         }
 
-        // If the secondary param operator is EQ, there should only have the middle condition
-        if (secondaryParam != null && secondaryParam.operator() == EQ) {
-            return noCondition();
-        }
-
-        long value = primaryParam.value().getId();
-        if (primaryParam.operator() == GT) {
-            value += 1L;
-        } else if (primaryParam.operator() == LT) {
-            value -= 1L;
-        }
-
-        return getCondition(primaryField, EQ, value).and(getCondition(secondaryField, secondaryParam));
+        return outerCondition;
     }
 
-    private Condition getMiddleCondition(
-            EntityIdRangeParameter primaryParam,
-            EntityIdRangeParameter secondaryParam,
-            Field<Long> primaryField,
-            Field<Long> secondaryField) {
-        if (primaryParam == null) {
-            return getCondition(secondaryField, secondaryParam);
-        }
-
-        // When the primary param operator is EQ, or the secondary param operator is EQ, don't adjust the value for the
-        // primary param.
-        if (primaryParam.operator() == EQ || (secondaryParam != null && secondaryParam.operator() == EQ)) {
-            return getCondition(primaryField, primaryParam).and(getCondition(secondaryField, secondaryParam));
-        }
-
-        long value = primaryParam.value().getId();
-        value += primaryParam.hasLowerBound() ? 1L : -1L;
-        return getCondition(primaryField, primaryParam.operator(), value);
+    // Returns a list of new bounds that have had their lower or upper ranges removed
+    private List<Bound> removeRanges(List<Bound> bounds, boolean isUpper) {
+        return bounds.stream().map(b -> isUpper ? b.toUpper() : b.toLower()).toList();
     }
 
-    record ConditionalFieldBounds(FieldBound primary, FieldBound secondary) {}
+    private Condition getPrimaryCondition(Bound primary, boolean isUpper) {
+        var rangeParameter = isUpper ? primary.getUpper() : primary.adjustLowerRange();
+        if (rangeParameter == null || rangeParameter.isEmpty() || rangeParameter.operator() == EQ) {
+            return noCondition();
+        } else {
+            long value = primary.getInclusiveRangeValue(isUpper);
+            return getCondition(primary.getField(), EQ, value);
+        }
+    }
 
-    record FieldBound(Field<Long> field, Bound bound) {
-        public FieldBound {
-            if (field == null) {
-                throw new IllegalArgumentException("Conditional field cannot be null");
-            }
-            if (bound == null) {
-                bound = Bound.EMPTY;
+    /**
+     * Produces the middle conditions by getting the primary condition and cumulating the secondary bounds if any
+     * secondary bound.contains the EQ operator
+     *
+     * Example:
+     *       Primary Bound:    receiver_account_id: GTE 2000, LTE 3000
+     *       Secondary Bounds: token_id:            GTE 4000, LTE 5000
+     *                         serial_number:       GTE 5,    LTE 100
+     *
+     * Returns:
+     *  ("receiver_account_id" > 2000 and "receiver_account_id" < 3000)
+     *
+     * Example:
+     *       Primary Bound:    receiver_account_id: GTE 2000, LTE 3000
+     *       Secondary Bounds: token_id:            EQ 4000,  null
+     *                         serial_number:       EQ 5,     null
+     *
+     * Returns:
+     * ("receiver_account_id" > 2000 and "receiver_account_id" < 3000
+     *   and "token_id" = 4000 and "serial_number" = 5)
+     */
+    private Condition getMiddleCondition(Bound primaryBound, List<Bound> secondaryBounds) {
+        var primaryLower = primaryBound.getLower();
+        var primaryUpper = primaryBound.getUpper();
+        var field = primaryBound.getField();
+        var primaryLowerCondition = getPrimaryMiddleCondition(primaryLower, field, GT);
+        var primaryUpperCondition = getPrimaryMiddleCondition(primaryUpper, field, LT);
+
+        var secondaryCondition = noCondition();
+        for (var secondaryBound : secondaryBounds) {
+            if (containsEqOperator(primaryLower, primaryUpper, secondaryBound.getUpper(), secondaryBound.getLower())) {
+                secondaryCondition = secondaryCondition.and(getCondition(secondaryBound));
             }
         }
+
+        return primaryLowerCondition.and(primaryUpperCondition).and(secondaryCondition);
+    }
+
+    private Condition getPrimaryMiddleCondition(
+            RangeParameter<Long> rangeParameter, Field<Long> field, RangeOperator inclusiveOperator) {
+        var condition = noCondition();
+        if (rangeParameter != null && !rangeParameter.isEmpty()) {
+            // When the primary param operator is EQ don't adjust the value for the primary param.
+            if (rangeParameter.operator() == EQ) {
+                condition = getCondition(rangeParameter, field);
+            } else if (rangeParameter.operator().isInclusive()) {
+                condition = getCondition(field, inclusiveOperator, rangeParameter.value());
+            } else {
+                condition = getCondition(rangeParameter, field);
+            }
+        }
+
+        return condition;
+    }
+
+    private boolean containsEqOperator(RangeParameter<?>... rangeParameters) {
+        return Arrays.stream(rangeParameters).anyMatch(this::hasEqOperator);
+    }
+
+    private boolean hasEqOperator(RangeParameter<?> rangeParameter) {
+        return rangeParameter != null && rangeParameter.operator() == EQ;
     }
 }

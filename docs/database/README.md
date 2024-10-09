@@ -10,7 +10,7 @@ requirements that the Hedera managed mirror node uses. This is for a database wi
 by many external clients. If operators store less data or only have a few internal clients then potentially some of
 these requirements can be relaxed.
 
-- PostgreSQL 14+
+- PostgreSQL 16+
 - 10 vCPUs
 - 40 GiB memory
 - 1-55 TiB

@@ -45,23 +45,36 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
     private static final Map<AirdropRequestType, Map<Direction, List<SortField<?>>>> SORT_ORDERS = Map.of(
             OUTSTANDING,
                     Map.of(
-                            Direction.ASC, List.of(OUTSTANDING.getPrimaryField().asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
+                            Direction.ASC,
+                                    List.of(
+                                            OUTSTANDING.getPrimaryField().asc(),
+                                            TOKEN_AIRDROP.TOKEN_ID.asc(),
+                                            TOKEN_AIRDROP.SERIAL_NUMBER.asc()),
                             Direction.DESC,
-                                    List.of(OUTSTANDING.getPrimaryField().desc(), TOKEN_AIRDROP.TOKEN_ID.desc())),
+                                    List.of(
+                                            OUTSTANDING.getPrimaryField().desc(),
+                                            TOKEN_AIRDROP.TOKEN_ID.desc(),
+                                            TOKEN_AIRDROP.SERIAL_NUMBER.desc())),
             PENDING,
                     Map.of(
-                            Direction.ASC, List.of(PENDING.getPrimaryField().asc(), TOKEN_AIRDROP.TOKEN_ID.asc()),
-                            Direction.DESC, List.of(PENDING.getPrimaryField().desc(), TOKEN_AIRDROP.TOKEN_ID.desc())));
+                            Direction.ASC,
+                                    List.of(
+                                            PENDING.getPrimaryField().asc(),
+                                            TOKEN_AIRDROP.TOKEN_ID.asc(),
+                                            TOKEN_AIRDROP.SERIAL_NUMBER.asc()),
+                            Direction.DESC,
+                                    List.of(
+                                            PENDING.getPrimaryField().desc(),
+                                            TOKEN_AIRDROP.TOKEN_ID.desc(),
+                                            TOKEN_AIRDROP.SERIAL_NUMBER.desc())));
 
     @Override
     public Collection<TokenAirdrop> findAll(TokenAirdropRequest request, EntityId accountId) {
         var type = request.getType();
-        var fieldBounds = getFieldBound(request);
+        var bounds = request.getBounds();
         var condition = getBaseCondition(accountId, type.getBaseField())
-                .and(getBoundCondition(fieldBounds))
-                .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING))
-                // Exclude NFTs
-                .and(TOKEN_AIRDROP.SERIAL_NUMBER.eq(0L));
+                .and(getBoundConditions(bounds))
+                .and(TOKEN_AIRDROP.STATE.eq(AirdropState.PENDING));
 
         var order = SORT_ORDERS.get(type).get(request.getOrder());
         return dslContext
@@ -70,13 +83,6 @@ class TokenAirdropRepositoryCustomImpl implements TokenAirdropRepositoryCustom {
                 .orderBy(order)
                 .limit(request.getLimit())
                 .fetchInto(TokenAirdrop.class);
-    }
-
-    private ConditionalFieldBounds getFieldBound(TokenAirdropRequest request) {
-        var primaryField = request.getType().getPrimaryField();
-        var primary = new FieldBound(primaryField, request.getEntityIds());
-        var secondary = new FieldBound(TOKEN_AIRDROP.TOKEN_ID, request.getTokenIds());
-        return new ConditionalFieldBounds(primary, secondary);
     }
 
     private Condition getBaseCondition(EntityId accountId, Field<Long> baseField) {

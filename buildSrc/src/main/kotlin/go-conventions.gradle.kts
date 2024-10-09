@@ -15,7 +15,6 @@
  */
 
 import org.gradle.internal.io.NullOutputStream
-import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
 import plugin.go.Go
 import plugin.go.GoExtension
 import plugin.go.GoPlugin
@@ -90,12 +89,10 @@ listOf(tasks.dependencyCheckAggregate, tasks.dependencyCheckAnalyze).forEach {
         dependsOn("setup")
         doFirst {
             dependencyCheck {
-                analyzers(
-                    closureOf<AnalyzerExtension> {
-                        val go = project.extensions.getByName<GoExtension>("go")
-                        pathToGo = go.goBin.toString()
-                    }
-                )
+                analyzers {
+                    val go = project.extensions.getByName<GoExtension>("go")
+                    pathToGo = go.goBin.toString()
+                }
             }
         }
     }

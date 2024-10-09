@@ -2,7 +2,7 @@
 set -ex
 
 if [[ "$#" -lt 1 ]]; then
-    echo "You must provide the Mirror Node image tag (e.g. 0.14.0)"
+    echo "You must provide the Mirror Node image tag (e.g. 0.116.0)"
     exit 1
 fi
 
@@ -21,7 +21,7 @@ fi
 target_tag="${target_tag#v}" # Strip v prefix if present
 target_tag_minor="${target_tag%\.*}"
 bats_tag="1.11.0"
-postgresql_tag="14.11.0-debian-12-r8"
+postgresql_tag="16.4.0-debian-12-r14"
 registry="gcr.io/mirror-node-public/hedera-mirror-node"
 
 function retag() {

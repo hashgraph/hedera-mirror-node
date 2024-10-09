@@ -198,6 +198,11 @@ public final class EntityIdUtils {
                 .build();
     }
 
+    public static Address toAddress(final com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
+        final var evmAddressBytes = bytes.toByteArray();
+        return Address.wrap(org.apache.tuweni.bytes.Bytes.wrap(evmAddressBytes));
+    }
+
     private static long[] parseLongTriple(final String dotDelimited) {
         final long[] triple = new long[3];
         int i = 0;

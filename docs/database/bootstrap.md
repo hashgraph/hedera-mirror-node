@@ -61,7 +61,7 @@ Download the `bootstrap.sh` script and the `bootstrap.env` configuration file. T
    ```bash
    curl -O https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/main/hedera-mirror-importer/src/main/resources/db/scripts/bootstrap.sh \
         -O https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/main/hedera-mirror-importer/src/main/resources/db/scripts/bootstrap.env
-   
+
    chmod +x bootstrap.sh
    ```
 
@@ -136,6 +136,7 @@ The Mirror Node database export data is available in a Google Cloud Storage (GCS
 ```bash
 gcloud config set project YOUR_GCP_PROJECT_ID
 ```
+
 - Replace YOUR_GCP_PROJECT_ID with your actual GCP project ID.
 
 #### 3.2. List Available Versions
@@ -221,9 +222,9 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
 
    - **Important**: The SKIP_DB_INIT flag file is automatically created by the script after a successful database initialization. Do not manually create or delete this file. If you need to force the script to reinitialize the database in future runs, remove the flag file using:
 
-      ```bash
-        rm -f SKIP_DB_INIT
-      ```
+     ```bash
+       rm -f SKIP_DB_INIT
+     ```
 
 3. **Verify the Script is Running:**
 

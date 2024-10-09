@@ -34,7 +34,7 @@ const ownerPassword = 'mirror_node_pass';
 const readOnlyUser = 'mirror_rest';
 const readOnlyPassword = 'mirror_rest_pass';
 const workerId = process.env.JEST_WORKER_ID;
-const v1DatabaseImage = 'postgres:14-alpine';
+const v1DatabaseImage = 'postgres:16-alpine';
 const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.1.1';
 
 const cleanupSql = fs.readFileSync(
