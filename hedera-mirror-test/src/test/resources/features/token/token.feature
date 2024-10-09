@@ -105,7 +105,7 @@ Feature: HTS Base Coverage Feature
     Then CAROL claims airdrop for NFT with serial number 3
     Then the mirror node REST API should return the transaction
     And I verify "successful" airdrop of serial number 3 to CAROL
-    And CAROL rejects serial number index 3
+    And CAROL rejects serial number index 2
     Then the mirror node REST API should return the transaction CAROL returns serial number index 2 to OPERATOR
     Then I airdrop serial number 3 to CAROL
     Then the mirror node REST API should return the transaction
