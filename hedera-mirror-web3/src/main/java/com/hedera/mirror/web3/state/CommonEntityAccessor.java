@@ -52,9 +52,9 @@ public class CommonEntityAccessor {
                 .orElseGet(() -> entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes));
     }
 
-    public Optional<Entity> getEntityByAliasAndTimestamp(byte[] alias, final Optional<Long> timestamp) {
+    public Optional<Entity> getEntityByEvmAddressOrAliasAndTimestamp(byte[] alias, final Optional<Long> timestamp) {
         return timestamp
-                .map(t -> entityRepository.findActiveByAliasAndTimestamp(alias, t))
-                .orElseGet(() -> entityRepository.findByAliasAndDeletedIsFalse(alias));
+                .map(t -> entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(alias, t))
+                .orElseGet(() -> entityRepository.findByEvmAddressOrAlias(alias));
     }
 }
