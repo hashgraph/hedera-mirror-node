@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.utils;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -49,5 +50,27 @@ public class Suppliers {
             value.set(newValue);
             return newValue;
         };
+    }
+
+    /**
+     * Compares two Suppliers of values for equality, handling null checks.
+     *
+     * @param <T> the type of the value
+     * @param supplier1 the first supplier to compare
+     * @param supplier2 the second supplier to compare
+     * @return true if both suppliers produce equal values, or if both are null; false otherwise
+     */
+    public static <T> boolean areSuppliersEqual(final Supplier<T> supplier1, final Supplier<T> supplier2) {
+        if (supplier1 == null && supplier2 == null) {
+            return true;
+        }
+        if (supplier1 == null || supplier2 == null) {
+            return false;
+        }
+
+        T value1 = supplier1.get();
+        T value2 = supplier2.get();
+
+        return Objects.equals(value1, value2);
     }
 }

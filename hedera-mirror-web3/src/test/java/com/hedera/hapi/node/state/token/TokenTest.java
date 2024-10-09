@@ -87,6 +87,23 @@ public class TokenTest extends AbstractStateTest {
     }
 
     @Test
+    void testEqualsWithNullSuppliers() {
+        final var item1 = ARGUMENTS.get(1);
+        final var itemNullSuppliers1 = item1.copyBuilder()
+                .totalSupply(null)
+                .treasuryAccountId((Supplier<AccountID>) null)
+                .autoRenewAccountId((Supplier<AccountID>) null)
+                .build();
+        final var itemNullSuppliers2 = item1.copyBuilder()
+                .totalSupply(null)
+                .treasuryAccountId((Supplier<AccountID>) null)
+                .autoRenewAccountId((Supplier<AccountID>) null)
+                .build();
+
+        assertEquals(itemNullSuppliers1, itemNullSuppliers2);
+    }
+
+    @Test
     void testEqualsWithNull() {
         final var item1 = ARGUMENTS.get(0);
         assertNotEquals(null, item1);

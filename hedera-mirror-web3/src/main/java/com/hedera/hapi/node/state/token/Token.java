@@ -16,6 +16,7 @@
 
 package com.hedera.hapi.node.state.token;
 
+import static com.hedera.mirror.web3.utils.Suppliers.areSuppliersEqual;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -396,33 +397,11 @@ public record Token(
         if (decimals != thatObj.decimals) {
             return false;
         }
-        if (totalSupplySupplier == null && thatObj.totalSupplySupplier != null) {
+        if (!areSuppliersEqual(totalSupplySupplier, thatObj.totalSupplySupplier)) {
             return false;
         }
-        if (totalSupplySupplier != null && thatObj.totalSupplySupplier == null) {
+        if (!areSuppliersEqual(treasuryAccountIdSupplier, thatObj.treasuryAccountIdSupplier)) {
             return false;
-        }
-        if (totalSupplySupplier != null && !totalSupplySupplier.get().equals(thatObj.totalSupplySupplier.get())) {
-            return false;
-        }
-        if (treasuryAccountIdSupplier == null && thatObj.treasuryAccountIdSupplier != null) {
-            return false;
-        }
-        if (treasuryAccountIdSupplier != null && thatObj.treasuryAccountIdSupplier == null) {
-            return false;
-        }
-        if (treasuryAccountIdSupplier != null) {
-            AccountID thisAccountId = treasuryAccountIdSupplier.get();
-            AccountID thatAccountId = thatObj.treasuryAccountIdSupplier.get();
-
-            // If both retrieved account IDs are null, continue without returning true
-            if (thisAccountId == null && thatAccountId == null) {
-                // Both are null, but we don't return true yet; we continue checking
-            } else if (thisAccountId == null || thatAccountId == null) {
-                return false; // One is null, and the other is not
-            } else if (!thisAccountId.equals(thatAccountId)) {
-                return false; // They are not equal
-            }
         }
         if (adminKey == null && thatObj.adminKey != null) {
             return false;
@@ -484,24 +463,8 @@ public record Token(
         if (supplyType != null && !supplyType.equals(thatObj.supplyType)) {
             return false;
         }
-        if (autoRenewAccountIdSupplier == null && thatObj.autoRenewAccountIdSupplier != null) {
+        if (!areSuppliersEqual(autoRenewAccountIdSupplier, thatObj.autoRenewAccountIdSupplier)) {
             return false;
-        }
-        if (autoRenewAccountIdSupplier != null && thatObj.autoRenewAccountIdSupplier == null) {
-            return false;
-        }
-        if (autoRenewAccountIdSupplier != null) {
-            AccountID thisAccountId = autoRenewAccountIdSupplier.get();
-            AccountID thatAccountId = thatObj.autoRenewAccountIdSupplier.get();
-
-            // If both retrieved account IDs are null, continue without returning true
-            if (thisAccountId == null && thatAccountId == null) {
-                // Both are null, but we don't return true yet; we continue checking
-            } else if (thisAccountId == null || thatAccountId == null) {
-                return false; // One is null, and the other is not
-            } else if (!thisAccountId.equals(thatAccountId)) {
-                return false; // They are not equal
-            }
         }
         if (autoRenewSeconds != thatObj.autoRenewSeconds) {
             return false;
