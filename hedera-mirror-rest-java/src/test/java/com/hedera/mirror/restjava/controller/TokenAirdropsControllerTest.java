@@ -119,31 +119,31 @@ class TokenAirdropsControllerTest extends ControllerTest {
         }
 
         @Test
-        void followDescendingOrderLink() {
+        void fungibleFollowDescendingOrderLink() {
             // Given
             long sender = 1000;
             long receiver = 2000;
-            long fungibleTokenId = 100;
-            long token1 = 300;
-            long token2 = 301;
+            long token1 = 100;
+            long token2 = 300;
+            long token3 = 301;
 
             var airdrop1 = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
                     .customize(a -> a.senderAccountId(sender)
                             .receiverAccountId(receiver)
-                            .tokenId(fungibleTokenId))
+                            .tokenId(token1))
                     .persist();
             var airdrop2 = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
                     .customize(a -> a.senderAccountId(sender)
                             .receiverAccountId(receiver)
-                            .tokenId(token1))
+                            .tokenId(token2))
                     .persist();
             var airdrop3 = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
                     .customize(a -> a.senderAccountId(sender)
                             .receiverAccountId(receiver)
-                            .tokenId(token2))
+                            .tokenId(token3))
                     .persist();
             domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
@@ -189,7 +189,83 @@ class TokenAirdropsControllerTest extends ControllerTest {
         }
 
         @Test
-        void followAscendingOrderLink() {
+        void nftFollowDescendingOrderLink() {
+            // Given
+            long sender = 1000;
+            long receiver = 2000;
+            long token1 = 100;
+            long token2 = 300;
+            long token3 = 301;
+            long serial1 = 10;
+            long serial2 = 20;
+            long serial3 = 30;
+
+            var airdrop1 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(sender)
+                            .receiverAccountId(receiver)
+                            .serialNumber(serial1)
+                            .tokenId(token1))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(sender)
+                            .receiverAccountId(receiver)
+                            .serialNumber(serial2)
+                            .tokenId(token2))
+                    .persist();
+            var airdrop3 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(sender)
+                            .receiverAccountId(receiver)
+                            .serialNumber(serial3)
+                            .tokenId(token3))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.receiverAccountId(receiver))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.receiverAccountId(receiver))
+                    .persist();
+
+            var uriParams = "?limit=1&receiver.id=gte:%s&order=desc".formatted(receiver);
+            var baseLink = "/api/v1/accounts/%d/airdrops/outstanding".formatted(sender);
+
+            // When
+            var result = restClient.get().uri(uriParams, sender).retrieve().body(TokenAirdropsResponse.class);
+            var nextParams =
+                    "?limit=1&receiver.id=gte:2000&receiver.id=lte:0.0.2000&order=desc&token.id=lte:0.0.301&serialnumber=lt:30";
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop3), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, sender).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            nextParams =
+                    "?limit=1&receiver.id=gte:2000&receiver.id=lte:0.0.2000&order=desc&token.id=lte:0.0.300&serialnumber=lt:20";
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, sender).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            nextParams =
+                    "?limit=1&receiver.id=gte:2000&receiver.id=lte:0.0.2000&order=desc&token.id=lte:0.0.100&serialnumber=lt:10";
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop1), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, sender).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
+        }
+
+        @Test
+        void fungibleFollowAscendingOrderLink() {
             // Given
             var entity = domainBuilder.entity().persist();
             var airdrop = domainBuilder
@@ -221,8 +297,8 @@ class TokenAirdropsControllerTest extends ControllerTest {
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
 
-            // When primary and secondary fields are specified
-            uriParams = "?limit=1&receiver.id=gt:2&token.id=gt:4";
+            // When primary secondary and tertiary fields are specified
+            uriParams = "?limit=1&receiver.id=gt:2&token.id=gte:4&serialnumber=gt:0";
             result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
@@ -252,7 +328,73 @@ class TokenAirdropsControllerTest extends ControllerTest {
         }
 
         @Test
-        void allParameters() {
+        void nftFollowAscendingOrderLink() {
+            // Given
+            var entity = domainBuilder.entity().persist();
+            var airdrop = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(3L)
+                            .serialNumber(1L)
+                            .tokenId(5L))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(3L)
+                            .serialNumber(2L)
+                            .tokenId(5L))
+                    .persist();
+            var airdrop3 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(4L)
+                            .serialNumber(3L)
+                            .tokenId(5L))
+                    .persist();
+
+            var baseLink = "/api/v1/accounts/%d/airdrops/outstanding".formatted(entity.getId());
+            var nextParams = "?limit=1&receiver.id=gte:0.0.3&token.id=gte:0.0.5&serialnumber=gt:1";
+
+            // When no primary or secondary parameters are specified
+            var uriParams = "?limit=1";
+            var result =
+                    restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When primary secondary and tertiary fields are specified
+            uriParams = "?limit=1&receiver.id=gt:2&token.id=gte:4&serialnumber=gt:0";
+            result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When only the secondary field is specified
+            uriParams = "?limit=1&token.id=gt:4";
+            result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams = "?limit=1&receiver.id=gte:0.0.3&token.id=gte:0.0.5&serialnumber=gt:2";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams = "?limit=1&receiver.id=gte:0.0.4&token.id=gte:0.0.5&serialnumber=gt:3";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop3), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
+        }
+
+        @Test
+        void allParametersFungible() {
             // Given
             var entity = domainBuilder.entity().persist();
             var airdrop = domainBuilder
@@ -341,6 +483,263 @@ class TokenAirdropsControllerTest extends ControllerTest {
             assertThat(result)
                     .isEqualTo(
                             getExpectedResponse(List.of(airdrop, serialOutsideRangeAirdrop, airdrop2, airdrop3), null));
+        }
+
+        @Test
+        void allParametersNftFollowLink() {
+            // Given
+            var entity = domainBuilder.entity().persist();
+            var airdrop = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(2L)
+                            .serialNumber(10L)
+                            .tokenId(5L))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(3L)
+                            .serialNumber(20L)
+                            .tokenId(5L))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(3L)
+                            .serialNumber(7L)
+                            .tokenId(6L))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(4L)
+                            .serialNumber(8L)
+                            .tokenId(5L))
+                    .persist();
+
+            var baseLink = "/api/v1/accounts/%d/airdrops/outstanding".formatted(entity.getId());
+            var uriParams = "?limit=1&receiver.id=gte:0.0.1&receiver.id=lt:0.0.4&token.id=lte:0.0.5&token.id=gt:0.0.3";
+
+            // When
+            var result =
+                    restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            var nextParams =
+                    "?limit=1&receiver.id=lt:0.0.4&receiver.id=gte:0.0.2&token.id=lte:0.0.5&token.id=gte:0.0.5&serialnumber=gt:10";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // Add serial number to the initial request
+            uriParams =
+                    "?limit=1&receiver.id=gte:0.0.1&receiver.id=lt:0.0.4&token.id=lte:0.0.5&token.id=gt:0.0.3&serialnumber=gt:5";
+            result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&receiver.id=lt:0.0.4&receiver.id=gte:0.0.3&token.id=lte:0.0.5&token.id=gte:0.0.5&serialnumber=gt:20";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+        }
+
+        @Test
+        void allParametersBothTokenTypesFollowAscendingOrder() {
+            // Given
+            var entity = domainBuilder.entity().persist();
+            var airdrop = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(2L)
+                            .tokenId(5L))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(3L)
+                            .tokenId(5L))
+                    .persist();
+            var airdropNft = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(2L)
+                            .serialNumber(10L)
+                            .tokenId(10L))
+                    .persist();
+            var airdropNft2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(2L)
+                            .serialNumber(11L)
+                            .tokenId(10L))
+                    .persist();
+            var airdropNft3 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(3L)
+                            .serialNumber(12L)
+                            .tokenId(10L))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId() + 1)
+                            .receiverAccountId(2L)
+                            .tokenId(5L))
+                    .persist();
+
+            var baseLink = "/api/v1/accounts/%d/airdrops/outstanding".formatted(entity.getId());
+            var uriParams = "?limit=1&receiver.id=gte:0.0.1&receiver.id=lt:0.0.4&token.id=lte:0.0.10&token.id=gt:0.0.3";
+
+            // When
+            var result =
+                    restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            var nextParams =
+                    "?limit=1&receiver.id=lt:0.0.4&receiver.id=gte:0.0.2&token.id=lte:0.0.10&token.id=gt:0.0.5";
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // Add serial number to the initial request
+            uriParams =
+                    "?limit=1&receiver.id=gte:0.0.1&receiver.id=lt:0.0.4&token.id=lte:0.0.10&token.id=gt:0.0.3&serialnumber=gt:5";
+            result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When following the next link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&receiver.id=lt:0.0.4&receiver.id=gte:0.0.2&token.id=lte:0.0.10&token.id=gte:0.0.10&serialnumber=gt:10";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&receiver.id=lt:0.0.4&receiver.id=gte:0.0.2&token.id=lte:0.0.10&token.id=gte:0.0.10&serialnumber=gt:11";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft2), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Serial number is removed from the next link
+            nextParams = "?limit=1&receiver.id=lt:0.0.4&receiver.id=gte:0.0.3&token.id=lte:0.0.10&token.id=gt:0.0.5";
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&receiver.id=lt:0.0.4&receiver.id=gte:0.0.3&token.id=lte:0.0.10&token.id=gte:0.0.10&serialnumber=gt:12";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft3), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
+        }
+
+        @Test
+        void allParametersBothTokenTypesFollowDescendingOrder() {
+            // Given
+            var entity = domainBuilder.entity().persist();
+            var airdrop = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(2L)
+                            .tokenId(5L))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(3L)
+                            .tokenId(5L))
+                    .persist();
+            var airdropNft = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(2L)
+                            .serialNumber(10L)
+                            .tokenId(10L))
+                    .persist();
+            var airdropNft2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(2L)
+                            .serialNumber(11L)
+                            .tokenId(10L))
+                    .persist();
+            var airdropNft3 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(entity.getId())
+                            .receiverAccountId(3L)
+                            .serialNumber(12L)
+                            .tokenId(10L))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(entity.getId() + 1)
+                            .receiverAccountId(2L)
+                            .tokenId(5L))
+                    .persist();
+
+            var baseLink = "/api/v1/accounts/%d/airdrops/outstanding".formatted(entity.getId());
+            var uriParams =
+                    "?limit=1&order=desc&receiver.id=gte:0.0.1&receiver.id=lt:0.0.4&token.id=lte:0.0.10&token.id=gt:0.0.3";
+
+            // When
+            var result =
+                    restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            var nextParams =
+                    "?limit=1&order=desc&receiver.id=gte:0.0.1&receiver.id=lte:0.0.3&token.id=gt:0.0.3&token.id=lte:0.0.10&serialnumber=lt:12";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft3), baseLink + nextParams));
+
+            // Add serial number to the initial request
+            uriParams =
+                    "?limit=1&order=desc&receiver.id=gte:0.0.1&receiver.id=lt:0.0.4&token.id=lte:0.0.10&token.id=gt:0.0.3&serialnumber=lt:20";
+            result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft3), baseLink + nextParams));
+
+            // When following the next link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Serial number is removed from the next link
+            nextParams =
+                    "?limit=1&order=desc&receiver.id=gte:0.0.1&receiver.id=lte:0.0.3&token.id=gt:0.0.3&token.id=lt:0.0.5";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&order=desc&receiver.id=gte:0.0.1&receiver.id=lte:0.0.2&token.id=gt:0.0.3&token.id=lte:0.0.10&serialnumber=lt:11";
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft2), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&order=desc&receiver.id=gte:0.0.1&receiver.id=lte:0.0.2&token.id=gt:0.0.3&token.id=lte:0.0.10&serialnumber=lt:10";
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&order=desc&receiver.id=gte:0.0.1&receiver.id=lte:0.0.2&token.id=gt:0.0.3&token.id=lt:0.0.5";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
         }
 
         @ParameterizedTest
@@ -549,31 +948,31 @@ class TokenAirdropsControllerTest extends ControllerTest {
         }
 
         @Test
-        void followDescendingOrderLink() {
+        void fungibleFollowDescendingOrderLink() {
             // Given
             long sender = 1000;
             long receiver = 2000;
-            long fungibleTokenId = 100;
-            long token1 = 300;
-            long token2 = 301;
+            long token1 = 100;
+            long token2 = 300;
+            long token3 = 301;
 
             var airdrop1 = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
                     .customize(a -> a.senderAccountId(sender)
                             .receiverAccountId(receiver)
-                            .tokenId(fungibleTokenId))
+                            .tokenId(token1))
                     .persist();
             var airdrop2 = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
                     .customize(a -> a.senderAccountId(sender)
                             .receiverAccountId(receiver)
-                            .tokenId(token1))
+                            .tokenId(token2))
                     .persist();
             var airdrop3 = domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
                     .customize(a -> a.senderAccountId(sender)
                             .receiverAccountId(receiver)
-                            .tokenId(token2))
+                            .tokenId(token3))
                     .persist();
             domainBuilder
                     .tokenAirdrop(FUNGIBLE_COMMON)
@@ -616,7 +1015,83 @@ class TokenAirdropsControllerTest extends ControllerTest {
         }
 
         @Test
-        void followAscendingOrderLink() {
+        void nftFollowDescendingOrderLink() {
+            // Given
+            long sender = 1000;
+            long receiver = 2000;
+            long token1 = 100;
+            long token2 = 300;
+            long token3 = 301;
+            long serial1 = 10;
+            long serial2 = 20;
+            long serial3 = 30;
+
+            var airdrop1 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(sender)
+                            .receiverAccountId(receiver)
+                            .serialNumber(serial1)
+                            .tokenId(token1))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(sender)
+                            .receiverAccountId(receiver)
+                            .serialNumber(serial2)
+                            .tokenId(token2))
+                    .persist();
+            var airdrop3 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(sender)
+                            .receiverAccountId(receiver)
+                            .serialNumber(serial3)
+                            .tokenId(token3))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(sender))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(sender))
+                    .persist();
+
+            var uriParams = "?limit=1&sender.id=gte:%s&order=desc".formatted(sender);
+            var baseLink = "/api/v1/accounts/%d/airdrops/pending".formatted(receiver);
+
+            // When
+            var result = restClient.get().uri(uriParams, receiver).retrieve().body(TokenAirdropsResponse.class);
+            var nextParams =
+                    "?limit=1&sender.id=gte:1000&sender.id=lte:0.0.1000&order=desc&token.id=lte:0.0.301&serialnumber=lt:30";
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop3), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, receiver).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            nextParams =
+                    "?limit=1&sender.id=gte:1000&sender.id=lte:0.0.1000&order=desc&token.id=lte:0.0.300&serialnumber=lt:20";
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, receiver).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            nextParams =
+                    "?limit=1&sender.id=gte:1000&sender.id=lte:0.0.1000&order=desc&token.id=lte:0.0.100&serialnumber=lt:10";
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop1), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, receiver).retrieve().body(TokenAirdropsResponse.class);
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
+        }
+
+        @Test
+        void fungibleFollowAscendingOrderLink() {
             // Given
             var entity = domainBuilder.entity().persist();
             var airdrop = domainBuilder
@@ -679,7 +1154,73 @@ class TokenAirdropsControllerTest extends ControllerTest {
         }
 
         @Test
-        void allParameters() {
+        void nftFollowAscendingOrderLink() {
+            // Given
+            var entity = domainBuilder.entity().persist();
+            var airdrop = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(3L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(1L)
+                            .tokenId(5L))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(3L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(2L)
+                            .tokenId(5L))
+                    .persist();
+            var airdrop3 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(4L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(3L)
+                            .tokenId(5L))
+                    .persist();
+
+            var baseLink = "/api/v1/accounts/%d/airdrops/pending".formatted(entity.getId());
+            var nextParams = "?limit=1&sender.id=gte:0.0.3&token.id=gte:0.0.5&serialnumber=gt:1";
+
+            // When no primary or secondary parameters are specified
+            var uriParams = "?limit=1";
+            var result =
+                    restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When primary secondary and tertiary fields are specified
+            uriParams = "?limit=1&sender.id=gt:2&token.id=gte:4&serialnumber=gt:0";
+            result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When only the secondary field is specified
+            uriParams = "?limit=1&token.id=gt:4";
+            result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams = "?limit=1&sender.id=gte:0.0.3&token.id=gte:0.0.5&serialnumber=gt:2";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams = "?limit=1&sender.id=gte:0.0.4&token.id=gte:0.0.5&serialnumber=gt:3";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop3), baseLink + nextParams));
+
+            // When follow link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
+        }
+
+        @Test
+        void allParametersFungible() {
             // Given
             var entity = domainBuilder.entity().persist();
             var airdrop = domainBuilder
@@ -722,6 +1263,262 @@ class TokenAirdropsControllerTest extends ControllerTest {
             nextParams = "?limit=1&sender.id=lt:0.0.4&sender.id=gte:0.0.3&token.id=lte:0.0.5&token.id=gt:0.0.5";
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+        }
+
+        @Test
+        void allParametersNft() {
+            // Given
+            var entity = domainBuilder.entity().persist();
+            var airdrop = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(2L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(10L)
+                            .tokenId(5L))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(3L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(20L)
+                            .tokenId(5L))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(3L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(7L)
+                            .tokenId(6L))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(4L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(8L)
+                            .tokenId(5L))
+                    .persist();
+
+            var baseLink = "/api/v1/accounts/%d/airdrops/pending".formatted(entity.getId());
+            var uriParams = "?limit=1&sender.id=gte:0.0.1&sender.id=lt:0.0.4&token.id=lte:0.0.5&token.id=gt:0.0.3";
+
+            // When
+            var result =
+                    restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            var nextParams =
+                    "?limit=1&sender.id=lt:0.0.4&sender.id=gte:0.0.2&token.id=lte:0.0.5&token.id=gte:0.0.5&serialnumber=gt:10";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // Add serial number to the initial request
+            uriParams =
+                    "?limit=1&sender.id=gte:0.0.1&sender.id=lt:0.0.4&token.id=lte:0.0.5&token.id=gt:0.0.3&serialnumber=gt:5";
+            result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&sender.id=lt:0.0.4&sender.id=gte:0.0.3&token.id=lte:0.0.5&token.id=gte:0.0.5&serialnumber=gt:20";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+        }
+
+        @Test
+        void allParametersBothTokenTypesFollowAscendingOrder() {
+            // Given
+            var entity = domainBuilder.entity().persist();
+            var airdrop = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(2L)
+                            .receiverAccountId(entity.getId())
+                            .tokenId(5L))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(3L)
+                            .receiverAccountId(entity.getId())
+                            .tokenId(5L))
+                    .persist();
+            var airdropNft = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(2L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(10L)
+                            .tokenId(10L))
+                    .persist();
+            var airdropNft2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(2L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(11L)
+                            .tokenId(10L))
+                    .persist();
+            var airdropNft3 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(3L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(12L)
+                            .tokenId(10L))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(2L)
+                            .receiverAccountId(entity.getId() + 1)
+                            .tokenId(5L))
+                    .persist();
+
+            var baseLink = "/api/v1/accounts/%d/airdrops/pending".formatted(entity.getId());
+            var uriParams = "?limit=1&sender.id=gte:0.0.1&sender.id=lt:0.0.4&token.id=lte:0.0.10&token.id=gt:0.0.3";
+
+            // When
+            var result =
+                    restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            var nextParams = "?limit=1&sender.id=lt:0.0.4&sender.id=gte:0.0.2&token.id=lte:0.0.10&token.id=gt:0.0.5";
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // Add serial number to the initial request
+            uriParams =
+                    "?limit=1&sender.id=gte:0.0.1&sender.id=lt:0.0.4&token.id=lte:0.0.10&token.id=gt:0.0.3&serialnumber=gt:5";
+            result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When following the next link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&sender.id=lt:0.0.4&sender.id=gte:0.0.2&token.id=lte:0.0.10&token.id=gte:0.0.10&serialnumber=gt:10";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&sender.id=lt:0.0.4&sender.id=gte:0.0.2&token.id=lte:0.0.10&token.id=gte:0.0.10&serialnumber=gt:11";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft2), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Serial number is removed from the next link
+            nextParams = "?limit=1&sender.id=lt:0.0.4&sender.id=gte:0.0.3&token.id=lte:0.0.10&token.id=gt:0.0.5";
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&sender.id=lt:0.0.4&sender.id=gte:0.0.3&token.id=lte:0.0.10&token.id=gte:0.0.10&serialnumber=gt:12";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft3), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
+        }
+
+        @Test
+        void allParametersBothTokenTypesFollowDescendingOrder() {
+            // Given
+            var entity = domainBuilder.entity().persist();
+            var airdrop = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(2L)
+                            .receiverAccountId(entity.getId())
+                            .tokenId(5L))
+                    .persist();
+            var airdrop2 = domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(3L)
+                            .receiverAccountId(entity.getId())
+                            .tokenId(5L))
+                    .persist();
+            var airdropNft = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(2L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(10L)
+                            .tokenId(10L))
+                    .persist();
+            var airdropNft2 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(2L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(11L)
+                            .tokenId(10L))
+                    .persist();
+            var airdropNft3 = domainBuilder
+                    .tokenAirdrop(NON_FUNGIBLE_UNIQUE)
+                    .customize(a -> a.senderAccountId(3L)
+                            .receiverAccountId(entity.getId())
+                            .serialNumber(12L)
+                            .tokenId(10L))
+                    .persist();
+            domainBuilder
+                    .tokenAirdrop(FUNGIBLE_COMMON)
+                    .customize(a -> a.senderAccountId(2L)
+                            .receiverAccountId(entity.getId() + 1)
+                            .tokenId(5L))
+                    .persist();
+
+            var baseLink = "/api/v1/accounts/%d/airdrops/pending".formatted(entity.getId());
+            var uriParams =
+                    "?limit=1&order=desc&sender.id=gte:0.0.1&sender.id=lt:0.0.4&token.id=lte:0.0.10&token.id=gt:0.0.3";
+
+            // When
+            var result =
+                    restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            var nextParams =
+                    "?limit=1&order=desc&sender.id=gte:0.0.1&sender.id=lte:0.0.3&token.id=gt:0.0.3&token.id=lte:0.0.10&serialnumber=lt:12";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft3), baseLink + nextParams));
+
+            // Add serial number to the initial request
+            uriParams =
+                    "?limit=1&order=desc&sender.id=gte:0.0.1&sender.id=lt:0.0.4&token.id=lte:0.0.10&token.id=gt:0.0.3&serialnumber=lt:20";
+            result = restClient.get().uri(uriParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft3), baseLink + nextParams));
+
+            // When following the next link
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Serial number is removed from the next link
+            nextParams =
+                    "?limit=1&order=desc&sender.id=gte:0.0.1&sender.id=lte:0.0.3&token.id=gt:0.0.3&token.id=lt:0.0.5";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop2), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&order=desc&sender.id=gte:0.0.1&sender.id=lte:0.0.2&token.id=gt:0.0.3&token.id=lte:0.0.10&serialnumber=lt:11";
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft2), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&order=desc&sender.id=gte:0.0.1&sender.id=lte:0.0.2&token.id=gt:0.0.3&token.id=lte:0.0.10&serialnumber=lt:10";
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdropNft), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            nextParams =
+                    "?limit=1&order=desc&sender.id=gte:0.0.1&sender.id=lte:0.0.2&token.id=gt:0.0.3&token.id=lt:0.0.5";
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(airdrop), baseLink + nextParams));
+
+            // When
+            result = restClient.get().uri(nextParams, entity.getId()).retrieve().body(TokenAirdropsResponse.class);
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
         }
 
         @ParameterizedTest
