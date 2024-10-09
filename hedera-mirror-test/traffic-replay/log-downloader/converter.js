@@ -95,13 +95,9 @@ class GoReplayConverter {
 
 const getElapsed = (lastSeconds) => getEpochSeconds() - lastSeconds;
 
-const getEpochSeconds = () => {
-  return Date.now() / 1000;
-};
+const getEpochSeconds = () => Date.now() / 1000;
 
-const getUUID = () => {
-  return Buffer.from(Array.from({length: 12}, randomByte)).toString('hex');
-};
+const getUUID = () => Buffer.from(Array.from({length: 12}, randomByte)).toString('hex');
 
 const randomByte = () => Math.floor(Math.random() * 256);
 
