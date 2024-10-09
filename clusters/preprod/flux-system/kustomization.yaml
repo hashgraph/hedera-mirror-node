@@ -2,7 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - alert-github.yaml
-- alert-github-dispatch-performance.yaml
 - alert-slack.yaml
 - gotk-components.yaml
 - gotk-sync.yaml
