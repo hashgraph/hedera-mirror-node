@@ -10,6 +10,7 @@ GCP_SNAPSHOT_PROJECT="${GCP_SNAPSHOT_PROJECT:-$GCP_PROJECT}"
 HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
 COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
 REPLACE_DISKS="${REPLACE_DISKS:-true}"
+ZFS_POOL_NAME="${ZFS_POOL_NAME:-zfspv-pool}"
 
 function doContinue() {
   read -p "Continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
@@ -51,9 +52,8 @@ function configureAndValidate() {
     exit 1
   fi
 
-  ZFS_POOL_NAME=$(helm get values "${HELM_RELEASE_NAME}" -n "${COMMON_NAMESPACE}" -o json | jq -r '.zfs.parameters.poolname')
   if [[ -z "${ZFS_POOL_NAME}" ]]; then
-    echo "Unable to find zfs pool name. Please check hedera-mirror-common configuration and rerun"
+    echo "Unable to find zfs pool name. set ZFS_POOL_NAME to value of zfs.paramaters.poolname in common values.yaml"
     exit 1
   fi
 
@@ -117,8 +117,7 @@ function configureAndValidate() {
              map(
                {
                  pvcName: .pvcName,
-                 namespace: .namespace,
-                 pgVersion: .citusCluster.pgVersion
+                 namespace: .namespace
                }
              ) as $pvcMatchData|
              {
@@ -249,7 +248,6 @@ function prepareDiskReplacement() {
 
     # Pause Citus
     pauseCitus "${namespace}"
-
   done
 
   # Spin down existing citus node pools
@@ -361,9 +359,55 @@ function configureShardedClusterResource() {
 
 function markAndConfigurePrimaries() {
   local pvcsInNamespace="${1}"
-  local superuserUsername="${2}"
-  local superuserPassword="${3}"
-  local shardedClusterName="${4}"
+  local shardedClusterName="${2}"
+
+  # Stackgres Passwords
+  local primaryCoordinator=$(echo "${pvcsInNamespace}" |
+          jq -r 'map(select(.snapshotPrimary and .citusCluster.isCoordinator))|first')
+  local sgPasswordsSecretName=$(echo "${primaryCoordinator}" | jq -r '.citusCluster.clusterName')
+  local sgPasswords=$(kubectl get secret -n "${namespace}" "${sgPasswordsSecretName}" -o json |
+    ksd |
+    jq -r '.stringData')
+  local superuserUsername=$(echo "${sgPasswords}" | jq -r '.["superuser-username"]')
+  local superuserPassword=$(echo "${sgPasswords}" | jq -r '.["superuser-password"]')
+  local replicationUsername=$(echo "${sgPasswords}" | jq -r '.["replication-username"]')
+  local replicationPassword=$(echo "${sgPasswords}" | jq -r '.["replication-password"]')
+  local authenticatorUsername=$(echo "${sgPasswords}" | jq -r '.["authenticator-username"]')
+  local authenticatorPassword=$(echo "${sgPasswords}" | jq -r '.["authenticator-password"]')
+
+  # Mirror Node Passwords
+  local mirrorNodePasswords=$(kubectl get secret -n "${namespace}" "${HELM_RELEASE_NAME}-passwords" -o json |
+    ksd |
+    jq -r '.stringData')
+  local graphqlUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRAPHQL_DB_USERNAME')
+  local graphqlPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRAPHQL_DB_PASSWORD')
+  local grpcUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRPC_DB_USERNAME')
+  local grpcPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRPC_DB_PASSWORD')
+  local importerUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_USERNAME')
+  local importerPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_PASSWORD')
+  local ownerUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_OWNER')
+  local ownerPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD')
+  local restUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_REST_DB_USERNAME')
+  local restPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_REST_DB_PASSWORD')
+  local restJavaUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_RESTJAVA_DB_USERNAME')
+  local restJavaPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_RESTJAVA_DB_PASSWORD')
+  local rosettaUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_ROSETTA_DB_USERNAME')
+  local rosettaPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_ROSETTA_DB_PASSWORD')
+  local web3Username=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_USERNAME')
+  local web3Password=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_PASSWORD')
+  local dbName=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_NAME')
+  local sqlCommands=(
+  "alter user ${superuserUsername} with password '${superuserPassword}';"
+  "alter user ${graphqlUsername} with password '${graphqlPassword}';"
+  "alter user ${grpcUsername} with password '${grpcPassword}';"
+  "alter user ${importerUsername} with password '${importerPassword}';"
+  "alter user ${ownerUsername} with password '${ownerPassword}';"
+  "alter user ${restUsername} with password '${restPassword}';"
+  "alter user ${restJavaUsername} with password '${restJavaPassword}';"
+  "alter user ${rosettaUsername} with password '${rosettaPassword}';"
+  "alter user ${web3Username} with password '${web3Password}';"
+  "alter user ${replicationUsername} with password '${replicationPassword}';"
+  "alter user ${authenticatorUsername} with password '${authenticatorPassword}';")
 
   local clusterGroups=$(echo "${pvcsInNamespace}" |
     jq -r 'group_by(.citusCluster.clusterName)|
@@ -409,7 +453,27 @@ group ${citusGroup}. Will failover"
     echo "Patching cluster ${clusterName} in namespace ${namespace} with ${clusterPatch}"
     kubectl patch sgclusters.stackgres.io -n "${namespace}" "${clusterName}" --type merge -p "${clusterPatch}"
     kubectl exec -n "${namespace}" "${primaryPod}" -c postgres-util \
-      -- psql -U "${superuserUsername}" -c "ALTER USER ${superuserUsername} WITH PASSWORD '${superuserPassword}';"
+                -- psql -U "${superuserUsername}" -c "${sql}"
+    for sql in "${sqlCommands[@]}"; do
+          echo "Executing sql command for cluster ${clusterName}: ${sql}"
+          kubectl exec -n "${namespace}" "${primaryPod}" -c postgres-util \
+            -- psql -U "${superuserUsername}" -c "${sql}"
+    done
+
+    kubectl exec -n "${namespace}" "${primaryPod}" -c postgres-util \
+          -- psql -U "${superuserUsername}" -d "${dbName}" -c \
+      "insert into pg_dist_authinfo(nodeid, rolename, authinfo)
+      values (0, '${superuserUsername}', 'password=${superuserPassword}'),
+             (0, '${graphqlUsername}', 'password=${graphqlPassword}'),
+             (0, '${grpcUsername}', 'password=${grpcPassword}'),
+             (0, '${importerUsername}', 'password=${importerPassword}'),
+             (0, '${ownerUsername}', 'password=${ownerPassword}'),
+             (0, '${restUsername}', 'password=${restPassword}'),
+             (0, '${restJavaUsername}', 'password=${restJavaPassword}'),
+             (0, '${rosettaUsername}', 'password=${rosettaPassword}'),
+             (0, '${web3Username}', 'password=${web3Password}') on conflict (nodeid, rolename)
+      do
+      update set authinfo = excluded.authinfo;"
   done
 }
 
@@ -430,130 +494,11 @@ function patchCitusClusters() {
             add')
   for namespace in "${NAMESPACES[@]}"; do
     local pvcsInNamespace=$(echo "${pvcsByNamespace}" | jq -r --arg namespace "${namespace}" '.[$namespace]')
-    local primaryCoordinator=$(echo "${pvcsInNamespace}" |
-      jq -r 'map(select(.snapshotPrimary and .citusCluster.isCoordinator))|first')
-
-    # Stackgres Passwords
-    local sgPasswordsSecretName=$(echo "${primaryCoordinator}" | jq -r '.citusCluster.clusterName')
-    local sgPasswords=$(kubectl get secret -n "${namespace}" "${sgPasswordsSecretName}" -o json |
-      ksd |
-      jq -r '.stringData')
-    local superuserUsername=$(echo "${sgPasswords}" | jq -r '.["superuser-username"]')
-    local superuserPassword=$(echo "${sgPasswords}" | jq -r '.["superuser-password"]')
-    local replicationUsername=$(echo "${sgPasswords}" | jq -r '.["replication-username"]')
-    local replicationPassword=$(echo "${sgPasswords}" | jq -r '.["replication-password"]')
-    local authenticatorUsername=$(echo "${sgPasswords}" | jq -r '.["authenticator-username"]')
-    local authenticatorPassword=$(echo "${sgPasswords}" | jq -r '.["authenticator-password"]')
-
-    # Mirror Node Passwords
-    local mirrorNodePasswords=$(kubectl get secret -n "${namespace}" "${HELM_RELEASE_NAME}-passwords" -o json |
-      ksd |
-      jq -r '.stringData')
-    local graphqlUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRAPHQL_DB_USERNAME')
-    local graphqlPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRAPHQL_DB_PASSWORD')
-    local grpcUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRPC_DB_USERNAME')
-    local grpcPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRPC_DB_PASSWORD')
-    local importerUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_USERNAME')
-    local importerPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_PASSWORD')
-    local ownerUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_OWNER')
-    local ownerPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD')
-    local restUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_REST_DB_USERNAME')
-    local restPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_REST_DB_PASSWORD')
-    local restJavaUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_RESTJAVA_DB_USERNAME')
-    local restJavaPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_RESTJAVA_DB_PASSWORD')
-    local rosettaUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_ROSETTA_DB_USERNAME')
-    local rosettaPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_ROSETTA_DB_PASSWORD')
-    local web3Username=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_USERNAME')
-    local web3Password=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_PASSWORD')
-    local sqlCommands=(
-      "insert into pg_dist_authinfo(nodeid, rolename, authinfo)
-    values (0, '${superuserUsername}', 'password=${superuserPassword}'),
-           (0, '${graphqlUsername}', 'password=${graphqlPassword}'),
-           (0, '${grpcUsername}', 'password=${grpcPassword}'),
-           (0, '${importerUsername}', 'password=${importerPassword}'),
-           (0, '${ownerUsername}', 'password=${ownerPassword}'),
-           (0, '${restUsername}', 'password=${restPassword}'),
-           (0, '${restJavaUsername}', 'password=${restJavaPassword}'),
-           (0, '${rosettaUsername}', 'password=${rosettaPassword}'),
-           (0, '${web3Username}', 'password=${web3Password}') on conflict (nodeid, rolename)
-    do
-    update set authinfo = excluded.authinfo;"
-      "SELECT run_command_on_workers(\$cmd\$
-    insert into pg_dist_authinfo(nodeid, rolename, authinfo)
-    values (0, '${superuserUsername}', 'password=${superuserPassword}'),
-           (0, '${graphqlUsername}', 'password=${graphqlPassword}'),
-           (0, '${grpcUsername}', 'password=${grpcPassword}'),
-           (0, '${importerUsername}', 'password=${importerPassword}'),
-           (0, '${ownerUsername}', 'password=${ownerPassword}'),
-           (0, '${restUsername}', 'password=${restPassword}'),
-           (0, '${restJavaUsername}', 'password=${restJavaPassword}'),
-           (0, '${rosettaUsername}', 'password=${rosettaPassword}'),
-           (0, '${web3Username}', 'password=${web3Password}')
-              on conflict (nodeid, rolename)
-           do update set authinfo = excluded.authinfo;
-    \$cmd\$
-    );"
-      "SELECT run_command_on_workers(\$cmd\$
-    alter user ${graphqlUsername} with password '${graphqlPassword}';
-    \$cmd\$
-    );"
-      "SELECT run_command_on_workers(\$cmd\$
-    alter user ${grpcUsername} with password '${grpcPassword}';
-    \$cmd\$
-    );"
-      "SELECT run_command_on_workers(\$cmd\$
-    alter user ${importerUsername} with password '${importerPassword}';
-    \$cmd\$
-    );"
-      "SELECT run_command_on_workers(\$cmd\$
-    alter user ${restUsername} with password '${restPassword}';
-    \$cmd\$
-    );"
-      "SELECT run_command_on_workers(\$cmd\$
-    alter user ${restJavaUsername} with password '${restJavaPassword}';
-    \$cmd\$
-    );"
-      "SELECT run_command_on_workers(\$cmd\$
-    alter user ${rosettaUsername} with password '${rosettaPassword}';
-    \$cmd\$
-    );"
-      "SELECT run_command_on_workers(\$cmd\$
-    alter user ${web3Username} with password '${web3Password}';
-    \$cmd\$
-    );"
-      "SELECT run_command_on_workers(\$cmd\$
-    alter user ${replicationUsername} with password '${replicationPassword}';
-    \$cmd\$
-    );"
-      "SELECT run_command_on_workers(\$cmd\$
-    alter user ${authenticatorUsername} with password '${authenticatorPassword}';
-    \$cmd\$
-    );"
-      "alter user ${graphqlUsername} with password '${graphqlPassword}';"
-      "alter user ${grpcUsername} with password '${grpcPassword}';"
-      "alter user ${importerUsername} with password '${importerPassword}';"
-      "alter user ${ownerUsername} with password '${ownerPassword}';"
-      "alter user ${restUsername} with password '${restPassword}';"
-      "alter user ${restJavaUsername} with password '${restJavaPassword}';"
-      "alter user ${rosettaUsername} with password '${rosettaPassword}';"
-      "alter user ${web3Username} with password '${web3Password}';"
-      "alter user ${replicationUsername} with password '${replicationPassword}';"
-      "alter user ${authenticatorUsername} with password '${authenticatorPassword}';")
-
-    local primaryCoordinatorPod=$(echo "${primaryCoordinator}" | jq -r '.citusCluster.podName')
     local shardedClusterName=$(echo "${pvcsInNamespace}" | jq -r '.[0].citusCluster.shardedClusterName')
-    local dbName=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_NAME')
 
     configureShardedClusterResource "${pvcsInNamespace}" "${shardedClusterName}" "${namespace}"
     unpauseCitus "${namespace}"
-    markAndConfigurePrimaries "${pvcsInNamespace}" "${superuserUsername}" "${superuserPassword}" "${shardedClusterName}"
-
-    for sql in "${sqlCommands[@]}"; do
-      echo "Executing sql command: ${sql}"
-      kubectl exec -n "${namespace}" "${primaryCoordinatorPod}" -c postgres-util \
-        -- psql -U "${superuserUsername}" -d "${dbName}" -c "${sql}"
-    done
-
+    markAndConfigurePrimaries "${pvcsInNamespace}" "${shardedClusterName}"
     scaleDeployment "${namespace}" 1 "app.kubernetes.io/component=importer"
   done
 }

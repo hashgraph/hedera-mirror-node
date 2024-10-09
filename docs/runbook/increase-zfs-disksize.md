@@ -1,6 +1,6 @@
 ## Problem
 
-The disk storage for the ZFS pool(s) is running out of space and needs to be increased
+The pvc for a shard is running out of space and needs to be increased beyond current capacity of the disk.
 
 ## Definitions
 
@@ -25,7 +25,13 @@ The disk storage for the ZFS pool(s) is running out of space and needs to be inc
    `diskSize` - the new size of the disk.
    <br>
    `gcloud compute disks resize "{diskName}" --size="{diskSize}" --zone="{zone}"`
-3. Update the `hedera-mirror` chart's `values.yaml` to reflect the new disk size
+3. Restart the zfs init pods
+   <br>
+   `kubectl rollout restart daemonset -n common mirror-zfs-init`
+4. Verify the pool size has been increased
+   <br>
+   `kubectl get pods -n common -l component=openebs-zfs-node  -o json |jq -r '.items[].metadata.name' |xargs -I % kubectl exec -c openebs-zfs-plugin -n common % -- zfs list`
+5. Update the `hedera-mirror` chart's `values.yaml` to reflect the new disk size
    <br>
    Example:
    ```yaml

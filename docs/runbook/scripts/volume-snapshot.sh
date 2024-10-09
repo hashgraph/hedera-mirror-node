@@ -4,8 +4,25 @@ GCP_PROJECT="${GCP_PROJECT}"
 COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
 HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
 
+function doContinue() {
+  read -p "Continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
+}
+
 if [[ -z "${GCP_PROJECT}" ]]; then
   echo "GCP_PROJECT is not set and is required. Exiting"
+  exit 1
+fi
+
+DISK_PREFIX=$(helm get values "${HELM_RELEASE_NAME}" -n "${COMMON_NAMESPACE}" -o json |jq -r '.zfs.init.diskPrefix')
+if [[ -z "${DISK_PREFIX}" ]]; then
+  echo "Unable to find diskPrefix. Please check hedera-mirror-common configuration and rerun"
+  exit 1
+fi
+
+echo "Finding disks with prefix ${DISK_PREFIX}"
+DISKS_TO_SNAPSHOT=$(gcloud compute disks list --project "${GCP_PROJECT}"  --filter="name~${DISK_PREFIX}.*-zfs" --format="json(name, sizeGb, users, zone)")
+if [[ -z "${DISKS_TO_SNAPSHOT}" ]]; then
+  echo "No disks found for prefix. Exiting"
   exit 1
 fi
 
@@ -22,18 +39,14 @@ jq -r '.items|map(select(.metadata.annotations."pv.kubernetes.io/provisioned-by"
 
 NAMESPACES=($(echo $ZFS_VOLUMES | jq -r '.[].namespace'| tr ' ' '\n' | sort -u | tr '\n' ' '))
 
-function doContinue() {
-  read -p "Continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
-}
-
-echo "Will spin down importer and citus in the namespaces (${NAMESPACES[*]}) for context $CURRENT_CONTEXT"
+echo "Will spin down importer and citus in the namespaces (${NAMESPACES[*]}) for context ${CURRENT_CONTEXT}"
 doContinue
 
 for namespace in "${NAMESPACES[@]}"
 do
    IMPORTER_PODS=$(kubectl get pods -n "${namespace}" -l 'app.kubernetes.io/component=importer' -o 'jsonpath={.items[*].metadata.name}')
    if [[ -n "${IMPORTER_PODS}" ]]; then
-     echo "Will delete importer ${IMPORTER_PODS} for namespace ${namespace}"
+     echo "Will delete importer ${IMPORTER_PODS} in namespace ${namespace} for context ${CURRENT_CONTEXT}"
      doContinue
      kubectl scale deployment -n "${namespace}" -l app.kubernetes.io/component=importer --replicas=0
      echo "Waiting for importer pods to be deleted"
@@ -44,7 +57,7 @@ do
 
    CITUS_PODS=$(kubectl get pods -n "${namespace}" -l 'stackgres.io/cluster=true' -o 'jsonpath={.items[*].metadata.name}')
    if [[ -n "${CITUS_PODS}" ]]; then
-     echo "Will delete citus pods ($CITUS_PODS) cluster in ${namespace}"
+     echo "Will delete citus pods ($CITUS_PODS) in ${namespace}"
      doContinue
      kubectl annotate sgclusters.stackgres.io -n "${namespace}" --all stackgres.io/reconciliation-pause="true" --overwrite
      sleep 30
@@ -56,19 +69,7 @@ do
    fi
 done
 
-DISK_PREFIX=$(helm get values "${HELM_RELEASE_NAME}" -n "${COMMON_NAMESPACE}" -o json |jq -r '.zfs.init.diskPrefix')
-if [[ -z "${DISK_PREFIX}" ]]; then
-  echo "Unable to find diskPrefix. Please check hedera-mirror-common configuration and rerun"
-  exit 1
-fi
-echo "Finding disks with prefix ${DISK_PREFIX}"
-DISKS_TO_SNAPSHOT=$(gcloud compute disks list --project "${GCP_PROJECT}"  --filter="name~${DISK_PREFIX}.*-zfs" --format="json(name, sizeGb, users, zone)")
-
-if [[ -z "${DISKS_TO_SNAPSHOT}" ]]; then
-  echo "No disks found for prefix. Exiting"
-  exit 1
-else
-  DISK_NAMES=($(echo $DISKS_TO_SNAPSHOT | jq -r '.[].name'))
+DISK_NAMES=($(echo $DISKS_TO_SNAPSHOT | jq -r '.[].name'))
   echo "Will snapshot disks ${DISK_NAMES[*]}"
   doContinue
   CITUS_CLUSTERS=$(kubectl get sgclusters.stackgres.io -A  -o json  |
@@ -132,4 +133,3 @@ else
     sleep 5
     kubectl wait --for=condition=Ready pod -n "${namespace}"  -l 'app.kubernetes.io/component=importer' --timeout=-1s
   done
-fi

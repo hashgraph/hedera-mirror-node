@@ -22,7 +22,6 @@ Need to update k8s version for Citus Node Pool(s)
    `gcloud container clusters upgrade {clusterName} --node-pool=citus-worker --cluster-version={version} --location={region} --project={project}`
     <br>
    `gcloud container clusters upgrade {clusterName} --node-pool=citus-coordinator --cluster-version={version} --location={region} --project={project}`
-
 4. Re-enable the importer and Citus cluster reconciliation for all namespaces spun down in step 2
    <br>
    `kubectl annotate sgclusters.stackgres.io -n {namespace} stackgres.io/reconciliation-pause- --overwrite`
