@@ -257,101 +257,222 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findByAliasAndDeletedIsFalseSuccess() {
+    void findByEvmAddressOrAliasSuccessWithAlias() {
         final var alias = domainBuilder.key();
-        domainBuilder.entity().customize(e -> e.alias(alias)).persist();
-        assertThat(entityRepository.findByAliasAndDeletedIsFalse(alias)).isNotEmpty();
+        final var entity = domainBuilder.entity().customize(e -> e.alias(alias)).persist();
+        assertThat(entityRepository.findByEvmAddressOrAlias(alias)).get().isEqualTo(entity);
     }
 
     @Test
-    void findByAliasAndDeletedIsFalseReturnsEmptyWhenDeletedIsTrue() {
+    void findByEvmAddressOrAliasSuccessWithEvmAddress() {
+        final var evmAddress = domainBuilder.evmAddress();
+        final var entity =
+                domainBuilder.entity().customize(e -> e.evmAddress(evmAddress)).persist();
+        assertThat(entityRepository.findByEvmAddressOrAlias(evmAddress)).get().isEqualTo(entity);
+    }
+
+    @Test
+    void findByEvmAddressOrAliasReturnsEmptyWhenDeletedIsTrueWithAlias() {
         final var alias = domainBuilder.key();
         domainBuilder.entity().customize(e -> e.alias(alias).deleted(true)).persist();
-        assertThat(entityRepository.findByAliasAndDeletedIsFalse(alias)).isEmpty();
+        assertThat(entityRepository.findByEvmAddressOrAlias(alias)).isEmpty();
     }
 
     @Test
-    void findByAliasAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
-        Entity entity = domainBuilder.entity().persist();
+    void findByEvmAddressOrAliasReturnsEmptyWhenDeletedIsTrueWithEvmAddress() {
+        final var evmAddress = domainBuilder.evmAddress();
+        domainBuilder
+                .entity()
+                .customize(e -> e.evmAddress(evmAddress).deleted(true))
+                .persist();
+        assertThat(entityRepository.findByEvmAddressOrAlias(evmAddress)).isEmpty();
+    }
 
-        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entity.getTimestampLower() + 1))
+    @Test
+    void findByEvmAddressOrAliasAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCallWithAlias() {
+        final var entity = domainBuilder.entity().persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getAlias(), entity.getTimestampLower() + 1))
                 .get()
                 .isEqualTo(entity);
     }
 
     @Test
-    void findByAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
-        Entity entity = domainBuilder.entity().persist();
+    void findByEvmAddressOrAliasAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCallWithEvmAddress() {
+        final var entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entity.getTimestampLower()))
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getEvmAddress(), entity.getTimestampLower() + 1))
                 .get()
                 .isEqualTo(entity);
     }
 
     @Test
-    void findByAliasAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
-        Entity entity = domainBuilder.entity().persist();
+    void findByEvmAddressOrAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCallWithAlias() {
+        final var entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entity.getTimestampLower() - 1))
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getAlias(), entity.getTimestampLower()))
+                .get()
+                .isEqualTo(entity);
+    }
+
+    @Test
+    void findByEvmAddressOrAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCallWithEvmAddress() {
+        final var entity = domainBuilder.entity().persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getEvmAddress(), entity.getTimestampLower()))
+                .get()
+                .isEqualTo(entity);
+    }
+
+    @Test
+    void findByEvmAddressOrAliasAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCallWithAlias() {
+        final var entity = domainBuilder.entity().persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getAlias(), entity.getTimestampLower() - 1))
                 .isEmpty();
     }
 
     @Test
-    void findByAliasAndTimestampRangeLessThanBlockTimestampAndDeletedTrueCall() {
-        Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+    void findByEvmAddressOrAliasAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCallWithEvmAddress() {
+        final var entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entity.getTimestampLower() + 1))
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getEvmAddress(), entity.getTimestampLower() - 1))
                 .isEmpty();
     }
 
     @Test
-    void findHistoricalEntityByAliasAndTimestampRangeAndDeletedTrueCall() {
-        EntityHistory entityHistory =
+    void findByEvmAddressOrAliasAndTimestampRangeLessThanBlockTimestampAndDeletedTrueCallWithAlias() {
+        final var entity =
+                domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getAlias(), entity.getTimestampLower() + 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByEvmAddressOrAliasAndTimestampRangeLessThanBlockTimestampAndDeletedTrueCallWithEvmAddress() {
+        final var entity =
+                domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getEvmAddress(), entity.getTimestampLower() + 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalEntityByEvmAddressOrAliasAndTimestampRangeAndDeletedTrueCallWithAlias() {
+        final var entityHistory =
                 domainBuilder.entityHistory().customize(e -> e.deleted(true)).persist();
 
-        assertThat(entityRepository.findActiveByAliasAndTimestamp(
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
                         entityHistory.getAlias(), entityHistory.getTimestampLower() - 1))
                 .isEmpty();
     }
 
     @Test
-    void findHistoricalEntityByAliasAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalse() {
-        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
-        Entity entity = domainBuilder
+    void findHistoricalEntityByEvmAddressOrAliasAndTimestampRangeAndDeletedTrueCallWithEvmAddress() {
+        final var entityHistory =
+                domainBuilder.entityHistory().customize(e -> e.deleted(true)).persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entityHistory.getEvmAddress(), entityHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalEntityByEvmAddressOrAliasAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseWithAlias() {
+        final var entityHistory = domainBuilder.entityHistory().persist();
+        final var entity = domainBuilder
                 .entity()
                 .customize(e -> e.id(entityHistory.getId()))
                 .persist();
 
-        assertThat(entityRepository.findActiveByAliasAndTimestamp(
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
                         entity.getAlias(), entityHistory.getTimestampLower() - 1))
                 .isEmpty();
     }
 
     @Test
-    void findEntityByAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalse() {
-        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
-
-        // Both entity and entity history will be queried in union but entity record is the latest valid
-        Entity entity = domainBuilder
+    void
+            findHistoricalEntityByEvmAddressOrAliasAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseWithEvmAddress() {
+        final var entityHistory = domainBuilder.entityHistory().persist();
+        final var entity = domainBuilder
                 .entity()
                 .customize(e -> e.id(entityHistory.getId()))
                 .persist();
 
-        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entity.getTimestampLower()))
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getEvmAddress(), entityHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findEntityByEvmAddressOrAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseWithAlias() {
+        final var entityHistory = domainBuilder.entityHistory().persist();
+
+        // Both entity and entity history will be queried in union but entity record is the latest valid
+        final var entity = domainBuilder
+                .entity()
+                .customize(e -> e.id(entityHistory.getId()))
+                .persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getAlias(), entity.getTimestampLower()))
                 .get()
                 .isEqualTo(entity);
     }
 
     @Test
-    void findHistoricalEntityByAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalse() {
-        Entity entity = domainBuilder.entity().persist();
+    void findEntityByEvmAddressOrAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseWithEvmAddress() {
+        final var entityHistory = domainBuilder.entityHistory().persist();
+
+        // Both entity and entity history will be queried in union but entity record is the latest valid
+        final var entity = domainBuilder
+                .entity()
+                .customize(e -> e.id(entityHistory.getId()))
+                .persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getEvmAddress(), entity.getTimestampLower()))
+                .get()
+                .isEqualTo(entity);
+    }
+
+    @Test
+    void findHistoricalEntityByEvmAddressOrAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseWithAlias() {
+        final var entity = domainBuilder.entity().persist();
         // Both entity and entity history will be queried in union but entity history record is the latest valid
-        EntityHistory entityHistory = domainBuilder
+        final var entityHistory = domainBuilder
                 .entityHistory()
                 .customize(e -> e.id(entity.getId()))
                 .persist();
 
-        assertThat(entityRepository.findActiveByAliasAndTimestamp(entity.getAlias(), entityHistory.getTimestampLower()))
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getAlias(), entityHistory.getTimestampLower()))
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(entityHistory);
+    }
+
+    @Test
+    void
+            findHistoricalEntityByEvmAddressOrAliasAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseWithEvmAddress() {
+        final var entity = domainBuilder.entity().persist();
+        // Both entity and entity history will be queried in union but entity history record is the latest valid
+        final var entityHistory = domainBuilder
+                .entityHistory()
+                .customize(e -> e.id(entity.getId()))
+                .persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        entity.getEvmAddress(), entityHistory.getTimestampLower()))
                 .get()
                 .usingRecursiveComparison()
                 .isEqualTo(entityHistory);

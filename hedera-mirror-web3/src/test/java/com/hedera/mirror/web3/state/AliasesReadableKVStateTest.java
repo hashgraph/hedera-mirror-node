@@ -74,9 +74,7 @@ class AliasesReadableKVStateTest {
 
     private static final AccountID ACCOUNT_ID_WITH_ALIAS = toAccountId(ENTITY_WITH_ALIAS);
 
-    private static final AccountID ACCOUNT_ID_WITH_EVM_ADDRESS = toAccountId(
-            ENTITY_WITH_EVM_ADDRESS); // TODO: add test cases for evm address and change the implementation to make a
-    // query for evm address
+    private static final AccountID ACCOUNT_ID_WITH_EVM_ADDRESS = toAccountId(ENTITY_WITH_EVM_ADDRESS);
 
     @BeforeAll
     static void initStaticMocks() {
@@ -94,16 +92,25 @@ class AliasesReadableKVStateTest {
     }
 
     @Test
-    void accountNotFoundReturnsNull() {
-        when(commonEntityAccessor.getEntityByAliasAndTimestamp(any(), any())).thenReturn(Optional.empty());
+    void accountNotFoundReturnsNullWithAlias() {
+        when(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(any(), any()))
+                .thenReturn(Optional.empty());
         assertThat(aliasesReadableKVState.get(ALIAS_BYTES))
                 .satisfies(accountID -> assertThat(accountID).isNull());
     }
 
     @Test
-    void whenTimestampIsNullReturnLatestAccountID() {
+    void accountNotFoundReturnsNullWithEvmAddress() {
+        when(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(any(), any()))
+                .thenReturn(Optional.empty());
+        assertThat(aliasesReadableKVState.get(EVM_ADDRESS_BYTES))
+                .satisfies(accountID -> assertThat(accountID).isNull());
+    }
+
+    @Test
+    void whenTimestampIsNullReturnLatestAccountIDWithAlias() {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(commonEntityAccessor.getEntityByAliasAndTimestamp(
+        when(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
                         ALIAS_BYTES.value().toByteArray(), Optional.empty()))
                 .thenReturn(Optional.of(ENTITY_WITH_ALIAS));
         assertThat(aliasesReadableKVState.get(ALIAS_BYTES))
@@ -111,10 +118,20 @@ class AliasesReadableKVStateTest {
     }
 
     @Test
-    void whenTimestampIsHistoricalReturnCorrectAccountID() {
+    void whenTimestampIsNullReturnLatestAccountIDWithEvmAddress() {
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
+                        EVM_ADDRESS_BYTES.value().toByteArray(), Optional.empty()))
+                .thenReturn(Optional.of(ENTITY_WITH_EVM_ADDRESS));
+        assertThat(aliasesReadableKVState.get(EVM_ADDRESS_BYTES))
+                .satisfies(accountID -> assertThat(accountID).isEqualTo(ACCOUNT_ID_WITH_EVM_ADDRESS));
+    }
+
+    @Test
+    void whenTimestampIsHistoricalReturnCorrectAccountIDWithAlias() {
         final var blockTimestamp = 1234567L;
         when(contractCallContext.getTimestamp()).thenReturn(Optional.of(blockTimestamp));
-        when(commonEntityAccessor.getEntityByAliasAndTimestamp(
+        when(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
                         ALIAS_BYTES.value().toByteArray(), Optional.of(blockTimestamp)))
                 .thenReturn(Optional.of(ENTITY_WITH_ALIAS));
         assertThat(aliasesReadableKVState.get(ALIAS_BYTES))
@@ -122,13 +139,35 @@ class AliasesReadableKVStateTest {
     }
 
     @Test
-    void whenTimestampIsLaterReturnNull() {
+    void whenTimestampIsHistoricalReturnCorrectAccountIDWithEvmAddress() {
         final var blockTimestamp = 1234567L;
         when(contractCallContext.getTimestamp()).thenReturn(Optional.of(blockTimestamp));
-        when(commonEntityAccessor.getEntityByAliasAndTimestamp(
+        when(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
+                        EVM_ADDRESS_BYTES.value().toByteArray(), Optional.of(blockTimestamp)))
+                .thenReturn(Optional.of(ENTITY_WITH_EVM_ADDRESS));
+        assertThat(aliasesReadableKVState.get(EVM_ADDRESS_BYTES))
+                .satisfies(accountID -> assertThat(accountID).isEqualTo(ACCOUNT_ID_WITH_EVM_ADDRESS));
+    }
+
+    @Test
+    void whenTimestampIsLaterReturnNullWithAlias() {
+        final var blockTimestamp = 1234567L;
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(blockTimestamp));
+        when(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
                         ALIAS_BYTES.value().toByteArray(), Optional.of(blockTimestamp)))
                 .thenReturn(Optional.empty());
         assertThat(aliasesReadableKVState.get(ALIAS_BYTES))
+                .satisfies(accountID -> assertThat(accountID).isNull());
+    }
+
+    @Test
+    void whenTimestampIsLaterReturnNullWithEvmAddress() {
+        final var blockTimestamp = 1234567L;
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(blockTimestamp));
+        when(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
+                        EVM_ADDRESS_BYTES.value().toByteArray(), Optional.of(blockTimestamp)))
+                .thenReturn(Optional.empty());
+        assertThat(aliasesReadableKVState.get(EVM_ADDRESS_BYTES))
                 .satisfies(accountID -> assertThat(accountID).isNull());
     }
 

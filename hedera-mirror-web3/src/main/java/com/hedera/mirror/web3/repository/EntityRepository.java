@@ -44,7 +44,15 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
             cacheManager = CACHE_MANAGER_ENTITY,
             key = "T(java.util.Arrays).hashCode(#alias)",
             unless = "#result == null")
-    Optional<Entity> findByAliasAndDeletedIsFalse(byte[] alias);
+    @Query(
+            value =
+                    """
+            select *
+            from entity
+            where (evm_address = ?1 or alias = ?1) and deleted is not true
+            """,
+            nativeQuery = true)
+    Optional<Entity> findByEvmAddressOrAlias(byte[] alias);
 
     /**
      * Retrieves the most recent state of an entity by its evm address up to a given block timestamp.
@@ -99,7 +107,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
             with entity_cte as (
                 select id
                 from entity
-                where alias = ?1 and created_timestamp <= ?2
+                where (evm_address = ?1 or alias = ?1) and created_timestamp <= ?2
                 order by created_timestamp desc
                 limit 1
             )
@@ -122,7 +130,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
             limit 1
             """,
             nativeQuery = true)
-    Optional<Entity> findActiveByAliasAndTimestamp(byte[] alias, long blockTimestamp);
+    Optional<Entity> findActiveByEvmAddressOrAliasAndTimestamp(byte[] alias, long blockTimestamp);
 
     /**
      * Retrieves the most recent state of an entity by its ID up to a given block timestamp.
