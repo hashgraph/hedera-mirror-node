@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.services.utils.EntityIdUtils.getAccountId;
+import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -229,7 +229,7 @@ class TokenReadableKVStateTest {
                         databaseToken.getTreasuryAccountId().getId()))
                 .thenReturn(Optional.of(treasuryEntity));
 
-        final var expectedTreasuryAccountId = getAccountId(11L, 12L, 13L);
+        final var expectedTreasuryAccountId = toAccountId(11L, 12L, 13L);
 
         Token token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
 
@@ -254,7 +254,7 @@ class TokenReadableKVStateTest {
         when(entityRepository.findActiveByIdAndTimestamp(treasuryEntity.getId(), timestamp.get()))
                 .thenReturn(Optional.of(treasuryEntity));
 
-        final var expectedTreasuryAccountId = getAccountId(0L, 0L, 10L);
+        final var expectedTreasuryAccountId = toAccountId(0L, 0L, 10L);
         assertThat(tokenReadableKVState.readFromDataSource(TOKEN_ID))
                 .satisfies(token ->
                         assertThat(token.treasuryAccountIdSupplier().get()).isEqualTo(expectedTreasuryAccountId));
@@ -281,7 +281,7 @@ class TokenReadableKVStateTest {
 
         verify(entityRepository, never()).findByIdAndDeletedIsFalse(anyLong());
 
-        final var autoRenewAccountId = getAccountId(0L, 0L, 10L);
+        final var autoRenewAccountId = toAccountId(0L, 0L, 10L);
         assertThat(tokenReadableKVState.readFromDataSource(TOKEN_ID))
                 .satisfies(token ->
                         assertThat(token.autoRenewAccountIdSupplier().get()).isEqualTo(autoRenewAccountId));
@@ -309,7 +309,7 @@ class TokenReadableKVStateTest {
 
         verify(entityRepository, never()).findActiveByIdAndTimestamp(anyLong(), anyLong());
 
-        final var autoRenewAccountId = getAccountId(0L, 0L, 10L);
+        final var autoRenewAccountId = toAccountId(0L, 0L, 10L);
         assertThat(tokenReadableKVState.readFromDataSource(TOKEN_ID))
                 .satisfies(token ->
                         assertThat(token.autoRenewAccountIdSupplier().get()).isEqualTo(autoRenewAccountId));

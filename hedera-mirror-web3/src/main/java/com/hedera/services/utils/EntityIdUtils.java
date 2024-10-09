@@ -186,7 +186,7 @@ public final class EntityIdUtils {
                 .build();
     }
 
-    public static com.hedera.hapi.node.base.AccountID getAccountId(final Long shard, final Long realm, final Long num) {
+    public static com.hedera.hapi.node.base.AccountID toAccountId(final Long shard, final Long realm, final Long num) {
         return new com.hedera.hapi.node.base.AccountID(shard, realm, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, num));
     }
 
