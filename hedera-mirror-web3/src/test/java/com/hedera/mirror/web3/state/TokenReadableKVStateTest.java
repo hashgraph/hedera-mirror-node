@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.state;
 
+import static com.hedera.services.utils.EntityIdUtils.getAccountId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -789,9 +790,5 @@ class TokenReadableKVStateTest {
         } else {
             when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
         }
-    }
-
-    private AccountID getAccountId(final Long shard, final Long realm, final Long num) {
-        return new AccountID(shard, realm, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, num));
     }
 }

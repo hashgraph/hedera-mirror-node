@@ -53,8 +53,6 @@ import java.util.function.Supplier;
 import org.springframework.util.CollectionUtils;
 
 public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
-    private static final String KEY = "TOKENS";
-
     private final CommonEntityAccessor commonEntityAccessor;
     private final CustomFeeRepository customFeeRepository;
     private final TokenRepository tokenRepository;
@@ -65,7 +63,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
             @Nonnull CustomFeeRepository customFeeRepository,
             @Nonnull TokenRepository tokenRepository,
             @Nonnull EntityRepository entityRepository) {
-        super(KEY);
+        super("TOKENS");
         this.commonEntityAccessor = commonEntityAccessor;
         this.customFeeRepository = customFeeRepository;
         this.tokenRepository = tokenRepository;
