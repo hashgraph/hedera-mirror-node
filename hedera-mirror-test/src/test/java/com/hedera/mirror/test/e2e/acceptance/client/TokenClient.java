@@ -679,7 +679,7 @@ public class TokenClient extends AbstractNetworkClient {
         var transaction = getFungibleTokenAirdropTransaction(tokenId, sender.getAccountId(), recipient, amount);
         var response = executeTransactionAndRetrieveReceipt(transaction, KeyList.of(sender.getPrivateKey()), sender);
         log.info(
-                "Airdroped {} tokens of {} from {} to {} via {}",
+                "Airdropped {} tokens of {} from {} to {} via {}",
                 amount,
                 tokenId,
                 sender,
