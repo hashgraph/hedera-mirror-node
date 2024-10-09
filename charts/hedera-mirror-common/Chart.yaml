@@ -1,6 +1,11 @@
 apiVersion: v2
 appVersion: 0.116.0-SNAPSHOT
 dependencies:
+  - alias: minio
+    condition: minio.enabled
+    name: minio
+    repository: https://charts.bitnami.com/bitnami
+    version: 14.7.10
   - name: loki
     condition: loki.enabled
     version: 5.47.2

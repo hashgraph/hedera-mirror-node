@@ -150,6 +150,31 @@ loki:
   test:
     enabled: false
 
+minio:
+  enabled: false
+  persistence:
+    enabled: true
+    size: 500Gi
+    storageClass: premium-rwo
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 60s
+      namespace: common
+      jobLabel: minio
+  priorityClassName: critical
+  provisioning:
+    enabled: true
+    buckets:
+      - name: stackgres-backup
+        policy: none
+        purge: true
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+
 networkPolicy:
   enabled: false
 
@@ -167,7 +192,7 @@ prometheus-adapter:
       memory: 50Mi
   rules:
     default: false
-    custom:  # This is a custom rule which exposes (requests_per_second) from the prometheus adapter to be used by any Horizontal Pod Autoscaler.
+    custom: # This is a custom rule which exposes (requests_per_second) from the prometheus adapter to be used by any Horizontal Pod Autoscaler.
       - seriesQuery: 'api_all_request_total{namespace!="",pod!=""}'
         resources:
           overrides:
@@ -389,7 +414,7 @@ testkube:
       restjava: {}
       web3: {}
     delay: 600s  # Delay duration between test suite steps. This needs to be at least 600s to match the pgbouncer server
-                 # connection idle timeout, so that connections will be freed up for the next set of tests
+    # connection idle timeout, so that connections will be freed up for the next set of tests
     extraExecutionRequestVariables: {}
     gitBranch: ""  # Default to .Chart.AppVersion
     schedule: ""  # Cron schedule of the test suite, default to no schedule
@@ -412,7 +437,7 @@ traefik:
   deployment:
     kind: DaemonSet
   enabled: true
-  globalArguments:  # Expose X-Forwarded-For header for tracing
+  globalArguments: # Expose X-Forwarded-For header for tracing
     - --entryPoints.web.forwardedHeaders.insecure
     - --entryPoints.websecure.forwardedHeaders.insecure
   logs:
