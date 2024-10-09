@@ -740,11 +740,12 @@ public class TokenFeature extends AbstractFeature {
         networkTransactionResponse = airdropFungibleTokens(tokenId, amount, sender, receiver);
     }
 
-    @Then("I verify {string} airdrop of {int} tokens to {account} from {account}")
+    @RetryAsserts
+    @Then("I verify {string} airdrop of {int} tokens to {account}")
     public void verifyFungibleTokenAirdrop(
-            String status, int amount, AccountNameEnum receiverName, AccountNameEnum senderName) {
+            String status, int amount, AccountNameEnum receiverName) {
         var receiver = accountClient.getAccount(receiverName);
-        var sender = accountClient.getAccount(senderName);
+        var sender = accountClient.getAccount(AccountNameEnum.OPERATOR);
 
         switch (status) {
             case "successful" -> verifySuccessfulAirdrop(tokenId, sender, receiver, amount);
@@ -1143,7 +1144,7 @@ public class TokenFeature extends AbstractFeature {
 
     private NetworkTransactionResponse cancelTokenAirdrops(
             ExpandedAccountId sender, AccountId receiver, TokenId tokenId) {
-        networkTransactionResponse = tokenClient.exeucuteCancelTokenAirdrop(sender, receiver, tokenId);
+        networkTransactionResponse = tokenClient.executeCancelTokenAirdrop(sender, receiver, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
 
@@ -1192,8 +1193,10 @@ public class TokenFeature extends AbstractFeature {
                 .isNull();
         // Call the REST api to get the token relationship
         var tokenRelationshipReceiver = mirrorClient.getTokenRelationships(receiver.getAccountId(), tokenId);
-        assertThat(tokenRelationshipReceiver.getTokens().getFirst().getTokenId())
-                .isEqualTo(tokenId.toString());
+        assertThat(tokenRelationshipReceiver.getTokens())
+                .hasSize(1)
+                .first()
+                .returns(tokenId.toString(), TokenRelationship::getTokenId);
         assertThat(getTokenBalance(receiver.getAccountId(), tokenId)).isEqualTo(amount);
     }
 
@@ -1212,7 +1215,10 @@ public class TokenFeature extends AbstractFeature {
         // Call the REST api to get the token relationship
         var tokenRelationshipSender = mirrorClient.getTokenRelationships(sender.getAccountId(), tokenId);
         var tokenRelationshipReceiver = mirrorClient.getTokenRelationships(receiver.getAccountId(), tokenId);
-        assertThat(tokenRelationshipSender.getTokens().getFirst().getTokenId()).isEqualTo(tokenId.toString());
+        assertThat(tokenRelationshipSender.getTokens())
+                .hasSize(1)
+                .first()
+                .returns(tokenId.toString(), TokenRelationship::getTokenId);
         assertThat(tokenRelationshipReceiver.getTokens()).isEmpty();
     }
 
