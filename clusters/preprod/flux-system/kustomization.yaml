@@ -9,5 +9,4 @@ resources:
 - provider-github-dispatch.yaml
 - provider-slack.yaml
 - sealed-secret-github.yaml
-- sealed-secret-github-dispatch.yaml
 - sealed-secret-slack.yaml
