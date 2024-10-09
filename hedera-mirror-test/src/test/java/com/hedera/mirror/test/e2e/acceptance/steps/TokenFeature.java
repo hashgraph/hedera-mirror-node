@@ -492,8 +492,8 @@ public class TokenFeature extends AbstractFeature {
     }
 
     @Given("{account} rejects serial number index {int}")
-    public void rejectNonFungibleToken(AccountNameEnum ownerName, int serialNumber) {
-//        long serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
+    public void rejectNonFungibleToken(AccountNameEnum ownerName, int index) {
+        long serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
         var nftId = new NftId(tokenId, serialNumber);
         var owner = accountClient.getAccount(ownerName);
 
@@ -741,15 +741,16 @@ public class TokenFeature extends AbstractFeature {
         networkTransactionResponse = airdropFungibleTokens(tokenId, amount, sender, receiver);
     }
 
-    @Then("I verify {string} airdrop of {int} tokens to {account} from {account}")
+    @RetryAsserts
+    @Then("I verify {string} airdrop of {int} tokens to {account}")
     public void verifyFungibleTokenAirdrop(
-            String status, int serialNumber, AccountNameEnum receiverName, AccountNameEnum senderName) {
+            String status, int amount, AccountNameEnum receiverName) {
         var receiver = accountClient.getAccount(receiverName);
-        var sender = accountClient.getAccount(senderName);
+        var sender = accountClient.getAccount(AccountNameEnum.OPERATOR);
 
         switch (status) {
-            case "successful" -> verifySuccessfulAirdrop(tokenId, sender, receiver, serialNumber);
-            case "pending" -> verifyPendingAirdrop(tokenId, sender, receiver, serialNumber);
+            case "successful" -> verifySuccessfulAirdrop(tokenId, sender, receiver, amount);
+            case "pending" -> verifyPendingAirdrop(tokenId, sender, receiver, amount);
             case "cancelled" -> verifyCancelledAirdrop(tokenId, sender, receiver);
             default -> log.warn("Invalid airdrop status");
         }
@@ -1182,7 +1183,7 @@ public class TokenFeature extends AbstractFeature {
 
     private NetworkTransactionResponse cancelTokenAirdrops(
             ExpandedAccountId sender, AccountId receiver, TokenId tokenId) {
-        networkTransactionResponse = tokenClient.exeucuteCancelTokenAirdrop(sender, receiver, tokenId);
+        networkTransactionResponse = tokenClient.executeCancelTokenAirdrop(sender, receiver, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
 
@@ -1231,27 +1232,11 @@ public class TokenFeature extends AbstractFeature {
                 .isNull();
         // Call the REST api to get the token relationship
         var tokenRelationshipReceiver = mirrorClient.getTokenRelationships(receiver.getAccountId(), tokenId);
-        assertThat(tokenRelationshipReceiver.getTokens().getFirst().getTokenId())
-                .isEqualTo(tokenId.toString());
-        assertThat(getTokenBalance(receiver.getAccountId(), tokenId)).isEqualTo(amount);
-    }
-
-    private void verifySuccessfulNFTAirdrop(
-            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, int serialNumber) {
-        assertThat(getPendingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
-                .isNull();
-        assertThat(getOutstandingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
-                .isNull();
-        // Call the REST api to get the token relationship
-        var tokenRelationshipReceiver = mirrorClient.getTokenRelationships(receiver.getAccountId(), tokenId);
         assertThat(tokenRelationshipReceiver.getTokens())
                 .hasSize(1)
                 .first()
                 .returns(tokenId.toString(), TokenRelationship::getTokenId);
-        var nftInfo = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
-        assertThat(nftInfo.getAccountId()).isEqualTo(receiver.toString());
-        assertThat(getNftAccountRelationship(receiver, tokenId, serialNumber)).isNotNull();
-        assertThat(getNftAccountRelationship(sender, tokenId, serialNumber)).isNull();
+        assertThat(getTokenBalance(receiver.getAccountId(), tokenId)).isEqualTo(amount);
     }
 
     private void verifyPendingAirdrop(
@@ -1269,38 +1254,10 @@ public class TokenFeature extends AbstractFeature {
         // Call the REST api to get the token relationship
         var tokenRelationshipSender = mirrorClient.getTokenRelationships(sender.getAccountId(), tokenId);
         var tokenRelationshipReceiver = mirrorClient.getTokenRelationships(receiver.getAccountId(), tokenId);
-        assertThat(tokenRelationshipReceiver.getTokens())
+        assertThat(tokenRelationshipSender.getTokens())
                 .hasSize(1)
                 .first()
-                .returns(tokenId.toString(), TokenRelationship::getTokenId);        assertThat(tokenRelationshipSender.getTokens()).isEmpty();
-    }
-
-    private Nft getNftAccountRelationship(ExpandedAccountId owner, TokenId tokenId, long serialNumber){
-        return mirrorClient.getAccountsNftInfo(owner.getAccountId()).getNfts().stream()
-                .filter(nft -> nft.getTokenId().equals(tokenId.toString()) && nft.getSerialNumber().equals(serialNumber))
-                .findFirst()
-                .orElse(null);
-    }
-
-    private void verifyPendingNftAirdrop(
-            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, int serialNumber) {
-        // Call the REST API to get the pending airdrops for the receiver
-        var pendingAirdropForToken =
-                getPendingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId());
-        verifyTokenAirdrop(pendingAirdropForToken, sender.getAccountId(), receiver.getAccountId(), tokenId);
-        assertThat(pendingAirdropForToken.getSerialNumber()).isEqualTo(serialNumber);
-        // Call the REST API to get the outstanding airdrops for the sender
-        var outstandingAirdropForToken =
-                getOutstandingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId());
-        verifyTokenAirdrop(outstandingAirdropForToken, sender.getAccountId(), receiver.getAccountId(), tokenId);
-        assertThat(outstandingAirdropForToken.getSerialNumber()).isEqualTo(serialNumber);
-        var nftInfo = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
-        assertThat(nftInfo.getAccountId()).isEqualTo(sender.toString());
-        assertThat(getNftAccountRelationship(sender, tokenId, serialNumber)).isNotNull();
-        // Call the REST api to get the token relationship
-        var tokenRelationshipSender = mirrorClient.getTokenRelationships(sender.getAccountId(), tokenId);
-        var tokenRelationshipReceiver = mirrorClient.getTokenRelationships(receiver.getAccountId(), tokenId);
-        assertThat(tokenRelationshipSender.getTokens().getFirst().getTokenId()).isEqualTo(tokenId.toString());
+                .returns(tokenId.toString(), TokenRelationship::getTokenId);
         assertThat(tokenRelationshipReceiver.getTokens()).isEmpty();
     }
 
@@ -1326,6 +1283,53 @@ public class TokenFeature extends AbstractFeature {
         assertThat(nftInfo.getAccountId()).isEqualTo(sender.toString());
         assertThat(getNftAccountRelationship(sender, tokenId, serialNumber)).isNotNull();
         assertThat(getNftAccountRelationship(receiver, tokenId, serialNumber)).isNull();
+    }
+
+    private Nft getNftAccountRelationship(ExpandedAccountId owner, TokenId tokenId, long serialNumber){
+        return mirrorClient.getAccountsNftInfo(owner.getAccountId()).getNfts().stream()
+                .filter(nft -> nft.getTokenId().equals(tokenId.toString()) && nft.getSerialNumber().equals(serialNumber))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void verifySuccessfulNFTAirdrop(
+            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, int serialNumber) {
+        assertThat(getPendingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
+                .isNull();
+        assertThat(getOutstandingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
+                .isNull();
+        // Call the REST api to get the token relationship
+        var tokenRelationshipReceiver = mirrorClient.getTokenRelationships(receiver.getAccountId(), tokenId);
+        assertThat(tokenRelationshipReceiver.getTokens())
+                .hasSize(1)
+                .first()
+                .returns(tokenId.toString(), TokenRelationship::getTokenId);
+        var nftInfo = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
+        assertThat(nftInfo.getAccountId()).isEqualTo(receiver.toString());
+        assertThat(getNftAccountRelationship(receiver, tokenId, serialNumber)).isNotNull();
+        assertThat(getNftAccountRelationship(sender, tokenId, serialNumber)).isNull();
+    }
+
+    private void verifyPendingNftAirdrop(
+            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, int serialNumber) {
+        // Call the REST API to get the pending airdrops for the receiver
+        var pendingAirdropForToken =
+                getPendingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId());
+        verifyTokenAirdrop(pendingAirdropForToken, sender.getAccountId(), receiver.getAccountId(), tokenId);
+        assertThat(pendingAirdropForToken.getSerialNumber()).isEqualTo(serialNumber);
+        // Call the REST API to get the outstanding airdrops for the sender
+        var outstandingAirdropForToken =
+                getOutstandingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId());
+        verifyTokenAirdrop(outstandingAirdropForToken, sender.getAccountId(), receiver.getAccountId(), tokenId);
+        assertThat(outstandingAirdropForToken.getSerialNumber()).isEqualTo(serialNumber);
+        var nftInfo = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
+        assertThat(nftInfo.getAccountId()).isEqualTo(sender.toString());
+        assertThat(getNftAccountRelationship(sender, tokenId, serialNumber)).isNotNull();
+        // Call the REST api to get the token relationship
+        var tokenRelationshipSender = mirrorClient.getTokenRelationships(sender.getAccountId(), tokenId);
+        var tokenRelationshipReceiver = mirrorClient.getTokenRelationships(receiver.getAccountId(), tokenId);
+        assertThat(tokenRelationshipSender.getTokens().getFirst().getTokenId()).isEqualTo(tokenId.toString());
+        assertThat(tokenRelationshipReceiver.getTokens()).isEmpty();
     }
 
     private NetworkTransactionResponse airdropNft(

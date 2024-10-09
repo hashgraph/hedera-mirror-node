@@ -26,10 +26,10 @@ Feature: HTS Base Coverage Feature
     And the mirror node REST API should confirm token update
     Then I airdrop <amount> tokens to CAROL
     Then the mirror node REST API should return the transaction
-    And I verify "pending" airdrop of <amount> tokens to CAROL from OPERATOR
+    And I verify "pending" airdrop of <amount> tokens to CAROL
     Then I cancel the airdrop to CAROL
     Then the mirror node REST API should return the transaction
-    And I verify "cancelled" airdrop of <amount> tokens to CAROL from OPERATOR
+    And I verify "cancelled" airdrop of <amount> tokens to CAROL
     Then I airdrop <amount> tokens to CAROL
     Then the mirror node REST API should return the transaction
     And I associate CAROL with token
@@ -37,12 +37,12 @@ Feature: HTS Base Coverage Feature
     Then the mirror node REST API should return the transaction
     Then CAROL claims the airdrop
     Then the mirror node REST API should return the transaction
-    And I verify "successful" airdrop of <amount> tokens to CAROL from OPERATOR
+    And I verify "successful" airdrop of <amount> tokens to CAROL
     Then CAROL rejects the fungible token
     Then the mirror node REST API should return the transaction CAROL returns <amount> fungible token to OPERATOR
     Then I airdrop <amount> tokens to CAROL
     Then the mirror node REST API should return the transaction
-    And I verify "successful" airdrop of <amount> tokens to CAROL from OPERATOR
+    And I verify "successful" airdrop of <amount> tokens to CAROL
     Then I burn <modifySupplyAmount> from the token
     And the mirror node REST API should return the transaction
     Then I mint <modifySupplyAmount> from the token
