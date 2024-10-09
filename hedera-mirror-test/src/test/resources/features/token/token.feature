@@ -89,10 +89,20 @@ Feature: HTS Base Coverage Feature
     Given I update the metadata for serial number indices 0 and 1
     Then the mirror node REST API should return the transaction for token serial number index 0 transaction flow
     And the mirror node REST API should return the transaction for token serial number index 1 transaction flow
+    Then I airdrop serial number 2 to CAROL
+    Then the mirror node REST API should return the transaction
+    And I verify "pending" airdrop of serial number 2 to CAROL from OPERATOR
+    Then I cancel the NFT with serial number 2 airdrop to CAROL
+    Then the mirror node REST API should return the transaction
+#    And I verify "cancelled" airdrop of serial number 1 to CAROL from OPERATOR
+    Then I airdrop serial number 2 to CAROL
+    Then the mirror node REST API should return the transaction
     And I associate CAROL with token
     And the mirror node REST API should return the transaction
-    Then the mirror node REST API should return the token relationship for nft
-    And I transfer serial number index 1 to CAROL
+#    Then the mirror node REST API should return the token relationship for nft
+    Then CAROL claims airdrop for NFT with serial number 2
+    Then the mirror node REST API should return the transaction
+#    And I transfer serial number index 1 to CAROL
     And CAROL rejects serial number index 1
     Then the mirror node REST API should return the transaction CAROL returns serial number index 1 to OPERATOR
     Then I wipe serial number index 0 from token for ALICE

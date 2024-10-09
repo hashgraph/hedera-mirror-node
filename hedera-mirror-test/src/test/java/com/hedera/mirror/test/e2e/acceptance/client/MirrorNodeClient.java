@@ -26,6 +26,7 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.rest.model.AccountBalanceTransactions;
 import com.hedera.mirror.rest.model.AccountInfo;
+import com.hedera.mirror.rest.model.AccountsResponse;
 import com.hedera.mirror.rest.model.BlocksResponse;
 import com.hedera.mirror.rest.model.ContractActionsResponse;
 import com.hedera.mirror.rest.model.ContractCallRequest;
@@ -41,6 +42,7 @@ import com.hedera.mirror.rest.model.NetworkStakeResponse;
 import com.hedera.mirror.rest.model.Nft;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.rest.model.NftTransactionHistory;
+import com.hedera.mirror.rest.model.Nfts;
 import com.hedera.mirror.rest.model.Schedule;
 import com.hedera.mirror.rest.model.TokenAirdropsResponse;
 import com.hedera.mirror.rest.model.TokenAllowancesResponse;
@@ -388,6 +390,12 @@ public class MirrorNodeClient {
         log.debug("Retrieving outstanding airdrops for account '{}' returned by Mirror Node", accountId);
         return callRestEndpoint(
                 "/accounts/{accountId}/airdrops/outstanding", TokenAirdropsResponse.class, accountId.toString());
+    }
+
+    public Nfts getAccountsNftInfo(@NonNull AccountId accountId){
+        log.debug("Retrieving outstanding airdrops for account '{}' returned by Mirror Node", accountId);
+        return callRestEndpoint(
+                "/accounts/{accountId}/nfts", Nfts.class, accountId.toString());
     }
 
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {

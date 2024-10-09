@@ -688,6 +688,66 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
+    public NetworkTransactionResponse executeNftAirdrop(
+            TokenId tokenId,
+            ExpandedAccountId sender,
+            AccountId recipient,
+            AccountId owner,
+            int serialNumber,
+            boolean isApproval) {
+        var transaction = getNftAirdropTransaction(
+                tokenId, sender.getAccountId(), recipient, owner, serialNumber, isApproval);
+        var response = executeTransactionAndRetrieveReceipt(
+                transaction, KeyList.of(sender.getPrivateKey()), sender);
+        log.info(
+                "Airdroped serial numbers {} of {} from {} to {} via {}",
+                serialNumber,
+                tokenId,
+                sender,
+                recipient,
+                response.getTransactionId()
+        );
+        return response;
+    }
+
+    public NetworkTransactionResponse exeucuteCancelNftAirdrop(
+            ExpandedAccountId sender,
+            AccountId receiver,
+            NftId nftId) {
+
+        var pendingAirdropIds = getPendingNftAirdropIds(sender.getAccountId(), receiver, nftId);
+        var transaction = getCancelTokenAirdropTransaction(pendingAirdropIds);
+        var response = executeTransactionAndRetrieveReceipt(
+                transaction, KeyList.of(sender.getPrivateKey()), sender);
+        log.info(
+                "Cancel pending Airdrop for {} from {} to {} via {}",
+                nftId,
+                sender,
+                receiver,
+                response.getTransactionId()
+        );
+        return response;
+    }
+
+    public NetworkTransactionResponse exeucuteClaimNftAirdrop(
+            ExpandedAccountId sender,
+            ExpandedAccountId receiver,
+            NftId nftId) {
+
+        var pendingAirdropIds = getPendingNftAirdropIds(sender.getAccountId(), receiver.getAccountId(), nftId);
+        var transaction = getClaimTokenAirdropsTransaction(pendingAirdropIds);
+        var response = executeTransactionAndRetrieveReceipt(
+                transaction, KeyList.of(receiver.getPrivateKey()), sender);
+        log.info(
+                "Claim pending Airdrop for {} from {} to {} via {}",
+                nftId,
+                sender,
+                receiver,
+                response.getTransactionId()
+        );
+        return response;
+    }
+
     private TokenAirdropTransaction getFungibleTokenAirdropTransaction(
             TokenId tokenId, AccountId sender, AccountId recipient, long amount) {
         var airdropTransaction = new TokenAirdropTransaction().setTransactionMemo(getMemo("Airdrop token"));
@@ -696,6 +756,24 @@ public class TokenClient extends AbstractNetworkClient {
         airdropTransaction.addTokenTransfer(tokenId, recipient, amount);
 
         return airdropTransaction;
+    }
+
+    private TokenAirdropTransaction getNftAirdropTransaction(
+            TokenId tokenId, AccountId sender, AccountId recipient, AccountId owner, int serialNumber, boolean isApproval) {
+
+        var airdropTransaction = new TokenAirdropTransaction().setTransactionMemo(getMemo("Airdrop Nft"));
+        var nftId = new NftId(tokenId, serialNumber);
+        if (isApproval) {
+            airdropTransaction.addApprovedNftTransfer(nftId, owner, recipient);
+        } else {
+            airdropTransaction.addNftTransfer(nftId, sender, recipient);
+        }
+
+        return airdropTransaction;
+    }
+
+    private PendingAirdropId getPendingNftAirdropIds(AccountId sender, AccountId receiver, NftId nftId) {
+        return new PendingAirdropId().setSender(sender).setReceiver(receiver).setNftId(nftId);
     }
 
     public NetworkTransactionResponse exeucuteCancelTokenAirdrop(
