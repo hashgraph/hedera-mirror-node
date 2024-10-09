@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import jakarta.annotation.Nonnull;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -29,12 +29,12 @@ public class CustomCallOperation extends CallOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
 
-    public CustomCallOperation(@NonNull final GasCalculator gasCalculator) {
+    public CustomCallOperation(@Nonnull final GasCalculator gasCalculator) {
         super(gasCalculator);
     }
 
     @Override
-    public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
+    public OperationResult execute(@Nonnull final MessageFrame frame, @Nonnull final EVM evm) {
         try {
             final long cost = cost(frame, false);
             if (frame.getRemainingGas() < cost) {
