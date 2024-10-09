@@ -35,3 +35,9 @@ updates:
     package-ecosystem: "gomod"
     schedule:
       interval: "weekly"
+
+  - directory: "/hedera-mirror-test/traffic-replay/log-downloader"
+    open-pull-requests-limit: 10
+    package-ecosystem: "npm"
+    schedule:
+      interval: "weekly"
