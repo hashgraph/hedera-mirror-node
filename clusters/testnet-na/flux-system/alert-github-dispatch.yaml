@@ -6,12 +6,12 @@ metadata:
 spec:
   eventMetadata:
     cluster: testnet-eu
-    namespaces: common,testnet,testnet-citus
+    namespaces: common,testnet-citus
   eventSeverity: info
   eventSources:
     - kind: HelmRelease
       name: mirror
-      namespace: testnet
+      namespace: testnet-citus
   inclusionList:
     - ".*.test.*succeeded.*"
   providerRef:
