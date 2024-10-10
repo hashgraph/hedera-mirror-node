@@ -78,7 +78,7 @@ class CommonEntityAccessorTest {
 
     @Test
     void getEntityByEvmAddress() {
-        when(entityRepository.findByEvmAddressAndDeletedIsFalse(
+        when(entityRepository.findByEvmAddressOrAlias(
                         ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray()))
                 .thenReturn(Optional.of(mockEntity));
 
@@ -88,7 +88,7 @@ class CommonEntityAccessorTest {
 
     @Test
     void getEntityByEvmAddressHistorical() {
-        when(entityRepository.findActiveByEvmAddressAndTimestamp(
+        when(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
                         ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray(), timestamp.get()))
                 .thenReturn(Optional.of(mockEntity));
 
@@ -102,13 +102,22 @@ class CommonEntityAccessorTest {
                         ACCOUNT_ALIAS_WITH_KEY.alias().toByteArray()))
                 .thenReturn(Optional.of(mockEntity));
 
-        assertThat(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
-                        ACCOUNT_ALIAS_WITH_KEY.alias().toByteArray(), Optional.empty()))
+        assertThat(commonEntityAccessor.get(ACCOUNT_ALIAS_WITH_KEY, Optional.empty()))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
 
     @Test
-    void getEntityByEvmAddressAlias() {
+    void getEntityByAliasHistorical() {
+        when(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        ACCOUNT_ALIAS_WITH_KEY.alias().toByteArray(), timestamp.get()))
+                .thenReturn(Optional.of(mockEntity));
+
+        assertThat(commonEntityAccessor.get(ACCOUNT_ALIAS_WITH_KEY, timestamp))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByEvmAddressOrAliasAndTimestampWithEvmAddress() {
         when(entityRepository.findByEvmAddressOrAlias(
                         ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray()))
                 .thenReturn(Optional.of(mockEntity));
@@ -119,7 +128,29 @@ class CommonEntityAccessorTest {
     }
 
     @Test
-    void getEntityByAliasAndTimestampHistorical() {
+    void getEntityByEvmAddressOrAliasAndTimestampWithEvmAddressHistorical() {
+        when(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+                        ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray(), timestamp.get()))
+                .thenReturn(Optional.of(mockEntity));
+
+        assertThat(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
+                        ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray(), timestamp))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByEvmAddressOrAliasAndTimestampWithKey() {
+        when(entityRepository.findByEvmAddressOrAlias(
+                        ACCOUNT_ALIAS_WITH_KEY.alias().toByteArray()))
+                .thenReturn(Optional.of(mockEntity));
+
+        assertThat(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
+                        ACCOUNT_ALIAS_WITH_KEY.alias().toByteArray(), Optional.empty()))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByEvmAddressOrAliasAndTimestampWithKeyHistorical() {
         when(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
                         ACCOUNT_ALIAS_WITH_KEY.alias().toByteArray(), timestamp.get()))
                 .thenReturn(Optional.of(mockEntity));
@@ -130,12 +161,23 @@ class CommonEntityAccessorTest {
     }
 
     @Test
-    void getEntityByEvmAddressAliasAndTimestampHistorical() {
-        when(entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(
+    void getEntityByEvmAddressAndTimestamp() {
+        when(entityRepository.findByEvmAddressAndDeletedIsFalse(
+                        ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray()))
+                .thenReturn(Optional.of(mockEntity));
+
+        assertThat(commonEntityAccessor.getEntityByEvmAddressAndTimestamp(
+                        ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray(), Optional.empty()))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByEvmAddressAndTimestampHistorical() {
+        when(entityRepository.findActiveByEvmAddressAndTimestamp(
                         ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray(), timestamp.get()))
                 .thenReturn(Optional.of(mockEntity));
 
-        assertThat(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
+        assertThat(commonEntityAccessor.getEntityByEvmAddressAndTimestamp(
                         ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray(), timestamp))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
