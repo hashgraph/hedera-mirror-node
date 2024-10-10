@@ -13,9 +13,6 @@ spec:
       namespace: common
     - kind: HelmRelease
       name: '*'
-      namespace: testnet
-    - kind: HelmRelease
-      name: '*'
       namespace: testnet-citus
     - kind: Kustomization
       name: '*'
