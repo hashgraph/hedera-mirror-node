@@ -389,7 +389,7 @@ describe('EntityId parse from encoded entityId', () => {
       } else {
         expect(() => {
           EntityId.parse(encodedId, options);
-        }).toThrowError(InvalidArgumentError);
+        }).toThrow(InvalidArgumentError);
       }
     });
   }

@@ -40,7 +40,7 @@ describe('exchange rate proto parse', () => {
   });
 
   test('invalid contents', () => {
-    expect(() => new ExchangeRate({file_data: Buffer.from('123456', 'hex'), consensus_timestamp: 1})).toThrowError(
+    expect(() => new ExchangeRate({file_data: Buffer.from('123456', 'hex'), consensus_timestamp: 1})).toThrow(
       FileDecodeError
     );
   });

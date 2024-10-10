@@ -1042,9 +1042,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
 
     const evmAddressFilter = {shard: 0, realm: 0, create2_evm_address: evmAddress};
     await expect(() => ContractService.getContractIdByEvmAddress(evmAddressFilter)).rejects.toThrow(
-      new NotFoundError(
-        `More than one contract with the evm address ${JSON.stringify(evmAddressFilter)} have been found.`
-      )
+      new Error(`More than one contract with the evm address ${JSON.stringify(evmAddressFilter)} have been found.`)
     );
   });
 

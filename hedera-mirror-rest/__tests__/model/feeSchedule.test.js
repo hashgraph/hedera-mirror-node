@@ -52,8 +52,8 @@ describe('fee schedule proto parse', () => {
   });
 
   test('invalid contents', () => {
-    expect(() => new FeeSchedule({file_data: '123456', consensus_timestamp: 1})).toThrowError(FileDecodeError);
-    expect(() => new FeeSchedule({file_data: Buffer.from('123456', 'hex'), consensus_timestamp: 1})).toThrowError(
+    expect(() => new FeeSchedule({file_data: '123456', consensus_timestamp: 1})).toThrow(FileDecodeError);
+    expect(() => new FeeSchedule({file_data: Buffer.from('123456', 'hex'), consensus_timestamp: 1})).toThrow(
       FileDecodeError
     );
   });
