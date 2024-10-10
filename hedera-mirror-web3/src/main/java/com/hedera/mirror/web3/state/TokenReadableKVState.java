@@ -34,9 +34,11 @@ import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.OneOf;
@@ -58,17 +60,20 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
     private final CustomFeeRepository customFeeRepository;
     private final TokenRepository tokenRepository;
     private final EntityRepository entityRepository;
+    private final NftRepository nftRepository;
 
     protected TokenReadableKVState(
             final CommonEntityAccessor commonEntityAccessor,
             final CustomFeeRepository customFeeRepository,
             final TokenRepository tokenRepository,
-            final EntityRepository entityRepository) {
+            final EntityRepository entityRepository,
+            final NftRepository nftRepository) {
         super("TOKENS");
         this.commonEntityAccessor = commonEntityAccessor;
         this.customFeeRepository = customFeeRepository;
         this.tokenRepository = tokenRepository;
         this.entityRepository = entityRepository;
+        this.nftRepository = nftRepository;
     }
 
     @Override
@@ -123,8 +128,8 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
                 .metadata(Bytes.wrap(token.getMetadata()))
                 .metadataKey(Utils.parseKey(token.getMetadataKey()))
                 .name(token.getName())
-                .pauseKey(Utils.parseKey(token.getPauseKey()))
                 .paused(token.getPauseStatus().equals(TokenPauseStatusEnum.PAUSED))
+                .pauseKey(Utils.parseKey(token.getPauseKey()))
                 .supplyKey(Utils.parseKey(token.getSupplyKey()))
                 .supplyType(TokenSupplyType.valueOf(token.getSupplyType().name()))
                 .symbol(token.getSymbol())
@@ -139,13 +144,18 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
     private Supplier<Long> getTotalSupply(
             final com.hedera.mirror.common.domain.token.Token token, final Optional<Long> timestamp) {
         return Suppliers.memoize(() -> timestamp
-                .map(t -> getTotalSupplyHistorical(token.getTokenId(), t))
+                .map(t -> getTotalSupplyHistorical(
+                        token.getType().equals(TokenTypeEnum.FUNGIBLE_COMMON), token.getTokenId(), t))
                 .or(() -> Optional.ofNullable(token.getTotalSupply()))
                 .orElse(0L));
     }
 
-    private Long getTotalSupplyHistorical(long tokenId, long timestamp) {
-        return tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(tokenId, timestamp);
+    private Long getTotalSupplyHistorical(boolean isFungible, long tokenId, long timestamp) {
+        if (isFungible) {
+            return tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(tokenId, timestamp);
+        } else {
+            return nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(tokenId, timestamp);
+        }
     }
 
     private Supplier<AccountID> getAutoRenewAccount(Long autoRenewAccountId, final Optional<Long> timestamp) {

@@ -46,6 +46,7 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.pbj.runtime.OneOf;
 import java.util.Collections;
@@ -90,6 +91,9 @@ class TokenReadableKVStateTest {
 
     @Mock
     private TokenRepository tokenRepository;
+
+    @Mock
+    private NftRepository nftRepository;
 
     @Mock
     private CommonEntityAccessor commonEntityAccessor;
@@ -353,6 +357,28 @@ class TokenReadableKVStateTest {
 
         verify(tokenRepository)
                 .findFungibleTotalSupplyByTokenIdAndTimestamp(databaseToken.getTokenId(), timestamp.get());
+    }
+
+    @Test
+    void getTotalSupplyHistoricalNonFungible() {
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        setupToken(timestamp);
+        final var treasuryId = EntityId.of(123L);
+        final var totalSupply = 10L;
+        final var historicalSupply = 9L;
+        databaseToken.setType(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        databaseToken.setTotalSupply(totalSupply);
+        databaseToken.setTreasuryAccountId(treasuryId);
+
+        when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
+        when(nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(databaseToken.getTokenId(), timestamp.get()))
+                .thenReturn(historicalSupply);
+
+        assertThat(tokenReadableKVState.readFromDataSource(TOKEN_ID))
+                .satisfies(
+                        token -> assertThat(token.totalSupplySupplier().get()).isEqualTo(historicalSupply));
+
+        verify(nftRepository).findNftTotalSupplyByTokenIdAndTimestamp(databaseToken.getTokenId(), timestamp.get());
     }
 
     @Test
