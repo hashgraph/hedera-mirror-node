@@ -751,22 +751,22 @@ public class TokenFeature extends AbstractFeature {
             case "successful" -> verifySuccessfulAirdrop(tokenId, sender, receiver, amount);
             case "pending" -> verifyPendingAirdrop(tokenId, sender, receiver, amount);
             case "cancelled" -> verifyCancelledAirdrop(tokenId, sender, receiver);
-            default -> log.warn("Invalid airdrop status");
+            default -> throw new IllegalArgumentException("Invalid airdrop status");
         }
     }
 
     @Then("I cancel the airdrop to {account}")
-    public void cancelFungibleTokenPendingAirdrop(AccountNameEnum accountName) {
+    public void cancelPendingFungibleTokenAirdrop(AccountNameEnum accountName) {
         var receiver = accountClient.getAccount(accountName);
         var sender = accountClient.getSdkClient().getExpandedOperatorAccountId();
-        networkTransactionResponse = cancelTokenAirdrops(sender, receiver.getAccountId(), tokenId);
+        networkTransactionResponse = verify(tokenClient.executeCancelTokenAirdrop(sender, receiver.getAccountId(), tokenId));
     }
 
     @Then("{account} claims the airdrop")
-    public void claimPendingAirdrop(AccountNameEnum accountName) {
+    public void claimPendingFungibleAirdrop(AccountNameEnum accountName) {
         var receiver = accountClient.getAccount(accountName);
         var sender = accountClient.getSdkClient().getExpandedOperatorAccountId();
-        networkTransactionResponse = claimTokenAirdrops(sender, receiver, tokenId);
+        networkTransactionResponse = verify(tokenClient.executeClaimTokenAirdrop(sender, receiver, tokenId));
     }
 
     private void associateWithToken(ExpandedAccountId accountId, TokenId tokenId) {
@@ -1136,19 +1136,17 @@ public class TokenFeature extends AbstractFeature {
 
         networkTransactionResponse =
                 tokenClient.executeFungibleTokenAirdrop(tokenId, sender, receiver.getAccountId(), amount);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
 
         return networkTransactionResponse;
     }
 
-    private NetworkTransactionResponse cancelTokenAirdrops(
-            ExpandedAccountId sender, AccountId receiver, TokenId tokenId) {
-        networkTransactionResponse = tokenClient.executeCancelTokenAirdrop(sender, receiver, tokenId);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-
-        return networkTransactionResponse;
+    private NetworkTransactionResponse verify(NetworkTransactionResponse response) {
+        assertThat(response.getTransactionId()).isNotNull();
+        assertThat(response.getReceipt()).isNotNull();
+        networkTransactionResponse = response;
+        return response;
     }
 
     private TokenAirdrop getPendingAirdrop(TokenId tokenId, AccountId sender, AccountId receiver) {
@@ -1169,20 +1167,12 @@ public class TokenFeature extends AbstractFeature {
                 .orElse(null);
     }
 
-    private NetworkTransactionResponse claimTokenAirdrops(
-            ExpandedAccountId sender, ExpandedAccountId receiver, TokenId tokenId) {
-        networkTransactionResponse = tokenClient.executeClaimTokenAirdrop(sender, receiver, tokenId);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-
-        return networkTransactionResponse;
-    }
-
     private void verifyTokenAirdrop(TokenAirdrop tokenAirdrop, AccountId sender, AccountId receiver, TokenId tokenId) {
-        assertThat(tokenAirdrop).isNotNull();
-        assertThat(tokenAirdrop.getReceiverId()).isEqualTo(receiver.toString());
-        assertThat(tokenAirdrop.getSenderId()).isEqualTo(sender.toString());
-        assertThat(tokenAirdrop.getTokenId()).isEqualTo(tokenId.toString());
+        assertThat(tokenAirdrop)
+                .isNotNull()
+                .returns(receiver.toString(), TokenAirdrop::getReceiverId)
+                .returns(sender.toString(), TokenAirdrop::getSenderId)
+                .returns(tokenId.toString(), TokenAirdrop::getTokenId);
     }
 
     private void verifySuccessfulAirdrop(
