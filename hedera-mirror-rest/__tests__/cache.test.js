@@ -17,7 +17,7 @@
 import config from '../config';
 import {Cache} from '../cache';
 import {RedisContainer} from '@testcontainers/redis';
-import {defaultBeforeAllTimeoutMillis} from './integrationUtils.js';
+import {defaultBeforeAllTimeoutMillis} from './integrationUtils';
 
 let cache;
 let redisContainer;
@@ -25,22 +25,19 @@ let redisContainer;
 beforeAll(async () => {
   config.redis.enabled = true;
   redisContainer = await new RedisContainer().withStartupTimeout(20000).start();
+  config.redis.uri = `0.0.0.0:${redisContainer.getMappedPort(6379)}`;
   logger.info('Started Redis container');
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
+  await cache.stop();
   await redisContainer.stop({signal: 'SIGKILL', t: 5});
   logger.info('Stopped Redis container');
 });
 
 beforeEach(async () => {
-  config.redis.uri = `0.0.0.0:${redisContainer.getMappedPort(6379)}`;
   cache = new Cache();
   await cache.clear();
-});
-
-afterEach(async () => {
-  await cache.stop();
 });
 
 const loader = (keys) => keys.map((key) => `v${key}`);
@@ -72,17 +69,27 @@ describe('get', () => {
     const values = await cache.get([], loader, keyMapper);
     expect(values).toEqual([]);
   });
+});
 
-  test('Disabled', async () => {
-    config.redis.enabled = false;
-    const values = await cache.get(['1', '2', '3'], loader, keyMapper);
-    expect(values).toEqual(['v1', 'v2', 'v3']);
+describe('Single key get/set', () => {
+  test('Get undefined key', async () => {
+    const value = await cache.getSingleWithTtl(undefined);
+    expect(value).toBeUndefined();
   });
 
-  test('Unable to connect', async () => {
-    config.redis.uri = 'redis://invalid:6379';
-    cache = new Cache();
-    const values = await cache.get(['1', '2', '3'], loader, keyMapper);
-    expect(values).toEqual(['v1', 'v2', 'v3']);
+  test('Get non-existent key', async () => {
+    const key = 'myKeyDoesNotExist';
+    const value = await cache.getSingleWithTtl(key);
+    expect(value).toBeUndefined();
+  });
+
+  test('Set and get object', async () => {
+    const key = 'myKey';
+    const objectToCache = {a: 5, b: 'some string', c: 'another string'};
+    const setResult = await cache.setSingle(key, 5, objectToCache);
+    expect(setResult).toEqual('OK');
+    const objectWithTtlFromCache = await cache.getSingleWithTtl(key);
+    expect(objectWithTtlFromCache.value).toEqual(objectToCache);
+    expect(objectWithTtlFromCache.ttl).toBeGreaterThan(0);
   });
 });

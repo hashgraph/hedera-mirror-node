@@ -47,6 +47,7 @@ const recordIpAndEndpoint = async (req, res, next) => {
   if (req.route !== undefined) {
     ipEndpointHistogram.labels(req.route.path, ipMask(req.ip)).inc();
   }
+  next();
 };
 
 const metricsHandler = () => {

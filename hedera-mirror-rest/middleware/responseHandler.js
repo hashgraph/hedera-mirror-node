@@ -19,6 +19,7 @@ import {
   contentTypeHeader,
   requestPathLabel,
   requestStartTime,
+  responseBodyLabel,
   responseDataLabel,
   responseHeadersLabel,
 } from '../constants';
@@ -58,16 +59,15 @@ const responseHandler = async (req, res, next) => {
     }
     const contentType = res.get(contentTypeHeader);
 
-    if (contentType === APPLICATION_JSON) {
-      res.send(JSONStringify(responseData));
-    } else {
-      res.send(responseData);
-    }
+    res.locals[responseBodyLabel] = contentType === APPLICATION_JSON ? JSONStringify(responseData) : responseData;
+    res.send(res.locals[responseBodyLabel]);
 
     const startTime = res.locals[requestStartTime];
     const elapsed = startTime ? Date.now() - startTime : 0;
     logger.info(`${req.ip} ${req.method} ${req.originalUrl} in ${elapsed} ms: ${code}`);
   }
+
+  next();
 };
 
 export default responseHandler;
