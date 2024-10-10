@@ -737,7 +737,7 @@ public class TokenFeature extends AbstractFeature {
     public void airdropTokens(int amount, AccountNameEnum accountName) {
         var receiver = accountClient.getAccount(accountName);
         var sender = accountClient.getSdkClient().getExpandedOperatorAccountId();
-        networkTransactionResponse = airdropFungibleTokens(tokenId, amount, sender, receiver);
+        networkTransactionResponse = verify(tokenClient.executeFungibleTokenAirdrop(tokenId, sender, receiver.getAccountId(), amount));
     }
 
     @RetryAsserts
@@ -1129,17 +1129,6 @@ public class TokenFeature extends AbstractFeature {
         return nftInfoForToken == null
                 ? emptyList()
                 : nftInfoForToken.stream().map(NftInfo::serialNumber).toList();
-    }
-
-    private NetworkTransactionResponse airdropFungibleTokens(
-            TokenId tokenId, int amount, ExpandedAccountId sender, ExpandedAccountId receiver) {
-
-        networkTransactionResponse =
-                tokenClient.executeFungibleTokenAirdrop(tokenId, sender, receiver.getAccountId(), amount);
-        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
-        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
-
-        return networkTransactionResponse;
     }
 
     private NetworkTransactionResponse verify(NetworkTransactionResponse response) {
