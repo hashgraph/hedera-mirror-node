@@ -26,6 +26,10 @@ import config from '../config';
 
 let v1OpenApiDocument;
 let v1OpenApiFile;
+let openApiMap;
+
+const pathParameterRegex = /{([^}]*)}/g;
+const integerRegexPattern = '\\d{1,10}';
 
 /**
  * Check if apiVersion is currently supported
@@ -80,6 +84,116 @@ const getV1OpenApiObject = () => {
   return v1OpenApiDocument;
 };
 
+/**
+ * Get the path to parameter properties map for the OpenApi Spec
+ *
+ * @returns {Map<string, {parameterName, defaultValue, pattern}, regex: RegExp>}
+ */
+const getOpenApiMap = () => {
+  if (_.isUndefined(openApiMap)) {
+    const openApiObject = getV1OpenApiObject();
+    const patternMap = getPathParametersPatterns(openApiObject);
+    openApiMap = new Map();
+    Object.keys(openApiObject.paths).forEach((path) => {
+      const parameters = getOpenApiParameters(path, openApiObject);
+      const regex = pathToRegexConverter(path, patternMap);
+      openApiMap.set(path, {
+        parameters,
+        regex,
+      });
+    });
+  }
+
+  return openApiMap;
+};
+
+/**
+ * Given a path, gets the query parameters and their default values
+ * @param path
+ * @param openApiObject
+ */
+const getOpenApiParameters = (path, openApiObject) => {
+  const pathObject = openApiObject.paths[path];
+  const parameters = pathObject?.get?.parameters;
+  if (parameters === undefined) {
+    return {};
+  }
+
+  return (
+    parameters
+      // Each open api parameter is prefixed by #/components/parameters/, which is 24 characters long
+      .map((p) => p.$ref?.substring(24))
+      .filter((p) => p !== undefined)
+      .map((p) => openApiObject.components.parameters[p])
+      .filter((p) => p.in !== 'path')
+      .map((p) => {
+        const defaultValue = p.schema?.default;
+        const parameterName = p.name;
+        return {parameterName, defaultValue};
+      })
+  );
+};
+
+/**
+ * Converts an OpenApi path to a regex using the OpenApi regex patterns
+ * @param path
+ * @param patternMap
+ * @returns {RegExp}
+ */
+const pathToRegexConverter = (path, patternMap) => {
+  const splitPath = path.split('/');
+  for (let i = 0; i < splitPath.length; i++) {
+    const value = splitPath[i];
+    if (pathParameterRegex.test(value)) {
+      let pattern = patternMap.get(value);
+      if (!pattern) {
+        // When no pattern is present default to regex for an integer
+        pattern = integerRegexPattern;
+      } else {
+        // Remove beginning and ending of string regex characters
+        if (pattern.charAt(0) === '^') {
+          pattern = pattern.substring(1);
+        }
+        if (pattern.charAt(pattern.length - 1) === '$') {
+          pattern = pattern.substring(0, pattern.length - 1);
+        }
+      }
+
+      splitPath[i] = pattern;
+    }
+  }
+
+  // Add beginning and ending of string regex characters to the entire path
+  path = '^' + splitPath.join('/') + '$';
+  return new RegExp(path);
+};
+
+/**
+ * Gets the regex patterns for each of the path parameters
+ * @return {Map<string, string>}
+ */
+const getPathParametersPatterns = (openApiObject) => {
+  const pathParameters = new Map();
+  const openApiParameters = openApiObject.components.parameters;
+  Object.keys(openApiParameters)
+    .map((p) => openApiParameters[p])
+    .filter((p) => p.in === 'path')
+    .forEach((p) => {
+      // Path parameters are denoted by brackets within the OpenApi paths, such as: /api/v1/accounts/{idOrAliasOrEvmAddress}
+      const key = '{' + p.name + '}';
+
+      // A schema may be nested within the parameter directly or it may be a reference to a schema in the components/schema object
+      // Remove the prefix: #/components/schemas/
+      const schemaReference = p.schema.$ref?.substring(21);
+      const schema = schemaReference ? openApiObject.components.schemas[schemaReference] : p.schema;
+
+      const pattern = schema?.pattern;
+      pathParameters.set(key, pattern);
+    });
+
+  return pathParameters;
+};
+
 const serveSpec = (req, res) => res.type('text/yaml').send(getV1OpenApiFile());
 
 /**
@@ -115,4 +229,4 @@ const openApiValidator = (app) => {
   );
 };
 
-export {getV1OpenApiObject, openApiValidator, serveSwaggerDocs};
+export {getV1OpenApiObject, getOpenApiMap, openApiValidator, serveSwaggerDocs};
