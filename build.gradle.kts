@@ -89,7 +89,7 @@ dependencies {
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:$tuweniVersion")
         api("org.apache.tuweni:tuweni-units:$tuweniVersion")
-        api("org.apache.velocity:velocity-engine-core:2.3")
+        api("org.apache.velocity:velocity-engine-core:2.4")
         api("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2")
         api("org.gaul:s3proxy:2.3.0")
         api("org.hyperledger.besu:secp256k1:0.8.2")
