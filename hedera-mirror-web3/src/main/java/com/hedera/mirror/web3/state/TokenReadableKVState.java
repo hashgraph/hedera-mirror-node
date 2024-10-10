@@ -111,6 +111,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
                 .autoRenewAccountId(getAutoRenewAccount(entity.getAutoRenewAccountId(), timestamp))
                 .autoRenewSeconds(
                         entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : DEFAULT_AUTO_RENEW_PERIOD)
+                .customFees(getCustomFees(token.getTokenId(), timestamp))
                 .decimals(token.getDecimals())
                 .deleted(false)
                 .expirationSecond(TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS))
@@ -122,6 +123,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
                 .metadata(Bytes.wrap(token.getMetadata()))
                 .metadataKey(Utils.parseKey(token.getMetadataKey()))
                 .name(token.getName())
+                .pauseKey(Utils.parseKey(token.getPauseKey()))
                 .paused(token.getPauseStatus().equals(TokenPauseStatusEnum.PAUSED))
                 .supplyKey(Utils.parseKey(token.getSupplyKey()))
                 .supplyType(TokenSupplyType.valueOf(token.getSupplyType().name()))
@@ -130,8 +132,6 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
                 .tokenType(TokenType.valueOf(token.getType().name()))
                 .totalSupply(getTotalSupply(token, timestamp))
                 .treasuryAccountId(getTreasury(token.getTreasuryAccountId(), timestamp))
-                .customFees(getCustomFees(token.getTokenId(), timestamp))
-                .pauseKey(Utils.parseKey(token.getPauseKey()))
                 .wipeKey(Utils.parseKey(token.getWipeKey()))
                 .build();
     }
