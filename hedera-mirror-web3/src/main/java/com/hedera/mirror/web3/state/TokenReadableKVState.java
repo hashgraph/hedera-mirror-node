@@ -46,6 +46,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
+import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -55,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.springframework.util.CollectionUtils;
 
+@Named
 public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
     private final CommonEntityAccessor commonEntityAccessor;
     private final CustomFeeRepository customFeeRepository;
