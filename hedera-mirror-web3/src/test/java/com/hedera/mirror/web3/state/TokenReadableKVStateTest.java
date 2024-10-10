@@ -102,6 +102,7 @@ class TokenReadableKVStateTest {
 
     private DomainBuilder domainBuilder;
     private Entity entity;
+    private Entity collector;
 
     @Spy
     private ContractCallContext contractCallContext;
@@ -121,9 +122,23 @@ class TokenReadableKVStateTest {
         domainBuilder = new DomainBuilder();
         entity = domainBuilder
                 .entity()
-                .customize(e -> e.id(TOKEN_ID.tokenNum()))
-                .customize(e -> e.num(TOKEN_ID.tokenNum()))
-                .customize(e -> e.type(EntityType.TOKEN))
+                .customize(e -> {
+                    e.id(TOKEN_ID.tokenNum());
+                    e.num(TOKEN_ID.tokenNum());
+                    e.type(EntityType.TOKEN);
+                })
+                .get();
+        collector = domainBuilder
+                .entity()
+                .customize(e -> {
+                    e.id(collectorId.getId());
+                    e.shard(collectorId.getShard());
+                    e.realm(collectorId.getRealm());
+                    e.num(collectorId.getNum());
+                    e.type(EntityType.ACCOUNT);
+                    e.evmAddress(null);
+                    e.alias(null);
+                })
                 .get();
         customFee = new CustomFee();
 
@@ -436,8 +451,7 @@ class TokenReadableKVStateTest {
         customFee.setRoyaltyFees(royaltyFees);
 
         when(customFeeRepository.findById(TOKEN_ENCODED_ID)).thenReturn(Optional.of(customFee));
-        when(commonEntityAccessor.getAccountWithCanonicalAddress(collectorId, Optional.empty()))
-                .thenReturn(collectorAccountId);
+        when(commonEntityAccessor.get(collectorId, Optional.empty())).thenReturn(Optional.of(collector));
 
         final var token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
         var results = token.customFeesSupplier().get();
@@ -481,8 +495,7 @@ class TokenReadableKVStateTest {
 
         when(customFeeRepository.findByTokenIdAndTimestamp(TOKEN_ENCODED_ID, timestamp.get()))
                 .thenReturn(Optional.of(customFee));
-        when(commonEntityAccessor.getAccountWithCanonicalAddress(collectorId, timestamp))
-                .thenReturn(collectorAccountId);
+        when(commonEntityAccessor.get(collectorId, timestamp)).thenReturn(Optional.of(collector));
 
         final var token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
         var results = token.customFeesSupplier().get();
@@ -521,8 +534,7 @@ class TokenReadableKVStateTest {
         customFee.setRoyaltyFees(royaltyFees);
 
         when(customFeeRepository.findById(TOKEN_ENCODED_ID)).thenReturn(Optional.of(customFee));
-        when(commonEntityAccessor.getAccountWithCanonicalAddress(collectorId, Optional.empty()))
-                .thenReturn(collectorAccountId);
+        when(commonEntityAccessor.get(collectorId, Optional.empty())).thenReturn(Optional.of(collector));
 
         final var token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
         var results = token.customFeesSupplier().get();
@@ -557,8 +569,7 @@ class TokenReadableKVStateTest {
 
         when(customFeeRepository.findByTokenIdAndTimestamp(TOKEN_ENCODED_ID, timestamp.get()))
                 .thenReturn(Optional.of(customFee));
-        when(commonEntityAccessor.getAccountWithCanonicalAddress(collectorId, timestamp))
-                .thenReturn(collectorAccountId);
+        when(commonEntityAccessor.get(collectorId, timestamp)).thenReturn(Optional.of(collector));
 
         final var token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
         var results = token.customFeesSupplier().get();
@@ -601,8 +612,7 @@ class TokenReadableKVStateTest {
         customFee.setFractionalFees(fractionalFees);
 
         when(customFeeRepository.findById(TOKEN_ENCODED_ID)).thenReturn(Optional.of(customFee));
-        when(commonEntityAccessor.getAccountWithCanonicalAddress(collectorId, Optional.empty()))
-                .thenReturn(collectorAccountId);
+        when(commonEntityAccessor.get(collectorId, Optional.empty())).thenReturn(Optional.of(collector));
 
         final var token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
         var results = token.customFeesSupplier().get();
@@ -650,8 +660,7 @@ class TokenReadableKVStateTest {
 
         when(customFeeRepository.findByTokenIdAndTimestamp(TOKEN_ENCODED_ID, timestamp.get()))
                 .thenReturn(Optional.of(customFee));
-        when(commonEntityAccessor.getAccountWithCanonicalAddress(collectorId, timestamp))
-                .thenReturn(collectorAccountId);
+        when(commonEntityAccessor.get(collectorId, timestamp)).thenReturn(Optional.of(collector));
 
         final var token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
         var results = token.customFeesSupplier().get();
@@ -687,8 +696,7 @@ class TokenReadableKVStateTest {
         customFee.setFixedFees(fixedFees);
 
         when(customFeeRepository.findById(TOKEN_ENCODED_ID)).thenReturn(Optional.of(customFee));
-        when(commonEntityAccessor.getAccountWithCanonicalAddress(collectorId, Optional.empty()))
-                .thenReturn(collectorAccountId);
+        when(commonEntityAccessor.get(collectorId, Optional.empty())).thenReturn(Optional.of(collector));
 
         final var token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
         var results = token.customFeesSupplier().get();
@@ -721,8 +729,7 @@ class TokenReadableKVStateTest {
 
         when(customFeeRepository.findByTokenIdAndTimestamp(TOKEN_ENCODED_ID, timestamp.get()))
                 .thenReturn(Optional.of(customFee));
-        when(commonEntityAccessor.getAccountWithCanonicalAddress(collectorId, timestamp))
-                .thenReturn(collectorAccountId);
+        when(commonEntityAccessor.get(collectorId, timestamp)).thenReturn(Optional.of(collector));
 
         final var token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
         var results = token.customFeesSupplier().get();

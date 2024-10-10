@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.services.utils.EntityIdUtils.entityIdFromId;
-import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -97,27 +96,6 @@ class CommonEntityAccessorTest {
 
         assertThat(commonEntityAccessor.get(tokenID, timestamp))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
-    }
-
-    @Test
-    void getAccountWithCanonicalAddress() {
-        final var entityId = EntityId.of(NUM);
-        when(mockEntity.toEntityId()).thenReturn(entityId);
-        when(entityRepository.findByIdAndDeletedIsFalse(entityId.getId())).thenReturn(Optional.of(mockEntity));
-
-        final AccountID accountId = commonEntityAccessor.getAccountWithCanonicalAddress(entityId, Optional.empty());
-        assertThat(accountId).isEqualTo(toAccountId(mockEntity));
-    }
-
-    @Test
-    void getAccountWithCanonicalAddressHistorical() {
-        final var entityId = EntityId.of(NUM);
-        when(mockEntity.toEntityId()).thenReturn(entityId);
-        when(entityRepository.findActiveByIdAndTimestamp(entityId.getId(), timestamp.get()))
-                .thenReturn(Optional.of(mockEntity));
-
-        final AccountID accountId = commonEntityAccessor.getAccountWithCanonicalAddress(entityId, timestamp);
-        assertThat(accountId).isEqualTo(toAccountId(mockEntity));
     }
 
     @Test

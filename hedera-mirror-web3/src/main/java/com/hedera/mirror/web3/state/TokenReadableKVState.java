@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
+import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import static com.hedera.services.utils.EntityIdUtils.toTokenId;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -59,10 +60,10 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
     private final EntityRepository entityRepository;
 
     protected TokenReadableKVState(
-            @Nonnull CommonEntityAccessor commonEntityAccessor,
-            @Nonnull CustomFeeRepository customFeeRepository,
-            @Nonnull TokenRepository tokenRepository,
-            @Nonnull EntityRepository entityRepository) {
+            final CommonEntityAccessor commonEntityAccessor,
+            final CustomFeeRepository customFeeRepository,
+            final TokenRepository tokenRepository,
+            final EntityRepository entityRepository) {
         super("TOKENS");
         this.commonEntityAccessor = commonEntityAccessor;
         this.customFeeRepository = customFeeRepository;
@@ -197,8 +198,9 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
 
         var fixedFees = new ArrayList<CustomFee>();
         customFee.getFixedFees().forEach(f -> {
-            final var collector =
-                    commonEntityAccessor.getAccountWithCanonicalAddress(f.getCollectorAccountId(), timestamp);
+            final var collector = toAccountId(commonEntityAccessor
+                    .get(f.getCollectorAccountId(), timestamp)
+                    .get());
             final var denominatingTokenId = f.getDenominatingTokenId();
 
             final var fixedFee = new FixedFee(f.getAmount(), toTokenId(denominatingTokenId));
@@ -218,8 +220,9 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
 
         var fractionalFees = new ArrayList<CustomFee>();
         customFee.getFractionalFees().forEach(f -> {
-            final var collector =
-                    commonEntityAccessor.getAccountWithCanonicalAddress(f.getCollectorAccountId(), timestamp);
+            final var collector = toAccountId(commonEntityAccessor
+                    .get(f.getCollectorAccountId(), timestamp)
+                    .get());
             final var fractionalFee = new FractionalFee(
                     new Fraction(f.getNumerator(), f.getDenominator()),
                     f.getMinimumAmount(),
@@ -241,8 +244,9 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
 
         var royaltyFees = new ArrayList<CustomFee>();
         customFee.getRoyaltyFees().forEach(f -> {
-            final var collector =
-                    commonEntityAccessor.getAccountWithCanonicalAddress(f.getCollectorAccountId(), timestamp);
+            final var collector = toAccountId(commonEntityAccessor
+                    .get(f.getCollectorAccountId(), timestamp)
+                    .get());
             final var fallbackFee = f.getFallbackFee();
 
             FixedFee convertedFallbackFee = null;
