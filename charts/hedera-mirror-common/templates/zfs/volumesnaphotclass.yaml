@@ -1,0 +1,11 @@
+{{- if .Values.zfs.enabled -}}
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  name: zfs
+  annotations:
+    snapshot.storage.k8s.io/is-default-class: "true"
+driver: zfs.csi.openebs.io
+deletionPolicy: Delete
+{{- end -}}

@@ -138,6 +138,22 @@ rosetta:
     priorityClassName: high
 
 stackgres:
+  backup:
+    enabled: true
+    instances:
+    - retention: 7
+      cronSchedule: "45 22 * * *"
+      compression: lz4
+      useVolumeSnapshot: true
+      fastVolumeSnapshot: false # Can be true once StackGres issue 2887 is resolved
+      volumeSnapshotClass: zfs
+      performance:
+        uploadDiskConcurrency: 1 # Can be 4 once StackGres issue 2887 is resolved
+    objectStorage:
+      endpoint: http://mirror-minio.common:9000
+      bucket: stackgres-backup
+      storageCredsSecretName: mirror-minio
+      storageCredsNamespace: common
   coordinator:
     instances: 2
     resources:
@@ -145,6 +161,9 @@ stackgres:
       memory: 24Gi
       requests:
         containers:
+          backup.create-backup:
+            memory: 512Mi
+            cpu: 1500m
           cluster-controller:
             cpu: 500m
           envoy:
@@ -167,6 +186,9 @@ stackgres:
       memory: 40Gi
       requests:
         containers:
+          backup.create-backup:
+            memory: 512Mi
+            cpu: 1500m
           cluster-controller:
             cpu: 500m
           envoy:

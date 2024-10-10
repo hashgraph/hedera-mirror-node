@@ -6,6 +6,14 @@ metadata:
   name: {{ include "hedera-mirror.stackgres" . }}
   namespace: {{ include "hedera-mirror.namespace" . }}
 spec:
+  {{- if .Values.stackgres.backup.enabled }}
+  configurations:
+    backups:
+    {{- range $backupConfig := .Values.stackgres.backup.instances }}
+    - sgObjectStorage: {{ include "hedera-mirror.stackgres" $ }}-object-storage
+      {{$backupConfig | toYaml | nindent 6}}
+    {{- end }}
+  {{- end }}
   coordinator:
     configurations:
       sgPoolingConfig: {{ include "hedera-mirror.stackgres" . }}-coordinator
@@ -21,6 +29,8 @@ spec:
       resources:
         disableResourcesRequestsSplitFromTotal: {{ .Values.stackgres.dedicatedResourcesRequests }}
       scheduling:
+        backup:
+          priorityClassName: {{ .Values.stackgres.priorityClassName }}
         priorityClassName: {{ .Values.stackgres.priorityClassName }}
         {{- if eq ((.Values.stackgres.coordinator.persistentVolume).storageClass) "zfs" }}
         nodeSelector:
@@ -61,6 +71,8 @@ spec:
       resources:
         disableResourcesRequestsSplitFromTotal: {{ .Values.stackgres.dedicatedResourcesRequests }}
       scheduling:
+        backup:
+          priorityClassName: {{ .Values.stackgres.priorityClassName }}
         priorityClassName: {{ .Values.stackgres.priorityClassName }}
         {{- if eq ((.Values.stackgres.worker.persistentVolume).storageClass) "zfs" }}
         nodeSelector:
