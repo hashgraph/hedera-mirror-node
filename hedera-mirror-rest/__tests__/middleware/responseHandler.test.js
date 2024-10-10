@@ -61,33 +61,33 @@ describe('Response middleware', () => {
   test('Custom headers', async () => {
     mockResponse.get.mockReturnValue('application/json; charset=utf-8');
     await responseHandler(mockRequest, mockResponse, null);
-    expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
+    expect(mockResponse.send).toHaveBeenCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
-    expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
+    expect(mockResponse.status).toHaveBeenCalledWith(mockResponse.locals.statusCode);
   });
 
   test('Default headers', async () => {
     mockRequest.route.path = '/api/v1/accounts';
     mockResponse.get.mockReturnValue('application/json; charset=utf-8');
     await responseHandler(mockRequest, mockResponse, null);
-    expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
+    expect(mockResponse.send).toHaveBeenCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenCalledWith({
       [cacheControl]: headers.path[mockRequest.route.path][cacheControl],
       [contentTypeHeader]: 'application/json; charset=utf-8',
     });
-    expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
+    expect(mockResponse.status).toHaveBeenCalledWith(mockResponse.locals.statusCode);
   });
 
   test('Custom Content-Type', async () => {
     mockResponse.locals[responseHeadersLabel] = {[contentTypeHeader]: 'text/plain; charset=utf-8'};
     mockResponse.locals.responseData = '123';
     await responseHandler(mockRequest, mockResponse, null);
-    expect(mockResponse.send).toBeCalledWith(mockResponse.locals.responseData);
+    expect(mockResponse.send).toHaveBeenCalledWith(mockResponse.locals.responseData);
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, {
       [cacheControl]: headers.default[cacheControl],
       [contentTypeHeader]: mockResponse.locals[responseHeadersLabel][contentTypeHeader],
     });
-    expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
+    expect(mockResponse.status).toHaveBeenCalledWith(mockResponse.locals.statusCode);
   });
 
   test('should set the Link next header and confirm it exists', async () => {
