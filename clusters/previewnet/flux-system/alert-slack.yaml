@@ -11,9 +11,6 @@ spec:
       namespace: common
     - kind: HelmRelease
       name: '*'
-      namespace: previewnet
-    - kind: HelmRelease
-      name: '*'
       namespace: previewnet-citus
     - kind: Kustomization
       name: '*'
