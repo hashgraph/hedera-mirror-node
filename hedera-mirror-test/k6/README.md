@@ -96,6 +96,8 @@ The following parameters can be used to configure a rest-java test:
 | DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_SPENDER |         |                                         |
 | RESTJAVA_TEST_EXCLUDE                     | ^$      | The rest-java test scenarios to exclude |
 | RESTJAVA_TEST_INCLUDE                     | .\*     | The rest-java test scenarios to include |
+| DEFAULT_ACCOUNT_ID_AIRDROP_SENDER         |         |                                         |
+| DEFAULT_ACCOUNT_ID_AIRDROP_RECEIVER       |         |                                         |
 
 ### Rosetta API
 
