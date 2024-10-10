@@ -98,6 +98,7 @@ public class EvmConfiguration {
     public static final String CACHE_NAME = "default";
     public static final String CACHE_NAME_CONTRACT = "contract";
     public static final String CACHE_NAME_EVM_ADDRESS = "evmAddress";
+    public static final String CACHE_NAME_ALIAS = "alias";
     public static final String CACHE_NAME_EXCHANGE_RATE = "exchangeRate";
     public static final String CACHE_NAME_FEE_SCHEDULE = "feeSchedule";
     public static final String CACHE_NAME_NFT = "nft";
@@ -144,7 +145,7 @@ public class EvmConfiguration {
     @Bean(CACHE_MANAGER_ENTITY)
     CacheManager cacheManagerEntity() {
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME, CACHE_NAME_EVM_ADDRESS));
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME, CACHE_NAME_EVM_ADDRESS, CACHE_NAME_ALIAS));
         caffeineCacheManager.setCacheSpecification(cacheProperties.getEntity());
         return caffeineCacheManager;
     }

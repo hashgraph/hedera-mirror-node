@@ -36,7 +36,7 @@ public class CommonEntityAccessor {
         if (accountID.hasAccountNum()) {
             return getEntityByMirrorAddressAndTimestamp(toEntityId(accountID), timestamp);
         } else {
-            return getEntityByEvmAddressAndTimestamp(accountID.alias().toByteArray(), timestamp);
+            return getEntityByEvmAddressOrAliasAndTimestamp(accountID.alias().toByteArray(), timestamp);
         }
     }
 
@@ -50,5 +50,11 @@ public class CommonEntityAccessor {
         return timestamp
                 .map(t -> entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, t))
                 .orElseGet(() -> entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes));
+    }
+
+    public Optional<Entity> getEntityByEvmAddressOrAliasAndTimestamp(byte[] alias, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(alias, t))
+                .orElseGet(() -> entityRepository.findByEvmAddressOrAlias(alias));
     }
 }
