@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.state;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.mirror.web3.common.ContractCallContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import java.util.Collections;
@@ -42,7 +41,7 @@ public class AliasesReadableKVState extends ReadableKVStateBase<ProtoBytes, Acco
         return entity.map(e -> AccountID.newBuilder()
                         .shardNum(e.getShard())
                         .realmNum(e.getRealm())
-                        .alias(e.getEvmAddress() != null ? Bytes.wrap(e.getEvmAddress()) : alias.value())
+                        .accountNum(e.getNum())
                         .build())
                 .orElse(null);
     }

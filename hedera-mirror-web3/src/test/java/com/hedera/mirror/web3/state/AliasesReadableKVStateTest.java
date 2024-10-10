@@ -62,19 +62,20 @@ class AliasesReadableKVStateTest {
 
     private static final Entity ENTITY_WITH_ALIAS = Entity.builder()
             .shard(1L)
-            .realm(0L)
+            .realm(2L)
+            .num(3L)
             .alias(ALIAS_BYTES.value().toByteArray())
             .build();
 
     private static final Entity ENTITY_WITH_EVM_ADDRESS = Entity.builder()
             .shard(1L)
-            .realm(0L)
+            .realm(2L)
+            .num(3L)
             .alias(EVM_ADDRESS_BYTES.value().toByteArray())
             .build();
 
-    private static final AccountID ACCOUNT_ID_WITH_ALIAS = toAccountId(ENTITY_WITH_ALIAS);
-
-    private static final AccountID ACCOUNT_ID_WITH_EVM_ADDRESS = toAccountId(ENTITY_WITH_EVM_ADDRESS);
+    private static final AccountID ACCOUNT_ID =
+            toAccountId(ENTITY_WITH_ALIAS.getShard(), ENTITY_WITH_ALIAS.getRealm(), ENTITY_WITH_ALIAS.getNum());
 
     @BeforeAll
     static void initStaticMocks() {
@@ -114,7 +115,7 @@ class AliasesReadableKVStateTest {
                         ALIAS_BYTES.value().toByteArray(), Optional.empty()))
                 .thenReturn(Optional.of(ENTITY_WITH_ALIAS));
         assertThat(aliasesReadableKVState.get(ALIAS_BYTES))
-                .satisfies(accountID -> assertThat(accountID).isEqualTo(ACCOUNT_ID_WITH_ALIAS));
+                .satisfies(accountID -> assertThat(accountID).isEqualTo(ACCOUNT_ID));
     }
 
     @Test
@@ -124,7 +125,7 @@ class AliasesReadableKVStateTest {
                         EVM_ADDRESS_BYTES.value().toByteArray(), Optional.empty()))
                 .thenReturn(Optional.of(ENTITY_WITH_EVM_ADDRESS));
         assertThat(aliasesReadableKVState.get(EVM_ADDRESS_BYTES))
-                .satisfies(accountID -> assertThat(accountID).isEqualTo(ACCOUNT_ID_WITH_EVM_ADDRESS));
+                .satisfies(accountID -> assertThat(accountID).isEqualTo(ACCOUNT_ID));
     }
 
     @Test
@@ -135,7 +136,7 @@ class AliasesReadableKVStateTest {
                         ALIAS_BYTES.value().toByteArray(), Optional.of(blockTimestamp)))
                 .thenReturn(Optional.of(ENTITY_WITH_ALIAS));
         assertThat(aliasesReadableKVState.get(ALIAS_BYTES))
-                .satisfies(accountID -> assertThat(accountID).isEqualTo(ACCOUNT_ID_WITH_ALIAS));
+                .satisfies(accountID -> assertThat(accountID).isEqualTo(ACCOUNT_ID));
     }
 
     @Test
@@ -146,7 +147,7 @@ class AliasesReadableKVStateTest {
                         EVM_ADDRESS_BYTES.value().toByteArray(), Optional.of(blockTimestamp)))
                 .thenReturn(Optional.of(ENTITY_WITH_EVM_ADDRESS));
         assertThat(aliasesReadableKVState.get(EVM_ADDRESS_BYTES))
-                .satisfies(accountID -> assertThat(accountID).isEqualTo(ACCOUNT_ID_WITH_EVM_ADDRESS));
+                .satisfies(accountID -> assertThat(accountID).isEqualTo(ACCOUNT_ID));
     }
 
     @Test

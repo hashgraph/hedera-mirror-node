@@ -36,7 +36,7 @@ public class CommonEntityAccessor {
         if (accountID.hasAccountNum()) {
             return getEntityByMirrorAddressAndTimestamp(toEntityId(accountID), timestamp);
         } else {
-            return getEntityByEvmAddressAndTimestamp(accountID.alias().toByteArray(), timestamp);
+            return getEntityByEvmAddressOrAliasAndTimestamp(accountID.alias().toByteArray(), timestamp);
         }
     }
 

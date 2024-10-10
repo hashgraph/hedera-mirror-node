@@ -161,6 +161,12 @@ public final class EntityIdUtils {
         return toAccountId(decodedEntityId);
     }
 
+    public static com.hedera.hapi.node.base.AccountID toAccountId(final long shard, final long realm, final long num) {
+        final var decodedEntityId = EntityId.of(shard, realm, num);
+
+        return toAccountId(decodedEntityId);
+    }
+
     public static com.hedera.hapi.node.base.AccountID toAccountId(final Entity entity) {
         if (entity == null) {
             return com.hedera.hapi.node.base.AccountID.DEFAULT;
