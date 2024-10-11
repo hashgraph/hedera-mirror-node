@@ -268,6 +268,16 @@ class EntityIdUtilsTest {
     }
 
     @Test
+    void toAccountIdFromShardRealmNum() {
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(3)
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(1, 2, 3));
+    }
+
+    @Test
     void toAccountIdFromEntityWithNoAlias() {
         final var domainBuilder = new DomainBuilder();
         final var entity = domainBuilder.entity().get();

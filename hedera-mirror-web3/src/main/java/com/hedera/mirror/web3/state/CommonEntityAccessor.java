@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -37,8 +38,14 @@ public class CommonEntityAccessor {
         if (accountID.hasAccountNum()) {
             return get(toEntityId(accountID), timestamp);
         } else {
-            return getEntityByEvmAddressAndTimestamp(accountID.alias().toByteArray(), timestamp);
+            return get(accountID.alias(), timestamp);
         }
+    }
+
+    public @Nonnull Optional<Entity> get(@Nonnull final Bytes alias, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(alias.toByteArray(), t))
+                .orElseGet(() -> entityRepository.findByEvmAddressOrAlias(alias.toByteArray()));
     }
 
     public @Nonnull Optional<Entity> get(@Nonnull TokenID tokenID, final Optional<Long> timestamp) {
