@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -239,6 +240,24 @@ class EntityIdUtilsTest {
                 .build();
 
         assertEquals(EntityId.of(1, 2, 3), EntityIdUtils.toEntityId(accountId));
+    }
+
+    @Test
+    void toEntityIdFromFileID() {
+        final long shard = 1L;
+        final long realm = 2L;
+        final long fileNum = 100L;
+
+        FileID fileID = FileID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .fileNum(fileNum)
+                .build();
+
+        EntityId entityId = EntityIdUtils.toEntityId(fileID);
+
+        EntityId expectedEntityId = EntityId.of(shard, realm, fileNum);
+        assertEquals(expectedEntityId, entityId);
     }
 
     @Test

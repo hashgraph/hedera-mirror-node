@@ -155,6 +155,10 @@ public final class EntityIdUtils {
         return EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum());
     }
 
+    public static EntityId toEntityId(final com.hedera.hapi.node.base.FileID fileID) {
+        return EntityId.of(fileID.shardNum(), fileID.realmNum(), fileID.fileNum());
+    }
+
     public static com.hedera.hapi.node.base.AccountID toAccountId(final Long id) {
         final var decodedEntityId = EntityId.of(id);
 
