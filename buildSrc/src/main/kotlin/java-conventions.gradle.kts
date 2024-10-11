@@ -72,6 +72,7 @@ tasks.javadoc { options.encoding = "UTF-8" }
 
 tasks.withType<Test> {
     finalizedBy(tasks.jacocoTestReport)
+    jvmArgs = listOf("-XX:+EnableDynamicAgentLoading") // Allow byte buddy for Mockito
     maxHeapSize = "4096m"
     minHeapSize = "1024m"
     systemProperty("user.timezone", "UTC")

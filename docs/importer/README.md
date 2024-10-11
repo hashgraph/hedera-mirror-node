@@ -86,7 +86,7 @@ should be able to ingest one month's worth of mainnet data in less than 1.5 days
 
 - Resource allocation
 
-  Run a PostgreSQL 14 instance with at least 4 vCPUs and 16 GB memory.
+  Run a PostgreSQL 16 instance with at least 4 vCPUs and 16 GB memory.
 
 - Configuration:
 

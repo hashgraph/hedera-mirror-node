@@ -136,6 +136,18 @@ class NodeSupplierTest {
     }
 
     @Test
+    void getByAccountId() {
+        monitorProperties.getNodeValidation().setEnabled(false);
+        nodeSupplier.validateNode(node);
+        assertThat(nodeSupplier.get(node.getAccountId())).isEqualTo(node);
+    }
+
+    @Test
+    void getByAccountIdMissing() {
+        assertThat(nodeSupplier.get("0.0.100000")).isNull();
+    }
+
+    @Test
     void init() {
         cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransaction(Mono.just(response(OK)));
@@ -266,6 +278,7 @@ class NodeSupplierTest {
         assertThatThrownBy(() -> nodeSupplier.get())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No valid nodes available");
+        assertThat(nodeSupplier.get(node.getAccountId())).isNull();
 
         // When it recovers
         cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
@@ -274,6 +287,7 @@ class NodeSupplierTest {
 
         // Then it is marked as healthy
         assertThat(nodeSupplier.get()).isEqualTo(node);
+        assertThat(nodeSupplier.get(node.getAccountId())).isEqualTo(node);
     }
 
     @Test

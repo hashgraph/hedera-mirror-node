@@ -8,35 +8,35 @@ dependencies:
     version: 14.7.10
   - name: loki
     condition: loki.enabled
-    version: 5.47.2
+    version: 6.12.0
     repository: https://grafana.github.io/helm-charts
   - condition: prometheus-adapter.enabled
     name: prometheus-adapter
     repository: https://prometheus-community.github.io/helm-charts
-    version: 4.9.1
+    version: 4.11.0
   - alias: prometheus
     condition: prometheus.enabled
     name: kube-prometheus-stack
     repository: https://prometheus-community.github.io/helm-charts
-    version: 57.2.0
+    version: 62.7.0
   - name: promtail
     condition: promtail.enabled
-    version: 6.15.5
+    version: 6.16.5
     repository: https://grafana.github.io/helm-charts
   - alias: stackgres
     condition: stackgres.enabled
     name: stackgres-operator
     repository: https://stackgres.io/downloads/stackgres-k8s/stackgres/helm/
-    version: 1.11.0
+    version: 1.13.0
   - condition: traefik.enabled
     name: traefik
     repository: https://helm.traefik.io/traefik
-    version: 26.1.0
+    version: 31.0.0
   - alias: zfs
     condition: zfs.enabled
     name: openebs
     repository: https://openebs.github.io/openebs
-    version: 4.0.1
+    version: 4.1.0
 description: Hedera Mirror Node common components installed globally for use across namespaces
 home: https://github.com/hashgraph/hedera-mirror-node
 icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067

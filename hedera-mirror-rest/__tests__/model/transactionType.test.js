@@ -56,22 +56,22 @@ describe('getProtoId', () => {
   test('Throw error for invalid name', () => {
     expect(() => {
       TransactionType.getProtoId(unknownProtoId);
-    }).toThrowError(InvalidArgumentError);
+    }).toThrow(InvalidArgumentError);
   });
   test('Throw error for unknown name', () => {
     expect(() => {
       TransactionType.getProtoId('UNKNOWN');
-    }).toThrowError(InvalidArgumentError);
+    }).toThrow(InvalidArgumentError);
   });
   test('Throw error for null name', () => {
     expect(() => {
       TransactionType.getProtoId(null);
-    }).toThrowError(InvalidArgumentError);
+    }).toThrow(InvalidArgumentError);
   });
   test('Throw error for undefined name', () => {
     expect(() => {
       TransactionType.getProtoId(undefined);
-    }).toThrowError(InvalidArgumentError);
+    }).toThrow(InvalidArgumentError);
   });
 });
 

@@ -17,6 +17,7 @@
 package com.hedera.mirror.monitor.publish;
 
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
@@ -47,6 +48,7 @@ public class PublishMetrics {
     private final Map<Tags, Timer> handleTimers = new ConcurrentHashMap<>();
     private final Map<Tags, Timer> submitTimers = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
+    private final NodeSupplier nodeSupplier;
     private final PublishProperties publishProperties;
 
     public void onSuccess(PublishResponse response) {
@@ -61,11 +63,18 @@ public class PublishMetrics {
 
     private void recordMetric(PublishRequest request, PublishResponse response, String status) {
         try {
-            String node = Optional.ofNullable(request.getTransaction().getNodeAccountIds())
+            String nodeAccount = Optional.ofNullable(request.getTransaction().getNodeAccountIds())
                     .filter(l -> !l.isEmpty())
                     .map(l -> l.get(0))
                     .map(AccountId::toString)
                     .orElse(UNKNOWN);
+
+            var node = nodeSupplier.get(nodeAccount);
+            if (node == null) {
+                log.warn("Unable to find node {}", nodeAccount);
+                return;
+            }
+
             long startTime = request.getTimestamp().toEpochMilli();
             long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
             Tags tags = new Tags(node, request.getScenario(), status);
@@ -90,7 +99,9 @@ public class PublishMetrics {
         return TimeGauge.builder(METRIC_DURATION, tags.getScenario(), unit, s -> s.getElapsed()
                         .toNanos())
                 .description("The amount of time this scenario has been publishing transactions")
-                .tag(Tags.TAG_NODE, tags.getNode())
+                .tag(Tags.TAG_HOST, String.valueOf(tags.getNode().getHost()))
+                .tag(Tags.TAG_NODE, String.valueOf(tags.getNode().getNodeId()))
+                .tag(Tags.TAG_PORT, String.valueOf(tags.getNode().getPort()))
                 .tag(Tags.TAG_SCENARIO, tags.getScenario().getName())
                 .tag(Tags.TAG_TYPE, tags.getType())
                 .register(meterRegistry);
@@ -99,7 +110,9 @@ public class PublishMetrics {
     private Timer newHandleMetric(Tags tags) {
         return Timer.builder(METRIC_HANDLE)
                 .description("The time it takes from submit to being handled by the main nodes")
-                .tag(Tags.TAG_NODE, tags.getNode())
+                .tag(Tags.TAG_HOST, String.valueOf(tags.getNode().getHost()))
+                .tag(Tags.TAG_NODE, String.valueOf(tags.getNode().getNodeId()))
+                .tag(Tags.TAG_PORT, String.valueOf(tags.getNode().getPort()))
                 .tag(Tags.TAG_SCENARIO, tags.getScenario().getName())
                 .tag(Tags.TAG_STATUS, tags.getStatus())
                 .tag(Tags.TAG_TYPE, tags.getType())
@@ -109,7 +122,9 @@ public class PublishMetrics {
     private Timer newSubmitMetric(Tags tags) {
         return Timer.builder(METRIC_SUBMIT)
                 .description("The time it takes to submit a transaction")
-                .tag(Tags.TAG_NODE, tags.getNode())
+                .tag(Tags.TAG_HOST, String.valueOf(tags.getNode().getHost()))
+                .tag(Tags.TAG_NODE, String.valueOf(tags.getNode().getNodeId()))
+                .tag(Tags.TAG_PORT, String.valueOf(tags.getNode().getPort()))
                 .tag(Tags.TAG_SCENARIO, tags.getScenario().getName())
                 .tag(Tags.TAG_STATUS, tags.getStatus())
                 .tag(Tags.TAG_TYPE, tags.getType())
@@ -146,12 +161,14 @@ public class PublishMetrics {
 
     @Value
     class Tags {
+        static final String TAG_HOST = "host";
         static final String TAG_NODE = "node";
+        static final String TAG_PORT = "port";
         static final String TAG_SCENARIO = "scenario";
         static final String TAG_STATUS = "status";
         static final String TAG_TYPE = "type";
 
-        private final String node;
+        private final NodeProperties node;
         private final PublishScenario scenario;
         private final String status;
 

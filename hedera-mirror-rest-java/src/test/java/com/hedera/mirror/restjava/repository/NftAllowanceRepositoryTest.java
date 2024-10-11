@@ -21,6 +21,7 @@ import static com.hedera.mirror.restjava.common.RangeOperator.GT;
 import static com.hedera.mirror.restjava.common.RangeOperator.GTE;
 import static com.hedera.mirror.restjava.common.RangeOperator.LT;
 import static com.hedera.mirror.restjava.common.RangeOperator.LTE;
+import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -74,8 +75,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(2) + 1)))
-                                .ownerOrSpenderIds(new Bound(List.of(), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(null, false, Constants.ACCOUNT_ID, NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(null, false, Constants.TOKEN_ID, NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(10)
                                 .order(Direction.ASC)
                                 .build(),
@@ -88,27 +89,11 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(new EntityIdRangeParameter(EQ, EntityId.of(spenders.get(2) + 1))),
+                                        paramToArray(new EntityIdRangeParameter(EQ, EntityId.of(spenders.get(2) + 1))),
                                         false,
-                                        Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(), false, Constants.TOKEN_ID))
-                                .limit(10)
-                                .order(Direction.ASC)
-                                .build(),
-                        EntityId.of(owners.get(0))))
-                .isEmpty();
-
-        // when, then
-        assertThat(nftAllowanceRepository.findAll(
-                        NftAllowanceRequest.builder()
-                                .isOwner(true)
-                                .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
-                                .ownerOrSpenderIds(
-                                        new Bound(List.of(fromIndex(EQ, spenders, 0)), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(
-                                        List.of(new EntityIdRangeParameter(EQ, EntityId.of(tokenIds.get(2) + 1))),
-                                        false,
-                                        Constants.TOKEN_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(null, false, Constants.TOKEN_ID, NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(10)
                                 .order(Direction.ASC)
                                 .build(),
@@ -121,13 +106,15 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(new EntityIdRangeParameter(GT, EntityId.of(spenders.get(2)))),
+                                        paramToArray(fromIndex(EQ, spenders, 0)),
                                         false,
-                                        Constants.ACCOUNT_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
                                 .tokenIds(new Bound(
-                                        List.of(new EntityIdRangeParameter(GT, EntityId.of(tokenIds.get(0)))),
+                                        paramToArray(new EntityIdRangeParameter(EQ, EntityId.of(tokenIds.get(2) + 1))),
                                         false,
-                                        Constants.TOKEN_ID))
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(10)
                                 .order(Direction.ASC)
                                 .build(),
@@ -140,13 +127,36 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(new EntityIdRangeParameter(LT, EntityId.of(spenders.get(0)))),
+                                        paramToArray(new EntityIdRangeParameter(GT, EntityId.of(spenders.get(2)))),
                                         false,
-                                        Constants.ACCOUNT_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
                                 .tokenIds(new Bound(
-                                        List.of(new EntityIdRangeParameter(LT, EntityId.of(tokenIds.get(2)))),
+                                        paramToArray(new EntityIdRangeParameter(GT, EntityId.of(tokenIds.get(0)))),
                                         false,
-                                        Constants.TOKEN_ID))
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
+                                .limit(10)
+                                .order(Direction.ASC)
+                                .build(),
+                        EntityId.of(owners.get(0))))
+                .isEmpty();
+
+        // when, then
+        assertThat(nftAllowanceRepository.findAll(
+                        NftAllowanceRequest.builder()
+                                .isOwner(true)
+                                .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
+                                .ownerOrSpenderIds(new Bound(
+                                        paramToArray(new EntityIdRangeParameter(LT, EntityId.of(spenders.get(0)))),
+                                        false,
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(
+                                        paramToArray(new EntityIdRangeParameter(LT, EntityId.of(tokenIds.get(2)))),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(10)
                                 .order(Direction.ASC)
                                 .build(),
@@ -190,8 +200,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
-                                .ownerOrSpenderIds(new Bound(List.of(), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(null, false, Constants.ACCOUNT_ID, NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(null, false, Constants.TOKEN_ID, NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -201,8 +211,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
-                                .ownerOrSpenderIds(new Bound(List.of(), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(null, false, Constants.ACCOUNT_ID, NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(null, false, Constants.TOKEN_ID, NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.DESC)
                                 .build(),
@@ -212,8 +222,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(false)
                                 .accountId(new EntityIdNumParameter(EntityId.of(spenders.get(1))))
-                                .ownerOrSpenderIds(new Bound(List.of(), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(null, false, Constants.ACCOUNT_ID, NFT_ALLOWANCE.OWNER))
+                                .tokenIds(new Bound(null, false, Constants.TOKEN_ID, NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -223,8 +233,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(false)
                                 .accountId(new EntityIdNumParameter(EntityId.of(spenders.get(1))))
-                                .ownerOrSpenderIds(new Bound(List.of(), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(null, false, Constants.ACCOUNT_ID, NFT_ALLOWANCE.OWNER))
+                                .tokenIds(new Bound(null, false, Constants.TOKEN_ID, NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.DESC)
                                 .build(),
@@ -234,9 +244,12 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
-                                .ownerOrSpenderIds(
-                                        new Bound(List.of(fromIndex(EQ, spenders, 0)), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(
+                                        paramToArray(fromIndex(EQ, spenders, 0)),
+                                        false,
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(null, false, Constants.TOKEN_ID, NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -246,9 +259,12 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
-                                .ownerOrSpenderIds(
-                                        new Bound(List.of(fromIndex(GTE, spenders, 0)), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(
+                                        paramToArray(fromIndex(GTE, spenders, 0)),
+                                        false,
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(null, false, Constants.TOKEN_ID, NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -258,9 +274,16 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
-                                .ownerOrSpenderIds(
-                                        new Bound(List.of(fromIndex(GTE, spenders, 0)), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(fromIndex(GTE, tokenIds, 0)), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(
+                                        paramToArray(fromIndex(GTE, spenders, 0)),
+                                        false,
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(
+                                        paramToArray(fromIndex(GTE, tokenIds, 0)),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -270,9 +293,16 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
-                                .ownerOrSpenderIds(
-                                        new Bound(List.of(fromIndex(GTE, spenders, 0)), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(fromIndex(GT, tokenIds, 1)), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(
+                                        paramToArray(fromIndex(GTE, spenders, 0)),
+                                        false,
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(
+                                        paramToArray(fromIndex(GT, tokenIds, 1)),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -282,9 +312,16 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
-                                .ownerOrSpenderIds(
-                                        new Bound(List.of(fromIndex(LTE, spenders, 2)), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(fromIndex(LT, tokenIds, 2)), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(
+                                        paramToArray(fromIndex(LTE, spenders, 2)),
+                                        false,
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(
+                                        paramToArray(fromIndex(LT, tokenIds, 2)),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.DESC)
                                 .build(),
@@ -295,13 +332,15 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(fromIndex(LTE, spenders, 2), fromIndex(GTE, spenders, 0)),
+                                        paramToArray(fromIndex(LTE, spenders, 2), fromIndex(GTE, spenders, 0)),
                                         false,
-                                        Constants.ACCOUNT_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
                                 .tokenIds(new Bound(
-                                        List.of(fromIndex(LT, tokenIds, 2), fromIndex(GT, tokenIds, 0)),
+                                        paramToArray(fromIndex(LT, tokenIds, 2), fromIndex(GT, tokenIds, 0)),
                                         false,
-                                        Constants.TOKEN_ID))
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -312,10 +351,15 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(fromIndex(LTE, spenders, 2), fromIndex(GT, spenders, 0)),
+                                        paramToArray(fromIndex(LTE, spenders, 2), fromIndex(GT, spenders, 0)),
                                         false,
-                                        Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(fromIndex(LTE, tokenIds, 0)), false, Constants.TOKEN_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(
+                                        paramToArray(fromIndex(LTE, tokenIds, 0)),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(6)
                                 .order(Direction.DESC)
                                 .build(),
@@ -325,9 +369,16 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
-                                .ownerOrSpenderIds(
-                                        new Bound(List.of(fromIndex(EQ, spenders, 0)), false, Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(fromIndex(EQ, tokenIds, 1)), false, Constants.TOKEN_ID))
+                                .ownerOrSpenderIds(new Bound(
+                                        paramToArray(fromIndex(EQ, spenders, 0)),
+                                        false,
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(
+                                        paramToArray(fromIndex(EQ, tokenIds, 1)),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -338,10 +389,15 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(fromIndex(GTE, spenders, 1), fromIndex(LTE, spenders, 1)),
+                                        paramToArray(fromIndex(GTE, spenders, 1), fromIndex(LTE, spenders, 1)),
                                         false,
-                                        Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(fromIndex(EQ, tokenIds, 0)), false, Constants.TOKEN_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(
+                                        paramToArray(fromIndex(EQ, tokenIds, 0)),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -352,10 +408,15 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(fromIndex(GTE, spenders, 1), fromIndex(LTE, spenders, 1)),
+                                        paramToArray(fromIndex(GTE, spenders, 1), fromIndex(LTE, spenders, 1)),
                                         false,
-                                        Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(fromIndex(GTE, tokenIds, 0)), false, Constants.TOKEN_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(
+                                        paramToArray(fromIndex(GTE, tokenIds, 0)),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -366,10 +427,15 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(fromIndex(GT, spenders, 0), fromIndex(LT, spenders, 2)),
+                                        paramToArray(fromIndex(GT, spenders, 0), fromIndex(LT, spenders, 2)),
                                         false,
-                                        Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(fromIndex(GTE, tokenIds, 0)), false, Constants.TOKEN_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(
+                                        paramToArray(fromIndex(GTE, tokenIds, 0)),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -380,12 +446,13 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(
+                                        paramToArray(
                                                 new EntityIdRangeParameter(GT, EntityId.of(spenders.get(0) - 1)),
                                                 new EntityIdRangeParameter(LT, EntityId.of(spenders.get(2) + 1))),
                                         false,
-                                        Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(), false, Constants.TOKEN_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(null, false, Constants.TOKEN_ID, NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -396,10 +463,15 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(fromIndex(GTE, spenders, 0), fromIndex(LTE, spenders, 2)),
+                                        paramToArray(fromIndex(GTE, spenders, 0), fromIndex(LTE, spenders, 2)),
                                         false,
-                                        Constants.ACCOUNT_ID))
-                                .tokenIds(new Bound(List.of(fromIndex(EQ, tokenIds, 0)), false, Constants.TOKEN_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
+                                .tokenIds(new Bound(
+                                        paramToArray(fromIndex(EQ, tokenIds, 0)),
+                                        false,
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -410,13 +482,15 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(fromIndex(GTE, spenders, 0), fromIndex(LTE, spenders, 2)),
+                                        paramToArray(fromIndex(GTE, spenders, 0), fromIndex(LTE, spenders, 2)),
                                         false,
-                                        Constants.ACCOUNT_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
                                 .tokenIds(new Bound(
-                                        List.of(fromIndex(GTE, tokenIds, 1), fromIndex(LTE, tokenIds, 1)),
+                                        paramToArray(fromIndex(GTE, tokenIds, 1), fromIndex(LTE, tokenIds, 1)),
                                         false,
-                                        Constants.TOKEN_ID))
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),
@@ -427,13 +501,15 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
                                 .ownerOrSpenderIds(new Bound(
-                                        List.of(fromIndex(GTE, spenders, 0), fromIndex(LTE, spenders, 2)),
+                                        paramToArray(fromIndex(GTE, spenders, 0), fromIndex(LTE, spenders, 2)),
                                         false,
-                                        Constants.ACCOUNT_ID))
+                                        Constants.ACCOUNT_ID,
+                                        NFT_ALLOWANCE.SPENDER))
                                 .tokenIds(new Bound(
-                                        List.of(fromIndex(GT, tokenIds, 0), fromIndex(LT, tokenIds, 2)),
+                                        paramToArray(fromIndex(GT, tokenIds, 0), fromIndex(LT, tokenIds, 2)),
                                         false,
-                                        Constants.TOKEN_ID))
+                                        Constants.TOKEN_ID,
+                                        NFT_ALLOWANCE.TOKEN_ID))
                                 .limit(4)
                                 .order(Direction.ASC)
                                 .build(),

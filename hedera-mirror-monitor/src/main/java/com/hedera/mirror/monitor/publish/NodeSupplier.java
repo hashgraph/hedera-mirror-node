@@ -35,6 +35,7 @@ import jakarta.inject.Named;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,6 +56,7 @@ public class NodeSupplier {
     private final RestApiClient restApiClient;
 
     private final CopyOnWriteArrayList<NodeProperties> nodes = new CopyOnWriteArrayList<>();
+    private final Map<String, NodeProperties> nodeMap = new ConcurrentHashMap<>();
     private final SecureRandom secureRandom = new SecureRandom();
 
     @PostConstruct
@@ -93,6 +95,10 @@ public class NodeSupplier {
         return nodes.get(nodeIndex);
     }
 
+    public NodeProperties get(String accountId) {
+        return nodeMap.get(accountId);
+    }
+
     public synchronized Flux<NodeProperties> refresh() {
         boolean empty = nodes.isEmpty();
         Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1L))
@@ -114,6 +120,7 @@ public class NodeSupplier {
                 .doOnNext(n -> {
                     if (empty) {
                         nodes.addIfAbsent(n);
+                        nodeMap.put(n.getAccountId(), n);
                     }
                 }); // Populate on startup before validation
     }
@@ -140,6 +147,7 @@ public class NodeSupplier {
             var nodeProperties = new NodeProperties();
             nodeProperties.setAccountId(networkNode.getNodeAccountId());
             nodeProperties.setHost(host);
+            nodeProperties.setNodeId(networkNode.getNodeId());
             nodeProperties.setPort(serviceEndpoint.getPort());
             return nodeProperties;
         }));
@@ -166,6 +174,7 @@ public class NodeSupplier {
     boolean validateNode(NodeProperties node) {
         if (!monitorProperties.getNodeValidation().isEnabled()) {
             nodes.addIfAbsent(node);
+            nodeMap.put(node.getAccountId(), node);
             log.info("Adding node {} without validation", node.getAccountId());
             return true;
         }
@@ -186,6 +195,7 @@ public class NodeSupplier {
             if (receiptStatus == SUCCESS) {
                 log.info("Validated node {} successfully", nodeAccountId);
                 nodes.addIfAbsent(node);
+                nodeMap.put(node.getAccountId(), node);
                 return true;
             }
 
@@ -196,6 +206,7 @@ public class NodeSupplier {
             log.warn("Unable to validate node {}: ", node, e);
         }
 
+        nodeMap.remove(node.getAccountId());
         nodes.remove(node);
         return false;
     }

@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.contract.ContractTransaction;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -45,9 +46,11 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.util.Version;
 
@@ -535,6 +538,27 @@ class RecordItemTest {
                 .build();
 
         assertThat(recordItem.getTransactionType()).isEqualTo(unknownType);
+    }
+
+    @EnumSource(
+            value = ResponseCodeEnum.class,
+            names = {"UNRECOGNIZED"},
+            mode = EnumSource.Mode.EXCLUDE)
+    @ParameterizedTest
+    void isInvalidIdError(ResponseCodeEnum responseCode) {
+        var receipt = TransactionReceipt.newBuilder().setStatus(responseCode).build();
+        var tr = TRANSACTION_RECORD.toBuilder().setReceipt(receipt).build();
+        var recordItem = RecordItem.builder()
+                .transaction(DEFAULT_TRANSACTION)
+                .transactionRecord(tr)
+                .build();
+        var types = StringUtils.join(EntityType.values(), '|');
+
+        if (responseCode.name().matches("^INVALID_(" + types + "|ALIAS|NODE_ACCOUNT)_(ID|KEY)$")) {
+            assertThat(recordItem.isInvalidIdError()).isTrue();
+        } else {
+            assertThat(recordItem.isInvalidIdError()).isFalse();
+        }
     }
 
     /**
