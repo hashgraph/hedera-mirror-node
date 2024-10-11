@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.state;
 import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
@@ -34,13 +35,17 @@ public class CommonEntityAccessor {
 
     public @Nonnull Optional<Entity> get(@Nonnull AccountID accountID, final Optional<Long> timestamp) {
         if (accountID.hasAccountNum()) {
-            return getEntityByMirrorAddressAndTimestamp(toEntityId(accountID), timestamp);
+            return get(toEntityId(accountID), timestamp);
         } else {
             return getEntityByEvmAddressAndTimestamp(accountID.alias().toByteArray(), timestamp);
         }
     }
 
-    private Optional<Entity> getEntityByMirrorAddressAndTimestamp(EntityId entityId, final Optional<Long> timestamp) {
+    public @Nonnull Optional<Entity> get(@Nonnull TokenID tokenID, final Optional<Long> timestamp) {
+        return get(toEntityId(tokenID), timestamp);
+    }
+
+    public @Nonnull Optional<Entity> get(@Nonnull EntityId entityId, final Optional<Long> timestamp) {
         return timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(entityId.getId(), t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(entityId.getId()));

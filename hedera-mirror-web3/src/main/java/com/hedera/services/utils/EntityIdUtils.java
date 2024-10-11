@@ -23,8 +23,10 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -44,7 +46,7 @@ public final class EntityIdUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static byte[] asEvmAddress(final com.hederahashgraph.api.proto.java.ContractID id) {
+    public static byte[] asEvmAddress(final ContractID id) {
         if (isOfEvmAddressSize(id.getEvmAddress())) {
             return id.getEvmAddress().toByteArray();
         } else {
@@ -182,6 +184,10 @@ public final class EntityIdUtils {
                 .realmNum(entityId.getRealm())
                 .accountNum(entityId.getNum())
                 .build();
+    }
+
+    public static com.hedera.hapi.node.base.AccountID toAccountId(final Long shard, final Long realm, final Long num) {
+        return new com.hedera.hapi.node.base.AccountID(shard, realm, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, num));
     }
 
     public static com.hedera.hapi.node.base.TokenID toTokenId(final Long entityId) {
