@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -36,8 +37,14 @@ public class CommonEntityAccessor {
         if (accountID.hasAccountNum()) {
             return getEntityByMirrorAddressAndTimestamp(toEntityId(accountID), timestamp);
         } else {
-            return getEntityByEvmAddressOrAliasAndTimestamp(accountID.alias().toByteArray(), timestamp);
+            return get(accountID.alias(), timestamp);
         }
+    }
+
+    public @Nonnull Optional<Entity> get(@Nonnull final Bytes alias, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(alias.toByteArray(), t))
+                .orElseGet(() -> entityRepository.findByEvmAddressOrAlias(alias.toByteArray()));
     }
 
     private Optional<Entity> getEntityByMirrorAddressAndTimestamp(EntityId entityId, final Optional<Long> timestamp) {
@@ -50,11 +57,5 @@ public class CommonEntityAccessor {
         return timestamp
                 .map(t -> entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, t))
                 .orElseGet(() -> entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes));
-    }
-
-    public Optional<Entity> getEntityByEvmAddressOrAliasAndTimestamp(byte[] alias, final Optional<Long> timestamp) {
-        return timestamp
-                .map(t -> entityRepository.findActiveByEvmAddressOrAliasAndTimestamp(alias, t))
-                .orElseGet(() -> entityRepository.findByEvmAddressOrAlias(alias));
     }
 }

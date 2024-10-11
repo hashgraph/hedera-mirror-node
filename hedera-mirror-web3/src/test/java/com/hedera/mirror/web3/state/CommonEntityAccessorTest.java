@@ -122,8 +122,7 @@ class CommonEntityAccessorTest {
                         ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray()))
                 .thenReturn(Optional.of(mockEntity));
 
-        assertThat(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
-                        ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray(), Optional.empty()))
+        assertThat(commonEntityAccessor.get(ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias(), Optional.empty()))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
 
@@ -133,8 +132,7 @@ class CommonEntityAccessorTest {
                         ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray(), timestamp.get()))
                 .thenReturn(Optional.of(mockEntity));
 
-        assertThat(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
-                        ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias().toByteArray(), timestamp))
+        assertThat(commonEntityAccessor.get(ACCOUNT_ALIAS_WITH_EVM_ADDRESS.alias(), timestamp))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
 
@@ -144,8 +142,7 @@ class CommonEntityAccessorTest {
                         ACCOUNT_ALIAS_WITH_KEY.alias().toByteArray()))
                 .thenReturn(Optional.of(mockEntity));
 
-        assertThat(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
-                        ACCOUNT_ALIAS_WITH_KEY.alias().toByteArray(), Optional.empty()))
+        assertThat(commonEntityAccessor.get(ACCOUNT_ALIAS_WITH_KEY.alias(), Optional.empty()))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
 
@@ -155,8 +152,7 @@ class CommonEntityAccessorTest {
                         ACCOUNT_ALIAS_WITH_KEY.alias().toByteArray(), timestamp.get()))
                 .thenReturn(Optional.of(mockEntity));
 
-        assertThat(commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
-                        ACCOUNT_ALIAS_WITH_KEY.alias().toByteArray(), timestamp))
+        assertThat(commonEntityAccessor.get(ACCOUNT_ALIAS_WITH_KEY.alias(), timestamp))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
 

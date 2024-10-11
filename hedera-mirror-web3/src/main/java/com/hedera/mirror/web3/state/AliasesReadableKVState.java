@@ -21,9 +21,11 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
+import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
 
+@Named
 public class AliasesReadableKVState extends ReadableKVStateBase<ProtoBytes, AccountID> {
 
     private final CommonEntityAccessor commonEntityAccessor;
@@ -36,8 +38,7 @@ public class AliasesReadableKVState extends ReadableKVStateBase<ProtoBytes, Acco
     @Override
     protected AccountID readFromDataSource(@Nonnull ProtoBytes alias) {
         final var timestamp = ContractCallContext.get().getTimestamp();
-        final var entity = commonEntityAccessor.getEntityByEvmAddressOrAliasAndTimestamp(
-                alias.value().toByteArray(), timestamp);
+        final var entity = commonEntityAccessor.get(alias.value(), timestamp);
         return entity.map(e -> AccountID.newBuilder()
                         .shardNum(e.getShard())
                         .realmNum(e.getRealm())
