@@ -41,7 +41,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class FileReadableKVStateTest {
+class FileReadableKVStateTest {
 
     private static final long SHARD = 0L;
     private static final long REALM = 1L;
@@ -85,22 +85,22 @@ public class FileReadableKVStateTest {
 
     @Test
     void fileFieldsMatchFileDataFields() {
-        FileData fileData = new FileData();
-        fileData.setConsensusTimestamp(TIMESTAMP.get());
-        fileData.setFileData("file-contents".getBytes());
+        FileData fileDataTest = new FileData();
+        fileDataTest.setConsensusTimestamp(TIMESTAMP.get());
+        fileDataTest.setFileData("file-contents".getBytes());
 
         long internalFileId = EntityIdUtils.toEntityId(FILE_ID).getId();
 
         when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
         when(fileDataRepository.getFileAtTimestamp(internalFileId, TIMESTAMP.get()))
-                .thenReturn(Optional.of(fileData));
+                .thenReturn(Optional.of(fileDataTest));
 
         File file = fileReadableKVState.get(FILE_ID);
 
         assertThat(file).isNotNull();
         assertThat(file.fileId()).isEqualTo(FILE_ID);
-        assertThat(file.expirationSecond()).isEqualTo(fileData.getConsensusTimestamp());
-        assertThat(file.contents()).isEqualTo(Bytes.wrap(fileData.getFileData()));
+        assertThat(file.expirationSecond()).isEqualTo(fileDataTest.getConsensusTimestamp());
+        assertThat(file.contents()).isEqualTo(Bytes.wrap(fileDataTest.getFileData()));
     }
 
     @Test
