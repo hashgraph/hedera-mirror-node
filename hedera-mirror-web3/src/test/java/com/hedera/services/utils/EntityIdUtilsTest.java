@@ -33,9 +33,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -322,6 +324,19 @@ class EntityIdUtilsTest {
                 .alias(Bytes.wrap(entity.getAlias()))
                 .build();
         assertEquals(expectedAccountId, EntityIdUtils.toAccountId(entity));
+    }
+
+    @Test
+    void toAccountIdWithShardRealmAndNum() {
+        final long shard = 0L;
+        final long realm = 0L;
+        final long num = 10L;
+
+        final var accountId = EntityIdUtils.toAccountId(shard, realm, num);
+        final var expectedAccountId =
+                new com.hedera.hapi.node.base.AccountID(shard, realm, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, num));
+
+        assertEquals(expectedAccountId, accountId);
     }
 
     @Test

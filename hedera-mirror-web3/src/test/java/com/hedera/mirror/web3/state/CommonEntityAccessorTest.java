@@ -23,7 +23,9 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -73,6 +75,29 @@ class CommonEntityAccessorTest {
                 .thenReturn(Optional.of(mockEntity));
 
         assertThat(commonEntityAccessor.get(ACCOUNT_ID, timestamp))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByTokenID() {
+        final var tokenID = new TokenID(0L, 1L, NUM);
+        final var entityId = EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum());
+
+        when(entityRepository.findByIdAndDeletedIsFalse(entityId.getId())).thenReturn(Optional.of(mockEntity));
+
+        assertThat(commonEntityAccessor.get(tokenID, Optional.empty()))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByTokenIDHistorical() {
+        final var tokenID = new TokenID(0L, 1L, NUM);
+        final var entityId = EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum());
+
+        when(entityRepository.findActiveByIdAndTimestamp(entityId.getId(), timestamp.get()))
+                .thenReturn(Optional.of(mockEntity));
+
+        assertThat(commonEntityAccessor.get(tokenID, timestamp))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
 
