@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.state;
 
+import static com.hedera.services.utils.EntityIdUtils.toAccountId;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.mirror.web3.common.ContractCallContext;
@@ -39,11 +41,7 @@ public class AliasesReadableKVState extends ReadableKVStateBase<ProtoBytes, Acco
     protected AccountID readFromDataSource(@Nonnull ProtoBytes alias) {
         final var timestamp = ContractCallContext.get().getTimestamp();
         final var entity = commonEntityAccessor.get(alias.value(), timestamp);
-        return entity.map(e -> AccountID.newBuilder()
-                        .shardNum(e.getShard())
-                        .realmNum(e.getRealm())
-                        .accountNum(e.getNum())
-                        .build())
+        return entity.map(e -> toAccountId(e.getShard(), e.getRealm(), e.getNum()))
                 .orElse(null);
     }
 
