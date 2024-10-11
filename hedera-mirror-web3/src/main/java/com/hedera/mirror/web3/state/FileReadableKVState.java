@@ -24,15 +24,16 @@ import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
 
 /**
- * This class serves as a repository layer between hedera app services read only state and the Postgres database in mirror-node
- * The object, which is read from DB is converted to the PBJ generated format, so that it can properly be utilized by the hedera app components
- * */
+ * This class serves as a repository layer between hedera app services read only state and the Postgres database in
+ * mirror-node The object, which is read from DB is converted to the PBJ generated format, so that it can properly be
+ * utilized by the hedera app components
+ */
 @Named
 public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
 
@@ -44,7 +45,7 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
     }
 
     @Override
-    protected File readFromDataSource(@NonNull FileID key) {
+    protected File readFromDataSource(@Nonnull FileID key) {
         final var timestamp = ContractCallContext.get().getTimestamp();
         final var fileId = EntityIdUtils.toEntityId(key).getId();
 
@@ -55,7 +56,7 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
                 .orElse(null);
     }
 
-    @NonNull
+    @Nonnull
     @Override
     protected Iterator<FileID> iterateFromDataSource() {
         return Collections.emptyIterator();
