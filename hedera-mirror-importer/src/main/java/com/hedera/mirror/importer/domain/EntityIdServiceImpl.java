@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.domain;
 
+import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_ALIAS;
@@ -64,13 +65,24 @@ public class EntityIdServiceImpl implements EntityIdService {
 
         return switch (accountId.getAccountCase()) {
             case ACCOUNTNUM -> Optional.ofNullable(EntityId.of(accountId));
-            case ALIAS -> cacheLookup(accountId.getAlias(), () -> {
+            case ALIAS -> {
+                long shard = accountId.getShardNum();
+                long realm = accountId.getRealmNum();
                 byte[] alias = toBytes(accountId.getAlias());
-                return alias.length == DomainUtils.EVM_ADDRESS_LENGTH
-                        ? findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum())
-                        : findByPublicKeyAlias(alias, accountId.getShardNum(), accountId.getRealmNum());
-            });
 
+                yield cacheLookup(
+                                accountId.getAlias(),
+                                () -> alias.length == EVM_ADDRESS_LENGTH
+                                        ? findByEvmAddress(alias, shard, realm)
+                                        : entityRepository.findByAlias(alias).map(EntityId::of))
+                        .or(() -> {
+                            if (alias.length == EVM_ADDRESS_LENGTH) {
+                                return Optional.empty();
+                            }
+                            var evmAddress = aliasToEvmAddress(alias);
+                            return cacheLookup(fromBytes(evmAddress), () -> findByEvmAddress(evmAddress, shard, realm));
+                        });
+            }
             default -> {
                 Utility.handleRecoverableError(
                         "Invalid Account Case for AccountID {}: {}", accountId, accountId.getAccountCase());
@@ -118,6 +130,10 @@ public class EntityIdServiceImpl implements EntityIdService {
 
     private Optional<EntityId> cacheLookup(ByteString key, Callable<Optional<EntityId>> loader) {
         try {
+            if (key == null || key.equals(ByteString.EMPTY)) {
+                return Optional.empty();
+            }
+
             return cache.get(key, loader);
         } catch (Cache.ValueRetrievalException e) {
             Utility.handleRecoverableError("Error looking up alias or EVM address {} from cache", key, e);
@@ -181,29 +197,5 @@ public class EntityIdServiceImpl implements EntityIdService {
         }
 
         return id;
-    }
-
-    private Optional<EntityId> findByPublicKeyAlias(byte[] alias, long shardNum, long realmNum) {
-        var encodedId = entityRepository.findByAlias(alias);
-        if (encodedId.isPresent()) {
-            return Optional.ofNullable(EntityId.of(encodedId.get()));
-        }
-
-        // Try to fall back to the 20-byte evm address recovered from the ECDSA secp256k1 alias
-        var evmAddress = aliasToEvmAddress(alias);
-        if (evmAddress == null) {
-            Utility.handleRecoverableError("Unable to find entity for alias {}", Hex.encodeHexString(alias));
-            return Optional.empty();
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug(
-                    "Trying to find entity by evm address {} recovered from public key alias {}",
-                    Hex.encodeHexString(evmAddress),
-                    Hex.encodeHexString(alias));
-        }
-
-        // Check cache first in case the 20-byte evm address hasn't persisted to db
-        return cache.get(fromBytes(evmAddress), () -> findByEvmAddress(evmAddress, shardNum, realmNum));
     }
 }
