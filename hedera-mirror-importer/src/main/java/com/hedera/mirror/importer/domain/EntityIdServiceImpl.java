@@ -33,7 +33,9 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
@@ -70,18 +72,12 @@ public class EntityIdServiceImpl implements EntityIdService {
                 long realm = accountId.getRealmNum();
                 byte[] alias = toBytes(accountId.getAlias());
 
-                yield cacheLookup(
-                                accountId.getAlias(),
-                                () -> alias.length == EVM_ADDRESS_LENGTH
-                                        ? findByEvmAddress(alias, shard, realm)
-                                        : entityRepository.findByAlias(alias).map(EntityId::of))
-                        .or(() -> {
-                            if (alias.length == EVM_ADDRESS_LENGTH) {
-                                return Optional.empty();
-                            }
-                            var evmAddress = aliasToEvmAddress(alias);
-                            return cacheLookup(fromBytes(evmAddress), () -> findByEvmAddress(evmAddress, shard, realm));
-                        });
+                yield alias.length == EVM_ADDRESS_LENGTH
+                        ? cacheLookup(accountId.getAlias(), () -> findByEvmAddress(alias, shard, realm))
+                        : cacheLookup(accountId.getAlias(), () -> entityRepository
+                                        .findByAlias(alias)
+                                        .map(EntityId::of))
+                                .or(() -> findByAliasEvmAddress(alias, shard, realm));
             }
             default -> {
                 Utility.handleRecoverableError(
@@ -128,13 +124,13 @@ public class EntityIdServiceImpl implements EntityIdService {
         return doLookups(contractIds, this::lookup);
     }
 
-    private Optional<EntityId> cacheLookup(ByteString key, Callable<Optional<EntityId>> loader) {
+    private @Nonnull Optional<EntityId> cacheLookup(ByteString key, Callable<Optional<EntityId>> loader) {
         try {
             if (key == null || key.equals(ByteString.EMPTY)) {
                 return Optional.empty();
             }
 
-            return cache.get(key, loader);
+            return Objects.requireNonNullElse(cache.get(key, loader), Optional.empty());
         } catch (Cache.ValueRetrievalException e) {
             Utility.handleRecoverableError("Error looking up alias or EVM address {} from cache", key, e);
             return Optional.empty();
@@ -197,5 +193,10 @@ public class EntityIdServiceImpl implements EntityIdService {
         }
 
         return id;
+    }
+
+    private Optional<EntityId> findByAliasEvmAddress(byte[] alias, long shard, long realm) {
+        var evmAddress = aliasToEvmAddress(alias);
+        return cacheLookup(fromBytes(evmAddress), () -> findByEvmAddress(evmAddress, shard, realm));
     }
 }
