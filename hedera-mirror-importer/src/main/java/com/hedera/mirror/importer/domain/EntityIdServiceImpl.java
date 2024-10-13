@@ -71,12 +71,9 @@ public class EntityIdServiceImpl implements EntityIdService {
                 long shard = accountId.getShardNum();
                 long realm = accountId.getRealmNum();
                 byte[] alias = toBytes(accountId.getAlias());
-
                 yield alias.length == EVM_ADDRESS_LENGTH
                         ? cacheLookup(accountId.getAlias(), () -> findByEvmAddress(alias, shard, realm))
-                        : cacheLookup(accountId.getAlias(), () -> entityRepository
-                                        .findByAlias(alias)
-                                        .map(EntityId::of))
+                        : cacheLookup(accountId.getAlias(), () -> findByAlias(alias))
                                 .or(() -> findByAliasEvmAddress(alias, shard, realm));
             }
             default -> {
@@ -126,10 +123,6 @@ public class EntityIdServiceImpl implements EntityIdService {
 
     private @Nonnull Optional<EntityId> cacheLookup(ByteString key, Callable<Optional<EntityId>> loader) {
         try {
-            if (key == null || key.equals(ByteString.EMPTY)) {
-                return Optional.empty();
-            }
-
             return Objects.requireNonNullElse(cache.get(key, loader), Optional.empty());
         } catch (Cache.ValueRetrievalException e) {
             Utility.handleRecoverableError("Error looking up alias or EVM address {} from cache", key, e);
@@ -195,8 +188,26 @@ public class EntityIdServiceImpl implements EntityIdService {
         return id;
     }
 
-    private Optional<EntityId> findByAliasEvmAddress(byte[] alias, long shard, long realm) {
+    private Optional<EntityId> findByAlias(byte[] alias) {
+        return entityRepository.findByAlias(alias).map(EntityId::of);
+    }
+
+    // Try to fall back to the 20-byte evm address recovered from the ECDSA secp256k1 alias
+    private Optional<EntityId> findByAliasEvmAddress(byte[] alias, long shardNum, long realmNum) {
         var evmAddress = aliasToEvmAddress(alias);
-        return cacheLookup(fromBytes(evmAddress), () -> findByEvmAddress(evmAddress, shard, realm));
+        if (evmAddress == null) {
+            Utility.handleRecoverableError("Unable to find entity for alias {}", Hex.encodeHexString(alias));
+            return Optional.empty();
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug(
+                    "Trying to find entity by evm address {} recovered from public key alias {}",
+                    Hex.encodeHexString(evmAddress),
+                    Hex.encodeHexString(alias));
+        }
+
+        // Check cache first in case the 20-byte evm address hasn't persisted to db
+        return cacheLookup(fromBytes(evmAddress), () -> findByEvmAddress(evmAddress, shardNum, realmNum));
     }
 }
