@@ -182,10 +182,7 @@ public record File(
         if (deleted != thatObj.deleted) {
             return false;
         }
-        if (preSystemDeleteExpirationSecond != thatObj.preSystemDeleteExpirationSecond) {
-            return false;
-        }
-        return true;
+        return preSystemDeleteExpirationSecond == thatObj.preSystemDeleteExpirationSecond;
     }
     /**
      * Convenience method to check if the fileId has a value
@@ -428,7 +425,7 @@ public record File(
          * @return builder to continue building with
          */
         public com.hedera.hapi.node.state.file.File.Builder contents(@NonNull Bytes contents) {
-            this.contents = contents != null ? contents : Bytes.EMPTY;
+            this.contents = contents;
             return this;
         }
 
@@ -439,7 +436,7 @@ public record File(
          * @return builder to continue building with
          */
         public com.hedera.hapi.node.state.file.File.Builder memo(@NonNull String memo) {
-            this.memo = memo != null ? memo : "";
+            this.memo = memo;
             return this;
         }
 

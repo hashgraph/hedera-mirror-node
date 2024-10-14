@@ -38,7 +38,7 @@ public class FileTest extends AbstractStateTest {
 
     @SuppressWarnings("EqualsWithItself")
     @Test
-    public void testTestEqualsAndHashCode() {
+    void testTestEqualsAndHashCode() {
         if (ARGUMENTS.size() >= 3) {
             final var item1 = ARGUMENTS.get(0);
             final var item2 = ARGUMENTS.get(1);
