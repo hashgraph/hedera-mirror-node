@@ -18,8 +18,10 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_TOKEN;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_TOKEN_TYPE;
 
 import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
@@ -30,6 +32,28 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
     @Override
     @Cacheable(cacheNames = CACHE_NAME_TOKEN, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<Token> findById(Long tokenId);
+
+    @Cacheable(cacheNames = CACHE_NAME_TOKEN_TYPE, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
+    @Query(
+            value =
+                    """
+                    select coalesce(
+                        (
+                            select type
+                            from token
+                            where token_id = ?1
+                        ),
+                        (
+                            select type
+                            from token_history
+                            where token_id = ?1
+                            order by lower(timestamp_range) desc
+                            limit 1
+                        )
+                    )
+                    """,
+            nativeQuery = true)
+    Optional<TokenTypeEnum> findTokenTypeById(Long tokenId);
 
     /**
      * Retrieves the most recent state of a token by its ID up to a given block timestamp.
