@@ -689,7 +689,7 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse executeNftAirdrop(
-            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, int serialNumber) {
+            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, long serialNumber) {
         var transaction =
                 getNftAirdropTransaction(tokenId, sender.getAccountId(), receiver.getAccountId(), serialNumber);
         var response = executeTransactionAndRetrieveReceipt(transaction, KeyList.of(sender.getPrivateKey()), sender);
@@ -784,7 +784,7 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     private TokenAirdropTransaction getNftAirdropTransaction(
-            TokenId tokenId, AccountId sender, AccountId recipient, int serialNumber) {
+            TokenId tokenId, AccountId sender, AccountId recipient, long serialNumber) {
         var airdropTransaction = new TokenAirdropTransaction().setTransactionMemo(getMemo("Airdrop Nft"));
         var nftId = new NftId(tokenId, serialNumber);
         return airdropTransaction.addNftTransfer(nftId, sender, recipient);

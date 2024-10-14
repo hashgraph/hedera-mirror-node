@@ -501,8 +501,9 @@ public class TokenFeature extends AbstractFeature {
         assertThat(networkTransactionResponse.getReceipt()).isNotNull();
     }
 
-    @Then("I airdrop serial number {int} to {account}")
-    public void airdropNonFungibleToken(int serialNumber, AccountNameEnum accountName) {
+    @Then("I airdrop serial number index {int} to {account}")
+    public void airdropNonFungibleToken(int index, AccountNameEnum accountName) {
+        var serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
         var receiver = accountClient.getAccount(accountName);
         var sender = accountClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = verify(tokenClient.executeNftAirdrop(tokenId, sender, receiver, serialNumber));
@@ -763,8 +764,9 @@ public class TokenFeature extends AbstractFeature {
     }
 
     @RetryAsserts
-    @Then("I verify {string} airdrop of serial number {int} to {account}")
-    public void verifyNftTokenAirdrop(String status, int serialNumber, AccountNameEnum receiverName) {
+    @Then("I verify {string} airdrop of serial number index {int} to {account}")
+    public void verifyNftTokenAirdrop(String status, int index, AccountNameEnum receiverName) {
+        var serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
         var receiver = accountClient.getAccount(receiverName);
         var sender = accountClient.getAccount(AccountNameEnum.OPERATOR);
 
@@ -784,8 +786,9 @@ public class TokenFeature extends AbstractFeature {
                 verify(tokenClient.executeCancelTokenAirdrop(sender, receiver.getAccountId(), tokenId));
     }
 
-    @Then("I cancel the NFT with serial number {int} airdrop to {account}")
-    public void cancelNftPendingAirdrop(int serialNumber, AccountNameEnum accountName) {
+    @Then("I cancel the NFT with serial number index {int} airdrop to {account}")
+    public void cancelNftPendingAirdrop(int index, AccountNameEnum accountName) {
+        var serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
         var receiver = accountClient.getAccount(accountName);
         var sender = accountClient.getSdkClient().getExpandedOperatorAccountId();
         var nftId = new NftId(tokenId, serialNumber);
@@ -800,8 +803,9 @@ public class TokenFeature extends AbstractFeature {
         networkTransactionResponse = verify(tokenClient.executeClaimTokenAirdrop(sender, receiver, tokenId));
     }
 
-    @Then("{account} claims airdrop for NFT with serial number {int}")
-    public void claimPendingNftAirdrop(AccountNameEnum accountName, int serialNumber) {
+    @Then("{account} claims airdrop for NFT with serial number index {int}")
+    public void claimPendingNftAirdrop(AccountNameEnum accountName, int index) {
+        var serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
         var receiver = accountClient.getAccount(accountName);
         var sender = accountClient.getSdkClient().getExpandedOperatorAccountId();
         var nftId = new NftId(tokenId, serialNumber);
@@ -1219,7 +1223,7 @@ public class TokenFeature extends AbstractFeature {
     }
 
     private void verifySuccessfulNFTAirdrop(
-            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, int serialNumber) {
+            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, long serialNumber) {
         assertThat(getPendingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
                 .isNull();
         assertThat(getOutstandingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
@@ -1237,7 +1241,7 @@ public class TokenFeature extends AbstractFeature {
     }
 
     private void verifyPendingNftAirdrop(
-            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, int serialNumber) {
+            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, long serialNumber) {
         // Call the REST API to get the pending airdrops for the receiver
         var pendingAirdropForToken = getPendingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId());
         verifyTokenAirdrop(pendingAirdropForToken, sender.getAccountId(), receiver.getAccountId(), tokenId);
@@ -1261,7 +1265,7 @@ public class TokenFeature extends AbstractFeature {
     }
 
     private void verifyCancelledNftAirdrop(
-            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, int serialNumber) {
+            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, long serialNumber) {
         assertThat(getPendingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
                 .isNull();
         assertThat(getOutstandingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
