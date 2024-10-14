@@ -16,17 +16,20 @@
 
 package com.hedera.mirror.web3.state;
 
+import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.utils.EntityIdUtils;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterAll;
@@ -51,16 +54,21 @@ class FileReadableKVStateTest {
             .realmNum(REALM)
             .fileNum(FILE_NUM)
             .build();
-    private static final long FILE_ID_LONG = EntityIdUtils.toEntityId(FILE_ID).getId();
+    private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
+    private static final long FILE_ID_LONG = toEntityId(FILE_ID).getId();
     private static final Optional<Long> TIMESTAMP = Optional.of(1234L);
     private static MockedStatic<ContractCallContext> contextMockedStatic;
     private FileData fileData;
+    private Entity entity;
 
     @InjectMocks
     private FileReadableKVState fileReadableKVState;
 
     @Mock
     private FileDataRepository fileDataRepository;
+
+    @Mock
+    private EntityRepository entityRepository;
 
     @Spy
     private ContractCallContext contractCallContext;
@@ -80,33 +88,44 @@ class FileReadableKVStateTest {
         fileData = new FileData();
         fileData.setFileData("Sample file data".getBytes());
         fileData.setConsensusTimestamp(TIMESTAMP.get());
+
+        entity = new Entity();
+        entity.setCreatedTimestamp(TIMESTAMP.get());
+        entity.setShard(SHARD);
+        entity.setRealm(REALM);
+        entity.setNum(FILE_NUM);
+        entity.setExpirationTimestamp(EXPIRATION_TIMESTAMP);
+        entity.setDeleted(false);
+        entity.setType(EntityType.FILE);
+
         contextMockedStatic.when(ContractCallContext::get).thenReturn(contractCallContext);
     }
 
     @Test
     void fileFieldsMatchFileDataFields() {
         FileData fileDataTest = new FileData();
-        fileDataTest.setConsensusTimestamp(TIMESTAMP.get());
         fileDataTest.setFileData("file-contents".getBytes());
 
-        long internalFileId = EntityIdUtils.toEntityId(FILE_ID).getId();
+        long internalFileId = toEntityId(FILE_ID).getId();
 
         when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
         when(fileDataRepository.getFileAtTimestamp(internalFileId, TIMESTAMP.get()))
                 .thenReturn(Optional.of(fileDataTest));
+        when(entityRepository.findActiveByIdAndTimestamp(toEntityId(FILE_ID).getId(), TIMESTAMP.get()))
+                .thenReturn(Optional.ofNullable(entity));
 
         File file = fileReadableKVState.get(FILE_ID);
 
         assertThat(file).isNotNull();
         assertThat(file.fileId()).isEqualTo(FILE_ID);
-        assertThat(file.expirationSecond()).isEqualTo(fileDataTest.getConsensusTimestamp());
+        assertThat(file.expirationSecondSupplier().get()).isEqualTo(entity.getExpirationTimestamp());
         assertThat(file.contents()).isEqualTo(Bytes.wrap(fileDataTest.getFileData()));
     }
 
     @Test
     void fileFieldsReturnNullWhenFileDataNotFound() {
         when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
-        long fileIdLong = EntityIdUtils.toEntityId(FILE_ID).getId();
+        long fileIdLong = toEntityId(FILE_ID).getId();
         when(fileDataRepository.getFileAtTimestamp(fileIdLong, TIMESTAMP.get())).thenReturn(Optional.empty());
 
         File file = fileReadableKVState.get(FILE_ID);
@@ -119,12 +138,14 @@ class FileReadableKVStateTest {
         when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
         when(fileDataRepository.getFileAtTimestamp(FILE_ID_LONG, TIMESTAMP.get()))
                 .thenReturn(Optional.of(fileData));
+        when(entityRepository.findActiveByIdAndTimestamp(toEntityId(FILE_ID).getId(), TIMESTAMP.get()))
+                .thenReturn(Optional.ofNullable(entity));
 
         File result = fileReadableKVState.readFromDataSource(FILE_ID);
 
         assertThat(result).isNotNull();
         assertThat(result.fileId()).isEqualTo(FILE_ID);
-        assertThat(result.expirationSecond()).isEqualTo(fileData.getConsensusTimestamp());
+        assertThat(result.expirationSecondSupplier().get()).isEqualTo(entity.getExpirationTimestamp());
         assertThat(result.contents()).isEqualTo(Bytes.wrap(fileData.getFileData()));
     }
 
@@ -132,12 +153,14 @@ class FileReadableKVStateTest {
     void readFromDataSourceWithoutTimestamp() {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(fileDataRepository.findById(FILE_ID_LONG)).thenReturn(Optional.of(fileData));
+        when(entityRepository.findByIdAndDeletedIsFalse(toEntityId(FILE_ID).getId()))
+                .thenReturn(Optional.of(entity));
 
         File result = fileReadableKVState.readFromDataSource(FILE_ID);
 
         assertThat(result).isNotNull();
         assertThat(result.fileId()).isEqualTo(FILE_ID);
-        assertThat(result.expirationSecond()).isEqualTo(fileData.getConsensusTimestamp());
+        assertThat(result.expirationSecondSupplier().get()).isEqualTo(entity.getExpirationTimestamp());
         assertThat(result.contents()).isEqualTo(Bytes.wrap(fileData.getFileData()));
     }
 

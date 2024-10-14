@@ -18,8 +18,11 @@ package com.hedera.hapi.node.state.token;
 
 import static com.hedera.pbj.runtime.ProtoTestTools.BOOLEAN_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.LONG_TESTS_LIST;
+import static com.hedera.pbj.runtime.ProtoTestTools.generateListArguments;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Fraction;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
@@ -36,6 +39,8 @@ public class AbstractStateTest {
     public static final List<FixedFee> FIXED_FEES_ARGUMENTS = createFixedFeeArguments();
     public static final List<RoyaltyFee> ROYALTY_FEES_ARGUMENTS = createRoyaltyFeeArguments();
     public static final List<CustomFee> CUSTOM_FEE_ARGUMENTS = createCustomFeeArguments();
+    public static final List<FileID> FILE_IDS_ARGUMENTS = createFileIDArguments();
+    public static final List<KeyList> KEY_LISTS_ARGUMENTS = createKeyListArguments();
 
     private static List<Fraction> createFractionArguments() {
         final var numeratorList = LONG_TESTS_LIST;
@@ -116,6 +121,29 @@ public class AbstractStateTest {
                         feeList.get(Math.min(i, feeList.size() - 1)),
                         feeCollectorAccountIdList.get(Math.min(i, feeCollectorAccountIdList.size() - 1)),
                         allCollectorsAreExemptList.get(Math.min(i, allCollectorsAreExemptList.size() - 1))))
+                .toList();
+    }
+
+    private static List<FileID> createFileIDArguments() {
+        final var shardNumList = LONG_TESTS_LIST;
+        final var realmNumList = LONG_TESTS_LIST;
+        final var fileNumList = LONG_TESTS_LIST;
+        int maxValues = Math.max(Math.max(shardNumList.size(), realmNumList.size()), fileNumList.size());
+
+        return IntStream.range(0, maxValues)
+                .mapToObj(i -> new FileID(
+                        shardNumList.get(Math.min(i, shardNumList.size() - 1)),
+                        realmNumList.get(Math.min(i, realmNumList.size() - 1)),
+                        fileNumList.get(Math.min(i, fileNumList.size() - 1))))
+                .toList();
+    }
+
+    private static List<KeyList> createKeyListArguments() {
+        final var keysList = generateListArguments(KeyTest.ARGUMENTS);
+        int maxValues = keysList.size();
+
+        return IntStream.range(0, maxValues)
+                .mapToObj(i -> new KeyList(keysList.get(Math.min(i, keysList.size() - 1))))
                 .toList();
     }
 }

@@ -16,18 +16,25 @@
 
 package com.hedera.mirror.web3.state;
 
+import static com.hedera.services.utils.EntityIdUtils.toEntityId;
+
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.FileDataRepository;
+import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * This class serves as a repository layer between hedera app services read only state and the Postgres database in
@@ -38,21 +45,23 @@ import java.util.Iterator;
 public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
 
     private final FileDataRepository fileDataRepository;
+    private final EntityRepository entityRepository;
 
-    public FileReadableKVState(final FileDataRepository fileDataRepository) {
+    public FileReadableKVState(final FileDataRepository fileDataRepository, final EntityRepository entityRepository) {
         super("FILES");
         this.fileDataRepository = fileDataRepository;
+        this.entityRepository = entityRepository;
     }
 
     @Override
     protected File readFromDataSource(@Nonnull FileID key) {
         final var timestamp = ContractCallContext.get().getTimestamp();
-        final var fileId = EntityIdUtils.toEntityId(key).getId();
+        final var fileId = toEntityId(key).getId();
 
         return timestamp
                 .map(t -> fileDataRepository.getFileAtTimestamp(fileId, t))
                 .orElseGet(() -> fileDataRepository.findById(fileId))
-                .map(fileData -> mapToFile(fileData, key))
+                .map(fileData -> mapToFile(fileData, key, timestamp))
                 .orElse(null);
     }
 
@@ -67,11 +76,19 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
         return 0;
     }
 
-    private File mapToFile(final FileData fileData, final FileID key) {
+    private File mapToFile(final FileData fileData, final FileID key, final Optional<Long> timestamp) {
         return File.newBuilder()
                 .fileId(key)
-                .expirationSecond(fileData.getConsensusTimestamp())
+                .expirationSecond(getExpirationSeconds(toEntityId(key), timestamp))
                 .contents(Bytes.wrap(fileData.getFileData()))
                 .build();
+    }
+
+    private Supplier<Long> getExpirationSeconds(final EntityId entityId, final Optional<Long> timestamp) {
+        return Suppliers.memoize(() -> timestamp
+                .map(t -> entityRepository.findActiveByIdAndTimestamp(entityId.getId(), t))
+                .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(entityId.getId()))
+                .map(AbstractEntity::getExpirationTimestamp)
+                .orElse(null));
     }
 }
