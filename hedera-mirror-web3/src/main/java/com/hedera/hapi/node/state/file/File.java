@@ -24,8 +24,8 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.JsonCodec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -47,8 +47,8 @@ public record File(
         @Nullable FileID fileId,
         Supplier<Long> expirationSecondSupplier,
         @Nullable KeyList keys,
-        @NonNull Bytes contents,
-        @NonNull String memo,
+        @Nonnull Bytes contents,
+        @Nonnull String memo,
         boolean deleted,
         long preSystemDeleteExpirationSecond) {
     /** Protobuf codec for reading and writing in protobuf format */
@@ -194,7 +194,7 @@ public record File(
      * @param defaultValue the default value to return if fileId is null
      * @return the value for fileId if it has a value, or else returns the default value
      */
-    public FileID fileIdOrElse(@NonNull final FileID defaultValue) {
+    public FileID fileIdOrElse(@Nonnull final FileID defaultValue) {
         return hasFileId() ? fileId : defaultValue;
     }
 
@@ -205,7 +205,7 @@ public record File(
      * @return the value for fileId if it has a value
      * @throws NullPointerException if fileId is null
      */
-    public @NonNull FileID fileIdOrThrow() {
+    public @Nonnull FileID fileIdOrThrow() {
         return requireNonNull(fileId, "Field fileId is null");
     }
 
@@ -214,7 +214,7 @@ public record File(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifFileId(@NonNull final Consumer<FileID> ifPresent) {
+    public void ifFileId(@Nonnull final Consumer<FileID> ifPresent) {
         if (hasFileId()) {
             ifPresent.accept(fileId);
         }
@@ -236,7 +236,7 @@ public record File(
      * @param defaultValue the default value to return if keys is null
      * @return the value for keys if it has a value, or else returns the default value
      */
-    public KeyList keysOrElse(@NonNull final KeyList defaultValue) {
+    public KeyList keysOrElse(@Nonnull final KeyList defaultValue) {
         return hasKeys() ? keys : defaultValue;
     }
 
@@ -247,7 +247,7 @@ public record File(
      * @return the value for keys if it has a value
      * @throws NullPointerException if keys is null
      */
-    public @NonNull KeyList keysOrThrow() {
+    public @Nonnull KeyList keysOrThrow() {
         return requireNonNull(keys, "Field keys is null");
     }
 
@@ -256,7 +256,7 @@ public record File(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifKeys(@NonNull final Consumer<KeyList> ifPresent) {
+    public void ifKeys(@Nonnull final Consumer<KeyList> ifPresent) {
         if (hasKeys()) {
             ifPresent.accept(keys);
         }
@@ -294,10 +294,10 @@ public record File(
         @Nullable
         private KeyList keys = null;
 
-        @NonNull
+        @Nonnull
         private Bytes contents = Bytes.EMPTY;
 
-        @NonNull
+        @Nonnull
         private String memo = "";
 
         private boolean deleted = false;
@@ -418,7 +418,7 @@ public record File(
          * @param contents value to set
          * @return builder to continue building with
          */
-        public com.hedera.hapi.node.state.file.File.Builder contents(@NonNull Bytes contents) {
+        public com.hedera.hapi.node.state.file.File.Builder contents(@Nonnull Bytes contents) {
             this.contents = contents;
             return this;
         }
@@ -429,7 +429,7 @@ public record File(
          * @param memo value to set
          * @return builder to continue building with
          */
-        public com.hedera.hapi.node.state.file.File.Builder memo(@NonNull String memo) {
+        public com.hedera.hapi.node.state.file.File.Builder memo(@Nonnull String memo) {
             this.memo = memo;
             return this;
         }
