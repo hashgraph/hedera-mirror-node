@@ -200,6 +200,10 @@ public final class EntityIdUtils {
         return new com.hedera.hapi.node.base.AccountID(shard, realm, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, num));
     }
 
+    public static com.hedera.hapi.node.base.FileID toFileId(final Long shard, final Long realm, final Long num) {
+        return new com.hedera.hapi.node.base.FileID(shard, realm, num);
+    }
+
     public static com.hedera.hapi.node.base.TokenID toTokenId(final Long entityId) {
         final var decodedEntityId = EntityId.of(entityId);
 
