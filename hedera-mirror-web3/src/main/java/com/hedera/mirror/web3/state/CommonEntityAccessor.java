@@ -52,7 +52,7 @@ public class CommonEntityAccessor {
         return get(toEntityId(tokenID), timestamp);
     }
 
-    private @Nonnull Optional<Entity> get(@Nonnull final EntityId entityId, final Optional<Long> timestamp) {
+    public @Nonnull Optional<Entity> get(@Nonnull final EntityId entityId, final Optional<Long> timestamp) {
         return timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(entityId.getId(), t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(entityId.getId()));
