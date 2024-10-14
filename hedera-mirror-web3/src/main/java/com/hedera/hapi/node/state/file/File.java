@@ -16,6 +16,7 @@
 
 package com.hedera.hapi.node.state.file;
 
+import static com.hedera.mirror.web3.utils.Suppliers.areSuppliersEqual;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -151,14 +152,7 @@ public record File(
         if (fileId != null && !fileId.equals(thatObj.fileId)) {
             return false;
         }
-        if (expirationSecondSupplier == null && thatObj.expirationSecondSupplier != null) {
-            return false;
-        }
-        if (expirationSecondSupplier != null && thatObj.expirationSecondSupplier == null) {
-            return false;
-        }
-        if (expirationSecondSupplier != null
-                && !expirationSecondSupplier.get().equals(thatObj.expirationSecondSupplier.get())) {
+        if (!areSuppliersEqual(expirationSecondSupplier, thatObj.expirationSecondSupplier)) {
             return false;
         }
         if (keys == null && thatObj.keys != null) {

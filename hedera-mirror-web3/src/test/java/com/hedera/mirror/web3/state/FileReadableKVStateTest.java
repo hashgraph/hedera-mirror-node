@@ -176,7 +176,7 @@ class FileReadableKVStateTest {
     }
 
     @Test
-    void sizeIsAlwaysEmpty() {
+    void sizeIsAlwaysZero() {
         assertThat(fileReadableKVState.size()).isZero();
     }
 
