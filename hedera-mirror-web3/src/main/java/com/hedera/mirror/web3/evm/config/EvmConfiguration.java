@@ -106,6 +106,7 @@ public class EvmConfiguration {
     public static final String CACHE_NAME_RECORD_FILE_LATEST = "latest";
     public static final String CACHE_NAME_RECORD_FILE_LATEST_INDEX = "latestIndex";
     public static final String CACHE_NAME_TOKEN = "token";
+    public static final String CACHE_NAME_TOKEN_TYPE = "tokenType";
     public static final String CACHE_NAME_TOKEN_ACCOUNT = "tokenAccount";
     public static final String CACHE_NAME_TOKEN_ACCOUNT_COUNT = "tokenAccountCount";
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
@@ -157,6 +158,7 @@ public class EvmConfiguration {
                 CACHE_NAME_NFT,
                 CACHE_NAME_NFT_ALLOWANCE,
                 CACHE_NAME_TOKEN,
+                CACHE_NAME_TOKEN_TYPE,
                 CACHE_NAME_TOKEN_ACCOUNT,
                 CACHE_NAME_TOKEN_ACCOUNT_COUNT,
                 CACHE_NAME_TOKEN_ALLOWANCE));

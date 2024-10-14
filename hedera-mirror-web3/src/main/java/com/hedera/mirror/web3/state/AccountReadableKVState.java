@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
+import static com.hedera.mirror.web3.state.Utils.ZERO_BALANCE;
 import static com.hedera.mirror.web3.state.Utils.parseKey;
 import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import static com.hedera.services.utils.EntityIdUtils.toTokenId;
@@ -60,7 +61,6 @@ import java.util.function.Supplier;
  * */
 @Named
 public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Account> {
-    private static final Long ZERO_BALANCE = 0L;
 
     private final AccountBalanceRepository accountBalanceRepository;
     private final CommonEntityAccessor commonEntityAccessor;
