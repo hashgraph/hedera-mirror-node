@@ -23,8 +23,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.JsonCodec;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -50,7 +50,7 @@ public record TokenRelation(
         boolean frozen,
         boolean kycGranted,
         boolean automaticAssociation,
-        @Nullable TokenID previousToken,
+        @Nullable TokenID previousToken, // TODO: do we need to fill in this and the next field?
         @Nullable TokenID nextToken) {
     /** Protobuf codec for reading and writing in protobuf format */
     public static final Codec<TokenRelation> PROTOBUF =
@@ -66,7 +66,7 @@ public record TokenRelation(
      *
      * @param tokenId <b>(1)</b> The token involved in this relation.It takes only positive,
      * @param accountId <b>(2)</b> The account involved in this association.,
-     * @param balanceSupplier <b>(3)</b> The balanceSupplier of the token relationship.,
+     * @param balance <b>(3)</b> The balance of the token relationship.,
      * @param frozen <b>(4)</b> The flags specifying the token relationship is frozen or not.,
      * @param kycGranted <b>(5)</b> The flag indicating if the token relationship has been granted KYC.,
      * @param automaticAssociation <b>(6)</b> The flag indicating if the token relationship was created using automatic association.,
@@ -76,20 +76,13 @@ public record TokenRelation(
     public TokenRelation(
             TokenID tokenId,
             AccountID accountId,
-            Supplier<Long> balanceSupplier,
+            long balance,
             boolean frozen,
             boolean kycGranted,
             boolean automaticAssociation,
             TokenID previousToken,
             TokenID nextToken) {
-        this.tokenId = tokenId;
-        this.accountId = accountId;
-        this.balanceSupplier = balanceSupplier;
-        this.frozen = frozen;
-        this.kycGranted = kycGranted;
-        this.automaticAssociation = automaticAssociation;
-        this.previousToken = previousToken;
-        this.nextToken = nextToken;
+        this(tokenId, accountId, () -> balance, frozen, kycGranted, automaticAssociation, previousToken, nextToken);
     }
     /**
      * Override the default hashCode method for
@@ -204,7 +197,7 @@ public record TokenRelation(
      * @param defaultValue the default value to return if tokenId is null
      * @return the value for tokenId if it has a value, or else returns the default value
      */
-    public TokenID tokenIdOrElse(@NonNull final TokenID defaultValue) {
+    public TokenID tokenIdOrElse(@Nonnull final TokenID defaultValue) {
         return hasTokenId() ? tokenId : defaultValue;
     }
 
@@ -215,7 +208,7 @@ public record TokenRelation(
      * @return the value for tokenId if it has a value
      * @throws NullPointerException if tokenId is null
      */
-    public @NonNull TokenID tokenIdOrThrow() {
+    public @Nonnull TokenID tokenIdOrThrow() {
         return requireNonNull(tokenId, "Field tokenId is null");
     }
 
@@ -224,7 +217,7 @@ public record TokenRelation(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifTokenId(@NonNull final Consumer<TokenID> ifPresent) {
+    public void ifTokenId(@Nonnull final Consumer<TokenID> ifPresent) {
         if (hasTokenId()) {
             ifPresent.accept(tokenId);
         }
@@ -246,7 +239,7 @@ public record TokenRelation(
      * @param defaultValue the default value to return if accountId is null
      * @return the value for accountId if it has a value, or else returns the default value
      */
-    public AccountID accountIdOrElse(@NonNull final AccountID defaultValue) {
+    public AccountID accountIdOrElse(@Nonnull final AccountID defaultValue) {
         return hasAccountId() ? accountId : defaultValue;
     }
 
@@ -257,7 +250,7 @@ public record TokenRelation(
      * @return the value for accountId if it has a value
      * @throws NullPointerException if accountId is null
      */
-    public @NonNull AccountID accountIdOrThrow() {
+    public @Nonnull AccountID accountIdOrThrow() {
         return requireNonNull(accountId, "Field accountId is null");
     }
 
@@ -266,7 +259,7 @@ public record TokenRelation(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifAccountId(@NonNull final Consumer<AccountID> ifPresent) {
+    public void ifAccountId(@Nonnull final Consumer<AccountID> ifPresent) {
         if (hasAccountId()) {
             ifPresent.accept(accountId);
         }
@@ -288,7 +281,7 @@ public record TokenRelation(
      * @param defaultValue the default value to return if previousToken is null
      * @return the value for previousToken if it has a value, or else returns the default value
      */
-    public TokenID previousTokenOrElse(@NonNull final TokenID defaultValue) {
+    public TokenID previousTokenOrElse(@Nonnull final TokenID defaultValue) {
         return hasPreviousToken() ? previousToken : defaultValue;
     }
 
@@ -299,7 +292,7 @@ public record TokenRelation(
      * @return the value for previousToken if it has a value
      * @throws NullPointerException if previousToken is null
      */
-    public @NonNull TokenID previousTokenOrThrow() {
+    public @Nonnull TokenID previousTokenOrThrow() {
         return requireNonNull(previousToken, "Field previousToken is null");
     }
 
@@ -308,7 +301,7 @@ public record TokenRelation(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifPreviousToken(@NonNull final Consumer<TokenID> ifPresent) {
+    public void ifPreviousToken(@Nonnull final Consumer<TokenID> ifPresent) {
         if (hasPreviousToken()) {
             ifPresent.accept(previousToken);
         }
@@ -330,7 +323,7 @@ public record TokenRelation(
      * @param defaultValue the default value to return if nextToken is null
      * @return the value for nextToken if it has a value, or else returns the default value
      */
-    public TokenID nextTokenOrElse(@NonNull final TokenID defaultValue) {
+    public TokenID nextTokenOrElse(@Nonnull final TokenID defaultValue) {
         return hasNextToken() ? nextToken : defaultValue;
     }
 
@@ -341,7 +334,7 @@ public record TokenRelation(
      * @return the value for nextToken if it has a value
      * @throws NullPointerException if nextToken is null
      */
-    public @NonNull TokenID nextTokenOrThrow() {
+    public @Nonnull TokenID nextTokenOrThrow() {
         return requireNonNull(nextToken, "Field nextToken is null");
     }
 
@@ -350,7 +343,7 @@ public record TokenRelation(
      *
      * @param ifPresent the {@link Consumer} to execute
      */
-    public void ifNextToken(@NonNull final Consumer<TokenID> ifPresent) {
+    public void ifNextToken(@Nonnull final Consumer<TokenID> ifPresent) {
         if (hasNextToken()) {
             ifPresent.accept(nextToken);
         }
@@ -416,7 +409,7 @@ public record TokenRelation(
          *
          * @param tokenId <b>(1)</b> The token involved in this relation.It takes only positive,
          * @param accountId <b>(2)</b> The account involved in this association.,
-         * @param balanceSupplier <b>(3)</b> The balanceSupplier of the token relationship wrapped in a Supplier.,
+         * @param balanceSupplier <b>(3)</b> The balance of the token relationship wrapped in a Supplier.,
          * @param frozen <b>(4)</b> The flags specifying the token relationship is frozen or not.,
          * @param kycGranted <b>(5)</b> The flag indicating if the token relationship has been granted KYC.,
          * @param automaticAssociation <b>(6)</b> The flag indicating if the token relationship was created using automatic association.,

@@ -16,4 +16,334 @@
 
 package com.hedera.mirror.web3.state;
 
-class TokenRelationshipReadableKVStateTest {}
+import static com.hedera.services.utils.EntityIdUtils.toEntityId;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenAccountRepository;
+import com.hedera.mirror.web3.repository.TokenBalanceRepository;
+import com.hedera.mirror.web3.repository.TokenRepository;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Collections;
+import java.util.Optional;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class TokenRelationshipReadableKVStateTest {
+
+    @InjectMocks
+    private TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
+
+    @Mock
+    private CommonEntityAccessor commonEntityAccessor;
+
+    @Mock
+    private TokenRepository tokenRepository;
+
+    @Mock
+    private NftRepository nftRepository;
+
+    @Mock
+    private TokenAccountRepository tokenAccountRepository;
+
+    @Mock
+    private TokenBalanceRepository tokenBalanceRepository;
+
+    @Spy
+    private ContractCallContext contractCallContext;
+
+    private final AccountID ACCOUNT_ID =
+            AccountID.newBuilder().shardNum(1L).realmNum(2L).accountNum(3L).build();
+    private final AccountID ACCOUNT_ID_ALIAS = AccountID.newBuilder()
+            .shardNum(1L)
+            .realmNum(2L)
+            .alias(Bytes.wrap("3a2102b3c641418e89452cd5202adfd4758f459acb8e364f741fd16cd2db79835d39d2".getBytes()))
+            .build();
+
+    private final TokenID TOKEN_ID =
+            TokenID.newBuilder().shardNum(4L).realmNum(5L).tokenNum(6L).build();
+
+    private static final Optional<Long> timestamp = Optional.of(1234L);
+
+    private static final long ACCOUNT_BALANCE = 3L;
+
+    private static MockedStatic<ContractCallContext> contextMockedStatic;
+
+    private DomainBuilder domainBuilder;
+
+    private Entity account;
+
+    private TokenAccount tokenAccount;
+
+    @BeforeAll
+    static void initStaticMocks() {
+        contextMockedStatic = mockStatic(ContractCallContext.class);
+    }
+
+    @AfterAll
+    static void closeStaticMocks() {
+        contextMockedStatic.close();
+    }
+
+    @BeforeEach
+    void setup() {
+        domainBuilder = new DomainBuilder();
+        contextMockedStatic.when(ContractCallContext::get).thenReturn(contractCallContext);
+    }
+
+    @Test
+    void sizeIsAlwaysZero() {
+        assertThat(tokenRelationshipReadableKVState.size()).isZero();
+    }
+
+    @Test
+    void iterateReturnsEmptyIterator() {
+        assertThat(tokenRelationshipReadableKVState.iterateFromDataSource()).isEqualTo(Collections.emptyIterator());
+    }
+
+    @Test
+    void getWithTokenIDNullReturnsNull() {
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId((TokenID) null)
+                .accountId(ACCOUNT_ID)
+                .build();
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
+    }
+
+    @Test
+    void getWithAccountIDNullReturnsNull() {
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId((AccountID) null)
+                .build();
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
+    }
+
+    @Test
+    void getWithAccountNullReturnsNull() {
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.empty());
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
+    }
+
+    @Test
+    void getWithTokenTypeNullReturnsNull() {
+        setUpAccountEntity();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.empty());
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
+    }
+
+    @Test
+    void getWithTokenAccountNullReturnsNull() {
+        setUpAccountEntity();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
+        when(tokenAccountRepository.findById(any())).thenReturn(Optional.empty());
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
+    }
+
+    @Test
+    void getWithTokenAccountNullReturnsNullHistorical() {
+        setUpAccountEntity();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
+        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
+        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.empty());
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
+    }
+
+    @Test
+    void getWithFungibleTokenAccountBalance() {
+        setUpAccountEntity();
+        setUpTokenAccount();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        final var expected = TokenRelation.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .balance(ACCOUNT_BALANCE)
+                .frozen(true)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
+        when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
+    }
+
+    @Test
+    void getWithFungibleTokenAccountBalanceHistorical() {
+        setUpAccountEntity();
+        setUpTokenAccount();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        final var expected = TokenRelation.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .balance(ACCOUNT_BALANCE)
+                .frozen(true)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
+        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
+        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(tokenAccount));
+        when(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(ACCOUNT_BALANCE));
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
+    }
+
+    @Test
+    void getWithNftAccountBalance() {
+        setUpAccountEntity();
+        setUpTokenAccount();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        final var expected = TokenRelation.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .balance(ACCOUNT_BALANCE)
+                .frozen(true)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
+        when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
+    }
+
+    @Test
+    void getWithNftAccountBalanceHistorical() {
+        setUpAccountEntity();
+        setUpTokenAccount();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        final var expected = TokenRelation.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .balance(ACCOUNT_BALANCE)
+                .frozen(true)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
+        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
+        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(tokenAccount));
+        when(nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(ACCOUNT_BALANCE));
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
+    }
+
+    @Test
+    void getWithAccountAliasReturnsCorrectValue() {
+        setUpAccountEntity();
+        setUpTokenAccount();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID_ALIAS)
+                .build();
+        final var expected = TokenRelation.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .balance(ACCOUNT_BALANCE)
+                .frozen(true)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(commonEntityAccessor.get(ACCOUNT_ID_ALIAS, timestamp)).thenReturn(Optional.of(account));
+        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
+        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(tokenAccount));
+        when(nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(ACCOUNT_BALANCE));
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
+    }
+
+    private void setUpAccountEntity() {
+        account = domainBuilder
+                .entity()
+                .customize(e -> e.shard(ACCOUNT_ID.shardNum())
+                        .realm(ACCOUNT_ID.realmNum())
+                        .num(ACCOUNT_ID.accountNum())
+                        .id(toEntityId(ACCOUNT_ID).getId())
+                        .balance(ACCOUNT_BALANCE)
+                        .createdTimestamp(timestamp.get())
+                        .type(EntityType.ACCOUNT))
+                .get();
+    }
+
+    private void setUpTokenAccount() {
+        tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(toEntityId(TOKEN_ID).getId())
+                        .accountId(toEntityId(ACCOUNT_ID).getId())
+                        .balance(ACCOUNT_BALANCE)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                        .automaticAssociation(true)
+                        .createdTimestamp(timestamp.get()))
+                .get();
+    }
+}
