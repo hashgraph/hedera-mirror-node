@@ -138,14 +138,13 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
     }
 
     /**
-     * Determines fungible or NFT balanceSupplier based on block context.
+     * Determines fungible or NFT balance based on block context.
      */
     private Supplier<Long> getBalance(
             final TokenTypeEnum tokenType, final TokenAccount tokenAccount, final Optional<Long> timestamp) {
-        if (tokenType.equals(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)) {
-            return Suppliers.memoize(() -> getNftBalance(tokenAccount, timestamp));
-        }
-        return Suppliers.memoize(() -> getFungibleBalance(tokenAccount, timestamp));
+        return Suppliers.memoize(() -> tokenType.equals(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                ? getNftBalance(tokenAccount, timestamp)
+                : getFungibleBalance(tokenAccount, timestamp));
     }
 
     /**
