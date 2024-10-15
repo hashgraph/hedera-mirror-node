@@ -47,6 +47,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -246,10 +248,20 @@ class TokenRelationshipReadableKVStateTest {
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
     }
 
-    @Test
-    void getWithNftAccountBalance() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void getWithNftAccountBalance(final boolean areFlagsEnabled) {
         setUpAccountEntity();
-        setUpTokenAccount();
+        tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(toEntityId(TOKEN_ID).getId())
+                        .accountId(toEntityId(ACCOUNT_ID).getId())
+                        .balance(ACCOUNT_BALANCE)
+                        .kycStatus(areFlagsEnabled ? TokenKycStatusEnum.GRANTED : TokenKycStatusEnum.REVOKED)
+                        .freezeStatus(areFlagsEnabled ? TokenFreezeStatusEnum.FROZEN : TokenFreezeStatusEnum.UNFROZEN)
+                        .automaticAssociation(areFlagsEnabled)
+                        .createdTimestamp(timestamp.get()))
+                .get();
         final var entityIDPair = EntityIDPair.newBuilder()
                 .tokenId(TOKEN_ID)
                 .accountId(ACCOUNT_ID)
@@ -258,9 +270,9 @@ class TokenRelationshipReadableKVStateTest {
                 .tokenId(TOKEN_ID)
                 .accountId(ACCOUNT_ID)
                 .balance(ACCOUNT_BALANCE)
-                .frozen(true)
-                .kycGranted(true)
-                .automaticAssociation(true)
+                .frozen(areFlagsEnabled)
+                .kycGranted(areFlagsEnabled)
+                .automaticAssociation(areFlagsEnabled)
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));

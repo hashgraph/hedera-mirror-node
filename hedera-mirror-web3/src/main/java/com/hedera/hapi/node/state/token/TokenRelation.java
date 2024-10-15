@@ -46,7 +46,7 @@ import java.util.function.Supplier;
 public record TokenRelation(
         @Nullable TokenID tokenId,
         @Nullable AccountID accountId,
-        Supplier<Long> balanceSupplier,
+        @Nullable Supplier<Long> balanceSupplier,
         boolean frozen,
         boolean kycGranted,
         boolean automaticAssociation,
@@ -513,7 +513,7 @@ public record TokenRelation(
          * @param balanceSupplier value to set
          * @return builder to continue building with
          */
-        public Builder balanceSupplier(Supplier<Long> balanceSupplier) {
+        public Builder balanceSupplier(@Nullable Supplier<Long> balanceSupplier) {
             this.balanceSupplier = balanceSupplier;
             return this;
         }
