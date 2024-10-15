@@ -79,15 +79,15 @@ class TokenRelationshipReadableKVStateTest {
     @Spy
     private ContractCallContext contractCallContext;
 
-    private final AccountID ACCOUNT_ID =
+    private static final AccountID ACCOUNT_ID =
             AccountID.newBuilder().shardNum(1L).realmNum(2L).accountNum(3L).build();
-    private final AccountID ACCOUNT_ID_ALIAS = AccountID.newBuilder()
+    private static final AccountID ACCOUNT_ID_ALIAS = AccountID.newBuilder()
             .shardNum(1L)
             .realmNum(2L)
             .alias(Bytes.wrap("3a2102b3c641418e89452cd5202adfd4758f459acb8e364f741fd16cd2db79835d39d2".getBytes()))
             .build();
 
-    private final TokenID TOKEN_ID =
+    private static final TokenID TOKEN_ID =
             TokenID.newBuilder().shardNum(4L).realmNum(5L).tokenNum(6L).build();
 
     private static final Optional<Long> timestamp = Optional.of(1234L);

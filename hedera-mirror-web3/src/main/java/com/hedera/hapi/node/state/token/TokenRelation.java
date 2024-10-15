@@ -176,10 +176,7 @@ public record TokenRelation(
         if (nextToken == null && thatObj.nextToken != null) {
             return false;
         }
-        if (nextToken != null && !nextToken.equals(thatObj.nextToken)) {
-            return false;
-        }
-        return true;
+        return nextToken == null || nextToken.equals(thatObj.nextToken);
     }
     /**
      * Convenience method to check if the tokenId has a value
@@ -416,6 +413,7 @@ public record TokenRelation(
          * @param previousToken <b>(7)</b> The previous token id of account's association linked list,
          * @param nextToken <b>(8)</b> The next token id of account's association linked list
          */
+        @SuppressWarnings("java:S107")
         public Builder(
                 TokenID tokenId,
                 AccountID accountId,
