@@ -50,7 +50,7 @@ public record TokenRelation(
         boolean frozen,
         boolean kycGranted,
         boolean automaticAssociation,
-        @Nullable TokenID previousToken, // TODO: do we need to fill in this and the next field?
+        @Nullable TokenID previousToken,
         @Nullable TokenID nextToken) {
     /** Protobuf codec for reading and writing in protobuf format */
     public static final Codec<TokenRelation> PROTOBUF =
