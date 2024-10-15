@@ -157,6 +157,10 @@ public final class EntityIdUtils {
         return EntityId.of(tokenID.shardNum(), tokenID.realmNum(), tokenID.tokenNum());
     }
 
+    public static EntityId toEntityId(final com.hedera.hapi.node.base.FileID fileID) {
+        return EntityId.of(fileID.shardNum(), fileID.realmNum(), fileID.fileNum());
+    }
+
     public static com.hedera.hapi.node.base.AccountID toAccountId(final Long id) {
         final var decodedEntityId = EntityId.of(id);
 
@@ -194,6 +198,10 @@ public final class EntityIdUtils {
 
     public static com.hedera.hapi.node.base.AccountID toAccountId(final Long shard, final Long realm, final Long num) {
         return new com.hedera.hapi.node.base.AccountID(shard, realm, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, num));
+    }
+
+    public static com.hedera.hapi.node.base.FileID toFileId(final Long shard, final Long realm, final Long num) {
+        return new com.hedera.hapi.node.base.FileID(shard, realm, num);
     }
 
     public static com.hedera.hapi.node.base.TokenID toTokenId(final Long entityId) {

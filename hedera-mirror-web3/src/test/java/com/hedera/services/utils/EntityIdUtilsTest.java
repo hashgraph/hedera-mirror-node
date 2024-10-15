@@ -244,6 +244,16 @@ class EntityIdUtilsTest {
     }
 
     @Test
+    void toEntityIdFromFileId() {
+        final var fileId = com.hedera.hapi.node.base.FileID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .fileNum(3)
+                .build();
+        assertEquals(EntityId.of(1, 2, 3), EntityIdUtils.toEntityId(fileId));
+    }
+
+    @Test
     void toAccountIdFromEntityId() {
         final var entityId = EntityId.of(1, 2, 3);
 
@@ -337,6 +347,16 @@ class EntityIdUtilsTest {
                 new com.hedera.hapi.node.base.AccountID(shard, realm, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, num));
 
         assertEquals(expectedAccountId, accountId);
+    }
+
+    @Test
+    void toFileIdFromShardRealmNum() {
+        final var expectedFileId = com.hedera.hapi.node.base.FileID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .fileNum(3)
+                .build();
+        assertEquals(expectedFileId, EntityIdUtils.toFileId(1L, 2L, 3L));
     }
 
     @Test
