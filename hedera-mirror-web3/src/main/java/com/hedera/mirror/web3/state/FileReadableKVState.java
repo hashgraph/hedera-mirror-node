@@ -38,7 +38,7 @@ import java.util.function.Supplier;
 
 /**
  * This class serves as a repository layer between hedera app services read only state and the Postgres database in
- * mirror-node The object, which is read from DB is converted to the PBJ generated format, so that it can properly be
+ * mirror-node The file data, which is read from the database is converted to the PBJ generated format, so that it can properly be
  * utilized by the hedera app components
  */
 @Named
@@ -78,9 +78,9 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
 
     private File mapToFile(final FileData fileData, final FileID key, final Optional<Long> timestamp) {
         return File.newBuilder()
-                .fileId(key)
-                .expirationSecond(getExpirationSeconds(toEntityId(key), timestamp))
                 .contents(Bytes.wrap(fileData.getFileData()))
+                .expirationSecond(getExpirationSeconds(toEntityId(key), timestamp))
+                .fileId(key)
                 .build();
     }
 

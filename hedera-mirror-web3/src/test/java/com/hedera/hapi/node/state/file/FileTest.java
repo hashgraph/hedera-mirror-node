@@ -22,8 +22,6 @@ import static com.hedera.pbj.runtime.ProtoTestTools.LONG_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.STRING_TESTS_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.KeyList;
@@ -43,29 +41,30 @@ public class FileTest extends AbstractStateTest {
             final var item1 = ARGUMENTS.get(0);
             final var item2 = ARGUMENTS.get(1);
             final var item3 = ARGUMENTS.get(2);
-            assertEquals(item1, item1);
-            assertEquals(item2, item2);
-            assertEquals(item3, item3);
-            assertNotEquals(item1, item2);
-            assertNotEquals(item2, item3);
+            assertThat(item1).isEqualTo(item1);
+            assertThat(item2).isEqualTo(item2);
+            assertThat(item3).isEqualTo(item3);
+            assertThat(item1).isNotEqualTo(item2);
+            assertThat(item2).isNotEqualTo(item3);
             final var item1HashCode = item1.hashCode();
             final var item2HashCode = item2.hashCode();
             final var item3HashCode = item3.hashCode();
-            assertNotEquals(item1HashCode, item2HashCode);
-            assertNotEquals(item2HashCode, item3HashCode);
+            assertThat(item1HashCode).isNotEqualTo(item2HashCode);
+            assertThat(item2HashCode).isNotEqualTo(item3HashCode);
         }
     }
 
     @Test
     void testEqualsWithNull() {
         final var item1 = ARGUMENTS.get(0);
-        assertNotEquals(null, item1);
+        final File nullItem = null;
+        assertThat(nullItem).isNotEqualTo(item1);
     }
 
     @Test
     void testEqualsWithDifferentClass() {
         final var item1 = ARGUMENTS.get(0);
-        assertNotEquals(item1, new Object());
+        assertThat(item1).isNotEqualTo(new Object());
     }
 
     @Test
@@ -73,7 +72,7 @@ public class FileTest extends AbstractStateTest {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithNullFileId =
                 item1.copyBuilder().fileId((FileID) null).build();
-        assertNotEquals(item1, item1WithNullFileId);
+        assertThat(item1).isNotEqualTo(item1WithNullFileId);
     }
 
     @Test
@@ -81,7 +80,7 @@ public class FileTest extends AbstractStateTest {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithDifferentContents =
                 item1.copyBuilder().contents(Bytes.wrap(new byte[] {1, 2, 3})).build();
-        assertNotEquals(item1, item1WithDifferentContents);
+        assertThat(item1).isNotEqualTo(item1WithDifferentContents);
     }
 
     @Test
@@ -89,7 +88,7 @@ public class FileTest extends AbstractStateTest {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithDifferentMemo =
                 item1.copyBuilder().memo("Different Memo").build();
-        assertNotEquals(item1, item1WithDifferentMemo);
+        assertThat(item1).isNotEqualTo(item1WithDifferentMemo);
     }
 
     @Test
@@ -97,14 +96,14 @@ public class FileTest extends AbstractStateTest {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithDifferentExpirationTime =
                 item1.copyBuilder().expirationSecond(123456789L).build();
-        assertNotEquals(item1, item1WithDifferentExpirationTime);
+        assertThat(item1).isNotEqualTo(item1WithDifferentExpirationTime);
     }
 
     @Test
     void testEqualsWithNullKeys() {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithNullKeys = item1.copyBuilder().keys((KeyList) null).build();
-        assertNotEquals(item1, item1WithNullKeys);
+        assertThat(item1).isNotEqualTo(item1WithNullKeys);
     }
 
     @Test
@@ -112,7 +111,7 @@ public class FileTest extends AbstractStateTest {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithDifferentDeletedStatus =
                 item1.copyBuilder().deleted(false).build();
-        assertNotEquals(item1, item1WithDifferentDeletedStatus);
+        assertThat(item1).isNotEqualTo(item1WithDifferentDeletedStatus);
     }
 
     @Test
