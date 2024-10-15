@@ -33,17 +33,11 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit Test for TokenRelation model object. Generate based on protobuf schema.
- */
-public final class TokenRelationTest {
-    /** A reference to the protoc generated object class. */
-    public static final Class<com.hederahashgraph.api.proto.java.TokenRelation> PROTOC_MODEL_CLASS =
-            com.hederahashgraph.api.proto.java.TokenRelation.class;
+public class TokenRelationTest {
 
     @SuppressWarnings("EqualsWithItself")
     @Test
-    public void testTestEqualsAndHashCode() {
+    void testTestEqualsAndHashCode() {
         if (ARGUMENTS.size() >= 3) {
             final var item1 = ARGUMENTS.get(0);
             final var item2 = ARGUMENTS.get(1);
