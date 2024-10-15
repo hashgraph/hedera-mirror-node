@@ -38,7 +38,7 @@ import java.util.function.Supplier;
 
 /**
  * This class serves as a repository layer between hedera app services read only state and the Postgres database in
- * mirror-node The file data, which is read from the database is converted to the PBJ generated format, so that it can properly be
+ * mirror-node. The file data, which is read from the database is converted to the PBJ generated format, so that it can properly be
  * utilized by the hedera app components
  */
 @Named
