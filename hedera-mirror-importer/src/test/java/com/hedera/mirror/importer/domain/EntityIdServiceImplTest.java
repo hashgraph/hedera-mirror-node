@@ -385,11 +385,19 @@ class EntityIdServiceImplTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void lookupAccountWithEvmAddress() {
+    void lookupAccountEvmAddress() {
         AccountID accountId = AccountID.newBuilder()
                 .setAlias(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
                 .build();
         assertThat(entityIdService.lookup(accountId)).hasValue(EntityId.of(100));
+    }
+
+    @Test
+    void lookupAccountEvmAddressNotFound() {
+        AccountID accountId = AccountID.newBuilder()
+                .setAlias(DomainUtils.fromBytes(domainBuilder.evmAddress()))
+                .build();
+        assertThat(entityIdService.lookup(accountId)).isNotPresent();
     }
 
     private AccountID getProtoAccountId(Entity account) {
