@@ -66,8 +66,7 @@ public class FileTest extends AbstractStateTest {
     @Test
     void testEqualsWithNull() {
         final var item1 = ARGUMENTS.get(0);
-        final File nullItem = null;
-        assertThat(item1).isNotEqualTo(nullItem);
+        assertThat(item1).isNotEqualTo(null);
     }
 
     @Test
