@@ -20,8 +20,6 @@ import static com.hedera.pbj.runtime.ProtoTestTools.BOOLEAN_TESTS_LIST;
 import static com.hedera.pbj.runtime.ProtoTestTools.LONG_TESTS_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
@@ -42,16 +40,16 @@ public class TokenRelationTest {
             final var item1 = ARGUMENTS.get(0);
             final var item2 = ARGUMENTS.get(1);
             final var item3 = ARGUMENTS.get(2);
-            assertEquals(item1, item1);
-            assertEquals(item2, item2);
-            assertEquals(item3, item3);
-            assertNotEquals(item1, item2);
-            assertNotEquals(item2, item3);
+            assertThat(item1).isEqualTo(item1);
+            assertThat(item2).isEqualTo(item2);
+            assertThat(item3).isEqualTo(item3);
+            assertThat(item1).isNotEqualTo(item2);
+            assertThat(item2).isNotEqualTo(item3);
             final var item1HashCode = item1.hashCode();
             final var item2HashCode = item2.hashCode();
             final var item3HashCode = item3.hashCode();
-            assertNotEquals(item1HashCode, item2HashCode);
-            assertNotEquals(item2HashCode, item3HashCode);
+            assertThat(item1HashCode).isNotEqualTo(item2HashCode);
+            assertThat(item2HashCode).isNotEqualTo(item3HashCode);
         }
     }
 
@@ -74,13 +72,13 @@ public class TokenRelationTest {
     @Test
     void testEqualsWithNull() {
         final var item1 = ARGUMENTS.get(0);
-        assertNotEquals(null, item1);
+        assertThat(item1).isNotNull();
     }
 
     @Test
     void testEqualsWithDifferentClass() {
         final var item1 = ARGUMENTS.get(0);
-        assertNotEquals(item1, new Object());
+        assertThat(item1).isNotEqualTo(new Object());
     }
 
     @Test
@@ -88,8 +86,8 @@ public class TokenRelationTest {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithNullTokenId =
                 item1.copyBuilder().tokenId((TokenID) null).build();
-        assertNotEquals(item1, item1WithNullTokenId);
-        assertNotEquals(item1WithNullTokenId, item1);
+        assertThat(item1).isNotEqualTo(item1WithNullTokenId);
+        assertThat(item1WithNullTokenId).isNotEqualTo(item1);
     }
 
     @Test
@@ -97,8 +95,8 @@ public class TokenRelationTest {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithNullTAccountId =
                 item1.copyBuilder().accountId((AccountID) null).build();
-        assertNotEquals(item1, item1WithNullTAccountId);
-        assertNotEquals(item1WithNullTAccountId, item1);
+        assertThat(item1).isNotEqualTo(item1WithNullTAccountId);
+        assertThat(item1WithNullTAccountId).isNotEqualTo(item1);
     }
 
     @Test
@@ -107,7 +105,7 @@ public class TokenRelationTest {
         final var itemNullSuppliers1 = item1.copyBuilder().balanceSupplier(null).build();
         final var itemNullSuppliers2 = item1.copyBuilder().balanceSupplier(null).build();
 
-        assertEquals(itemNullSuppliers1, itemNullSuppliers2);
+        assertThat(itemNullSuppliers1).isEqualTo(itemNullSuppliers2);
     }
 
     @Test
@@ -116,7 +114,7 @@ public class TokenRelationTest {
         final var itemSupplier1 = item1.copyBuilder().balanceSupplier(() -> 1L).build();
         final var itemSupplier2 = item1.copyBuilder().balanceSupplier(() -> 2L).build();
 
-        assertNotEquals(itemSupplier1, itemSupplier2);
+        assertThat(itemSupplier1).isNotEqualTo(itemSupplier2);
     }
 
     @Test
@@ -125,8 +123,8 @@ public class TokenRelationTest {
         final var itemSupplier1 = item1.copyBuilder().balanceSupplier(() -> 1L).build();
         final var itemSupplier2 = item1.copyBuilder().balanceSupplier(null).build();
 
-        assertNotEquals(itemSupplier1, itemSupplier2);
-        assertNotEquals(itemSupplier2, itemSupplier1);
+        assertThat(itemSupplier1).isNotEqualTo(itemSupplier2);
+        assertThat(itemSupplier2).isNotEqualTo(itemSupplier1);
     }
 
     @Test
@@ -135,7 +133,7 @@ public class TokenRelationTest {
         final var itemSupplier1 = item1.copyBuilder().balanceSupplier(() -> 1L).build();
         final var itemSupplier2 = item1.copyBuilder().balanceSupplier(() -> 1L).build();
 
-        assertEquals(itemSupplier1, itemSupplier2);
+        assertThat(itemSupplier1).isEqualTo(itemSupplier2);
     }
 
     @Test
@@ -144,7 +142,7 @@ public class TokenRelationTest {
         final var itemDifferentFrozenFlag =
                 item1.copyBuilder().frozen(!item1.frozen()).build();
 
-        assertNotEquals(itemDifferentFrozenFlag, item1);
+        assertThat(itemDifferentFrozenFlag).isNotEqualTo(item1);
     }
 
     @Test
@@ -153,7 +151,7 @@ public class TokenRelationTest {
         final var itemDifferentKycGrantedFlag =
                 item1.copyBuilder().kycGranted(!item1.kycGranted()).build();
 
-        assertNotEquals(itemDifferentKycGrantedFlag, item1);
+        assertThat(itemDifferentKycGrantedFlag).isNotEqualTo(item1);
     }
 
     @Test
@@ -163,7 +161,7 @@ public class TokenRelationTest {
                 .automaticAssociation(!item1.automaticAssociation())
                 .build();
 
-        assertNotEquals(itemDifferentAutomaticAssociationFlag, item1);
+        assertThat(itemDifferentAutomaticAssociationFlag).isNotEqualTo(item1);
     }
 
     @Test
@@ -171,8 +169,9 @@ public class TokenRelationTest {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithNullTokenId =
                 item1.copyBuilder().previousToken((TokenID) null).build();
-        assertNotEquals(item1, item1WithNullTokenId);
-        assertNotEquals(item1WithNullTokenId, item1);
+
+        assertThat(item1).isNotEqualTo(item1WithNullTokenId);
+        assertThat(item1WithNullTokenId).isNotEqualTo(item1);
     }
 
     @Test
@@ -180,8 +179,9 @@ public class TokenRelationTest {
         final var item1 = ARGUMENTS.get(0);
         final var item1WithNullTokenId =
                 item1.copyBuilder().nextToken((TokenID) null).build();
-        assertNotEquals(item1, item1WithNullTokenId);
-        assertNotEquals(item1WithNullTokenId, item1);
+
+        assertThat(item1).isNotEqualTo(item1WithNullTokenId);
+        assertThat(item1WithNullTokenId).isNotEqualTo(item1);
     }
 
     @Test

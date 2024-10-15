@@ -46,24 +46,24 @@ import java.util.function.Supplier;
 @Named
 public class TokenRelationshipReadableKVState extends ReadableKVStateBase<EntityIDPair, TokenRelation> {
 
+    private final CommonEntityAccessor commonEntityAccessor;
+    private final NftRepository nftRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TokenRepository tokenRepository;
-    private final NftRepository nftRepository;
-    private final CommonEntityAccessor commonEntityAccessor;
 
     protected TokenRelationshipReadableKVState(
+            final CommonEntityAccessor commonEntityAccessor,
+            final NftRepository nftRepository,
             final TokenAccountRepository tokenAccountRepository,
             final TokenBalanceRepository tokenBalanceRepository,
-            final TokenRepository tokenRepository,
-            final NftRepository nftRepository,
-            final CommonEntityAccessor commonEntityAccessor) {
+            final TokenRepository tokenRepository) {
         super("TOKEN_RELS");
+        this.nftRepository = nftRepository;
+        this.commonEntityAccessor = commonEntityAccessor;
         this.tokenAccountRepository = tokenAccountRepository;
         this.tokenBalanceRepository = tokenBalanceRepository;
         this.tokenRepository = tokenRepository;
-        this.nftRepository = nftRepository;
-        this.commonEntityAccessor = commonEntityAccessor;
     }
 
     @Override
