@@ -24,7 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.pbj.runtime.OneOf;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -342,6 +344,46 @@ public final class TokenRelationTest {
                 item1.copyBuilder().nextToken((TokenID) null).build();
         assertThat(item1.nextTokenOrThrow()).isEqualTo(item1.tokenId());
         assertThatThrownBy(itemNullTokenId::nextTokenOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testTokenBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+        final var tokenID = new TokenID(1, 2, 3);
+        final var itemToken = item1.copyBuilder()
+                .tokenId(new TokenID.Builder().shardNum(1).realmNum(2).tokenNum(3))
+                .build();
+        assertThat(itemToken.tokenId()).isEqualTo(tokenID);
+    }
+
+    @Test
+    void testAccountBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+        final var accountId = new AccountID(1, 2, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 3L));
+        final var itemAccount = item1.copyBuilder()
+                .accountId(new AccountID.Builder().shardNum(1).realmNum(2).accountNum(3))
+                .build();
+        assertThat(itemAccount.accountId()).isEqualTo(accountId);
+    }
+
+    @Test
+    void testPreviousTokenBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+        final var tokenID = new TokenID(1, 2, 3);
+        final var itemPreviousToken = item1.copyBuilder()
+                .previousToken(new TokenID.Builder().shardNum(1).realmNum(2).tokenNum(3))
+                .build();
+        assertThat(itemPreviousToken.previousToken()).isEqualTo(tokenID);
+    }
+
+    @Test
+    void testNextTokenBuilder() {
+        final var item1 = ARGUMENTS.get(0);
+        final var tokenID = new TokenID(1, 2, 3);
+        final var itemNextToken = item1.copyBuilder()
+                .nextToken(new TokenID.Builder().shardNum(1).realmNum(2).tokenNum(3))
+                .build();
+        assertThat(itemNextToken.nextToken()).isEqualTo(tokenID);
     }
 
     /**
