@@ -197,15 +197,12 @@ minio:
     serviceMonitor:
       enabled: true
       interval: 60s
-      namespace: common
       jobLabel: minio
   priorityClassName: critical
   provisioning:
     enabled: true
     buckets:
       - name: stackgres-backup
-        policy: none
-        purge: true
   resources:
     requests:
       cpu: 1000m
