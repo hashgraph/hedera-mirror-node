@@ -72,7 +72,7 @@ public class TokenRelationTest {
     @Test
     void testEqualsWithNull() {
         final var item1 = ARGUMENTS.get(0);
-        assertThat(item1).isNotNull();
+        assertThat(item1).isNotEqualTo(null);
     }
 
     @Test
