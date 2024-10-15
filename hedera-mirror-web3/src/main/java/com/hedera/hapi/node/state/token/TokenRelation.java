@@ -495,7 +495,7 @@ public record TokenRelation(
         }
 
         /**
-         * <b>(3)</b> The balanceSupplier of the token relationship.
+         * <b>(3)</b> The balance of the token relationship.
          *
          * @param balance value to set
          * @return builder to continue building with
@@ -506,7 +506,7 @@ public record TokenRelation(
         }
 
         /**
-         * <b>(3)</b> The balanceSupplier of the token relationship.
+         * <b>(3)</b> The balance of the token relationship.
          *
          * @param balanceSupplier value to set
          * @return builder to continue building with
