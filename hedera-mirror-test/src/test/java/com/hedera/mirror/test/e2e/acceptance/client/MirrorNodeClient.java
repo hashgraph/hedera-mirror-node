@@ -41,6 +41,7 @@ import com.hedera.mirror.rest.model.NetworkStakeResponse;
 import com.hedera.mirror.rest.model.Nft;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.rest.model.NftTransactionHistory;
+import com.hedera.mirror.rest.model.Nfts;
 import com.hedera.mirror.rest.model.Schedule;
 import com.hedera.mirror.rest.model.TokenAirdropsResponse;
 import com.hedera.mirror.rest.model.TokenAllowancesResponse;
@@ -221,6 +222,11 @@ public class MirrorNodeClient {
                 accountId,
                 tokenId,
                 spenderId);
+    }
+
+    public Nfts getAccountsNftInfo(@NonNull AccountId accountId) {
+        log.debug("Retrieving account nft info for '{}' returned by Mirror Node", accountId);
+        return callRestEndpoint("/accounts/{accountId}/nfts", Nfts.class, accountId.toString());
     }
 
     public TokenAllowancesResponse getAccountTokenAllowanceBySpender(

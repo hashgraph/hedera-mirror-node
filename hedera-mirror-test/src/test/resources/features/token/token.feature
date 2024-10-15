@@ -89,12 +89,27 @@ Feature: HTS Base Coverage Feature
     Given I update the metadata for serial number indices 0 and 1
     Then the mirror node REST API should return the transaction for token serial number index 0 transaction flow
     And the mirror node REST API should return the transaction for token serial number index 1 transaction flow
+    Given I mint a serial number from the token
+    Then the mirror node REST API should return the transaction for token serial number index 2 transaction flow
+    Then I airdrop serial number index 2 to CAROL
+    Then the mirror node REST API should return the transaction
+    And I verify "pending" airdrop of serial number index 2 to CAROL
+    Then I cancel the NFT with serial number index 2 airdrop to CAROL
+    Then the mirror node REST API should return the transaction
+    And I verify "cancelled" airdrop of serial number index 2 to CAROL
+    Then I airdrop serial number index 2 to CAROL
+    Then the mirror node REST API should return the transaction
     And I associate CAROL with token
     And the mirror node REST API should return the transaction
     Then the mirror node REST API should return the token relationship for nft
-    And I transfer serial number index 1 to CAROL
-    And CAROL rejects serial number index 1
-    Then the mirror node REST API should return the transaction CAROL returns serial number index 1 to OPERATOR
+    Then CAROL claims airdrop for NFT with serial number index 2
+    Then the mirror node REST API should return the transaction
+    And I verify "successful" airdrop of serial number index 2 to CAROL
+    And CAROL rejects serial number index 2
+    Then the mirror node REST API should return the transaction CAROL returns serial number index 2 to OPERATOR
+    Then I airdrop serial number index 2 to CAROL
+    Then the mirror node REST API should return the transaction
+    And I verify "successful" airdrop of serial number index 2 to CAROL
     Then I wipe serial number index 0 from token for ALICE
     And the mirror node REST API should return the transaction for token serial number index 0 transaction flow
     Then I burn serial number index 1 from token
