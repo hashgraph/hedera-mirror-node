@@ -55,6 +55,15 @@ public class FileTest extends AbstractStateTest {
     }
 
     @Test
+    void testHashCodeWithCustomExpirationSupplier() {
+        final var item1 = ARGUMENTS.get(1);
+        final var itemCustomExpirationSupplier =
+                item1.copyBuilder().expirationSecond(() -> 11111L).build();
+
+        assertThat(item1.hashCode()).isNotEqualTo(itemCustomExpirationSupplier.hashCode());
+    }
+
+    @Test
     void testEqualsWithNull() {
         final var item1 = ARGUMENTS.get(0);
         final File nullItem = null;

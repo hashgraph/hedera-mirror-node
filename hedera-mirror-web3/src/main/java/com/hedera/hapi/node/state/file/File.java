@@ -58,12 +58,11 @@ public record File(
     public static final JsonCodec<com.hedera.hapi.node.state.file.File> JSON =
             new com.hedera.hapi.node.state.file.codec.FileJsonCodec();
 
-    /** Default instance with all fields set to default values */
-    public static final com.hedera.hapi.node.state.file.File DEFAULT =
-            newBuilder().build();
-
     private static final Supplier<Long> DEFAULT_LONG_SUPPLIER = () -> 0L;
 
+    /** Default instance with all fields set to default values */
+    public static final com.hedera.hapi.node.state.file.File DEFAULT =
+            newBuilder().expirationSecond(DEFAULT_LONG_SUPPLIER).build();
     /**
      * Create a pre-populated File.
      *
