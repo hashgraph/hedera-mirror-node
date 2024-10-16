@@ -1049,7 +1049,7 @@ paths:
           schema:
             type: string
         - $ref: "#/components/parameters/limitQueryParam"
-        - $ref: "#/components/parameters/orderQueryParamDesc"
+        - $ref: "#/components/parameters/orderQueryParam"
         - name: sequencenumber
           in: query
           example: 2
@@ -1284,7 +1284,7 @@ paths:
         - $ref: "#/components/parameters/accountIdQueryParam"
         - $ref: "#/components/parameters/accountPublicKeyQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
-        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/orderQueryParamDesc"
         - $ref: "#/components/parameters/timestampQueryParam"
       responses:
         200:

@@ -23,9 +23,11 @@ import swaggerUi from 'swagger-ui-express';
 
 // files
 import config from '../config';
+import {isTestEnv} from '../utils.js';
 
 let v1OpenApiDocument;
 let v1OpenApiFile;
+let openApiMap;
 
 /**
  * Check if apiVersion is currently supported
@@ -80,6 +82,57 @@ const getV1OpenApiObject = () => {
   return v1OpenApiDocument;
 };
 
+/**
+ * Get the path to parameter properties map for the OpenApi Spec
+ *
+ * @returns {Map<string, {parameterName, defaultValue, pattern}, regex: RegExp>}
+ */
+const getOpenApiMap = () => {
+  if (_.isUndefined(openApiMap)) {
+    const openApiObject = getV1OpenApiObject();
+    const map = new Map();
+    Object.keys(openApiObject.paths).forEach((path) => {
+      const parameters = getOpenApiParameters(path, openApiObject);
+      map.set(path, parameters);
+    });
+    openApiMap = map;
+  }
+
+  return openApiMap;
+};
+
+/**
+ * Given a path, gets the query parameters and their default values
+ * @param path
+ * @param openApiObject
+ */
+const getOpenApiParameters = (path, openApiObject) => {
+  const pathObject = openApiObject.paths[path];
+  const parameters = pathObject?.get?.parameters;
+  if (parameters === undefined) {
+    return {};
+  }
+
+  return (
+    parameters
+      // Each open api parameter is prefixed by #/components/parameters/, which is 24 characters long
+      .map((p) => p.$ref?.substring(24))
+      .filter((p) => p !== undefined)
+      .map((p) => openApiObject.components.parameters[p])
+      .filter((p) => p.in !== 'path')
+      .map((p) => {
+        const parameterName = p.name;
+        let defaultValue = p.schema?.default;
+        if (defaultValue !== undefined && !_.isString(defaultValue)) {
+          // Convert all values to strings
+          defaultValue = '' + defaultValue;
+        }
+
+        return {parameterName, defaultValue};
+      })
+  );
+};
+
 const serveSpec = (req, res) => res.type('text/yaml').send(getV1OpenApiFile());
 
 /**
@@ -109,10 +162,10 @@ const openApiValidator = (app) => {
       ignoreUndocumented: true,
       validateRequests: false,
       validateResponses: {
-        allErrors: true,
+        allErrors: isTestEnv(),
       },
     })
   );
 };
 
-export {getV1OpenApiObject, openApiValidator, serveSwaggerDocs};
+export {getV1OpenApiObject, getOpenApiMap, openApiValidator, serveSwaggerDocs};
