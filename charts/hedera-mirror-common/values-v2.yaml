@@ -1,0 +1,6 @@
+minio:
+  enabled: true
+stackgres:
+  enabled: true
+zfs:
+  enabled: true

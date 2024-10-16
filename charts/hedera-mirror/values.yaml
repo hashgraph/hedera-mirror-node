@@ -272,6 +272,8 @@ rosetta:
         name: mirror-passwords
 
 stackgres:
+  backup:
+    enabled: false
   coordinator:
     config:
       autovacuum_max_workers: "2"

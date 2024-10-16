@@ -186,6 +186,28 @@ loki:
   write:
     replicas: 0
 
+minio:
+  enabled: false
+  persistence:
+    enabled: true
+    size: 500Gi
+    storageClass: premium-rwo
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 60s
+      jobLabel: minio
+  priorityClassName: critical
+  provisioning:
+    enabled: true
+    buckets:
+      - name: stackgres-backup
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
 networkPolicy:
   enabled: false
 
