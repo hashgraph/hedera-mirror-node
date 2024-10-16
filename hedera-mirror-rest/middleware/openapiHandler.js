@@ -85,7 +85,7 @@ const getV1OpenApiObject = () => {
 /**
  * Get the path to parameter properties map for the OpenApi Spec
  *
- * @returns {Map<string, {parameterName, defaultValue, pattern}, regex: RegExp>}
+ * @returns {Map<string, Array<{parameterName, defaultValue}>>}
  */
 const getOpenApiMap = () => {
   if (_.isUndefined(openApiMap)) {
@@ -105,6 +105,7 @@ const getOpenApiMap = () => {
  * Given a path, gets the query parameters and their default values
  * @param path
  * @param openApiObject
+ * @returns {Array<{parameterName, defaultValue}>}
  */
 const getOpenApiParameters = (path, openApiObject) => {
   const pathObject = openApiObject.paths[path];

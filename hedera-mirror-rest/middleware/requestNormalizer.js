@@ -27,7 +27,9 @@ const NON_SORTED_PARAMS = ['balance', 'block.hash', 'block.number', 'nonce', 'sc
 /**
  * Normalizes a request by adding any missing default values and sorting the query parameters.
  *
- * Note, query parameters should be lower case before this is called, as parameters such as `LIMIT=25` are not equivalent to 'limit=25' and an additional `limit=25` will be added to the resulting parameters.
+ * Note, query parameters should be lower case before this is called, as parameters
+ * such as `LIMIT=25` are not equivalent to `limit=25` and an additional
+ * `limit=25` will be added to the resulting parameters.
  *
  * @param openApiRoute {string}
  * @param path {string}
