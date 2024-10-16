@@ -386,13 +386,13 @@ public class MirrorNodeClient {
 
     public TokenAirdropsResponse getPendingAirdrops(@NonNull AccountId accountId) {
         log.debug("Retrieving pending airdrops for account '{}' returned by Mirror Node", accountId);
-        return callRestEndpoint(
+        return callRestJavaEndpoint(
                 "/accounts/{accountId}/airdrops/pending", TokenAirdropsResponse.class, accountId.toString());
     }
 
     public TokenAirdropsResponse getOutstandingAirdrops(@NonNull AccountId accountId) {
         log.debug("Retrieving outstanding airdrops for account '{}' returned by Mirror Node", accountId);
-        return callRestEndpoint(
+        return callRestJavaEndpoint(
                 "/accounts/{accountId}/airdrops/outstanding", TokenAirdropsResponse.class, accountId.toString());
     }
 
