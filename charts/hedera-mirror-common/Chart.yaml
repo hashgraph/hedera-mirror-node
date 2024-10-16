@@ -5,7 +5,7 @@ dependencies:
     condition: minio.enabled
     name: minio
     repository: https://charts.bitnami.com/bitnami
-    version: 14.7.15
+    version: 14.7.12
   - name: loki
     condition: loki.enabled
     version: 6.12.0
