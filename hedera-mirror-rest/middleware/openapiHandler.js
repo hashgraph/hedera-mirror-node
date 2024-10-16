@@ -103,7 +103,7 @@ const getOpenApiMap = () => {
 
 /**
  * Given a path, gets the query parameters and their default values
- * @param path
+ * @param path {string}
  * @param openApiObject
  * @returns {Array<{parameterName, defaultValue}>}
  */
