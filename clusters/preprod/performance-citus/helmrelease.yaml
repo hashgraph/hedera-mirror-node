@@ -51,6 +51,8 @@ spec:
       monitor:
         enabled: false
     stackgres:
+      backup:
+        enabled: false
       coordinator:
         persistentVolume:
           size: 96Gi
