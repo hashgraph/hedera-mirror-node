@@ -116,8 +116,18 @@ class TopicControllerTest extends ControllerTest {
             validateError(callable, HttpClientErrorException.NotFound.class, "Topic not found: " + entity.toEntityId());
         }
 
-        @NullAndEmptySource
+        @ParameterizedTest
         @ValueSource(strings = {"999", "0.999", "0.0.999"})
+        void entityNotFound(String id) {
+            // When
+            ThrowingCallable callable =
+                    () -> restClient.get().uri("", id).retrieve().body(Topic.class);
+
+            // Then
+            validateError(callable, HttpClientErrorException.NotFound.class, "Entity not found: 0.0.999");
+        }
+
+        @NullAndEmptySource
         @ParameterizedTest
         void notFound(String id) {
             // When
@@ -125,7 +135,7 @@ class TopicControllerTest extends ControllerTest {
                     () -> restClient.get().uri("", id).retrieve().body(Topic.class);
 
             // Then
-            validateError(callable, HttpClientErrorException.NotFound.class, "not found");
+            validateError(callable, HttpClientErrorException.NotFound.class, "No static resource api/v1/topics.");
         }
     }
 }

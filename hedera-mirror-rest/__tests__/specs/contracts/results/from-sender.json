@@ -1,6 +1,10 @@
 {
   "description": "Contract results api call for all contracts with from specified as payer and sender",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": 1676540099
+    },
     "accounts": [
       {
         "num": 5999,
@@ -79,6 +83,32 @@
         "gas_used": 100,
         "sender_id": 9001,
         "transaction_nonce": 0
+      }
+    ],
+    "transactions": [
+      {
+        "payerAccountId": "0.0.5000",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1676540001234390005",
+        "name": "CONTRACTCALL",
+        "type": "7",
+        "entity_id": "0.0.9"
+      },
+      {
+        "payerAccountId": "0.0.5000",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1676540001234500005",
+        "name": "CONTRACTCALL",
+        "type": "7",
+        "entity_id": "0.0.9"
+      },
+      {
+        "payerAccountId": "0.0.5000",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1676540001234900005",
+        "name": "CONTRACTCALL",
+        "type": "7",
+        "entity_id": "0.0.9"
       }
     ]
   },

@@ -12,6 +12,10 @@ aims to document the required changes associated with any new feature.
 - [ ] `TransactionType`
 - [ ] `DomainBuilder`
 
+## GraphQL API
+
+- [ ] Transaction type
+
 ## Importer
 
 - [ ] V1 migration

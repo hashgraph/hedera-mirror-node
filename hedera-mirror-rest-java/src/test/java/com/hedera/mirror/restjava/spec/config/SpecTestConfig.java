@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.restjava.spec.config;
 
+import static com.hedera.mirror.common.config.CommonTestConfiguration.POSTGRESQL;
+
 import com.google.common.collect.ImmutableMap;
 import com.hedera.mirror.common.config.CommonTestConfiguration.FilteringConsumer;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +36,8 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 public class SpecTestConfig {
 
+    public static final String REST_API = "restApi";
+
     @Value("#{environment.matchesProfiles('v2')}")
     private boolean v2;
 
@@ -42,10 +46,10 @@ public class SpecTestConfig {
         return Network.newNetwork();
     }
 
-    @Bean("postgresql")
+    @Bean(POSTGRESQL)
     @ServiceConnection("postgresql")
     PostgreSQLContainer<?> postgresqlOverride(Network postgresqlNetwork) {
-        var imageName = v2 ? "gcr.io/mirrornode/citus:12.1.1" : "postgres:14-alpine";
+        var imageName = v2 ? "gcr.io/mirrornode/citus:12.1.1" : "postgres:16-alpine";
         var dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor("postgres");
         var logger = LoggerFactory.getLogger(PostgreSQLContainer.class);
         var excluded = "terminating connection due to unexpected postmaster exit";
@@ -62,7 +66,7 @@ public class SpecTestConfig {
                 .withUsername("mirror_node");
     }
 
-    @Bean
+    @Bean(REST_API)
     GenericContainer<?> jsRestApi(PostgreSQLContainer<?> postgresql, Network prostgresqlNetwork) {
         var envBuilder = ImmutableMap.<String, String>builder()
                 .put("HEDERA_MIRROR_REST_REDIS_ENABLED", "false")
@@ -75,8 +79,7 @@ public class SpecTestConfig {
                     .put("HEDERA_MIRROR_REST_DB_PASSWORD", "mirror_rest_pass");
         }
 
-        return new GenericContainer<>(
-                DockerImageName.parse("gcr.io/mirrornode/hedera-mirror-rest:latest"))
+        return new GenericContainer<>(DockerImageName.parse("gcr.io/mirrornode/hedera-mirror-rest:latest"))
                 .dependsOn(postgresql)
                 .withNetwork(prostgresqlNetwork)
                 .withExposedPorts(5551)

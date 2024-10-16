@@ -26,18 +26,26 @@ import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.IdUtils.asContract;
 import static com.hedera.services.utils.IdUtils.asToken;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
+import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -177,6 +185,11 @@ class EntityIdUtilsTest {
     }
 
     @Test
+    void entityIdFromContractIdNullContractId() {
+        assertThat(EntityIdUtils.entityIdFromContractId(null)).isNull();
+    }
+
+    @Test
     void idFromEntityId() {
         assertThat(EntityIdUtils.idFromEntityId(EntityId.of(1L, 2L, 3L)))
                 .returns(1L, Id::shard)
@@ -217,5 +230,164 @@ class EntityIdUtilsTest {
                 .build();
 
         assertEquals("0000000000000000000000000000000000000003", EntityIdUtils.asHexedEvmAddress(accountId));
+    }
+
+    @Test
+    void toEntityIdFromAccountId() {
+        final var accountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(3)
+                .build();
+
+        assertEquals(EntityId.of(1, 2, 3), EntityIdUtils.toEntityId(accountId));
+    }
+
+    @Test
+    void toEntityIdFromFileId() {
+        final var fileId = com.hedera.hapi.node.base.FileID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .fileNum(3)
+                .build();
+        assertEquals(EntityId.of(1, 2, 3), EntityIdUtils.toEntityId(fileId));
+    }
+
+    @Test
+    void toAccountIdFromEntityId() {
+        final var entityId = EntityId.of(1, 2, 3);
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(3)
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(entityId));
+    }
+
+    @Test
+    void toAccountIdFromId() {
+        final var id = EntityId.of(1, 2, 3).getId();
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(3)
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(id));
+    }
+
+    @Test
+    void toAccountIdFromShardRealmNum() {
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(3)
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(1, 2, 3));
+    }
+
+    @Test
+    void toAccountIdFromEntityWithNoAlias() {
+        final var domainBuilder = new DomainBuilder();
+        final var entity = domainBuilder.entity().get();
+        entity.setEvmAddress(null);
+        entity.setAlias(null);
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entity.getShard())
+                .realmNum(entity.getRealm())
+                .accountNum(entity.getNum())
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(entity));
+    }
+
+    @Test
+    void toAccountIdWithNullEntity() {
+        final var accountId = EntityIdUtils.toAccountId((Entity) null);
+
+        assertThat(accountId).isEqualTo(com.hedera.hapi.node.base.AccountID.DEFAULT);
+    }
+
+    @Test
+    void toAccountIdFromEntityWithEvmAddress() {
+        final var domainBuilder = new DomainBuilder();
+        final var entity = domainBuilder.entity().get();
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entity.getShard())
+                .realmNum(entity.getRealm())
+                .alias(Bytes.wrap(entity.getEvmAddress()))
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(entity));
+    }
+
+    @Test
+    void toAccountIdFromEntityWithAlias() {
+        final var domainBuilder = new DomainBuilder();
+        final var entity = domainBuilder.entity().get();
+        entity.setEvmAddress(null);
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entity.getShard())
+                .realmNum(entity.getRealm())
+                .alias(Bytes.wrap(entity.getAlias()))
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountId(entity));
+    }
+
+    @Test
+    void toAccountIdWithShardRealmAndNum() {
+        final long shard = 0L;
+        final long realm = 0L;
+        final long num = 10L;
+
+        final var accountId = EntityIdUtils.toAccountId(shard, realm, num);
+        final var expectedAccountId =
+                new com.hedera.hapi.node.base.AccountID(shard, realm, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, num));
+
+        assertEquals(expectedAccountId, accountId);
+    }
+
+    @Test
+    void toFileIdFromShardRealmNum() {
+        final var expectedFileId = com.hedera.hapi.node.base.FileID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .fileNum(3)
+                .build();
+        assertEquals(expectedFileId, EntityIdUtils.toFileId(1L, 2L, 3L));
+    }
+
+    @Test
+    void toTokenIdFromId() {
+        final var id = EntityId.of(1, 2, 3).getId();
+
+        final var expectedTokenId = com.hedera.hapi.node.base.TokenID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .tokenNum(3)
+                .build();
+        assertEquals(expectedTokenId, EntityIdUtils.toTokenId(id));
+    }
+
+    @Test
+    void toTokenIdFromEntityId() {
+        final var entityId = EntityId.of(1, 2, 3);
+
+        final var expectedTokenId = com.hedera.hapi.node.base.TokenID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .tokenNum(3)
+                .build();
+        assertEquals(expectedTokenId, EntityIdUtils.toTokenId(entityId));
+    }
+
+    @Test
+    void toAddressFromPbjBytes() {
+        final var address = Address.fromHexString("0x0000000000000000000000000000000000000001");
+        final var pbjBytes = Bytes.fromHex("0000000000000000000000000000000000000001");
+
+        assertEquals(address, EntityIdUtils.toAddress(pbjBytes));
     }
 }

@@ -24,11 +24,13 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncoded;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
+import com.hedera.mirror.web3.utils.RuntimeBytecodeExtractor;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
@@ -37,6 +39,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -67,6 +71,8 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Numeric;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
+@Getter
+@Setter
 public class TestWeb3jService implements Web3jService {
     private static final long DEFAULT_TRANSACTION_VALUE = 10L;
     private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
@@ -75,14 +81,17 @@ public class TestWeb3jService implements Web3jService {
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
     private final Web3j web3j;
+
     private Address sender = Address.fromHexString("");
-    private String transactionResult;
     private boolean isEstimateGas = false;
+    private String transactionResult;
     private String estimatedGas;
     private long value = 0L;
     private boolean persistContract = true;
     private byte[] contractRuntime;
     private BlockType blockType = BlockType.LATEST;
+    private Range historicalRange;
+    private boolean useContractCallDeploy;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -92,42 +101,24 @@ public class TestWeb3jService implements Web3jService {
         this.web3j = Web3j.build(this);
     }
 
-    public void setSender(Address sender) {
-        this.sender = sender;
-    }
-
     public void setSender(String sender) {
         this.sender = Address.fromHexString(sender);
-    }
-
-    public String getTransactionResult() {
-        return transactionResult;
-    }
-
-    public String getEstimatedGas() {
-        return estimatedGas;
     }
 
     public void setEstimateGas(final boolean isEstimateGas) {
         this.isEstimateGas = isEstimateGas;
     }
 
-    public void setValue(final long value) {
-        this.value = value;
-    }
-
-    public void setBlockType(BlockType blockType) {
-        this.blockType = blockType;
-    }
-
-    public byte[] getContractRuntime() {
-        return contractRuntime;
-    }
-
     public void reset() {
         this.isEstimateGas = false;
         this.contractRuntime = null;
         this.persistContract = true;
+        this.sender = Address.ZERO;
+        this.value = 0L;
+        this.sender = Address.fromHexString("");
+        this.blockType = BlockType.LATEST;
+        this.historicalRange = null;
+        this.useContractCallDeploy = false;
     }
 
     @SneakyThrows(Exception.class)
@@ -158,25 +149,6 @@ public class TestWeb3jService implements Web3jService {
         };
     }
 
-    private EthSendTransaction sendTopLevelContractCreate(
-            RawTransaction rawTransaction, String transactionHash, Request request) {
-        final var res = new EthSendTransaction();
-        var serviceParameters = serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
-        final var mirrorNodeResult = contractExecutionService.processCall(serviceParameters);
-        try {
-            final var contractInstance = deployInternal(mirrorNodeResult, persistContract);
-            res.setResult(transactionHash);
-            res.setRawResponse(contractInstance.toHexString());
-            res.setId(request.getId());
-            res.setJsonrpc(request.getJsonrpc());
-            transactionResult = contractInstance.toHexString();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return res;
-    }
-
     private EthSendTransaction call(List<?> params, Request request) {
         var rawTransaction = TransactionDecoder.decode(params.getFirst().toString());
         var transactionHash = generateTransactionHashHexEncoded(rawTransaction, credentials);
@@ -187,6 +159,31 @@ public class TestWeb3jService implements Web3jService {
         }
 
         return sendEthCall(rawTransaction, transactionHash, request);
+    }
+
+    private EthSendTransaction sendTopLevelContractCreate(
+            RawTransaction rawTransaction, String transactionHash, Request request) {
+        final var res = new EthSendTransaction();
+        String runtimeCode;
+        if (useContractCallDeploy) {
+            var serviceParameters =
+                    serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
+            runtimeCode = contractExecutionService.processCall(serviceParameters);
+        } else {
+            runtimeCode = RuntimeBytecodeExtractor.extractRuntimeBytecode(rawTransaction.getData());
+        }
+        try {
+            final var contractInstance = deployInternal(runtimeCode, persistContract);
+            res.setResult(transactionHash);
+            res.setRawResponse(contractInstance.toHexString());
+            res.setId(request.getId());
+            res.setJsonrpc(request.getJsonrpc());
+            transactionResult = contractInstance.toHexString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return res;
     }
 
     private EthSendTransaction sendEthCall(RawTransaction rawTransaction, String transactionHash, Request request) {
@@ -208,22 +205,25 @@ public class TestWeb3jService implements Web3jService {
         res.setId(request.getId());
         res.setJsonrpc(request.getJsonrpc());
 
-        transactionResult = mirrorNodeResult;
+        transactionResult = estimatedGas = mirrorNodeResult;
         return res;
     }
 
     private EthCall ethCall(List<Transaction> reqParams, Request request) {
-        var transaction = reqParams.get(0);
+        var transaction = reqParams.getFirst();
 
         // First get the transaction result
         final var serviceParametersForCall = serviceParametersForExecutionSingle(transaction, ETH_CALL, blockType);
         final var result = contractExecutionService.processCall(serviceParametersForCall);
         transactionResult = result;
 
-        // Then get the estimated gas
-        final var serviceParametersForEstimate =
-                serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, blockType);
-        estimatedGas = contractExecutionService.processCall(serviceParametersForEstimate);
+        // estimate gas is not supported for historical blocks so we ignore the estimate gas logic in historical context
+        if (!isHistoricalContext()) {
+            // Then get the estimated gas
+            final var serviceParametersForEstimate =
+                    serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, blockType);
+            estimatedGas = contractExecutionService.processCall(serviceParametersForEstimate);
+        }
 
         final var ethCall = new EthCall();
         ethCall.setId(request.getId());
@@ -319,7 +319,11 @@ public class TestWeb3jService implements Web3jService {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
         if (persistContract) {
-            contractPersist(binary, id);
+            if (blockType != BlockType.LATEST) {
+                historicalContractPersist(binary, id, contractAddress);
+            } else {
+                contractPersist(binary, id);
+            }
         } else {
             contractRuntime = Hex.decode(binary.replace(HEX_PREFIX, ""));
         }
@@ -330,7 +334,35 @@ public class TestWeb3jService implements Web3jService {
         final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
         final var entity = domainBuilder
                 .entity()
-                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId).key(domainBuilder.key(KeyCase.ED25519)))
+                .customize(e -> e.type(CONTRACT)
+                        .id(entityId)
+                        .num(entityId)
+                        .alias(null)
+                        .evmAddress(null)
+                        .key(domainBuilder.key(KeyCase.ED25519))
+                        .balance(3000L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(entity.getId()).runtimeBytecode(contractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(entity.getId()))
+                .persist();
+    }
+
+    private void historicalContractPersist(String binary, long entityId, final Address contractAddress) {
+        final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
+        final var entity = domainBuilder
+                .entity()
+                .customize(e -> e.type(CONTRACT)
+                        .id(entityId)
+                        .num(entityId)
+                        .evmAddress(contractAddress.toArray())
+                        .timestampRange(historicalRange))
                 .persist();
 
         domainBuilder
@@ -363,6 +395,10 @@ public class TestWeb3jService implements Web3jService {
         ethTransactionReceipt.setResult(transactionReceipt);
 
         return ethTransactionReceipt;
+    }
+
+    private boolean isHistoricalContext() {
+        return historicalRange != null;
     }
 
     public interface Deployer<T extends Contract> {

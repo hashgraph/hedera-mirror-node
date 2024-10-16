@@ -19,10 +19,12 @@ package com.hedera.mirror.web3.controller;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
+import com.hedera.mirror.web3.evm.exception.PrecompileNotSupportedException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidInputException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -31,7 +33,6 @@ import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse.ErrorMessage;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
@@ -65,7 +66,7 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
-            public void addCorsMappings(@NotNull CorsRegistry registry) {
+            public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/v1/contracts/**").allowedOrigins("*");
             }
         };
@@ -99,6 +100,16 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler
     private ResponseEntity<?> queryTimeoutException(final QueryTimeoutException e, WebRequest request) {
         return handleExceptionInternal(e, null, null, SERVICE_UNAVAILABLE, request);
+    }
+
+    /**
+     * Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence
+     * of a precompile
+     **/
+    @ExceptionHandler
+    private ResponseEntity<?> precompileNotSupportedException(
+            final PrecompileNotSupportedException e, WebRequest request) {
+        return handleExceptionInternal(e, null, null, NOT_IMPLEMENTED, request);
     }
 
     @ExceptionHandler

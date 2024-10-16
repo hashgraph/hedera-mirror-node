@@ -91,8 +91,8 @@ const getResponseHeadersFromFileOrDefault = (specPath) => {
 
 const getResponseHeaders = (spec, specPath) => {
   spec.responseHeaders = {
-    ...(spec.responseHeaders ?? {}),
     ...getResponseHeadersFromFileOrDefault(specPath),
+    ...(spec.responseHeaders ?? {}),
   };
 };
 
@@ -222,8 +222,11 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
 
   const setupFeatureSupport = (features) => {
     if (features?.fakeTime) {
+      const {fakeTime} = features;
+      // If the value is a number, it's epoch seconds
+      const now = typeof fakeTime === 'number' ? new Date(fakeTime * 1000) : new Date(fakeTime);
       featureSupport.clock = sinon.useFakeTimers({
-        now: Date.parse(features.fakeTime),
+        now,
         shouldAdvanceTime: true,
         shouldClearNativeTimers: true,
       });

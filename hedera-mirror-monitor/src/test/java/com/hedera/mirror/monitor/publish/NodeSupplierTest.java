@@ -37,6 +37,7 @@ import com.hedera.hashgraph.sdk.proto.TransactionResponse;
 import com.hedera.mirror.monitor.HederaNetwork;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
+import com.hedera.mirror.monitor.NodeValidationProperties.TlsMode;
 import com.hedera.mirror.monitor.OperatorProperties;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
@@ -88,7 +89,10 @@ class NodeSupplierTest {
         node = new NodeProperties("0.0.3", "in-process:" + SERVER);
         networkNode = new NetworkNode();
         networkNode.setNodeAccountId(node.getAccountId());
-        networkNode.addServiceEndpointsItem(new ServiceEndpoint().ipAddressV4(node.getEndpoint()));
+        networkNode.addServiceEndpointsItem(
+                new ServiceEndpoint().ipAddressV4(node.getEndpoint()).port(50211));
+        networkNode.addServiceEndpointsItem(
+                new ServiceEndpoint().ipAddressV4(node.getEndpoint()).port(50212));
 
         publishScenarioProperties = new PublishScenarioProperties();
         publishScenarioProperties.setName("test");
@@ -132,6 +136,18 @@ class NodeSupplierTest {
     }
 
     @Test
+    void getByAccountId() {
+        monitorProperties.getNodeValidation().setEnabled(false);
+        nodeSupplier.validateNode(node);
+        assertThat(nodeSupplier.get(node.getAccountId())).isEqualTo(node);
+    }
+
+    @Test
+    void getByAccountIdMissing() {
+        assertThat(nodeSupplier.get("0.0.100000")).isNull();
+    }
+
+    @Test
     void init() {
         cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransaction(Mono.just(response(OK)));
@@ -166,13 +182,43 @@ class NodeSupplierTest {
     @Test
     void refreshAddressBook() {
         monitorProperties.setNodes(Set.of());
+        monitorProperties.getNodeValidation().setTls(TlsMode.PLAINTEXT);
         when(restApiClient.getNodes()).thenReturn(Flux.just(networkNode));
         assertThat(nodeSupplier.refresh().collectList().block())
                 .hasSize(1)
                 .first()
                 .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
                 .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost)
-                .satisfies(node -> assertThat(nodeSupplier.get()).isEqualTo(node));
+                .returns(50211, NodeProperties::getPort)
+                .satisfies(n -> assertThat(nodeSupplier.get()).isEqualTo(n));
+    }
+
+    @Test
+    void refreshAddressBookTls() {
+        monitorProperties.setNodes(Set.of());
+        monitorProperties.getNodeValidation().setTls(TlsMode.TLS);
+        when(restApiClient.getNodes()).thenReturn(Flux.just(networkNode));
+        assertThat(nodeSupplier.refresh().collectList().block())
+                .hasSize(1)
+                .first()
+                .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
+                .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost)
+                .returns(50212, NodeProperties::getPort)
+                .satisfies(n -> assertThat(nodeSupplier.get()).isEqualTo(n));
+    }
+
+    @Test
+    void refreshAddressBookBoth() {
+        monitorProperties.setNodes(Set.of());
+        monitorProperties.getNodeValidation().setTls(TlsMode.BOTH);
+        when(restApiClient.getNodes()).thenReturn(Flux.just(networkNode));
+        assertThat(nodeSupplier.refresh().collectList().block())
+                .hasSize(2)
+                .allSatisfy(n -> assertThat(n)
+                        .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
+                        .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost))
+                .extracting(NodeProperties::getPort)
+                .containsExactlyInAnyOrder(50211, 50212);
     }
 
     @Test
@@ -186,7 +232,7 @@ class NodeSupplierTest {
                 .first()
                 .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
                 .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost)
-                .satisfies(node -> assertThat(nodeSupplier.get()).isEqualTo(node));
+                .satisfies(n -> assertThat(nodeSupplier.get()).isEqualTo(n));
     }
 
     @Test
@@ -232,6 +278,7 @@ class NodeSupplierTest {
         assertThatThrownBy(() -> nodeSupplier.get())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No valid nodes available");
+        assertThat(nodeSupplier.get(node.getAccountId())).isNull();
 
         // When it recovers
         cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
@@ -240,6 +287,7 @@ class NodeSupplierTest {
 
         // Then it is marked as healthy
         assertThat(nodeSupplier.get()).isEqualTo(node);
+        assertThat(nodeSupplier.get(node.getAccountId())).isEqualTo(node);
     }
 
     @Test

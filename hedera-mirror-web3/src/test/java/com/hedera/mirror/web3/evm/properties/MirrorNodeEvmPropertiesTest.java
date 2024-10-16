@@ -25,10 +25,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties.HederaNetwork;
-import com.swirlds.common.utility.SemanticVersion;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -163,7 +163,7 @@ class MirrorNodeEvmPropertiesTest {
         properties.setNetwork(HederaNetwork.MAINNET);
 
         var result = properties.getEvmVersionForBlock(blockNumber);
-        assertThat(result).isEqualByComparingTo(expectedEvmVersion);
+        assertThat(result).isEqualTo(expectedEvmVersion);
     }
 
     @ParameterizedTest
@@ -173,6 +173,6 @@ class MirrorNodeEvmPropertiesTest {
         properties.setEvmVersions(createEvmVersionsMapCustom());
 
         var result = properties.getEvmVersionForBlock(blockNumber);
-        assertThat(result).isEqualByComparingTo(expectedEvmVersion);
+        assertThat(result).isEqualTo(expectedEvmVersion);
     }
 }

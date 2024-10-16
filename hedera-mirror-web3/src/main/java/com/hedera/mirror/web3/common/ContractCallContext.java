@@ -42,9 +42,9 @@ public class ContractCallContext {
     private List<ContractAction> contractActions = List.of();
 
     /**
-     * This is used to determine the contract action index of the current frame.
-     * It starts from {@code -1} because when the tracer receives the initial frame,
-     * it will increment this immediately inside {@link OpcodeTracer#traceContextEnter}.
+     * This is used to determine the contract action index of the current frame. It starts from {@code -1} because when
+     * the tracer receives the initial frame, it will increment this immediately inside
+     * {@link OpcodeTracer#traceContextEnter}.
      */
     @Setter
     private int contractActionIndexOfCurrentFrame = -1;
@@ -71,7 +71,7 @@ public class ContractCallContext {
      * The timestamp used to fetch the state from the stackedStateFrames.
      */
     @Setter
-    private long timestamp = 0;
+    private Optional<Long> timestamp = Optional.empty();
 
     private ContractCallContext() {}
 
@@ -121,8 +121,8 @@ public class ContractCallContext {
      */
     public void initializeStackFrames(final StackedStateFrames stackedStateFrames) {
         if (stackedStateFrames != null) {
-            final var stateTimestamp = this.timestamp > 0
-                    ? Optional.of(this.timestamp)
+            final var stateTimestamp = timestamp.isPresent()
+                    ? timestamp
                     : Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd);
             stackBase = stack = stackedStateFrames.getInitializedStackBase(stateTimestamp);
         }

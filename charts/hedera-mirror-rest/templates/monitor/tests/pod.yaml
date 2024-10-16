@@ -4,6 +4,7 @@ kind: Pod
 metadata:
   annotations: {{- toYaml .Values.monitor.test.annotations | nindent 4 }}
   labels: {{- include "hedera-mirror-rest-monitor.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "hedera-mirror-rest.name" . }}-monitor-test
   name: {{ include "hedera-mirror-rest.fullname" . }}-monitor-test
   namespace: {{ include "hedera-mirror-rest.namespace" . }}
 spec:
@@ -20,6 +21,8 @@ spec:
         - --retry-all-errors
         - --retry-delay
         - "5"
+  imagePullSecrets: {{ toYaml .Values.monitor.test.image.pullSecrets | nindent 4 }}
+  priorityClassName: {{ .Values.monitor.test.priorityClassName }}
   terminationGracePeriodSeconds: 1
   restartPolicy: Never
 {{- end -}}

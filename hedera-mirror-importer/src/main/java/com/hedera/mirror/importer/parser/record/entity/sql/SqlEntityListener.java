@@ -41,6 +41,7 @@ import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
@@ -293,6 +294,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
         context.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
+    }
+
+    @Override
+    public void onTokenAirdrop(TokenAirdrop tokenAirdrop) {
+        if (entityProperties.getPersist().isTokenAirdrops()) {
+            context.merge(tokenAirdrop.getId(), tokenAirdrop, this::mergeTokenAirdrop);
+        }
     }
 
     @Override
@@ -578,6 +586,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             src.setTimestampUpper(dest.getTimestampLower());
         }
 
+        /*
+         * An unset spender field indicates this is an NFT metadata only update, and that the existing allowance
+         * information must be retained from the source.
+         */
+        if (EntityId.UNSET.equals(dest.getSpender())) {
+            dest.setSpender(src.getSpender());
+        }
+        if (EntityId.UNSET.equals(dest.getDelegatingSpender())) {
+            dest.setDelegatingSpender(src.getDelegatingSpender());
+        }
+
         return dest;
     }
 
@@ -755,6 +774,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             lastTokenAccount.setBalanceTimestamp(newTokenAccount.getBalanceTimestamp());
         }
         return lastTokenAccount;
+    }
+
+    private TokenAirdrop mergeTokenAirdrop(TokenAirdrop previous, TokenAirdrop current) {
+        if (previous.getAmount() != null && current.getAmount() == null) {
+            // Cancel or claim do not contain an amount so set the amount here so as not to override it with null
+            current.setAmount(previous.getAmount());
+        }
+
+        previous.setTimestampUpper(current.getTimestampLower());
+        return current;
     }
 
     private void onNftTransferList(Transaction transaction) {

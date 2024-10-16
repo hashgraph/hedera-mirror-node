@@ -19,16 +19,16 @@ env:
 jobs:
   deploy:
     name: Deploy
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: mirror-node-linux-medium
     if: github.event.client_payload.severity == 'info'
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
         with:
           ref: deploy
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
@@ -71,7 +71,7 @@ jobs:
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Open deployment PR
-        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
+        uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f # v7.0.5
         with:
           author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           body: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.namespaces }} in ${{ github.event.client_payload.metadata.cluster }}

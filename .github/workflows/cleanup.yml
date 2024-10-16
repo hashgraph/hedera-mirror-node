@@ -13,7 +13,7 @@ defaults:
 
 jobs:
   images:
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: mirror-node-linux-medium
     strategy:
       matrix:
         module:
@@ -31,12 +31,12 @@ jobs:
           ]
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
         with:
           egress-policy: audit
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@f112390a2df9932162083945e46d439060d66ec2 # v2.1.4
+        uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
         with:
           credentials_json: "${{ secrets.GCR_KEY }}"
 

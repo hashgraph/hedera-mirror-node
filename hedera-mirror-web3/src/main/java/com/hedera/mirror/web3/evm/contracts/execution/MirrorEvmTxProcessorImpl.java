@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -35,7 +36,6 @@ import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.utility.SemanticVersion;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Map;
@@ -97,8 +97,15 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         store.wrap();
         if (store.getAccount(params.getSender().canonicalAddress(), OnMissing.DONT_THROW)
                 .isEmptyAccount()) {
-            final var senderAccount =
-                    Account.getDummySenderAccount(params.getSender().canonicalAddress());
+
+            final Account senderAccount;
+            if (isMirror(params.getSender().canonicalAddress())) {
+                senderAccount = Account.getDummySenderAccount(params.getSender().canonicalAddress());
+            } else {
+                senderAccount = Account.getDummySenderAccountWithAlias(
+                        params.getSender().canonicalAddress());
+            }
+
             store.updateAccount(senderAccount);
         }
         Address receiverAddress = determineReceiverAddress(params.getReceiver());
@@ -165,5 +172,9 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         } else {
             return canonical;
         }
+    }
+
+    private boolean isMirror(final Address address) {
+        return address == null || address.equals(Address.ZERO) || aliasManager.isMirror(address);
     }
 }

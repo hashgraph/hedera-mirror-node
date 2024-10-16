@@ -65,11 +65,10 @@ hpa:
 
 image:
   pullPolicy: IfNotPresent
+  pullSecrets: []
   registry: gcr.io
   repository: mirrornode/hedera-mirror-web3
   tag: ""  # Defaults to the chart's app version
-
-imagePullSecrets: []
 
 ingress:
   annotations:
@@ -290,9 +289,11 @@ test:
   enabled: true
   image:
     pullPolicy: IfNotPresent
+    pullSecrets: []
     repository: postman/newman
-    tag: 6.1.1-alpine
+    tag: 6.1.3-alpine
   postman: ""  # Custom postman.json in base64 encoding
+  priorityClassName: ""
 
 tolerations: []
 

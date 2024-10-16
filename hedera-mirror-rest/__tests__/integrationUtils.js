@@ -18,7 +18,7 @@ import {jest} from '@jest/globals';
 import {exec} from 'child_process';
 
 import integrationDbOps from './integrationDbOps';
-import transactions from '../transactions';
+import testExports from '../timestampRange';
 import {TokenService} from '../service';
 
 // set a large timeout for beforeAll as downloading docker image if not exists can take quite some time. Note
@@ -68,7 +68,7 @@ const setupIntegrationTest = () => {
   beforeEach(async () => {
     await integrationDbOps.cleanUp();
     TokenService.clearTokenCache();
-    transactions.getFirstTransactionTimestamp.reset();
+    testExports.getFirstTransactionTimestamp.reset();
   });
 };
 

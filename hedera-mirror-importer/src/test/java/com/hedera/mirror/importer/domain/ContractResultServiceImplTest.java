@@ -119,17 +119,17 @@ class ContractResultServiceImplTest {
                 (RecordItemBuilder builder) -> builder.contractCreate().build();
 
         return Stream.of(
-                Arguments.of(withoutDefaultContractId, null, true),
-                Arguments.of(withoutDefaultContractId, EntityId.EMPTY, true),
-                Arguments.of(withDefaultContractId, null, false),
-                Arguments.of(withDefaultContractId, EntityId.EMPTY, false),
-                Arguments.of(contractCreate, EntityId.EMPTY, false),
-                Arguments.of(contractCreate, null, false),
-                Arguments.of(contractCreate, EntityId.of(0, 0, 5), false),
-                Arguments.of(withInactiveEvmFunctionOnly, null, true),
-                Arguments.of(withInactiveEvmFunctionOnly, EntityId.EMPTY, true),
-                Arguments.of(withInactiveEvmReceipt, null, false),
-                Arguments.of(withInactiveEvmReceipt, EntityId.EMPTY, false));
+                Arguments.of(withoutDefaultContractId, null),
+                Arguments.of(withoutDefaultContractId, EntityId.EMPTY),
+                Arguments.of(withDefaultContractId, null),
+                Arguments.of(withDefaultContractId, EntityId.EMPTY),
+                Arguments.of(contractCreate, EntityId.EMPTY),
+                Arguments.of(contractCreate, null),
+                Arguments.of(contractCreate, EntityId.of(0, 0, 5)),
+                Arguments.of(withInactiveEvmFunctionOnly, null),
+                Arguments.of(withInactiveEvmFunctionOnly, EntityId.EMPTY),
+                Arguments.of(withInactiveEvmReceipt, null),
+                Arguments.of(withInactiveEvmReceipt, EntityId.EMPTY));
     }
 
     @BeforeEach
@@ -143,10 +143,7 @@ class ContractResultServiceImplTest {
     @MethodSource("provideEntities")
     @SneakyThrows
     void verifiesEntityLookup(
-            Function<RecordItemBuilder, RecordItem> recordBuilder,
-            EntityId entityId,
-            boolean recoverableError,
-            CapturedOutput capturedOutput) {
+            Function<RecordItemBuilder, RecordItem> recordBuilder, EntityId entityId, CapturedOutput capturedOutput) {
         var recordItem = recordBuilder.apply(recordItemBuilder);
         var transaction = domainBuilder
                 .transaction()
@@ -159,12 +156,7 @@ class ContractResultServiceImplTest {
 
         verify(entityListener, times(1)).onContractResult(any());
 
-        if (recoverableError) {
-            assertThat(capturedOutput.getAll()).containsIgnoringCase(RECOVERABLE_ERROR_LOG_PREFIX);
-        } else {
-            assertThat(capturedOutput.getAll()).doesNotContainIgnoringCase(RECOVERABLE_ERROR_LOG_PREFIX);
-        }
-
+        assertThat(capturedOutput.getAll()).doesNotContainIgnoringCase(RECOVERABLE_ERROR_LOG_PREFIX);
         verifyContractTransactions(recordItem, transaction, entityId);
     }
 

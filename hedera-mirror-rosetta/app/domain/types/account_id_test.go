@@ -297,7 +297,25 @@ func TestAccountIdToSdkAccountId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.input.ToSdkAccountId())
+			actual, err := tt.input.ToSdkAccountId()
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestAccountIdToSdkAccountIdOutOfRange(t *testing.T) {
+	inputs := []AccountId{
+		{accountId: domain.EntityId{ShardNum: -1}},
+		{accountId: domain.EntityId{RealmNum: -1}},
+		{accountId: domain.EntityId{EntityNum: -1}},
+	}
+
+	for _, input := range inputs {
+		t.Run(input.String(), func(t *testing.T) {
+			actual, err := input.ToSdkAccountId()
+			assert.Error(t, err)
+			assert.Equal(t, hedera.AccountID{}, actual)
 		})
 	}
 }
@@ -343,26 +361,23 @@ func TestNewAccountIdFromStringShardRealmAccount(t *testing.T) {
 
 func TestNewAccountIdFromStringAlias(t *testing.T) {
 	tests := []struct {
-		input            string
-		expectErr        bool
-		alias            []byte
-		curveType        types.CurveType
-		sdkAccountString string
-		shard            int64
-		realm            int64
+		input     string
+		expectErr bool
+		alias     []byte
+		curveType types.CurveType
+		shard     int64
+		realm     int64
 	}{
 		{
-			input:            ecdsaSecp256k1AliasString,
-			alias:            ecdsaSecp256k1Alias,
-			curveType:        types.Secp256k1,
-			sdkAccountString: "0.0." + ecdsaSecp256k1PublicKey.String(),
+			input:     ecdsaSecp256k1AliasString,
+			alias:     ecdsaSecp256k1Alias,
+			curveType: types.Secp256k1,
 		},
 		{
-			input:            ed25519AliasString,
-			alias:            ed25519Alias,
-			curveType:        types.Edwards25519,
-			sdkAccountString: "0.1." + ed25519PublicKey.String(),
-			realm:            1,
+			input:     ed25519AliasString,
+			alias:     ed25519Alias,
+			curveType: types.Edwards25519,
+			realm:     1,
 		},
 		{
 			input:     hex.EncodeToString(ed25519Alias),
@@ -400,7 +415,8 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.alias, accountId.GetAlias())
 				assert.Equal(t, tt.curveType, accountId.GetCurveType())
-				assert.Equal(t, tt.sdkAccountString, accountId.ToSdkAccountId().String())
+				assert.Equal(t, tt.shard, accountId.accountId.ShardNum)
+				assert.Equal(t, tt.realm, accountId.accountId.RealmNum)
 			} else {
 				assert.NotNil(t, err)
 				assert.Equal(t, zeroAccountId, accountId)
@@ -411,29 +427,30 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 
 func TestNewAccountIdFromAlias(t *testing.T) {
 	tests := []struct {
-		input            []byte
-		curveType        types.CurveType
-		sdkAccountString string
+		input     []byte
+		curveType types.CurveType
+		shard     int64
+		realm     int64
 	}{
 		{
-			input:            ed25519Alias,
-			curveType:        types.Edwards25519,
-			sdkAccountString: "0.1." + ed25519PublicKey.String(),
+			input:     ed25519Alias,
+			curveType: types.Edwards25519,
 		},
 		{
-			input:            ecdsaSecp256k1Alias,
-			curveType:        types.Secp256k1,
-			sdkAccountString: "0.1." + ecdsaSecp256k1PublicKey.String(),
+			input:     ecdsaSecp256k1Alias,
+			curveType: types.Secp256k1,
+			realm:     5,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(hex.EncodeToString(tt.input), func(t *testing.T) {
-			accountId, err := NewAccountIdFromAlias(tt.input, 0, 1)
+			accountId, err := NewAccountIdFromAlias(tt.input, tt.shard, tt.realm)
 			assert.Nil(t, err)
 			assert.Equal(t, tt.input, accountId.GetAlias())
 			assert.Equal(t, tt.curveType, accountId.GetCurveType())
-			assert.Equal(t, tt.sdkAccountString, accountId.ToSdkAccountId().String())
+			assert.Equal(t, tt.shard, accountId.accountId.ShardNum)
+			assert.Equal(t, tt.realm, accountId.accountId.RealmNum)
 		})
 	}
 }
@@ -554,32 +571,32 @@ func TestNewAccountIdFromEntityId(t *testing.T) {
 
 func TestNewAccountIdFromPublicKeyBytes(t *testing.T) {
 	tests := []struct {
-		keyBytes         []byte
-		alias            []byte
-		curveType        types.CurveType
-		sdkAccountString string
+		keyBytes  []byte
+		alias     []byte
+		curveType types.CurveType
+		shard     int64
+		realm     int64
 	}{
 		{
-			keyBytes:         ed25519PublicKey.BytesRaw(),
-			alias:            ed25519Alias,
-			curveType:        types.Edwards25519,
-			sdkAccountString: "0.0." + ed25519PublicKey.String(),
+			keyBytes:  ed25519PublicKey.BytesRaw(),
+			alias:     ed25519Alias,
+			curveType: types.Edwards25519,
 		},
 		{
-			keyBytes:         ecdsaSecp256k1PublicKey.BytesRaw(),
-			alias:            ecdsaSecp256k1Alias,
-			curveType:        types.Secp256k1,
-			sdkAccountString: "0.0." + ecdsaSecp256k1PublicKey.String(),
+			keyBytes:  ecdsaSecp256k1PublicKey.BytesRaw(),
+			alias:     ecdsaSecp256k1Alias,
+			curveType: types.Secp256k1,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(hex.EncodeToString(tt.keyBytes), func(t *testing.T) {
-			accountId, err := NewAccountIdFromPublicKeyBytes(tt.keyBytes, 0, 0)
+			accountId, err := NewAccountIdFromPublicKeyBytes(tt.keyBytes, tt.shard, tt.realm)
 			assert.Nil(t, err)
 			assert.Equal(t, tt.alias, accountId.GetAlias())
 			assert.Equal(t, tt.curveType, accountId.GetCurveType())
-			assert.Equal(t, tt.sdkAccountString, accountId.ToSdkAccountId().String())
+			assert.Equal(t, tt.shard, accountId.accountId.ShardNum)
+			assert.Equal(t, tt.realm, accountId.accountId.RealmNum)
 		})
 	}
 }
@@ -631,6 +648,9 @@ func TestNewAccountIdFromSdkAccountId(t *testing.T) {
 		{input: hedera.AccountID{Shard: 1 << 15}, expectErr: true},
 		{input: hedera.AccountID{Realm: 1 << 16}, expectErr: true},
 		{input: hedera.AccountID{Account: 1 << 32}, expectErr: true},
+		{input: hedera.AccountID{Shard: 9223372036854775808}, expectErr: true},
+		{input: hedera.AccountID{Realm: 9223372036854775808}, expectErr: true},
+		{input: hedera.AccountID{Account: 9223372036854775808}, expectErr: true},
 		{input: hedera.AccountID{AliasKey: &hedera.PublicKey{}}, expectErr: true},
 	}
 
@@ -639,10 +659,11 @@ func TestNewAccountIdFromSdkAccountId(t *testing.T) {
 			accountId, err := NewAccountIdFromSdkAccountId(tt.input)
 			if !tt.expectErr {
 				assert.Nil(t, err)
-				assert.Equal(t, tt.input.String(), accountId.ToSdkAccountId().String())
 				assert.Equal(t, tt.alias, accountId.GetAlias())
 				assert.Equal(t, tt.curveType, accountId.GetCurveType())
 				assert.Equal(t, tt.hasAlias, accountId.HasAlias())
+				sdkAccountId, _ := accountId.ToSdkAccountId()
+				assert.Equal(t, tt.input, sdkAccountId)
 			} else {
 				assert.NotNil(t, err)
 				assert.Equal(t, zeroAccountId, accountId)

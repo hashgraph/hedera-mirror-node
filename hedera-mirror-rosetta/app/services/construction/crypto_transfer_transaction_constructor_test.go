@@ -29,16 +29,15 @@ import (
 )
 
 var (
-	accountIdA    = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(9500))
-	accountIdB    = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(9505))
-	sdkAccountIdA = accountIdA.ToSdkAccountId()
-	sdkAccountIdB = accountIdB.ToSdkAccountId()
+	accountIdA       = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(9500))
+	accountIdB       = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(9505))
+	sdkAccountIdA, _ = accountIdA.ToSdkAccountId()
+	sdkAccountIdB, _ = accountIdB.ToSdkAccountId()
 
 	currencyHbar = types.CurrencyHbar
 
-	defaultSerialNumbers = []int64{1}
-	defaultSigners       = []types.AccountId{accountIdA}
-	defaultTransfers     = []transferOperation{
+	defaultSigners   = []types.AccountId{accountIdA}
+	defaultTransfers = []transferOperation{
 		{accountId: accountIdA, amount: &types.HbarAmount{Value: -15}},
 		{accountId: accountIdB, amount: &types.HbarAmount{Value: 15}},
 	}
@@ -86,6 +85,10 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestConstruct() {
 		expectedSigners []types.AccountId
 	}{
 		{name: "Success", transfers: defaultTransfers, expectedSigners: defaultSigners},
+		{name: "AccountNumOutOfRange", transfers: []transferOperation{
+			{accountId: types.NewAccountIdFromEntityId(domain.EntityId{EntityNum: -1}), amount: &types.HbarAmount{Value: -15}},
+			{accountId: accountIdB, amount: &types.HbarAmount{Value: 15}},
+		}, expectError: true},
 		{name: "EmptyOperations", expectError: true},
 	}
 
@@ -301,7 +304,7 @@ func assertCryptoTransferTransaction(
 func operationTransferStringify(operation types.Operation) string {
 	serialNumber := int64(0)
 	amount := operation.Amount
-	return fmt.Sprintf("%s_%d_%s_%d_%d", operation.AccountId.ToSdkAccountId(), amount.GetValue(), amount.GetSymbol(),
+	return fmt.Sprintf("%s_%d_%s_%d_%d", operation.AccountId.String(), amount.GetValue(), amount.GetSymbol(),
 		amount.GetDecimals(), serialNumber)
 }
 

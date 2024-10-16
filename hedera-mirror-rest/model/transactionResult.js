@@ -338,9 +338,13 @@ const protoToName = {
   360: 'TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY',
   361: 'EMPTY_PENDING_AIRDROP_ID_LIST',
   362: 'PENDING_AIRDROP_ID_REPEATED',
-  363: 'MAX_PENDING_AIRDROP_ID_EXCEEDED',
+  363: 'PENDING_AIRDROP_ID_LIST_TOO_LONG',
   364: 'PENDING_NFT_AIRDROP_ALREADY_EXISTS',
   365: 'ACCOUNT_HAS_PENDING_AIRDROPS',
+  366: 'THROTTLED_AT_CONSENSUS',
+  367: 'INVALID_PENDING_AIRDROP_ID',
+  368: 'TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY',
+  369: 'INVALID_TOKEN_IN_PENDING_AIRDROP',
 };
 
 const nameToProto = _.invert(protoToName);
@@ -355,12 +359,16 @@ const getProtoId = (name) => {
   return nameToProto[name];
 };
 
-const getSuccessProtoId = () => {
-  return getProtoId(SUCCESS);
+const getSuccessProtoIds = () => {
+  return [
+    Number.parseInt(getProtoId(SUCCESS)),
+    Number.parseInt(getProtoId('FEE_SCHEDULE_FILE_PART_UPLOADED')),
+    Number.parseInt(getProtoId('SUCCESS_BUT_MISSING_EXPECTED_OPERATION')),
+  ];
 };
 
 export default {
   getName,
   getProtoId,
-  getSuccessProtoId,
+  getSuccessProtoIds,
 };

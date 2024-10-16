@@ -28,6 +28,7 @@ plugins {
 configurations.all {
     exclude(group = "com.github.jnr") // Unused and has licensing issues
     exclude(group = "commons-logging", "commons-logging")
+    exclude(group = "org.jetbrains", module = "annotations")
     exclude(group = "org.slf4j", module = "slf4j-nop")
 }
 
@@ -51,7 +52,6 @@ dependencies {
 }
 
 tasks.compileJava {
-    dependsOn("generateEffectiveLombokConfig")
     // Disable deprecation, serial, and this-escape warnings due to errors in generated code
     options.compilerArgs.addAll(
         listOf("-Werror", "-Xlint:all", "-Xlint:-deprecation,-serial,-this-escape,-preview")
@@ -62,7 +62,6 @@ tasks.compileJava {
 }
 
 tasks.compileTestJava {
-    dependsOn("generateEffectiveLombokConfig")
     options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-this-escape,-preview"))
     options.encoding = "UTF-8"
     sourceCompatibility = "21"
@@ -73,6 +72,7 @@ tasks.javadoc { options.encoding = "UTF-8" }
 
 tasks.withType<Test> {
     finalizedBy(tasks.jacocoTestReport)
+    jvmArgs = listOf("-XX:+EnableDynamicAgentLoading") // Allow byte buddy for Mockito
     maxHeapSize = "4096m"
     minHeapSize = "1024m"
     systemProperty("user.timezone", "UTC")

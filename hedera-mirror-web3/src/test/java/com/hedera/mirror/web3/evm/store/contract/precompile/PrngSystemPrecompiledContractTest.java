@@ -31,7 +31,6 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
 import java.util.Optional;
@@ -50,8 +49,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PrngSystemPrecompiledContractTest {
-    private static final Hash WELL_KNOWN_HASH = new Hash(CommonUtils.unhex(
-            "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d616300"));
+    private static final byte[] WELL_KNOWN_HASH_BYTE_ARRAY = CommonUtils.unhex(
+            "65386630386164632d356537632d343964342d623437372d62636134346538386338373133633038316162372d6163");
+    private final Instant consensusNow = Instant.ofEpochSecond(123456789L);
 
     @Mock
     private MessageFrame frame;
@@ -62,16 +62,22 @@ class PrngSystemPrecompiledContractTest {
     @Mock
     private PrecompilePricingUtils pricingUtils;
 
-    private final Instant consensusNow = Instant.ofEpochSecond(123456789L);
-
     @Mock
     private LivePricesSource livePricesSource;
 
     private PrngSystemPrecompiledContract subject;
 
+    private static Bytes random256BitGeneratorInput() {
+        return input(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
+    }
+
+    private static Bytes input(final int selector) {
+        return Bytes.concatenate(Bytes.ofUnsignedInt(selector & 0xffffffffL), Bytes.EMPTY);
+    }
+
     @BeforeEach
     void setUp() {
-        Supplier<byte[]> mockSupplier = WELL_KNOWN_HASH::getValue;
+        Supplier<byte[]> mockSupplier = () -> WELL_KNOWN_HASH_BYTE_ARRAY;
         final var logic = new PrngLogic(mockSupplier);
 
         subject = new PrngSystemPrecompiledContract(gasCalculator, logic, livePricesSource, pricingUtils);
@@ -167,14 +173,6 @@ class PrngSystemPrecompiledContractTest {
 
         final var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
         assertNull(result);
-    }
-
-    private static Bytes random256BitGeneratorInput() {
-        return input(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
-    }
-
-    private static Bytes input(final int selector) {
-        return Bytes.concatenate(Bytes.ofUnsignedInt(selector & 0xffffffffL), Bytes.EMPTY);
     }
 
     private void initialSetUp() {

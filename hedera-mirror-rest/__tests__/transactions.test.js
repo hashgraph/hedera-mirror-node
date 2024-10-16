@@ -29,6 +29,7 @@ const {
   extractSqlFromTransactionsRequest,
   formatTransactionRows,
   getStakingRewardTimestamps,
+  getTransactionsByIdOrHashCacheControlHeader,
   isValidTransactionHash,
 } = subject;
 
@@ -457,6 +458,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery(),
           params: defaultParams,
+          scheduledParamExists: false,
+          isTransactionHash: false,
         },
       },
       {
@@ -468,6 +471,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('nonce = $4'),
           params: [...defaultParams, 1],
+          scheduledParamExists: false,
+          isTransactionHash: false,
         },
       },
       {
@@ -482,6 +487,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('nonce = $4'),
           params: [...defaultParams, 2],
+          scheduledParamExists: false,
+          isTransactionHash: false,
         },
       },
       {
@@ -493,6 +500,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('scheduled = $4'),
           params: [...defaultParams, true],
+          scheduledParamExists: true,
+          isTransactionHash: false,
         },
       },
       {
@@ -507,6 +516,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('scheduled = $4'),
           params: [...defaultParams, false],
+          scheduledParamExists: true,
+          isTransactionHash: false,
         },
       },
       {
@@ -521,6 +532,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('nonce = $4 and scheduled = $5'),
           params: [...defaultParams, 1, true],
+          scheduledParamExists: true,
+          isTransactionHash: false,
         },
       },
       {
@@ -539,6 +552,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery('nonce = $4 and scheduled = $5'),
           params: [...defaultParams, 3, false],
+          scheduledParamExists: true,
+          isTransactionHash: false,
         },
       },
     ];
@@ -552,6 +567,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
 
         testutils.assertSqlQueryEqual(actual.query, testSpec.expected.query);
         expect(actual.params).toStrictEqual(testSpec.expected.params);
+        expect(actual.scheduledParamExists).toEqual(testSpec.expected.scheduledParamExists);
+        expect(actual.isTransactionHash).toEqual(testSpec.expected.isTransactionHash);
       });
     }
   });
@@ -674,14 +691,14 @@ describe('extractSqlFromTransactionsRequest', () => {
     test('single value', () => {
       const expected = {
         ...defaultExpected,
-        limitQuery: 'limit $2',
-        params: ['22', 25],
-        resultTypeQuery: 't.result = $1',
+        limitQuery: 'limit $1',
+        params: [25],
+        resultTypeQuery: `t.result in (${utils.resultSuccess})`,
       };
       const filters = [{key: constants.filterKeys.RESULT, operator: utils.opsMap.eq, value: 'success'}];
       expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
 
-      expected.resultTypeQuery = 't.result <> $1';
+      expected.resultTypeQuery = `t.result not in (${utils.resultSuccess})`;
       filters[0].value = 'fail';
       expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
     });
@@ -689,9 +706,9 @@ describe('extractSqlFromTransactionsRequest', () => {
     test('multiple values', () => {
       const expected = {
         ...defaultExpected,
-        limitQuery: 'limit $2',
-        params: ['22', 25],
-        resultTypeQuery: 't.result = $1',
+        limitQuery: 'limit $1',
+        params: [25],
+        resultTypeQuery: `t.result in (${utils.resultSuccess})`,
       };
       const filters = [
         {key: constants.filterKeys.RESULT, operator: utils.opsMap.eq, value: 'success'},
@@ -700,7 +717,7 @@ describe('extractSqlFromTransactionsRequest', () => {
       ];
       expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
 
-      expected.resultTypeQuery = 't.result <> $1';
+      expected.resultTypeQuery = `t.result not in (${utils.resultSuccess})`;
       filters[2].value = 'fail';
       expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
     });
@@ -740,11 +757,11 @@ describe('extractSqlFromTransactionsRequest', () => {
       accountQuery: 'ctl.entity_id = $1',
       creditDebitQuery: 'ctl.amount > 0',
       limit: 30,
-      limitQuery: 'limit $4',
+      limitQuery: 'limit $3',
       order: 'asc',
-      params: [123, '22', '14', 30],
-      resultTypeQuery: 't.result = $2',
-      transactionTypeQuery: 'type = $3',
+      params: [123, '14', 30],
+      resultTypeQuery: `t.result in (${utils.resultSuccess})`,
+      transactionTypeQuery: 'type = $2',
     };
     const filters = [
       {key: constants.filterKeys.ACCOUNT_ID, operator: utils.opsMap.eq, value: 123},
@@ -925,5 +942,148 @@ describe('getStakingRewardTimestamps', () => {
 
     const expected = [1565779604000000002, 1565779600000000002];
     expect(getStakingRewardTimestamps(transactions)).toEqual(expected);
+  });
+});
+
+describe('getTransactionsByIdOrHashCacheControlHeader', () => {
+  test(' longer max-age for SCHEDULECREATE', async () => {
+    const scheduledTransactionsExecuted = [
+      {
+        consensus_timestamp: 1,
+        entity_id: 98,
+        memo: null,
+        charged_tx_fee: 5,
+        max_fee: 33,
+        nonce: 0,
+        parent_consensus_timestamp: null,
+        token_transfers: [],
+        transfers: [],
+        result: 22,
+        scheduled: false,
+        transaction_hash: 'hash',
+        type: 42,
+        valid_start_ns: 1623787159737799966n,
+        transaction_bytes: 'bytes',
+        node_account_id: 2,
+        payer_account_id: 3,
+      },
+      {
+        consensus_timestamp: 2,
+        entity_id: 100,
+        memo: null,
+        charged_tx_fee: 5,
+        max_fee: 33,
+        nonce: 1,
+        parent_consensus_timestamp: 1,
+        token_transfers: [],
+        transfers: [],
+        result: 22,
+        scheduled: true,
+        transaction_hash: 'hash',
+        type: 14,
+        valid_start_ns: 1623787159737799966n,
+        transaction_bytes: 'bytes',
+        node_account_id: 2,
+        payer_account_id: 3,
+        crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
+      },
+    ];
+
+    expect(await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsExecuted, false)).toEqual({});
+    expect(await getTransactionsByIdOrHashCacheControlHeader(true, scheduledTransactionsExecuted, false)).toEqual({});
+    expect(await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsExecuted, true)).toEqual({});
+  });
+  test(' shorter max-age for SCHEDULECREATE', async () => {
+    const expected = {'cache-control': `public, max-age=5`};
+    const scheduledTransactionsNotYetExecuted = [
+      {
+        consensus_timestamp: 1823787159637799966n,
+        entity_id: 98,
+        memo: null,
+        charged_tx_fee: 5,
+        max_fee: 33,
+        nonce: 0,
+        parent_consensus_timestamp: null,
+        token_transfers: [],
+        transfers: [],
+        result: 22,
+        scheduled: false,
+        transaction_hash: 'hash',
+        type: 42,
+        valid_start_ns: 1623787159737799966n,
+        transaction_bytes: 'bytes',
+        node_account_id: 2,
+        payer_account_id: 3,
+      },
+      {
+        consensus_timestamp: 2,
+        entity_id: 100,
+        memo: null,
+        charged_tx_fee: 5,
+        max_fee: 33,
+        nonce: 1,
+        parent_consensus_timestamp: 1,
+        token_transfers: [],
+        transfers: [],
+        result: 22,
+        scheduled: false,
+        transaction_hash: 'hash',
+        type: 14,
+        valid_start_ns: 1623787159737799966n,
+        transaction_bytes: 'bytes',
+        node_account_id: 2,
+        payer_account_id: 3,
+        crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
+      },
+    ];
+
+    expect(
+      await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsNotYetExecuted, false)
+    ).toEqual(expected);
+  });
+  test(' longer max-age for failed SCHEDULECREATE', async () => {
+    const scheduledTransactionsExecuted = [
+      {
+        consensus_timestamp: 1,
+        entity_id: 98,
+        memo: null,
+        charged_tx_fee: 5,
+        max_fee: 33,
+        nonce: 0,
+        parent_consensus_timestamp: null,
+        token_transfers: [],
+        transfers: [],
+        result: 15,
+        scheduled: false,
+        transaction_hash: 'hash',
+        type: 42,
+        valid_start_ns: 1623787159737799966n,
+        transaction_bytes: 'bytes',
+        node_account_id: 2,
+        payer_account_id: 3,
+      },
+      {
+        consensus_timestamp: 2,
+        entity_id: 100,
+        memo: null,
+        charged_tx_fee: 5,
+        max_fee: 33,
+        nonce: 1,
+        parent_consensus_timestamp: 1,
+        token_transfers: [],
+        transfers: [],
+        result: 22,
+        scheduled: true,
+        transaction_hash: 'hash',
+        type: 14,
+        valid_start_ns: 1623787159737799966n,
+        transaction_bytes: 'bytes',
+        node_account_id: 2,
+        payer_account_id: 3,
+        crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
+      },
+    ];
+
+    expect(await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsExecuted, false)).toEqual({});
   });
 });

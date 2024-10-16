@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.config;
 import static org.hyperledger.besu.evm.internal.EvmConfiguration.WorldUpdaterMode.JOURNALED;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
@@ -28,6 +29,7 @@ import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
+import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
@@ -48,7 +50,6 @@ import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV
 import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV046;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
-import com.swirlds.common.utility.SemanticVersion;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -97,6 +98,7 @@ public class EvmConfiguration {
     public static final String CACHE_NAME = "default";
     public static final String CACHE_NAME_CONTRACT = "contract";
     public static final String CACHE_NAME_EVM_ADDRESS = "evmAddress";
+    public static final String CACHE_NAME_ALIAS = "alias";
     public static final String CACHE_NAME_EXCHANGE_RATE = "exchangeRate";
     public static final String CACHE_NAME_FEE_SCHEDULE = "feeSchedule";
     public static final String CACHE_NAME_NFT = "nft";
@@ -107,10 +109,10 @@ public class EvmConfiguration {
     public static final String CACHE_NAME_TOKEN_ACCOUNT = "tokenAccount";
     public static final String CACHE_NAME_TOKEN_ACCOUNT_COUNT = "tokenAccountCount";
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
-    public static final SemanticVersion EVM_VERSION_0_30 = SemanticVersion.parse("0.30.0");
-    public static final SemanticVersion EVM_VERSION_0_34 = SemanticVersion.parse("0.34.0");
-    public static final SemanticVersion EVM_VERSION_0_38 = SemanticVersion.parse("0.38.0");
-    public static final SemanticVersion EVM_VERSION_0_46 = SemanticVersion.parse("0.46.0");
+    public static final SemanticVersion EVM_VERSION_0_30 = new SemanticVersion(0, 30, 0, "", "");
+    public static final SemanticVersion EVM_VERSION_0_34 = new SemanticVersion(0, 34, 0, "", "");
+    public static final SemanticVersion EVM_VERSION_0_38 = new SemanticVersion(0, 38, 0, "", "");
+    public static final SemanticVersion EVM_VERSION_0_46 = new SemanticVersion(0, 46, 0, "", "");
     public static final SemanticVersion EVM_VERSION = EVM_VERSION_0_46;
     private final CacheProperties cacheProperties;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -143,7 +145,7 @@ public class EvmConfiguration {
     @Bean(CACHE_MANAGER_ENTITY)
     CacheManager cacheManagerEntity() {
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME, CACHE_NAME_EVM_ADDRESS));
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME, CACHE_NAME_EVM_ADDRESS, CACHE_NAME_ALIAS));
         caffeineCacheManager.setCacheSpecification(cacheProperties.getEntity());
         return caffeineCacheManager;
     }
@@ -441,6 +443,7 @@ public class EvmConfiguration {
                         new HederaEvmSLoadOperation(gasCalculator),
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
+                        new CustomCallOperation(gasCalculator),
                         prngSeedOperation,
                         hederaBlockHashOperation,
                         extCodeHashOperation,

@@ -41,7 +41,9 @@ import com.hedera.mirror.rest.model.NetworkStakeResponse;
 import com.hedera.mirror.rest.model.Nft;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.rest.model.NftTransactionHistory;
+import com.hedera.mirror.rest.model.Nfts;
 import com.hedera.mirror.rest.model.Schedule;
+import com.hedera.mirror.rest.model.TokenAirdropsResponse;
 import com.hedera.mirror.rest.model.TokenAllowancesResponse;
 import com.hedera.mirror.rest.model.TokenBalancesResponse;
 import com.hedera.mirror.rest.model.TokenInfo;
@@ -222,6 +224,11 @@ public class MirrorNodeClient {
                 spenderId);
     }
 
+    public Nfts getAccountsNftInfo(@NonNull AccountId accountId) {
+        log.debug("Retrieving account nft info for '{}' returned by Mirror Node", accountId);
+        return callRestEndpoint("/accounts/{accountId}/nfts", Nfts.class, accountId.toString());
+    }
+
     public TokenAllowancesResponse getAccountTokenAllowanceBySpender(
             String accountId, String tokenId, String spenderId) {
         log.debug(
@@ -375,6 +382,18 @@ public class MirrorNodeClient {
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
         log.info("Unsubscribed from {}", subscription);
+    }
+
+    public TokenAirdropsResponse getPendingAirdrops(@NonNull AccountId accountId) {
+        log.debug("Retrieving pending airdrops for account '{}' returned by Mirror Node", accountId);
+        return callRestJavaEndpoint(
+                "/accounts/{accountId}/airdrops/pending", TokenAirdropsResponse.class, accountId.toString());
+    }
+
+    public TokenAirdropsResponse getOutstandingAirdrops(@NonNull AccountId accountId) {
+        log.debug("Retrieving outstanding airdrops for account '{}' returned by Mirror Node", accountId);
+        return callRestJavaEndpoint(
+                "/accounts/{accountId}/airdrops/outstanding", TokenAirdropsResponse.class, accountId.toString());
     }
 
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {

@@ -162,6 +162,58 @@ paths:
           $ref: "#/components/responses/NotFoundError"
       tags:
         - accounts
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/airdrops/outstanding:
+    get:
+      summary: Get outstanding token airdrops sent by an account
+      description: |
+        Returns outstanding token airdrops that have been sent by an account.
+      operationId: getOutstandingTokenAirdrops
+      parameters:
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/receiverIdQueryParam"
+        - $ref: "#/components/parameters/serialNumberQueryParam"
+        - $ref: "#/components/parameters/tokenIdQueryParam"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenAirdropsResponse"
+        400:
+          $ref: "#/components/responses/InvalidParameterError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+      tags:
+        - airdrops
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/airdrops/pending:
+    get:
+      summary: Get pending token airdrops received by an account
+      description: |
+        Returns pending token airdrops that have been received by an account.
+      operationId: getPendingTokenAirdrops
+      parameters:
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/senderIdQueryParam"
+        - $ref: "#/components/parameters/serialNumberQueryParam"
+        - $ref: "#/components/parameters/tokenIdQueryParam"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenAirdropsResponse"
+        400:
+          $ref: "#/components/responses/InvalidParameterError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+      tags:
+        - airdrops
   /api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/crypto:
     get:
       summary: Get crypto allowances for an account info
@@ -1318,7 +1370,7 @@ paths:
         - tokens
 tags:
   - name: accounts
-    description: The accounts object represents the information associated with an account entity and returns a list of account information.
+    description: The accounts object represents the information associated with an account entity and returns a list of account information.The accounts list endpoint is cached and not updated as frequently as the account lookup by a specific ID endpoint.
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#accounts
   - name: balances
@@ -1326,9 +1378,9 @@ tags:
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#balances
   - name: contracts
-    description: The contracts objects represents the information associated with contract entities.
+    description: The contracts objects represents the information associated with contract entities.The contracts list endpoint is cached and not updated as frequently as the contract lookup by a specific ID endpoint.
   - name: schedules
-    description: The schedules object represents the information associated with a schedule entity.
+    description: The schedules object represents the information associated with a schedule entity.The schedules list endpoints is cached and not updated as frequently as the schedule lookup by a specific ID endpoint.
   - name: transactions
     description: The transaction object represents the transactions processed on the Hedera network.
     externalDocs:
@@ -1338,10 +1390,10 @@ tags:
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#topic-messages
   - name: tokens
-    description: The tokens object represents the information associated with a token entity and returns a list of token information.
+    description: The tokens object represents the information associated with a token entity and returns a list of token information.The tokens list endpoint is cached and not updated as frequently as the token lookup by a specific ID.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.113.0-SNAPSHOT
+  version: 0.116.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -1652,6 +1704,13 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/StakingReward"
+        links:
+          $ref: "#/components/schemas/Links"
+    TokenAirdropsResponse:
+      type: object
+      properties:
+        airdrops:
+          $ref: "#/components/schemas/TokenAirdrops"
         links:
           $ref: "#/components/schemas/Links"
     TokenAllowancesResponse:
@@ -3306,6 +3365,44 @@ components:
         symbol: FIRSTMOVERLPDJH
         token_id: 0.0.1
         type: FUNGIBLE_COMMON
+    TokenAirdrop:
+      type: object
+      properties:
+        amount:
+          format: int64
+          type: integer
+        receiver_id:
+          $ref: "#/components/schemas/EntityId"
+        sender_id:
+          $ref: "#/components/schemas/EntityId"
+        serial_number:
+          example: 1
+          format: int64
+          nullable: true
+          type: integer
+        timestamp:
+          $ref: "#/components/schemas/TimestampRange"
+        token_id:
+          $ref: "#/components/schemas/EntityId"
+      example:
+        amount: 10
+        receiver_id: "0.0.15"
+        sender_id: "0.0.10"
+        serial_number: null
+        timestamp:
+          from: "1651560386.060890949"
+          to: "1651560386.661997287"
+        token_id: "0.0.99"
+      required:
+        - amount
+        - receiver_id
+        - sender_id
+        - timestamp
+        - token_id
+    TokenAirdrops:
+      type: array
+      items:
+        $ref: "#/components/schemas/TokenAirdrop"
     TokenAllowance:
       allOf:
         - $ref: "#/components/schemas/Allowance"
@@ -4384,6 +4481,40 @@ components:
       example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
       schema:
         type: string
+    receiverIdQueryParam:
+      name: receiver.id
+      description: The ID of the receiver to return information for
+      in: query
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+        idGtOperator:
+          summary: Example of id greather than operator
+          value: gt:0.0.200
+        idGteOperator:
+          summary: Example of id greather than or equal to operator
+          value: gte:0.0.200
+        idLtOperator:
+          summary: Example of id less than operator
+          value: lt:0.0.200
+        idLteOperator:
+          summary: Example of id less than or equal to operator
+          value: lte:0.0.200
+      schema:
+        $ref: "#/components/schemas/EntityIdQuery"
     scheduledQueryParam:
       name: scheduled
       in: query
@@ -4452,6 +4583,40 @@ components:
         idLteOperator:
           summary: Example of id less than or equals operator
           value: lte:0.0.700
+      schema:
+        $ref: "#/components/schemas/EntityIdQuery"
+    senderIdQueryParam:
+      name: sender.id
+      description: The ID of the sender to return information for
+      in: query
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+        idGtOperator:
+          summary: Example of id greather than operator
+          value: gt:0.0.200
+        idGteOperator:
+          summary: Example of id greather than or equal to operator
+          value: gte:0.0.200
+        idLtOperator:
+          summary: Example of id less than operator
+          value: lt:0.0.200
+        idLteOperator:
+          summary: Example of id less than or equal to operator
+          value: lte:0.0.200
       schema:
         $ref: "#/components/schemas/EntityIdQuery"
     serialNumberPathParam:
