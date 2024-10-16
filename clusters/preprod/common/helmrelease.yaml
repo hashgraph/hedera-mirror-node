@@ -10,7 +10,10 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.115.0-beta1'
+      valuesFiles:
+        - values.yaml
+        - values-v2.yaml
+      version: '0.116.0-rc1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -78,8 +81,6 @@ spec:
                 resources:
                   requests:
                     storage: 250Gi
-    stackgres:
-      enabled: true
     testkube:
       enabled: true
       test:
@@ -91,7 +92,6 @@ spec:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod-new"} } }'
     zfs:
-      enabled: true
       coordinator:
         initialDiskSize: 100GB
       worker:
