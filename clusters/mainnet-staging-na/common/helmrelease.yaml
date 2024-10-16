@@ -10,7 +10,10 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.115.0-beta1'
+      valuesFiles:
+        - values.yaml
+        - values-v2.yaml
+      version: '0.116.0-rc1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -104,8 +107,6 @@ spec:
             release: mirror
       trigger:
         enabled: true
-    stackgres:
-      enabled: true
     traefik:
       resources:
         limits:
@@ -116,7 +117,6 @@ spec:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mainnet-staging-na"} } }'
     zfs:
-      enabled: true
       init:
         diskPrefix: mainnet-staging-na
 
