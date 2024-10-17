@@ -27,6 +27,10 @@ loki:
     storage:
       type: 'filesystem'
     structuredConfig:
+      compactor:
+        retention_enabled: true
+      limits_config:
+        retention_period: 1440h
       ruler:
         alertmanager_url: http://{{ .Release.Name }}-prometheus-alertmanager:9093
         enable_alertmanager_v2: true
@@ -48,9 +52,6 @@ loki:
             object_store: filesystem
             schema: v13
             store: tsdb
-      table_manager:
-        retention_deletes_enabled: true
-        retention_period: 1440h
   lokiCanary:
     enabled: false
   monitoring:
@@ -370,7 +371,7 @@ prometheus:
         requests:
           cpu: 250m
           memory: 1Gi
-      retention: 60d
+      retentionSize: 100GiB
       ruleSelectorNilUsesHelmValues: false
       scrapeInterval: 30s
       serviceMonitorSelectorNilUsesHelmValues: false
@@ -473,6 +474,7 @@ traefik:
   globalArguments:  # Expose X-Forwarded-For header for tracing
     - --entryPoints.web.forwardedHeaders.insecure
     - --entryPoints.websecure.forwardedHeaders.insecure
+    - --api.insecure=true
   logs:
     access:
       enabled: true
