@@ -371,7 +371,7 @@ prometheus:
         requests:
           cpu: 250m
           memory: 1Gi
-      retentionSize: 90GiB
+      retentionSize: 100GiB
       ruleSelectorNilUsesHelmValues: false
       scrapeInterval: 30s
       serviceMonitorSelectorNilUsesHelmValues: false
