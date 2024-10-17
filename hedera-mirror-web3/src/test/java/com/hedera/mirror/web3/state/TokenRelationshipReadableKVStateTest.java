@@ -140,6 +140,24 @@ class TokenRelationshipReadableKVStateTest {
     }
 
     @Test
+    void getWithTokenIDDefaultReturnsNull() {
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TokenID.DEFAULT)
+                .accountId(ACCOUNT_ID)
+                .build();
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
+    }
+
+    @Test
+    void getWithAccountIDDefaultReturnsNull() {
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(AccountID.DEFAULT)
+                .build();
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
+    }
+
+    @Test
     void getWithAccountNullReturnsNull() {
         final var entityIDPair = EntityIDPair.newBuilder()
                 .tokenId(TOKEN_ID)
@@ -159,7 +177,6 @@ class TokenRelationshipReadableKVStateTest {
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
-        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.empty());
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
     }
 
@@ -172,7 +189,6 @@ class TokenRelationshipReadableKVStateTest {
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
-        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.empty());
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
     }
@@ -186,7 +202,6 @@ class TokenRelationshipReadableKVStateTest {
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
-        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.empty());
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
@@ -210,7 +225,6 @@ class TokenRelationshipReadableKVStateTest {
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
-        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
     }
@@ -269,7 +283,6 @@ class TokenRelationshipReadableKVStateTest {
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
-        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
     }
