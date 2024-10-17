@@ -72,6 +72,7 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
         if (tokenId == null || accountId == null) {
             return null;
         }
+        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
 
         final var timestamp = ContractCallContext.get().getTimestamp();
         final var account = findAccount(accountId, timestamp);
@@ -79,14 +80,9 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
             return null;
         }
 
-        final var tokenType = findTokenType(tokenId);
-        if (tokenType.isEmpty()) {
-            return null;
-        }
-
         // The accountId will always be in the format "shard.realm.num"
         return findTokenAccount(tokenId, accountId, timestamp)
-                .map(ta -> tokenRelationFromEntity(tokenType.get(), tokenId, accountId, ta, timestamp))
+                .map(ta -> tokenRelationFromEntity(tokenId, accountId, ta, timestamp))
                 .orElse(null);
     }
 
@@ -112,7 +108,6 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
     }
 
     private TokenRelation tokenRelationFromEntity(
-            final TokenTypeEnum tokenType,
             final TokenID tokenID,
             final AccountID accountID,
             final TokenAccount tokenAccount,
@@ -120,7 +115,7 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
         return TokenRelation.newBuilder()
                 .tokenId(tokenID)
                 .accountId(accountID)
-                .balanceSupplier(getBalance(tokenType, tokenAccount, timestamp))
+                .balanceSupplier(getBalance(tokenAccount, timestamp))
                 .frozen(tokenAccount.getFreezeStatus() == TokenFreezeStatusEnum.FROZEN)
                 .kycGranted(tokenAccount.getKycStatus() != TokenKycStatusEnum.REVOKED)
                 .automaticAssociation(tokenAccount.getAutomaticAssociation())
@@ -128,44 +123,34 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
     }
 
     /**
-     * Determines fungible or NFT balance based on block context.
+     * For the latest block we have the balance directly as a field in the TokenAccount object.
+     * For the historical block we need to execute a query to calculate the historical balance, but
+     * we first need to find the token type in order to use the correct repository.
      */
-    private Supplier<Long> getBalance(
-            final TokenTypeEnum tokenType, final TokenAccount tokenAccount, final Optional<Long> timestamp) {
-        return Suppliers.memoize(() -> tokenType.equals(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                ? getNftBalance(tokenAccount, timestamp)
-                : getFungibleBalance(tokenAccount, timestamp));
+    private Supplier<Long> getBalance(final TokenAccount tokenAccount, final Optional<Long> timestamp) {
+        if (timestamp.isEmpty()) {
+            return tokenAccount::getBalance;
+        }
+
+        final var tokenType = findTokenType(tokenAccount.getTokenId());
+        return tokenType
+                .map(tokenTypeEnum -> Suppliers.memoize(() -> tokenTypeEnum.equals(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        ? getNftBalance(tokenAccount, timestamp.get())
+                        : getFungibleBalance(tokenAccount, timestamp.get())))
+                .orElseGet(() -> () -> 0L);
     }
 
-    /**
-     * NFT Balance Explanation:
-     * Non-historical Call:
-     * The balance is obtained from `tokenAccount.getBalance()`.
-     * Historical Call:
-     * In historical block queries, as the `token_account` and `token_balance` tables lack historical state for NFT balances,
-     * the NFT balance is retrieved from `NftRepository.nftBalanceByAccountIdTokenIdAndTimestamp`
-     */
-    private Long getNftBalance(final TokenAccount tokenAccount, final Optional<Long> timestamp) {
-        return timestamp
-                .map(t -> nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(
-                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), t))
-                .orElseGet(() -> Optional.of(tokenAccount.getBalance()))
+    private Long getNftBalance(final TokenAccount tokenAccount, final long timestamp) {
+        return nftRepository
+                .nftBalanceByAccountIdTokenIdAndTimestamp(
+                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp)
                 .orElse(0L);
     }
 
-    /**
-     * Fungible Token Balance Explanation:
-     * Non-historical Call:
-     * The balanceSupplier is obtained from `tokenAccount.getBalance()`.
-     * Historical Call:
-     * In historical block queries, since the `token_account` table lacks historical state for fungible balances,
-     * the fungible balance is determined from the `token_balance` table using the `findHistoricalTokenBalanceUpToTimestamp` query.
-     */
-    private Long getFungibleBalance(final TokenAccount tokenAccount, final Optional<Long> timestamp) {
-        return timestamp
-                .map(t -> tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
-                        tokenAccount.getTokenId(), tokenAccount.getAccountId(), t))
-                .orElseGet(() -> Optional.of(tokenAccount.getBalance()))
+    private Long getFungibleBalance(final TokenAccount tokenAccount, final long timestamp) {
+        return tokenBalanceRepository
+                .findHistoricalTokenBalanceUpToTimestamp(
+                        tokenAccount.getTokenId(), tokenAccount.getAccountId(), timestamp)
                 .orElse(0L);
     }
 
@@ -173,7 +158,7 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
         return commonEntityAccessor.get(accountID, timestamp);
     }
 
-    private Optional<TokenTypeEnum> findTokenType(final TokenID tokenID) {
-        return tokenRepository.findTokenTypeById(toEntityId(tokenID).getId());
+    private Optional<TokenTypeEnum> findTokenType(final long tokenId) {
+        return tokenRepository.findTokenTypeById(tokenId);
     }
 }

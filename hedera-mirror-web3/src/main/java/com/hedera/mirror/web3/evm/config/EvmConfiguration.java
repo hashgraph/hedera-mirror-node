@@ -95,6 +95,7 @@ public class EvmConfiguration {
     public static final String CACHE_MANAGER_RECORD_FILE_TIMESTAMP = "recordFileTimestamp";
     public static final String CACHE_MANAGER_SYSTEM_FILE = "systemFile";
     public static final String CACHE_MANAGER_TOKEN = "token";
+    public static final String CACHE_MANAGER_TOKEN_TYPE = "tokenType";
     public static final String CACHE_NAME = "default";
     public static final String CACHE_NAME_CONTRACT = "contract";
     public static final String CACHE_NAME_EVM_ADDRESS = "evmAddress";
@@ -158,11 +159,18 @@ public class EvmConfiguration {
                 CACHE_NAME_NFT,
                 CACHE_NAME_NFT_ALLOWANCE,
                 CACHE_NAME_TOKEN,
-                CACHE_NAME_TOKEN_TYPE,
                 CACHE_NAME_TOKEN_ACCOUNT,
                 CACHE_NAME_TOKEN_ACCOUNT_COUNT,
                 CACHE_NAME_TOKEN_ALLOWANCE));
         caffeineCacheManager.setCacheSpecification(cacheProperties.getToken());
+        return caffeineCacheManager;
+    }
+
+    @Bean(CACHE_MANAGER_TOKEN_TYPE)
+    CacheManager cacheManagerTokenType() {
+        final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME_TOKEN_TYPE));
+        caffeineCacheManager.setCacheSpecification(cacheProperties.getTokenType());
         return caffeineCacheManager;
     }
 
