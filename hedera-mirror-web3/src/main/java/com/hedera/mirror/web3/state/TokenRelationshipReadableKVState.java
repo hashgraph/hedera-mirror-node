@@ -69,10 +69,12 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
     protected TokenRelation readFromDataSource(@Nonnull EntityIDPair key) {
         final var tokenId = key.tokenId();
         final var accountId = key.accountId();
-        if (tokenId == null || accountId == null) {
+        if (tokenId == null
+                || accountId == null
+                || AccountID.DEFAULT.equals(accountId)
+                || TokenID.DEFAULT.equals(tokenId)) {
             return null;
         }
-        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
 
         final var timestamp = ContractCallContext.get().getTimestamp();
         final var account = findAccount(accountId, timestamp);
