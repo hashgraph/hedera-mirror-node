@@ -46,7 +46,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class AirdropsReadableKVStateTest {
+class AirdropsReadableKVStateTest {
 
     @InjectMocks
     private AirdropsReadableKVState airdropsReadableKVState;
