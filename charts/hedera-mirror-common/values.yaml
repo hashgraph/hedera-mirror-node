@@ -27,6 +27,10 @@ loki:
     storage:
       type: 'filesystem'
     structuredConfig:
+      compactor:
+        retention_enabled: true
+      limits_config:
+        retention_period: 2160h
       ruler:
         alertmanager_url: http://{{ .Release.Name }}-prometheus-alertmanager:9093
         enable_alertmanager_v2: true
