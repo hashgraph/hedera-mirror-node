@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.repository;
 
-import static com.hedera.mirror.common.domain.token.TokenTypeEnum.FUNGIBLE_COMMON;
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -281,35 +280,6 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE))
                 .persist();
 
-        assertThat(tokenRepository.findTokenTypeById(token.getTokenId()).get()).isEqualTo(NON_FUNGIBLE_UNIQUE);
-    }
-
-    @Test
-    void findTokenTypeByIdHistorical() {
-        final var token = domainBuilder
-                .tokenHistory()
-                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE))
-                .persist();
-
-        assertThat(tokenRepository.findTokenTypeById(token.getTokenId()).get()).isEqualTo(NON_FUNGIBLE_UNIQUE);
-    }
-
-    @Test
-    void findTokenTypeByIdCombined() {
-        final var timestamp = domainBuilder.timestamp();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).createdTimestamp(timestamp))
-                .persist();
-
-        // We shouldn't have such case directly. The test aims to check that we take the data from the "token" table
-        // with priority over the "token_history" table in case we have the token in both.
-        domainBuilder
-                .tokenHistory()
-                .customize(
-                        t -> t.tokenId(token.getTokenId()).type(FUNGIBLE_COMMON).createdTimestamp(timestamp - 1))
-                .persist();
-
-        assertThat(tokenRepository.findTokenTypeById(token.getTokenId()).get()).isEqualTo(NON_FUNGIBLE_UNIQUE);
+        assertThat(tokenRepository.findTypeByTokenId(token.getTokenId()).get()).isEqualTo(NON_FUNGIBLE_UNIQUE);
     }
 }

@@ -161,6 +161,6 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
     }
 
     private Optional<TokenTypeEnum> findTokenType(final long tokenId) {
-        return tokenRepository.findTokenTypeById(tokenId);
+        return tokenRepository.findTypeByTokenId(tokenId);
     }
 }

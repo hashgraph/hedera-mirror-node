@@ -247,7 +247,7 @@ class TokenRelationshipReadableKVStateTest {
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
-        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
+        when(tokenRepository.findTypeByTokenId(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
         when(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(anyLong(), anyLong(), anyLong()))
@@ -305,7 +305,7 @@ class TokenRelationshipReadableKVStateTest {
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
-        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
+        when(tokenRepository.findTypeByTokenId(anyLong())).thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
         when(nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(anyLong(), anyLong(), anyLong()))

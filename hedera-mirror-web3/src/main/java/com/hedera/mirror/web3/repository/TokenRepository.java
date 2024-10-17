@@ -38,23 +38,12 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
     @Query(
             value =
                     """
-                    select coalesce(
-                        (
-                            select type
-                            from token
-                            where token_id = ?1
-                        ),
-                        (
-                            select type
-                            from token_history
-                            where token_id = ?1
-                            order by lower(timestamp_range) desc
-                            limit 1
-                        )
-                    )
-                    """,
+            select t.type
+            from token t
+            where token_id = ?1
+            """,
             nativeQuery = true)
-    Optional<TokenTypeEnum> findTokenTypeById(Long tokenId);
+    Optional<TokenTypeEnum> findTypeByTokenId(Long tokenId);
 
     /**
      * Retrieves the most recent state of a token by its ID up to a given block timestamp.
