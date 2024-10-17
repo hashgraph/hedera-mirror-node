@@ -39,7 +39,6 @@ import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterAll;
@@ -81,12 +80,6 @@ class TokenRelationshipReadableKVStateTest {
 
     private static final AccountID ACCOUNT_ID =
             AccountID.newBuilder().shardNum(1L).realmNum(2L).accountNum(3L).build();
-    private static final AccountID ACCOUNT_ID_ALIAS = AccountID.newBuilder()
-            .shardNum(1L)
-            .realmNum(2L)
-            .alias(Bytes.wrap("3a2102b3c641418e89452cd5202adfd4758f459acb8e364f741fd16cd2db79835d39d2".getBytes()))
-            .build();
-
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().shardNum(4L).realmNum(5L).tokenNum(6L).build();
 
@@ -299,32 +292,6 @@ class TokenRelationshipReadableKVStateTest {
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
-        when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
-        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(tokenAccount));
-        when(nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(anyLong(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(ACCOUNT_BALANCE));
-        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
-    }
-
-    @Test
-    void getWithAccountAliasReturnsCorrectValue() {
-        setUpAccountEntity();
-        setUpTokenAccount();
-        final var entityIDPair = EntityIDPair.newBuilder()
-                .tokenId(TOKEN_ID)
-                .accountId(ACCOUNT_ID_ALIAS)
-                .build();
-        final var expected = TokenRelation.newBuilder()
-                .tokenId(TOKEN_ID)
-                .accountId(ACCOUNT_ID)
-                .balance(ACCOUNT_BALANCE)
-                .frozen(true)
-                .kycGranted(true)
-                .automaticAssociation(true)
-                .build();
-        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
-        when(commonEntityAccessor.get(ACCOUNT_ID_ALIAS, timestamp)).thenReturn(Optional.of(account));
         when(tokenRepository.findTokenTypeById(anyLong())).thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));

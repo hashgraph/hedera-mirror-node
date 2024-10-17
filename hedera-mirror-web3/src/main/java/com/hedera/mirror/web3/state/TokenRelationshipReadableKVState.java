@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -79,24 +78,15 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
         if (account.isEmpty()) {
             return null;
         }
-        // If the AccountID is defined by alias, we need to define a new AccountID with num, so that we can execute the
-        // next search queries.
-        final var searchableAccountId = accountId.hasAccountNum()
-                ? accountId
-                : toAccountId(account.get().toEntityId());
 
         final var tokenType = findTokenType(tokenId);
         if (tokenType.isEmpty()) {
             return null;
         }
 
-        final var tokenAccount = findTokenAccount(tokenId, searchableAccountId, timestamp);
-        if (tokenAccount.isEmpty()) {
-            return null;
-        }
-
-        return tokenAccount
-                .map(ta -> tokenRelationFromEntity(tokenType.get(), tokenId, searchableAccountId, ta, timestamp))
+        // The accountId will always be in the format "shard.realm.num"
+        return findTokenAccount(tokenId, accountId, timestamp)
+                .map(ta -> tokenRelationFromEntity(tokenType.get(), tokenId, accountId, ta, timestamp))
                 .orElse(null);
     }
 
