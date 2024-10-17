@@ -97,9 +97,7 @@ app.set('port', port);
 app.set('query parser', requestQueryParser);
 
 serveSwaggerDocs(app);
-if (isTestEnv()) {
-  openApiValidator(app);
-}
+openApiValidator(app);
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(
