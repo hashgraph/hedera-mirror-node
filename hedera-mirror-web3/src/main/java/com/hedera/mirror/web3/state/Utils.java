@@ -31,7 +31,6 @@ import org.hyperledger.besu.datatypes.Address;
 public class Utils {
 
     public static final long DEFAULT_AUTO_RENEW_PERIOD = 7776000L;
-    public static final Long ZERO_BALANCE = 0L;
     public static final int EVM_ADDRESS_LEN = 20;
     /* A placeholder to store the 12-byte of zeros prefix that marks an EVM address as a "mirror" address. */
     private static final byte[] MIRROR_PREFIX = new byte[12];
