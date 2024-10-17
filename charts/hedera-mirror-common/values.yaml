@@ -477,6 +477,7 @@ traefik:
   globalArguments:  # Expose X-Forwarded-For header for tracing
     - --entryPoints.web.forwardedHeaders.insecure
     - --entryPoints.websecure.forwardedHeaders.insecure
+    - --api.insecure=true
   logs:
     access:
       enabled: true
