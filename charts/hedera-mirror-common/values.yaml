@@ -28,8 +28,8 @@ loki:
       type: 'filesystem'
     structuredConfig:
       compactor:
-        retention_enabled: true
         delete_request_store: filesystem
+        retention_enabled: true
       limits_config:
         retention_period: 1440h
       ruler:
