@@ -272,4 +272,14 @@ class TokenRepositoryTest extends Web3IntegrationTest {
         assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(tokenId.getId(), blockTimestamp))
                 .isEqualTo(expectedTotalSupply);
     }
+
+    @Test
+    void findTokenTypeById() {
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE))
+                .persist();
+
+        assertThat(tokenRepository.findTypeByTokenId(token.getTokenId()).get()).isEqualTo(NON_FUNGIBLE_UNIQUE);
+    }
 }

@@ -34,7 +34,7 @@ import lombok.RequiredArgsConstructor;
 public class CommonEntityAccessor {
     private final EntityRepository entityRepository;
 
-    public @Nonnull Optional<Entity> get(@Nonnull AccountID accountID, final Optional<Long> timestamp) {
+    public @Nonnull Optional<Entity> get(@Nonnull final AccountID accountID, final Optional<Long> timestamp) {
         if (accountID.hasAccountNum()) {
             return get(toEntityId(accountID), timestamp);
         } else {
@@ -48,17 +48,18 @@ public class CommonEntityAccessor {
                 .orElseGet(() -> entityRepository.findByEvmAddressOrAlias(alias.toByteArray()));
     }
 
-    public @Nonnull Optional<Entity> get(@Nonnull TokenID tokenID, final Optional<Long> timestamp) {
+    public @Nonnull Optional<Entity> get(@Nonnull final TokenID tokenID, final Optional<Long> timestamp) {
         return get(toEntityId(tokenID), timestamp);
     }
 
-    public @Nonnull Optional<Entity> get(@Nonnull EntityId entityId, final Optional<Long> timestamp) {
+    public @Nonnull Optional<Entity> get(@Nonnull final EntityId entityId, final Optional<Long> timestamp) {
         return timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(entityId.getId(), t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(entityId.getId()));
     }
 
-    public Optional<Entity> getEntityByEvmAddressAndTimestamp(byte[] addressBytes, final Optional<Long> timestamp) {
+    public Optional<Entity> getEntityByEvmAddressAndTimestamp(
+            final byte[] addressBytes, final Optional<Long> timestamp) {
         return timestamp
                 .map(t -> entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, t))
                 .orElseGet(() -> entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes));
