@@ -76,6 +76,7 @@ import org.apache.tuweni.bytes.Bytes;
 @RequiredArgsConstructor
 public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     private static final String HEX_DIGITS = "0123456789abcdef";
+    private final int GAS_CORRECTION = 2507;
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
 
     private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
@@ -1453,7 +1454,10 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
         var data = encodeDataToByteArray(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
         var estimateGasValue = validateAndReturnGas(data, BALANCE_OF, ercTestContractSolidityAddress);
-        executeContractTransaction(deployedErcTestContract, estimateGasValue, BALANCE_OF, data);
+        // Temporary change: Adding 2507 gas correction because of #10828 from hedera-services where the gas
+        // calculations are adjusted
+        // TODO: To be reverted when reusable services are implemented in mirror node
+        executeContractTransaction(deployedErcTestContract, estimateGasValue + GAS_CORRECTION, BALANCE_OF, data);
     }
 
     @And("I update the account and token keys")
@@ -1532,8 +1536,12 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(fungibleKycUnfrozenTokenId),
                 asAddress(admin),
                 asAddress(receiverAccountAlias));
+        // Temporary change: Adding 2507 gas correction because of #10828 from hedera-services where the gas
+        // calculations are adjusted
+        // TODO: To be reverted when reusable services are implemented in mirror node
         var estimateGasValue = validateAndReturnGas(data, ALLOWANCE, estimatePrecompileContractSolidityAddress);
-        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, ALLOWANCE, data);
+        executeContractTransaction(
+                deployedEstimatePrecompileContract, estimateGasValue + GAS_CORRECTION, ALLOWANCE, data);
     }
 
     @Then("I call estimateGas with allowance function for NFT and verify the estimated gas against HAPI")
@@ -1544,8 +1552,12 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(nonFungibleKycUnfrozenTokenId),
                 asAddress(admin),
                 asAddress(receiverAccountAlias));
+        // Temporary change: Adding 2507 gas correction because of #10828 from hedera-services where the gas
+        // calculations are adjusted
+        // TODO: To be reverted when reusable services are implemented in mirror node
         var estimateGasValue = validateAndReturnGas(data, ALLOWANCE, estimatePrecompileContractSolidityAddress);
-        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, ALLOWANCE, data);
+        executeContractTransaction(
+                deployedEstimatePrecompileContract, estimateGasValue + GAS_CORRECTION, ALLOWANCE, data);
     }
 
     @Then("I call estimateGas with approve function and verify the estimated gas against HAPI")
