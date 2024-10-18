@@ -31,6 +31,7 @@ import java.net.UnknownHostException;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -86,20 +87,29 @@ public class NetworkController extends ReactorNetworkServiceGrpc.NetworkServiceI
         }
 
         for (var s : addressBookEntry.getServiceEndpoints()) {
-            try {
-                var ipAddressV4 = InetAddress.getByName(s.getIpAddressV4()).getAddress();
-                var serviceEndpoint = ServiceEndpoint.newBuilder()
-                        .setDomainName(s.getDomainName())
-                        .setIpAddressV4(ProtoUtil.toByteString(ipAddressV4))
-                        .setPort(s.getPort())
-                        .build();
-                nodeAddress.addServiceEndpoint(serviceEndpoint);
-            } catch (UnknownHostException e) {
-                // Shouldn't occur since we never pass hostnames to InetAddress.getByName()
-                log.warn("Unable to convert IP address to byte array", e.getMessage());
-            }
+            var serviceEndpoint = ServiceEndpoint.newBuilder()
+                    .setDomainName(s.getDomainName())
+                    .setIpAddressV4(toIpAddressV4(s.getIpAddressV4()))
+                    .setPort(s.getPort())
+                    .build();
+            nodeAddress.addServiceEndpoint(serviceEndpoint);
         }
 
         return nodeAddress.build();
+    }
+
+    private ByteString toIpAddressV4(String ipAddress) {
+        try {
+            if (StringUtils.isBlank(ipAddress)) {
+                return ByteString.EMPTY;
+            }
+
+            return ProtoUtil.toByteString(InetAddress.getByName(ipAddress).getAddress());
+        } catch (UnknownHostException e) {
+            // Shouldn't occur since we never pass hostnames to InetAddress.getByName()
+            log.warn("Unable to convert IP address to byte array", e.getMessage());
+        }
+
+        return ByteString.EMPTY;
     }
 }

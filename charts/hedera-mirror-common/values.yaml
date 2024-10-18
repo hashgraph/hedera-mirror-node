@@ -372,7 +372,7 @@ prometheus:
         requests:
           cpu: 250m
           memory: 1Gi
-      retentionSize: 100GiB
+      retentionSize: 84GiB  # Capacity minus 16% so KubePersistentVolumeFillingUp alert doesn't fire
       ruleSelectorNilUsesHelmValues: false
       scrapeInterval: 30s
       serviceMonitorSelectorNilUsesHelmValues: false

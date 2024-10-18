@@ -39,6 +39,7 @@ import java.time.Duration;
 import java.util.HashSet;
 import lombok.CustomLog;
 import net.devh.boot.grpc.client.inject.GrpcClient;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -249,10 +250,12 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .returns(addressBookEntry.getStake(), NodeAddress::getStake);
 
         var serviceEndpoint = addressBookEntry.getServiceEndpoints().iterator().next();
-        ByteString ipAddress = null;
+        ByteString ipAddress = ByteString.EMPTY;
         try {
-            ipAddress = ProtoUtil.toByteString(
-                    InetAddress.getByName(serviceEndpoint.getIpAddressV4()).getAddress());
+            if (StringUtils.isNotBlank(serviceEndpoint.getIpAddressV4())) {
+                ipAddress = ProtoUtil.toByteString(
+                        InetAddress.getByName(serviceEndpoint.getIpAddressV4()).getAddress());
+            }
         } catch (Exception e) {
             // Ignore
         }
@@ -261,7 +264,10 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .first()
                 .returns(ipAddress, ServiceEndpoint::getIpAddressV4)
                 .returns(serviceEndpoint.getPort(), ServiceEndpoint::getPort)
-                .returns(serviceEndpoint.getDomainName(), ServiceEndpoint::getDomainName);
+                .returns(serviceEndpoint.getDomainName(), ServiceEndpoint::getDomainName)
+                .extracting(ServiceEndpoint::getIpAddressV4)
+                .isNotEqualTo(
+                        ByteString.copyFrom(InetAddress.getLoopbackAddress().getAddress()));
     }
 
     private void assertException(Throwable t, Status.Code status, String message) {
