@@ -91,31 +91,60 @@ public class ModularizedPropertiesTest extends Web3IntegrationTest {
     public void testGetPropertiesMap() {
         Map<String, String> propertiesMap = modularizedProperties.getPropertiesMap();
 
-        assertThat(propertiesMap).isNotEmpty();
-        assertThat(propertiesMap).containsEntry(AUTO_RENEW_TARGET_TYPES, "[ACCOUNT]");
-        assertThat(propertiesMap).containsEntry(CHAIN_ID, "295");
-        assertThat(propertiesMap).containsEntry(EVM_VERSION, "v0.46");
-        assertThat(propertiesMap).containsEntry(EVM_VERSION_DYNAMIC, "true");
-        assertThat(propertiesMap).containsEntry(FUNDING_ACCOUNT, "98");
-        assertThat(propertiesMap).containsEntry(MAX_REFUND_PERCENT, "20");
-        assertThat(propertiesMap).containsEntry(REDIRECT_TOKEN_CALLS, "false");
-        assertThat(propertiesMap).containsEntry(LAZY_CREATION_ENABLED, "true");
-        assertThat(propertiesMap).containsEntry(ALLOW_CREATE2, "true");
-        assertThat(propertiesMap).containsEntry(ALLOW_CALLS_TO_NON_CONTRACT, "true");
-        assertThat(propertiesMap).containsEntry(MAX_BATCH_SIZE_BURN, "10");
-        assertThat(propertiesMap).containsEntry(MAX_BATCH_SIZE_MINT, "11");
-        assertThat(propertiesMap).containsEntry(MAX_BATCH_SIZE_WIPE, "12");
-        assertThat(propertiesMap).containsEntry(NON_EXTANT_CONTRACTS_FAIL, "[]");
-        assertThat(propertiesMap).containsEntry(EXCHANGE_RATE_GAS_COST, "101");
-        assertThat(propertiesMap).containsEntry(HTS_DEFAULT_GAS_COST, "10001");
-        assertThat(propertiesMap).containsEntry(LIMIT_TOKEN_ASSOCIATIONS, "true");
-        assertThat(propertiesMap).containsEntry(MAX_LIFETIME, "8000002");
-        assertThat(propertiesMap).containsEntry(MAX_CUSTOM_FEES_ALLOWED, "11");
-        assertThat(propertiesMap).containsEntry(MAX_MEMO_UTF8_BYTES, "101");
-        assertThat(propertiesMap).containsEntry(MAX_METADATA_BYTES, "101");
-        assertThat(propertiesMap).containsEntry(MAX_TOKEN_NAME_UTF8_BYTES, "101");
-        assertThat(propertiesMap).containsEntry(MAX_PER_ACCOUNT, "1001");
-        assertThat(propertiesMap).containsEntry(MAX_SYMBOL_UTF8_BYTES, "101");
-        assertThat(propertiesMap).containsEntry(TOKEN_TRANSFER_USAGE_MULTIPLIER, "381");
+        assertThat(propertiesMap)
+                .isNotEmpty()
+                .containsAllEntriesOf(Map.of(
+                        AUTO_RENEW_TARGET_TYPES,
+                        "[ACCOUNT]",
+                        CHAIN_ID,
+                        "295",
+                        EVM_VERSION,
+                        "v0.46",
+                        EVM_VERSION_DYNAMIC,
+                        "true",
+                        FUNDING_ACCOUNT,
+                        "98",
+                        MAX_REFUND_PERCENT,
+                        "20",
+                        REDIRECT_TOKEN_CALLS,
+                        "false",
+                        LAZY_CREATION_ENABLED,
+                        "true",
+                        ALLOW_CREATE2,
+                        "true",
+                        ALLOW_CALLS_TO_NON_CONTRACT,
+                        "true"))
+                .containsAllEntriesOf(Map.of(
+                        MAX_BATCH_SIZE_BURN,
+                        "10",
+                        MAX_BATCH_SIZE_MINT,
+                        "11",
+                        MAX_BATCH_SIZE_WIPE,
+                        "12",
+                        NON_EXTANT_CONTRACTS_FAIL,
+                        "[]",
+                        EXCHANGE_RATE_GAS_COST,
+                        "101",
+                        HTS_DEFAULT_GAS_COST,
+                        "10001",
+                        LIMIT_TOKEN_ASSOCIATIONS,
+                        "true",
+                        MAX_LIFETIME,
+                        "8000002",
+                        MAX_CUSTOM_FEES_ALLOWED,
+                        "11",
+                        MAX_MEMO_UTF8_BYTES,
+                        "101"))
+                .containsAllEntriesOf(Map.of(
+                        MAX_METADATA_BYTES,
+                        "101",
+                        MAX_TOKEN_NAME_UTF8_BYTES,
+                        "101",
+                        MAX_PER_ACCOUNT,
+                        "1001",
+                        MAX_SYMBOL_UTF8_BYTES,
+                        "101",
+                        TOKEN_TRANSFER_USAGE_MULTIPLIER,
+                        "381"));
     }
 }
