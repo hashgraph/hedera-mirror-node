@@ -18,8 +18,8 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN_TYPE;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_TOKEN;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_TOKEN_TYPE;
 
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
@@ -34,7 +34,7 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
     @Cacheable(cacheNames = CACHE_NAME_TOKEN, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<Token> findById(Long tokenId);
 
-    @Cacheable(cacheNames = CACHE_NAME_TOKEN_TYPE, cacheManager = CACHE_MANAGER_TOKEN_TYPE, unless = "#result == null")
+    @Cacheable(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_TOKEN_TYPE, unless = "#result == null")
     @Query(
             value =
                     """

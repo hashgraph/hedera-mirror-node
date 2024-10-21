@@ -107,7 +107,6 @@ public class EvmConfiguration {
     public static final String CACHE_NAME_RECORD_FILE_LATEST = "latest";
     public static final String CACHE_NAME_RECORD_FILE_LATEST_INDEX = "latestIndex";
     public static final String CACHE_NAME_TOKEN = "token";
-    public static final String CACHE_NAME_TOKEN_TYPE = "tokenType";
     public static final String CACHE_NAME_TOKEN_ACCOUNT = "tokenAccount";
     public static final String CACHE_NAME_TOKEN_ACCOUNT_COUNT = "tokenAccountCount";
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
@@ -169,7 +168,7 @@ public class EvmConfiguration {
     @Bean(CACHE_MANAGER_TOKEN_TYPE)
     CacheManager cacheManagerTokenType() {
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME_TOKEN_TYPE));
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME));
         caffeineCacheManager.setCacheSpecification(cacheProperties.getTokenType());
         return caffeineCacheManager;
     }

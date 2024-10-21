@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.Range;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -158,29 +159,6 @@ class TokenRelationshipReadableKVStateTest {
     }
 
     @Test
-    void getWithAccountNullReturnsNull() {
-        final var entityIDPair = EntityIDPair.newBuilder()
-                .tokenId(TOKEN_ID)
-                .accountId(ACCOUNT_ID)
-                .build();
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.empty());
-        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
-    }
-
-    @Test
-    void getWithTokenTypeNullReturnsNull() {
-        setUpAccountEntity();
-        final var entityIDPair = EntityIDPair.newBuilder()
-                .tokenId(TOKEN_ID)
-                .accountId(ACCOUNT_ID)
-                .build();
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
-        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
-    }
-
-    @Test
     void getWithTokenAccountNullReturnsNull() {
         setUpAccountEntity();
         final var entityIDPair = EntityIDPair.newBuilder()
@@ -188,22 +166,7 @@ class TokenRelationshipReadableKVStateTest {
                 .accountId(ACCOUNT_ID)
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.empty());
-        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
-    }
-
-    @Test
-    void getWithTokenAccountNullReturnsNullHistorical() {
-        setUpAccountEntity();
-        final var entityIDPair = EntityIDPair.newBuilder()
-                .tokenId(TOKEN_ID)
-                .accountId(ACCOUNT_ID)
-                .build();
-        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
-        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
-        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
-                .thenReturn(Optional.empty());
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
     }
 
@@ -224,7 +187,6 @@ class TokenRelationshipReadableKVStateTest {
                 .automaticAssociation(true)
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
     }
@@ -255,6 +217,64 @@ class TokenRelationshipReadableKVStateTest {
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
     }
 
+    @Test
+    void getWithFungibleTokenAccountBalanceHistoricalAccountNotFoundReturnsZeroBalance() {
+        setUpAccountEntity();
+        setUpTokenAccount();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        final var expected = TokenRelation.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .balance(0L)
+                .frozen(true)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.empty());
+        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(tokenAccount));
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
+    }
+
+    @Test
+    void getWithFungibleTokenAccountBalanceHistoricalAccountCreatedTimestampLaterReturnsZeroBalance() {
+        account = domainBuilder
+                .entity()
+                .customize(e -> e.shard(ACCOUNT_ID.shardNum())
+                        .realm(ACCOUNT_ID.realmNum())
+                        .num(ACCOUNT_ID.accountNum())
+                        .id(toEntityId(ACCOUNT_ID).getId())
+                        .balance(ACCOUNT_BALANCE)
+                        .createdTimestamp(timestamp.get() + 1)
+                        .timestampRange(Range.atLeast(timestamp.get()))
+                        .type(EntityType.ACCOUNT))
+                .get();
+        setUpTokenAccount();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        final var expected = TokenRelation.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .balance(0L)
+                .frozen(true)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
+        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(tokenAccount));
+        when(tokenRepository.findTypeByTokenId(tokenAccount.getTokenId()))
+                .thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void getWithNftAccountBalance(final boolean areFlagsEnabled) {
@@ -282,7 +302,6 @@ class TokenRelationshipReadableKVStateTest {
                 .automaticAssociation(areFlagsEnabled)
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.of(account));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
     }
@@ -310,6 +329,64 @@ class TokenRelationshipReadableKVStateTest {
                 .thenReturn(Optional.of(tokenAccount));
         when(nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(ACCOUNT_BALANCE));
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
+    }
+
+    @Test
+    void getWithNftAccountBalanceHistoricalAccountNotFoundReturnsZeroBalance() {
+        setUpAccountEntity();
+        setUpTokenAccount();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        final var expected = TokenRelation.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .balance(0L)
+                .frozen(true)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.empty());
+        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(tokenAccount));
+        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
+    }
+
+    @Test
+    void getWithNftAccountBalanceHistoricalAccountCreatedTimestampLaterReturnsZeroBalance() {
+        account = domainBuilder
+                .entity()
+                .customize(e -> e.shard(ACCOUNT_ID.shardNum())
+                        .realm(ACCOUNT_ID.realmNum())
+                        .num(ACCOUNT_ID.accountNum())
+                        .id(toEntityId(ACCOUNT_ID).getId())
+                        .balance(ACCOUNT_BALANCE)
+                        .createdTimestamp(timestamp.get() + 1)
+                        .timestampRange(Range.atLeast(timestamp.get()))
+                        .type(EntityType.ACCOUNT))
+                .get();
+        setUpTokenAccount();
+        final var entityIDPair = EntityIDPair.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .build();
+        final var expected = TokenRelation.newBuilder()
+                .tokenId(TOKEN_ID)
+                .accountId(ACCOUNT_ID)
+                .balance(0L)
+                .frozen(true)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
+        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.of(tokenAccount));
+        when(tokenRepository.findTypeByTokenId(tokenAccount.getTokenId()))
+                .thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
     }
 

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.state;
 
+import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -77,11 +78,6 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
         }
 
         final var timestamp = ContractCallContext.get().getTimestamp();
-        final var account = findAccount(accountId, timestamp);
-        if (account.isEmpty()) {
-            return null;
-        }
-
         // The accountId will always be in the format "shard.realm.num"
         return findTokenAccount(tokenId, accountId, timestamp)
                 .map(ta -> tokenRelationFromEntity(tokenId, accountId, ta, timestamp))
@@ -127,33 +123,46 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
     /**
      * For the latest block we have the balance directly as a field in the TokenAccount object.
      * For the historical block we need to execute a query to calculate the historical balance, but
-     * we first need to find the token type in order to use the correct repository.
+     * we first need to find the account created timestamp and the token type in order to use the correct repository.
+     * If the account creation is after the passed timestamp - return 0L (the entity was not created).
      */
     private Supplier<Long> getBalance(final TokenAccount tokenAccount, final Optional<Long> timestamp) {
-        if (timestamp.isEmpty()) {
-            return tokenAccount::getBalance;
+        return Suppliers.memoize(() -> timestamp
+                .map(ts -> findAccount(toAccountId(tokenAccount.getAccountId()), Optional.of(ts))
+                        .map(account -> {
+                            final var accountCreatedTimestamp = account.getCreatedTimestamp();
+                            return findTokenType(tokenAccount.getTokenId())
+                                    .map(tokenTypeEnum -> tokenTypeEnum.equals(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                                            ? getNftBalance(tokenAccount, ts, accountCreatedTimestamp)
+                                            : getFungibleBalance(tokenAccount, ts, accountCreatedTimestamp))
+                                    .orElse(0L);
+                        })
+                        .orElse(0L))
+                .orElseGet(tokenAccount::getBalance));
+    }
+
+    private Long getNftBalance(
+            final TokenAccount tokenAccount, final long timestamp, final long accountCreatedTimestamp) {
+        if (timestamp >= accountCreatedTimestamp) {
+            return nftRepository
+                    .nftBalanceByAccountIdTokenIdAndTimestamp(
+                            tokenAccount.getTokenId(), tokenAccount.getAccountId(), timestamp)
+                    .orElse(0L);
+        } else {
+            return 0L;
         }
-
-        final var tokenType = findTokenType(tokenAccount.getTokenId());
-        return tokenType
-                .map(tokenTypeEnum -> Suppliers.memoize(() -> tokenTypeEnum.equals(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        ? getNftBalance(tokenAccount, timestamp.get())
-                        : getFungibleBalance(tokenAccount, timestamp.get())))
-                .orElseGet(() -> () -> 0L);
     }
 
-    private Long getNftBalance(final TokenAccount tokenAccount, final long timestamp) {
-        return nftRepository
-                .nftBalanceByAccountIdTokenIdAndTimestamp(
-                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp)
-                .orElse(0L);
-    }
-
-    private Long getFungibleBalance(final TokenAccount tokenAccount, final long timestamp) {
-        return tokenBalanceRepository
-                .findHistoricalTokenBalanceUpToTimestamp(
-                        tokenAccount.getTokenId(), tokenAccount.getAccountId(), timestamp)
-                .orElse(0L);
+    private Long getFungibleBalance(
+            final TokenAccount tokenAccount, final long timestamp, final long accountCreatedTimestamp) {
+        if (timestamp >= accountCreatedTimestamp) {
+            return tokenBalanceRepository
+                    .findHistoricalTokenBalanceUpToTimestamp(
+                            tokenAccount.getTokenId(), tokenAccount.getAccountId(), timestamp)
+                    .orElse(0L);
+        } else {
+            return 0L;
+        }
     }
 
     private Optional<Entity> findAccount(final AccountID accountID, final Optional<Long> timestamp) {
