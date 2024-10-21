@@ -66,7 +66,7 @@ dependencies {
         api("com.hedera.hashgraph:app:0.54.2")
         api("com.hedera.evm:hedera-evm:0.48.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.55.0")
-        api("com.hedera.hashgraph:sdk:2.41.0")
+        api("com.hedera.hashgraph:sdk:2.42.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.9")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
