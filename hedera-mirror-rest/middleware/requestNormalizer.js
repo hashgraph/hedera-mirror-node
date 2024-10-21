@@ -36,10 +36,7 @@ const NON_SORTED_PARAMS = ['balance', 'block.hash', 'block.number', 'nonce', 'sc
 /**
  * Normalizes a request by adding any missing default values and sorting any array query parameters.
  *
- * Any unknown query parameters will not be included in the normalized query string.
- *
- * Note, this should be called after requestQueryParser, as query parameters should be lower case before this is called.
- * Parameters such as `LIMIT=10` are not equivalent to `limit=10` and are unknown and will not be included in the normalized query.
+ * It is expected that this is called after any error handling for the request
  *
  * @param openApiRoute {string}
  * @param path {string}
