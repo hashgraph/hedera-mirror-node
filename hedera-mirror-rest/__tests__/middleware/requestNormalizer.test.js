@@ -30,24 +30,24 @@ describe('request normalizer', () => {
       expected: '/api/v1/unknown',
     },
     {
-      description: 'Unknown path and unknown query parameters are sorted',
+      description: 'Unknown path and unknown query parameters are discarded',
       input: '/api/v1/unknown?b_param=3&a_param=5',
-      expected: '/api/v1/unknown?a_param=5&b_param=3',
+      expected: '/api/v1/unknown',
     },
     {
-      description: 'Unknown array parameters are not sorted',
+      description: 'Unknown array parameters are discarded',
       input: '/api/v1/unknown?a_param=3&a_param=5',
-      expected: '/api/v1/unknown?a_param=3&a_param=5',
+      expected: '/api/v1/unknown',
     },
     {
       description: 'Unknown path with path parameter',
       input: '/api/v1/unknown/100/transactions?b_param=3&a_param=5',
-      expected: '/api/v1/unknown/100/transactions?a_param=5&b_param=3',
+      expected: '/api/v1/unknown/100/transactions',
     },
     {
       description: 'Unknown path with invalid path parameter',
       input: '//v1/unknown//transactions??=false',
-      expected: '//v1/unknown//transactions??=false',
+      expected: '//v1/unknown//transactions',
     },
     {
       description: 'Block query parameters are added',
@@ -55,9 +55,14 @@ describe('request normalizer', () => {
       expected: '/api/v1/blocks?limit=25&order=desc',
     },
     {
-      description: 'Known and unknown query parameters are sorted',
+      description: 'Known and unknown query parameters',
       input: '/api/v1/blocks?order=asc&unknown=3',
-      expected: '/api/v1/blocks?limit=25&order=asc&unknown=3',
+      expected: '/api/v1/blocks?limit=25&order=asc',
+    },
+    {
+      description: 'Case insensitive query parameter is discarded',
+      input: '/api/v1/blocks?LimIT=10',
+      expected: '/api/v1/blocks?limit=25&order=desc',
     },
     {
       description: 'Non sortable parameters are not sorted',

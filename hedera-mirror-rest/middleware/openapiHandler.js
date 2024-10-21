@@ -29,6 +29,8 @@ let v1OpenApiDocument;
 let v1OpenApiFile;
 let openApiMap;
 
+const OPEN_API_PARAMETER_LOCATION = '#/components/parameters/';
+
 /**
  * Check if apiVersion is currently supported
  * @param {Number} apiVersion
@@ -116,9 +118,9 @@ const getOpenApiParameters = (path, openApiObject) => {
 
   return (
     parameters
-      // Each open api parameter is prefixed by #/components/parameters/, which is 24 characters long
-      .map((p) => p.$ref?.substring(24))
-      .filter((p) => p !== undefined)
+      // Each open api parameter is prefixed by #/components/parameters/
+      .filter((p) => p.$ref?.includes(OPEN_API_PARAMETER_LOCATION))
+      .map((p) => p.$ref.substring(OPEN_API_PARAMETER_LOCATION.length))
       .map((p) => openApiObject.components.parameters[p])
       .filter((p) => p.in !== 'path')
       .map((p) => {

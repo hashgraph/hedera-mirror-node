@@ -15,64 +15,75 @@
  */
 
 import _ from 'lodash';
-import qs from 'qs';
 
 import {getOpenApiMap} from './openapiHandler.js';
 
 const openApiMap = getOpenApiMap();
 
-// Do not sort these query parameters as the results of the sql query changes based on their order
+/**
+ * Do not sort these query parameters as the results of the sql query changes based on their order
+ *
+ * Some examples from the spec tests:
+ *   /api/v1/contracts/results?block.number=11&block.number=10 sorts the results differently than ?block.number=10&block.number=11
+ *   /api/v1/transactions/0.0.10-1234567890-000000001?nonce=2&nonce=1 sorts the results differently than ?nonce=1&nonce=2
+ *
+ * From historical-custom-fees.json:
+ *   /api/v1/tokens/1135?timestamp=lt:1234567899.999999000&timestamp=1234567899.999999001 returns a result whereas
+ *   ?timestamp=1234567899.999999001&timestamp=lt:1234567899.999999000 returns a 404
+ */
 const NON_SORTED_PARAMS = ['balance', 'block.hash', 'block.number', 'nonce', 'scheduled', 'timestamp'];
 
 /**
- * Normalizes a request by adding any missing default values and sorting the query parameters.
+ * Normalizes a request by adding any missing default values and sorting any array query parameters.
  *
- * Note, query parameters should be lower case before this is called, as parameters
- * such as `LIMIT=25` are not equivalent to `limit=25` and an additional
- * `limit=25` will be added to the resulting parameters.
+ * Any unknown query parameters will not be included in the normalized query string.
+ *
+ * Note, this should be called after requestQueryParser, as query parameters should be lower case before this is called.
+ * Parameters such as `LIMIT=10` are not equivalent to `limit=10` and are unknown and will not be included in the normalized query.
  *
  * @param openApiRoute {string}
  * @param path {string}
- * @param query
+ * @param query request query object
  * @returns {string}
  */
 const normalizeRequestQueryParams = (openApiRoute, path, query) => {
   const openApiParameters = openApiMap.get(openApiRoute);
   if (_.isEmpty(openApiParameters)) {
-    return formatPathQuery(path, query);
+    return path;
   }
 
-  const normalizedQuery = _.cloneDeep(query);
+  let queryString = '';
   for (const param of openApiParameters) {
-    if (normalizedQuery[param?.parameterName] === undefined && param?.defaultValue !== undefined) {
-      // Add default value to query parameter
-      normalizedQuery[param.parameterName] = param.defaultValue;
-    } else if (
-      !NON_SORTED_PARAMS.includes(param?.parameterName) &&
-      Array.isArray(normalizedQuery[param?.parameterName])
-    ) {
-      // Sort the order of the parameters within the array
-      normalizedQuery[param.parameterName].sort();
+    const name = param.parameterName;
+    const value = query[param.parameterName];
+    if (value !== undefined) {
+      queryString = Array.isArray(value)
+        ? appendArrayToQuery(queryString, name, value)
+        : appendToQuery(queryString, name, value);
+    } else if (param?.defaultValue !== undefined) {
+      // Add the default value to the query parameter
+      queryString = appendToQuery(queryString, name, param.defaultValue);
     }
   }
 
-  return formatPathQuery(path, normalizedQuery);
+  return _.isEmpty(queryString) ? path : path + '?' + queryString;
 };
 
-const alphabeticalSort = (a, b) => {
-  return a.localeCompare(b);
+const appendArrayToQuery = (queryString, parameterName, valueArray) => {
+  if (!NON_SORTED_PARAMS.includes(parameterName)) {
+    // Sort the order of the parameters within the array
+    valueArray.sort();
+  }
+
+  return queryString + getQueryPrefix(queryString) + parameterName + '=' + valueArray.join('&' + parameterName + '=');
 };
 
-const formatPathQuery = (path, query) => {
-  return _.isEmpty(query) ? path : path + '?' + sortQueryProperties(query);
+const appendToQuery = (queryString, parameterName, value) => {
+  return queryString + getQueryPrefix(queryString) + parameterName + '=' + value;
 };
 
-const sortQueryProperties = (query) => {
-  // Sort the order of the parameters in the query
-  return qs.stringify(query, stringifyOptions);
+const getQueryPrefix = (queryString) => {
+  return queryString.length > 0 ? '&' : '';
 };
-
-// alphabeticalSort is used to sort the properties of the Object
-const stringifyOptions = {encode: false, indices: false, sort: alphabeticalSort};
 
 export {normalizeRequestQueryParams};
