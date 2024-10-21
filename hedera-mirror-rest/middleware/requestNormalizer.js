@@ -55,7 +55,7 @@ const normalizeRequestQueryParams = (openApiRoute, path, query) => {
   let queryString = '';
   for (const param of openApiParameters) {
     const name = param.parameterName;
-    const value = query[param.parameterName];
+    const value = query[name];
     if (value !== undefined) {
       queryString = Array.isArray(value)
         ? appendArrayToQuery(queryString, name, value)
