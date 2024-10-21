@@ -77,7 +77,7 @@ dependencies {
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-63:3.8.3")
-        api("io.projectreactor:reactor-core-micrometer:1.1.10")
+        api("io.projectreactor:reactor-core-micrometer:1.1.11")
         api("io.swagger:swagger-annotations:1.6.14")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
