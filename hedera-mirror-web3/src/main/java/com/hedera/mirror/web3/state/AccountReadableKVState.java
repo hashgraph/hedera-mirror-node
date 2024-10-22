@@ -60,7 +60,6 @@ import java.util.function.Supplier;
  * */
 @Named
 public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Account> {
-    private static final Long ZERO_BALANCE = 0L;
 
     private final AccountBalanceRepository accountBalanceRepository;
     private final CommonEntityAccessor commonEntityAccessor;
@@ -162,12 +161,12 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                     if (createdTimestamp == null || t >= createdTimestamp) {
                         return accountBalanceRepository
                                 .findHistoricalAccountBalanceUpToTimestamp(entity.getId(), t)
-                                .orElse(ZERO_BALANCE);
+                                .orElse(0L);
                     } else {
-                        return ZERO_BALANCE;
+                        return 0L;
                     }
                 })
-                .orElseGet(() -> Objects.requireNonNullElse(entity.getBalance(), ZERO_BALANCE)));
+                .orElseGet(() -> Objects.requireNonNullElse(entity.getBalance(), 0L)));
     }
 
     private Supplier<List<AccountCryptoAllowance>> getCryptoAllowances(

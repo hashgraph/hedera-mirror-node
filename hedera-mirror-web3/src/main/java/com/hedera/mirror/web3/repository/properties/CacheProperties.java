@@ -45,4 +45,7 @@ public class CacheProperties {
 
     @NotBlank
     private String token = ENTITY_CACHE_CONFIG;
+
+    @NotBlank
+    private String tokenType = "expireAfterAccess=24h,maximumSize=100000,recordStats";
 }

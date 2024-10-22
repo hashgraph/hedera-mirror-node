@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalance.Id;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -183,6 +184,42 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
                         consensusTimestamp + 10))
                 .get()
                 .isEqualTo(historicalAccountBalance);
+    }
+
+    @Test
+    void findHistoricalTokenBalanceUpToTimestampMissingTokenBalance() {
+        var accountId = domainBuilder.entityId();
+        var tokenId = domainBuilder.entityId();
+        long snapshotTimestamp = domainBuilder.timestamp();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(snapshotTimestamp, TREASURY_ENTITY_ID)))
+                .persist();
+        var tokenTransfer1 = domainBuilder
+                .tokenTransfer()
+                .customize(tt -> tt.id(new TokenTransfer.Id(snapshotTimestamp + 2, tokenId, accountId)))
+                .persist();
+        var tokenTransfer2 = domainBuilder
+                .tokenTransfer()
+                .customize(tt -> tt.id(new TokenTransfer.Id(snapshotTimestamp + 3, tokenId, accountId)))
+                .persist();
+
+        assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                        tokenId.getId(), accountId.getId(), snapshotTimestamp))
+                .get()
+                .isEqualTo(0L);
+        assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                        tokenId.getId(), accountId.getId(), snapshotTimestamp + 1)) // Assumed account creation
+                .get()
+                .isEqualTo(0L);
+        assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                        tokenId.getId(), accountId.getId(), snapshotTimestamp + 2))
+                .get()
+                .isEqualTo(tokenTransfer1.getAmount());
+        assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                        tokenId.getId(), accountId.getId(), snapshotTimestamp + 3))
+                .get()
+                .isEqualTo(tokenTransfer2.getAmount() + tokenTransfer2.getAmount());
     }
 
     private void persistTokenTransfersBefore(int count, long baseTimestamp, TokenBalance tokenBalance1) {
