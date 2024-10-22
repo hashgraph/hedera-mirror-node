@@ -23,14 +23,11 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.Range;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
@@ -88,8 +85,6 @@ class TokenRelationshipReadableKVStateTest {
     private static MockedStatic<ContractCallContext> contextMockedStatic;
 
     private DomainBuilder domainBuilder;
-
-    private Entity account;
 
     private TokenAccount tokenAccount;
 
@@ -157,7 +152,6 @@ class TokenRelationshipReadableKVStateTest {
 
     @Test
     void getWithTokenAccountNullReturnsNull() {
-        setUpAccountEntity();
         final var entityIDPair = EntityIDPair.newBuilder()
                 .tokenId(TOKEN_ID)
                 .accountId(ACCOUNT_ID)
@@ -169,7 +163,6 @@ class TokenRelationshipReadableKVStateTest {
 
     @Test
     void getWithFungibleTokenAccountBalance() {
-        setUpAccountEntity();
         setUpTokenAccount();
         final var entityIDPair = EntityIDPair.newBuilder()
                 .tokenId(TOKEN_ID)
@@ -190,7 +183,6 @@ class TokenRelationshipReadableKVStateTest {
 
     @Test
     void getWithFungibleTokenAccountBalanceHistorical() {
-        setUpAccountEntity();
         setUpTokenAccount();
         final var entityIDPair = EntityIDPair.newBuilder()
                 .tokenId(TOKEN_ID)
@@ -213,44 +205,9 @@ class TokenRelationshipReadableKVStateTest {
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
     }
 
-    @Test
-    void getWithFungibleTokenAccountBalanceHistoricalAccountCreatedTimestampLaterReturnsZeroBalance() {
-        account = domainBuilder
-                .entity()
-                .customize(e -> e.shard(ACCOUNT_ID.shardNum())
-                        .realm(ACCOUNT_ID.realmNum())
-                        .num(ACCOUNT_ID.accountNum())
-                        .id(toEntityId(ACCOUNT_ID).getId())
-                        .balance(ACCOUNT_BALANCE)
-                        .createdTimestamp(timestamp.get() + 10)
-                        .timestampRange(Range.atLeast(timestamp.get()))
-                        .type(EntityType.ACCOUNT))
-                .get();
-        setUpTokenAccount();
-        final var entityIDPair = EntityIDPair.newBuilder()
-                .tokenId(TOKEN_ID)
-                .accountId(ACCOUNT_ID)
-                .build();
-        final var expected = TokenRelation.newBuilder()
-                .tokenId(TOKEN_ID)
-                .accountId(ACCOUNT_ID)
-                .balance(0L)
-                .frozen(true)
-                .kycGranted(true)
-                .automaticAssociation(true)
-                .build();
-        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
-        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(tokenAccount));
-        when(tokenRepository.findTypeByTokenId(tokenAccount.getTokenId()))
-                .thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
-        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
-    }
-
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void getWithNftAccountBalance(final boolean areFlagsEnabled) {
-        setUpAccountEntity();
         tokenAccount = domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(toEntityId(TOKEN_ID).getId())
@@ -280,7 +237,6 @@ class TokenRelationshipReadableKVStateTest {
 
     @Test
     void getWithNftAccountBalanceHistorical() {
-        setUpAccountEntity();
         setUpTokenAccount();
         final var entityIDPair = EntityIDPair.newBuilder()
                 .tokenId(TOKEN_ID)
@@ -305,7 +261,6 @@ class TokenRelationshipReadableKVStateTest {
 
     @Test
     void getWithTokenAccountBalanceHistoricalAccountNotFoundReturnsZeroBalance() {
-        setUpAccountEntity();
         setUpTokenAccount();
         final var entityIDPair = EntityIDPair.newBuilder()
                 .tokenId(TOKEN_ID)
@@ -323,53 +278,6 @@ class TokenRelationshipReadableKVStateTest {
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
-    }
-
-    @Test
-    void getWithNftAccountBalanceHistoricalAccountCreatedTimestampLaterReturnsZeroBalance() {
-        account = domainBuilder
-                .entity()
-                .customize(e -> e.shard(ACCOUNT_ID.shardNum())
-                        .realm(ACCOUNT_ID.realmNum())
-                        .num(ACCOUNT_ID.accountNum())
-                        .id(toEntityId(ACCOUNT_ID).getId())
-                        .balance(ACCOUNT_BALANCE)
-                        .createdTimestamp(timestamp.get() + 10)
-                        .timestampRange(Range.atLeast(timestamp.get()))
-                        .type(EntityType.ACCOUNT))
-                .get();
-        setUpTokenAccount();
-        final var entityIDPair = EntityIDPair.newBuilder()
-                .tokenId(TOKEN_ID)
-                .accountId(ACCOUNT_ID)
-                .build();
-        final var expected = TokenRelation.newBuilder()
-                .tokenId(TOKEN_ID)
-                .accountId(ACCOUNT_ID)
-                .balance(0L)
-                .frozen(true)
-                .kycGranted(true)
-                .automaticAssociation(true)
-                .build();
-        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
-        when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(tokenAccount));
-        when(tokenRepository.findTypeByTokenId(tokenAccount.getTokenId()))
-                .thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
-        assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
-    }
-
-    private void setUpAccountEntity() {
-        account = domainBuilder
-                .entity()
-                .customize(e -> e.shard(ACCOUNT_ID.shardNum())
-                        .realm(ACCOUNT_ID.realmNum())
-                        .num(ACCOUNT_ID.accountNum())
-                        .id(toEntityId(ACCOUNT_ID).getId())
-                        .balance(ACCOUNT_BALANCE)
-                        .createdTimestamp(timestamp.get())
-                        .type(EntityType.ACCOUNT))
-                .get();
     }
 
     private void setUpTokenAccount() {

@@ -119,7 +119,6 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
      * For the latest block we have the balance directly as a field in the TokenAccount object.
      * For the historical block we need to execute a query to calculate the historical balance, but
      * we first need to find the account created timestamp and the token type in order to use the correct repository.
-     * If the account creation is after the passed timestamp - return 0L (the entity was not created).
      */
     private Supplier<Long> getBalance(final TokenAccount tokenAccount, final Optional<Long> timestamp) {
         return Suppliers.memoize(() -> timestamp
