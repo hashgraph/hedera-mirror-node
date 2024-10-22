@@ -16,14 +16,12 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -46,21 +44,18 @@ import java.util.function.Supplier;
 @Named
 public class TokenRelationshipReadableKVState extends ReadableKVStateBase<EntityIDPair, TokenRelation> {
 
-    private final CommonEntityAccessor commonEntityAccessor;
     private final NftRepository nftRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TokenRepository tokenRepository;
 
     protected TokenRelationshipReadableKVState(
-            final CommonEntityAccessor commonEntityAccessor,
             final NftRepository nftRepository,
             final TokenAccountRepository tokenAccountRepository,
             final TokenBalanceRepository tokenBalanceRepository,
             final TokenRepository tokenRepository) {
         super("TOKEN_RELS");
         this.nftRepository = nftRepository;
-        this.commonEntityAccessor = commonEntityAccessor;
         this.tokenAccountRepository = tokenAccountRepository;
         this.tokenBalanceRepository = tokenBalanceRepository;
         this.tokenRepository = tokenRepository;
@@ -128,45 +123,26 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
      */
     private Supplier<Long> getBalance(final TokenAccount tokenAccount, final Optional<Long> timestamp) {
         return Suppliers.memoize(() -> timestamp
-                .map(ts -> findAccount(toAccountId(tokenAccount.getAccountId()), Optional.of(ts))
-                        .map(account -> {
-                            final var accountCreatedTimestamp = account.getCreatedTimestamp();
-                            return findTokenType(tokenAccount.getTokenId())
-                                    .map(tokenTypeEnum -> tokenTypeEnum.equals(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                                            ? getNftBalance(tokenAccount, ts, accountCreatedTimestamp)
-                                            : getFungibleBalance(tokenAccount, ts, accountCreatedTimestamp))
-                                    .orElse(0L);
-                        })
+                .map(t -> findTokenType(tokenAccount.getTokenId())
+                        .map(tokenTypeEnum -> tokenTypeEnum.equals(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                                ? getNftBalance(tokenAccount, t)
+                                : getFungibleBalance(tokenAccount, t))
                         .orElse(0L))
                 .orElseGet(tokenAccount::getBalance));
     }
 
-    private Long getNftBalance(
-            final TokenAccount tokenAccount, final long timestamp, final long accountCreatedTimestamp) {
-        if (timestamp >= accountCreatedTimestamp) {
-            return nftRepository
-                    .nftBalanceByAccountIdTokenIdAndTimestamp(
-                            tokenAccount.getTokenId(), tokenAccount.getAccountId(), timestamp)
-                    .orElse(0L);
-        } else {
-            return 0L;
-        }
+    private Long getNftBalance(final TokenAccount tokenAccount, final long timestamp) {
+        return nftRepository
+                .nftBalanceByAccountIdTokenIdAndTimestamp(
+                        tokenAccount.getTokenId(), tokenAccount.getAccountId(), timestamp)
+                .orElse(0L);
     }
 
-    private Long getFungibleBalance(
-            final TokenAccount tokenAccount, final long timestamp, final long accountCreatedTimestamp) {
-        if (timestamp >= accountCreatedTimestamp) {
-            return tokenBalanceRepository
-                    .findHistoricalTokenBalanceUpToTimestamp(
-                            tokenAccount.getTokenId(), tokenAccount.getAccountId(), timestamp)
-                    .orElse(0L);
-        } else {
-            return 0L;
-        }
-    }
-
-    private Optional<Entity> findAccount(final AccountID accountID, final Optional<Long> timestamp) {
-        return commonEntityAccessor.get(accountID, timestamp);
+    private Long getFungibleBalance(final TokenAccount tokenAccount, final long timestamp) {
+        return tokenBalanceRepository
+                .findHistoricalTokenBalanceUpToTimestamp(
+                        tokenAccount.getTokenId(), tokenAccount.getAccountId(), timestamp)
+                .orElse(0L);
     }
 
     private Optional<TokenTypeEnum> findTokenType(final long tokenId) {

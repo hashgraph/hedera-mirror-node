@@ -62,9 +62,6 @@ class TokenRelationshipReadableKVStateTest {
     private TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
 
     @Mock
-    private CommonEntityAccessor commonEntityAccessor;
-
-    @Mock
     private TokenRepository tokenRepository;
 
     @Mock
@@ -208,7 +205,6 @@ class TokenRelationshipReadableKVStateTest {
                 .automaticAssociation(true)
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
-        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
         when(tokenRepository.findTypeByTokenId(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
@@ -226,7 +222,7 @@ class TokenRelationshipReadableKVStateTest {
                         .num(ACCOUNT_ID.accountNum())
                         .id(toEntityId(ACCOUNT_ID).getId())
                         .balance(ACCOUNT_BALANCE)
-                        .createdTimestamp(timestamp.get() + 1)
+                        .createdTimestamp(timestamp.get() + 10)
                         .timestampRange(Range.atLeast(timestamp.get()))
                         .type(EntityType.ACCOUNT))
                 .get();
@@ -244,7 +240,6 @@ class TokenRelationshipReadableKVStateTest {
                 .automaticAssociation(true)
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
-        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
         when(tokenRepository.findTypeByTokenId(tokenAccount.getTokenId()))
@@ -300,7 +295,6 @@ class TokenRelationshipReadableKVStateTest {
                 .automaticAssociation(true)
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
-        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
         when(tokenRepository.findTypeByTokenId(anyLong())).thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
@@ -326,7 +320,6 @@ class TokenRelationshipReadableKVStateTest {
                 .automaticAssociation(true)
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
-        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.empty());
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
@@ -341,7 +334,7 @@ class TokenRelationshipReadableKVStateTest {
                         .num(ACCOUNT_ID.accountNum())
                         .id(toEntityId(ACCOUNT_ID).getId())
                         .balance(ACCOUNT_BALANCE)
-                        .createdTimestamp(timestamp.get() + 1)
+                        .createdTimestamp(timestamp.get() + 10)
                         .timestampRange(Range.atLeast(timestamp.get()))
                         .type(EntityType.ACCOUNT))
                 .get();
@@ -359,7 +352,6 @@ class TokenRelationshipReadableKVStateTest {
                 .automaticAssociation(true)
                 .build();
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
-        when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.of(account));
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
         when(tokenRepository.findTypeByTokenId(tokenAccount.getTokenId()))
