@@ -110,6 +110,7 @@ public class EvmConfiguration {
     public static final String CACHE_NAME_TOKEN_ACCOUNT = "tokenAccount";
     public static final String CACHE_NAME_TOKEN_ACCOUNT_COUNT = "tokenAccountCount";
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
+    public static final String CACHE_NAME_TOKEN_AIRDROP = "tokenAirdrop";
     public static final SemanticVersion EVM_VERSION_0_30 = new SemanticVersion(0, 30, 0, "", "");
     public static final SemanticVersion EVM_VERSION_0_34 = new SemanticVersion(0, 34, 0, "", "");
     public static final SemanticVersion EVM_VERSION_0_38 = new SemanticVersion(0, 38, 0, "", "");
@@ -160,7 +161,8 @@ public class EvmConfiguration {
                 CACHE_NAME_TOKEN,
                 CACHE_NAME_TOKEN_ACCOUNT,
                 CACHE_NAME_TOKEN_ACCOUNT_COUNT,
-                CACHE_NAME_TOKEN_ALLOWANCE));
+                CACHE_NAME_TOKEN_ALLOWANCE,
+                CACHE_NAME_TOKEN_AIRDROP));
         caffeineCacheManager.setCacheSpecification(cacheProperties.getToken());
         return caffeineCacheManager;
     }
