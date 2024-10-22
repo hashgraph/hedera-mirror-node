@@ -17,6 +17,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
@@ -84,6 +85,10 @@ func (c *metricsController) Routes() server.Routes {
 			promhttp.Handler().ServeHTTP,
 		},
 	}
+}
+
+func (c *metricsController) ContextFromRequest(r *http.Request) context.Context {
+	return r.Context()
 }
 
 // MetricsMiddleware instruments HTTP requests with request metrics
