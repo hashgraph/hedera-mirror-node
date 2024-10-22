@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -74,7 +73,7 @@ class TokenAirdropRepositoryTest extends Web3IntegrationTest {
                 .build();
 
         assertThat(tokenAirdropRepository
-                        .findById(senderId, receiverId, tokenId)
+                        .findById(senderId, receiverId, tokenId, serialNumber)
                         .get())
                 .isEqualTo(expected);
     }
@@ -115,7 +114,7 @@ class TokenAirdropRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(timestampRange))
                 .persist();
 
-        assertThat(tokenAirdropRepository.findById(senderId, receiverId, tokenId))
+        assertThat(tokenAirdropRepository.findById(senderId, receiverId, tokenId, serialNumber))
                 .isEmpty();
     }
 
@@ -159,7 +158,8 @@ class TokenAirdropRepositoryTest extends Web3IntegrationTest {
                 .build();
 
         assertThat(tokenAirdropRepository
-                        .findByIdAndTimestamp(senderId, receiverId, tokenId, timestampRange.lowerEndpoint())
+                        .findByIdAndTimestamp(
+                                senderId, receiverId, tokenId, serialNumber, timestampRange.lowerEndpoint())
                         .get())
                 .isEqualTo(expected);
     }
@@ -202,36 +202,48 @@ class TokenAirdropRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenAirdropRepository.findByIdAndTimestamp(
-                        senderId, receiverId, tokenId, timestampRange.lowerEndpoint()))
+                        senderId, receiverId, tokenId, serialNumber, timestampRange.lowerEndpoint()))
                 .isEmpty();
     }
 
-    @Test
-    void testFindByIdAndTimestampReturnsCorrectValueForTimestamp() {
+    @ParameterizedTest
+    @EnumSource(TokenTypeEnum.class)
+    void testFindByIdAndTimestampReturnsCorrectValueForTimestamp(final TokenTypeEnum tokenType) {
         final var senderId = domainBuilder.entityId().getId();
         final var receiverId = domainBuilder.entityId().getId();
         final var tokenId = domainBuilder.entityId().getId();
         final var timestampRangeHistorical = Range.atLeast(domainBuilder.timestamp());
         final var timestampRange = Range.atLeast(timestampRangeHistorical.lowerEndpoint() + 100L);
-        final var amount = 1L;
+
+        long amount;
+        long serialNumber;
+        if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
+            amount = 1L;
+            serialNumber = 0L;
+        } else {
+            amount = 0L;
+            serialNumber = 123L;
+        }
 
         domainBuilder
-                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .tokenAirdrop(tokenType)
                 .customize(ta -> ta.senderAccountId(senderId)
                         .receiverAccountId(receiverId)
                         .tokenId(tokenId)
                         .state(TokenAirdropStateEnum.CLAIMED)
                         .amount(amount)
+                        .serialNumber(serialNumber)
                         .timestampRange(timestampRange))
                 .persist();
 
         domainBuilder
-                .tokenAirdropHistory(TokenTypeEnum.FUNGIBLE_COMMON)
+                .tokenAirdropHistory(tokenType)
                 .customize(ta -> ta.senderAccountId(senderId)
                         .receiverAccountId(receiverId)
                         .tokenId(tokenId)
                         .state(TokenAirdropStateEnum.PENDING)
                         .amount(amount)
+                        .serialNumber(serialNumber)
                         .timestampRange(timestampRangeHistorical))
                 .persist();
 
@@ -241,42 +253,56 @@ class TokenAirdropRepositoryTest extends Web3IntegrationTest {
                 .tokenId(tokenId)
                 .state(TokenAirdropStateEnum.PENDING)
                 .amount(amount)
+                .serialNumber(serialNumber)
                 .timestampRange(timestampRangeHistorical)
                 .build();
 
         assertThat(tokenAirdropRepository
-                        .findByIdAndTimestamp(senderId, receiverId, tokenId, timestampRangeHistorical.lowerEndpoint())
+                        .findByIdAndTimestamp(
+                                senderId, receiverId, tokenId, serialNumber, timestampRangeHistorical.lowerEndpoint())
                         .get())
                 .isEqualTo(expected);
     }
 
-    @Test
-    void testFindByIdAndTimestampReturnsCorrectValueForTimestampTwoHistoricalEntries() {
+    @ParameterizedTest
+    @EnumSource(TokenTypeEnum.class)
+    void testFindByIdAndTimestampReturnsCorrectValueForTimestampTwoHistoricalEntries(final TokenTypeEnum tokenType) {
         final var senderId = domainBuilder.entityId().getId();
         final var receiverId = domainBuilder.entityId().getId();
         final var tokenId = domainBuilder.entityId().getId();
         final var timestampRangeHistorical = Range.atLeast(domainBuilder.timestamp());
         final var timestampRange = Range.atLeast(timestampRangeHistorical.lowerEndpoint() + 100L);
-        final var amount = 1L;
+
         final var amountLatest = 2L;
+        long amount;
+        long serialNumber;
+        if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
+            amount = 1L;
+            serialNumber = 0L;
+        } else {
+            amount = 0L;
+            serialNumber = 123L;
+        }
 
         domainBuilder
-                .tokenAirdropHistory(TokenTypeEnum.FUNGIBLE_COMMON)
+                .tokenAirdropHistory(tokenType)
                 .customize(ta -> ta.senderAccountId(senderId)
                         .receiverAccountId(receiverId)
                         .tokenId(tokenId)
                         .state(TokenAirdropStateEnum.PENDING)
                         .amount(amount)
+                        .serialNumber(serialNumber)
                         .timestampRange(timestampRangeHistorical))
                 .persist();
 
         domainBuilder
-                .tokenAirdropHistory(TokenTypeEnum.FUNGIBLE_COMMON)
+                .tokenAirdropHistory(tokenType)
                 .customize(ta -> ta.senderAccountId(senderId)
                         .receiverAccountId(receiverId)
                         .tokenId(tokenId)
                         .state(TokenAirdropStateEnum.PENDING)
                         .amount(amountLatest)
+                        .serialNumber(serialNumber)
                         .timestampRange(timestampRange))
                 .persist();
 
@@ -286,6 +312,7 @@ class TokenAirdropRepositoryTest extends Web3IntegrationTest {
                 .tokenId(tokenId)
                 .state(TokenAirdropStateEnum.PENDING)
                 .amount(amount)
+                .serialNumber(serialNumber)
                 .timestampRange(timestampRangeHistorical)
                 .build();
 
@@ -295,11 +322,13 @@ class TokenAirdropRepositoryTest extends Web3IntegrationTest {
                 .build();
 
         assertThat(tokenAirdropRepository
-                        .findByIdAndTimestamp(senderId, receiverId, tokenId, timestampRangeHistorical.lowerEndpoint())
+                        .findByIdAndTimestamp(
+                                senderId, receiverId, tokenId, serialNumber, timestampRangeHistorical.lowerEndpoint())
                         .get())
                 .isEqualTo(expected);
         assertThat(tokenAirdropRepository
-                        .findByIdAndTimestamp(senderId, receiverId, tokenId, timestampRange.lowerEndpoint())
+                        .findByIdAndTimestamp(
+                                senderId, receiverId, tokenId, serialNumber, timestampRange.lowerEndpoint())
                         .get())
                 .isEqualTo(expectedLatest);
     }

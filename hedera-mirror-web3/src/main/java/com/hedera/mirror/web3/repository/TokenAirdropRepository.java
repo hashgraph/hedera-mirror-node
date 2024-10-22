@@ -37,10 +37,11 @@ public interface TokenAirdropRepository extends CrudRepository<TokenAirdrop, Abs
                     where sender_account_id = :senderId
                         and receiver_account_id = :receiverId
                         and token_id = :tokenId
+                        and serial_number = :serialNumber
                         and state = 'PENDING'
                     """,
             nativeQuery = true)
-    Optional<TokenAirdrop> findById(long senderId, long receiverId, long tokenId);
+    Optional<TokenAirdrop> findById(long senderId, long receiverId, long tokenId, long serialNumber);
 
     /**
      * Retrieves the most recent state of a token airdrop by its ID up to a given block timestamp.
@@ -65,6 +66,7 @@ public interface TokenAirdropRepository extends CrudRepository<TokenAirdrop, Abs
                         where sender_account_id = :senderId
                             and receiver_account_id = :receiverId
                             and token_id = :tokenId
+                            and serial_number = :serialNumber
                             and state = 'PENDING'
                             and lower(timestamp_range) <= :blockTimestamp
                             )
@@ -75,15 +77,17 @@ public interface TokenAirdropRepository extends CrudRepository<TokenAirdrop, Abs
                         where sender_account_id = :senderId
                             and receiver_account_id = :receiverId
                             and token_id = :tokenId
+                            and serial_number = :serialNumber
                             and state = 'PENDING'
                             and lower(timestamp_range) <= :blockTimestamp
                         order by lower(timestamp_range) desc
                         limit 1
                             )
-                            order by timestamp_range desc
-                            limit 1
+                    order by timestamp_range desc
+                    limit 1
                     )
                     """,
             nativeQuery = true)
-    Optional<TokenAirdrop> findByIdAndTimestamp(long senderId, long receiverId, long tokenId, long blockTimestamp);
+    Optional<TokenAirdrop> findByIdAndTimestamp(
+            long senderId, long receiverId, long tokenId, long serialNumber, long blockTimestamp);
 }

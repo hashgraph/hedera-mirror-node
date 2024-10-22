@@ -41,19 +41,21 @@ public class AirdropsReadableKVState extends ReadableKVStateBase<PendingAirdropI
 
     @Override
     protected AccountPendingAirdrop readFromDataSource(@Nonnull PendingAirdropId key) {
-        if (key.hasNonFungibleToken()) {
-            return AccountPendingAirdrop.DEFAULT;
-        }
-
         final var senderId = toEntityId(key.senderId()).getId();
         final var receiverId = toEntityId(key.receiverId()).getId();
-        final var tokenId = toEntityId(key.fungibleTokenType()).getId();
+        final var tokenId = toEntityId(
+                        key.hasNonFungibleToken() ? key.nonFungibleToken().tokenId() : key.fungibleTokenType())
+                .getId();
+        final var serialNumber =
+                key.hasNonFungibleToken() ? key.nonFungibleToken().serialNumber() : 0L;
         final var timestamp = ContractCallContext.get().getTimestamp();
 
         return timestamp
-                .map(t -> tokenAirdropRepository.findByIdAndTimestamp(senderId, receiverId, tokenId, t))
-                .orElseGet(() -> tokenAirdropRepository.findById(senderId, receiverId, tokenId))
-                .map(tokenAirdrop -> mapToAccountPendingAirdrop(tokenAirdrop.getAmount()))
+                .map(t -> tokenAirdropRepository.findByIdAndTimestamp(senderId, receiverId, tokenId, serialNumber, t))
+                .orElseGet(() -> tokenAirdropRepository.findById(senderId, receiverId, tokenId, serialNumber))
+                .map(tokenAirdrop -> key.hasNonFungibleToken()
+                        ? AccountPendingAirdrop.DEFAULT
+                        : mapToAccountPendingAirdrop(tokenAirdrop.getAmount()))
                 .orElse(null);
     }
 

@@ -90,18 +90,6 @@ class AirdropsReadableKVStateTest {
     }
 
     @Test
-    void nftReturnsDefault() {
-        final var senderId = toAccountId(domainBuilder.entityId());
-        final var receiverId = toAccountId(domainBuilder.entityId());
-        assertThat(airdropsReadableKVState.get(PendingAirdropId.newBuilder()
-                        .senderId(senderId)
-                        .receiverId(receiverId)
-                        .nonFungibleToken(NftID.DEFAULT)
-                        .build()))
-                .isEqualTo(AccountPendingAirdrop.DEFAULT);
-    }
-
-    @Test
     void fungibleTokenLatestBlockHappyPath() {
         final var senderId = toAccountId(domainBuilder.entityId());
         final var receiverId = toAccountId(domainBuilder.entityId());
@@ -114,7 +102,8 @@ class AirdropsReadableKVStateTest {
         when(tokenAirdropRepository.findById(
                         toEntityId(senderId).getId(),
                         toEntityId(receiverId).getId(),
-                        toEntityId(tokenId).getId()))
+                        toEntityId(tokenId).getId(),
+                        0L))
                 .thenReturn(Optional.of(tokenAirdrop));
 
         final var expected = AccountPendingAirdrop.newBuilder()
@@ -143,6 +132,7 @@ class AirdropsReadableKVStateTest {
                         toEntityId(senderId).getId(),
                         toEntityId(receiverId).getId(),
                         toEntityId(tokenId).getId(),
+                        0L,
                         timestamp.get()))
                 .thenReturn(Optional.of(tokenAirdrop));
 
@@ -164,7 +154,8 @@ class AirdropsReadableKVStateTest {
         final var tokenId =
                 TokenID.newBuilder().shardNum(1L).realmNum(2L).tokenNum(3L).build();
 
-        when(tokenAirdropRepository.findById(anyLong(), anyLong(), anyLong())).thenReturn(Optional.empty());
+        when(tokenAirdropRepository.findById(anyLong(), anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.empty());
 
         assertThat(airdropsReadableKVState.get(PendingAirdropId.newBuilder()
                         .senderId(senderId)
@@ -182,13 +173,124 @@ class AirdropsReadableKVStateTest {
                 TokenID.newBuilder().shardNum(1L).realmNum(2L).tokenNum(3L).build();
 
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
-        when(tokenAirdropRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong(), anyLong()))
+        when(tokenAirdropRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.empty());
 
         assertThat(airdropsReadableKVState.get(PendingAirdropId.newBuilder()
                         .senderId(senderId)
                         .receiverId(receiverId)
                         .fungibleTokenType(tokenId)
+                        .build()))
+                .isNull();
+    }
+
+    @Test
+    void nftLatestBlockHappyPath() {
+        final var senderId = toAccountId(domainBuilder.entityId());
+        final var receiverId = toAccountId(domainBuilder.entityId());
+        final var nftId = NftID.newBuilder()
+                .tokenId(TokenID.newBuilder()
+                        .shardNum(1L)
+                        .realmNum(2L)
+                        .tokenNum(3L)
+                        .build())
+                .serialNumber(4L)
+                .build();
+        final var tokenAirdrop = TokenAirdrop.builder().build();
+
+        when(tokenAirdropRepository.findById(
+                        toEntityId(senderId).getId(),
+                        toEntityId(receiverId).getId(),
+                        toEntityId(nftId.tokenId()).getId(),
+                        4L))
+                .thenReturn(Optional.of(tokenAirdrop));
+
+        final var expected = AccountPendingAirdrop.DEFAULT;
+        assertThat(airdropsReadableKVState.get(PendingAirdropId.newBuilder()
+                        .senderId(senderId)
+                        .receiverId(receiverId)
+                        .nonFungibleToken(nftId)
+                        .build()))
+                .isEqualTo(expected);
+    }
+
+    @Test
+    void nftHistoricalBlockHappyPath() {
+        final var senderId = toAccountId(domainBuilder.entityId());
+        final var receiverId = toAccountId(domainBuilder.entityId());
+        final var nftId = NftID.newBuilder()
+                .tokenId(TokenID.newBuilder()
+                        .shardNum(1L)
+                        .realmNum(2L)
+                        .tokenNum(3L)
+                        .build())
+                .serialNumber(4L)
+                .build();
+        final var tokenAirdrop = TokenAirdrop.builder().build();
+
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(tokenAirdropRepository.findByIdAndTimestamp(
+                        toEntityId(senderId).getId(),
+                        toEntityId(receiverId).getId(),
+                        toEntityId(nftId.tokenId()).getId(),
+                        4L,
+                        timestamp.get()))
+                .thenReturn(Optional.of(tokenAirdrop));
+
+        final var expected = AccountPendingAirdrop.DEFAULT;
+        assertThat(airdropsReadableKVState.get(PendingAirdropId.newBuilder()
+                        .senderId(senderId)
+                        .receiverId(receiverId)
+                        .nonFungibleToken(nftId)
+                        .build()))
+                .isEqualTo(expected);
+    }
+
+    @Test
+    void nftAirdropNotFoundReturnsNull() {
+        final var senderId = toAccountId(domainBuilder.entityId());
+        final var receiverId = toAccountId(domainBuilder.entityId());
+        final var nftId = NftID.newBuilder()
+                .tokenId(TokenID.newBuilder()
+                        .shardNum(1L)
+                        .realmNum(2L)
+                        .tokenNum(3L)
+                        .build())
+                .serialNumber(4L)
+                .build();
+
+        when(tokenAirdropRepository.findById(anyLong(), anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.empty());
+
+        assertThat(airdropsReadableKVState.get(PendingAirdropId.newBuilder()
+                        .senderId(senderId)
+                        .receiverId(receiverId)
+                        .nonFungibleToken(nftId)
+                        .build()))
+                .isNull();
+    }
+
+    @Test
+    void nftAirdropNotFoundHistoricalReturnsNull() {
+        final var senderId = toAccountId(domainBuilder.entityId());
+        final var receiverId = toAccountId(domainBuilder.entityId());
+        final var nftId = NftID.newBuilder()
+                .tokenId(TokenID.newBuilder()
+                        .shardNum(1L)
+                        .realmNum(2L)
+                        .tokenNum(3L)
+                        .build())
+                .serialNumber(4L)
+                .build();
+
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(tokenAirdropRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong(), anyLong(), anyLong()))
+                .thenReturn(Optional.empty());
+
+        assertThat(airdropsReadableKVState.get(PendingAirdropId.newBuilder()
+                        .senderId(senderId)
+                        .receiverId(receiverId)
+                        .nonFungibleToken(nftId)
                         .build()))
                 .isNull();
     }
