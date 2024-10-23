@@ -30,6 +30,8 @@ let cache;
 let redisContainer;
 let compressEnabled;
 
+const cacheControlMaxAge = 60;
+
 beforeAll(async () => {
   config.redis.enabled = true;
   compressEnabled = config.cache.response.compress;
@@ -52,10 +54,13 @@ beforeEach(async () => {
 });
 
 describe('Response cache middleware', () => {
-  let mockNextMiddleware, mockRequest, mockResponse, responseData;
+  let mockNextMiddleware, mockRequest, mockResponse;
+  const cachedHeaders = {
+    'cache-control': `public, max-age=${cacheControlMaxAge}`,
+    'content-type': 'application/json; charset=utf-8',
+  };
 
   beforeEach(() => {
-    responseData = {accounts: [], links: {next: null}};
     mockNextMiddleware = jest.fn();
     mockRequest = {
       headers: {'accept-encoding': 'gzip'},
@@ -74,7 +79,12 @@ describe('Response cache middleware', () => {
 
     mockResponse = {
       getHeaders: jest.fn(),
-      headers: [],
+      headers: {
+        'cache-control': `public, max-age=${cacheControlMaxAge}`,
+        'content-encoding': 'gzip',
+        etag: 'W/"5c35-Gld7z2oXbbJUpCcZpRCrhYePM04',
+        vary: 'accept-encoding',
+      },
       locals: [],
       removeHeader: jest.fn(),
       send: jest.fn(),
@@ -89,6 +99,7 @@ describe('Response cache middleware', () => {
     }, defaultBeforeAllTimeoutMillis);
 
     describe('Cache check', () => {
+
       test('Cache miss', async () => {
         // The cache is empty, thus a cache miss is expected.
         await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
@@ -107,14 +118,8 @@ describe('Response cache middleware', () => {
       });
 
       test('Cache hit', async () => {
-        const cachedBody = JSONStringify({a: 'b'});
-        const cacheControlMaxAge = 60;
-        const cachedHeaders = {
-          'cache-control': `public, max-age=${cacheControlMaxAge}`,
-          'content-type': 'application/json; charset=utf-8',
-        };
-
         // Place the expected response in the cache.
+        const cachedBody = JSONStringify({a: 'b'});
         const cachedResponse = new CachedApiResponse(cachedHeaders, cachedBody, false);
         const cacheKey = cacheKeyGenerator(mockRequest);
         await cache.setSingle(cacheKey, cacheControlMaxAge, cachedResponse);
@@ -177,48 +182,13 @@ describe('Response cache middleware', () => {
         expect(mockNextMiddleware).toBeCalled();
       });
 
-      test('Cache successful response - 200', async () => {
+      test.each([200, 304])('Cache successful response - %d', async (status) => {
         const cacheKey = cacheKeyGenerator(mockRequest);
         const expectedBody = JSONStringify({a: 'b'});
-        const cacheControlMaxAge = 60;
 
-        // Set up mockResponse to reflect standard API response handling has occurred.
-        mockResponse.headers = {
-          'cache-control': `public, max-age=${cacheControlMaxAge}`,
-          'content-encoding': 'gzip',
-          etag: 'W/"5c35-Gld7z2oXbbJUpCcZpRCrhYePM04',
-          vary: 'accept-encoding',
-        };
         mockResponse.locals[responseBodyLabel] = expectedBody;
         mockResponse.locals[responseCacheKeyLabel] = cacheKey;
-        mockResponse.statusCode = 200;
-        mockResponse.getHeaders.mockImplementation(() => mockResponse.headers);
-
-        await responseCacheUpdateHandler(mockRequest, mockResponse, mockNextMiddleware);
-        const cachedResponse = await cache.getSingleWithTtl(cacheKey);
-        expect(cachedResponse).not.toBeUndefined();
-
-        expect(cachedResponse.ttl).toBeLessThanOrEqual(cacheControlMaxAge);
-        expect(cachedResponse.value?.compressedBody).toEqual(false);
-        expect(cachedResponse.value?.body).toEqual(expectedBody);
-        expect(mockNextMiddleware).toBeCalled();
-      });
-
-      test('Cache successful response - 304', async () => {
-        const cacheKey = cacheKeyGenerator(mockRequest);
-        const expectedBody = JSONStringify({a: 'b'});
-        const cacheControlMaxAge = 60;
-
-        // Set up mockResponse to reflect standard API response handling has occurred.
-        mockResponse.headers = {
-          'cache-control': `public, max-age=${cacheControlMaxAge}`,
-          'content-encoding': 'gzip',
-          etag: 'W/"5c35-Gld7z2oXbbJUpCcZpRCrhYePM04',
-          vary: 'accept-encoding',
-        };
-        mockResponse.locals[responseBodyLabel] = expectedBody;
-        mockResponse.locals[responseCacheKeyLabel] = cacheKey;
-        mockResponse.statusCode = 304;
+        mockResponse.statusCode = status;
         mockResponse.getHeaders.mockImplementation(() => mockResponse.headers);
 
         await responseCacheUpdateHandler(mockRequest, mockResponse, mockNextMiddleware);
@@ -240,96 +210,46 @@ describe('Response cache middleware', () => {
 
     describe('Cache check', () => {
       test('Cache hit accepts gzip', async () => {
-        const cachedBody= gzipSync(JSONStringify({a: 'b'}));
-        const cacheControlMaxAge = 60;
-        const cachedHeaders = {
-          'cache-control': `public, max-age=${cacheControlMaxAge}`,
-          'content-type': 'application/json; charset=utf-8',
-        };
-        const cachedStatusCode = 200;
-
         // Place the expected response in the cache.
-        const cachedResponse = new CachedApiResponse(cachedHeaders, cachedBody, true);
+        const cachedBody= gzipSync(JSONStringify({a: 'b'}));
+        const cachedResponse= new CachedApiResponse(cachedHeaders, cachedBody, true);
         const cacheKey = cacheKeyGenerator(mockRequest);
         await cache.setSingle(cacheKey, cacheControlMaxAge, cachedResponse);
 
-        // Cache hit is expected, and the middleware must handle the response.
         await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
         expect(mockResponse.send).toBeCalledWith(cachedBody);
         expect(mockResponse.set).toHaveBeenNthCalledWith(1, Object.assign(cachedHeaders, {'content-encoding': 'gzip'}));
-        expect(mockResponse.status).toBeCalledWith(cachedStatusCode);
+        expect(mockResponse.status).toBeCalledWith(200);
         expect(mockNextMiddleware).not.toBeCalled();
       });
 
       test('Cache hit does not accept gzip', async () => {
         const cachedBody= JSONStringify({a: 'b'});
-        const cacheControlMaxAge = 60;
-        const cachedHeaders = {
-          'cache-control': `public, max-age=${cacheControlMaxAge}`,
-          'content-type': 'application/json; charset=utf-8',
-        };
-        const cachedStatusCode = 200;
 
         // Place the expected response in the cache.
         const cachedResponse = new CachedApiResponse(cachedHeaders, gzipSync(cachedBody), true);
         const cacheKey = cacheKeyGenerator(mockRequest);
         await cache.setSingle(cacheKey, cacheControlMaxAge, cachedResponse);
 
-        // accepts-encoding zstd
+        // accept-encoding zstd
         mockRequest.headers['accept-encoding'] = 'zstd';
 
-        // Cache hit is expected, and the middleware must handle the response.
         await responseCacheCheckHandler(mockRequest, mockResponse, mockNextMiddleware);
         expect(mockResponse.send).toBeCalledWith(cachedBody);
         expect(mockResponse.set).toHaveBeenNthCalledWith(1, cachedHeaders);
-        expect(mockResponse.status).toBeCalledWith(cachedStatusCode);
+        expect(mockResponse.status).toBeCalledWith(200);
         expect(mockNextMiddleware).not.toBeCalled();
       });
     });
 
     describe('Cache update', () => {
-      test('Cache successful response - 200', async () => {
+      test.each([200, 304])('Cache successful response - %d', async (status) => {
         const cacheKey = cacheKeyGenerator(mockRequest);
         const expectedBody = JSONStringify({a: 'b'});
-        const cacheControlMaxAge = 60;
 
-        // Set up mockResponse to reflect standard API response handling has occurred.
-        mockResponse.headers = {
-          'cache-control': `public, max-age=${cacheControlMaxAge}`,
-          'content-encoding': 'gzip',
-          etag: 'W/"5c35-Gld7z2oXbbJUpCcZpRCrhYePM04',
-          vary: 'accept-encoding',
-        };
         mockResponse.locals[responseBodyLabel] = expectedBody;
         mockResponse.locals[responseCacheKeyLabel] = cacheKey;
-        mockResponse.statusCode = 200;
-        mockResponse.getHeaders.mockImplementation(() => mockResponse.headers);
-
-        await responseCacheUpdateHandler(mockRequest, mockResponse, mockNextMiddleware);
-        const cachedResponse = await cache.getSingleWithTtl(cacheKey);
-        expect(cachedResponse).not.toBeUndefined();
-
-        expect(cachedResponse.ttl).toBeLessThanOrEqual(cacheControlMaxAge);
-        expect(cachedResponse.value?.compressedBody).toEqual(true);
-        expect(unzipSync(Buffer.from(cachedResponse.value?.body)).toString()).toEqual(expectedBody);
-        expect(mockNextMiddleware).toBeCalled();
-      });
-
-      test('Cache successful response - 304', async () => {
-        const cacheKey = cacheKeyGenerator(mockRequest);
-        const expectedBody = JSONStringify({a: 'b'});
-        const cacheControlMaxAge = 60;
-
-        // Set up mockResponse to reflect standard API response handling has occurred.
-        mockResponse.headers = {
-          'cache-control': `public, max-age=${cacheControlMaxAge}`,
-          'content-encoding': 'gzip',
-          etag: 'W/"5c35-Gld7z2oXbbJUpCcZpRCrhYePM04',
-          vary: 'accept-encoding',
-        };
-        mockResponse.locals[responseBodyLabel] = expectedBody;
-        mockResponse.locals[responseCacheKeyLabel] = cacheKey;
-        mockResponse.statusCode = 304;
+        mockResponse.statusCode = status;
         mockResponse.getHeaders.mockImplementation(() => mockResponse.headers);
 
         await responseCacheUpdateHandler(mockRequest, mockResponse, mockNextMiddleware);
