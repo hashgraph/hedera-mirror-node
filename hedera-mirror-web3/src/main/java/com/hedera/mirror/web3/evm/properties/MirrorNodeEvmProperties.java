@@ -35,6 +35,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -61,6 +62,8 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
 
+    private final Map<String, String> properties = new HashMap<>();
+
     @Getter
     private boolean allowTreasuryToOwnNfts = true;
 
@@ -73,7 +76,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private double estimateGasIterationThresholdPercent = 0.10d;
 
     private boolean directTokenCall = true;
-
     private boolean dynamicEvmVersion = true;
 
     @Min(1)
@@ -132,11 +134,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @Min(21_000L)
     private long maxGasLimit = 15_000_000L;
-
     // maximum iteration count for estimate gas' search algorithm
     @Getter
     private int maxGasEstimateRetriesCount = 20;
-
     // used by eth_estimateGas only
     @Min(1)
     @Max(100)
@@ -169,9 +169,22 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
+    private final Map<String, String> defaultOverrides = Map.of(
+            ConfigKeyExtractor.getChainIdKey(),
+            chainIdBytes32().toBigInteger().toString(),
+            ConfigKeyExtractor.getMaxGasRefundPercentageKey(),
+            String.valueOf(maxGasRefundPercentage()));
+
     @Getter
     @Min(1)
     private int feesTokenTransferUsageMultiplier = 380;
+
+    public Map<String, String> getProperties() {
+        Map<String, String> props = new HashMap<>();
+        props.putAll(properties);
+        props.putAll(defaultOverrides);
+        return Collections.unmodifiableMap(props);
+    }
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
