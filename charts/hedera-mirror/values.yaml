@@ -221,10 +221,10 @@ redis:
     resources:
       limits:
         cpu: 1500m
-        memory: 1000Mi
+        memory: 2000Mi
       requests:
         cpu: 250m
-        memory: 500Mi
+        memory: 1000Mi
   sentinel:
     enabled: true
     masterSet: mirror

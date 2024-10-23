@@ -1,6 +1,10 @@
 hedera:
   mirror:
     rest:
+      cache:
+        response:
+          enabled: false
+          compress: true
       metrics:
         enabled: false
       redis:

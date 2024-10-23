@@ -103,6 +103,8 @@ const contentTypeHeader = 'content-type';
 const requestIdLabel = 'requestId';
 const requestPathLabel = 'requestPath';
 const requestStartTime = 'requestStartTime';
+const responseBodyLabel = 'responseBody';
+const responseCacheKeyLabel = 'responseCacheKey';
 const responseDataLabel = 'responseData';
 
 const responseHeadersLabel = 'responseHeaders';
@@ -253,6 +255,8 @@ export {
   requestIdLabel,
   requestPathLabel,
   requestStartTime,
+  responseBodyLabel,
+  responseCacheKeyLabel,
   responseDataLabel,
   responseHeadersLabel,
   tokenTypeFilter,
