@@ -18,9 +18,10 @@
  * API response cached in Redis.
  */
 class CachedApiResponse {
-  constructor(status, headers, body) {
+  constructor(headers, body, compressedBody) {
     this.body = body;
     this.headers = headers;
+    this.compressedBody = compressedBody;
   }
 }
 

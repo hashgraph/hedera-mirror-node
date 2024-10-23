@@ -26,7 +26,6 @@ const CONTENT_ENCODING_HEADER = 'content-encoding';
 const ETAG_HEADER = 'etag';
 const VARY_HEADER = 'vary';
 const DEFAULT_REDIS_EXPIRY = 1;
-const compressionEnabled = config.cache.response.compress;
 
 let cache = new Cache();
 
@@ -39,25 +38,25 @@ const responseCacheCheckHandler = async (req, res, next) => {
   if (cachedTtlAndValue) {
     const {ttl: redisTtl, value: redisValue} = cachedTtlAndValue;
     const cachedResponse = Object.assign(new CachedApiResponse(), redisValue);
+    const compressedBody = cachedResponse.compressedBody;
 
-    if (compressionEnabled || cachedResponse.body?.type === 'Buffer') {
-      cachedResponse.body = new Buffer(cachedResponse.body);
+    if (compressedBody) {
+      cachedResponse.body = Buffer.from(cachedResponse.body);
       const acceptsGzip = req.get('accept-encoding')?.includes('gzip');
       if (!acceptsGzip) {
-        cachedResponse.body = unzipSync(cachedResponse.body);
+        cachedResponse.body = unzipSync(cachedResponse.body).toString();
       } else {
         cachedResponse.headers[CONTENT_ENCODING_HEADER] = 'gzip';
       }
     }
-
+    cachedResponse.headers[CACHE_CONTROL_HEADER] = `public, max-age=${redisTtl}`;
     res.set(cachedResponse.headers);
-    res.set(CACHE_CONTROL_HEADER, `public, max-age=${redisTtl}`);
     res.status(200);
     res.send(cachedResponse.body);
 
     const elapsed = Date.now() - startTime;
     logger.info(
-      `${req.ip} ${req.method} ${req.originalUrl} from cache (ttl: ${redisTtl}) in ${elapsed} ms: ${cachedResponse.status}`
+      `${req.ip} ${req.method} ${req.originalUrl} from cache (ttl: ${redisTtl}) in ${elapsed} ms: 200`
     );
     return;
   }
@@ -68,6 +67,7 @@ const responseCacheCheckHandler = async (req, res, next) => {
 
 // Response middleware that caches the completed response.
 const responseCacheUpdateHandler = async (req, res, next) => {
+  const compressionEnabled = config.cache.response.compress;
   const responseCacheKey = res.locals[responseCacheKeyLabel];
   const responseBody = res.locals[responseBodyLabel];
 
@@ -84,8 +84,8 @@ const responseCacheUpdateHandler = async (req, res, next) => {
       delete headers[ETAG_HEADER];
       delete headers[VARY_HEADER];
 
-      const body = compressionEnabled ? gzipSync(new Buffer(responseBody, 'utf-8')) : responseBody;
-      const cachedResponse = new CachedApiResponse(headers, body);
+      const body = compressionEnabled ? gzipSync(responseBody) : responseBody;
+      const cachedResponse = new CachedApiResponse(headers, body, compressionEnabled);
 
       await cache.setSingle(responseCacheKey, redisExpiry, cachedResponse);
     }
