@@ -72,7 +72,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private double estimateGasIterationThresholdPercent = 0.10d;
 
     private boolean directTokenCall = true;
-
     private boolean dynamicEvmVersion = true;
 
     @Min(1)
@@ -130,11 +129,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @Min(21_000L)
     private long maxGasLimit = 15_000_000L;
-
     // maximum iteration count for estimate gas' search algorithm
     @Getter
     private int maxGasEstimateRetriesCount = 20;
-
     // used by eth_estimateGas only
     @Min(1)
     @Max(100)
@@ -167,9 +164,19 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
+    private Map<String, String> properties = Map.of(
+            "contracts.chainId",
+            chainIdBytes32().toBigInteger().toString(),
+            "contracts.maxRefundPercentOfGasLimit",
+            String.valueOf(maxGasRefundPercentage()));
+
     @Getter
     @Min(1)
     private int feesTokenTransferUsageMultiplier = 380;
+
+    public Map<String, String> getProperties() {
+        return Map.copyOf(properties);
+    }
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
