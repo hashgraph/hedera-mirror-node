@@ -34,13 +34,11 @@ class ModularizedPropertiesTest extends Web3IntegrationTest {
     private static final String CHAIN_ID = "chainId";
     private static final String CONTRACTS_CONFIG = "contracts";
     private static final String CHAIN_ID_KEY_CONFIG = CONTRACTS_CONFIG + DOT_SEPARATOR + CHAIN_ID;
+    private static final Map<String, String> YAML_PROPERTIES =
+            Map.of("contracts.allowCreate2", "false", "contracts.maxGasPerSec", "10000000", CHAIN_ID_KEY_CONFIG, "297");
     private static final String MAX_GAS_REFUND_PERCENTAGE = "maxRefundPercentOfGasLimit";
     private static final String MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG =
             CONTRACTS_CONFIG + DOT_SEPARATOR + MAX_GAS_REFUND_PERCENTAGE;
-    private static final Map<String, String> DEFAULT_PROPERTIES =
-            Map.of(CHAIN_ID_KEY_CONFIG, "296", MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG, "100");
-    private static final Map<String, String> YAML_PROPERTIES =
-            Map.of("contracts.allowCreate2", "false", "contracts.maxGasPerSec", "10000000");
     private final MirrorNodeEvmProperties properties;
 
     private static String getConfigKey(Class<?> configClass, String fieldName) {
@@ -56,9 +54,12 @@ class ModularizedPropertiesTest extends Web3IntegrationTest {
     @Test
     void getModularizedProperties() {
         Map<String, String> modularizedProperties = properties.getProperties();
-        assertThat(modularizedProperties).isNotEmpty();
-        assertThat(modularizedProperties).containsAllEntriesOf(DEFAULT_PROPERTIES);
-        assertThat(modularizedProperties).containsAllEntriesOf(YAML_PROPERTIES);
+        assertThat(modularizedProperties)
+                .isNotEmpty()
+                // override from yaml
+                .doesNotContainEntry(CHAIN_ID_KEY_CONFIG, "296")
+                .containsEntry(MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG, "100")
+                .containsAllEntriesOf(YAML_PROPERTIES);
     }
 
     @Test
