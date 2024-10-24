@@ -66,7 +66,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private boolean allowTreasuryToOwnNfts = true;
 
     @NotNull
-    @Getter
     private Set<EntityType> autoRenewTargetTypes = new HashSet<>();
 
     @Getter
@@ -79,7 +78,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     private long exchangeRateGasReq = 100;
 
-    @Getter
     private SemanticVersion evmVersion = EVM_VERSION;
 
     private NavigableMap<Long, SemanticVersion> evmVersions = new TreeMap<>();
