@@ -32,7 +32,7 @@ const openApiMap = getOpenApiMap();
 const NON_SORTED_PARAMS = ['balance', 'block.hash', 'block.number', 'nonce', 'scheduled', 'timestamp'];
 
 // Multiple values of these params can be collapsed to the last value
-const COLLAPSABLE_PARAMS = ['balance', 'nonce', 'scheduled', 'timestamp'];
+const COLLAPSABLE_PARAMS = ['balance', 'nonce', 'scheduled'];
 
 /**
  * Normalizes a request by adding any missing default values and sorting any array query parameters.

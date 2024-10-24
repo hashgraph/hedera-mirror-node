@@ -120,9 +120,10 @@ describe('request normalizer', () => {
       expected: '/api/v1/accounts?balance=false&limit=25&order=asc',
     },
     {
-      description: 'Timestamp is collapsed to the last value',
+      description: 'Timestamp values are not sorted',
       input: '/api/v1/transactions?timestamp=1639010141.000000001&timestamp=1639010141.000000000',
-      expected: '/api/v1/transactions?limit=25&order=desc&timestamp=1639010141.000000000',
+      expected:
+        '/api/v1/transactions?limit=25&order=desc&timestamp=1639010141.000000001&timestamp=1639010141.000000000',
     },
   ];
 
