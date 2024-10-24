@@ -68,15 +68,15 @@ should be able to ingest one month's worth of mainnet data in less than 1.5 days
     mirror:
       importer:
         downloader:
-          record:
-            batchSize: 600
-            frequency: 1
+          batchSize: 600
+          record:            
+            frequency: 1ms
         parser:
           record:
             entity:
               redis:
                 enabled: false
-            frequency: 10
+            frequency: 10ms
             queueCapacity: 40
   ```
 
