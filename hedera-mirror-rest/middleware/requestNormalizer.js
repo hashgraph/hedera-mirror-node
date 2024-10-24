@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-
 import {getOpenApiMap} from './openapiHandler.js';
 
 const openApiMap = getOpenApiMap();
@@ -33,6 +31,9 @@ const openApiMap = getOpenApiMap();
  */
 const NON_SORTED_PARAMS = ['balance', 'block.hash', 'block.number', 'nonce', 'scheduled', 'timestamp'];
 
+// Multiple values of these params can be collapsed to the last value
+const COLLAPSABLE_PARAMS = ['balance', 'nonce', 'scheduled', 'timestamp'];
+
 /**
  * Normalizes a request by adding any missing default values and sorting any array query parameters.
  *
@@ -45,42 +46,32 @@ const NON_SORTED_PARAMS = ['balance', 'block.hash', 'block.number', 'nonce', 'sc
  */
 const normalizeRequestQueryParams = (openApiRoute, path, query) => {
   const openApiParameters = openApiMap.get(openApiRoute);
-  if (_.isEmpty(openApiParameters)) {
-    return path;
-  }
-
-  let queryString = '';
+  const queryArray = [];
   for (const param of openApiParameters) {
     const name = param.parameterName;
     const value = query[name];
     if (value !== undefined) {
-      queryString = Array.isArray(value)
-        ? appendArrayToQuery(queryString, name, value)
-        : appendToQuery(queryString, name, value);
+      const queryValue = Array.isArray(value) ? getArrayValues(name, value) : name + '=' + value;
+      queryArray.push(queryValue);
     } else if (param?.defaultValue !== undefined) {
       // Add the default value to the query parameter
-      queryString = appendToQuery(queryString, name, param.defaultValue);
+      queryArray.push(name + '=' + param.defaultValue);
     }
   }
 
-  return _.isEmpty(queryString) ? path : path + '?' + queryString;
+  return queryArray.length !== 0 ? path + '?' + queryArray.join('&') : path;
 };
 
-const appendArrayToQuery = (queryString, parameterName, valueArray) => {
-  if (!NON_SORTED_PARAMS.includes(parameterName)) {
+const getArrayValues = (name, valuesArray) => {
+  if (!NON_SORTED_PARAMS.includes(name)) {
     // Sort the order of the parameters within the array
-    valueArray.sort();
+    valuesArray.sort();
+  } else if (COLLAPSABLE_PARAMS.includes(name)) {
+    // Only add the last item in the array to the query parameter
+    return name + '=' + valuesArray[valuesArray.length - 1];
   }
 
-  return queryString + getQueryPrefix(queryString) + parameterName + '=' + valueArray.join('&' + parameterName + '=');
-};
-
-const appendToQuery = (queryString, parameterName, value) => {
-  return queryString + getQueryPrefix(queryString) + parameterName + '=' + value;
-};
-
-const getQueryPrefix = (queryString) => {
-  return queryString.length > 0 ? '&' : '';
+  return name + '=' + valuesArray.join('&' + name + '=');
 };
 
 export {normalizeRequestQueryParams};

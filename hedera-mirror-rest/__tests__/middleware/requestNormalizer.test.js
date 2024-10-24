@@ -51,8 +51,8 @@ describe('request normalizer', () => {
     },
     {
       description: 'Multiple instances of the same parameter are allowed',
-      input: '/api/v1/accounts?limit=2&limit=3',
-      expected: '/api/v1/accounts?balance=true&limit=2&limit=3&order=asc',
+      input: '/api/v1/accounts?limit=2&limit=3&limit=5',
+      expected: '/api/v1/accounts?balance=true&limit=2&limit=3&limit=5&order=asc',
     },
     {
       description: 'Accounts with path parameter has default parameter added',
@@ -115,15 +115,14 @@ describe('request normalizer', () => {
       expected: '/api/v1/topics/7/messages?limit=25&order=asc',
     },
     {
-      description: 'Balance is not sorted',
+      description: 'Balance is collapsed to the last value',
       input: '/api/v1/accounts?balance=true&balance=false',
-      expected: '/api/v1/accounts?balance=true&balance=false&limit=25&order=asc',
+      expected: '/api/v1/accounts?balance=false&limit=25&order=asc',
     },
     {
-      description: 'Timestamp values are not sorted',
+      description: 'Timestamp is collapsed to the last value',
       input: '/api/v1/transactions?timestamp=1639010141.000000001&timestamp=1639010141.000000000',
-      expected:
-        '/api/v1/transactions?limit=25&order=desc&timestamp=1639010141.000000001&timestamp=1639010141.000000000',
+      expected: '/api/v1/transactions?limit=25&order=desc&timestamp=1639010141.000000000',
     },
   ];
 
