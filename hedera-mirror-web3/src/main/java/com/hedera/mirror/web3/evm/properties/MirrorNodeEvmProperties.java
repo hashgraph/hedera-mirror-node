@@ -35,7 +35,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -165,22 +164,18 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
-    private final Map<String, String> defaultOverrides = Map.of(
+    private Map<String, String> properties = Map.of(
             "contracts.chainId",
             chainIdBytes32().toBigInteger().toString(),
             "contracts.maxRefundPercentOfGasLimit",
             String.valueOf(maxGasRefundPercentage()));
-    private Map<String, String> properties = new HashMap<>();
 
     @Getter
     @Min(1)
     private int feesTokenTransferUsageMultiplier = 380;
 
     public Map<String, String> getProperties() {
-        Map<String, String> props = new HashMap<>();
-        props.putAll(defaultOverrides);
-        props.putAll(properties);
-        return props;
+        return Map.copyOf(properties);
     }
 
     public boolean shouldAutoRenewAccounts() {
