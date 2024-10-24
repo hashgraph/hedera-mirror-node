@@ -62,8 +62,6 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
 
-    private final Map<String, String> properties = new HashMap<>();
-
     @Getter
     private boolean allowTreasuryToOwnNfts = true;
 
@@ -170,10 +168,11 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private HederaNetwork network = HederaNetwork.TESTNET;
 
     private final Map<String, String> defaultOverrides = Map.of(
-            ConfigKeyExtractor.getChainIdKey(),
+            "contracts.chainId",
             chainIdBytes32().toBigInteger().toString(),
-            ConfigKeyExtractor.getMaxGasRefundPercentageKey(),
+            "contracts.maxRefundPercentOfGasLimit",
             String.valueOf(maxGasRefundPercentage()));
+    private Map<String, String> properties = new HashMap<>();
 
     @Getter
     @Min(1)
@@ -181,9 +180,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     public Map<String, String> getProperties() {
         Map<String, String> props = new HashMap<>();
-        props.putAll(properties);
         props.putAll(defaultOverrides);
-        return Collections.unmodifiableMap(props);
+        props.putAll(properties);
+        return props;
     }
 
     public boolean shouldAutoRenewAccounts() {
