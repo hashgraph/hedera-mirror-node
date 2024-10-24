@@ -195,7 +195,7 @@ public class Utility {
     /**
      * Handle a parser recoverable error. Depending on the value of the system property
      * HEDERA_MIRROR_IMPORTER_PARSER_HALTONERROR, when false (default), the provided message and arguments are logged at
-     * ERROR level, with the message prepended with the String defined by Utility.RECOVERABLE_ERROR, identifying it as a
+     * WARN level, with the message prepended with the String defined by Utility.RECOVERABLE_ERROR, identifying it as a
      * recoverable error.
      * <p/>
      * When the system property is set to true, then ParserException is thrown, and the provided message and arguments
@@ -217,7 +217,7 @@ public class Utility {
             var formattedMessage = formattingTuple.getMessage();
             throw new ParserException(formattedMessage, throwable);
         } else {
-            log.error(RECOVERABLE_ERROR + message, args);
+            log.warn(RECOVERABLE_ERROR + message, args);
         }
     }
 
