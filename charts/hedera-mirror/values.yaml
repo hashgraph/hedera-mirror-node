@@ -175,7 +175,6 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
-      tag: 14.11.0-debian-12-r8
     initdbScriptsCM: "{{ .Release.Name }}-init"
     maxConnections: 200
     password: ""  # Randomly generated if left blank
@@ -273,6 +272,8 @@ rosetta:
         name: mirror-passwords
 
 stackgres:
+  backup:
+    enabled: false
   coordinator:
     config:
       autovacuum_max_workers: "2"

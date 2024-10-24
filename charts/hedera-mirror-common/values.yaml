@@ -4,9 +4,22 @@ global:
 labels: {}
 
 loki:
+  backend:
+    replicas: 0
+  chunksCache:
+    enabled: false
+  compactor:
+    replicas: 0
+  deploymentMode: SingleBinary
+  distributor:
+    replicas: 0
   enabled: true
   gateway:
     enabled: false
+  indexGateway:
+    replicas: 0
+  ingester:
+    replicas: 0
   loki:
     auth_enabled: false
     commonConfig:
@@ -14,6 +27,11 @@ loki:
     storage:
       type: 'filesystem'
     structuredConfig:
+      compactor:
+        delete_request_store: filesystem
+        retention_enabled: true
+      limits_config:
+        retention_period: 1440h
       ruler:
         alertmanager_url: http://{{ .Release.Name }}-prometheus-alertmanager:9093
         enable_alertmanager_v2: true
@@ -26,16 +44,34 @@ loki:
           type: local
           local:
             directory: /rules
-      table_manager:
-        retention_deletes_enabled: true
-        retention_period: 1440h
+      schema_config:
+        configs:
+          - from: "2022-01-11"
+            index:
+              prefix: loki_index_
+              period: 24h
+            object_store: filesystem
+            schema: v13
+            store: tsdb
+  lokiCanary:
+    enabled: false
   monitoring:
-    lokiCanary:
-      enabled: false
     selfMonitoring:
       enabled: false
       grafanaAgent:
         installOperator: false
+  querier:
+    replicas: 0
+  queryFrontend:
+    replicas: 0
+  queryScheduler:
+    replicas: 0
+  read:
+    replicas: 0
+  resultsCache:
+    enabled: false
+  ruler:
+    replicas: 0
   rules:
     - name: hedera-mirror-grpc
       rules:
@@ -143,12 +179,36 @@ loki:
     resources:
       limits:
         cpu: 200m
-        memory: 384Mi
+        memory: 512Mi
       requests:
-        cpu: 50m
-        memory: 64Mi
+        cpu: 100m
+        memory: 128Mi
   test:
     enabled: false
+  write:
+    replicas: 0
+
+minio:
+  enabled: false
+  persistence:
+    enabled: true
+    size: 500Gi
+    storageClass: premium-rwo
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 60s
+      jobLabel: minio
+  priorityClassName: critical
+  provisioning:
+    enabled: true
+    buckets:
+      - name: stackgres-backup
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
 
 networkPolicy:
   enabled: false
@@ -248,11 +308,11 @@ prometheus:
   kube-state-metrics:
     resources:
       limits:
+        cpu: 20m
+        memory: 128Mi
+      requests:
         cpu: 10m
         memory: 64Mi
-      requests:
-        cpu: 5m
-        memory: 16Mi
   # We disable these exporters because they either don't work in GKE or produce too many time series
   kubeApiServer:
     enabled: false
@@ -312,7 +372,7 @@ prometheus:
         requests:
           cpu: 250m
           memory: 1Gi
-      retention: 60d
+      retentionSize: 84GiB  # Capacity minus 16% so KubePersistentVolumeFillingUp alert doesn't fire
       ruleSelectorNilUsesHelmValues: false
       scrapeInterval: 30s
       serviceMonitorSelectorNilUsesHelmValues: false
@@ -381,7 +441,7 @@ testkube:
     image:
       registry: docker.io
       repository: grafana/k6
-      tag: 0.50.0
+      tag: 0.53.0
   namespace: testkube
   test:
     config:
@@ -415,6 +475,7 @@ traefik:
   globalArguments:  # Expose X-Forwarded-For header for tracing
     - --entryPoints.web.forwardedHeaders.insecure
     - --entryPoints.websecure.forwardedHeaders.insecure
+    - --api.insecure=true
   logs:
     access:
       enabled: true

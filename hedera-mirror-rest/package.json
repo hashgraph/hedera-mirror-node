@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-rest",
-  "version": "0.115.0-SNAPSHOT",
+  "version": "0.117.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
   "type": "module",
   "main": "server.js",
@@ -19,14 +19,14 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@aws-sdk/client-s3": "^3.654.0",
+    "@aws-sdk/client-s3": "^3.675.0",
     "@godaddy/terminus": "^4.12.1",
     "@hashgraph/proto": "^2.15.0",
     "@trufflesuite/bigint-buffer": "^1.1.10",
     "asn1js": "^3.0.5",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
-    "express": "^4.21.0",
+    "express": "^4.21.1",
     "express-http-context": "^1.2.4",
     "express-openapi-validator": "^5.3.7",
     "extend": "^3.0.2",
@@ -37,7 +37,7 @@
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "long": "^5.2.3",
-    "mathjs": "^13.1.1",
+    "mathjs": "^13.2.0",
     "parse-duration": "^1.1.0",
     "pg": "~8.13.0",
     "pg-range": "^1.1.2",
@@ -45,17 +45,17 @@
     "qs": "^6.13.0",
     "quick-lru": "^7.0.0",
     "rfc4648": "^1.5.3",
-    "sql-formatter": "^15.4.2",
+    "sql-formatter": "^15.4.4",
     "swagger-stats": "^0.99.7",
     "swagger-ui-express": "^5.0.1",
     "word-wrap": "npm:@aashutoshrathi/word-wrap@^1.2.6"
   },
   "devDependencies": {
-    "@testcontainers/postgresql": "^10.13.0",
+    "@testcontainers/postgresql": "^10.13.2",
     "app-root-path": "^3.1.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-import": "^2.30.0",
+    "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-jest": "^28.8.3",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-security": "^3.0.1",
@@ -68,7 +68,7 @@
     "rewire": "^7.0.0",
     "sinon": "^18.0.1",
     "supertest": "^7.0.0",
-    "@testcontainers/redis": "^10.13.0"
+    "@testcontainers/redis": "^10.13.2"
   },
   "jest-junit": {
     "outputDirectory": "build/test-results/test",

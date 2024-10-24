@@ -29,6 +29,7 @@ import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
+import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
@@ -94,9 +95,11 @@ public class EvmConfiguration {
     public static final String CACHE_MANAGER_RECORD_FILE_TIMESTAMP = "recordFileTimestamp";
     public static final String CACHE_MANAGER_SYSTEM_FILE = "systemFile";
     public static final String CACHE_MANAGER_TOKEN = "token";
+    public static final String CACHE_MANAGER_TOKEN_TYPE = "tokenType";
     public static final String CACHE_NAME = "default";
     public static final String CACHE_NAME_CONTRACT = "contract";
     public static final String CACHE_NAME_EVM_ADDRESS = "evmAddress";
+    public static final String CACHE_NAME_ALIAS = "alias";
     public static final String CACHE_NAME_EXCHANGE_RATE = "exchangeRate";
     public static final String CACHE_NAME_FEE_SCHEDULE = "feeSchedule";
     public static final String CACHE_NAME_NFT = "nft";
@@ -107,6 +110,7 @@ public class EvmConfiguration {
     public static final String CACHE_NAME_TOKEN_ACCOUNT = "tokenAccount";
     public static final String CACHE_NAME_TOKEN_ACCOUNT_COUNT = "tokenAccountCount";
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
+    public static final String CACHE_NAME_TOKEN_AIRDROP = "tokenAirdrop";
     public static final SemanticVersion EVM_VERSION_0_30 = new SemanticVersion(0, 30, 0, "", "");
     public static final SemanticVersion EVM_VERSION_0_34 = new SemanticVersion(0, 34, 0, "", "");
     public static final SemanticVersion EVM_VERSION_0_38 = new SemanticVersion(0, 38, 0, "", "");
@@ -143,7 +147,7 @@ public class EvmConfiguration {
     @Bean(CACHE_MANAGER_ENTITY)
     CacheManager cacheManagerEntity() {
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME, CACHE_NAME_EVM_ADDRESS));
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME, CACHE_NAME_EVM_ADDRESS, CACHE_NAME_ALIAS));
         caffeineCacheManager.setCacheSpecification(cacheProperties.getEntity());
         return caffeineCacheManager;
     }
@@ -157,8 +161,17 @@ public class EvmConfiguration {
                 CACHE_NAME_TOKEN,
                 CACHE_NAME_TOKEN_ACCOUNT,
                 CACHE_NAME_TOKEN_ACCOUNT_COUNT,
-                CACHE_NAME_TOKEN_ALLOWANCE));
+                CACHE_NAME_TOKEN_ALLOWANCE,
+                CACHE_NAME_TOKEN_AIRDROP));
         caffeineCacheManager.setCacheSpecification(cacheProperties.getToken());
+        return caffeineCacheManager;
+    }
+
+    @Bean(CACHE_MANAGER_TOKEN_TYPE)
+    CacheManager cacheManagerTokenType() {
+        final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME));
+        caffeineCacheManager.setCacheSpecification(cacheProperties.getTokenType());
         return caffeineCacheManager;
     }
 
@@ -441,6 +454,7 @@ public class EvmConfiguration {
                         new HederaEvmSLoadOperation(gasCalculator),
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
+                        new CustomCallOperation(gasCalculator),
                         prngSeedOperation,
                         hederaBlockHashOperation,
                         extCodeHashOperation,

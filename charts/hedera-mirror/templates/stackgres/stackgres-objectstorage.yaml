@@ -1,0 +1,22 @@
+{{- if and .Values.stackgres.enabled .Values.stackgres.backup.enabled -}}
+apiVersion: stackgres.io/v1beta1
+kind: SGObjectStorage
+metadata:
+  labels: {{ include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror.stackgres" . }}-object-storage
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  type: s3Compatible
+  s3Compatible:
+    bucket: {{ .Values.stackgres.backup.objectStorage.bucket }}
+    enablePathStyleAddressing: true
+    endpoint: {{ .Values.stackgres.backup.objectStorage.endpoint }}
+    awsCredentials:
+      secretKeySelectors:
+        accessKeyId:
+          key: root-user
+          name: {{ include "hedera-mirror.stackgres" . }}-objectstorage-creds
+        secretAccessKey:
+          key: root-password
+          name: {{ include "hedera-mirror.stackgres" . }}-objectstorage-creds
+{{- end -}}

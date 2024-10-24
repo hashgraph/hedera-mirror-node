@@ -17,23 +17,21 @@ This checklist verifies a release is rolled out successfully.
 
 ### Previewnet
 
-v1 is deployed by tag creation automation. Upon success, a PR for v2 will automatically get created.
+Deployed automatically on every tag.
 
-- [ ] Deployed v1
-- [ ] Deployed v2
+- [ ] Deployed
 
 ### Performance
 
-- [ ] Deployed v1
-- [ ] Deployed v2
+- [ ] Deployed
 - [ ] gRPC API performance tests
 - [ ] Importer performance tests
 
 ### Mainnet Staging
 
-- [ ] Deployed v1
-- [ ] Deployed v2
+- [ ] Deployed
 - [ ] REST API performance tests
+- [ ] REST Java API performance tests
 - [ ] Web3 API performance tests
 
 ## Generally Available
@@ -43,14 +41,13 @@ v1 is deployed by tag creation automation. Upon success, a PR for v2 will automa
 
 ### Previewnet
 
-v1 is deployed by tag creation automation. Upon success, a PR for v2 will automatically get created.
+Deployed automatically on every tag.
 
-- [ ] Deployed v1
-- [ ] Deployed v2
+- [ ] Deployed
 
 ### Testnet
 
-The GA tag automation deploys v1 to NA. Upon success, a PR for EU will automatically get created.
+A GA tag will trigger an automatic deployment to NA. Upon success, a PR for EU will automatically get created.
 
 - [ ] Deployed NA
 - [ ] Deployed EU

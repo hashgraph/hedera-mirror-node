@@ -19,6 +19,8 @@ import {getSequentialTestScenarios} from '../../lib/common.js';
 // import test modules
 import * as accountsNftAllowanceOwner from './accountsNftAllowanceOwner.js';
 import * as accountsNftAllowanceSpender from './accountsNftAllowanceSpender.js';
+import * as accountsPendingAirdrop from './accountsPendingAirdrop.js';
+import * as accountsOutstandingAirdrop from './accountsOutstandingAirdrop.js';
 import * as topicsId from './topicsId.js';
 import * as rampUp from './rampUp.js';
 
@@ -26,6 +28,8 @@ import * as rampUp from './rampUp.js';
 const tests = {
   accountsNftAllowanceOwner,
   accountsNftAllowanceSpender,
+  accountsPendingAirdrop,
+  accountsOutstandingAirdrop,
   topicsId,
   rampUp,
 };

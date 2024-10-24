@@ -50,8 +50,8 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
     @Override
     public Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId accountId) {
         boolean byOwner = request.isOwner();
-        var fieldBounds = getFieldBounds(request, byOwner);
-        var condition = getBaseCondition(accountId, byOwner).and(getBoundCondition(fieldBounds));
+        var bounds = request.getBounds();
+        var condition = getBaseCondition(accountId, byOwner).and(getBoundConditions(bounds));
         return dslContext
                 .selectFrom(NFT_ALLOWANCE)
                 .where(condition)
@@ -63,13 +63,6 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
     private Condition getBaseCondition(EntityId accountId, boolean byOwner) {
         return getCondition(byOwner ? NFT_ALLOWANCE.OWNER : NFT_ALLOWANCE.SPENDER, EQ, accountId.getId())
                 .and(APPROVAL_CONDITION);
-    }
-
-    private ConditionalFieldBounds getFieldBounds(NftAllowanceRequest request, boolean byOwner) {
-        var field = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
-        return new ConditionalFieldBounds(
-                new FieldBound(field, request.getOwnerOrSpenderIds()),
-                new FieldBound(NFT_ALLOWANCE.TOKEN_ID, request.getTokenIds()));
     }
 
     private record OrderSpec(boolean byOwner, Direction direction) {}

@@ -27,9 +27,9 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import graphql.schema.GraphQLScalarType;
+import jakarta.annotation.Nonnull;
 import java.time.Instant;
 import java.util.Locale;
-import org.jetbrains.annotations.NotNull;
 
 public class GraphQlTimestamp implements Coercing<Instant, String> {
 
@@ -40,11 +40,11 @@ public class GraphQlTimestamp implements Coercing<Instant, String> {
             .build();
 
     @Override
-    public @NotNull Instant parseLiteral(
-            @NotNull Value<?> input,
-            @NotNull CoercedVariables variables,
-            @NotNull GraphQLContext graphQLContext,
-            @NotNull Locale locale)
+    public @Nonnull Instant parseLiteral(
+            @Nonnull Value<?> input,
+            @Nonnull CoercedVariables variables,
+            @Nonnull GraphQLContext graphQLContext,
+            @Nonnull Locale locale)
             throws CoercingParseLiteralException {
         if (input instanceof StringValue str) {
             return Instant.parse(str.getValue());
@@ -53,8 +53,8 @@ public class GraphQlTimestamp implements Coercing<Instant, String> {
     }
 
     @Override
-    public @NotNull Instant parseValue(
-            @NotNull Object input, @NotNull GraphQLContext graphQLContext, @NotNull Locale locale)
+    public @Nonnull Instant parseValue(
+            @Nonnull Object input, @Nonnull GraphQLContext graphQLContext, @Nonnull Locale locale)
             throws CoercingParseValueException {
         if (input instanceof Instant instant) {
             return instant;
@@ -65,7 +65,7 @@ public class GraphQlTimestamp implements Coercing<Instant, String> {
     }
 
     @Override
-    public String serialize(@NotNull Object input, @NotNull GraphQLContext graphQLContext, @NotNull Locale locale)
+    public String serialize(@Nonnull Object input, @Nonnull GraphQLContext graphQLContext, @Nonnull Locale locale)
             throws CoercingSerializeException {
         if (input instanceof Instant instant) {
             return instant.toString();

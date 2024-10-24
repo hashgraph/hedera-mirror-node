@@ -90,12 +90,14 @@ The following parameters can be used to configure a REST test:
 
 The following parameters can be used to configure a rest-java test:
 
-| Name                                      | Default | Description                             |
-| ----------------------------------------- | ------- | --------------------------------------- |
-| DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_OWNER   |         |                                         |
-| DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_SPENDER |         |                                         |
-| RESTJAVA_TEST_EXCLUDE                     | ^$      | The rest-java test scenarios to exclude |
-| RESTJAVA_TEST_INCLUDE                     | .\*     | The rest-java test scenarios to include |
+| Name                                      | Default | Description                                     |
+|-------------------------------------------| ------- |-------------------------------------------------|
+| DEFAULT_ACCOUNT_ID_AIRDROP_RECEIVER       |         | The account to be used for pending airdrops     |
+| DEFAULT_ACCOUNT_ID_AIRDROP_SENDER         |         | The account to be used for outstanding airdrops |
+| DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_OWNER   |         |                                                 |
+| DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_SPENDER |         |                                                 |
+| RESTJAVA_TEST_EXCLUDE                     | ^$      | The rest-java test scenarios to exclude         |
+| RESTJAVA_TEST_INCLUDE                     | .\*     | The rest-java test scenarios to include         |
 
 ### Rosetta API
 

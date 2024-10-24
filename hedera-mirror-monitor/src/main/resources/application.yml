@@ -44,6 +44,7 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+      environment: ${hedera.mirror.monitor.network}
   prometheus:
     metrics:
       export:
