@@ -59,7 +59,7 @@ class GoReplayConverter {
   }
 
   #convertLine(line) {
-    const match = line.match(GoReplayConverter.#INPUT_LINE_REGEX);
+    const match = line?.match(GoReplayConverter.#INPUT_LINE_REGEX);
     if (!match) {
       return null;
     }

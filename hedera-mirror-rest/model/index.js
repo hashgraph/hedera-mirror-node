@@ -19,6 +19,7 @@ import AddressBook from './addressBook';
 import AddressBookEntry from './addressBookEntry';
 import AddressBookServiceEndpoint from './addressBookServiceEndpoint';
 import AssessedCustomFee from './assessedCustomFee';
+import CachedApiResponse from './cachedApiResponse';
 import CachedToken from './cachedToken';
 import Contract from './contract';
 import CryptoAllowance from './cryptoAllowance';
@@ -66,6 +67,7 @@ export {
   AddressBookEntry,
   AddressBookServiceEndpoint,
   AssessedCustomFee,
+  CachedApiResponse,
   CachedToken,
   Contract,
   CryptoAllowance,

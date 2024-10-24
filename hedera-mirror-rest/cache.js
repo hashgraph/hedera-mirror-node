@@ -73,6 +73,41 @@ export class Cache {
     return this.redis.flushall();
   }
 
+  async getSingleWithTtl(key) {
+    if (!this.ready) {
+      return undefined;
+    }
+
+    let valueWithTtl = undefined; // Cache miss to caller
+    await this.redis
+      .multi()
+      .ttl(key)
+      .get(key)
+      .exec(function (err, result) {
+        if (err) {
+          logger.warn(`Redis error during ttl/get: ${err.message}`);
+        } else {
+          // result is [[null, ttl], [null, value]], with value === null on cache miss.
+          const rawValue = result[1][1];
+          if (rawValue) {
+            valueWithTtl = {ttl: result[0][1], value: JSONParse(rawValue)};
+          }
+        }
+      });
+
+    return valueWithTtl;
+  }
+
+  async setSingle(key, expiry, value) {
+    if (!this.ready) {
+      return undefined;
+    }
+
+    return this.redis
+      .setex(key, expiry, JSONStringify(value))
+      .catch((err) => logger.warn(`Redis error during set: ${err.message}`));
+  }
+
   async get(keys, loader, keyMapper = (k) => (k ? k.toString() : k)) {
     if (_.isEmpty(keys)) {
       return [];
