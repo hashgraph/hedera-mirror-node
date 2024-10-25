@@ -139,7 +139,7 @@ rosetta:
 
 stackgres:
   backup:
-    enabled: true
+    enabled: false
     instances:
     - retention: 7
       cronSchedule: "45 22 * * *"
