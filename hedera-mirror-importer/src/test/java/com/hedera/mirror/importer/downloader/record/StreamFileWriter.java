@@ -101,20 +101,20 @@ public class StreamFileWriter {
         var fileHash = fileDigest.digest();
         var metadataHash = calculateMetadataHash(recordFile);
         var filename = recordFile.getName();
-        var sidecarName = recordFile.getName().replace(".rcd.gz", "_01.rcd.gz");
+        var sidecarName = filename.replace(".rcd.gz", "_01.rcd.gz");
         var base = properties.getStreamPath().resolve(TYPE.getPath());
 
         for (var node : nodes) {
             var nodePath = base.resolve(TYPE.getNodePrefix() + node.getNodeAccountId());
-            var recordFileFile = nodePath.resolve(filename).toFile();
-            var sidecarPath = nodePath.resolve(SIDECAR_FOLDER);
-            var sidecarFile = sidecarPath.resolve(sidecarName).toFile();
-            sidecarPath.toFile().mkdirs();
 
             if (sidecar.bytes() != null) {
+                var sidecarPath = nodePath.resolve(SIDECAR_FOLDER);
+                var sidecarFile = sidecarPath.resolve(sidecarName).toFile();
+                sidecarPath.toFile().mkdirs();
                 FileUtils.writeByteArrayToFile(sidecarFile, sidecar.bytes());
             }
 
+            var recordFileFile = nodePath.resolve(filename).toFile();
             FileUtils.writeByteArrayToFile(recordFileFile, bytes);
             writeSignature(node.getPrivateKey(), recordFileFile, fileHash, metadataHash);
         }

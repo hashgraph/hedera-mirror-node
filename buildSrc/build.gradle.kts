@@ -50,7 +50,7 @@ dependencies {
     implementation("org.openapitools:openapi-generator-gradle-plugin:7.9.0")
     implementation("org.owasp:dependency-check-gradle:10.0.4")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.1.0.4882")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.4")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.5")
     implementation("org.testcontainers:postgresql:1.20.2")
     implementation("org.web3j:web3j-gradle-plugin:4.12.2")
 }
