@@ -4,36 +4,44 @@
 
 Need to update k8s version for Citus Node Pool(s)
 
+## Prerequisites
+
+- Have `jq` installed
+- kubectl is pointing to the cluster you want to upgrade
+- All bash commands assume your working directory is `docs/runbook/scripts`
+
 ## Solution
 
-1. Suspend the helm release in all namespaces running a Citus cluster
-   `flux suspend helmrelease -n {namespace} {releaseName}`
-2. Scale down the importer, monitor, and Citus cluster(s) in all namespaces running a Citus cluster
-   <br>
-   `kubectl scale deployment --context {sourceClusterContext} -n {namespace} mirror-importer --replicas=0`
-   <br>
-   `kubectl scale deployment --context {sourceClusterContext} -n {namespace} mirror-monitor --replicas=0`
-   <br>
-   `kubectl annotate sgclusters.stackgres.io -n {namespace} --all stackgres.io/reconciliation-pause="true" --overwrite`
-   <br>
-   `kubectl scale sts -n {namespace} -l 'stackgres.io/cluster=true' --replicas=0`
-3. Perform k8s version upgrade for the node pool(s)
-   <br>
-   `gcloud container clusters upgrade {clusterName} --node-pool=citus-worker --cluster-version={version} --location={region} --project={project}`
-    <br>
-   `gcloud container clusters upgrade {clusterName} --node-pool=citus-coordinator --cluster-version={version} --location={region} --project={project}`
-4. Re-enable the importer and Citus cluster reconciliation for all namespaces spun down in step 2
-   <br>
-   `kubectl annotate sgclusters.stackgres.io -n {namespace} stackgres.io/reconciliation-pause- --overwrite`
-   <br>
-   Wait for the Citus pods to be ready and then scale up the importer
-   <br>
-   `kubectl scale deployment --context {sourceClusterContext} --replicas=1 -n {namespace} mirror-importer`
-5. Monitor importer logs and wait for it to catch up with the Citus cluster
-    <br>
-    `kubectl logs -n {namespace} -lapp.kubernetes.io/name=importer --follow`
-6. Scale up the monitor
-   <br>
-   `kubectl scale deployment --context {sourceClusterContext} --replicas=1 -n {namespace} mirror-monitor`
-7. Resume the helm release in all namespaces suspended in step 1
-   `flux resume helmrelease -n {namespace} {releaseName} --timeout=30m`
+1. Follow the steps to [create a disk snapshot for Citus cluster](./create-disk-snapshot-for-citus-cluster.md)
+   to backup the current cluster data
+2. Configure and export env vars
+   ```bash
+   export GCP_PROJECT="my-gcp-project"
+   export GCP_K8S_CLUSTER_NAME="my-cluster-name"
+   export GCP_K8S_CLUSTER_REGION="my-cluster-region"
+   export GCP_WORKER_POOL_NAME="citus-worker"
+   export GCP_COORDINATOR_POOL_NAME="citus-coordinator"
+   export MACHINE_TYPE="new-machine-type"
+   export AUTO_UNROUTE="true" # Automatically suspend/resume helm release and scale monitor 
+   export VERSION="new-k8s-version" # Specify the new k8s version
+   export POOLS_TO_UPDATE=("${GCP_WORKER_POOL_NAME}" "${GCP_COORDINATOR_POOL_NAME}" "default-pool")
+   ```
+3. Run
+   ```bash
+   source ./utils.sh
+   NAMESPACES=($(kubectl get sgshardedclusters.stackgres.io -A -o jsonpath='{.items[*].metadata.namespace}'))
+   for namespace in "${NAMESPACES[@]}"
+   do
+     unrouteTraffic "${namespace}"
+     pauseCitus "${namespace}"
+   done
+   for pool in "${POOLS_TO_UPDATE[@]}"
+   do
+    gcloud container clusters upgrade ${GCP_K8S_CLUSTER_NAME} --node-pool=${pool} --cluster-version=${VERSION} --location=${GCP_K8S_CLUSTER_REGION} --project=${GCP_PROJECT}
+   done
+   for namespace in "${NAMESPACES[@]}"
+   do
+     unpauseCitus "${namespace}"
+     routeTraffic "${namespace}"
+   done
+   ```

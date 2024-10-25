@@ -1,112 +1,87 @@
 #!/usr/bin/env bash
 
-GCP_PROJECT="${GCP_PROJECT}"
-SNAPSHOT_ID="${SNAPSHOT_ID}"
-GCP_K8S_CLUSTER_NAME="${GCP_K8S_CLUSTER_NAME}"
-GCP_K8S_CLUSTER_REGION="${GCP_K8S_CLUSTER_REGION}"
+set -euo pipefail
+
+source ./utils.sh
+
+REPLACE_DISKS="${REPLACE_DISKS:-true}"
+COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
+ZFS_POOL_NAME="${ZFS_POOL_NAME:-zfspv-pool}"
 GCP_COORDINATOR_POOL_NAME="${GCP_COORDINATOR_POOL_NAME:-citus-coordinator}"
 GCP_WORKER_POOL_NAME="${GCP_WORKER_POOL_NAME:-citus-worker}"
-GCP_SNAPSHOT_PROJECT="${GCP_SNAPSHOT_PROJECT:-$GCP_PROJECT}"
-HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
-COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
-REPLACE_DISKS="${REPLACE_DISKS:-true}"
-ZFS_POOL_NAME="${ZFS_POOL_NAME:-zfspv-pool}"
+AUTO_UNROUTE="${AUTO_UNROUTE:-true}"
 
-function doContinue() {
-  read -p "Continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
-}
 
 function configureAndValidate() {
   CURRENT_CONTEXT=$(kubectl config current-context)
-
+  GCP_PROJECT="$(readUserInput "Enter GCP Project for target: ")"
   if [[ -z "${GCP_PROJECT}" ]]; then
-    echo "GCP_PROJECT is not set and is required. Exiting"
+    log "GCP_PROJECT is not set and is required. Exiting"
     exit 1
+  else
+    gcloud projects describe "${GCP_PROJECT}" > /dev/null
   fi
 
+  GCP_SNAPSHOT_PROJECT="$(readUserInput "Enter GCP Project for snapshot source: ")"
+  if [[ -z "${GCP_SNAPSHOT_PROJECT}" ]]; then
+      log "GCP_SNAPSHOT_PROJECT is not set and is required. Exiting"
+      exit 1
+    else
+      gcloud projects describe "${GCP_SNAPSHOT_PROJECT}" > /dev/null
+  fi
+
+  GCP_K8S_CLUSTER_REGION="$(readUserInput "Enter target cluster region: ")"
+    if [[ -z "${GCP_K8S_CLUSTER_REGION}" ]]; then
+      log "GCP_K8S_CLUSTER_REGION is not set and is required. Exiting"
+      exit 1
+    else
+      gcloud compute regions describe "${GCP_K8S_CLUSTER_REGION}" --project "${GCP_PROJECT}"  > /dev/null
+    fi
+
+  GCP_K8S_CLUSTER_NAME="$(readUserInput "Enter target cluster name: ")"
   if [[ -z "${GCP_K8S_CLUSTER_NAME}" ]]; then
-    echo "GCP_K8S_CLUSTER_NAME is not set and is required. Exiting"
+    log "GCP_K8S_CLUSTER_NAME is not set and is required. Exiting"
     exit 1
+  else
+    gcloud container clusters describe --project "${GCP_PROJECT}" \
+                                       --region="${GCP_K8S_CLUSTER_REGION}" \
+                                       "${GCP_K8S_CLUSTER_NAME}" > /dev/null
   fi
 
-  if [[ -z "${GCP_K8S_CLUSTER_REGION}" ]]; then
-    echo "GCP_K8S_CLUSTER_REGION is not set and is required. Exiting"
-    exit 1
-  fi
+  log "Listing snapshots in project ${GCP_SNAPSHOT_PROJECT}"
+  gcloud compute snapshots list --project "${GCP_SNAPSHOT_PROJECT}" --format="table(name, diskSizeGb, sourceDisk, description, creationTimestamp)" --filter="name~.*[0-9]{10,}$" --sort-by="~creationTimestamp"
 
-  local clusterFound=$(gcloud container clusters list --project "${GCP_PROJECT}" --filter="name=${GCP_K8S_CLUSTER_NAME}" --format="json(name)" --region="${GCP_K8S_CLUSTER_REGION}"|jq -r 'length == 1')
-  if [[ "${clusterFound}" == "false" ]]; then
-    echo "Cluster ${GCP_K8S_CLUSTER_NAME} not found in project ${GCP_PROJECT} and region ${GCP_K8S_CLUSTER_REGION}. Exiting"
-    exit 1
-  fi
-
+  SNAPSHOT_ID="$(readUserInput "Enter snapshot id (the epoch suffix of the snapshot group): ")"
   if [[ -z "${SNAPSHOT_ID}" ]]; then
-    echo "SNAPSHOT_ID is not set and is required. Please provide an identifier that is unique across all snapshots. Exiting"
-    gcloud compute snapshots list --project "${GCP_SNAPSHOT_PROJECT}" --format="table(name, diskSizeGb, sourceDisk, description)"
+    log "SNAPSHOT_ID is not set and is required. Please provide an identifier that is unique across all snapshots. Exiting"
     exit 1
+  else
+    SNAPSHOTS_TO_RESTORE=$(gcloud compute snapshots list --project "${GCP_SNAPSHOT_PROJECT}" \
+        --filter="name~.*${SNAPSHOT_ID}$" \
+        --format="json(name, description)" |
+        jq -r 'map(select(.description != null) | {name: .name, description: (.description|fromjson|sort_by(.volumeName))})')
+    if [[ -z "${SNAPSHOTS_TO_RESTORE}" ]]; then
+      log "No snapshots found for snapshot id ${SNAPSHOT_ID} in project ${GCP_SNAPSHOT_PROJECT}. Exiting"
+      exit 1
+    else
+      log "Found snapshots to restore: ${SNAPSHOTS_TO_RESTORE}"
+      doContinue
+    fi
   fi
 
-  DISK_PREFIX=$(helm get values "${HELM_RELEASE_NAME}" -n "${COMMON_NAMESPACE}" -o json | jq -r '.zfs.init.diskPrefix')
+  DISK_PREFIX="$(readUserInput "Enter the disk prefix of target cluster (value of zfs.init.diskPrefix in values.yaml): ")"
   if [[ -z "${DISK_PREFIX}" ]]; then
-    echo "Unable to find disk prefix. Please check hedera-mirror-common for release ${HELM_RELEASE_NAME} configuration and rerun"
+    log "DISK_PREFIX can not be empty. Exiting"
     exit 1
   fi
 
   if [[ -z "${ZFS_POOL_NAME}" ]]; then
-    echo "Unable to find zfs pool name. set ZFS_POOL_NAME to value of zfs.paramaters.poolname in common values.yaml"
+    log "Unable to find zfs pool name. set ZFS_POOL_NAME to value of zfs.paramaters.poolname in common values.yaml"
     exit 1
   fi
 
-  SNAPSHOTS_TO_RESTORE=$(gcloud compute snapshots list --project "${GCP_SNAPSHOT_PROJECT}" \
-    --filter="name~${SNAPSHOT_ID}" \
-    --format="json(name, description)" |
-    jq -r 'map({name: .name, description: (.description|fromjson|sort_by(.volumeName))})')
-  if [[ -z "${SNAPSHOTS_TO_RESTORE}" ]]; then
-    echo "No snapshots found for snapshot id ${SNAPSHOT_ID} in project ${GCP_SNAPSHOT_PROJECT}. Exiting"
-    exit 1
-  fi
-
-  CITUS_CLUSTERS=$(kubectl get sgclusters.stackgres.io -A -o json |
-    jq -r '.items|
-           map(
-             .metadata as $metadata|
-             .spec.postgres.version as $pgVersion|
-             ((.metadata.labels["stackgres.io/coordinator"] // "false")| test("true")) as $isCoordinator |
-             .spec.configurations.patroni.initialConfig.citus.group as $citusGroup|
-             .status.podStatuses[]|
-               {
-                 citusGroup: $citusGroup,
-                 clusterName: $metadata.name,
-                 isCoordinator: $isCoordinator,
-                 namespace: $metadata.namespace,
-                 pgVersion: $pgVersion,
-                 podName: .name,
-                 pvcName: "\($metadata.name)-data-\(.name)",
-                 primary: .primary,
-                 shardedClusterName: $metadata.ownerReferences[0].name
-               }
-           )')
-
-  ZFS_VOLUMES=$(kubectl get pv -o json |
-    jq -r --arg CITUS_CLUSTERS "${CITUS_CLUSTERS}" \
-      '.items|
-       map(select(.metadata.annotations."pv.kubernetes.io/provisioned-by"=="zfs.csi.openebs.io" and
-                  .status.phase == "Bound")|
-          (.spec.claimRef.name) as $pvcName |
-          (.spec.claimRef.namespace) as $pvcNamespace |
-          {
-            namespace: ($pvcNamespace),
-            volumeName: (.metadata.name),
-            pvcName: ($pvcName),
-            pvcSize: (.spec.capacity.storage),
-            nodeId: (.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]),
-            citusCluster: ($CITUS_CLUSTERS | fromjson | map(select(.pvcName == $pvcName and
-                                                            .namespace == $pvcNamespace))|first)
-          }
-      )')
-
+  ZFS_VOLUMES=$(getZFSVolumes)
   NAMESPACES=($(echo $ZFS_VOLUMES | jq -r '.[].namespace' | tr ' ' '\n' | sort -u | tr '\n' ' '))
-
   NODE_ID_MAP=$(echo -e "${SNAPSHOTS_TO_RESTORE}\n${ZFS_VOLUMES}" |
     jq -s '.[0] as $snapshots |
            .[1] as $volumes |
@@ -130,121 +105,34 @@ function configureAndValidate() {
 
   UNIQUE_NODE_IDS=($(echo "${NODE_ID_MAP}" | jq -r 'keys[]'))
   for nodeId in "${UNIQUE_NODE_IDS[@]}"; do
+    local diskName="${DISK_PREFIX}-${nodeId}-zfs"
+    local diskZone="$(echo "${nodeId}" | cut -d '-' -f 2-4)"
+
+    if ! gcloud compute disks describe "${diskName}" --project "${GCP_PROJECT}" --zone "${diskZone}"> /dev/null; then
+      log "Disk ${diskName} does not exist in project ${GCP_PROJECT} Please confirm the input for disk prefix. Exiting"
+      exit 1
+    fi
     local nodeInfo=$(echo "${NODE_ID_MAP}" | jq -r --arg NODE_ID "${nodeId}" '.[$NODE_ID]')
     HAS_VALID_SNAPSHOT=$(echo "${nodeInfo}" | jq -r '.snapshot|length == 1')
     if [[ "${HAS_VALID_SNAPSHOT}" == "false" ]]; then
-      echo -e "Unable to find valid snapshot for node id ${nodeId} in snapshot id ${SNAPSHOT_ID}.
+      log "Unable to find valid snapshot for node id ${nodeId} in snapshot id ${SNAPSHOT_ID}.
                   Please verify snapshots contain same namespace, pvc name and postgres version.
                   ${nodeInfo}"
       exit 1
     else
-      echo "Snapshot contains all pvcs for node ${nodeId}"
+      log "Snapshot contains all pvcs for node ${nodeId}"
     fi
   done
 }
 
-function scaleDeployment() {
-  local namespace="${1}"
-  local replicas="${2}"
-  local deploymentLabel="${3}"
-
-  if [[ "${replicas}" -gt 0 ]]; then # scale up
-    kubectl scale deployment -n "${namespace}" -l "${deploymentLabel}" --replicas="${replicas}"
-    echo "Waiting for pods with label ${deploymentLabel} to be ready"
-    kubectl wait --for=condition=Ready pod -n "${namespace}" -l "${deploymentLabel}" --timeout=-1s
-  else # scale down
-    local deploymentPods=$(kubectl get pods -n "${namespace}" -l "${deploymentLabel}" -o 'jsonpath={.items[*].metadata.name}')
-    if [[ -z "${deploymentPods}" ]]; then
-      echo "No pods found for deployment ${deploymentLabel} in namespace ${namespace}"
-      return
-    else
-      echo "Removing pods ${deploymentPods} in ${namespace} for ${CURRENT_CONTEXT}"
-      doContinue
-      kubectl scale deployment -n "${namespace}" -l "${deploymentLabel}" --replicas="${replicas}"
-      echo "Waiting for pods with label ${deploymentLabel} to be deleted"
-      kubectl wait --for=delete pod -n "${namespace}" -l "${deploymentLabel}" --timeout=-1s
-    fi
-  fi
-}
-
-function pauseCitus() {
-  local namespace="${1}"
-  local citusPods=$(kubectl get pods -n "${namespace}" -l 'stackgres.io/cluster=true' -o 'jsonpath={.items[*].metadata.name}')
-  if [[ -z "${citusPods}" ]]; then
-    echo "Citus is not currently running"
-  else
-    echo "Removing pods (${citusPods}) in ${namespace} for ${CURRENT_CONTEXT}"
-    doContinue
-    kubectl annotate sgclusters.stackgres.io -n "${namespace}" --all stackgres.io/reconciliation-pause="true" --overwrite
-    kubectl scale sts -n "${namespace}" -l 'stackgres.io/cluster=true' --replicas=0
-    echo "Waiting for citus pods to terminate"
-    kubectl wait --for=delete pod -l 'stackgres.io/cluster=true' -n "${namespace}" --timeout=-1s
-  fi
-}
-
-function unpauseCitus() {
-  local namespace="${1}"
-
-  local citusPods=$(kubectl get pods -n "${namespace}" -l 'stackgres.io/cluster=true' -o 'jsonpath={.items[*].metadata.name}')
-  if [[ -z "${citusPods}" ]]; then
-    echo "Starting citus cluster in namespace ${namespace}"
-    kubectl annotate endpoints -n "${namespace}" -l 'stackgres.io/cluster=true' initialize- --overwrite
-    kubectl annotate sgclusters.stackgres.io -n "${namespace}" --all stackgres.io/reconciliation-pause- --overwrite
-    echo "Waiting for citus pods to be ready"
-    sleep 5
-    kubectl wait --for=condition=Ready pod -l 'stackgres.io/cluster=true' -n "${namespace}" --timeout=-1s
-    echo "Waiting citus replica pods to be ready"
-    sleep 30 # Wait again as replicas will not spin up until the primary is started
-    kubectl wait --for=condition=Ready pod -l 'stackgres.io/cluster=true' -n "${namespace}" --timeout=-1s
-  else
-    echo "Citus is already running in namespace ${namespace}. Skipping"
-  fi
-}
-
-function resizeCitusNodePools() {
-  local numNodes="${1}"
-
-  echo "Scaling nodepool ${GCP_COORDINATOR_POOL_NAME} and ${GCP_WORKER_POOL_NAME} in cluster ${GCP_K8S_CLUSTER_NAME}
-  for project ${GCP_PROJECT} to ${numNodes} nodes per zone"
-
-  if [[ "${numNodes}" -gt 0 ]]; then
-    gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_COORDINATOR_POOL_NAME}" --num-nodes "${numNodes}" --location "${GCP_K8S_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
-    gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_WORKER_POOL_NAME}" --num-nodes "${numNodes}" --location "${GCP_K8S_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
-    echo "Waiting for nodes to be ready"
-    wait
-    kubectl wait --for=condition=Ready node -l'citus-role=coordinator' --timeout=-1s
-    kubectl wait --for=condition=Ready node -l'citus-role=worker' --timeout=-1s
-  else
-    local coordinatorNodes=$(kubectl get nodes -l'citus-role=coordinator' -o 'jsonpath={.items[*].metadata.name}')
-    if [[ -z "${coordinatorNodes}" ]]; then
-      echo "No coordinator nodes found"
-    else
-      echo "Scaling down coordinator nodes ${coordinatorNodes}"
-      gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_COORDINATOR_POOL_NAME}" --num-nodes 0 --location "${GCP_K8S_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
-    fi
-
-    local workerNodes=$(kubectl get nodes -l'citus-role=worker' -o 'jsonpath={.items[*].metadata.name}')
-    if [[ -z "${workerNodes}" ]]; then
-      echo "No worker nodes found"
-    else
-      echo "Scaling down worker nodes ${workerNodes}"
-      gcloud container clusters resize "${GCP_K8S_CLUSTER_NAME}" --node-pool "${GCP_WORKER_POOL_NAME}" --num-nodes 0 --location "${GCP_K8S_CLUSTER_REGION}" --project "${GCP_PROJECT}" --quiet &
-    fi
-    echo "Waiting for nodes to be deleted"
-    wait
-    kubectl wait --for=delete node -l'citus-role=coordinator' --timeout=-1s
-    kubectl wait --for=delete node -l'citus-role=worker' --timeout=-1s
-  fi
-}
-
 function prepareDiskReplacement() {
-  echo "Will spin down importer and citus in the namespaces (${NAMESPACES[*]}) for context ${CURRENT_CONTEXT} and
-    Will restore snapshots ${SNAPSHOTS_TO_RESTORE}"
+  log "Will spin down importer and citus in the namespaces (${NAMESPACES[*]}) for context ${CURRENT_CONTEXT}"
   doContinue
 
   for namespace in "${NAMESPACES[@]}"; do
-    # Shutdown the importer
-    scaleDeployment "${namespace}" 0 "app.kubernetes.io/component=importer"
+
+    # Unroute traffic
+    unrouteTraffic "${namespace}"
 
     # Pause Citus
     pauseCitus "${namespace}"
@@ -255,7 +143,7 @@ function prepareDiskReplacement() {
 }
 
 function renameZfsVolumes() {
-  echo "Waiting for zfs pods to be ready"
+  log "Waiting for zfs pods to be ready"
   kubectl wait --for=condition=Ready pod -n "${COMMON_NAMESPACE}" -l 'component=openebs-zfs-node' --timeout=-1s
 
   local zfsNodePods=$(kubectl get pods -A -o wide -o json -l 'component=openebs-zfs-node' | jq -r '.items|map({node: (.spec.nodeName), podName: (.metadata.name)})')
@@ -270,7 +158,7 @@ function renameZfsVolumes() {
            )|
            add')
 
-  echo "Renaming zfs datasets"
+  log "Renaming zfs datasets"
   for nodeId in "${UNIQUE_NODE_IDS[@]}"; do
     local podInfo=$(echo "${nodeIdToPodMap}" | jq -r --arg NODE_ID "${nodeId}" '.[$NODE_ID]')
     local nodeData=$(echo "${NODE_ID_MAP}" | jq -r --arg NODE_ID "${nodeId}" '.[$NODE_ID]')
@@ -280,18 +168,19 @@ function renameZfsVolumes() {
       local snapshotPvcVolumeName=$(echo "${nodeData}" | jq -r --arg PVC_INDEX "${pvcIndex}" '.snapshot[0].description[$PVC_INDEX|tonumber].volumeName')
 
       if [[ "${pvcVolumeName}" != "${snapshotPvcVolumeName}" ]]; then
-        echo "Renaming snapshot pvc ${ZFS_POOL_NAME}/${snapshotPvcVolumeName} to ${ZFS_POOL_NAME}/${pvcVolumeName}"
+        log "Renaming snapshot pvc ${ZFS_POOL_NAME}/${snapshotPvcVolumeName} to ${ZFS_POOL_NAME}/${pvcVolumeName}"
         kubectl exec -n "${COMMON_NAMESPACE}" "${podInfo}" -c openebs-zfs-plugin -- zfs rename "${ZFS_POOL_NAME}/${snapshotPvcVolumeName}" "${ZFS_POOL_NAME}/${pvcVolumeName}"
       else
-        echo "Snapshot pvc ${ZFS_POOL_NAME}/${snapshotPvcVolumeName} already matches pvc ${ZFS_POOL_NAME}/${pvcVolumeName}"
+        log "Snapshot pvc ${ZFS_POOL_NAME}/${snapshotPvcVolumeName} already matches pvc ${ZFS_POOL_NAME}/${pvcVolumeName}"
       fi
     done
     kubectl exec -n "${COMMON_NAMESPACE}" "${podInfo}" -c openebs-zfs-plugin -- zfs list
   done
+  log "ZFS datasets renamed"
 }
 
 function replaceDisks() {
-  echo "Will delete disks ${DISK_PREFIX}-(${UNIQUE_NODE_IDS[*]})-zfs in project ${GCP_PROJECT}"
+  log "Will delete disks ${DISK_PREFIX}-(${UNIQUE_NODE_IDS[*]})-zfs in project ${GCP_PROJECT}"
   doContinue
 
   prepareDiskReplacement
@@ -302,12 +191,12 @@ function replaceDisks() {
     local diskZone=$(echo "${nodeId}" | cut -d '-' -f 2-4)
     local snapshotName=$(echo "${nodeInfo}" | jq -r '.snapshot[0].name')
     local snapshotFullName="projects/${GCP_SNAPSHOT_PROJECT}/global/snapshots/${snapshotName}"
-    echo "Recreating disk ${diskName} in ${GCP_PROJECT} with snapshot ${snapshotName}"
+    log "Recreating disk ${diskName} in ${GCP_PROJECT} with snapshot ${snapshotName}"
     gcloud compute disks delete "${diskName}" --project "${GCP_PROJECT}" --zone "${diskZone}" --quiet
     gcloud compute disks create "${diskName}" --project "${GCP_PROJECT}" --zone "${diskZone}" --source-snapshot "${snapshotFullName}" --type=pd-balanced --quiet &
   done
 
-  echo "Waiting for disks to be created"
+  log "Waiting for disks to be created"
   wait
 
   resizeCitusNodePools 1
@@ -343,9 +232,9 @@ function configureShardedClusterResource() {
             }
          }
        }')
-  echo "Patching sharded cluster ${shardedClusterName} in namespace ${namespace} with ${shardedClusterPatch}"
+  log "Patching sharded cluster ${shardedClusterName} in namespace ${namespace} with ${shardedClusterPatch}"
   kubectl patch sgshardedclusters.stackgres.io -n "${namespace}" "${shardedClusterName}" --type merge -p "${shardedClusterPatch}"
-  echo "
+  log "
   **** IMPORTANT ****
   Please configure your helm values.yaml for namespace ${namespace} to have the following values:
 
@@ -353,7 +242,7 @@ function configureShardedClusterResource() {
 
   stackgres.worker.overrides=${workerPvcOverrides}
   "
-  echo "Continue to acknowledge config change is saved (do not need to apply the config change yet)"
+  log "Continue to acknowledge config change is saved (do not need to apply the config change yet)"
   doContinue
 }
 
@@ -433,29 +322,35 @@ function markAndConfigurePrimaries() {
       jq -r '{status: {podStatuses: map({name: .name, primary: .primary})}}')
     local citusGroup=$(echo "${groupPods}" | jq -r '.[0].group')
     local primaryPod=$(echo "${groupPods}" | jq -r 'map(select(.primary))|first|.name')
+    local endpointName="${HELM_RELEASE_NAME}-citus-${citusGroup}"
+    log "Marking primary on endpoint ${endpointName}"
+    kubectl annotate endpoints "${endpointName}" -n "${namespace}" leader="${primaryPod}" --overwrite
+    log "Waiting for patroni to mark primary"
+    sleep 10
     local patroniClusterStatus=$(kubectl exec -n "${namespace}" -c patroni "${primaryPod}" \
       -- patronictl list --group "${citusGroup}" -f json | jq -r 'map({primary: (.Role == "Leader"), name: .Member})')
     local patroniPrimaryPod=$(echo "${patroniClusterStatus}" | jq -r 'map(select(.primary))|first|.name')
     if [[ "${patroniPrimaryPod}" != "${primaryPod}" ]]; then
-      echo "Primary pod ${primaryPod} is not the patroni primary ${patroniPrimaryPod} for ${shardedClusterName}
+      log "Primary pod ${primaryPod} is not the patroni primary ${patroniPrimaryPod} for ${shardedClusterName}
 group ${citusGroup}. Will failover"
       kubectl exec -n "${namespace}" "${primaryPod}" -c patroni \
         -- patronictl failover "${shardedClusterName}" --group "${citusGroup}" --candidate "${primaryPod}" --force
       patroniPrimaryPod=$(echo "${patroniClusterStatus}" | jq -r 'map(select(.primary))|first|.name')
       while [[ "${patroniPrimaryPod}" != "${primaryPod}" ]]; do
-        echo "Waiting for failover to complete expecting ${primaryPod} to be primary but got ${patroniPrimaryPod}"
+        log "Waiting for failover to complete expecting ${primaryPod} to be primary but got ${patroniPrimaryPod}"
         sleep 10
         patroniClusterStatus=$(kubectl exec -n "${namespace}" -c patroni "${primaryPod}" \
           -- patronictl list --group "${citusGroup}" -f json | jq -r 'map({primary: (.Role == "Leader"), name: .Member})')
         patroniPrimaryPod=$(echo "${patroniClusterStatus}" | jq -r 'map(select(.primary))|first|.name')
       done
     fi
-    echo "Patching cluster ${clusterName} in namespace ${namespace} with ${clusterPatch}"
+    log "Patching cluster ${clusterName} in namespace ${namespace} with ${clusterPatch}"
     kubectl patch sgclusters.stackgres.io -n "${namespace}" "${clusterName}" --type merge -p "${clusterPatch}"
     kubectl exec -n "${namespace}" "${primaryPod}" -c postgres-util \
-                -- psql -U "${superuserUsername}" -c "${sql}"
+                -- psql -U "${superuserUsername}" \
+                        -c "ALTER USER ${superuserUsername} WITH PASSWORD '${superuserPassword}';"
     for sql in "${sqlCommands[@]}"; do
-          echo "Executing sql command for cluster ${clusterName}: ${sql}"
+          log "Executing sql command for cluster ${clusterName}: ${sql}"
           kubectl exec -n "${namespace}" "${primaryPod}" -c postgres-util \
             -- psql -U "${superuserUsername}" -c "${sql}"
     done
@@ -478,6 +373,7 @@ group ${citusGroup}. Will failover"
 }
 
 function patchCitusClusters() {
+  log "Patching Citus clusters in namespaces ${NAMESPACES[*]}"
   local pvcsByNamespace=$(echo -e "${SNAPSHOTS_TO_RESTORE}\n${ZFS_VOLUMES}" |
     jq -s '(.[0] | map(.description)| flatten) as $snapshots|
             .[1] as $volumes|
@@ -497,9 +393,9 @@ function patchCitusClusters() {
     local shardedClusterName=$(echo "${pvcsInNamespace}" | jq -r '.[0].citusCluster.shardedClusterName')
 
     configureShardedClusterResource "${pvcsInNamespace}" "${shardedClusterName}" "${namespace}"
-    unpauseCitus "${namespace}"
+    unpauseCitus "${namespace}" "true"
     markAndConfigurePrimaries "${pvcsInNamespace}" "${shardedClusterName}"
-    scaleDeployment "${namespace}" 1 "app.kubernetes.io/component=importer"
+    routeTraffic "${namespace}"
   done
 }
 
@@ -508,7 +404,7 @@ configureAndValidate
 if [[ "${REPLACE_DISKS}" == "true" ]]; then
   replaceDisks
 else
-  echo "REPLACE_DISKS is set to false. Skipping disk replacement"
+  log "REPLACE_DISKS is set to false. Skipping disk replacement"
 fi
 
 patchCitusClusters

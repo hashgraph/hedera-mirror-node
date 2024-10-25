@@ -4,35 +4,45 @@
 
 Need to Change Machine Type for Citus Node Pool(s)
 
+## Prerequisites
+
+- Have `jq` installed
+- kubectl is pointing to the cluster you want to create snapshots from
+- All bash commands assume your working directory is `docs/runbook/scripts`
+
 ## Solution
 
 1. Follow the steps to [create a disk snapshot for Citus cluster](./create-disk-snapshot-for-citus-cluster.md)
    to backup the current cluster data
-2. Scale down the importer and Citus cluster(s) in all namespaces running a Citus cluster
-   <br>
-   `kubectl scale deployment --context {sourceClusterContext} -n {namespace} mirror-importer --replicas=0`
-   <br>
-   `kubectl annotate sgclusters.stackgres.io -n {namespace} --all stackgres.io/reconciliation-pause="true" --overwrite`
-   <br>
-   `kubectl exec -it -n {namespace} -c patroni mirror-citus-coord-0 -- patronictl restart mirror-citus`
-   <br>
-   `kubectl scale sts -n {namespace} -l 'stackgres.io/cluster=true' --replicas=0`
-3. Resize the node pool(s) down to 0 nodes
-   <br>
-   `gcloud container clusters resize {k8sClusterName} --node-pool {poolName} --num-nodes 0 --location {clusterRegion} --project {project}`
-4. Change the machine type for the node pool(s)
-   <br>
-   `gcloud container node-pools update {poolName} --project {gcpProjectName} --cluster {k8sClusterName} --location {clusterRegion} --machine-type {machineType`
-5. Resize the node pool(s) back to the original number of nodes
-   <br>
-   `gcloud container clusters resize {k8sClusterName} --node-pool {poolName} --num-nodes {numNodes} --location {clusterRegion} --project {project}`
-6. Re-enable the importer and Citus cluster reconciliation for all namespaces spun down in step 2
-   <br>
-   `kubectl annotate sgclusters.stackgres.io -n {namespace} stackgres.io/reconciliation-pause- --overwrite`
-   <br>
-   Wait for the Citus pods to be ready. They are ready when `metadatasynced=true` for all rows in the following query
-   <br>
-   `kubectl exec -it -n {namespace} -c postgres-util mirror-citus-coord-0 -- psql -U postgres -d mirror_node -c "SELECT * FROM pg_dist_node"`
-7. Scale up the importer
-   <br>
-   `kubectl scale deployment --context {sourceClusterContext} --replicas=1 -n {namespace} mirror-importer`
+2. Configure and export env vars
+   ```bash
+   export GCP_PROJECT="my-gcp-project"
+   export GCP_K8S_CLUSTER_NAME="my-cluster-name"
+   export GCP_K8S_CLUSTER_REGION="my-cluster-region"
+   export GCP_WORKER_POOL_NAME="citus-worker"
+   export GCP_COORDINATOR_POOL_NAME="citus-coordinator"
+   export MACHINE_TYPE="new-machine-type"
+   export AUTO_UNROUTE="true" # Automatically suspend/resume helm release and scale monitor 
+   export POOLS_TO_UPDATE=("${GCP_WORKER_POOL_NAME}" "${GCP_COORDINATOR_POOL_NAME}")
+   ```
+3. Run
+   ```bash
+   source ./utils.sh
+   NAMESPACES=($(kubectl get sgshardedclusters.stackgres.io -A -o jsonpath='{.items[*].metadata.namespace}'))
+   for namespace in "${NAMESPACES[@]}"
+   do
+     unrouteTraffic "${namespace}"
+     pauseCitus "${namespace}"
+   done
+   resizeCitusNodePools 0
+   for pool in "${POOLS_TO_UPDATE[@]}"
+   do
+    gcloud container node-pools update ${pool} --project=${GCP_PROJECT} --cluster=${GCP_K8S_CLUSTER_NAME} --location=${GCP_K8S_CLUSTER_REGION} --machine-type=${MACHINE_TYPE}
+   done
+   resizeCitusNodePools 1
+   for namespace in "${NAMESPACES[@]}"
+   do
+     unpauseCitus "${namespace}"
+     routeTraffic "${namespace}"
+   done
+   ```
