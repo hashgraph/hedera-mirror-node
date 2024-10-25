@@ -62,9 +62,19 @@ function routeTraffic() {
   kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -- psql -U mirror_rest -d mirror_node -c "select * from transaction limit 10"
   kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -- psql -U mirror_node -d mirror_node -c "select * from transaction limit 10"
   doContinue
-
+  scaleDeployment "${namespace}" 1 "app.kubernetes.io/component=importer"
+  while true; do
+    local statusQuery="select $(date +%s) - (max(consensus_end) / 1000000000) from record_file"
+    local status=$(kubectl exec -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -- psql -q --csv -t -U mirror_rest -d mirror_node -c "select $(date +%s) - (max(consensus_end) / 1000000000) from record_file" | tail -n 1)
+    if [[ "${status}" -lt 10 ]]; then
+      log "Importer is caught up with the source"
+      break
+    else
+      log "Waiting for importer to catch up with the source. Current lag: ${status} seconds"
+      sleep 10
+    fi
+  done
   if [[ "${AUTO_UNROUTE}" == "true" ]]; then
-    scaleDeployment "${namespace}" 1 "app.kubernetes.io/component=importer"
     if kubectl get helmrelease -n "${namespace}" "${HELM_RELEASE_NAME}" > /dev/null; then
       log "Resuming helm release ${HELM_RELEASE_NAME} in namespace ${namespace}.
           Be sure to configure values.yaml with any changes before continuing"
@@ -74,8 +84,6 @@ function routeTraffic() {
       log "No helm release found in namespace ${namespace}. Skipping suspend"
     fi
     scaleDeployment "${namespace}" 1 "app.kubernetes.io/component=monitor"
-  else
-    scaleDeployment "${namespace}" 1 "app.kubernetes.io/component=importer"
   fi
 }
 
