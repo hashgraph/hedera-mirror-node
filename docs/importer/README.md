@@ -50,50 +50,43 @@ inaccurate due to bugs, follow the steps below to re-run the migration to fix it
              checksum: 2
    ```
 
-### Historical Data Ingestion
+## Historical Data Ingestion
 
 The following resource allocation and configuration is recommended to speed up historical data ingestion. The importer
 should be able to ingest one month's worth of mainnet data in less than 1.5 days.
 
-1. Importer
+### Importer
 
-- Resource allocation
+Run the importer with 4 vCPUs and 10 GB of heap. Configure the application.yml:
 
-  Run the importer with 4 vCPUs and 10 GB of heap.
+```yaml
+hedera:
+  mirror:
+    importer:
+      downloader:
+        batchSize: 600
+        record:
+          frequency: 1ms
+      parser:
+        record:
+          entity:
+            redis:
+              enabled: false
+          frequency: 10ms
+          queueCapacity: 40
+```
 
-- Configuration:
+Note once the importer has caught up all data, it's recommend to change the configuration back to the default.
 
-  ```yaml
-  hedera:
-    mirror:
-      importer:
-        downloader:
-          batchSize: 600
-          record:            
-            frequency: 1ms
-        parser:
-          record:
-            entity:
-              redis:
-                enabled: false
-            frequency: 10ms
-            queueCapacity: 40
-  ```
+### Database
 
-  Note once the importer has caught up all data, please change the configuration to the default where applicable.
+Run a PostgreSQL 16 instance with at least 4 vCPUs and 16 GB memory. Set the following parameters (note the unit is
+kilobytes):
 
-2. PostgreSQL Database
-
-- Resource allocation
-
-  Run a PostgreSQL 16 instance with at least 4 vCPUs and 16 GB memory.
-
-- Configuration:
-
-  Set the following parameters. Note the unit is kilobytes.
-
-  - max_wal_size = 8388608
-  - work_mem = 262144
+```
+max_wal_size = 8388608
+work_mem = 262144
+```
 
 ## Performance Tests
 
