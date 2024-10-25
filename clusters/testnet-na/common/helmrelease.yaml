@@ -10,6 +10,9 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
+      valuesFiles:
+        - values.yaml
+        - values-v2.yaml
       version: '>0.0.0' # Update to the latest release
   driftDetection:
     mode: enabled
@@ -58,14 +61,11 @@ spec:
           resources:
             limits:
               memory: 6Gi
-    stackgres:
-      enabled: true
     traefik:
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-testnet-na"} } }'
     zfs:
-      enabled: true
       init:
         diskPrefix: testnet-na
       worker:
