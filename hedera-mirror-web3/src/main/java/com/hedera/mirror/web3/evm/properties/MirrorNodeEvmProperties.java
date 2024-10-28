@@ -168,6 +168,14 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private HederaNetwork network = HederaNetwork.TESTNET;
 
     @Getter
+    @NotNull
+    private Map<String, String> properties = Map.of(
+            "contracts.chainId",
+            chainIdBytes32().toBigInteger().toString(),
+            "contracts.maxRefundPercentOfGasLimit",
+            String.valueOf(maxGasRefundPercentage()));
+
+    @Getter
     @Min(1)
     private int feesTokenTransferUsageMultiplier = 380;
 
