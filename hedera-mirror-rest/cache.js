@@ -78,24 +78,20 @@ export class Cache {
       return undefined;
     }
 
-    let valueWithTtl = undefined; // Cache miss to caller
-    await this.redis
-      .multi()
-      .ttl(key)
-      .get(key)
-      .exec(function (err, result) {
-        if (err) {
-          logger.warn(`Redis error during ttl/get: ${err.message}`);
-        } else {
-          // result is [[null, ttl], [null, value]], with value === null on cache miss.
-          const rawValue = result[1][1];
-          if (rawValue) {
-            valueWithTtl = {ttl: result[0][1], value: JSONParse(rawValue)};
-          }
-        }
-      });
+    const result = await this.redis
+        .multi()
+        .ttl(key)
+        .get(key)
+        .exec()
+        .catch((err) => logger.warn(`Redis error during ttl/get: ${err.message}`));
 
-    return valueWithTtl;
+    // result is [[null, ttl], [null, value]], with value === null on cache miss.
+    const rawValue = result[1][1];
+    if (rawValue) {
+      return {ttl: result[0][1], value: JSONParse(rawValue)};
+    }
+
+    return undefined;
   }
 
   async setSingle(key, expiry, value) {

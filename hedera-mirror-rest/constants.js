@@ -201,6 +201,8 @@ const httpStatusCodes = {
   OK: new StatusCode(200, 'OK'),
   PARTIAL_CONTENT: new StatusCode(206, 'Partial mirror node'),
   SERVICE_UNAVAILABLE: new StatusCode(503, 'Service unavailable'),
+  UNMODIFIED: new StatusCode(304, 'Not Modified'),
+  isSuccess: (code) => code >= 200 && code < 300,
 };
 
 const queryParamOperators = {

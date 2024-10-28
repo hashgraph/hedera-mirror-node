@@ -130,7 +130,7 @@ if (config.metrics.enabled) {
 // Check for cached response
 if (applicationCacheEnabled) {
   logger.info('Response caching is enabled');
-  app.use(responseCacheCheckHandler);
+  app.useAsync(responseCacheCheckHandler);
 }
 
 // accounts routes
