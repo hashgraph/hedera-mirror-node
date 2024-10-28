@@ -141,7 +141,6 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
     void contractDeployWithValue() throws Exception {
         // Given
         final var contract = testWeb3jService.deployWithValue(TestAddressThis::deploy, BigInteger.valueOf(1000));
-
         final var request = new ContractCallRequest();
         request.setBlock(BlockType.LATEST);
         request.setData(contract.getContractBinary());

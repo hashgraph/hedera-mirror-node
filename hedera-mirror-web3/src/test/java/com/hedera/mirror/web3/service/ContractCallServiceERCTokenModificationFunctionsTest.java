@@ -144,7 +144,6 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     void contractDeployNonPayableWithValue() throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
-
         final var request = new ContractCallRequest();
         request.setBlock(BlockType.LATEST);
         request.setData(contract.getContractBinary());
