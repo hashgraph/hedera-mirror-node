@@ -166,12 +166,12 @@ The Hedera Mirror Node uses **Gradle** for building and managing dependencies.
 ### 2. **Configure Gradle Properties**
 Ensure that the gradle.properties file contains the correct path for Java 17:
 
-properties
+```
 org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64
+```
 
 
-
-This ensures that **Java 21** is used globally for the project.
+This ensures that **Java 17** is used globally for the project.
 
 ## Running Tests
 
@@ -239,4 +239,5 @@ For production or deployment, you may need to generate Docker images or Helm cha
    ```bash
    ./gradlew helmGenerate
    ```
+
 
