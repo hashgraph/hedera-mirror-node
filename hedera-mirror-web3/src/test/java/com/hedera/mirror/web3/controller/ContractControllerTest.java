@@ -79,6 +79,7 @@ class ContractControllerTest {
     private static final String CALL_URI = "/api/v1/contracts/call";
     private static final String ONE_BYTE_HEX = "80";
     private static final long THROTTLE_GAS_LIMIT = 10_000_000L;
+    private static final String INIT_CODE = "0x60006000556000526000526000f3";
 
     @Resource
     private MockMvc mockMvc;
@@ -118,14 +119,13 @@ class ContractControllerTest {
     }
 
     @NullAndEmptySource
-    @ValueSource(strings = {"0x00000000000000000000000000000000000007e7"})
     @ParameterizedTest
-    void estimateGas(String to) throws Exception {
+    void estimateGasWithEmptyTo(String to) throws Exception {
         final var request = request();
         request.setEstimate(true);
         request.setValue(0);
         request.setTo(to);
-        contractCall(request).andExpect(status().isOk());
+        contractCall(request).andExpect(status().isBadRequest());
     }
 
     @ValueSource(longs = {2000, -2000, 16_000_000L, 0})
@@ -266,7 +266,7 @@ class ContractControllerTest {
         final var request = request();
         final var dataAsHex =
                 ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
-        request.setTo(null);
+        request.setTo("0x00000000000000000000000000000000000004e2");
         request.setValue(0);
         request.setData("0x" + dataAsHex);
         request.setEstimate(true);
@@ -437,7 +437,7 @@ class ContractControllerTest {
     void callSuccessOnContractCreateWithMissingFrom() throws Exception {
         final var request = request();
         request.setFrom(null);
-        request.setTo(null);
+        request.setData(INIT_CODE);
         request.setValue(0);
         request.setEstimate(false);
 

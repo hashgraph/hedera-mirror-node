@@ -33,6 +33,7 @@ import lombok.experimental.UtilityClass;
 public class RuntimeBytecodeExtractor {
 
     private static final String CODECOPY = "39";
+    private static final String RETURN = "f3";
     private static final String RUNTIME_CODE_PREFIX =
             "6080"; // The pattern to find the start of the runtime code in the init bytecode
 
@@ -65,5 +66,23 @@ public class RuntimeBytecodeExtractor {
 
         // Extract the runtime bytecode starting from the runtimeCodePrefixIndex
         return initBytecode.substring(runtimeCodePrefixIndex);
+    }
+
+    /**
+     * Checks if a given data string is likely init bytecode.
+     * @param data the data string to check.
+     * @return true if it is init bytecode, false otherwise.
+     */
+    public static boolean isInitBytecode(final String data) {
+        if (data == null || data.isEmpty()) {
+            return false;
+        }
+
+        // CODECOPY (0x39) and RETURN (0xf3)
+        boolean hasCodeCopy = data.contains(CODECOPY);
+        boolean hasReturn = data.contains(RETURN);
+
+        // Check if both CODECOPY and RETURN opcodes are present
+        return hasCodeCopy && hasReturn;
     }
 }
