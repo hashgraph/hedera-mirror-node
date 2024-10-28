@@ -25,6 +25,11 @@ openApiValidator(app);
 describe('request normalizer', () => {
   const testSpecs = [
     {
+      description: 'Unknown path',
+      input: '/api/v1/unknown/123?limit=2',
+      expected: '/api/v1/unknown/123?limit=2',
+    },
+    {
       description: 'Block query parameters are added',
       input: '/api/v1/blocks',
       expected: '/api/v1/blocks?limit=25&order=desc',
@@ -116,8 +121,15 @@ describe('request normalizer', () => {
     },
     {
       description: 'Balance is collapsed to the last value',
-      input: '/api/v1/accounts?balance=true&balance=false',
-      expected: '/api/v1/accounts?balance=false&limit=25&order=asc',
+      input: '/api/v1/accounts?limit=3&balance=true&balance=false',
+      expected: '/api/v1/accounts?balance=false&limit=3&order=asc',
+    },
+    {
+      description: 'Two collapsable params are collapsed',
+      input:
+        '/api/v1/transactions/0xae8bebf1c9fa0f309356e48057f6047af7cde63037d0509d16ddc3b20e085158bfdf14d15345c1b18b199b72fed4ac6f?scheduled=false&scheduled=true&nonce=2&nonce=1',
+      expected:
+        '/api/v1/transactions/0xae8bebf1c9fa0f309356e48057f6047af7cde63037d0509d16ddc3b20e085158bfdf14d15345c1b18b199b72fed4ac6f?nonce=1&scheduled=true',
     },
     {
       description: 'Timestamp values are not sorted',

@@ -16,11 +16,13 @@
 
 import {getOpenApiMap} from './openapiHandler.js';
 import {filterKeys} from '../constants.js';
+import _ from 'lodash';
+import * as querystring from 'node:querystring';
 
 const openApiMap = getOpenApiMap();
 
 // Multiple values of these params can be collapsed to the last value
-const COLLAPSABLE_PARAMS = [filterKeys.BALANCE, filterKeys.NONCE, filterKeys.SCHEDULED];
+const COLLAPSABLE_PARAMS = [filterKeys.BALANCE, filterKeys.BLOCK_HASH, filterKeys.NONCE, filterKeys.SCHEDULED];
 
 /**
  * Do not sort these query parameters as the results of the sql query changes based on their order
@@ -32,11 +34,7 @@ const COLLAPSABLE_PARAMS = [filterKeys.BALANCE, filterKeys.NONCE, filterKeys.SCH
  *   /api/v1/tokens/1135?timestamp=lt:1234567899.999999000&timestamp=1234567899.999999001 returns a result whereas
  *   ?timestamp=1234567899.999999001&timestamp=lt:1234567899.999999000 returns a 404
  */
-const NON_SORTED_PARAMS = COLLAPSABLE_PARAMS.concat([
-  filterKeys.BLOCK_HASH,
-  filterKeys.BLOCK_NUMBER,
-  filterKeys.TIMESTAMP,
-]);
+const NON_SORTED_PARAMS = COLLAPSABLE_PARAMS.concat([filterKeys.BLOCK_NUMBER, filterKeys.TIMESTAMP]);
 
 /**
  * Normalizes a request by adding any missing default values and sorting any array query parameters.
@@ -50,32 +48,52 @@ const NON_SORTED_PARAMS = COLLAPSABLE_PARAMS.concat([
  */
 const normalizeRequestQueryParams = (openApiRoute, path, query) => {
   const openApiParameters = openApiMap.get(openApiRoute);
-  const queryArray = [];
+  if (_.isEmpty(openApiParameters)) {
+    return _.isEmpty(query) ? path : path + '?' + querystring.stringify(query);
+  }
+
+  let normalizedQuery = '';
   for (const param of openApiParameters) {
     const name = param.parameterName;
     const value = query[name];
+    let normalizedValue = '';
     if (value !== undefined) {
-      const queryValue = Array.isArray(value) ? getArrayValues(name, value) : name + '=' + value;
-      queryArray.push(queryValue);
+      normalizedValue = Array.isArray(value) ? getNormalizedArrayValue(name, value) : value;
     } else if (param?.defaultValue !== undefined) {
       // Add the default value to the query parameter
-      queryArray.push(name + '=' + param.defaultValue);
+      normalizedValue = param.defaultValue;
+    }
+
+    if (!_.isEmpty(normalizedValue)) {
+      normalizedQuery = appendToQuery(normalizedQuery, name + '=' + normalizedValue);
     }
   }
 
-  return queryArray.length !== 0 ? path + '?' + queryArray.join('&') : path;
+  return _.isEmpty(normalizedQuery) ? path : path + '?' + normalizedQuery;
 };
 
-const getArrayValues = (name, valuesArray) => {
-  if (!NON_SORTED_PARAMS.includes(name)) {
-    // Sort the order of the parameters within the array
-    valuesArray.sort();
-  } else if (COLLAPSABLE_PARAMS.includes(name)) {
-    // Only add the last item in the array to the query parameter
-    return name + '=' + valuesArray[valuesArray.length - 1];
+const appendToQuery = (queryString, queryValue) => {
+  return queryString + getQueryPrefix(queryString) + queryValue;
+};
+
+const getNormalizedArrayValue = (name, valueArray) => {
+  if (_.isEmpty(valueArray)) {
+    return;
   }
 
-  return name + '=' + valuesArray.join('&' + name + '=');
+  if (!NON_SORTED_PARAMS.includes(name)) {
+    // Sort the order of the parameters within the array
+    valueArray.sort();
+  } else if (COLLAPSABLE_PARAMS.includes(name)) {
+    // Only add the last item in the array to the query parameter
+    valueArray = valueArray.slice(valueArray.length - 1);
+  }
+
+  return valueArray.join('&' + name + '=');
+};
+
+const getQueryPrefix = (queryString) => {
+  return queryString.length > 0 ? '&' : '';
 };
 
 export {normalizeRequestQueryParams};
