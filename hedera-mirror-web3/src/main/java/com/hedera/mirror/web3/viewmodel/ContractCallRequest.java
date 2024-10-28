@@ -25,7 +25,6 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 @Data
 public class ContractCallRequest {
@@ -59,10 +58,5 @@ public class ContractCallRequest {
     @AssertTrue(message = "must not be empty")
     private boolean hasFrom() {
         return value <= 0 || from != null;
-    }
-
-    @AssertTrue(message = "must not be empty")
-    private boolean hasTo() {
-        return value <= 0 || from == null || StringUtils.isNotEmpty(to);
     }
 }

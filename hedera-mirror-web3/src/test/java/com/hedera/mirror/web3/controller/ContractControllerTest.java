@@ -190,15 +190,6 @@ class ContractControllerTest {
     }
 
     @Test
-    void callInvalidToDueToTransfer() throws Exception {
-        final var request = request();
-        request.setTo(null);
-        contractCall(request)
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(new StringContains("to field")));
-    }
-
-    @Test
     void callMissingTo() throws Exception {
         final var exceptionMessage = "No such contract or token";
         final var request = request();

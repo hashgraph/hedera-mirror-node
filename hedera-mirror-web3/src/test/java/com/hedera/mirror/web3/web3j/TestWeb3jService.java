@@ -133,6 +133,12 @@ public class TestWeb3jService implements Web3jService {
     }
 
     @SneakyThrows(Exception.class)
+    public <T extends Contract> T deployWithoutPersistWithValue(DeployerWithValue<T> deployer, BigInteger value) {
+        persistContract = false;
+        return deployer.deploy(web3j, credentials, contractGasProvider, value).send();
+    }
+
+    @SneakyThrows(Exception.class)
     public <T extends Contract> T deployWithValue(DeployerWithValue<T> deployer, BigInteger value) {
         return deployer.deploy(web3j, credentials, contractGasProvider, value).send();
     }
