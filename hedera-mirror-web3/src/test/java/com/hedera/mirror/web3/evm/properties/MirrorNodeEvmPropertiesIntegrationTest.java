@@ -53,7 +53,7 @@ class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
     }
 
     private static String getContractsConfigKey(final String configKey) {
-        String fieldName = configKey.replace(CONTRACTS_CONFIG + DOT_SEPARATOR, "");
+        var fieldName = configKey.replace(CONTRACTS_CONFIG + DOT_SEPARATOR, "");
         return getConfigKey(ContractsConfig.class, fieldName);
     }
 
@@ -71,9 +71,8 @@ class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
     @Test
     void verifyUpstreamPropertiesExist() {
         Set<String> propertyKeys = properties.getProperties().keySet();
-        for (String configKey : propertyKeys) {
-            assertThat(getContractsConfigKey(configKey)).isEqualTo(configKey);
-        }
+        propertyKeys.forEach(
+                configKey -> assertThat(getContractsConfigKey(configKey)).isEqualTo(configKey));
     }
 
     @Test
