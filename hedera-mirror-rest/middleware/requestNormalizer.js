@@ -15,24 +15,28 @@
  */
 
 import {getOpenApiMap} from './openapiHandler.js';
+import {filterKeys} from '../constants.js';
 
 const openApiMap = getOpenApiMap();
+
+// Multiple values of these params can be collapsed to the last value
+const COLLAPSABLE_PARAMS = [filterKeys.BALANCE, filterKeys.NONCE, filterKeys.SCHEDULED];
 
 /**
  * Do not sort these query parameters as the results of the sql query changes based on their order
  *
  * Some examples from the spec tests:
  *   /api/v1/contracts/results?block.number=11&block.number=10 sorts the results differently than ?block.number=10&block.number=11
- *   /api/v1/transactions/0.0.10-1234567890-000000001?nonce=2&nonce=1 sorts the results differently than ?nonce=1&nonce=2
  *
  * From historical-custom-fees.json:
  *   /api/v1/tokens/1135?timestamp=lt:1234567899.999999000&timestamp=1234567899.999999001 returns a result whereas
  *   ?timestamp=1234567899.999999001&timestamp=lt:1234567899.999999000 returns a 404
  */
-const NON_SORTED_PARAMS = ['balance', 'block.hash', 'block.number', 'nonce', 'scheduled', 'timestamp'];
-
-// Multiple values of these params can be collapsed to the last value
-const COLLAPSABLE_PARAMS = ['balance', 'nonce', 'scheduled'];
+const NON_SORTED_PARAMS = COLLAPSABLE_PARAMS.concat([
+  filterKeys.BLOCK_HASH,
+  filterKeys.BLOCK_NUMBER,
+  filterKeys.TIMESTAMP,
+]);
 
 /**
  * Normalizes a request by adding any missing default values and sorting any array query parameters.
