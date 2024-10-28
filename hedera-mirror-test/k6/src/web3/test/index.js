@@ -62,6 +62,16 @@ import * as contractCallEstimateUnfreezeToken from './contractCallEstimateUnfree
 import * as contractCallEstimateUnfreezeNft from './contractCallEstimateUnfreezeNft.js';
 import * as contractCallEstimateTransferToken from './contractCallEstimateTransferToken.js';
 import * as contractCallEstimateTransferNft from './contractCallEstimateTransferNft.js';
+import * as contractCallPrecompileApprove from './contractCallPrecompileApprove.js';
+import * as contractCallPrecompileAssociate from './contractCallPrecompileAssociate.js';
+import * as contractCallPrecompileCryptoTransferHbars from './contractCallPrecompileCryptoTransferHbars.js';
+import * as contractCallPrecompileCryptoTransferToken from './contractCallPrecompileCryptoTransferToken.js';
+import * as contractCallPrecompileDeleteToken from './contractCallPrecompileDeleteToken.js';
+import * as contractCallPrecompileDissociate from './contractCallPrecompileDissociate.js';
+import * as contractCallPrecompileMintToken from './contractCallPrecompileMintToken.js';
+import * as contractCallPrecompileNestedAssociate from './contractCallPrecompileNestedAssociate.js';
+import * as contractCallPrecompileTransferFungibleToken from './contractCallPrecompileTransferFungibleToken.js';
+import * as contractCallRedirectApprove from './contractCallRedirectApprove.js';
 import * as rampUp from './rampUp.js';
 
 // add test modules here
@@ -116,6 +126,21 @@ if (__ENV.RUN_ESTIMATE_TESTS) {
     contractCallEstimateUnfreezeNft,
     contractCallEstimateTransferToken,
     contractCallEstimateTransferNft,
+  });
+}
+
+if (__ENV.RUN_MODIFICATION_TESTS) {
+  Object.assign(tests, {
+    contractCallPrecompileApprove,
+    contractCallPrecompileAssociate,
+    contractCallPrecompileCryptoTransferHbars,
+    contractCallPrecompileCryptoTransferToken,
+    contractCallPrecompileDeleteToken,
+    contractCallPrecompileDissociate,
+    contractCallPrecompileMintToken,
+    contractCallPrecompileNestedAssociate,
+    contractCallPrecompileTransferFungibleToken,
+    contractCallRedirectApprove,
   });
 }
 
