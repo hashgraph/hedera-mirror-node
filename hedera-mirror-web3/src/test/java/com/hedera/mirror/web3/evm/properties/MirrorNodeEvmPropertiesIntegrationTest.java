@@ -24,11 +24,12 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.ConfigData;
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class ModularizedPropertiesTest extends Web3IntegrationTest {
+class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
 
     private static final String DOT_SEPARATOR = ".";
     private static final String CHAIN_ID = "chainId";
@@ -41,7 +42,7 @@ class ModularizedPropertiesTest extends Web3IntegrationTest {
             CONTRACTS_CONFIG + DOT_SEPARATOR + MAX_GAS_REFUND_PERCENTAGE;
     private final MirrorNodeEvmProperties properties;
 
-    private static String getConfigKey(Class<?> configClass, String fieldName) {
+    private static String getConfigKey(final Class<?> configClass, final String fieldName) {
         try {
             Field field = configClass.getDeclaredField(fieldName);
             ConfigData configProperty = configClass.getAnnotation(ConfigData.class);
@@ -49,6 +50,11 @@ class ModularizedPropertiesTest extends Web3IntegrationTest {
         } catch (NoSuchFieldException e) {
             throw new IllegalArgumentException("Field " + fieldName + " not found in " + configClass.getSimpleName());
         }
+    }
+
+    private static String getContractsConfigKey(final String configKey) {
+        String fieldName = configKey.replace(CONTRACTS_CONFIG + DOT_SEPARATOR, "");
+        return getConfigKey(ContractsConfig.class, fieldName);
     }
 
     @Test
@@ -64,9 +70,10 @@ class ModularizedPropertiesTest extends Web3IntegrationTest {
 
     @Test
     void verifyUpstreamPropertiesExist() {
-        assertThat(getConfigKey(ContractsConfig.class, CHAIN_ID)).isEqualTo(CHAIN_ID_KEY_CONFIG);
-        assertThat(getConfigKey(ContractsConfig.class, MAX_GAS_REFUND_PERCENTAGE))
-                .isEqualTo(MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG);
+        Set<String> propertyKeys = properties.getProperties().keySet();
+        for (String configKey : propertyKeys) {
+            assertThat(getContractsConfigKey(configKey)).isEqualTo(configKey);
+        }
     }
 
     @Test
