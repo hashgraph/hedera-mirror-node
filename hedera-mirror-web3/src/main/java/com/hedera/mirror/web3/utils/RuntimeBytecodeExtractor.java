@@ -75,10 +75,11 @@ public class RuntimeBytecodeExtractor {
      * @param data the data string to check.
      * @return true if it is init bytecode, false otherwise.
      */
-    public static boolean isInitBytecode(final String data) {
+    public static boolean isInitBytecode(String data) {
         if (data == null || data.isEmpty()) {
             return false;
         }
+        data = data.toLowerCase();
 
         // CODECOPY (0x39) and RETURN (0xf3)
         boolean hasCodeCopy = data.contains(CODECOPY);

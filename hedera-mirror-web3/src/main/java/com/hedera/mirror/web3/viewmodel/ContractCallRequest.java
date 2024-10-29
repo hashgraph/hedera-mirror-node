@@ -64,6 +64,7 @@ public class ContractCallRequest {
 
     @AssertTrue(message = "must not be empty")
     private boolean hasTo() {
-        return RuntimeBytecodeExtractor.isInitBytecode(data) || StringUtils.isNotEmpty(to);
+        boolean isValidToField = value <= 0 || from == null || StringUtils.isNotEmpty(to);
+        return RuntimeBytecodeExtractor.isInitBytecode(data) || isValidToField;
     }
 }

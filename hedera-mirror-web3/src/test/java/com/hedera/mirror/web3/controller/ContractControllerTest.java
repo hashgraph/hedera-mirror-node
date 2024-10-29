@@ -128,10 +128,7 @@ class ContractControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "0x00000000000000000000000000000000000007e7",
-            "0x00000000000000000000000000000000000004e2"
-    })
+    @ValueSource(strings = {"0x00000000000000000000000000000000000007e7", "0x00000000000000000000000000000000000004e2"})
     void estimateGas(final String to) throws Exception {
         final var request = request();
         request.setEstimate(true);
@@ -147,21 +144,21 @@ class ContractControllerTest {
         request.setEstimate(true);
         request.setValue(0);
         request.setTo(to);
-        contractCall(request).andExpect(status().isBadRequest());
+        contractCall(request).andExpect(status().isOk());
     }
 
     @ParameterizedTest
     @ValueSource(
             strings = {
-                    DynamicEthCalls.BINARY,
-                    ERCTestContractHistorical.BINARY,
-                    EthCall.BINARY,
-                    EvmCodes.BINARY,
-                    EvmCodesHistorical.BINARY,
-                    ExchangeRatePrecompileHistorical.BINARY,
-                    NestedCallsHistorical.BINARY,
-                    PrecompileTestContractHistorical.BINARY,
-                    TestAddressThis.BINARY
+                DynamicEthCalls.BINARY,
+                ERCTestContractHistorical.BINARY,
+                EthCall.BINARY,
+                EvmCodes.BINARY,
+                EvmCodesHistorical.BINARY,
+                ExchangeRatePrecompileHistorical.BINARY,
+                NestedCallsHistorical.BINARY,
+                PrecompileTestContractHistorical.BINARY,
+                TestAddressThis.BINARY
             })
     void estimateGasContractDeploy(final String data) throws Exception {
         final var request = request();
@@ -215,19 +212,28 @@ class ContractControllerTest {
 
     @ValueSource(
             strings = {
-                    " ",
-                    "0x",
-                    "0xghijklmno",
-                    "0x00000000000000000000000000000000000004e",
-                    "0x00000000000000000000000000000000000004e2a",
-                    "0x000000000000000000000000000000Z0000007e7",
-                    "00000000001239847e"
+                " ",
+                "0x",
+                "0xghijklmno",
+                "0x00000000000000000000000000000000000004e",
+                "0x00000000000000000000000000000000000004e2a",
+                "0x000000000000000000000000000000Z0000007e7",
+                "00000000001239847e"
             })
     @ParameterizedTest
     void callInvalidTo(String to) throws Exception {
         final var request = request();
         request.setValue(0);
         request.setTo(to);
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(new StringContains("to field")));
+    }
+
+    @Test
+    void callInvalidToDueToTransfer() throws Exception {
+        final var request = request();
+        request.setTo(null);
         contractCall(request)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(new StringContains("to field")));
@@ -262,13 +268,13 @@ class ContractControllerTest {
     @EmptySource
     @ValueSource(
             strings = {
-                    " ",
-                    "0x",
-                    "0xghijklmno",
-                    "0x00000000000000000000000000000000000004e",
-                    "0x00000000000000000000000000000000000004e2a",
-                    "0x000000000000000000000000000000Z0000007e7",
-                    "00000000001239847e"
+                " ",
+                "0x",
+                "0xghijklmno",
+                "0x00000000000000000000000000000000000004e",
+                "0x00000000000000000000000000000000000004e2a",
+                "0x000000000000000000000000000000Z0000007e7",
+                "00000000001239847e"
             })
     @ParameterizedTest
     void callInvalidFrom(String from) throws Exception {
@@ -310,7 +316,7 @@ class ContractControllerTest {
         final var request = request();
         final var dataAsHex =
                 ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
-        request.setTo("0x00000000000000000000000000000000000004e2");
+        request.setTo(null);
         request.setValue(0);
         request.setData("0x" + dataAsHex);
         request.setEstimate(true);
