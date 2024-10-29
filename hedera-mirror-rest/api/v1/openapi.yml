@@ -5079,7 +5079,7 @@ components:
     blockHashQueryParam:
       name: block.hash
       in: query
-      description: The block's hash
+      description: The block's hash. If multiple values are provided the last value will be the only value used.
       examples:
         noValue:
           summary: --
