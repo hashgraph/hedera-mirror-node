@@ -128,18 +128,9 @@ class ContractControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"0x00000000000000000000000000000000000007e7", "0x00000000000000000000000000000000000004e2"})
-    void estimateGas(final String to) throws Exception {
-        final var request = request();
-        request.setEstimate(true);
-        request.setValue(0);
-        request.setTo(to);
-        contractCall(request).andExpect(status().isOk());
-    }
-
     @NullAndEmptySource
-    @ParameterizedTest
-    void estimateGasWithEmptyTo(String to) throws Exception {
+    @ValueSource(strings = {"0x00000000000000000000000000000000000007e7", "0x00000000000000000000000000000000000004e2"})
+    void estimateGas(String to) throws Exception {
         final var request = request();
         request.setEstimate(true);
         request.setValue(0);
