@@ -50,7 +50,7 @@ class StateNetworkInfoTest extends Web3IntegrationTest {
     void testSelfNodeInfo() {
         SelfNodeInfo selfNodeInfo = stateNetworkInfo.selfNodeInfo();
         assertThat(selfNodeInfo).isNotNull().satisfies(info -> {
-            assertThat(info.nodeId()).isEqualTo(0);
+            assertThat(info.nodeId()).isZero();
             assertThat(info.accountId()).isEqualTo(AccountID.DEFAULT);
             assertThat(info.hapiVersion()).isEqualTo(mirrorNodeEvmProperties.getSemanticEvmVersion());
         });
@@ -67,15 +67,15 @@ class StateNetworkInfoTest extends Web3IntegrationTest {
         assertThat(nodeInfo).isNotNull().satisfies(info -> {
             assertThat(info.nodeId()).isEqualTo(NODE_ID);
             assertThat(info.accountId()).isEqualTo(NODE_ACCOUNT_ID);
-            assertThat(info.memo()).isEqualTo("");
-            assertThat(info.externalHostName()).isEqualTo("");
-            assertThat(info.externalPort()).isEqualTo(0);
-            assertThat(info.hexEncodedPublicKey()).isEqualTo("");
-            assertThat(info.stake()).isEqualTo(0L);
+            assertThat(info.memo()).isEmpty();
+            assertThat(info.externalHostName()).isEmpty();
+            assertThat(info.externalPort()).isZero();
+            assertThat(info.hexEncodedPublicKey()).isEmpty();
+            assertThat(info.stake()).isZero();
             assertThat(info.sigCertBytes()).isEqualTo(Bytes.EMPTY);
-            assertThat(info.internalHostName()).isEqualTo("");
-            assertThat(info.internalPort()).isEqualTo(0);
-            assertThat(info.selfName()).isEqualTo("");
+            assertThat(info.internalHostName()).isEmpty();
+            assertThat(info.internalPort()).isZero();
+            assertThat(info.selfName()).isEmpty();
         });
     }
 
