@@ -5,11 +5,11 @@ The pvc for a shard is running out of space and needs to be increased beyond cur
 ## Prerequisites
 
 - Have `jq` installed
+- The kubectl context is set to the cluster containing the disks you want to resize
 
 ## Solution
 
-1. Configure kubectl to point to the cluster
-2. Identify the worker (and/or coordinator) pvc(s) that needs to be resized
+1. Identify the worker (and/or coordinator) pvc(s) that needs to be resized
    ```bash
    kubectl get pv -o \
    custom-columns='PVC_NAME:.spec.claimRef.name,PV_NAME:.metadata.name,CAPACITY:..spec.capacity.storage,NODE_ID:.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]' \
@@ -32,7 +32,7 @@ The pvc for a shard is running out of space and needs to be increased beyond cur
       mirror-citus-shard0-data-mirror-citus-shard0-0                                         pvc-5dd58b07-db59-4c3a-882f-dcd7467dfd49   10000Gi    worker-us-central1-c-0
       mirror-citus-shard1-data-mirror-citus-shard1-0                                         pvc-f9b980a9-0771-4222-9034-bd44279ddde8   12000Gi    worker-us-central1-f-0
    ```
-3. Using the `nodeId` from the previous step, increase the disk size for all disks needed
+2. Using the `nodeId` from the previous step, increase the disk size for all disks needed
    ```text
    diskPrefix - value of zfs.init.diskPrefix in values.yaml
    diskName - {diskPrefix}-{nodeId}-zfs
@@ -42,17 +42,17 @@ The pvc for a shard is running out of space and needs to be increased beyond cur
    ```bash
    gcloud compute disks resize "{diskName}" --size="{diskSize}" --zone="{zone}"
    ```
-4. Restart the zfs init pods
+3. Restart the zfs init pods
    ```bash
    kubectl rollout restart daemonset -n common mirror-zfs-init
    ```
-5. Verify the pool size has been increased
+4. Verify the pool size has been increased
    ```bash
    kubectl get pods -n common -l component=openebs-zfs-node  -o json |
    jq -r '.items[].metadata.name' |
    xargs -I % kubectl exec -c openebs-zfs-plugin -n common % -- zfs list
    ```
-6. Update the `hedera-mirror` chart's `values.yaml` to reflect the new disk size
+5. Update the `hedera-mirror` chart's `values.yaml` to reflect the new disk size
    ```yaml
    stackgres:
      coordinator:
@@ -73,5 +73,5 @@ The pvc for a shard is running out of space and needs to be increased beyond cur
              persistentVolume:
                size: 3200Gi
    ```
-7. Deploy the changes. Be sure to leave wiggle room for zfs rounding
+6. Deploy the changes. Be sure to leave wiggle room for zfs rounding
    see [here](https://github.com/openebs/zfs-localpv/blob/develop/docs/faq.md#7-why-the-zfs-volume-size-is-different-than-the-reqeusted-size-in-pvc)

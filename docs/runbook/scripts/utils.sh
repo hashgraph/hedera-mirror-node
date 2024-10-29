@@ -59,13 +59,13 @@ function routeTraffic() {
   local namespace="${1}"
 
   log "Running test queries"
-  kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -- psql -U mirror_rest -d mirror_node -c "select * from transaction limit 10"
-  kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -- psql -U mirror_node -d mirror_node -c "select * from transaction limit 10"
+  kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U mirror_rest -d mirror_node -c "select * from transaction limit 10"
+  kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U mirror_node -d mirror_node -c "select * from transaction limit 10"
   doContinue
   scaleDeployment "${namespace}" 1 "app.kubernetes.io/component=importer"
   while true; do
     local statusQuery="select $(date +%s) - (max(consensus_end) / 1000000000) from record_file"
-    local status=$(kubectl exec -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -- psql -q --csv -t -U mirror_rest -d mirror_node -c "select $(date +%s) - (max(consensus_end) / 1000000000) from record_file" | tail -n 1)
+    local status=$(kubectl exec -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -q --csv -t -U mirror_rest -d mirror_node -c "select $(date +%s) - (max(consensus_end) / 1000000000) from record_file" | tail -n 1)
     if [[ "${status}" -lt 10 ]]; then
       log "Importer is caught up with the source"
       break
@@ -208,3 +208,6 @@ COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
 HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
 CURRENT_CONTEXT="$(kubectl config current-context)"
 CITUS_CLUSTERS="$(getCitusClusters)"
+AUTO_UNROUTE="${AUTO_UNROUTE:-true}"
+GCP_COORDINATOR_POOL_NAME="${GCP_COORDINATOR_POOL_NAME:-citus-coordinator}"
+GCP_WORKER_POOL_NAME="${GCP_WORKER_POOL_NAME:-citus-worker}"

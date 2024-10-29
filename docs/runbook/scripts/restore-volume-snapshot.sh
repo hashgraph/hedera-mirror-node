@@ -5,12 +5,7 @@ set -euo pipefail
 source ./utils.sh
 
 REPLACE_DISKS="${REPLACE_DISKS:-true}"
-COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
 ZFS_POOL_NAME="${ZFS_POOL_NAME:-zfspv-pool}"
-GCP_COORDINATOR_POOL_NAME="${GCP_COORDINATOR_POOL_NAME:-citus-coordinator}"
-GCP_WORKER_POOL_NAME="${GCP_WORKER_POOL_NAME:-citus-worker}"
-AUTO_UNROUTE="${AUTO_UNROUTE:-true}"
-
 
 function configureAndValidate() {
   CURRENT_CONTEXT=$(kubectl config current-context)

@@ -4,8 +4,6 @@ set -euo pipefail
 
 source ./utils.sh
 
-AUTO_UNROUTE="${AUTO_UNROUTE:-true}"
-
 GCP_PROJECT="$(readUserInput "Enter GCP Project for target: ")"
 if [[ -z "${GCP_PROJECT}" ]]; then
   log "GCP_PROJECT is not set and is required. Exiting"
