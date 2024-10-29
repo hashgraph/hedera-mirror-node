@@ -5,7 +5,6 @@ set -euo pipefail
 source ./utils.sh
 
 NAMESPACES=($(kubectl get sgshardedclusters.stackgres.io -A -o jsonpath='{.items[*].metadata.namespace}'))
-POOLS_TO_UPDATE=("${GCP_WORKER_POOL_NAME}" "${GCP_COORDINATOR_POOL_NAME}" "default-pool")
 
 GCP_PROJECT="$(readUserInput "Enter GCP Project for target: ")"
 if [[ -z "${GCP_PROJECT}" ]]; then
@@ -43,6 +42,18 @@ else
     log "Version ${VERSION} is not valid. Exiting"
     exit 1
   fi
+fi
+
+AVAILABLE_POOLS="$(gcloud container node-pools list --project="${GCP_PROJECT}" --cluster="${GCP_K8S_CLUSTER_NAME}" --region="${GCP_K8S_CLUSTER_REGION}" --format="json(name)"| jq -r '.[].name' | tr '\n' ' ')"
+POOLS_TO_UPDATE_INPUT="$(readUserInput "Enter the node pools(${AVAILABLE_POOLS}) to update (space-separated): ")"
+if [[ -z "${POOLS_TO_UPDATE_INPUT}" ]]; then
+  log "POOLS_TO_UPDATE_INPUT is not set and is required. Exiting"
+  exit 1
+else
+  IFS=', ' read -r -a POOLS_TO_UPDATE <<< "${POOLS_TO_UPDATE_INPUT}"
+  for pool in "${POOLS_TO_UPDATE[@]}"; do
+    gcloud container node-pools describe "${pool}" --project="${GCP_PROJECT}" --cluster="${GCP_K8S_CLUSTER_NAME}" --region="${GCP_K8S_CLUSTER_REGION}" > /dev/null
+  done
 fi
 
 for namespace in "${NAMESPACES[@]}"

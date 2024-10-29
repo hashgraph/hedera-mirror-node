@@ -36,7 +36,8 @@ if [[ -z "${MACHINE_TYPE}" ]]; then
   exit 1
 fi
 
-POOLS_TO_UPDATE_INPUT="$(readUserInput "Enter the node pools to update (space-separated): ")"
+AVAILABLE_POOLS="$(gcloud container node-pools list --project="${GCP_PROJECT}" --cluster="${GCP_K8S_CLUSTER_NAME}" --region="${GCP_K8S_CLUSTER_REGION}" --format="json(name)"| jq -r '.[].name' | tr '\n' ' ')"
+POOLS_TO_UPDATE_INPUT="$(readUserInput "Enter the node pools(${AVAILABLE_POOLS}) to update (space-separated): ")"
 if [[ -z "${POOLS_TO_UPDATE_INPUT}" ]]; then
   log "POOLS_TO_UPDATE_INPUT is not set and is required. Exiting"
   exit 1
