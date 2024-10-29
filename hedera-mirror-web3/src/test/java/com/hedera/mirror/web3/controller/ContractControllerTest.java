@@ -45,6 +45,15 @@ import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
+import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls;
+import com.hedera.mirror.web3.web3j.generated.ERCTestContractHistorical;
+import com.hedera.mirror.web3.web3j.generated.EthCall;
+import com.hedera.mirror.web3.web3j.generated.EvmCodes;
+import com.hedera.mirror.web3.web3j.generated.EvmCodesHistorical;
+import com.hedera.mirror.web3.web3j.generated.ExchangeRatePrecompileHistorical;
+import com.hedera.mirror.web3.web3j.generated.NestedCallsHistorical;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical;
+import com.hedera.mirror.web3.web3j.generated.TestAddressThis;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -118,6 +127,19 @@ class ContractControllerTest {
                 .content(convert(request)));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "0x00000000000000000000000000000000000007e7",
+            "0x00000000000000000000000000000000000004e2"
+    })
+    void estimateGas(final String to) throws Exception {
+        final var request = request();
+        request.setEstimate(true);
+        request.setValue(0);
+        request.setTo(to);
+        contractCall(request).andExpect(status().isOk());
+    }
+
     @NullAndEmptySource
     @ParameterizedTest
     void estimateGasWithEmptyTo(String to) throws Exception {
@@ -126,6 +148,28 @@ class ContractControllerTest {
         request.setValue(0);
         request.setTo(to);
         contractCall(request).andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                    DynamicEthCalls.BINARY,
+                    ERCTestContractHistorical.BINARY,
+                    EthCall.BINARY,
+                    EvmCodes.BINARY,
+                    EvmCodesHistorical.BINARY,
+                    ExchangeRatePrecompileHistorical.BINARY,
+                    NestedCallsHistorical.BINARY,
+                    PrecompileTestContractHistorical.BINARY,
+                    TestAddressThis.BINARY
+            })
+    void estimateGasContractDeploy(final String data) throws Exception {
+        final var request = request();
+        request.setEstimate(true);
+        request.setValue(0);
+        request.setTo(null);
+        request.setData(data);
+        contractCall(request).andExpect(status().isOk());
     }
 
     @ValueSource(longs = {2000, -2000, 16_000_000L, 0})
@@ -171,13 +215,13 @@ class ContractControllerTest {
 
     @ValueSource(
             strings = {
-                " ",
-                "0x",
-                "0xghijklmno",
-                "0x00000000000000000000000000000000000004e",
-                "0x00000000000000000000000000000000000004e2a",
-                "0x000000000000000000000000000000Z0000007e7",
-                "00000000001239847e"
+                    " ",
+                    "0x",
+                    "0xghijklmno",
+                    "0x00000000000000000000000000000000000004e",
+                    "0x00000000000000000000000000000000000004e2a",
+                    "0x000000000000000000000000000000Z0000007e7",
+                    "00000000001239847e"
             })
     @ParameterizedTest
     void callInvalidTo(String to) throws Exception {
@@ -218,13 +262,13 @@ class ContractControllerTest {
     @EmptySource
     @ValueSource(
             strings = {
-                " ",
-                "0x",
-                "0xghijklmno",
-                "0x00000000000000000000000000000000000004e",
-                "0x00000000000000000000000000000000000004e2a",
-                "0x000000000000000000000000000000Z0000007e7",
-                "00000000001239847e"
+                    " ",
+                    "0x",
+                    "0xghijklmno",
+                    "0x00000000000000000000000000000000000004e",
+                    "0x00000000000000000000000000000000000004e2a",
+                    "0x000000000000000000000000000000Z0000007e7",
+                    "00000000001239847e"
             })
     @ParameterizedTest
     void callInvalidFrom(String from) throws Exception {

@@ -24,9 +24,9 @@ import lombok.experimental.UtilityClass;
 /**
  * A utility class for extracting runtime bytecode from init bytecode of a smart contract.
  * <p>
- * Smart contracts have init bytecode (constructor bytecode) and runtime bytecode (the code
- * executed when the contract is called). This class helps in extracting the runtime bytecode from the
- * given init bytecode by searching for specific patterns.
+ * Smart contracts have init bytecode (constructor bytecode) and runtime bytecode (the code executed when the contract
+ * is called). This class helps in extracting the runtime bytecode from the given init bytecode by searching for
+ * specific patterns.
  * </p>
  */
 @UtilityClass
@@ -34,6 +34,7 @@ public class RuntimeBytecodeExtractor {
 
     private static final String CODECOPY = "39";
     private static final String RETURN = "f3";
+    private static final long MINIMUM_INIT_CODE_SIZE = 14L;
     private static final String RUNTIME_CODE_PREFIX =
             "6080"; // The pattern to find the start of the runtime code in the init bytecode
 
@@ -70,6 +71,7 @@ public class RuntimeBytecodeExtractor {
 
     /**
      * Checks if a given data string is likely init bytecode.
+     *
      * @param data the data string to check.
      * @return true if it is init bytecode, false otherwise.
      */
@@ -81,8 +83,9 @@ public class RuntimeBytecodeExtractor {
         // CODECOPY (0x39) and RETURN (0xf3)
         boolean hasCodeCopy = data.contains(CODECOPY);
         boolean hasReturn = data.contains(RETURN);
+        boolean isValidSize = data.length() >= MINIMUM_INIT_CODE_SIZE;
 
-        // Check if both CODECOPY and RETURN opcodes are present
-        return hasCodeCopy && hasReturn;
+        // Check if both CODECOPY and RETURN opcodes are present and if the size is at least the minimum possible size.
+        return hasCodeCopy && hasReturn && isValidSize;
     }
 }

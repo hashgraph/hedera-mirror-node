@@ -111,4 +111,16 @@ class RuntimeBytecodeExtractorTest extends Web3IntegrationTest {
     void testIsInitBytecode(final String data) {
         assertThat(RuntimeBytecodeExtractor.isInitBytecode(data)).isTrue();
     }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "  ",
+                "0x",
+                "0x39",
+                "0xf30039",
+            })
+    void testIsInitBytecodeFalse(final String data) {
+        assertThat(RuntimeBytecodeExtractor.isInitBytecode(data)).isFalse();
+    }
 }
