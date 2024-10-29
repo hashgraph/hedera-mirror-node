@@ -55,14 +55,14 @@ public class RuntimeBytecodeExtractor {
         int codeCopyIndex = initBytecode.indexOf(CODECOPY);
 
         if (codeCopyIndex == -1) {
-            throw new RuntimeException("CODECOPY instruction (39) not found in init bytecode.");
+            throw new IllegalArgumentException("CODECOPY instruction (39) not found in init bytecode.");
         }
 
         // Find the first occurrence of "6080" after the "CODECOPY"
         int runtimeCodePrefixIndex = initBytecode.indexOf(RUNTIME_CODE_PREFIX, codeCopyIndex);
 
         if (runtimeCodePrefixIndex == -1) {
-            throw new RuntimeException("Runtime code prefix (6080) not found after CODECOPY.");
+            throw new IllegalArgumentException("Runtime code prefix (6080) not found after CODECOPY.");
         }
 
         // Extract the runtime bytecode starting from the runtimeCodePrefixIndex
