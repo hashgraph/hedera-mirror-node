@@ -19,7 +19,7 @@ import {ContractCallTestScenarioBuilder} from './common.js';
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
 const account = __ENV.ACCOUNT_ADDRESS;
 const token = __ENV.TOKEN_ADDRESS;
-const selector = '0x9c219247';
+const selector = '0x9c219247'; //dissociateTokenExternal
 
 const {options, run} = new ContractCallTestScenarioBuilder()
   .name('contractCallPrecompileDissociate') // use unique scenario name among all tests

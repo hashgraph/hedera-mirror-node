@@ -19,13 +19,14 @@ import {ContractCallTestScenarioBuilder} from './common.js';
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
 const account = __ENV.ACCOUNT_ADDRESS;
 const token = __ENV.TOKEN_ADDRESS;
-const selector = '0x437dffd5';
+const selector = '0x437dffd5'; //nestedAssociateTokenExternal
 
 const {options, run} = new ContractCallTestScenarioBuilder()
   .name('contractCallPrecompileNestedAssociate') // use unique scenario name among all tests
   .selector(selector)
   .args([account, token])
   .to(contract)
+  .shouldRevert(true)
   .build();
 
 export {options, run};

@@ -18,7 +18,7 @@
 import {ContractCallTestScenarioBuilder} from './common.js';
 
 const contract = __ENV.PRECOMPILE_CONTRACT;
-const selector = '0x911ce425';
+const selector = '0x911ce425'; //approveRedirect
 const token = __ENV.TOKEN_ADDRESS;
 const spender = __ENV.ACCOUNT_ADDRESS;
 const amount = __ENV.AMOUNT;

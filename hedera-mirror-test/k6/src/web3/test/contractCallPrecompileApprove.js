@@ -18,7 +18,7 @@
 import {ContractCallTestScenarioBuilder} from './common.js';
 
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
-const selector = '0xceda64c4';
+const selector = '0xceda64c4'; //approveExternal
 const token = __ENV.TOKEN_ADDRESS;
 const spender = __ENV.ACCOUNT_ADDRESS;
 const amount = __ENV.AMOUNT;

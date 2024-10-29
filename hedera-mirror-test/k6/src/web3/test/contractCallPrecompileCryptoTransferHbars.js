@@ -18,7 +18,7 @@
 import {ContractCallTestScenarioBuilder} from './common.js';
 
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
-const selector = '0xa6218810';
+const selector = '0xa6218810'; //cryptoTransferExternal
 const sender = __ENV.ACCOUNT_ADDRESS;
 const receiver = __ENV.RECEIVER_ADDRESS;
 //ABI encoded parameters used for crypto transfer of Hbars

@@ -21,7 +21,7 @@ const sender = __ENV.ACCOUNT_ADDRESS;
 const receiver = __ENV.RECEIVER_ADDRESS;
 const token = __ENV.TOKEN_ADDRESS;
 const amount = __ENV.AMOUNT;
-const selector = '0x4fd6ce0a';
+const selector = '0x4fd6ce0a'; //transferTokenExternal
 
 const {options, run} = new ContractCallTestScenarioBuilder()
   .name('contractCallPrecompileTransferFungibleToken') // use unique scenario name among all tests
