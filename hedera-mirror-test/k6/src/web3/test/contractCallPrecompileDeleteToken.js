@@ -24,7 +24,7 @@ const token = __ENV.TOKEN_ADDRESS;
 const runMode = __ENV.RUN_WITH_VARIABLES;
 const testName = 'contractCallPrecompileDeleteToken';
 
-//If RUN_WITH_VARIABLES=true will run tests from the __ENV variables
+//If RUN_WITH_VARIABLES=true will run tests with __ENV variables
 const {options, run} = runMode==="true"
     ? new ContractCallTestScenarioBuilder().name(testName) // use unique scenario name among all tests
     .selector(selector)

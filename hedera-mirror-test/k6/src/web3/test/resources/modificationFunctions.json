@@ -10,6 +10,17 @@
       "sleep": 0
     }
   ],
+  "contractCallPrecompileApprove": [
+    {
+      "block": "",
+      "data": "",
+      "to": "",
+      "gas": 0,
+      "from": "",
+      "value": 0,
+      "sleep": 0
+    }
+  ],
   "contractCallPrecompileCryptoTransferHbars": [
     {
       "block": "",

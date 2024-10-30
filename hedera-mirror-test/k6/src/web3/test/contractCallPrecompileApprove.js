@@ -16,18 +16,23 @@
  */
 
 import {ContractCallTestScenarioBuilder} from './common.js';
+import {PrecompileModificationTestTemplate} from './commonPrecompileModificationFunctionsTemplate.js';
 
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
 const selector = '0xceda64c4'; //approveExternal
 const token = __ENV.TOKEN_ADDRESS;
 const spender = __ENV.ACCOUNT_ADDRESS;
 const amount = __ENV.AMOUNT;
+const runMode = __ENV.RUN_WITH_VARIABLES
+const testName = 'contractCallPrecompileApprove';
 
-const {options, run} = new ContractCallTestScenarioBuilder()
-  .name('contractCallPrecompileApprove') // use unique scenario name among all tests
-  .selector(selector)
-  .args([token, spender, amount])
-  .to(contract)
-  .build();
+//If RUN_WITH_VARIABLES=true will run tests with __ENV variables
+const {options, run} = runMode==="true"
+    ? new ContractCallTestScenarioBuilder().name(testName) // use unique scenario name among all tests
+    .selector(selector)
+    .args([token, spender, amount])
+    .to(contract)
+    .build()
+    : new PrecompileModificationTestTemplate(testName, false);
 
 export {options, run};

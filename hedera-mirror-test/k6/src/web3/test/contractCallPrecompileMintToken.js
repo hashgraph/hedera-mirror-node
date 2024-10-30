@@ -27,7 +27,7 @@ const testName = 'contractCallPrecompileMintToken';
 const emptyByteArray= '0000000000000000000000000000000000000000000000000000000000000060'
     + '0000000000000000000000000000000000000000000000000000000000000000';
 
-//If RUN_WITH_VARIABLES=true will run tests from the __ENV variables
+//If RUN_WITH_VARIABLES=true will run tests with __ENV variables
 const {options, run} = runMode==="true"
     ? new ContractCallTestScenarioBuilder().name(testName) // use unique scenario name among all tests
     .selector(selector)
