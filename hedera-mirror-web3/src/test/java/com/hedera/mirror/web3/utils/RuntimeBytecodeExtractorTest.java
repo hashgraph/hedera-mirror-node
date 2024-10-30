@@ -115,10 +115,19 @@ class RuntimeBytecodeExtractorTest extends Web3IntegrationTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
+                "",
                 "  ",
                 "0x",
-                "0x39",
-                "0xf30039",
+                "0x39", // Only CODECOPY, missing everything else
+                "0xf30039", // Contains RETURN and CODECOPY, but in the wrong order
+                "608060", // Starts with a partial free memory pointer setup
+                "608060403900000", // Free memory pointer setup + CODECOPY but missing RETURN
+                "396080604000000", // CODECOPY before free memory pointer setup
+                "606060f3", // Free memory pointer setup + RETURN but missing CODECOPY
+                "60404039f2", // Free memory pointer setup + CODECOPY, but invalid opcode instead of RETURN
+                "0x0039608040f3", // CODECOPY at start, free memory pointer setup and RETURN out of order
+                "60806040f360", // Free memory pointer setup followed by RETURN and CODECOPY out of order
+                "0x608060f34039", // Free memory pointer setup, RETURN before CODECOPY
             })
     void testIsInitBytecodeFalse(final String data) {
         assertThat(RuntimeBytecodeExtractor.isInitBytecode(data)).isFalse();

@@ -35,6 +35,8 @@ public class RuntimeBytecodeExtractor {
     private static final String CODECOPY = "39";
     private static final String RETURN = "f3";
     private static final long MINIMUM_INIT_CODE_SIZE = 14L;
+    private static final String FREE_MEMORY_POINTER = "60806040";
+    private static final String FREE_MEMORY_POINTER_2 = "60606040";
     private static final String RUNTIME_CODE_PREFIX =
             "6080"; // The pattern to find the start of the runtime code in the init bytecode
 
@@ -79,14 +81,33 @@ public class RuntimeBytecodeExtractor {
         if (data == null || data.isEmpty()) {
             return false;
         }
-        data = data.toLowerCase();
 
-        // CODECOPY (0x39) and RETURN (0xf3)
-        boolean hasCodeCopy = data.contains(CODECOPY);
-        boolean hasReturn = data.contains(RETURN);
-        boolean isValidSize = data.length() >= MINIMUM_INIT_CODE_SIZE;
+        String lowerCaseData = data.toLowerCase();
 
-        // Check if both CODECOPY and RETURN opcodes are present and if the size is at least the minimum possible size.
-        return hasCodeCopy && hasReturn && isValidSize;
+        // Check if bytecode meets minimum length requirement
+        if (lowerCaseData.length() < MINIMUM_INIT_CODE_SIZE) {
+            return false;
+        }
+
+        // Check if (free memory pointer setup) exists
+        int freeMemoryPointerIndex = lowerCaseData.indexOf(FREE_MEMORY_POINTER);
+        if (freeMemoryPointerIndex == -1) {
+            freeMemoryPointerIndex = lowerCaseData.indexOf(FREE_MEMORY_POINTER_2);
+        }
+        if (freeMemoryPointerIndex == -1) {
+            return false;
+        }
+
+        // Verify CODECOPY occurs after free memory pointer setup
+        int codeCopyIndex = lowerCaseData.indexOf(CODECOPY, freeMemoryPointerIndex + FREE_MEMORY_POINTER.length());
+        if (codeCopyIndex == -1) {
+            return false;
+        }
+
+        // Check if RETURN occurs after CODECOPY
+        int returnIndex = lowerCaseData.indexOf(RETURN, codeCopyIndex + CODECOPY.length());
+
+        // If all conditions are met, this is likely init bytecode
+        return returnIndex != -1;
     }
 }
