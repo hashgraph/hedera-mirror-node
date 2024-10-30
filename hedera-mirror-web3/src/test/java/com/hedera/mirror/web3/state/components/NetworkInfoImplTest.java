@@ -27,13 +27,13 @@ import com.swirlds.state.spi.info.SelfNodeInfo;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-class StateNetworkInfoTest extends Web3IntegrationTest {
+class NetworkInfoImplTest extends Web3IntegrationTest {
 
     @Resource
     private MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Resource
-    private StateNetworkInfo stateNetworkInfo;
+    private NetworkInfoImpl networkInfoImpl;
 
     private static final AccountID NODE_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(3).build();
@@ -43,12 +43,12 @@ class StateNetworkInfoTest extends Web3IntegrationTest {
     @Test
     void testLedgerId() {
         Bytes expectedLedgerId = Bytes.wrap(new byte[] {0x03});
-        assertThat(stateNetworkInfo.ledgerId()).isEqualTo(expectedLedgerId);
+        assertThat(networkInfoImpl.ledgerId()).isEqualTo(expectedLedgerId);
     }
 
     @Test
     void testSelfNodeInfo() {
-        SelfNodeInfo selfNodeInfo = stateNetworkInfo.selfNodeInfo();
+        SelfNodeInfo selfNodeInfo = networkInfoImpl.selfNodeInfo();
         assertThat(selfNodeInfo).isNotNull().satisfies(info -> {
             assertThat(info.nodeId()).isZero();
             assertThat(info.accountId()).isEqualTo(AccountID.DEFAULT);
@@ -58,12 +58,12 @@ class StateNetworkInfoTest extends Web3IntegrationTest {
 
     @Test
     void testAddressBookIsNotEmpty() {
-        assertThat(stateNetworkInfo.addressBook()).isNotEmpty();
+        assertThat(networkInfoImpl.addressBook()).isNotEmpty();
     }
 
     @Test
     void testNodeInfo() {
-        NodeInfo nodeInfo = stateNetworkInfo.nodeInfo(NODE_ID);
+        NodeInfo nodeInfo = networkInfoImpl.nodeInfo(NODE_ID);
         assertThat(nodeInfo).isNotNull().satisfies(info -> {
             assertThat(info.nodeId()).isEqualTo(NODE_ID);
             assertThat(info.accountId()).isEqualTo(NODE_ACCOUNT_ID);
@@ -81,17 +81,17 @@ class StateNetworkInfoTest extends Web3IntegrationTest {
 
     @Test
     void testNodeInfoInvalid() {
-        NodeInfo nodeInfo = stateNetworkInfo.nodeInfo(Integer.MAX_VALUE);
+        NodeInfo nodeInfo = networkInfoImpl.nodeInfo(Integer.MAX_VALUE);
         assertThat(nodeInfo).isNull();
     }
 
     @Test
     void testContainsNode() {
-        assertThat(stateNetworkInfo.containsNode(NODE_ID)).isTrue();
+        assertThat(networkInfoImpl.containsNode(NODE_ID)).isTrue();
     }
 
     @Test
     void testContainsNodeInvalid() {
-        assertThat(stateNetworkInfo.containsNode(Integer.MAX_VALUE)).isFalse();
+        assertThat(networkInfoImpl.containsNode(Integer.MAX_VALUE)).isFalse();
     }
 }

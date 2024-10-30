@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class StateNetworkInfo implements NetworkInfo {
+public class NetworkInfoImpl implements NetworkInfo {
 
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
