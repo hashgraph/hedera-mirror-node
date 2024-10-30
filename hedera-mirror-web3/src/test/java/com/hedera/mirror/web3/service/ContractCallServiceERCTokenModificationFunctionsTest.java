@@ -33,7 +33,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.web3.utils.RuntimeBytecodeExtractor;
+import com.hedera.mirror.web3.utils.BytecodeUtils;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.web3j.generated.ERCTestContract;
@@ -136,7 +136,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
                 .andExpect(result -> {
                     final var response = result.getResponse().getContentAsString();
                     assertThat(response)
-                            .contains(RuntimeBytecodeExtractor.extractRuntimeBytecode(contract.getContractBinary()));
+                            .contains(BytecodeUtils.extractRuntimeBytecode(contract.getContractBinary()));
                 });
     }
 

@@ -30,7 +30,7 @@ import lombok.experimental.UtilityClass;
  * </p>
  */
 @UtilityClass
-public class RuntimeBytecodeExtractor {
+public class BytecodeUtils {
 
     private static final String CODECOPY = "39";
     private static final String RETURN = "f3";

@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
 import com.hedera.mirror.web3.convert.BlockTypeSerializer;
-import com.hedera.mirror.web3.utils.RuntimeBytecodeExtractor;
+import com.hedera.mirror.web3.utils.BytecodeUtils;
 import com.hedera.mirror.web3.validation.Hex;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
@@ -65,6 +65,6 @@ public class ContractCallRequest {
     @AssertTrue(message = "must not be empty")
     private boolean hasTo() {
         boolean isValidToField = value <= 0 || from == null || StringUtils.isNotEmpty(to);
-        return RuntimeBytecodeExtractor.isInitBytecode(data) || isValidToField;
+        return BytecodeUtils.isInitBytecode(data) || isValidToField;
     }
 }
