@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
+import {PrecompileModificationTestTemplate} from './commonPrecompileModificationFunctionsTemplate.js';
 import {ContractCallTestScenarioBuilder} from './common.js';
 
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
 const account = __ENV.ACCOUNT_ADDRESS;
 const token = __ENV.TOKEN_ADDRESS;
+const runMode = __ENV.RUN_WITH_VARIABLES
 const selector = '0xd91cfc95'; //associateTokenExternal
+const testName = 'contractCallPrecompileAssociate'
 
-const {options, run} = new ContractCallTestScenarioBuilder()
-  .name('contractCallPrecompileAssociate') // use unique scenario name among all tests
-  .selector(selector)
-  .args([account, token])
-  .to(contract)
-  .build();
+//If RUN_WITH_VARIABLES=true will run tests from the __ENV variables
+const {options, run} = runMode==="true"
+    ? new ContractCallTestScenarioBuilder().name(testName) // use unique scenario name among all tests
+    .selector(selector)
+    .args([account, token])
+    .to(contract)
+    .build()
+    : new PrecompileModificationTestTemplate(testName, false);
 
 export {options, run};
