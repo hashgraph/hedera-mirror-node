@@ -36,14 +36,6 @@ function isNonErrorResponse(response) {
   }
 }
 
-function isErrorResponse(response) {
-  try {
-    return response.status !== 200;
-  } catch (e) {
-    return false;
-  }
-}
-
 const jsonPost = (url, payload) =>
   http.post(url, payload, {
     headers: {
@@ -101,11 +93,9 @@ function ContractCallTestScenarioBuilder() {
         }
 
         const response = jsonPost(that._url, JSON.stringify(payload));
-        if(that._shouldRevert) {
-          check(response, {[`${that._name}`]: (r) => isErrorResponse(r)});
-        } else{
-          check(response, {[`${that._name}`]: (r) => isNonErrorResponse(r)});
-        }
+        check(response, {[`${that._name}`]: (r) => that._shouldRevert
+              ? !isNonErrorResponse(r)
+              : isNonErrorResponse(r)});
 
         if (sleepSecs > 0) {
           sleep(sleepSecs);
