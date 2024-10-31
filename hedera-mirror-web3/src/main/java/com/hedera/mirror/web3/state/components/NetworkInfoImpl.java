@@ -26,6 +26,7 @@ import com.swirlds.state.spi.info.SelfNodeInfo;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 
@@ -35,16 +36,10 @@ public class NetworkInfoImpl implements NetworkInfo {
 
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    private static final Bytes DEV_LEDGER_ID = Bytes.wrap(new byte[] {0x03});
-    private static final List<NodeInfo> FAKE_NODE_INFOS = List.of(
-            fakeInfoWith(2L, AccountID.newBuilder().accountNum(3).build()),
-            fakeInfoWith(4L, AccountID.newBuilder().accountNum(4).build()),
-            fakeInfoWith(8L, AccountID.newBuilder().accountNum(5).build()));
-
     @Nonnull
     @Override
     public Bytes ledgerId() {
-        return DEV_LEDGER_ID;
+        return Bytes.EMPTY;
     }
 
     @Nonnull
@@ -56,16 +51,13 @@ public class NetworkInfoImpl implements NetworkInfo {
     @Nonnull
     @Override
     public List<NodeInfo> addressBook() {
-        return FAKE_NODE_INFOS;
+        return Collections.emptyList();
     }
 
     @Nullable
     @Override
     public NodeInfo nodeInfo(long nodeId) {
-        return FAKE_NODE_INFOS.stream()
-                .filter(node -> node.nodeId() == nodeId)
-                .findFirst()
-                .orElse(null);
+        return null;
     }
 
     @Override
@@ -73,68 +65,10 @@ public class NetworkInfoImpl implements NetworkInfo {
         return nodeInfo(nodeId) != null;
     }
 
-    private static NodeInfo fakeInfoWith(final long nodeId, @Nonnull final AccountID nodeAccountId) {
-        return new NodeInfo() {
-            @Override
-            public long nodeId() {
-                return nodeId;
-            }
-
-            @Override
-            public AccountID accountId() {
-                return nodeAccountId;
-            }
-
-            @Override
-            public String memo() {
-                return "";
-            }
-
-            @Override
-            public String externalHostName() {
-                return "";
-            }
-
-            @Override
-            public int externalPort() {
-                return 0;
-            }
-
-            @Override
-            public String hexEncodedPublicKey() {
-                return "";
-            }
-
-            @Override
-            public long stake() {
-                return 0L;
-            }
-
-            @Override
-            public Bytes sigCertBytes() {
-                return Bytes.EMPTY;
-            }
-
-            @Override
-            public String internalHostName() {
-                return "";
-            }
-
-            @Override
-            public int internalPort() {
-                return 0;
-            }
-
-            @Override
-            public String selfName() {
-                return "";
-            }
-        };
-    }
-
     /**
-     * Returns a {@link SelfNodeInfo} that is a complete mock other than the software version present in the
-     * given configuration.
+     * Returns a {@link SelfNodeInfo} that is a complete mock other than the software version present in the given
+     * configuration.
+     *
      * @return a mock self node info
      */
     private SelfNodeInfo mockSelfNodeInfo() {

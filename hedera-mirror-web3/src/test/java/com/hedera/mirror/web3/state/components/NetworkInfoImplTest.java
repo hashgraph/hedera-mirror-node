@@ -29,21 +29,17 @@ import org.junit.jupiter.api.Test;
 
 class NetworkInfoImplTest extends Web3IntegrationTest {
 
+    private static final int NODE_ID = 2;
+
     @Resource
     private MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Resource
     private NetworkInfoImpl networkInfoImpl;
 
-    private static final AccountID NODE_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(3).build();
-
-    private static final int NODE_ID = 2;
-
     @Test
     void testLedgerId() {
-        Bytes expectedLedgerId = Bytes.wrap(new byte[] {0x03});
-        assertThat(networkInfoImpl.ledgerId()).isEqualTo(expectedLedgerId);
+        assertThat(networkInfoImpl.ledgerId()).isEqualTo(Bytes.EMPTY);
     }
 
     @Test
@@ -57,26 +53,13 @@ class NetworkInfoImplTest extends Web3IntegrationTest {
     }
 
     @Test
-    void testAddressBookIsNotEmpty() {
-        assertThat(networkInfoImpl.addressBook()).isNotEmpty();
+    void testAddressBookIsEmpty() {
+        assertThat(networkInfoImpl.addressBook()).isEmpty();
     }
 
     @Test
     void testNodeInfo() {
-        NodeInfo nodeInfo = networkInfoImpl.nodeInfo(NODE_ID);
-        assertThat(nodeInfo).isNotNull().satisfies(info -> {
-            assertThat(info.nodeId()).isEqualTo(NODE_ID);
-            assertThat(info.accountId()).isEqualTo(NODE_ACCOUNT_ID);
-            assertThat(info.memo()).isEmpty();
-            assertThat(info.externalHostName()).isEmpty();
-            assertThat(info.externalPort()).isZero();
-            assertThat(info.hexEncodedPublicKey()).isEmpty();
-            assertThat(info.stake()).isZero();
-            assertThat(info.sigCertBytes()).isEqualTo(Bytes.EMPTY);
-            assertThat(info.internalHostName()).isEmpty();
-            assertThat(info.internalPort()).isZero();
-            assertThat(info.selfName()).isEmpty();
-        });
+        assertThat(networkInfoImpl.nodeInfo(NODE_ID)).isNull();
     }
 
     @Test
@@ -87,7 +70,7 @@ class NetworkInfoImplTest extends Web3IntegrationTest {
 
     @Test
     void testContainsNode() {
-        assertThat(networkInfoImpl.containsNode(NODE_ID)).isTrue();
+        assertThat(networkInfoImpl.containsNode(NODE_ID)).isFalse();
     }
 
     @Test
