@@ -35,16 +35,11 @@ public abstract class SharedTopicListener implements TopicListener {
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         Sinks.Many<TopicMessage> sink = Sinks.many().unicast().onBackpressureBuffer();
-        Flux<TopicMessage> overflowProcessor = sink.asFlux();
 
-        // moving publishOn from after onBackpressureBuffer to after Flux.merge reduces CPU usage by up to 40%
-        Flux<TopicMessage> topicMessageFlux = getSharedListener(filter)
+        return getSharedListener(filter)
                 .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
-                .onBackpressureBuffer(
-                        listenerProperties.getMaxBufferSize(), t -> sink.tryEmitError(Exceptions.failWithOverflow()))
-                .doFinally(s -> sink.tryEmitComplete());
-
-        return Flux.merge(listenerProperties.getPrefetch(), topicMessageFlux, overflowProcessor)
+                .onBackpressureBuffer(listenerProperties.getMaxBufferSize(), BufferOverflowStrategy.ERROR)
+                .doFinally(s -> sink.tryEmitComplete())
                 .publishOn(Schedulers.boundedElastic(), false, listenerProperties.getPrefetch());
     }
 
