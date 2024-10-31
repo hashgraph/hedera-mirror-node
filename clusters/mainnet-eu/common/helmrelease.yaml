@@ -10,7 +10,10 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.115.0'
+      valuesFiles:
+        - values.yaml
+        - values-v2.yaml
+      version: '0.116.1'
   driftDetection:
     mode: enabled
     ignore:
@@ -73,13 +76,10 @@ spec:
                 resources:
                   requests:
                     storage: 250Gi
-    stackgres:
-      enabled: true
     traefik:
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-eu"} } }'
     zfs:
-      enabled: true
       init:
         diskPrefix: mainnet-eu
