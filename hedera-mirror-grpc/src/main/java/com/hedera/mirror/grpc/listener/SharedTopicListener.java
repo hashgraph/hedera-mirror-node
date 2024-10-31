@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 
 @RequiredArgsConstructor
@@ -34,12 +33,9 @@ public abstract class SharedTopicListener implements TopicListener {
 
     @Override
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
-        Sinks.Many<TopicMessage> sink = Sinks.many().unicast().onBackpressureBuffer();
-
         return getSharedListener(filter)
                 .doOnSubscribe(s -> log.info("Subscribing: {}", filter))
                 .onBackpressureBuffer(listenerProperties.getMaxBufferSize(), BufferOverflowStrategy.ERROR)
-                .doFinally(s -> sink.tryEmitComplete())
                 .publishOn(Schedulers.boundedElastic(), false, listenerProperties.getPrefetch());
     }
 
