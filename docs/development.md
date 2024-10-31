@@ -6,20 +6,20 @@ This document outlines the process to set up a development environment for the H
 
 To contribute to the Hedera Mirror Node project, you need to install the following software and tools:
 
-### 1. **Java 17+**
-Hedera Mirror Node requires **Java 17** or a later version for development.
+### 1. **Java 21**
+Hedera Mirror Node requires **Java 21** or a later version for development.
 
-- **Install Java 17**:
+- **Install Java 21**:
 
   On Ubuntu:
   ```bash
   sudo apt update
-  sudo apt install openjdk-17-jdk
+  sudo apt install openjdk-21-jdk
   ```
 
   On MacOS:
   ```bash
-  brew install openjdk@17
+  brew install openjdk@21
   ```
 
 - **Verify Installation**:
@@ -29,19 +29,19 @@ Hedera Mirror Node requires **Java 17** or a later version for development.
 
   You should see output similar to:
   ```
-  openjdk version "17.0.12" 2024-XX-XX
+  openjdk version "21.0.4" 2024-XX-XX
   ```
 
-- **Set `JAVA_HOME`** to Java 17:
+- **Set `JAVA_HOME`** to Java 21:
 
   On Ubuntu:
   ```bash
-  export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+  export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
   ```
 
   On MacOS:
   ```bash
-  export JAVA_HOME=/usr/local/opt/openjdk@17
+  export JAVA_HOME=/usr/local/opt/openjdk@21
   ```
 
 ### 2. **Docker**
@@ -131,11 +131,11 @@ We recommend using **IntelliJ IDEA** or **Eclipse** for developing the Hedera Mi
 
 2. **Set up Project SDK**:
     - Go to `File > Project Structure > Project`.
-    - Set **Project SDK** to `Java 17` (or higher).
-    - Set **Project language level** to `17 - Sealed types, always-strict floating-point semantics`.
+    - Set **Project SDK** to `Java 21` (or higher).
+    - Set **Project language level** to `21 - Record patterns, pattern matching for switch`.
 
 3. **Gradle Configuration**:
-    - Ensure **Gradle JVM** is set to **Java 17**: Go to `File > Settings > Build, Execution, Deployment > Build Tools > Gradle` and set the **Gradle JVM** to Java 17.
+    - Ensure **Gradle JVM** is set to **Java 21**: Go to `File > Settings > Build, Execution, Deployment > Build Tools > Gradle` and set the **Gradle JVM** to Java 21.
 
 4. **Enable Docker Integration**:
     - Enable Docker integration in IntelliJ if you are running containerized services directly from the IDE.
@@ -164,14 +164,14 @@ The Hedera Mirror Node uses **Gradle** for building and managing dependencies.
    ./gradlew :hedera-mirror-monitor:build
    ```
 ### 2. **Configure Gradle Properties**
-Ensure that the gradle.properties file contains the correct path for Java 17:
+Ensure that the gradle.properties file contains the correct path for Java 21:
 
 ```
-org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64
+org.gradle.java.home=/usr/lib/jvm/java-21-openjdk-amd64
 ```
 
 
-This ensures that **Java 17** is used globally for the project.
+This ensures that **Java 21** is used globally for the project.
 
 ## Running Tests
 
