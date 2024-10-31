@@ -359,7 +359,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidTimestampParam(val);
       break;
     case constants.filterKeys.TOKEN_ID:
-      ret = EntityId.isValidEntityId(val);
+      ret = EntityId.isValidEntityId(val, false);
       break;
     case constants.filterKeys.TOKEN_TYPE:
       ret = isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
