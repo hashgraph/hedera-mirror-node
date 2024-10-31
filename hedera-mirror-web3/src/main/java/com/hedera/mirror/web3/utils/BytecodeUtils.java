@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.utils;
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 
 import jakarta.annotation.Nonnull;
+import java.util.regex.Pattern;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -39,6 +40,23 @@ public class BytecodeUtils {
     private static final String FREE_MEMORY_POINTER_2 = "60606040";
     private static final String RUNTIME_CODE_PREFIX =
             "6080"; // The pattern to find the start of the runtime code in the init bytecode
+
+    /**
+     * Compiled regex pattern to match the init bytecode sequence. The pattern checks for a sequence of a free memory
+     * pointer setup, a CODECOPY operation, and a RETURN operation, in that order. The sequence is matched
+     * case-insensitively to account for hexadecimal representations. Pattern explanation: - (?i) enables
+     * case-insensitive matching for the entire pattern. - (%s|%s) matches either FREE_MEMORY_POINTER or
+     * FREE_MEMORY_POINTER_2, which represent setup instructions for the free memory pointer, required for
+     * initialization bytecode. - .* matches any sequence of characters (including none) after the free memory pointer
+     * setup. - %s matches the CODECOPY opcode, which copies code to memory and typically follows the memory pointer
+     * setup in init bytecode. - .* matches any sequence of characters (including none) between CODECOPY and RETURN. %s
+     * matches the RETURN opcode, signaling the end of the initialization bytecode.
+     * <p>
+     * Example pattern: (?i)(60806040|60606040).*39.*f3 This example would match any sequence where either "60806040" or
+     * "60606040" appears, followed by "39" (CODECOPY) and then "f3" (RETURN), with any characters in between.
+     */
+    private static final Pattern INIT_BYTECODE_PATTERN = Pattern.compile(
+            String.format("(?i)(%s|%s).*%s.*%s", FREE_MEMORY_POINTER, FREE_MEMORY_POINTER_2, CODECOPY, RETURN));
 
     public static String extractRuntimeBytecode(String initBytecode) {
         // Check if the bytecode starts with "0x" and remove it if necessary
@@ -78,36 +96,10 @@ public class BytecodeUtils {
      * @return true if it is init bytecode, false otherwise.
      */
     public static boolean isInitBytecode(String data) {
-        if (data == null || data.isEmpty()) {
+        if (data == null || data.length() < MINIMUM_INIT_CODE_SIZE) {
             return false;
         }
 
-        String lowerCaseData = data.toLowerCase();
-
-        // Check if bytecode meets minimum length requirement
-        if (lowerCaseData.length() < MINIMUM_INIT_CODE_SIZE) {
-            return false;
-        }
-
-        // Check if (free memory pointer setup) exists
-        int freeMemoryPointerIndex = lowerCaseData.indexOf(FREE_MEMORY_POINTER);
-        if (freeMemoryPointerIndex == -1) {
-            freeMemoryPointerIndex = lowerCaseData.indexOf(FREE_MEMORY_POINTER_2);
-        }
-        if (freeMemoryPointerIndex == -1) {
-            return false;
-        }
-
-        // Verify CODECOPY occurs after free memory pointer setup
-        int codeCopyIndex = lowerCaseData.indexOf(CODECOPY, freeMemoryPointerIndex + FREE_MEMORY_POINTER.length());
-        if (codeCopyIndex == -1) {
-            return false;
-        }
-
-        // Check if RETURN occurs after CODECOPY
-        int returnIndex = lowerCaseData.indexOf(RETURN, codeCopyIndex + CODECOPY.length());
-
-        // If all conditions are met, this is likely init bytecode
-        return returnIndex != -1;
+        return INIT_BYTECODE_PATTERN.matcher(data).find();
     }
 }

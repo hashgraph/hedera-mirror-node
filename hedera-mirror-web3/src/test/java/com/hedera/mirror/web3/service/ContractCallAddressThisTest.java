@@ -54,12 +54,16 @@ import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
+
     @Resource
     protected ContractExecutionService contractCallService;
+
     @Resource
     private MockMvc mockMvc;
+
     @Resource
     private ObjectMapper objectMapper;
+
     @SpyBean
     private ContractExecutionService contractExecutionService;
 
@@ -78,7 +82,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
                 contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.ZERO);
         final long actualGas = 57764L;
         assertThat(isWithinExpectedGasRange(
-                longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), actualGas))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), actualGas))
                 .isTrue();
     }
 
@@ -98,11 +102,11 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
                 testWeb3jService.getContractRuntime(), Address.fromHexString(contract.getContractAddress()));
         final List<Bytes> capturedOutputs = new ArrayList<>();
         doAnswer(invocation -> {
-            HederaEvmTransactionProcessingResult result =
-                    (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
-            capturedOutputs.add(result.getOutput()); // Capture the result
-            return result;
-        })
+                    HederaEvmTransactionProcessingResult result =
+                            (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                    capturedOutputs.add(result.getOutput()); // Capture the result
+                    return result;
+                })
                 .when(contractExecutionService)
                 .callContract(any(), any());
 
@@ -128,8 +132,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
                 .andExpect(status().isOk())
                 .andExpect(result -> {
                     final var response = result.getResponse().getContentAsString();
-                    assertThat(response)
-                            .contains(BytecodeUtils.extractRuntimeBytecode(contract.getContractBinary()));
+                    assertThat(response).contains(BytecodeUtils.extractRuntimeBytecode(contract.getContractBinary()));
                 });
     }
 
@@ -148,8 +151,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
                 .andExpect(status().isOk())
                 .andExpect(result -> {
                     final var response = result.getResponse().getContentAsString();
-                    assertThat(response)
-                            .contains(BytecodeUtils.extractRuntimeBytecode(contract.getContractBinary()));
+                    assertThat(response).contains(BytecodeUtils.extractRuntimeBytecode(contract.getContractBinary()));
                 });
     }
 
@@ -160,7 +162,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
                 contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.ZERO);
         final long actualGas = 95401L;
         assertThat(isWithinExpectedGasRange(
-                longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
                 .isTrue();
     }
 

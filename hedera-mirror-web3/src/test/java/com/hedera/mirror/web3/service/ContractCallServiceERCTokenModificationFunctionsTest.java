@@ -135,8 +135,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
                 .andExpect(status().isOk())
                 .andExpect(result -> {
                     final var response = result.getResponse().getContentAsString();
-                    assertThat(response)
-                            .contains(BytecodeUtils.extractRuntimeBytecode(contract.getContractBinary()));
+                    assertThat(response).contains(BytecodeUtils.extractRuntimeBytecode(contract.getContractBinary()));
                 });
     }
 

@@ -141,15 +141,15 @@ class ContractControllerTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
-                    DynamicEthCalls.BINARY,
-                    ERCTestContractHistorical.BINARY,
-                    EthCall.BINARY,
-                    EvmCodes.BINARY,
-                    EvmCodesHistorical.BINARY,
-                    ExchangeRatePrecompileHistorical.BINARY,
-                    NestedCallsHistorical.BINARY,
-                    PrecompileTestContractHistorical.BINARY,
-                    TestAddressThis.BINARY
+                DynamicEthCalls.BINARY,
+                ERCTestContractHistorical.BINARY,
+                EthCall.BINARY,
+                EvmCodes.BINARY,
+                EvmCodesHistorical.BINARY,
+                ExchangeRatePrecompileHistorical.BINARY,
+                NestedCallsHistorical.BINARY,
+                PrecompileTestContractHistorical.BINARY,
+                TestAddressThis.BINARY
             })
     void estimateGasContractDeploy(final String data) throws Exception {
         final var request = request();
@@ -203,13 +203,13 @@ class ContractControllerTest {
 
     @ValueSource(
             strings = {
-                    " ",
-                    "0x",
-                    "0xghijklmno",
-                    "0x00000000000000000000000000000000000004e",
-                    "0x00000000000000000000000000000000000004e2a",
-                    "0x000000000000000000000000000000Z0000007e7",
-                    "00000000001239847e"
+                " ",
+                "0x",
+                "0xghijklmno",
+                "0x00000000000000000000000000000000000004e",
+                "0x00000000000000000000000000000000000004e2a",
+                "0x000000000000000000000000000000Z0000007e7",
+                "00000000001239847e"
             })
     @ParameterizedTest
     void callInvalidTo(String to) throws Exception {
@@ -259,13 +259,13 @@ class ContractControllerTest {
     @EmptySource
     @ValueSource(
             strings = {
-                    " ",
-                    "0x",
-                    "0xghijklmno",
-                    "0x00000000000000000000000000000000000004e",
-                    "0x00000000000000000000000000000000000004e2a",
-                    "0x000000000000000000000000000000Z0000007e7",
-                    "00000000001239847e"
+                " ",
+                "0x",
+                "0xghijklmno",
+                "0x00000000000000000000000000000000000004e",
+                "0x00000000000000000000000000000000000004e2a",
+                "0x000000000000000000000000000000Z0000007e7",
+                "00000000001239847e"
             })
     @ParameterizedTest
     void callInvalidFrom(String from) throws Exception {
