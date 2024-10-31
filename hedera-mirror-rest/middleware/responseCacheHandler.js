@@ -22,6 +22,7 @@ import config from '../config.js';
 import crypto from 'crypto';
 
 const CACHE_CONTROL_HEADER = 'cache-control';
+const CACHE_CONTROL_REGEX = /^.*max-age=(\d+)/;
 const CONTENT_ENCODING_HEADER = 'content-encoding';
 const ETAG_HEADER = 'etag';
 const CONDITIONAL_HEADER = 'if-none-match';
@@ -113,7 +114,7 @@ const cacheKeyGenerator = (req) => {
 
 const getCacheControlExpiryOrDefault = (headerValue) => {
   if (headerValue) {
-    const maxAge = headerValue.match(/^.*max-age=(\d+)/);
+    const maxAge = headerValue.match(CACHE_CONTROL_REGEX);
     if (maxAge && maxAge.length === 2) {
       return parseInt(maxAge[1], 10);
     }
