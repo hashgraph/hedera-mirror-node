@@ -15,24 +15,24 @@
  *
  */
 
-import {ContractCallTestScenarioBuilder} from './common.js';
-import {PrecompileModificationTestTemplate} from './commonPrecompileModificationFunctionsTemplate.js';
+import {ContractCallTestScenarioBuilder} from '../common.js';
+import {PrecompileModificationTestTemplate} from '../commonPrecompileModificationFunctionsTemplate.js';
 
-const contract = __ENV.PRECOMPILE_CONTRACT;
-const selector = '0x911ce425'; //approveRedirect
+const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
+const account = __ENV.ACCOUNT_ADDRESS;
 const token = __ENV.TOKEN_ADDRESS;
-const spender = __ENV.ACCOUNT_ADDRESS;
-const amount = __ENV.AMOUNT;
+const selector = '0x437dffd5'; //nestedAssociateTokenExternal
 const runMode = __ENV.RUN_WITH_VARIABLES;
-const testName = "contractCallRedirectApprove";
+const testName = 'contractCallPrecompileNestedAssociate';
 
 //If RUN_WITH_VARIABLES=true will run tests with __ENV variables
 const {options, run} = runMode==="true"
     ? new ContractCallTestScenarioBuilder().name(testName) // use unique scenario name among all tests
     .selector(selector)
-    .args([token, spender, amount])
+    .args([account, token])
     .to(contract)
+    .shouldRevert(true)
     .build()
-    : new PrecompileModificationTestTemplate(testName, false);
+    : new PrecompileModificationTestTemplate(testName, true);
 
 export {options, run};

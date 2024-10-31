@@ -15,8 +15,8 @@
  *
  */
 
-import {ContractCallTestScenarioBuilder} from './common.js';
-import {PrecompileModificationTestTemplate} from './commonPrecompileModificationFunctionsTemplate.js';
+import {ContractCallTestScenarioBuilder} from '../common.js';
+import {PrecompileModificationTestTemplate} from '../commonPrecompileModificationFunctionsTemplate.js';
 
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
 const selector = '0xceda64c4'; //approveExternal

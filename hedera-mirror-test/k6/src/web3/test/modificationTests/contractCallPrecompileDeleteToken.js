@@ -15,23 +15,20 @@
  *
  */
 
-import {ContractCallTestScenarioBuilder} from './common.js';
-import {PrecompileModificationTestTemplate} from './commonPrecompileModificationFunctionsTemplate.js';
+import {ContractCallTestScenarioBuilder} from '../common.js';
+import {PrecompileModificationTestTemplate} from "../commonPrecompileModificationFunctionsTemplate";
 
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
-const selector = '0x0c0295d4'; //mintTokenExternal
+const selector = '0x0c0a198c'; // deleteTokenExternal
 const token = __ENV.TOKEN_ADDRESS;
-const amount = __ENV.AMOUNT;
 const runMode = __ENV.RUN_WITH_VARIABLES;
-const testName = 'contractCallPrecompileMintToken';
-const emptyByteArray= '0000000000000000000000000000000000000000000000000000000000000060'
-    + '0000000000000000000000000000000000000000000000000000000000000000';
+const testName = 'contractCallPrecompileDeleteToken';
 
 //If RUN_WITH_VARIABLES=true will run tests with __ENV variables
 const {options, run} = runMode==="true"
     ? new ContractCallTestScenarioBuilder().name(testName) // use unique scenario name among all tests
     .selector(selector)
-    .args([token, amount, emptyByteArray])
+    .args([token])
     .to(contract)
     .build()
     : new PrecompileModificationTestTemplate(testName, false);
