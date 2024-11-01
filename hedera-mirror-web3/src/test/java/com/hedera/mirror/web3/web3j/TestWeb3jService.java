@@ -30,7 +30,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
-import com.hedera.mirror.web3.utils.RuntimeBytecodeExtractor;
+import com.hedera.mirror.web3.utils.BytecodeUtils;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
@@ -133,6 +133,12 @@ public class TestWeb3jService implements Web3jService {
     }
 
     @SneakyThrows(Exception.class)
+    public <T extends Contract> T deployWithoutPersistWithValue(DeployerWithValue<T> deployer, BigInteger value) {
+        persistContract = false;
+        return deployer.deploy(web3j, credentials, contractGasProvider, value).send();
+    }
+
+    @SneakyThrows(Exception.class)
     public <T extends Contract> T deployWithValue(DeployerWithValue<T> deployer, BigInteger value) {
         return deployer.deploy(web3j, credentials, contractGasProvider, value).send();
     }
@@ -170,7 +176,7 @@ public class TestWeb3jService implements Web3jService {
                     serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
             runtimeCode = contractExecutionService.processCall(serviceParameters);
         } else {
-            runtimeCode = RuntimeBytecodeExtractor.extractRuntimeBytecode(rawTransaction.getData());
+            runtimeCode = BytecodeUtils.extractRuntimeBytecode(rawTransaction.getData());
         }
         try {
             final var contractInstance = deployInternal(runtimeCode, persistContract);

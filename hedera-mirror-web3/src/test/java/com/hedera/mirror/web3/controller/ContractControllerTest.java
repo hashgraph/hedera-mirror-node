@@ -45,6 +45,15 @@ import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
+import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls;
+import com.hedera.mirror.web3.web3j.generated.ERCTestContractHistorical;
+import com.hedera.mirror.web3.web3j.generated.EthCall;
+import com.hedera.mirror.web3.web3j.generated.EvmCodes;
+import com.hedera.mirror.web3.web3j.generated.EvmCodesHistorical;
+import com.hedera.mirror.web3.web3j.generated.ExchangeRatePrecompileHistorical;
+import com.hedera.mirror.web3.web3j.generated.NestedCallsHistorical;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContractHistorical;
+import com.hedera.mirror.web3.web3j.generated.TestAddressThis;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -79,6 +88,7 @@ class ContractControllerTest {
     private static final String CALL_URI = "/api/v1/contracts/call";
     private static final String ONE_BYTE_HEX = "80";
     private static final long THROTTLE_GAS_LIMIT = 10_000_000L;
+    private static final String INIT_CODE = "0x6080604052348015600f57600080fd5b5060a38061001c6000396000f3";
 
     @Resource
     private MockMvc mockMvc;
@@ -117,14 +127,36 @@ class ContractControllerTest {
                 .content(convert(request)));
     }
 
-    @NullAndEmptySource
-    @ValueSource(strings = {"0x00000000000000000000000000000000000007e7"})
     @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"0x00000000000000000000000000000000000007e7", "0x00000000000000000000000000000000000004e2"})
     void estimateGas(String to) throws Exception {
         final var request = request();
         request.setEstimate(true);
         request.setValue(0);
         request.setTo(to);
+        contractCall(request).andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                DynamicEthCalls.BINARY,
+                ERCTestContractHistorical.BINARY,
+                EthCall.BINARY,
+                EvmCodes.BINARY,
+                EvmCodesHistorical.BINARY,
+                ExchangeRatePrecompileHistorical.BINARY,
+                NestedCallsHistorical.BINARY,
+                PrecompileTestContractHistorical.BINARY,
+                TestAddressThis.BINARY
+            })
+    void estimateGasContractDeploy(final String data) throws Exception {
+        final var request = request();
+        request.setEstimate(true);
+        request.setValue(0);
+        request.setTo(null);
+        request.setData(data);
         contractCall(request).andExpect(status().isOk());
     }
 
@@ -446,7 +478,7 @@ class ContractControllerTest {
     void callSuccessOnContractCreateWithMissingFrom() throws Exception {
         final var request = request();
         request.setFrom(null);
-        request.setTo(null);
+        request.setData(INIT_CODE);
         request.setValue(0);
         request.setEstimate(false);
 
