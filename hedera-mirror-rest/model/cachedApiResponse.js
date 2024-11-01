@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-export {handleError} from './httpErrorHandler';
-export * from './metricsHandler';
-export {openApiValidator, serveSwaggerDocs} from './openapiHandler';
-export * from './requestHandler';
-export {
-  cacheKeyGenerator,
-  responseCacheCheckHandler,
-  responseCacheUpdateHandler,
-  setCache,
-} from './responseCacheHandler.js';
-export {default as responseHandler} from './responseHandler';
+/**
+ * API response cached in Redis.
+ */
+class CachedApiResponse {
+  constructor(statusCode, headers, body, compressed) {
+    this.statusCode = statusCode;
+    this.body = body;
+    this.headers = headers;
+    this.compressed = compressed;
+  }
+}
+
+export default CachedApiResponse;

@@ -44,6 +44,8 @@ import {
   recordIpAndEndpoint,
   requestLogger,
   requestQueryParser,
+  responseCacheCheckHandler,
+  responseCacheUpdateHandler,
   responseHandler,
   serveSwaggerDocs,
 } from './middleware';
@@ -90,6 +92,7 @@ global.pool = pool;
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
 const app = addAsync(express());
 const {apiPrefix} = constants;
+const applicationCacheEnabled = config.cache.response.enabled && config.redis.enabled;
 
 app.disable('x-powered-by');
 app.set('trust proxy', true);
@@ -120,6 +123,12 @@ app.useAsync(requestLogger);
 // metrics middleware
 if (config.metrics.enabled) {
   app.use(metricsHandler());
+}
+
+// Check for cached response
+if (applicationCacheEnabled) {
+  logger.info('Response caching is enabled');
+  app.useAsync(responseCacheCheckHandler);
 }
 
 // accounts routes
@@ -175,6 +184,11 @@ if (config.metrics.ipMetrics) {
 
 // response data handling middleware
 app.useAsync(responseHandler);
+
+// Update Cache with response
+if (applicationCacheEnabled) {
+  app.useAsync(responseCacheUpdateHandler);
+}
 
 // response error handling middleware
 app.useAsync(handleError);

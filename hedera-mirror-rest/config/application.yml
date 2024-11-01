@@ -6,6 +6,9 @@ hedera:
         entityId:
           maxAge: 1800
           maxSize: 100000
+        response:
+          enabled: false
+          compress: true
         token:
           maxSize: 100000
       db:
@@ -74,7 +77,7 @@ hedera:
         connectTimeout: 10000
         enabled: true
         maxBackoff: 128000
-        maxMemory: 250Mb
+        maxMemory: 750Mb
         maxMemoryPolicy: allkeys-lfu
         maxRetriesPerRequest: 1
         sentinel:
