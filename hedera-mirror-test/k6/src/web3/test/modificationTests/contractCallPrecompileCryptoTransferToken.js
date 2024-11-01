@@ -45,7 +45,7 @@ const {options, run} = runMode==="false"
     ? new PrecompileModificationTestTemplate('contractCallPrecompileCryptoTransferToken', false)
     : new ContractCallTestScenarioBuilder().name('contractCallPrecompileCryptoTransferToken') // use unique scenario name among all tests
     .selector(selector)
-    .args([data1,sender,data2,receiver,data4])
+    .args([data1,token,data2,sender,data3,receiver,data4])
     .to(contract)
     .build();
 
