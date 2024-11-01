@@ -17,11 +17,11 @@
 package com.hedera.mirror.web3.state.components;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.info.NodeInfo;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import jakarta.annotation.Resource;
@@ -39,7 +39,8 @@ class NetworkInfoImplTest extends Web3IntegrationTest {
 
     @Test
     void testLedgerId() {
-        assertThat(networkInfoImpl.ledgerId()).isEqualTo(Bytes.EMPTY);
+        final var exception = assertThrows(UnsupportedOperationException.class, () -> networkInfoImpl.ledgerId());
+        assertThat(exception.getMessage()).isEqualTo("Ledger ID is not supported.");
     }
 
     @Test
@@ -53,8 +54,9 @@ class NetworkInfoImplTest extends Web3IntegrationTest {
     }
 
     @Test
-    void testAddressBookIsEmpty() {
-        assertThat(networkInfoImpl.addressBook()).isEmpty();
+    void testAddressBook() {
+        final var exception = assertThrows(UnsupportedOperationException.class, () -> networkInfoImpl.addressBook());
+        assertThat(exception.getMessage()).isEqualTo("Address book is not supported.");
     }
 
     @Test

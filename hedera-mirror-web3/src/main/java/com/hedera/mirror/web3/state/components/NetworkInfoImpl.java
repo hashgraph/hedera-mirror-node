@@ -26,7 +26,6 @@ import com.swirlds.state.spi.info.SelfNodeInfo;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
-import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 
@@ -39,7 +38,7 @@ public class NetworkInfoImpl implements NetworkInfo {
     @Nonnull
     @Override
     public Bytes ledgerId() {
-        return Bytes.EMPTY;
+        throw new UnsupportedOperationException("Ledger ID is not supported.");
     }
 
     @Nonnull
@@ -51,7 +50,7 @@ public class NetworkInfoImpl implements NetworkInfo {
     @Nonnull
     @Override
     public List<NodeInfo> addressBook() {
-        return Collections.emptyList();
+        throw new UnsupportedOperationException("Address book is not supported.");
     }
 
     @Nullable
