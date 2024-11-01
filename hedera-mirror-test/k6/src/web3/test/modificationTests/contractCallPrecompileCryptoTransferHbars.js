@@ -36,12 +36,12 @@ const data4 = "000000000000000000000000000000000000000000000000000000000000000a"
     + "0000000000000000000000000000000000000000000000000000000000000000";
 
 //If RUN_WITH_VARIABLES=true will run tests with __ENV variables
-const {options, run} = runMode==="true"
-    ? new ContractCallTestScenarioBuilder().name(testName) // use unique scenario name among all tests
+const {options, run} = runMode==="false"
+    ? new PrecompileModificationTestTemplate(testName, false)
+    : new ContractCallTestScenarioBuilder().name(testName) // use unique scenario name among all tests
     .selector(selector)
     .args([data1,sender,data2,receiver,data4])
     .to(contract)
-    .build()
-    : new PrecompileModificationTestTemplate(testName, false);
+    .build();
 
 export {options, run};

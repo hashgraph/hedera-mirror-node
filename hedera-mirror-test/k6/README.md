@@ -129,7 +129,7 @@ The following parameters can be used to configure a web3 test:
 | RECEIVER_ADDRESS             |         | 64 character hex encoded account address without `0x` prefix                                       |
 | RUN_ESTIMATE_TESTS           |         | If set to true, estimate gas tests will be run.                                                    |
 | RUN_MODIFICATION_TESTS       |         | If set to true, modification tests will be run.                                                    |
-| RUN_WITH_VARIABLES           |         | if set to true if, tests will be run with __ENV variables                                          |
+| RUN_WITH_VARIABLES           |         | if set to false, tests will be run with data from modificationFunctions.json                       |
 | SERIAL_NUMBER                |         | 64 character hex encoded nft serial number without `0x` prefix                                     |
 | SPENDER_ADDRESS              |         | 64 character hex encoded account address without `0x` prefix                                       |
 | TOKEN_ADDRESS                |         | 64 character hex encoded token address without `0x` prefix                                         |

@@ -26,12 +26,12 @@ const runMode = __ENV.RUN_WITH_VARIABLES;
 const testName = 'contractCallPrecompileDissociate';
 
 //If RUN_WITH_VARIABLES=true will run tests with __ENV variables
-const {options, run} = runMode==="true"
-    ? new ContractCallTestScenarioBuilder().name(testName) // use unique scenario name among all tests
+const {options, run} = runMode==="false"
+    ? new PrecompileModificationTestTemplate(testName, false)
+    : new ContractCallTestScenarioBuilder().name(testName) // use unique scenario name among all tests
     .selector(selector)
     .args([account, token])
     .to(contract)
-    .build()
-    : new PrecompileModificationTestTemplate(testName, false);
+    .build();
 
 export {options, run};
