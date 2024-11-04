@@ -115,7 +115,7 @@ The following parameters can be used to configure a rosetta test:
 The following parameters can be used to configure a web3 test:
 
 | Name                         | Default | Description                                                                                        |
-|------------------------------| ------- |----------------------------------------------------------------------------------------------------|
+|------------------------------|---------|----------------------------------------------------------------------------------------------------|
 | ACCOUNT_ADDRESS              |         | 64 character hex encoded account address without `0x` prefix                                       |
 | AMOUNT                       |         | 64 character hex encoded amount without `0x` prefix                                                |
 | DEFAULT_ACCOUNT_ADDRESS      |         | 40 character hex encoded account address without `0x` prefix                                       |
@@ -128,7 +128,7 @@ The following parameters can be used to configure a web3 test:
 | PRECOMPILE_CONTRACT          |         | 40 character hex encoded contract address without `0x` prefix for `PrecompileTestContract.sol`     |
 | RUN_ESTIMATE_TESTS           |         | If set to true, estimate gas tests will be run.                                                    |
 | RUN_MODIFICATION_TESTS       |         | If set to true, modification tests will be run.                                                    |
-| RUN_WITH_VARIABLES           |         | if set to false, tests will be run with data from modificationFunctions.json                       |
+| RUN_WITH_VARIABLES           | true    | if set to false, tests will be run with data from modificationFunctions.json                       |
 | SERIAL_NUMBER                |         | 64 character hex encoded nft serial number without `0x` prefix                                     |
 | SPENDER_ADDRESS              |         | 64 character hex encoded account address without `0x` prefix                                       |
 | TOKEN_ADDRESS                |         | 64 character hex encoded token address without `0x` prefix                                         |
