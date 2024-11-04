@@ -126,8 +126,8 @@ The following parameters can be used to configure a web3 test:
 | KEY_TYPE                     |         | 64 character hex encoded key type without `0x` prefix                                              |
 | NON_FUNGIBLE_TOKEN_ADDRESS   |         | 64 character hex encoded non-fungible token address without `0x` prefix                            |
 | PRECOMPILE_CONTRACT          |         | 40 character hex encoded contract address without `0x` prefix for `PrecompileTestContract.sol`     |
-| RUN_ESTIMATE_TESTS           |         | If set to true, estimate gas tests will be run.                                                    |
-| RUN_MODIFICATION_TESTS       |         | If set to true, modification tests will be run.                                                    |
+| RUN_ESTIMATE_TESTS           | true    | If set to true, estimate gas tests will be run.                                                    |
+| RUN_MODIFICATION_TESTS       | true    | If set to true, modification tests will be run.                                                    |
 | RUN_WITH_VARIABLES           | true    | if set to false, tests will be run with data from modificationFunctions.json                       |
 | SERIAL_NUMBER                |         | 64 character hex encoded nft serial number without `0x` prefix                                     |
 | SPENDER_ADDRESS              |         | 64 character hex encoded account address without `0x` prefix                                       |
