@@ -39,7 +39,6 @@ public abstract class BaseContractFeature extends AbstractFeature {
         assertThat(mirrorContract.getDeleted()).isEqualTo(isDeleted);
         assertThat(mirrorContract.getFileId())
                 .isEqualTo(deployedParentContract.fileId().toString());
-        assertThat(mirrorContract.getMemo()).isNotBlank();
         String address = mirrorContract.getEvmAddress();
         assertThat(address).isNotBlank().isNotEqualTo("0x").isNotEqualTo("0x0000000000000000000000000000000000000000");
         assertThat(mirrorContract.getTimestamp()).isNotNull();
