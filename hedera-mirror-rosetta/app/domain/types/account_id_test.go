@@ -19,11 +19,11 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/hashgraph/hedera-sdk-go/v2/proto/services"
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-protobufs-go/services"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/thanhpk/randstr"
