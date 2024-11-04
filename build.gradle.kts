@@ -30,7 +30,7 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.68.0")
+    set("grpcVersion", "1.68.1")
     set("mapStructVersion", "1.6.2")
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.5")
