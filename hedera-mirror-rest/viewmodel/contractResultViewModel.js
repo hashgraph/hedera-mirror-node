@@ -17,6 +17,7 @@
 import _ from 'lodash';
 import EntityId from '../entityId';
 import {nsToSecNs, toHexString} from '../utils';
+import {proto} from '@hashgraph/proto';
 
 /**
  * Contract results view model
@@ -38,7 +39,7 @@ class ContractResultViewModel {
     this.contract_id = contractId.toString();
     this.created_contract_ids = _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString());
     this.error_message = _.isEmpty(contractResult.errorMessage) ? null : contractResult.errorMessage;
-    this.from = EntityId.parse(contractResult.senderId, {isNullable: true}).toEvmAddress();
+    this.from = EntityId.parse(contractResult.senderId, {isNullable: true}).toEvmAddress() || this.#extractSenderFromFunctionResult(contractResult);
     this.function_parameters = toHexString(contractResult.functionParameters, true);
     this.gas_consumed = contractResult.gasConsumed;
     this.gas_limit = contractResult.gasLimit;
@@ -46,6 +47,19 @@ class ContractResultViewModel {
     this.timestamp = nsToSecNs(contractResult.consensusTimestamp);
     this.to = contractId.toEvmAddress();
     this.hash = toHexString(contractResult.transactionHash, true);
+  }
+
+  #extractSenderFromFunctionResult(contractResult) {
+    if (!contractResult.sender_id && contractResult.functionResult) {
+      try {
+        const functionResult = proto.ContractFunctionResult.decode(contractResult.functionResult);
+        return functionResult?.senderId?.alias?.length ? toHexString(Array.from(functionResult.senderId.alias), true) : null;
+      } catch (error) {
+        logger.warn('Error decoding function result', error);
+      }
+    }
+
+    return null;
   }
 }
 
