@@ -24,19 +24,48 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KE
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.web3.utils.BytecodeUtils;
+import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.web3j.generated.ERCTestContract;
 import com.hedera.mirror.web3.web3j.generated.RedirectTestContract;
+import jakarta.annotation.Resource;
 import java.math.BigInteger;
+import lombok.SneakyThrows;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
+@AutoConfigureMockMvc
 class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContractCallServiceTest {
+
+    private static final String CALL_URI = "/api/v1/contracts/call";
+
+    @Resource
+    private MockMvc mockMvc;
+
+    @Resource
+    private ObjectMapper objectMapper;
+
+    @SneakyThrows
+    private ResultActions contractCall(ContractCallRequest request) {
+        return mockMvc.perform(post(CALL_URI)
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(convert(request)));
+    }
 
     @Test
     void approveFungibleToken() {
@@ -90,6 +119,39 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
                 contract.send_approve(tokenAddress.toHexString(), Address.ZERO.toHexString(), BigInteger.ONE);
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
+    }
+
+    @Test
+    void contractDeployNonPayableWithoutValue() throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
+        final var request = new ContractCallRequest();
+        request.setBlock(BlockType.LATEST);
+        request.setData(contract.getContractBinary());
+        request.setFrom(Address.ZERO.toHexString());
+        // When
+        contractCall(request)
+                // Then
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    final var response = result.getResponse().getContentAsString();
+                    assertThat(response).contains(BytecodeUtils.extractRuntimeBytecode(contract.getContractBinary()));
+                });
+    }
+
+    @Test
+    void contractDeployNonPayableWithValue() throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
+        final var request = new ContractCallRequest();
+        request.setBlock(BlockType.LATEST);
+        request.setData(contract.getContractBinary());
+        request.setFrom(Address.ZERO.toHexString());
+        request.setValue(10);
+        // When
+        contractCall(request)
+                // Then
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -738,5 +800,10 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
                         .amount(amount)
                         .owner(owner.getId()))
                 .persist();
+    }
+
+    @SneakyThrows
+    private String convert(Object object) {
+        return objectMapper.writeValueAsString(object);
     }
 }
