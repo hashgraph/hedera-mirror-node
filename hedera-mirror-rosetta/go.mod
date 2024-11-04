@@ -6,7 +6,7 @@ require (
 	github.com/Code-Hex/go-generics-cache v1.5.1
 	github.com/coinbase/rosetta-sdk-go v0.8.6
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0
-	github.com/cucumber/godog v0.14.1
+	github.com/cucumber/godog v0.15.0
 	github.com/ethereum/go-ethereum v1.14.11
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20240910141930-3e9d10484c9a
