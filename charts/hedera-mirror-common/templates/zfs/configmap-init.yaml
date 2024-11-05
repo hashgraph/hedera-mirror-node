@@ -194,6 +194,13 @@ data:
       echo "Configuring zpool ${POOL}"
       partprobe
 
+      ARC_SIZE_GB="${ARC_SIZE_GB:-2}"
+      echo "Configuring arc max to ${ARC_SIZE_GB}GB and arc min to 1/4 of max"
+      ARC_MAX="$((ARC_SIZE_GB*1073741824))"
+      ARC_MIN="$((ARC_MAX/4))"
+      echo $ARC_MIN >> /sys/module/zfs/parameters/zfs_arc_min
+      echo $ARC_MAX >> /sys/module/zfs/parameters/zfs_arc_max
+
       if (zfs list | grep -q "${POOL}"); then
           echo "Found existing pool. Skipping creation"
       elif (zpool create -o autoexpand=on "${POOL}" /dev/sdb); then
@@ -234,11 +241,6 @@ data:
       else
         echo "No L2 cache device specified. Skipping ..."
       fi
-
-      ARC_SIZE_GB="${ARC_SIZE_GB:-2}"
-      echo "Configuring arc to ${ARC_SIZE_GB}GB"
-      ARC_SIZE="$((ARC_SIZE_GB*1073741824))"
-      echo $ARC_SIZE >> /sys/module/zfs/parameters/zfs_arc_max
 
       zfs set primarycache=metadata xattr=sa "${POOL}"
       zpool set autoexpand=on "${POOL}"
