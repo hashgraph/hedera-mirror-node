@@ -79,15 +79,15 @@ public class MirrorNodeState implements State {
             if (serviceStates == null) {
                 return new EmptyReadableStates();
             }
-            final Map<String, Object> states = new ConcurrentHashMap<>();
+            final Map<String, Object> data = new ConcurrentHashMap<>();
             for (final var entry : serviceStates.entrySet()) {
                 final var stateName = entry.getKey();
                 final var state = entry.getValue();
                 if (state instanceof Map map) {
-                    states.put(stateName, new MapReadableKVState(stateName, map));
+                    data.put(stateName, new MapReadableKVState(stateName, map));
                 }
             }
-            return new MapReadableStates(states);
+            return new MapReadableStates(data);
         });
     }
 
