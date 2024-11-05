@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+function checkCitusMetadataSyncStatus() {
+  local namespace="${1}"
+
+  deadline=$((SECONDS+300))
+  while [[ "$SECONDS" -lt "$deadline" ]]; do
+    synced=$(kubectl exec -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U postgres -d mirror_node -P format=unaligned -t -c "select bool_and(metadatasynced) from pg_dist_node")
+    if [[ "${synced}" == "t" ]]; then
+      log "Citus metadata is synced"
+      return 0
+    else
+      log "Citus metadata is not synced. Waiting..."
+      sleep 5
+    fi
+  done
+
+  log "Citus metadata did not sync in 300 seconds"
+  exit 1
+}
+
 function doContinue() {
   read -p "Continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 }
@@ -57,6 +76,8 @@ function unrouteTraffic() {
 
 function routeTraffic() {
   local namespace="${1}"
+
+  checkCitusMetadataSyncStatus "${namespace}"
 
   log "Running test queries"
   kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U mirror_rest -d mirror_node -c "select * from transaction limit 10"
