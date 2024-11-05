@@ -16,91 +16,98 @@
 
 package com.hedera.mirror.web3.state;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.mirror.web3.state.utils.MapReadableKVState;
 import com.hedera.mirror.web3.state.utils.MapReadableStates;
 import com.hedera.mirror.web3.state.utils.MapWritableKVState;
 import com.hedera.mirror.web3.state.utils.MapWritableStates;
-import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.token.TokenService;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.EmptyReadableStates;
+import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 @Named
 public class MirrorNodeState implements State {
-    private final Map<String, ReadableKVState<?, ?>> tokenReadableServiceStates = new HashMap<>();
-    private final Map<String, ReadableKVState<?, ?>> contractReadableServiceStates = new HashMap<>();
-    private final Map<String, ReadableKVState<?, ?>> fileReadableServiceStates = new HashMap<>();
 
     private final Map<String, ReadableStates> readableStates = new ConcurrentHashMap<>();
+    // Key is Service, value is Map of state name to state datasource
+    private final Map<String, Map<String, Object>> states = new ConcurrentHashMap<>();
 
-    public MirrorNodeState(
-            final AccountReadableKVState accountReadableKVState,
-            final AirdropsReadableKVState airdropsReadableKVState,
-            final AliasesReadableKVState aliasesReadableKVState,
-            final ContractBytecodeReadableKVState contractBytecodeReadableKVState,
-            final ContractStorageReadableKVState contractStorageReadableKVState,
-            final FileReadableKVState fileReadableKVState,
-            final NftReadableKVState nftReadableKVState,
-            final TokenReadableKVState tokenReadableKVState,
-            final TokenRelationshipReadableKVState tokenRelationshipReadableKVState) {
+    public MirrorNodeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
+        final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
+        dataSources.forEach((k, b) -> {
+            if (!serviceStates.containsKey(k)) {
+                serviceStates.put(k, b);
+            }
+        });
 
-        tokenReadableServiceStates.put("ACCOUNTS", accountReadableKVState);
-        tokenReadableServiceStates.put("PENDING_AIRDROPS", airdropsReadableKVState);
-        tokenReadableServiceStates.put("ALIASES", aliasesReadableKVState);
-        tokenReadableServiceStates.put("NFTS", nftReadableKVState);
-        tokenReadableServiceStates.put("TOKENS", tokenReadableKVState);
-        tokenReadableServiceStates.put("TOKEN_RELS", tokenRelationshipReadableKVState);
+        // Purge any readable states whose state definitions are now stale,
+        // since they don't include the new data sources we just added
+        readableStates.remove(serviceName);
+        return this;
+    }
 
-        contractReadableServiceStates.put("BYTECODE", contractBytecodeReadableKVState);
-        contractReadableServiceStates.put("STORAGE", contractStorageReadableKVState);
-
-        fileReadableServiceStates.put("FILES", fileReadableKVState);
+    /**
+     * Removes the state with the given key for the service with the given name.
+     *
+     * @param serviceName the name of the service
+     * @param stateKey the key of the state
+     */
+    public void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
+        requireNonNull(serviceName);
+        requireNonNull(stateKey);
+        this.states.computeIfPresent(serviceName, (k, v) -> {
+            v.remove(stateKey);
+            readableStates.remove(serviceName); // Remove the service so that its states will be repopulated.
+            return v;
+        });
     }
 
     @Nonnull
     @Override
     public ReadableStates getReadableStates(@Nonnull String serviceName) {
         return readableStates.computeIfAbsent(serviceName, s -> {
-            switch (s) {
-                case TokenService.NAME -> {
-                    return new MapReadableStates(tokenReadableServiceStates);
-                }
-                case ContractService.NAME -> {
-                    return new MapReadableStates(contractReadableServiceStates);
-                }
-                case FileService.NAME -> {
-                    return new MapReadableStates(fileReadableServiceStates);
-                }
-                default -> {
-                    return new MapReadableStates(Collections.emptyMap());
+            final var serviceStates = this.states.get(s);
+            if (serviceStates == null) {
+                return new EmptyReadableStates();
+            }
+            final Map<String, Object> states = new ConcurrentHashMap<>();
+            for (final var entry : serviceStates.entrySet()) {
+                final var stateName = entry.getKey();
+                final var state = entry.getValue();
+                if (state instanceof Map map) {
+                    states.put(stateName, new MapReadableKVState(stateName, map));
                 }
             }
+            return new MapReadableStates(states);
         });
     }
 
     @Nonnull
     @Override
     public WritableStates getWritableStates(@Nonnull String serviceName) {
-        return switch (serviceName) {
-            case TokenService.NAME -> new MapWritableStates(getWritableStates(tokenReadableServiceStates));
-            case ContractService.NAME -> new MapWritableStates(getWritableStates(contractReadableServiceStates));
-            case FileService.NAME -> new MapWritableStates(getWritableStates(fileReadableServiceStates));
-            default -> new MapWritableStates(Collections.emptyMap());
-        };
-    }
+        final var serviceStates = states.get(serviceName);
+        if (serviceStates == null) {
+            return new EmptyWritableStates();
+        }
 
-    private Map<String, ?> getWritableStates(final Map<String, ReadableKVState<?, ?>> readableStates) {
-        final Map<String, Object> data = new HashMap<>();
-        readableStates.forEach(((s, readableKVState) ->
-                data.put(s, new MapWritableKVState<>(readableKVState.getStateKey(), readableKVState))));
-        return data;
+        final Map<String, Object> data = new ConcurrentHashMap<>();
+        for (final var entry : serviceStates.entrySet()) {
+            final var stateName = entry.getKey();
+            final var state = entry.getValue();
+            if (state instanceof Map) {
+                final var readableState = getReadableStates(serviceName).get(stateName);
+                data.put(stateName, new MapWritableKVState<>(stateName, readableState));
+            }
+        }
+        return new MapWritableStates(data);
     }
 }
