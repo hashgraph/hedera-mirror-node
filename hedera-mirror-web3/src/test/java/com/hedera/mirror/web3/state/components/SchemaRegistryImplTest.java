@@ -149,8 +149,7 @@ class SchemaRegistryImplTest {
         verify(mirrorNodeState, times(1)).getReadableStates(serviceName);
         verify(schema).migrate(any());
         verify(writableStates, times(1)).commit();
-        // TODO uncomment
-        // verify(mirrorNodeState, times(1)).addService(any(), any());
+        verify(mirrorNodeState, times(1)).addService(any(), any());
     }
 
     @Test

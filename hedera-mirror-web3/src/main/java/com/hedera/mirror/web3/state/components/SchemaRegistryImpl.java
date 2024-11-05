@@ -126,9 +126,9 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             if (writableStates instanceof MapWritableStates mws) {
                 mws.commit();
             }
-            // TODO uncomment
+
             // And finally we can remove any states we need to remove
-            // schema.statesToRemove().forEach(stateKey -> state.removeServiceState(serviceName, stateKey));
+            schema.statesToRemove().forEach(stateKey -> state.removeServiceState(serviceName, stateKey));
         }
     }
 
@@ -210,8 +210,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             }
         });
 
-        // TODO uncomment
-        // state.addService(serviceName, stateDataSources);
+        state.addService(serviceName, stateDataSources);
 
         final var statesToRemove = schema.statesToRemove();
         final var writableStates = state.getWritableStates(serviceName);
