@@ -117,4 +117,26 @@ class MapWritableStatesTest {
         Set<String> keys = states.stateKeys();
         assertThatThrownBy(() -> keys.add("newKey")).isInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void testEqualsSameInstance() {
+        assertThat(states).isEqualTo(states);
+    }
+
+    @Test
+    void testEqualsDifferentClass() {
+        assertThat(states).isNotEqualTo("other");
+    }
+
+    @Test
+    void testEqualsWithNull() {
+        assertThat(states).isNotEqualTo(null);
+    }
+
+    @Test
+    void testHashCode() {
+        MapWritableStates other = new MapWritableStates(
+                Map.of(KV_STATE_KEY, kvStateMock, SINGLETON_KEY, singletonStateMock, QUEUE_KEY, queueStateMock));
+        assertThat(states).hasSameHashCodeAs(other);
+    }
 }

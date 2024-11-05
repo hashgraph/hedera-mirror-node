@@ -129,6 +129,11 @@ class MapReadableStatesTest {
     }
 
     @Test
+    void testEqualsWithNull() {
+        assertThat(states).isNotEqualTo(null);
+    }
+
+    @Test
     void testEqualsSameValues() {
         MapReadableStates other = new MapReadableStates(
                 Map.of(KV_STATE_KEY, kvStateMock, SINGLETON_KEY, singletonStateMock, QUEUE_KEY, queueStateMock));
