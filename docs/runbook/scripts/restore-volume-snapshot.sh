@@ -64,11 +64,12 @@ function configureAndValidate() {
     fi
   fi
 
-  DISK_PREFIX="$(readUserInput "Enter the disk prefix of target cluster (value of zfs.init.diskPrefix in values.yaml): ")"
+  DISK_PREFIX=$(kubectl -n "${COMMON_NAMESPACE}" get daemonsets -l 'app=zfs-init' -o json | jq -r '.items[0].spec.template.spec.initContainers[0].env[] | select (.name == "DISK_PREFIX") | .value')
   if [[ -z "${DISK_PREFIX}" ]]; then
     log "DISK_PREFIX can not be empty. Exiting"
     exit 1
   fi
+  log "Target disk prefix is ${DISK_PREFIX}"
 
   if [[ -z "${ZFS_POOL_NAME}" ]]; then
     log "Unable to find zfs pool name. set ZFS_POOL_NAME to value of zfs.paramaters.poolname in common values.yaml"
