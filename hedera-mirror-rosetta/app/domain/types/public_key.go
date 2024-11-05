@@ -18,10 +18,10 @@ package types
 
 import (
 	"fmt"
+	"github.com/hashgraph/hedera-sdk-go/v2/proto/services"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
-	"github.com/hashgraph/hedera-protobufs-go/services"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
