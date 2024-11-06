@@ -22,9 +22,9 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFIN
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.state.MirrorNodeState;
+import com.hedera.mirror.web3.state.utils.FilteredWritableStates;
 import com.hedera.mirror.web3.state.utils.MapWritableStates;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
-import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -42,9 +42,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 
 public class SchemaRegistryImpl implements SchemaRegistry {
@@ -201,11 +199,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nonnull final MirrorNodeState state) {
         final Map<String, Object> stateDataSources = new HashMap<>();
         schema.statesToCreate(configuration).forEach(def -> {
-            if (def.singleton()) {
-                stateDataSources.put(def.stateKey(), new AtomicReference<>());
-            } else if (def.queue()) {
-                stateDataSources.put(def.stateKey(), new ConcurrentLinkedDeque<>());
-            } else {
+            if (def.onDisk()) {
                 stateDataSources.put(def.stateKey(), new ConcurrentHashMap<>());
             }
         });
