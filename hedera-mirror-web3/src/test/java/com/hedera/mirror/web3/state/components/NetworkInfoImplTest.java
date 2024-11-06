@@ -55,8 +55,7 @@ class NetworkInfoImplTest extends Web3IntegrationTest {
 
     @Test
     void testAddressBook() {
-        final var exception = assertThrows(UnsupportedOperationException.class, () -> networkInfoImpl.addressBook());
-        assertThat(exception.getMessage()).isEqualTo("Address book is not supported.");
+        assertThat(networkInfoImpl.addressBook()).isNotEmpty();
     }
 
     @Test

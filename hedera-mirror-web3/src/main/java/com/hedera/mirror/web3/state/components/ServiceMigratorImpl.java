@@ -20,9 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChanges.Builder;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.mirror.web3.state.MirrorNodeState;
-import com.hedera.mirror.web3.state.utils.MapWritableStates;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.config.data.HederaConfig;
@@ -36,14 +34,10 @@ import jakarta.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ServiceMigratorImpl implements ServiceMigrator {
-
-    public static final String NAME_OF_ENTITY_ID_SERVICE = "EntityIdService";
-    public static final String NAME_OF_ENTITY_ID_SINGLETON = "ENTITY_ID";
 
     @Override
     public List<Builder> doMigrations(
@@ -72,46 +66,23 @@ public class ServiceMigratorImpl implements ServiceMigrator {
         final AtomicLong prevEntityNum =
                 new AtomicLong(config.getConfigData(HederaConfig.class).firstUserEntity() - 1);
         final Map<String, Object> sharedValues = new HashMap<>();
-        final var entityIdRegistration = registry.registrations().stream()
-                .filter(service ->
-                        NAME_OF_ENTITY_ID_SERVICE.equals(service.service().getServiceName()))
-                .findFirst()
-                .orElseThrow();
-        if (!(entityIdRegistration.registry() instanceof SchemaRegistryImpl entityIdRegistry)) {
-            throw new IllegalArgumentException("Can only be used with SchemaRegistryImpl instances");
-        }
         final var deserializedPbjVersion = Optional.ofNullable(previousVersion)
                 .map(SoftwareVersion::getPbjSemanticVersion)
                 .orElse(null);
-        entityIdRegistry.migrate(
-                NAME_OF_ENTITY_ID_SERVICE,
-                mirrorNodeState,
-                deserializedPbjVersion,
-                networkInfo,
-                config,
-                sharedValues,
-                prevEntityNum);
-        registry.registrations().stream()
-                .filter(r -> !Objects.equals(entityIdRegistration, r))
-                .forEach(registration -> {
-                    if (!(registration.registry() instanceof SchemaRegistryImpl schemaRegistry)) {
-                        throw new IllegalArgumentException("Can only be used with SchemaRegistryImpl instances");
-                    }
-                    schemaRegistry.migrate(
-                            registration.serviceName(),
-                            mirrorNodeState,
-                            deserializedPbjVersion,
-                            networkInfo,
-                            config,
-                            sharedValues,
-                            prevEntityNum);
-                });
-        final var entityIdWritableStates = mirrorNodeState.getWritableStates(NAME_OF_ENTITY_ID_SERVICE);
-        if (!(entityIdWritableStates instanceof MapWritableStates mapWritableStates)) {
-            throw new IllegalArgumentException("Can only be used with MapWritableStates instances");
-        }
-        mapWritableStates.getSingleton(NAME_OF_ENTITY_ID_SINGLETON).put(new EntityNumber(prevEntityNum.get()));
-        mapWritableStates.commit();
+
+        registry.registrations().stream().forEach(registration -> {
+            if (!(registration.registry() instanceof SchemaRegistryImpl schemaRegistry)) {
+                throw new IllegalArgumentException("Can only be used with SchemaRegistryImpl instances");
+            }
+            schemaRegistry.migrate(
+                    registration.serviceName(),
+                    mirrorNodeState,
+                    deserializedPbjVersion,
+                    networkInfo,
+                    config,
+                    sharedValues,
+                    prevEntityNum);
+        });
         return List.of();
     }
 

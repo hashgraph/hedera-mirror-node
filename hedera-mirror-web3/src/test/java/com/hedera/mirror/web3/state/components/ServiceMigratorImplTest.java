@@ -16,18 +16,13 @@
 
 package com.hedera.mirror.web3.state.components;
 
-import static com.hedera.mirror.web3.state.components.ServiceMigratorImpl.NAME_OF_ENTITY_ID_SERVICE;
-import static com.hedera.mirror.web3.state.components.ServiceMigratorImpl.NAME_OF_ENTITY_ID_SINGLETON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.state.MirrorNodeState;
-import com.hedera.mirror.web3.state.utils.MapWritableStates;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.services.ServicesRegistry;
@@ -37,12 +32,9 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.info.NetworkInfo;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,9 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ServiceMigratorImplTest {
-
-    @Mock
-    private MapWritableStates mapWritableStates;
 
     @Mock
     private Metrics metrics;
@@ -80,9 +69,6 @@ class ServiceMigratorImplTest {
     @Mock
     private State mockState;
 
-    @Mock
-    private WritableSingletonState writableSingletonState;
-
     private VersionedConfiguration bootstrapConfig;
 
     private ServiceMigratorImpl serviceMigrator;
@@ -106,15 +92,10 @@ class ServiceMigratorImplTest {
     @Test
     void doMigrations() {
         final var mockServiceRegistration = mock(Registration.class);
-        final var mockService = mock(Service.class);
-        when(mockServiceRegistration.service()).thenReturn(mockService);
-        when(mockService.getServiceName()).thenReturn(NAME_OF_ENTITY_ID_SERVICE);
         when(servicesRegistry.registrations()).thenReturn(Set.of(mockServiceRegistration));
         when(mockServiceRegistration.registry()).thenReturn(schemaRegistry);
-        when(mirrorNodeState.getWritableStates(NAME_OF_ENTITY_ID_SERVICE)).thenReturn(mapWritableStates);
-        when(mapWritableStates.getSingleton(NAME_OF_ENTITY_ID_SINGLETON)).thenReturn(writableSingletonState);
 
-        serviceMigrator.doMigrations(
+        assertDoesNotThrow(() -> serviceMigrator.doMigrations(
                 mirrorNodeState,
                 servicesRegistry,
                 null,
@@ -122,16 +103,12 @@ class ServiceMigratorImplTest {
                         bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
                 new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
-                metrics);
-
-        verify(mapWritableStates, times(1)).commit();
+                metrics));
     }
 
     @Test
     void doMigrationsWithMultipleRegistrations() {
         Service service1 = mock(Service.class);
-        when(service1.getServiceName()).thenReturn(NAME_OF_ENTITY_ID_SERVICE);
-
         Service service2 = mock(Service.class);
         when(service2.getServiceName()).thenReturn("testService2");
 
@@ -141,10 +118,7 @@ class ServiceMigratorImplTest {
         Registration registration1 = new Registration(service1, registry1);
         Registration registration2 = new Registration(service2, registry2);
         when(servicesRegistry.registrations()).thenReturn(Set.of(registration1, registration2));
-        when(mirrorNodeState.getWritableStates(NAME_OF_ENTITY_ID_SERVICE)).thenReturn(mapWritableStates);
-        when(mapWritableStates.getSingleton(NAME_OF_ENTITY_ID_SINGLETON)).thenReturn(writableSingletonState);
-
-        serviceMigrator.doMigrations(
+        assertDoesNotThrow(() -> serviceMigrator.doMigrations(
                 mirrorNodeState,
                 servicesRegistry,
                 null,
@@ -152,16 +126,12 @@ class ServiceMigratorImplTest {
                         bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
                 new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
-                metrics);
-
-        verify(mapWritableStates, times(1)).commit();
+                metrics));
     }
 
     @Test
     void doMigrationsWithMultipleRegistrationsWithInvalidSchemaRegistry() {
         Service service1 = mock(Service.class);
-        when(service1.getServiceName()).thenReturn(NAME_OF_ENTITY_ID_SERVICE);
-
         Service service2 = mock(Service.class);
 
         SchemaRegistry registry1 = mock(SchemaRegistryImpl.class);
@@ -186,22 +156,6 @@ class ServiceMigratorImplTest {
                         metrics));
 
         assertThat(exception.getMessage()).isEqualTo("Can only be used with SchemaRegistryImpl instances");
-    }
-
-    @Test
-    void doMigrationsInvalidRegistrations() {
-        assertThrows(
-                NoSuchElementException.class,
-                () -> serviceMigrator.doMigrations(
-                        mirrorNodeState,
-                        servicesRegistry,
-                        null,
-                        new ServicesSoftwareVersion(bootstrapConfig
-                                .getConfigData(VersionConfig.class)
-                                .servicesVersion()),
-                        new ConfigProviderImpl().getConfiguration(),
-                        networkInfo,
-                        metrics));
     }
 
     @Test
@@ -243,9 +197,6 @@ class ServiceMigratorImplTest {
     @Test
     void doMigrationsInvalidSchemaRegistry() {
         final var mockServiceRegistration = mock(Registration.class);
-        final var mockService = mock(Service.class);
-        when(mockServiceRegistration.service()).thenReturn(mockService);
-        when(mockService.getServiceName()).thenReturn(NAME_OF_ENTITY_ID_SERVICE);
         when(servicesRegistry.registrations()).thenReturn(Set.of(mockServiceRegistration));
         when(mockServiceRegistration.registry()).thenReturn(mockSchemaRegistry);
         var exception = assertThrows(
@@ -262,32 +213,5 @@ class ServiceMigratorImplTest {
                         metrics));
 
         assertThat(exception.getMessage()).isEqualTo("Can only be used with SchemaRegistryImpl instances");
-    }
-
-    @Test
-    void doMigrationsInvalidWritableStates() {
-        final var mockServiceRegistration = mock(Registration.class);
-        final var mockService = mock(Service.class);
-        when(mockServiceRegistration.service()).thenReturn(mockService);
-        when(mockService.getServiceName()).thenReturn(NAME_OF_ENTITY_ID_SERVICE);
-        when(servicesRegistry.registrations()).thenReturn(Set.of(mockServiceRegistration));
-        when(mockServiceRegistration.registry()).thenReturn(schemaRegistry);
-        final var mockMapWritableStates = mock(EmptyWritableStates.class);
-        when(mirrorNodeState.getWritableStates(NAME_OF_ENTITY_ID_SERVICE)).thenReturn(mockMapWritableStates);
-
-        var exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> serviceMigrator.doMigrations(
-                        mirrorNodeState,
-                        servicesRegistry,
-                        null,
-                        new ServicesSoftwareVersion(bootstrapConfig
-                                .getConfigData(VersionConfig.class)
-                                .servicesVersion()),
-                        new ConfigProviderImpl().getConfiguration(),
-                        networkInfo,
-                        metrics));
-
-        assertThat(exception.getMessage()).isEqualTo("Can only be used with MapWritableStates instances");
     }
 }
