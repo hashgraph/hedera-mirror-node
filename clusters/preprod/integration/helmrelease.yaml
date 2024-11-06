@@ -59,6 +59,9 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    rest:
+      env:
+        HEDERA_MIRROR_REST_CACHE_RESPONSE_ENABLED: "true"
     rosetta:
       enabled: true
     test:
