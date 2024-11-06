@@ -52,7 +52,7 @@ public class MapReadableStates implements ReadableStates {
     @Nonnull
     @Override
     public <T> ReadableSingletonState<T> getSingleton(@Nonnull String stateKey) {
-        final var state = states.get(Objects.requireNonNull(stateKey));
+        var state = states.get(Objects.requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown singleton state key: " + stateKey);
         }

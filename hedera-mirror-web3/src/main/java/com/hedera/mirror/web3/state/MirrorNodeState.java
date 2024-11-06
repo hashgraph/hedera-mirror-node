@@ -18,20 +18,25 @@ package com.hedera.mirror.web3.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.mirror.web3.state.utils.ListReadableQueueState;
+import com.hedera.mirror.web3.state.utils.ListWritableQueueState;
 import com.hedera.mirror.web3.state.utils.MapReadableKVState;
 import com.hedera.mirror.web3.state.utils.MapReadableStates;
 import com.hedera.mirror.web3.state.utils.MapWritableKVState;
 import com.hedera.mirror.web3.state.utils.MapWritableStates;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.EmptyReadableStates;
-import com.swirlds.state.spi.EmptyWritableStates;
+import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 @Named
@@ -77,14 +82,18 @@ public class MirrorNodeState implements State {
         return readableStates.computeIfAbsent(serviceName, s -> {
             final var serviceStates = this.states.get(s);
             if (serviceStates == null) {
-                return new EmptyReadableStates();
+                return new MapReadableStates(new HashMap<>());
             }
             final Map<String, Object> states = new ConcurrentHashMap<>();
             for (final var entry : serviceStates.entrySet()) {
                 final var stateName = entry.getKey();
                 final var state = entry.getValue();
-                if (state instanceof Map map) {
+                if (state instanceof Queue queue) {
+                    states.put(stateName, new ListReadableQueueState(stateName, queue));
+                } else if (state instanceof Map map) {
                     states.put(stateName, new MapReadableKVState(stateName, map));
+                } else if (state instanceof AtomicReference ref) {
+                    states.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
                 }
             }
             return new MapReadableStates(states);
@@ -96,16 +105,20 @@ public class MirrorNodeState implements State {
     public WritableStates getWritableStates(@Nonnull String serviceName) {
         final var serviceStates = states.get(serviceName);
         if (serviceStates == null) {
-            return new EmptyWritableStates();
+            return new MapWritableStates(new HashMap<>());
         }
 
         final Map<String, Object> data = new ConcurrentHashMap<>();
         for (final var entry : serviceStates.entrySet()) {
             final var stateName = entry.getKey();
             final var state = entry.getValue();
-            if (state instanceof Map) {
+            if (state instanceof Queue<?> queue) {
+                data.put(stateName, new ListWritableQueueState<>(stateName, queue));
+            } else if (state instanceof Map) {
                 final var readableState = getReadableStates(serviceName).get(stateName);
                 data.put(stateName, new MapWritableKVState<>(stateName, readableState));
+            } else if (state instanceof AtomicReference ref) {
+                data.put(stateName, new WritableSingletonStateBase<>(stateName, ref::get, (value) -> ref.set(value)));
             }
         }
         return new MapWritableStates(data);

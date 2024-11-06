@@ -22,6 +22,7 @@ import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import jakarta.annotation.Nonnull;
 import java.util.Collections;
@@ -29,7 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class MapWritableStates implements WritableStates, CommittableWritableStates {
 
     private final Map<String, ?> states;
@@ -112,6 +113,13 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
 
     @Override
     public void commit() {
-        // Empty body because we don't want to persist any changes to DB.
+        states.values().forEach(state -> {
+            //            if (state instanceof WritableKVStateBase kv) {
+            //                kv.commit();
+            //            } else
+            if (state instanceof WritableSingletonStateBase singleton) {
+                singleton.commit();
+            }
+        });
     }
 }

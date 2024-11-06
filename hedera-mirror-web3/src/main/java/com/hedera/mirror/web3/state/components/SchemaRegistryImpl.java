@@ -42,7 +42,9 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 
 public class SchemaRegistryImpl implements SchemaRegistry {
@@ -199,7 +201,11 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nonnull final MirrorNodeState state) {
         final Map<String, Object> stateDataSources = new HashMap<>();
         schema.statesToCreate(configuration).forEach(def -> {
-            if (def.onDisk()) {
+            if (def.singleton()) {
+                stateDataSources.put(def.stateKey(), new AtomicReference<>());
+            } else if (def.queue()) {
+                stateDataSources.put(def.stateKey(), new ConcurrentLinkedDeque<>());
+            } else {
                 stateDataSources.put(def.stateKey(), new ConcurrentHashMap<>());
             }
         });

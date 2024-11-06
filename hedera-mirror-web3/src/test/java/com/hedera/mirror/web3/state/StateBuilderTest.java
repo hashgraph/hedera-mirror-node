@@ -52,16 +52,12 @@ import java.time.InstantSource;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class StateBuilderTest extends Web3IntegrationTest {
 
     @Resource
     private NetworkInfoImpl networkInfo;
-
-    @BeforeEach
-    void init() {}
 
     @Test
     void testBuildState() {

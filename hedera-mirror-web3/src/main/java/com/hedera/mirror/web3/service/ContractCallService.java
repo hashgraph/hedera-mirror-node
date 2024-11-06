@@ -20,24 +20,69 @@ import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErr
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
+import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.state.MirrorNodeState;
+import com.hedera.mirror.web3.state.components.MetricsImpl;
+import com.hedera.mirror.web3.state.components.ServiceMigratorImpl;
+import com.hedera.mirror.web3.state.components.ServicesRegistryImpl;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
+import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.FeeService;
+import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.services.AppContextImpl;
+import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.app.workflows.standalone.TransactionExecutors;
+import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.VersionConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
+import java.time.Instant;
+import java.time.InstantSource;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import lombok.CustomLog;
-import org.apache.tuweni.bytes.Bytes;
 
 @Named
 @CustomLog
@@ -51,6 +96,7 @@ public abstract class ContractCallService {
     private final RecordFileService recordFileService;
     private final ThrottleProperties throttleProperties;
     private final Bucket gasLimitBucket;
+    private final NetworkInfo networkInfo;
 
     protected ContractCallService(
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
@@ -58,7 +104,8 @@ public abstract class ContractCallService {
             ThrottleProperties throttleProperties,
             MeterRegistry meterRegistry,
             RecordFileService recordFileService,
-            Store store) {
+            Store store,
+            NetworkInfo networkInfo) {
         this.gasLimitCounter = Counter.builder(GAS_LIMIT_METRIC)
                 .description("The amount of gas limit sent in the request")
                 .withRegistry(meterRegistry);
@@ -70,6 +117,7 @@ public abstract class ContractCallService {
         this.recordFileService = recordFileService;
         this.throttleProperties = throttleProperties;
         this.gasLimitBucket = gasLimitBucket;
+        this.networkInfo = networkInfo;
     }
 
     /**
@@ -106,13 +154,36 @@ public abstract class ContractCallService {
             CallServiceParameters params, long estimatedGas, boolean restoreGasToThrottleBucket)
             throws MirrorEvmTransactionException {
         try {
-            var result = mirrorEvmTxProcessor.execute(params, estimatedGas);
-            if (!restoreGasToThrottleBucket) {
-                return result;
+            //            var result = mirrorEvmTxProcessor.execute(params, estimatedGas);
+            final var isContractCreate = params.getReceiver().isZero();
+            final var state = buildState();
+            if (isContractCreate) {
+
+            } else {
+                final var transactionBody = TransactionBody.newBuilder()
+                        .contractCall(ContractCallTransactionBody.newBuilder()
+                                .contractID(ContractID.newBuilder()
+                                        .evmAddress(
+                                                Bytes.wrap(params.getReceiver().toArrayUnsafe()))
+                                        .build())
+                                .build())
+                        .nodeAccountID(AccountID.newBuilder().accountNum(2).build())
+                        .transactionID(TransactionID.newBuilder()
+                                .transactionValidStart(new Timestamp(0, 0))
+                                .accountID(AccountID.newBuilder().accountNum(2).build())
+                                .build())
+                        .build();
+                var receipt = TransactionExecutors.TRANSACTION_EXECUTORS
+                        .newExecutor(state, Map.of(), null)
+                        .execute(transactionBody, Instant.now());
             }
 
-            restoreGasToBucket(result, params.getGas());
-            return result;
+            //            if (!restoreGasToThrottleBucket) {
+            //                return result;
+            //            }
+
+            //            restoreGasToBucket(result, params.getGas());
+            return null;
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }
@@ -134,7 +205,7 @@ public abstract class ContractCallService {
     protected void validateResult(final HederaEvmTransactionProcessingResult txnResult, final CallType type) {
         if (!txnResult.isSuccessful()) {
             updateGasUsedMetric(ERROR, txnResult.getGasUsed(), 1);
-            var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
+            var revertReason = txnResult.getRevertReason().orElse(org.apache.tuweni.bytes.Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
             throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
         } else {
@@ -150,5 +221,84 @@ public abstract class ContractCallService {
 
     protected void updateGasLimitMetric(final CallType callType, final long gasLimit) {
         gasLimitCounter.withTags("type", callType.toString()).increment(gasLimit);
+    }
+
+    private State buildState() {
+        final var state = new MirrorNodeState();
+        final var servicesRegistry = new ServicesRegistryImpl();
+        registerServices(servicesRegistry);
+        final var migrator = new ServiceMigratorImpl();
+        final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
+        migrator.doMigrations(
+                state,
+                servicesRegistry,
+                null,
+                new ServicesSoftwareVersion(
+                        bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
+                new ConfigProviderImpl().getConfiguration(),
+                networkInfo,
+                new MetricsImpl());
+
+        final var writableStates = state.getWritableStates(FileService.NAME);
+        final var files = writableStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
+        genesisContentProviders(networkInfo, bootstrapConfig).forEach((fileNum, provider) -> {
+            final var fileId = createFileID(fileNum, bootstrapConfig);
+            files.put(
+                    fileId,
+                    File.newBuilder()
+                            .fileId(fileId)
+                            .keys(KeyList.DEFAULT)
+                            .contents(provider.apply(bootstrapConfig))
+                            .build());
+        });
+        ((CommittableWritableStates) writableStates).commit();
+        return state;
+    }
+
+    private void registerServices(ServicesRegistry servicesRegistry) {
+        // Register all service schema RuntimeConstructable factories before platform init
+        final var appContext = new AppContextImpl(InstantSource.system(), fakeSignatureVerifier());
+        Set.of(
+                        new TokenServiceImpl(),
+                        new FileServiceImpl(),
+                        new ContractServiceImpl(appContext),
+                        new BlockRecordService(),
+                        new FeeService(),
+                        new CongestionThrottleService(),
+                        new RecordCacheService())
+                .forEach(servicesRegistry::register);
+    }
+
+    private Map<Long, Function<Configuration, com.hedera.pbj.runtime.io.buffer.Bytes>> genesisContentProviders(
+            final NetworkInfo networkInfo, final Configuration config) {
+        final var genesisSchema = new V0490FileSchema();
+        final var filesConfig = config.getConfigData(FilesConfig.class);
+        return Map.of(
+                filesConfig.addressBook(), ignore -> genesisSchema.genesisAddressBook(networkInfo),
+                filesConfig.nodeDetails(), ignore -> genesisSchema.genesisNodeDetails(networkInfo),
+                filesConfig.feeSchedules(), genesisSchema::genesisFeeSchedules,
+                filesConfig.exchangeRates(), genesisSchema::genesisExchangeRates,
+                filesConfig.networkProperties(), genesisSchema::genesisNetworkProperties,
+                filesConfig.hapiPermissions(), genesisSchema::genesisHapiPermissions,
+                filesConfig.throttleDefinitions(), genesisSchema::genesisThrottleDefinitions);
+    }
+
+    private SignatureVerifier fakeSignatureVerifier() {
+        return new SignatureVerifier() {
+            @Override
+            public boolean verifySignature(
+                    @NonNull Key key,
+                    @NonNull com.hedera.pbj.runtime.io.buffer.Bytes bytes,
+                    @NonNull MessageType messageType,
+                    @NonNull SignatureMap signatureMap,
+                    @Nullable Function<Key, SimpleKeyStatus> simpleKeyVerifier) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public KeyCounts countSimpleKeys(@NonNull Key key) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+        };
     }
 }

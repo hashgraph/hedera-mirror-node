@@ -60,6 +60,7 @@ import com.hedera.mirror.web3.web3j.generated.State;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
+import com.swirlds.state.spi.info.NetworkInfo;
 import io.github.bucket4j.Bucket;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
@@ -85,6 +86,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Mock
     private Bucket gasLimitBucket;
+
+    @Mock
+    private NetworkInfo networkInfo;
 
     @Autowired
     private BinaryGasEstimator binaryGasEstimator;
@@ -715,7 +719,8 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 mirrorEvmTxProcessor,
                 recordFileService,
                 throttleProperties,
-                gasLimitBucket);
+                gasLimitBucket,
+                networkInfo);
 
         // When
         try {
@@ -748,7 +753,8 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 mirrorEvmTxProcessor,
                 recordFileService,
                 throttleProperties,
-                gasLimitBucket);
+                gasLimitBucket,
+                networkInfo);
 
         // When
         try {
@@ -782,7 +788,8 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 mirrorEvmTxProcessor,
                 recordFileService,
                 throttleProperties,
-                gasLimitBucket);
+                gasLimitBucket,
+                networkInfo);
 
         // When
         try {

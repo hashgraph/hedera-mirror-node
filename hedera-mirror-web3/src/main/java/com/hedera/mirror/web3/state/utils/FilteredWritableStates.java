@@ -17,10 +17,8 @@
 package com.hedera.mirror.web3.state.utils;
 
 import com.swirlds.state.spi.WritableSingletonState;
-import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Set;
 
 public class FilteredWritableStates extends com.hedera.node.app.spi.state.FilteredWritableStates {
@@ -37,11 +35,6 @@ public class FilteredWritableStates extends com.hedera.node.app.spi.state.Filter
     @NonNull
     @Override
     public <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey) {
-        Objects.requireNonNull(stateKey);
-        if (!contains(stateKey)) {
-            return new WritableSingletonStateBase<>(stateKey, () -> null, c -> {});
-        }
-
-        return getDelegate().getSingleton(stateKey);
+        return super.getSingleton(stateKey);
     }
 }
