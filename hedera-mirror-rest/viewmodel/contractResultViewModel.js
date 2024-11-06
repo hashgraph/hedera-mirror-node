@@ -53,7 +53,7 @@ class ContractResultViewModel {
     if (!contractResult.sender_id && contractResult.functionResult) {
       try {
         const functionResult = proto.ContractFunctionResult.decode(contractResult.functionResult);
-        return functionResult?.senderId?.alias?.length ? toHexString(Array.from(functionResult.senderId.alias), true) : null;
+        return functionResult?.senderId?.alias?.length ? toHexString(functionResult.senderId.alias, true) : null;
       } catch (error) {
         logger.warn('Error decoding function result', error);
       }
