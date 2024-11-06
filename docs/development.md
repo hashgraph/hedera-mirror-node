@@ -103,7 +103,7 @@ for IntelliJ IDEA.
 
 5. **Import Java Code Style**:
     - `Download`
-      the [Java Code Style by Steven Sheehy](https://gist.github.com/steven-sheehy/b324eb91155373c0906387ac88b53207).
+      the Java code file located in the repository at [docs/palantir-style.xml](docs/palantir-style.xml)
     - In IntelliJ, go to `File > Settings > Editor > Code Style`.
     - Click on `Java` under `Code Style`.
     - In the Code Style section for Java, look for an option to import the downloaded code style file. This can
@@ -171,7 +171,7 @@ You can run the project’s tests using Gradle.
 
 ## Docker Integration for Local Development
 
-The mirror node often depends on containerized services such as **PostgreSQL** or **Prometheus**. These services are
+The mirror node often depends on containerized services such as **PostgreSQL** or **Redis**. These services are
 defined in `docker-compose` files within the repository.
 
 1. **Start Docker Services**:
@@ -202,3 +202,16 @@ For production or deployment, you may need to generate Docker images.
    -PdockerRegistry=docker.io \
    -PdockerTag=1.0.0-SNAPSHOT
    ```
+
+2. **Push Docker Images**:
+   After building the Docker image, you can push it to the specified Docker registry to make it available for use in a
+   remote Kubernetes environment.
+
+   ```bash
+      ./gradlew dockerPush \
+      -PdockerPlatform=linux/amd64 \
+      -PdockerRegistry=docker.io \
+      -PdockerTag=1.0.0-SNAPSHOT
+   ```   
+   NB: Ensure you are logged into the Docker registry if authentication is required. This command will push the image
+   with the specified tag to the registry.
