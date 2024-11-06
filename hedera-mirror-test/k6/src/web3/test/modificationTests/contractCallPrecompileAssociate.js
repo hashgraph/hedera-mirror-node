@@ -19,7 +19,7 @@ import {PrecompileModificationTestTemplate} from '../commonPrecompileModificatio
 import {ContractCallTestScenarioBuilder} from '../common.js';
 
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
-const account = __ENV.ACCOUNT_ADDRESS;
+const account = __ENV.SPENDER_ADDRESS;
 const token = __ENV.TOKEN_ADDRESS;
 const runMode = __ENV.RUN_WITH_VARIABLES
 const selector = '0xd91cfc95'; //associateTokenExternal

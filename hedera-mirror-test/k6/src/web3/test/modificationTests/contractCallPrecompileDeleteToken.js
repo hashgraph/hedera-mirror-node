@@ -16,7 +16,7 @@
  */
 
 import {ContractCallTestScenarioBuilder} from '../common.js';
-import {PrecompileModificationTestTemplate} from "../commonPrecompileModificationFunctionsTemplate";
+import {PrecompileModificationTestTemplate} from '../commonPrecompileModificationFunctionsTemplate.js';
 
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
 const selector = '0x0c0a198c'; // deleteTokenExternal

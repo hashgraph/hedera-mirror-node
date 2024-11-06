@@ -20,7 +20,7 @@ import {PrecompileModificationTestTemplate} from '../commonPrecompileModificatio
 
 const contract = __ENV.ESTIMATE_PRECOMPILE_CONTRACT;
 const sender = __ENV.ACCOUNT_ADDRESS;
-const receiver = __ENV.SPENDER_ADDRESS;
+const receiver = __ENV.RECEIVER_ADDRESS;
 const token = __ENV.TOKEN_ADDRESS;
 const amount = __ENV.AMOUNT;
 const runMode = __ENV.RUN_WITH_VARIABLES;
