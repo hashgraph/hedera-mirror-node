@@ -96,15 +96,16 @@ documentation for more information.
 ## Documentation
 
 - Components
-  - [GraphQL API](docs/graphql/README.md)
-  - [gRPC API](docs/grpc/README.md)
-  - [Importer](docs/importer/README.md)
-  - [Monitor](docs/monitor/README.md)
-  - [REST API](docs/rest/README.md)
-  - [REST Java API](docs/rest-java/README.md)
-  - [Rosetta API](docs/rosetta/README.md)
-  - [Web3 API](docs/web3/README.md)
+    - [GraphQL API](docs/graphql/README.md)
+    - [gRPC API](docs/grpc/README.md)
+    - [Importer](docs/importer/README.md)
+    - [Monitor](docs/monitor/README.md)
+    - [REST API](docs/rest/README.md)
+    - [REST Java API](docs/rest-java/README.md)
+    - [Rosetta API](docs/rosetta/README.md)
+    - [Web3 API](docs/web3/README.md)
 - [Configuration](docs/configuration.md)
+- [Development Guide](docs/development.md)
 - [Contributing](docs/contributing.md)
 - [Installation](docs/installation.md)
 - [Troubleshooting](docs/troubleshooting.md)
@@ -121,6 +122,9 @@ If you have a question on how to use the product, please see our
 ## Contributing
 
 Contributions are welcome. Please see the [contributing guide](docs/contributing.md) to see how you can get involved.
+
+For detailed instructions on setting up the development environment, IDE configurations, and running tests, refer to
+the [Development Guide](docs/development.md).
 
 ## Code of Conduct
 
