@@ -31,12 +31,14 @@ import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Named
 public class ServiceMigratorImpl implements ServiceMigrator {
 
     @Override

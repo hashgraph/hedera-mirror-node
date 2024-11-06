@@ -29,11 +29,7 @@ import java.util.TreeSet;
 @Named
 public class ServicesRegistryImpl implements ServicesRegistry {
 
-    private final SortedSet<Registration> entries;
-
-    public ServicesRegistryImpl() {
-        this.entries = new TreeSet<>();
-    }
+    private final SortedSet<Registration> entries = new TreeSet<>();
 
     @Nonnull
     @Override

@@ -46,16 +46,14 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class SchemaRegistryImpl implements SchemaRegistry {
 
     public static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 47, 0, "SNAPSHOT", "");
 
     private final SchemaApplications schemaApplications;
-
-    public SchemaRegistryImpl(@Nonnull final SchemaApplications schemaApplications) {
-        this.schemaApplications = schemaApplications;
-    }
 
     /**
      * The ordered set of all schemas registered by the service
@@ -186,14 +184,6 @@ public class SchemaRegistryImpl implements SchemaRegistry {
         };
     }
 
-    /**
-     * Encapsulates the writable states before and after applying a schema's state definitions.
-     *
-     * @param beforeStates the writable states before applying the schema's state definitions
-     * @param afterStates the writable states after applying the schema's state definitions
-     */
-    private record RedefinedWritableStates(WritableStates beforeStates, WritableStates afterStates) {}
-
     private RedefinedWritableStates applyStateDefinitions(
             @Nonnull final String serviceName,
             @Nonnull final Schema schema,
@@ -219,4 +209,12 @@ public class SchemaRegistryImpl implements SchemaRegistry {
         final var newStates = new FilteredWritableStates(writableStates, remainingStates);
         return new RedefinedWritableStates(writableStates, newStates);
     }
+
+    /**
+     * Encapsulates the writable states before and after applying a schema's state definitions.
+     *
+     * @param beforeStates the writable states before applying the schema's state definitions
+     * @param afterStates  the writable states after applying the schema's state definitions
+     */
+    private record RedefinedWritableStates(WritableStates beforeStates, WritableStates afterStates) {}
 }
