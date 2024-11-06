@@ -19,7 +19,9 @@ package com.hedera.mirror.web3.state;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.state.components.MetricsImpl;
@@ -28,19 +30,25 @@ import com.hedera.mirror.web3.state.components.ServiceMigratorImpl;
 import com.hedera.mirror.web3.state.components.ServicesRegistryImpl;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.intern.ConfigurationProvider;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import jakarta.annotation.Resource;
+import java.time.InstantSource;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -51,9 +59,6 @@ public class StateBuilderTest extends Web3IntegrationTest {
 
     @Resource
     private NetworkInfoImpl networkInfo;
-
-    private final Configuration DEFAULT_CONFIG =
-            ConfigurationProvider.getInstance().createBuilder().build();
 
     @BeforeEach
     void init() {}
@@ -77,14 +82,14 @@ public class StateBuilderTest extends Web3IntegrationTest {
 
         final var writableStates = state.getWritableStates(FileService.NAME);
         final var files = writableStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
-        genesisContentProviders(networkInfo, DEFAULT_CONFIG).forEach((fileNum, provider) -> {
-            final var fileId = createFileID(fileNum, DEFAULT_CONFIG);
+        genesisContentProviders(networkInfo, bootstrapConfig).forEach((fileNum, provider) -> {
+            final var fileId = createFileID(fileNum, bootstrapConfig);
             files.put(
                     fileId,
                     File.newBuilder()
                             .fileId(fileId)
                             .keys(KeyList.DEFAULT)
-                            .contents(provider.apply(DEFAULT_CONFIG))
+                            .contents(provider.apply(bootstrapConfig))
                             .build());
         });
         ((CommittableWritableStates) writableStates).commit();
@@ -92,7 +97,9 @@ public class StateBuilderTest extends Web3IntegrationTest {
 
     private void registerServices(ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
-        Set.of(new TokenServiceImpl()).forEach(servicesRegistry::register);
+        final var appContext = new AppContextImpl(InstantSource.system(), fakeSignatureVerifier());
+        Set.of(new TokenServiceImpl(), new FileServiceImpl(), new ContractServiceImpl(appContext))
+                .forEach(servicesRegistry::register);
     }
 
     private Map<Long, Function<Configuration, Bytes>> genesisContentProviders(
@@ -107,5 +114,24 @@ public class StateBuilderTest extends Web3IntegrationTest {
                 filesConfig.networkProperties(), genesisSchema::genesisNetworkProperties,
                 filesConfig.hapiPermissions(), genesisSchema::genesisHapiPermissions,
                 filesConfig.throttleDefinitions(), genesisSchema::genesisThrottleDefinitions);
+    }
+
+    private SignatureVerifier fakeSignatureVerifier() {
+        return new SignatureVerifier() {
+            @Override
+            public boolean verifySignature(
+                    @NonNull Key key,
+                    @NonNull Bytes bytes,
+                    @NonNull MessageType messageType,
+                    @NonNull SignatureMap signatureMap,
+                    @Nullable Function<Key, SimpleKeyStatus> simpleKeyVerifier) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public KeyCounts countSimpleKeys(@NonNull Key key) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+        };
     }
 }
