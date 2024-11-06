@@ -50,7 +50,7 @@ public class NetworkInfoImpl implements NetworkInfo {
     @Nonnull
     @Override
     public List<NodeInfo> addressBook() {
-        return List.of();
+        return List.of(mockSelfNodeInfo());
     }
 
     @Nullable
