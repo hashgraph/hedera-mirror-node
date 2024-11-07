@@ -45,7 +45,7 @@ class MapWritableKVStateTest {
 
     @BeforeEach
     void setup() {
-        mapWritableKVState = new MapWritableKVState<>("ACCOUNTS", readableKVState);
+        mapWritableKVState = new MapWritableKVState<>("ACCOUNTS");
     }
 
     @Test
@@ -105,19 +105,19 @@ class MapWritableKVStateTest {
 
     @Test
     void testEqualsSameValues() {
-        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", readableKVState);
+        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS");
         assertThat(mapWritableKVState).isEqualTo(other);
     }
 
     @Test
     void testEqualsDifferentValues() {
-        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ALIASES", readableKVState);
+        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ALIASES");
         assertThat(mapWritableKVState).isNotEqualTo(other);
     }
 
     @Test
     void testHashCode() {
-        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", readableKVState);
+        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS");
         assertThat(mapWritableKVState).hasSameHashCodeAs(other);
     }
 }

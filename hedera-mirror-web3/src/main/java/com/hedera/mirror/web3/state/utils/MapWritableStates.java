@@ -20,10 +20,14 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableQueueStateBase;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import jakarta.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Map;
@@ -35,8 +39,16 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
 
     private final Map<String, ?> states;
 
-    public MapWritableStates(Map<String, ?> states) {
-        this.states = states;
+    @Nullable
+    private final Runnable onCommit;
+
+    public MapWritableStates(@NonNull final Map<String, ?> states) {
+        this(states, null);
+    }
+
+    public MapWritableStates(@NonNull final Map<String, ?> states, @Nullable final Runnable onCommit) {
+        this.states = requireNonNull(states);
+        this.onCommit = onCommit;
     }
 
     @Nonnull
@@ -114,12 +126,19 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
     @Override
     public void commit() {
         states.values().forEach(state -> {
-            //            if (state instanceof WritableKVStateBase kv) {
-            //                kv.commit();
-            //            } else
-            if (state instanceof WritableSingletonStateBase singleton) {
+            if (state instanceof WritableKVStateBase kv) {
+                kv.commit();
+            } else if (state instanceof WritableSingletonStateBase singleton) {
                 singleton.commit();
+            } else if (state instanceof WritableQueueStateBase queue) {
+                queue.commit();
+            } else {
+                throw new IllegalStateException(
+                        "Unknown state type " + state.getClass().getName());
             }
         });
+        if (onCommit != null) {
+            onCommit.run();
+        }
     }
 }

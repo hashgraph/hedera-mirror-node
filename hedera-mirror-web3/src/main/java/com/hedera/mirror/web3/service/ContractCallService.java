@@ -25,6 +25,7 @@ import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
@@ -49,6 +50,7 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -166,16 +168,21 @@ public abstract class ContractCallService {
                                         .evmAddress(
                                                 Bytes.wrap(params.getReceiver().toArrayUnsafe()))
                                         .build())
+                                .gas(100_000L)
                                 .build())
-                        .nodeAccountID(AccountID.newBuilder().accountNum(2).build())
+                        .nodeAccountID(AccountID.newBuilder().accountNum(1000).build())
                         .transactionID(TransactionID.newBuilder()
                                 .transactionValidStart(new Timestamp(0, 0))
-                                .accountID(AccountID.newBuilder().accountNum(2).build())
+                                .accountID(
+                                        AccountID.newBuilder().accountNum(1000).build())
                                 .build())
+                        .transactionValidDuration(new Duration(15))
                         .build();
                 var receipt = TransactionExecutors.TRANSACTION_EXECUTORS
                         .newExecutor(state, Map.of(), null)
-                        .execute(transactionBody, Instant.now());
+                        .execute(transactionBody, Instant.EPOCH);
+
+                int a = 0;
             }
 
             //            if (!restoreGasToThrottleBucket) {
@@ -259,6 +266,7 @@ public abstract class ContractCallService {
         // Register all service schema RuntimeConstructable factories before platform init
         final var appContext = new AppContextImpl(InstantSource.system(), fakeSignatureVerifier());
         Set.of(
+                        new EntityIdService(),
                         new TokenServiceImpl(),
                         new FileServiceImpl(),
                         new ContractServiceImpl(appContext),

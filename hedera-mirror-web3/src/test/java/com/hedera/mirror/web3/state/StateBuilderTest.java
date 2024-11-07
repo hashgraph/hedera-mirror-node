@@ -30,14 +30,25 @@ import com.hedera.mirror.web3.state.components.ServiceMigratorImpl;
 import com.hedera.mirror.web3.state.components.ServicesRegistryImpl;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.FeeService;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
+import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
+import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.VersionConfig;
@@ -94,7 +105,21 @@ public class StateBuilderTest extends Web3IntegrationTest {
     private void registerServices(ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
         final var appContext = new AppContextImpl(InstantSource.system(), fakeSignatureVerifier());
-        Set.of(new TokenServiceImpl(), new FileServiceImpl(), new ContractServiceImpl(appContext))
+        Set.of(
+                        new EntityIdService(),
+                        new ConsensusServiceImpl(),
+                        new TokenServiceImpl(),
+                        new FileServiceImpl(),
+                        new FreezeServiceImpl(),
+                        new ScheduleServiceImpl(),
+                        new ContractServiceImpl(appContext),
+                        new UtilServiceImpl(),
+                        new RecordCacheService(),
+                        new BlockRecordService(),
+                        new FeeService(),
+                        new CongestionThrottleService(),
+                        new NetworkServiceImpl(),
+                        new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
     }
 
