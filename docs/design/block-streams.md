@@ -1,0 +1,142 @@
+# HIP-1056 Block Streams
+
+## Purpose
+
+[HIP-1056](https://hips.hedera.com/hip/hip-1056) introduces a new output data format for consensus nodes, called block streams, that replaces the existing
+record streams and signature files with one single stream. Support for block streams in the Mirror Node
+will be split into two phases. This design document concerns the first phase which will translate the block streams into the existing record stream format and parse the
+translated record streams just as we do today. The second phase (to be detailed in a separate design document) will remove the translation and parse the block streams directly and
+translate record streams into block streams to allow the mirror node to continue to ingest all record streams from the past.
+
+## Goals
+
+- Ingest block stream files downloaded from an S3/GCP bucket and translate them into record stream files.
+
+## Non-Goals
+
+- Support for Block Nodes will be covered in a separate design document.
+
+## Architecture
+
+### Domain
+
+- Add a new type `BLOCK` to `StreamType` enum.
+- Add the new class `BlockItem implements StreamItem`.
+- Add new classes `BlockFile implements StreamFile<BlockItem>`.
+
+### Importer
+
+- Add a new downloader, `BlockStreamDownloader extends Downloader<BlockFile, BlockItem>`, that will download block stream files from an S3/GCP bucket. This downloader will poll the bucket for the next numbered block file and download it. It should not use any list operations.
+- Add a new interface, `BlockFileReader extends StreamFileReader<BlockFile, BlockItem>` that will read block files.
+- Add a `ProtoBlockFileReader implements BlockFileReader` that will generate a `BlockFile` from a `StreamFileData`.
+- Add a `BlockStreamTranslator` that will translate a block file into a record file according to the mapping below.
+
+### Block protobuf to mirror node database mapping
+
+#### Contract Create Transaction
+
+| Database                                      | Block Item                                                                                              |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| contract.id                                   | transaction_output.contract_create.sidecars[i].bytecode.contract_id                                     |
+| contract.file_id                              | state_changes[i].state_change.map_update.value.file_value.file_id                                       |
+| contract.initcode                             | transaction_output.contract_create.sidecars[i].bytecode.initcode                                        |
+| contract.runtime_bytecode                     | transaction_output.contract_create.sidecars[i].bytecode.runtime_bytecode                                |
+| contract_action.call_depth                    | transaction_output.contract_create.sidecars[i].actions.contract_actions.call_depth                      |
+| contract_action.call_operation_type           | transaction_output.contract_create.sidecars[i].actions.contract_actions.call_operation_type             |
+| contract_action.call_type                     | transaction_output.contract_create.sidecars[i].actions.contract_actions.call_type                       |
+| contract_action.caller                        | transaction_output.contract_create.sidecars[i].actions.contract_actions.caller                          |
+| contract_action.caller_type                   | transaction_output.contract_create.sidecars[i].actions.contract_actions.caller_case                     |
+| contract_action.consensus_timestamp           | transaction_output.contract_create.sidecars[i].consensus_timestamp                                      |
+| contract_action.gas                           | transaction_output.contract_create.sidecars[i].actions.contract_actions[j].gas                          |
+| contract_action.gas_used                      | transaction_output.contract_create.sidecars[i].actions.contract_actions[j].gas_used                     |
+| contract_action.index                         | Index j of transaction_output.contract_create.sidecars[i].actions.contract_actions[j]                   |
+| contract_action.input                         | transaction_output.contract_create.sidecars[i].actions.contract_actions.input                           |
+| contract_action.payer_account_id              | state_changes[i].state_change.map_update.value.account_value.account_id                                 |
+| contract_action.recipient_account             | transaction_output.contract_create.sidecars[i].actions.contract_actions[j].recipient_account            |
+| contract_action.recipient_address             | transaction_output.contract_create.sidecars[i].actions.contract_actions[j].targeted_address             |
+| contract_action.recipient_contract            | transaction_output.contract_create.sidecars[i].actions.contract_actions[j].recipient_contract           |
+| contract_action.result_data                   | transaction_output.contract_create.sidecars[i].actions.contract_actions[j].result_data                  |
+| contract_action.result_data_type              | transaction_output.contract_create.sidecars[i].actions.contract_actions[j].result_data_case             |
+| contract_action.value                         | transaction_output.contract_create.sidecars[i].actions.contract_actions[j].value                        |
+| contract_log.bloom                            | transaction_output.contract_create.contract_create_result.log_info[i].bloom                             |
+| contract_log.consensus_timestamp              | transaction_result.consensus_timestamp                                                                  |
+| contract_log.contract_id                      | transaction_output.contract_create.contract_create_result.log_info[i].contract_ID                       |
+| contract_log.data                             | transaction_output.contract_create.contract_create_result.log_info[i].data                              |
+| contract_log.index                            | Index i of transaction_output.contract_create.contract_create_result.log_info[i]                        |
+| contract_log.payer_account_id                 |                                                                                                         |
+| contract_log.root_contract_id                 |                                                                                                         |
+| contract_log.topic0                           | transaction_output.contract_create.contract_create_result.log_info[i].topic[0]                          |
+| contract_log.topic1                           | transaction_output.contract_create.contract_create_result.log_info[i].topic[1]                          |
+| contract_log.topic2                           | transaction_output.contract_create.contract_create_result.log_info[i].topic[2]                          |
+| contract_log.topic3                           | transaction_output.contract_create.contract_create_result.log_info[i].topic[3]                          |
+| contract_log.transaction_hash                 | transaction_output.contract_create.contract_create_result.evm_address                                   |
+| contract_log.transaction_index                |                                                                                                         |
+| contract_result.amount                        | transaction_output.contract_create.contract_create_result.amount                                        |
+| contract_result.bloom                         | transaction_output.contract_create.contract_create_result.bloom                                         |
+| contract_result.call_result                   | transaction_output.contract_create.contract_create_result.contract_call_result                          |
+| contract_result.consensus_timestamp           | transaction_result.consensus_timestamp                                                                  |
+| contract_result.contract_id                   | transaction_output.contract_create.contract_create_result.contractID                                    |
+| contract_result.created_contract_ids          | transaction_output.contract_create.contract_create_result.created_contract_ids                          |
+| contract_result.error_message                 | transaction_output.contract_create.contract_create_result.error_message                                 |
+| contract_result.failed_initcode               |                                                                                                         |
+| contract_result.function_parameters           | transaction_output.contract_create.contract_create_result.function_parameters                           |
+| contract_result.function_result               | transaction_output.contract_create.contract_create_result                                               |
+| contract_result.gas_consumed                  |                                                                                                         |
+| contract_result.gas_limit                     |                                                                                                         |
+| contract_result.gas_used                      | transaction_output.contract_create.contract_create_result.gas_used                                      |
+| contract_result.payer_account_id              |                                                                                                         |
+| contract_result.sender_id                     | transaction_output.contract_create.contract_create_result.sender_id                                     |
+| contract_result.transaction_hash              |                                                                                                         |
+| contract_result.transaction_index             |                                                                                                         |
+| contract_result.transaction_nonce             | transaction_output.contract_create.contract_create_result.contract_nonces[i].nonce                      |
+| contract_result.transaction_result            |                                                                                                         |
+| constract_state.contract_id                   | transaction_output.contract_create.sidecars[i].state_changes[j].contract_state_changes[k].contract_id   |
+| constract_state.created_timestamp             |                                                                                                         |
+| constract_state.modified_timestamp            | transaction_output.contract_create.sidecars[i].consensus_timestamp                                      |
+| constract_state.slot                          | transaction_output.contract_create.sidecars[i].state_changes[j].contract_state_changes[k].slot          |
+| constract_state.value                         | transaction_output.contract_create.sidecars[i].state_changes[j].contract_state_changes[k].value_written |
+| contract_state_change.consensus_timestamp     | transaction_output.contract_create.sidecars[i].consensus_timestamp                                      |
+| contract_state_change.contract_id             | transaction_output.contract_create.sidecars[i].state_changes[j].contract_state_changes[k].contract_id   |
+| contract_state_change.migration               | transaction_output.contract_create.sidecars[i].migration                                                |
+| contract_state_change.payer_account_id        |                                                                                                         |
+| contract_state_change.slot                    | transaction_output.contract_create.sidecars[i].state_changes[j].contract_state_changes[k].slot          |
+| contract_state_change.value_read              | transaction_output.contract_create.sidecars[i].state_changes[j].contract_state_changes[k].value_read    |
+| contract_state_change.value_written           | transaction_output.contract_create.sidecars[i].state_changes[j].contract_state_changes[k].value_written |
+| contract_transaction_hash.consensus_timestamp |                                                                                                         |
+| contract_transaction_hash.hash                |                                                                                                         |
+| contract_transaction_hash.payer_account_id    |                                                                                                         |
+| contract_transaction_hash.entity_id           |                                                                                                         |
+| contract_transaction_hash.transaction_result  |                                                                                                         |
+| entity.alias                                  | state_changes[i].state_change.map_update.value.account_value.alias                                      |
+| entity.auto_renew_account_id                  | state_changes[i].state_change.map_update.value.account_value.auto_renew_account_id                      |
+| entity.auto_renew_period                      | state_changes[i].state_change.map_update.value.account_value.auto_renew_seconds                         |
+| entity.balance                                | state_changes[i].state_change.map_update.value.account_value.tinybar_balance                            |
+| entity.balance_timestamp                      | state_changes.consensus_timestamp                                                                       |
+| entity.created_timestamp                      |                                                                                                         |
+| entity.decline_reward                         | state_changes[i].state_change.map_update.value.account_value.decline_reward                             |
+| entity.deleted                                | state_changes[i].state_change.map_update.value.account_value.deleted                                    |
+| entity.ethereum_nonce                         | state_changes[i].state_change.map_update.value.account_value.ethereum_nonce                             |
+| entity.evm_address                            |                                                                                                         |
+| entity.expiration_timestamp                   | state_changes[i].state_change.map_update.value.account_value.expiration_second                          |
+| entity.id                                     | state_changes[i].state_change.map_update.value.account_id_value                                         |
+| entity.key                                    | state_changes[i].state_change.map_update.value.account_value.key                                        |
+| entity.max_automatic_token_associations       | state_changes[i].state_change.map_update.value.account_value.                                           |
+| entity.memo                                   | state_changes[i].state_change.map_update.value.account_value.memo                                       |
+| entity.num                                    | state_changes[i].state_change.map_update.value.account_id_value.accountNum                              |
+| entity.obtainer_id                            |                                                                                                         |
+| entity.permanent_removal                      |                                                                                                         |
+| entity.proxy_account_id                       |                                                                                                         |
+| entity.public_key                             |                                                                                                         |
+| entity.realm                                  | state_changes[i].state_change.map_update.value.account_id_value.realmNum                                |
+| entity.receiver_sig_required                  |                                                                                                         |
+| entity.shard                                  | state_changes[i].state_change.map_update.value.account_id_value.shardNum                                |
+| entity.staked_account_id                      | state_changes[i].state_change.map_update.value.account_value.staked_account_id                          |
+| entity.staked_node_id                         | state_changes[i].state_change.map_update.value.account_value.staked_node_id                             |
+| entity.stake_period_start                     | state_changes[i].state_change.map_update.value.account_value.stake_period_start                         |
+| entity.submit_key                             |                                                                                                         |
+| entity.timestamp_range                        | Calculated by Mirror Node Upsert                                                                        |
+| entity.type                                   | state_changes[i].state_change.map_update.value: hasAccountValue/hasTokenValue                           |
+
+### REST API
+
+-Deprecate the REST API's State Proof Alpha. The record files and signature files will no longer be provided in the cloud buckets.
