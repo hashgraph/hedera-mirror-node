@@ -94,15 +94,6 @@ Edit the `bootstrap.env` file to set your own credentials and passwords for data
 
   - Otherwise, leave it as `false`.
 
-- **Set the `CREATE_MIRROR_API_USER` variable to `true` if you are bootstrapping a DB versioned 0.113.2 or earlier:**
-
-  ```bash
-  # Create mirror_api user for DBs versioned 0.113.2 or earlier
-  export CREATE_MIRROR_API_USER="true"
-  ```
-
-  - Otherwise, leave it as `false`.
-
 - **Set Database User Passwords:**
 
   ```bash
@@ -301,6 +292,10 @@ If you need to stop the script before it completes:
   ```
 
   - The script will resume where it left off, skipping files that have already been imported successfully.
+
+#### **Start the Mirrornode Importer**
+
+  - Once the bootstrap process completes without errors, you may start the Mirrornode Importer.
 
 ---
 
