@@ -150,17 +150,8 @@ initialize_database() {
     exit 1
   fi
 
-  # Check for MIRRORNODE_VERSION in $IMPORT_DIR
-  if [[ -f "$IMPORT_DIR/MIRRORNODE_VERSION" ]]; then
-    MIRRORNODE_VERSION=$(cat "$IMPORT_DIR/MIRRORNODE_VERSION")
-    log "Found MIRRORNODE_VERSION: $MIRRORNODE_VERSION"
-  else
-    log "Error: MIRRORNODE_VERSION file not found in $IMPORT_DIR" "ERROR"
-    exit 1
-  fi
-
   # Construct the URL for init.sh
-  INIT_SH_URL="https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/refs/tags/v$MIRRORNODE_VERSION/hedera-mirror-importer/src/main/resources/db/scripts/init.sh"
+  INIT_SH_URL="https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/refs/heads/main/hedera-mirror-importer/src/main/resources/db/scripts/init.sh"
 
   # Download init.sh
   log "Downloading init.sh from $INIT_SH_URL"
