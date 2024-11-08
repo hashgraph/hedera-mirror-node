@@ -63,6 +63,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
 
     @Override
     public SchemaRegistry register(@Nonnull Schema schema) {
+        schemas.remove(schema);
         schemas.add(schema);
         return this;
     }

@@ -18,7 +18,11 @@ package com.hedera.mirror.web3.state.components;
 
 import static java.util.Collections.EMPTY_MAP;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.state.MirrorNodeState;
@@ -47,6 +51,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SchemaRegistryImplTest {
 
+    private final String serviceName = "testService";
+    private final SemanticVersion previousVersion = new SemanticVersion(0, 46, 0, "", "");
+
     @Mock
     private MirrorNodeState mirrorNodeState;
 
@@ -69,11 +76,7 @@ class SchemaRegistryImplTest {
     private Codec<String> mockCodec;
 
     private Configuration config;
-
     private SchemaRegistryImpl schemaRegistry;
-
-    private final String serviceName = "testService";
-    private final SemanticVersion previousVersion = new SemanticVersion(0, 46, 0, "", "");
 
     @BeforeEach
     void initialize() {
