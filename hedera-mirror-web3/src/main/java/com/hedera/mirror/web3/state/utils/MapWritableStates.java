@@ -20,22 +20,34 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableQueueStateBase;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class MapWritableStates implements WritableStates, CommittableWritableStates {
 
     private final Map<String, ?> states;
 
-    public MapWritableStates(Map<String, ?> states) {
-        this.states = states;
+    @Nullable
+    private final Runnable onCommit;
+
+    public MapWritableStates(@Nonnull final Map<String, ?> states) {
+        this(states, null);
+    }
+
+    public MapWritableStates(@Nonnull final Map<String, ?> states, @Nullable final Runnable onCommit) {
+        this.states = requireNonNull(states);
+        this.onCommit = onCommit;
     }
 
     @Nonnull
@@ -112,6 +124,20 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
 
     @Override
     public void commit() {
-        // Empty body because we don't want to persist any changes to DB.
+        states.values().forEach(state -> {
+            if (state instanceof WritableKVStateBase kv) {
+                kv.commit();
+            } else if (state instanceof WritableSingletonStateBase singleton) {
+                singleton.commit();
+            } else if (state instanceof WritableQueueStateBase queue) {
+                queue.commit();
+            } else {
+                throw new IllegalStateException(
+                        "Unknown state type " + state.getClass().getName());
+            }
+        });
+        if (onCommit != null) {
+            onCommit.run();
+        }
     }
 }
