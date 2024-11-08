@@ -161,9 +161,8 @@ class MirrorNodeStateTest {
         final var writableStates = mirrorNodeState.getWritableStates(FileService.NAME);
         final var readableStates = mirrorNodeState.getReadableStates(FileService.NAME);
         assertThat(writableStates)
-                .isEqualTo(new MapWritableStates(Map.of(
-                        "FILES",
-                        new MapWritableKVState<>(fileReadableKVState.getStateKey(), readableStates.get("FILES")))));
+                .isEqualTo(new MapWritableStates(
+                        Map.of("FILES", new MapWritableKVState<>(fileReadableKVState.getStateKey()))));
     }
 
     @Test
@@ -172,15 +171,12 @@ class MirrorNodeStateTest {
         when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
 
         final var writableStates = mirrorNodeState.getWritableStates(ContractService.NAME);
-        final var readableStates = mirrorNodeState.getReadableStates(ContractService.NAME);
         assertThat(writableStates)
                 .isEqualTo(new MapWritableStates(Map.of(
                         "BYTECODE",
-                        new MapWritableKVState<>(
-                                contractBytecodeReadableKVState.getStateKey(), readableStates.get("BYTECODE")),
+                        new MapWritableKVState<>(contractBytecodeReadableKVState.getStateKey()),
                         "STORAGE",
-                        new MapWritableKVState<>(
-                                contractStorageReadableKVState.getStateKey(), readableStates.get("STORAGE")))));
+                        new MapWritableKVState<>(contractStorageReadableKVState.getStateKey()))));
     }
 
     @Test
@@ -197,19 +193,17 @@ class MirrorNodeStateTest {
         assertThat(writableStates)
                 .isEqualTo(new MapWritableStates(Map.of(
                         "ACCOUNTS",
-                        new MapWritableKVState<>(accountReadableKVState.getStateKey(), readableStates.get("ACCOUNTS")),
+                        new MapWritableKVState<>(accountReadableKVState.getStateKey()),
                         "PENDING_AIRDROPS",
-                        new MapWritableKVState<>(
-                                airdropsReadableKVState.getStateKey(), readableStates.get("PENDING_AIRDROPS")),
+                        new MapWritableKVState<>(airdropsReadableKVState.getStateKey()),
                         "ALIASES",
-                        new MapWritableKVState<>(aliasesReadableKVState.getStateKey(), readableStates.get("ALIASES")),
+                        new MapWritableKVState<>(aliasesReadableKVState.getStateKey()),
                         "NFTS",
-                        new MapWritableKVState<>(nftReadableKVState.getStateKey(), readableStates.get("NFTS")),
+                        new MapWritableKVState<>(nftReadableKVState.getStateKey()),
                         "TOKENS",
-                        new MapWritableKVState<>(tokenReadableKVState.getStateKey(), readableStates.get("TOKENS")),
+                        new MapWritableKVState<>(tokenReadableKVState.getStateKey()),
                         "TOKEN_RELS",
-                        new MapWritableKVState<>(
-                                tokenRelationshipReadableKVState.getStateKey(), readableStates.get("TOKEN_RELS")))));
+                        new MapWritableKVState<>(tokenRelationshipReadableKVState.getStateKey()))));
     }
 
     @Test
