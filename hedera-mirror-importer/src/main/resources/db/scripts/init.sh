@@ -7,6 +7,7 @@ export PGHOST="${PGHOST}"
 export PGPORT="${PGPORT:-5432}"
 export PGUSER="${POSTGRES_USER:-postgres}"
 export IS_GCP_CLOUD_SQL="${IS_GCP_CLOUD_SQL:-false}"
+export CREATE_MIRROR_API_USER="${CREATE_MIRROR_API_USER:-false}"
 
 DB_SPECIFIC_EXTENSION_SQL="create extension btree_gist;
                            create extension pg_trgm;"
@@ -51,6 +52,7 @@ psql --set ON_ERROR_STOP=1 \
   --set "web3Username=${WEB3_USERNAME:-mirror_web3}" \
   --set "tempSchema=${DB_TEMPSCHEMA:-temporary}" \
   --set "isGcpCloudSql=${IS_GCP_CLOUD_SQL}" \
+  --set "createMirrorApiUser=${CREATE_MIRROR_API_USER}" \
   --set "pgUser=${PGUSER}" <<__SQL__
 
 -- Create database & owner
@@ -78,6 +80,10 @@ create user :importerUsername with login password :'importerPassword' in role re
 create user :restJavaUsername with login password :'restJavaPassword' in role readonly;
 create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
 create user :web3Username with login password :'web3Password' in role readonly;
+
+\if :createMirrorApiUser
+  create user :restUsername with login password :'restPassword' in role readonly;
+\endif
 
 -- Grant temp schema admin privileges
 grant temporary_admin to :ownerUsername;
