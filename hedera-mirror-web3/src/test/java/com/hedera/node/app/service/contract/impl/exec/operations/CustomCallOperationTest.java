@@ -20,6 +20,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -49,11 +51,17 @@ class CustomCallOperationTest {
     @Mock
     private WorldUpdater worldUpdater;
 
+    @Mock
+    private AddressChecks addressChecks;
+
+    @Mock
+    private FeatureFlags featureFlags;
+
     private CustomCallOperation subject;
 
     @BeforeEach
     void setUp() {
-        subject = new CustomCallOperation(gasCalculator);
+        subject = new CustomCallOperation(featureFlags, gasCalculator, addressChecks);
     }
 
     @Test

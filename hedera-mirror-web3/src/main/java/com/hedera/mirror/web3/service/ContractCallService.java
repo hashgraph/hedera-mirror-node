@@ -85,6 +85,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import lombok.CustomLog;
+import org.hyperledger.besu.evm.precompile.KZGPointEvalPrecompiledContract;
 
 @Named
 @CustomLog
@@ -170,17 +171,21 @@ public abstract class ContractCallService {
                                         .build())
                                 .gas(100_000L)
                                 .build())
-                        .nodeAccountID(AccountID.newBuilder().accountNum(1000).build())
+                        .nodeAccountID(AccountID.newBuilder().accountNum(2).build())
                         .transactionID(TransactionID.newBuilder()
                                 .transactionValidStart(new Timestamp(0, 0))
-                                .accountID(
-                                        AccountID.newBuilder().accountNum(1000).build())
+                                .accountID(AccountID.newBuilder().accountNum(2).build())
                                 .build())
                         .transactionValidDuration(new Duration(15))
                         .build();
-                var receipt = TransactionExecutors.TRANSACTION_EXECUTORS
-                        .newExecutor(state, Map.of(), null)
-                        .execute(transactionBody, Instant.EPOCH);
+                try {
+                    KZGPointEvalPrecompiledContract.init();
+                } catch (NoSuchMethodError e) {
+                    // ignore
+                }
+                var executor = TransactionExecutors.TRANSACTION_EXECUTORS.newExecutor(
+                        state, Map.of("contracts.evm.version", "v0.46", "contracts.evm.version.dynamic", "true"), null);
+                var receipt = executor.execute(transactionBody, Instant.EPOCH);
 
                 int a = 0;
             }

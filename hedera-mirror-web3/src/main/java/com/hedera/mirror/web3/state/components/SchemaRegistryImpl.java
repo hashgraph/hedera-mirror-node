@@ -49,7 +49,7 @@ import lombok.Getter;
 
 public class SchemaRegistryImpl implements SchemaRegistry {
 
-    public static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 47, 0, "SNAPSHOT", "");
+    public static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 46, 0, "", "");
 
     private final SchemaApplications schemaApplications;
 

@@ -25,6 +25,8 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
+import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
@@ -117,6 +119,8 @@ import com.hedera.services.txns.util.PrngLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hedera.services.v030.Version030AddressChecks;
+import com.hedera.services.v030.Version030FeatureFlags;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Base64;
 import java.util.EnumMap;
@@ -800,5 +804,15 @@ public class ServicesConfiguration {
     @Bean
     CreateChecks createChecks(final OptionValidator optionValidator) {
         return new CreateChecks(optionValidator);
+    }
+
+    @Bean
+    FeatureFlags featureFlags() {
+        return new Version030FeatureFlags();
+    }
+
+    @Bean
+    AddressChecks addressChecks() {
+        return new Version030AddressChecks();
     }
 }

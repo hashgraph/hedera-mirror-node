@@ -29,6 +29,8 @@ import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
+import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
@@ -127,6 +129,8 @@ public class EvmConfiguration {
     private final PrecompiledContractProvider precompilesHolder;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
+    private final AddressChecks addressChecks;
+    private final FeatureFlags featureFlags;
 
     @Bean(CACHE_MANAGER_CONTRACT)
     CacheManager cacheManagerContract() {
@@ -454,13 +458,15 @@ public class EvmConfiguration {
                         new HederaEvmSLoadOperation(gasCalculator),
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
-                        new CustomCallOperation(gasCalculator),
+                        new CustomCallOperation(featureFlags, gasCalculator, addressChecks),
                         prngSeedOperation,
                         hederaBlockHashOperation,
                         extCodeHashOperation,
                         selfDestructOperation,
                         hederaBalanceOperation)
                 .forEach(operationRegistry::put);
+
+        if (specVersion.name().equals("Shanghai")) {}
 
         return new EVM(operationRegistry, gasCalculator, provideEvmConfiguration(), specVersion);
     }

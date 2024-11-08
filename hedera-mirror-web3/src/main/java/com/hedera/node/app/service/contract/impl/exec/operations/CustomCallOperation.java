@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
+import java.util.Objects;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -29,8 +33,16 @@ public class CustomCallOperation extends CallOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
 
-    public CustomCallOperation(@Nonnull final GasCalculator gasCalculator) {
+    private final FeatureFlags featureFlags;
+    private final AddressChecks addressChecks;
+
+    public CustomCallOperation(
+            @NonNull final FeatureFlags featureFlags,
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final AddressChecks addressChecks) {
         super(gasCalculator);
+        this.featureFlags = Objects.requireNonNull(featureFlags);
+        this.addressChecks = Objects.requireNonNull(addressChecks);
     }
 
     @Override
