@@ -62,6 +62,16 @@ import * as contractCallEstimateUnfreezeToken from './contractCallEstimateUnfree
 import * as contractCallEstimateUnfreezeNft from './contractCallEstimateUnfreezeNft.js';
 import * as contractCallEstimateTransferToken from './contractCallEstimateTransferToken.js';
 import * as contractCallEstimateTransferNft from './contractCallEstimateTransferNft.js';
+import * as contractCallPrecompileApprove from './modificationTests/contractCallPrecompileApprove.js';
+import * as contractCallPrecompileAssociate from './modificationTests/contractCallPrecompileAssociate.js';
+import * as contractCallPrecompileCryptoTransferHbars from './modificationTests/contractCallPrecompileCryptoTransferHbars.js';
+import * as contractCallPrecompileCryptoTransferToken from './modificationTests/contractCallPrecompileCryptoTransferToken.js';
+import * as contractCallPrecompileDeleteToken from './modificationTests/contractCallPrecompileDeleteToken.js';
+import * as contractCallPrecompileDissociate from './modificationTests/contractCallPrecompileDissociate.js';
+import * as contractCallPrecompileMintToken from './modificationTests/contractCallPrecompileMintToken.js';
+import * as contractCallPrecompileNestedAssociate from './modificationTests/contractCallPrecompileNestedAssociate.js';
+import * as contractCallPrecompileTransferFungibleToken from './modificationTests/contractCallPrecompileTransferFungibleToken.js';
+import * as contractCallRedirectApprove from './modificationTests/contractCallRedirectApprove.js';
 import * as rampUp from './rampUp.js';
 
 // add test modules here
@@ -96,7 +106,7 @@ const tests = {
   rampUp,
 };
 
-if (__ENV.RUN_ESTIMATE_TESTS) {
+if (__ENV.RUN_ESTIMATE_TESTS !=="false") {
   Object.assign(tests, {
     contractCallEstimateFungibleTokenCustomFees,
     contractCallEstimateNftCustomFees,
@@ -116,6 +126,21 @@ if (__ENV.RUN_ESTIMATE_TESTS) {
     contractCallEstimateUnfreezeNft,
     contractCallEstimateTransferToken,
     contractCallEstimateTransferNft,
+  });
+}
+
+if (__ENV.RUN_MODIFICATION_TESTS !=="false") {
+  Object.assign(tests, {
+    contractCallPrecompileApprove,
+    contractCallPrecompileAssociate,
+    contractCallPrecompileCryptoTransferHbars,
+    contractCallPrecompileCryptoTransferToken,
+    contractCallPrecompileDeleteToken,
+    contractCallPrecompileDissociate,
+    contractCallPrecompileMintToken,
+    contractCallPrecompileNestedAssociate,
+    contractCallPrecompileTransferFungibleToken,
+    contractCallRedirectApprove,
   });
 }
 

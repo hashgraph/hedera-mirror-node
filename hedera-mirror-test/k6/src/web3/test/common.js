@@ -51,6 +51,7 @@ function ContractCallTestScenarioBuilder() {
   this._tags = {};
   this._to = null;
   this._vuData = null;
+  this._shouldRevert = false;
 
   this._block = 'latest';
   this._data = null;
@@ -92,7 +93,10 @@ function ContractCallTestScenarioBuilder() {
         }
 
         const response = jsonPost(that._url, JSON.stringify(payload));
-        check(response, {[`${that._name}`]: (r) => isNonErrorResponse(r)});
+        check(response, {[`${that._name}`]: (r) => that._shouldRevert
+              ? !isNonErrorResponse(r)
+              : isNonErrorResponse(r)});
+
         if (sleepSecs > 0) {
           sleep(sleepSecs);
         }
@@ -165,6 +169,11 @@ function ContractCallTestScenarioBuilder() {
 
   this.vuData = function (vuData) {
     this._vuData = vuData;
+    return this;
+  };
+
+  this.shouldRevert = function (shouldRevert) {
+    this._shouldRevert = shouldRevert;
     return this;
   };
 
