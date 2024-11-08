@@ -64,7 +64,7 @@ translate record streams into block streams to allow the mirror node to continue
 | contract_log.data                             | transaction_output.contract_create.contract_create_result.log_info[i].data                              |
 | contract_log.index                            | Index i of transaction_output.contract_create.contract_create_result.log_info[i]                        |
 | contract_log.payer_account_id                 |                                                                                                         |
-| contract_log.root_contract_id                 |                                                                                                         |
+| contract_log.root_contract_id                 | transaction_output.contract_create.contract_create_result.contractID                                    |
 | contract_log.topic0                           | transaction_output.contract_create.contract_create_result.log_info[i].topic[0]                          |
 | contract_log.topic1                           | transaction_output.contract_create.contract_create_result.log_info[i].topic[1]                          |
 | contract_log.topic2                           | transaction_output.contract_create.contract_create_result.log_info[i].topic[2]                          |
@@ -78,11 +78,11 @@ translate record streams into block streams to allow the mirror node to continue
 | contract_result.contract_id                   | transaction_output.contract_create.contract_create_result.contractID                                    |
 | contract_result.created_contract_ids          | transaction_output.contract_create.contract_create_result.created_contract_ids                          |
 | contract_result.error_message                 | transaction_output.contract_create.contract_create_result.error_message                                 |
-| contract_result.failed_initcode               |                                                                                                         |
+| contract_result.failed_initcode               | transaction_output.contract_create.sidecars[i].bytecode.initcode                                        |
 | contract_result.function_parameters           | transaction_output.contract_create.contract_create_result.function_parameters                           |
 | contract_result.function_result               | transaction_output.contract_create.contract_create_result                                               |
-| contract_result.gas_consumed                  |                                                                                                         |
-| contract_result.gas_limit                     |                                                                                                         |
+| contract_result.gas_consumed                  | Calculated by mirror node                                                                               |
+| contract_result.gas_limit                     | transaction_output.contract_create.contract_create_result.gas                                           |
 | contract_result.gas_used                      | transaction_output.contract_create.contract_create_result.gas_used                                      |
 | contract_result.payer_account_id              |                                                                                                         |
 | contract_result.sender_id                     | transaction_output.contract_create.contract_create_result.sender_id                                     |
@@ -123,17 +123,17 @@ translate record streams into block streams to allow the mirror node to continue
 | entity.max_automatic_token_associations       | state_changes[i].state_change.map_update.value.account_value.                                           |
 | entity.memo                                   | state_changes[i].state_change.map_update.value.account_value.memo                                       |
 | entity.num                                    | state_changes[i].state_change.map_update.value.account_id_value.accountNum                              |
-| entity.obtainer_id                            |                                                                                                         |
-| entity.permanent_removal                      |                                                                                                         |
+| entity.obtainer_id                            | Not updated in contract create                                                                          |
+| entity.permanent_removal                      | Not updated in contract create                                                                          |
 | entity.proxy_account_id                       |                                                                                                         |
 | entity.public_key                             |                                                                                                         |
 | entity.realm                                  | state_changes[i].state_change.map_update.value.account_id_value.realmNum                                |
-| entity.receiver_sig_required                  |                                                                                                         |
+| entity.receiver_sig_required                  | state_changes[i].state_change.map_update.value.account_value.receiver_sig_required                      |
 | entity.shard                                  | state_changes[i].state_change.map_update.value.account_id_value.shardNum                                |
 | entity.staked_account_id                      | state_changes[i].state_change.map_update.value.account_value.staked_account_id                          |
 | entity.staked_node_id                         | state_changes[i].state_change.map_update.value.account_value.staked_node_id                             |
 | entity.stake_period_start                     | state_changes[i].state_change.map_update.value.account_value.stake_period_start                         |
-| entity.submit_key                             |                                                                                                         |
+| entity.submit_key                             | state_changes[i].state_change.map_update.value.account_value.submit_key                                 |
 | entity.timestamp_range                        | Calculated by Mirror Node Upsert                                                                        |
 | entity.type                                   | state_changes[i].state_change.map_update.value: hasAccountValue/hasTokenValue                           |
 
