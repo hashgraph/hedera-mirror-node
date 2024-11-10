@@ -343,8 +343,12 @@ const getTransferDistinctTimestampsQuery = (
 };
 
 // the condition to exclude synthetic transactions attached to a user submitted transaction
+const transactionTypesToInclude = ['CRYPTOAPPROVEALLOWANCE', 'CRYPTOTRANSFER', 'CRYPTODELETEALLOWANCE'];
 const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(Transaction.NONCE)} = 0 or
-  ${Transaction.getFullName(Transaction.PARENT_CONSENSUS_TIMESTAMP)} is not null`;
+  ${Transaction.getFullName(Transaction.PARENT_CONSENSUS_TIMESTAMP)} is not null 
+  or ${Transaction.getFullName(Transaction.TYPE)} in (${transactionTypesToInclude
+  .map((type) => `'${type}'`)
+  .join(', ')})`;
 
 const getQueryWithEqualValues = (column, params, values) => {
   if (values.length === 0) {
