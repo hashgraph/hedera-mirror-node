@@ -50,8 +50,6 @@ const responseCacheCheckHandler = async (req, res, next) => {
     res.status(statusCode);
 
     if (isHead || clientCached) {
-        res.set(cachedResponse.headers);
-        res.status(statusCode);
         res.end();
     } else {
       if (cachedResponse.compressed) {
@@ -60,9 +58,10 @@ const responseCacheCheckHandler = async (req, res, next) => {
         if (!acceptsGzip) {
           cachedResponse.body = unzipSync(cachedResponse.body).toString();
         } else {
-          cachedResponse.headers[CONTENT_ENCODING_HEADER] = 'gzip';
+          res.setHeader(CONTENT_ENCODING_HEADER, 'gzip');
         }
       }
+      
       res.send(cachedResponse.body);
     }
 
