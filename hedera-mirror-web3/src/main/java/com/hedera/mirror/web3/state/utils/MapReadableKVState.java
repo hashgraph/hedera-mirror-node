@@ -78,4 +78,9 @@ public class MapReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
     public int hashCode() {
         return Objects.hash(getStateKey(), backingStore);
     }
+
+    @Override
+    public String toString() {
+        return "MapReadableKVState{" + "backingStore=" + backingStore + '}';
+    }
 }

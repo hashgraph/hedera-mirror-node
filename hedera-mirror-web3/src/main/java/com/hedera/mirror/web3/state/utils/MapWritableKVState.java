@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.state.utils;
 
 import com.swirlds.state.spi.WritableKVStateBase;
 import jakarta.annotation.Nonnull;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -26,15 +25,6 @@ import java.util.Objects;
 public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
 
     private final Map<K, V> backingStore;
-
-    /**
-     * Create an instance using a HashMap as the backing store.
-     *
-     * @param stateKey The state key for this state
-     */
-    public MapWritableKVState(@Nonnull final String stateKey) {
-        this(stateKey, new HashMap<>());
-    }
 
     /**
      * Create an instance using the given map as the backing store. This is useful when you want to
@@ -83,5 +73,18 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
     @Override
     public String toString() {
         return "MapWritableKVState{" + "backingStore=" + backingStore + '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MapWritableKVState<?, ?> that = (MapWritableKVState<?, ?>) o;
+        return Objects.equals(getStateKey(), that.getStateKey()) && Objects.equals(backingStore, that.backingStore);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getStateKey(), backingStore);
     }
 }

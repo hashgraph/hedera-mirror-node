@@ -140,4 +140,9 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
             onCommit.run();
         }
     }
+
+    @Override
+    public String toString() {
+        return "MapWritableStates{" + "states=" + states + '}';
+    }
 }
