@@ -28,15 +28,11 @@ import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class MapWritableStates implements WritableStates, CommittableWritableStates {
-
-    private final Map<String, ?> states;
+public class MapWritableStates extends AbstractMapReadableState implements WritableStates, CommittableWritableStates {
 
     @Nullable
     private final Runnable onCommit;
@@ -46,7 +42,7 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
     }
 
     public MapWritableStates(@Nonnull final Map<String, ?> states, @Nullable final Runnable onCommit) {
-        this.states = requireNonNull(states);
+        super(states);
         this.onCommit = onCommit;
     }
 
@@ -92,17 +88,6 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
         }
 
         return (WritableQueueState<E>) state;
-    }
-
-    @Override
-    public boolean contains(@Nonnull String stateKey) {
-        return states.containsKey(stateKey);
-    }
-
-    @Nonnull
-    @Override
-    public Set<String> stateKeys() {
-        return Collections.unmodifiableSet(states.keySet());
     }
 
     @Override
