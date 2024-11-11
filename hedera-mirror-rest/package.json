@@ -76,6 +76,7 @@
   },
   "baseUrlPath": "/api/v1",
   "overrides": {
+    "cross-spawn": "^7.0.5",
     "micromatch": "^4.0.8",
     "swagger-stats": {
       "path-to-regexp": "^6.3.0",
