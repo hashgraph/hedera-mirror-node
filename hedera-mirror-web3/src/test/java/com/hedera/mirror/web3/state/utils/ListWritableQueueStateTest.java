@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.state.utils;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -41,7 +41,7 @@ class ListWritableQueueStateTest {
         final var elem = new Object();
         final var queueState = new ListWritableQueueState<>("KEY", backingStore);
         queueState.addToDataSource(elem);
-        assertThat(backingStore.contains(elem)).isTrue();
+        assertThat(backingStore).contains(elem);
     }
 
     @Test
@@ -50,7 +50,7 @@ class ListWritableQueueStateTest {
         backingStore.add(elem);
         final var queueState = new ListWritableQueueState<>("KEY", backingStore);
         queueState.removeFromDataSource();
-        assertThat(backingStore.isEmpty()).isTrue();
+        assertThat(backingStore).isEmpty();
     }
 
     @Test

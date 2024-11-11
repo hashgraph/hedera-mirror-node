@@ -19,20 +19,15 @@ package com.hedera.mirror.web3.state.utils;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
-import com.swirlds.state.spi.ReadableStates;
 import jakarta.annotation.Nonnull;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 @SuppressWarnings("unchecked")
-public class MapReadableStates implements ReadableStates {
-
-    private final Map<String, ?> states;
+public class MapReadableStates extends AbstractMapReadableState {
 
     public MapReadableStates(@Nonnull final Map<String, ?> states) {
-        this.states = Objects.requireNonNull(states);
+        super(states);
     }
 
     @Nonnull
@@ -77,17 +72,6 @@ public class MapReadableStates implements ReadableStates {
         }
 
         return (ReadableQueueState<E>) state;
-    }
-
-    @Override
-    public boolean contains(@Nonnull String stateKey) {
-        return states.containsKey(stateKey);
-    }
-
-    @Nonnull
-    @Override
-    public Set<String> stateKeys() {
-        return Collections.unmodifiableSet(states.keySet());
     }
 
     @Override
