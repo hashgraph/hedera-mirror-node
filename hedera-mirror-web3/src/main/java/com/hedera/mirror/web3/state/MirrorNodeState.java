@@ -21,6 +21,7 @@ import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.state.utils.ListReadableQueueState;
 import com.hedera.mirror.web3.state.utils.ListWritableQueueState;
 import com.hedera.mirror.web3.state.utils.MapReadableKVState;
@@ -45,6 +46,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -86,6 +88,10 @@ public class MirrorNodeState implements State {
         requireNonNull(stateKey);
         this.states.computeIfPresent(serviceName, (k, v) -> {
             v.remove(stateKey);
+            // Purge any readable states whose state definitions are now stale,
+            // since they still include the data sources we just removed
+            readableStates.remove(serviceName);
+            writableStates.remove(serviceName);
             return v;
         });
     }
@@ -233,5 +239,30 @@ public class MirrorNodeState implements State {
                 listener.mapDeleteChange(stateId, key);
             }
         });
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        MirrorNodeState that = (MirrorNodeState) o;
+        return Objects.equals(readableStates, that.readableStates)
+                && Objects.equals(writableStates, that.writableStates)
+                && Objects.equals(states, that.states)
+                && Objects.equals(listeners, that.listeners);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(readableStates, writableStates, states, listeners);
+    }
+
+    @VisibleForTesting
+    void setWritableStates(final Map<String, WritableStates> writableStates) {
+        this.writableStates.putAll(writableStates);
     }
 }
