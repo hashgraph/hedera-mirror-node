@@ -125,14 +125,11 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
     @Override
     public void commit() {
         states.values().forEach(state -> {
-            if (state instanceof WritableKVStateBase kv) {
-                kv.commit();
-            } else if (state instanceof WritableSingletonStateBase singleton) {
-                singleton.commit();
-            } else if (state instanceof WritableQueueStateBase queue) {
-                queue.commit();
-            } else {
-                throw new IllegalStateException(
+            switch (state) {
+                case WritableKVStateBase kv -> kv.commit();
+                case WritableSingletonStateBase singleton -> singleton.commit();
+                case WritableQueueStateBase queue -> queue.commit();
+                default -> throw new IllegalStateException(
                         "Unknown state type " + state.getClass().getName());
             }
         });

@@ -104,19 +104,19 @@ public class MirrorNodeState implements State {
             if (serviceStates == null) {
                 return new MapReadableStates(new HashMap<>());
             }
-            final Map<String, Object> states = new ConcurrentHashMap<>();
+            final Map<String, Object> data = new ConcurrentHashMap<>();
             for (final var entry : serviceStates.entrySet()) {
                 final var stateName = entry.getKey();
                 final var state = entry.getValue();
                 if (state instanceof Queue queue) {
-                    states.put(stateName, new ListReadableQueueState(stateName, queue));
+                    data.put(stateName, new ListReadableQueueState(stateName, queue));
                 } else if (state instanceof Map map) {
-                    states.put(stateName, new MapReadableKVState(stateName, map));
+                    data.put(stateName, new MapReadableKVState(stateName, map));
                 } else if (state instanceof AtomicReference ref) {
-                    states.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
+                    data.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
                 }
             }
-            return new MapReadableStates(states);
+            return new MapReadableStates(data);
         });
     }
 
@@ -161,8 +161,8 @@ public class MirrorNodeState implements State {
     }
 
     public void commit() {
-        writableStates.values().forEach(writableStates -> {
-            if (writableStates instanceof MapWritableStates mapWritableStates) {
+        writableStates.values().forEach(writableStatesValue -> {
+            if (writableStatesValue instanceof MapWritableStates mapWritableStates) {
                 mapWritableStates.commit();
             }
         });
