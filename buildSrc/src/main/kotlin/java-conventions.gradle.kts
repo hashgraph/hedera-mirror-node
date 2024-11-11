@@ -52,9 +52,9 @@ dependencies {
 }
 
 tasks.compileJava {
-    // Disable deprecation, serial, and this-escape warnings due to errors in generated code
+    // Disable serial, and this-escape warnings due to errors in generated code
     options.compilerArgs.addAll(
-        listOf("-Werror", "-Xlint:all", "-Xlint:-deprecation,-serial,-this-escape,-preview")
+        listOf("-Werror", "-Xlint:all", "-Xlint:-serial,-this-escape,-preview")
     )
     options.encoding = "UTF-8"
     sourceCompatibility = "21"
