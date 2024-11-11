@@ -19,7 +19,7 @@
     "_status": {
       "messages": [
         {
-          "message": "No contract with the given evm address: {\"shard\":null,\"realm\":null,\"create2_evm_address\":{\"type\":\"Buffer\",\"data\":[94,23,201,136,204,20,174,95,11,243,40,36,94,175,136,240,129,195,166,20]}} has been found."
+          "message": "No contract with the given evm address 0x5e17c988cc14ae5f0bf328245eaf88f081c3a614 has been found."
         }
       ]
     }
