@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.state.utils;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -76,30 +76,30 @@ class MapWritableKVStateTest {
 
     @Test
     void testPutIntoDataSource() {
-        final var backingStore = new HashMap<AccountID, Account>();
-        final var mapWritableKVState = new MapWritableKVState<>("ACCOUNTS", backingStore);
-        mapWritableKVState.putIntoDataSource(accountID, account);
-        assertThat(backingStore.get(accountID)).isEqualTo(account);
+        final var map = new HashMap<AccountID, Account>();
+        final var kvState = new MapWritableKVState<>("ACCOUNTS", map);
+        kvState.putIntoDataSource(accountID, account);
+        assertThat(map).containsEntry(accountID, account);
     }
 
     @Test
     void testRemoveFromDataSource() {
-        final var backingStore = new HashMap<AccountID, Account>();
-        final var mapWritableKVState = new MapWritableKVState<>("ACCOUNTS", backingStore);
-        backingStore.put(accountID, account);
-        assertThat(mapWritableKVState.contains(accountID)).isTrue();
-        mapWritableKVState.removeFromDataSource(accountID);
-        assertThat(backingStore.get(accountID)).isNull();
+        final var map = new HashMap<AccountID, Account>();
+        final var kvState = new MapWritableKVState<>("ACCOUNTS", map);
+        map.put(accountID, account);
+        assertThat(kvState.contains(accountID)).isTrue();
+        kvState.removeFromDataSource(accountID);
+        assertThat(map.get(accountID)).isNull();
     }
 
     @Test
     void testCommit() {
-        final var backingStore = new HashMap<AccountID, Account>();
-        final var mapWritableKVState = new MapWritableKVState<>("ACCOUNTS", backingStore);
-        mapWritableKVState.put(accountID, account);
-        assertThat(mapWritableKVState.modifiedKeys().isEmpty()).isFalse();
-        mapWritableKVState.commit();
-        assertThat(mapWritableKVState.modifiedKeys().isEmpty()).isTrue();
+        final var map = new HashMap<AccountID, Account>();
+        final var kvState = new MapWritableKVState<>("ACCOUNTS", map);
+        kvState.put(accountID, account);
+        assertThat(kvState.modifiedKeys()).isNotEmpty();
+        kvState.commit();
+        assertThat(kvState.modifiedKeys()).isEmpty();
     }
 
     @Test
