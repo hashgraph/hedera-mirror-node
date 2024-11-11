@@ -67,11 +67,11 @@ class MapWritableKVStateTest {
 
     @Test
     void testIterateFromDataSourceReturnsEmptyIterator() {
-        final var backingStore = new HashMap<AccountID, Account>();
-        final var mapWritableKVState = new MapWritableKVState<>("ACCOUNTS", backingStore);
-        mapWritableKVState.putIntoDataSource(accountID, account);
-        assertThat(mapWritableKVState.iterateFromDataSource().next())
-                .isEqualTo(backingStore.keySet().iterator().next());
+        final var map = new HashMap<AccountID, Account>();
+        final var kvState = new MapWritableKVState<>("ACCOUNTS", map);
+        kvState.putIntoDataSource(accountID, account);
+        assertThat(kvState.iterateFromDataSource().next())
+                .isEqualTo(map.keySet().iterator().next());
     }
 
     @Test
@@ -115,5 +115,24 @@ class MapWritableKVStateTest {
     @Test
     void testEqualsWithNull() {
         assertThat(mapWritableKVState).isNotEqualTo(null);
+    }
+
+    @Test
+    void testEqualsDifferentKeys() {
+        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ALIASES", backingStore);
+        assertThat(mapWritableKVState).isNotEqualTo(other);
+    }
+
+    @Test
+    void testEqualsDifferentValues() {
+        final var accountMapOther = Map.of(AccountID.newBuilder().accountNum(3L).build(), account);
+        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", accountMapOther);
+        assertThat(mapWritableKVState).isNotEqualTo(other);
+    }
+
+    @Test
+    void testHashCode() {
+        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", backingStore);
+        assertThat(mapWritableKVState).hasSameHashCodeAs(other);
     }
 }

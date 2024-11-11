@@ -122,9 +122,4 @@ public class MapWritableStates extends AbstractMapReadableState implements Writa
             onCommit.run();
         }
     }
-
-    @Override
-    public String toString() {
-        return "MapWritableStates{" + "states=" + states + '}';
-    }
 }

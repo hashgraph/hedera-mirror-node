@@ -71,11 +71,6 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
     }
 
     @Override
-    public String toString() {
-        return "MapWritableKVState{" + "backingStore=" + backingStore + '}';
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

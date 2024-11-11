@@ -18,10 +18,12 @@ package com.hedera.mirror.web3.state.utils;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.WritableQueueState;
-import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.WritableQueueStateBase;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,13 +38,13 @@ class MapWritableStatesTest {
     private MapWritableStates states;
 
     @Mock
-    private WritableKVState<String, String> kvStateMock;
+    private WritableKVStateBase<String, String> kvStateMock;
 
     @Mock
-    private WritableSingletonState<String> singletonStateMock;
+    private WritableSingletonStateBase<String> singletonStateMock;
 
     @Mock
-    private WritableQueueState<String> queueStateMock;
+    private WritableQueueStateBase<String> queueStateMock;
 
     private static final String KV_STATE_KEY = "kvState";
     private static final String SINGLETON_KEY = "singleton";
@@ -138,5 +140,23 @@ class MapWritableStatesTest {
         MapWritableStates other = new MapWritableStates(
                 Map.of(KV_STATE_KEY, kvStateMock, SINGLETON_KEY, singletonStateMock, QUEUE_KEY, queueStateMock));
         assertThat(states).hasSameHashCodeAs(other);
+    }
+
+    @Test
+    void testCommit() {
+        final Runnable onCommit = () -> {};
+        final var state = new MapWritableStates(
+                Map.of(KV_STATE_KEY, kvStateMock, SINGLETON_KEY, singletonStateMock, QUEUE_KEY, queueStateMock),
+                onCommit);
+        state.commit();
+        verify(kvStateMock, times(1)).commit();
+        verify(singletonStateMock, times(1)).commit();
+        verify(queueStateMock, times(1)).commit();
+    }
+
+    @Test
+    void testCommitUnknownValue() {
+        final var state = new MapWritableStates(Map.of("other", new Object()));
+        assertThatThrownBy(state::commit).isInstanceOf(IllegalStateException.class);
     }
 }
