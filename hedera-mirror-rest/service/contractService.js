@@ -18,7 +18,7 @@ import _ from 'lodash';
 
 import BaseService from './baseService';
 import {getResponseLimit} from '../config';
-import {MAX_LONG, filterKeys, orderFilterValues} from '../constants';
+import {filterKeys, MAX_LONG, orderFilterValues} from '../constants';
 import EntityId from '../entityId';
 import {NotFoundError} from '../errors';
 import {OrderSpec} from '../sql';
@@ -60,6 +60,9 @@ ${ContractResult.getFullName(ContractResult.CREATED_CONTRACT_IDS)},
 ${ContractResult.getFullName(ContractResult.ERROR_MESSAGE)},
 ${ContractResult.getFullName(ContractResult.FAILED_INITCODE)},
 ${ContractResult.getFullName(ContractResult.FUNCTION_PARAMETERS)},
+case when ${ContractResult.getFullName(ContractResult.SENDER_ID)} is null
+then ${ContractResult.getFullName(ContractResult.FUNCTION_RESULT)}
+else '' end as ${ContractResult.FUNCTION_RESULT},
 ${ContractResult.getFullName(ContractResult.GAS_CONSUMED)},
 ${ContractResult.getFullName(ContractResult.GAS_LIMIT)},
 ${ContractResult.getFullName(ContractResult.GAS_USED)},

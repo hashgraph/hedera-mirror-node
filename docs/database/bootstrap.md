@@ -293,6 +293,10 @@ If you need to stop the script before it completes:
 
   - The script will resume where it left off, skipping files that have already been imported successfully.
 
+#### **Start the Mirrornode Importer**
+
+  - Once the bootstrap process completes without errors, you may start the Mirrornode Importer.
+
 ---
 
 ## Handling Failed Imports

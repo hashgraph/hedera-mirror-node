@@ -17,18 +17,28 @@
 package com.hedera.mirror.web3.state;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.state.utils.MapReadableKVState;
 import com.hedera.mirror.web3.state.utils.MapReadableStates;
 import com.hedera.mirror.web3.state.utils.MapWritableKVState;
 import com.hedera.mirror.web3.state.utils.MapWritableStates;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.token.TokenService;
+import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.StateChangeListener.StateType;
+import com.swirlds.state.spi.WritableStates;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,25 +79,12 @@ class MirrorNodeStateTest {
     @Mock
     private TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
 
+    @Mock
+    private StateChangeListener listener;
+
     @BeforeEach
     void setup() {
-        final Map<String, Object> fileStateData = new HashMap<>(Map.of("FILES", Map.of("FILES", fileReadableKVState)));
-        final Map<String, Object> contractStateData = new HashMap<>(Map.of(
-                "BYTECODE", Map.of("BYTECODE", contractBytecodeReadableKVState),
-                "STORAGE", Map.of("STORAGE", contractStorageReadableKVState)));
-        final Map<String, Object> tokenStateData = new HashMap<>(Map.of(
-                "ACCOUNTS", Map.of("ACCOUNTS", accountReadableKVState),
-                "PENDING_AIRDROPS", Map.of("PENDING_AIRDROPS", airdropsReadableKVState),
-                "ALIASES", Map.of("ALIASES", aliasesReadableKVState),
-                "NFTS", Map.of("NFTS", nftReadableKVState),
-                "TOKENS", Map.of("TOKENS", tokenReadableKVState),
-                "TOKEN_RELS", Map.of("TOKEN_RELS", tokenRelationshipReadableKVState)));
-
-        // Add service using the mock data source
-        mirrorNodeState = mirrorNodeState
-                .addService(FileService.NAME, fileStateData)
-                .addService(ContractService.NAME, contractStateData)
-                .addService(TokenService.NAME, tokenStateData);
+        mirrorNodeState = buildTestState();
     }
 
     @Test
@@ -116,7 +113,7 @@ class MirrorNodeStateTest {
         final var readableStates = mirrorNodeState.getReadableStates(FileService.NAME);
         assertThat(readableStates)
                 .isEqualTo(new MapReadableStates(new ConcurrentHashMap<>(
-                        Map.of("FILES", new MapReadableKVState("FILES", Map.of("FILES", fileReadableKVState))))));
+                        Map.of("FILES", new MapReadableKVState<>("FILES", Map.of("FILES", fileReadableKVState))))));
     }
 
     @Test
@@ -155,65 +152,200 @@ class MirrorNodeStateTest {
     }
 
     @Test
+    void testGetReadableStatesWithSingleton() {
+        final var stateWithSingleton = new MirrorNodeState();
+        stateWithSingleton.addService(EntityIdService.NAME, Map.of("EntityId", new AtomicReference<>(1L)));
+        final var readableStates = stateWithSingleton.getReadableStates(EntityIdService.NAME);
+        assertThat(readableStates.contains("EntityId")).isTrue();
+        assertThat(readableStates.getSingleton("EntityId").get()).isEqualTo(1L);
+    }
+
+    @Test
+    void testGetReadableStatesWithQueue() {
+        final var stateWithQueue = new MirrorNodeState();
+        stateWithQueue.addService(
+                EntityIdService.NAME, Map.of("EntityId", new ConcurrentLinkedDeque<>(Set.of("value"))));
+        final var readableStates = stateWithQueue.getReadableStates(EntityIdService.NAME);
+        assertThat(readableStates.contains("EntityId")).isTrue();
+        assertThat(readableStates.getQueue("EntityId").peek()).isEqualTo("value");
+    }
+
+    @Test
     void testGetWritableStatesForFileService() {
-        when(fileReadableKVState.getStateKey()).thenReturn("FILES");
+        final var writableStates = mirrorNodeState.getWritableStates(FileService.NAME);
+        assertThat(writableStates)
+                .isEqualTo(new MapWritableStates(
+                        Map.of("FILES", new MapWritableKVState<>("FILES", Map.of("FILES", fileReadableKVState)))));
+    }
+
+    @Test
+    void testGetWritableStatesForFileServiceWithListeners() {
+        when(listener.stateTypes()).thenReturn(Set.of(StateType.MAP));
+        mirrorNodeState.registerCommitListener(listener);
 
         final var writableStates = mirrorNodeState.getWritableStates(FileService.NAME);
-        final var readableStates = mirrorNodeState.getReadableStates(FileService.NAME);
         assertThat(writableStates)
-                .isEqualTo(new MapWritableStates(Map.of(
-                        "FILES",
-                        new MapWritableKVState<>(fileReadableKVState.getStateKey(), readableStates.get("FILES")))));
+                .isEqualTo(new MapWritableStates(
+                        Map.of("FILES", new MapWritableKVState<>("FILES", Map.of("FILES", fileReadableKVState)))));
     }
 
     @Test
     void testGetWritableStatesForContractService() {
-        when(contractBytecodeReadableKVState.getStateKey()).thenReturn("BYTECODE");
-        when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
-
         final var writableStates = mirrorNodeState.getWritableStates(ContractService.NAME);
-        final var readableStates = mirrorNodeState.getReadableStates(ContractService.NAME);
         assertThat(writableStates)
                 .isEqualTo(new MapWritableStates(Map.of(
                         "BYTECODE",
-                        new MapWritableKVState<>(
-                                contractBytecodeReadableKVState.getStateKey(), readableStates.get("BYTECODE")),
+                        new MapWritableKVState<>("BYTECODE", Map.of("BYTECODE", contractBytecodeReadableKVState)),
                         "STORAGE",
-                        new MapWritableKVState<>(
-                                contractStorageReadableKVState.getStateKey(), readableStates.get("STORAGE")))));
+                        new MapWritableKVState<>("STORAGE", Map.of("STORAGE", contractStorageReadableKVState)))));
     }
 
     @Test
     void testGetWritableStatesForTokenService() {
-        when(accountReadableKVState.getStateKey()).thenReturn("ACCOUNTS");
-        when(airdropsReadableKVState.getStateKey()).thenReturn("PENDING_AIRDROPS");
-        when(aliasesReadableKVState.getStateKey()).thenReturn("ALIASES");
-        when(nftReadableKVState.getStateKey()).thenReturn("NFTS");
-        when(tokenReadableKVState.getStateKey()).thenReturn("TOKENS");
-        when(tokenRelationshipReadableKVState.getStateKey()).thenReturn("TOKEN_RELS");
-
         final var writableStates = mirrorNodeState.getWritableStates(TokenService.NAME);
-        final var readableStates = mirrorNodeState.getReadableStates(TokenService.NAME);
         assertThat(writableStates)
                 .isEqualTo(new MapWritableStates(Map.of(
                         "ACCOUNTS",
-                        new MapWritableKVState<>(accountReadableKVState.getStateKey(), readableStates.get("ACCOUNTS")),
+                        new MapWritableKVState<>("ACCOUNTS", Map.of("ACCOUNTS", accountReadableKVState)),
                         "PENDING_AIRDROPS",
                         new MapWritableKVState<>(
-                                airdropsReadableKVState.getStateKey(), readableStates.get("PENDING_AIRDROPS")),
+                                "PENDING_AIRDROPS", Map.of("PENDING_AIRDROPS", airdropsReadableKVState)),
                         "ALIASES",
-                        new MapWritableKVState<>(aliasesReadableKVState.getStateKey(), readableStates.get("ALIASES")),
+                        new MapWritableKVState<>("ALIASES", Map.of("ALIASES", aliasesReadableKVState)),
                         "NFTS",
-                        new MapWritableKVState<>(nftReadableKVState.getStateKey(), readableStates.get("NFTS")),
+                        new MapWritableKVState<>("NFTS", Map.of("NFTS", nftReadableKVState)),
                         "TOKENS",
-                        new MapWritableKVState<>(tokenReadableKVState.getStateKey(), readableStates.get("TOKENS")),
+                        new MapWritableKVState<>("TOKENS", Map.of("TOKENS", tokenReadableKVState)),
                         "TOKEN_RELS",
                         new MapWritableKVState<>(
-                                tokenRelationshipReadableKVState.getStateKey(), readableStates.get("TOKEN_RELS")))));
+                                "TOKEN_RELS", Map.of("TOKEN_RELS", tokenRelationshipReadableKVState)))));
     }
 
     @Test
     void testGetWritableStateForUnsupportedService() {
         assertThat(mirrorNodeState.getWritableStates("").size()).isZero();
+    }
+
+    @Test
+    void testGetWritableStatesWithSingleton() {
+        final var stateWithSingleton = new MirrorNodeState();
+        stateWithSingleton.addService(EntityIdService.NAME, Map.of("EntityId", new AtomicReference<>(1L)));
+        final var writableStates = stateWithSingleton.getWritableStates(EntityIdService.NAME);
+        assertThat(writableStates.contains("EntityId")).isTrue();
+        assertThat(writableStates.getSingleton("EntityId").get()).isEqualTo(1L);
+    }
+
+    @Test
+    void testGetWritableStatesWithSingletonWithListeners() {
+        final var stateWithSingleton = new MirrorNodeState();
+        final var ref = new AtomicReference<>(1L);
+        stateWithSingleton.addService(EntityIdService.NAME, Map.of("EntityId", ref));
+        when(listener.stateTypes()).thenReturn(Set.of(StateType.SINGLETON));
+        stateWithSingleton.registerCommitListener(listener);
+
+        final var writableStates = stateWithSingleton.getWritableStates(EntityIdService.NAME);
+        assertThat(writableStates.contains("EntityId")).isTrue();
+        assertThat(writableStates.getSingleton("EntityId").get()).isEqualTo(1L);
+    }
+
+    @Test
+    void testGetWritableStatesWithQueue() {
+        final var stateWithQueue = new MirrorNodeState();
+        stateWithQueue.addService(
+                EntityIdService.NAME, Map.of("EntityId", new ConcurrentLinkedDeque<>(Set.of("value"))));
+        final var writableStates = stateWithQueue.getWritableStates(EntityIdService.NAME);
+        assertThat(writableStates.contains("EntityId")).isTrue();
+        assertThat(writableStates.getQueue("EntityId").peek()).isEqualTo("value");
+    }
+
+    @Test
+    void testGetWritableStatesWithQueueWithListeners() {
+        final var stateWithQueue = new MirrorNodeState();
+        final var queue = new ConcurrentLinkedDeque<>(Set.of("value"));
+        stateWithQueue.addService(EntityIdService.NAME, Map.of("EntityId", queue));
+        when(listener.stateTypes()).thenReturn(Set.of(StateType.QUEUE));
+        stateWithQueue.registerCommitListener(listener);
+
+        final var writableStates = stateWithQueue.getWritableStates(EntityIdService.NAME);
+        assertThat(writableStates.contains("EntityId")).isTrue();
+        assertThat(writableStates.getQueue("EntityId").peek()).isEqualTo("value");
+    }
+
+    @Test
+    void testRegisterCommitListener() {
+        final var state1 = new MirrorNodeState();
+        final var state2 = new MirrorNodeState();
+        assertThat(state1).isEqualTo(state2);
+        state1.registerCommitListener(listener);
+        assertThat(state1).isNotEqualTo(state2);
+    }
+
+    @Test
+    void testUnregisterCommitListener() {
+        final var state1 = new MirrorNodeState();
+        final var state2 = new MirrorNodeState();
+        assertThat(state1).isEqualTo(state2);
+        state1.registerCommitListener(listener);
+        assertThat(state1).isNotEqualTo(state2);
+        state1.unregisterCommitListener(listener);
+        assertThat(state1).isEqualTo(state2);
+    }
+
+    @Test
+    void testCommit() {
+        final var state = new MirrorNodeState();
+        final var mockMapWritableState = mock(MapWritableStates.class);
+        Map<String, WritableStates> writableStates = new ConcurrentHashMap<>();
+        writableStates.put(FileService.NAME, mockMapWritableState);
+        state.setWritableStates(writableStates);
+        state.commit();
+        verify(mockMapWritableState, times(1)).commit();
+    }
+
+    @Test
+    void testEqualsSameInstance() {
+        assertThat(mirrorNodeState).isEqualTo(mirrorNodeState);
+    }
+
+    @Test
+    void testEqualsDifferentType() {
+        assertThat(mirrorNodeState).isNotEqualTo("someString");
+    }
+
+    @Test
+    void testEqualsWithNull() {
+        assertThat(mirrorNodeState).isNotEqualTo(null);
+    }
+
+    @Test
+    void testEqualsSameValues() {
+        final var other = buildTestState();
+        assertThat(mirrorNodeState).isEqualTo(other);
+    }
+
+    @Test
+    void testHashCode() {
+        final var other = buildTestState();
+        assertThat(mirrorNodeState).hasSameHashCodeAs(other);
+    }
+
+    private MirrorNodeState buildTestState() {
+        final Map<String, Object> fileStateData = new HashMap<>(Map.of("FILES", Map.of("FILES", fileReadableKVState)));
+        final Map<String, Object> contractStateData = new HashMap<>(Map.of(
+                "BYTECODE", Map.of("BYTECODE", contractBytecodeReadableKVState),
+                "STORAGE", Map.of("STORAGE", contractStorageReadableKVState)));
+        final Map<String, Object> tokenStateData = new HashMap<>(Map.of(
+                "ACCOUNTS", Map.of("ACCOUNTS", accountReadableKVState),
+                "PENDING_AIRDROPS", Map.of("PENDING_AIRDROPS", airdropsReadableKVState),
+                "ALIASES", Map.of("ALIASES", aliasesReadableKVState),
+                "NFTS", Map.of("NFTS", nftReadableKVState),
+                "TOKENS", Map.of("TOKENS", tokenReadableKVState),
+                "TOKEN_RELS", Map.of("TOKEN_RELS", tokenRelationshipReadableKVState)));
+
+        // Add service using the mock data source
+        return new MirrorNodeState()
+                .addService(FileService.NAME, fileStateData)
+                .addService(ContractService.NAME, contractStateData)
+                .addService(TokenService.NAME, tokenStateData);
     }
 }

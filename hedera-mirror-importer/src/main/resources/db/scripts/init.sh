@@ -27,6 +27,9 @@ if [[ "${SCHEMA_V2}" == "true" ]]; then
                              alter type timestamptz owner to :ownerUsername;
                              "
   DB_SPECIFIC_MIRROR_IMPORTER_ROLE_ADMIN=
+fi
+
+if [[ "${SCHEMA_V2}" == "true" || "${CREATE_MIRROR_API_USER}" == "true" ]]; then
   DB_SPECIFIC_SQL="create user :restUsername with login password :'restPassword' in role readonly;"
 fi
 

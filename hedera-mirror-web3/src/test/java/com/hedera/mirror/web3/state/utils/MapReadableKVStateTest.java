@@ -90,14 +90,26 @@ class MapReadableKVStateTest {
     }
 
     @Test
+    void testEqualsWithNull() {
+        assertThat(mapReadableKVState).isNotEqualTo(null);
+    }
+
+    @Test
     void testEqualsSameValues() {
         MapReadableKVState<AccountID, Account> other = new MapReadableKVState<>("ACCOUNTS", accountMap);
         assertThat(mapReadableKVState).isEqualTo(other);
     }
 
     @Test
-    void testEqualsDifferentValues() {
+    void testEqualsDifferentKeys() {
         MapReadableKVState<AccountID, Account> other = new MapReadableKVState<>("ALIASES", accountMap);
+        assertThat(mapReadableKVState).isNotEqualTo(other);
+    }
+
+    @Test
+    void testEqualsDifferentValues() {
+        final var accountMapOther = Map.of(AccountID.newBuilder().accountNum(3L).build(), account);
+        MapReadableKVState<AccountID, Account> other = new MapReadableKVState<>("ACCOUNTS", accountMapOther);
         assertThat(mapReadableKVState).isNotEqualTo(other);
     }
 

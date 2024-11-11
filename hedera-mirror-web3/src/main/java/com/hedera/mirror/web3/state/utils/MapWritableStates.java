@@ -20,22 +20,30 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableQueueStateBase;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import jakarta.annotation.Nonnull;
-import java.util.Collections;
+import jakarta.annotation.Nullable;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
-@SuppressWarnings("unchecked")
-public class MapWritableStates implements WritableStates, CommittableWritableStates {
+@SuppressWarnings({"rawtypes", "unchecked"})
+public class MapWritableStates extends AbstractMapReadableState implements WritableStates, CommittableWritableStates {
 
-    private final Map<String, ?> states;
+    @Nullable
+    private final Runnable onCommit;
 
-    public MapWritableStates(Map<String, ?> states) {
-        this.states = states;
+    public MapWritableStates(@Nonnull final Map<String, ?> states) {
+        this(states, null);
+    }
+
+    public MapWritableStates(@Nonnull final Map<String, ?> states, @Nullable final Runnable onCommit) {
+        super(states);
+        this.onCommit = onCommit;
     }
 
     @Nonnull
@@ -83,17 +91,6 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
     }
 
     @Override
-    public boolean contains(@Nonnull String stateKey) {
-        return states.containsKey(stateKey);
-    }
-
-    @Nonnull
-    @Override
-    public Set<String> stateKeys() {
-        return Collections.unmodifiableSet(states.keySet());
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -112,6 +109,22 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
 
     @Override
     public void commit() {
-        // Empty body because we don't want to persist any changes to DB.
+        states.values().forEach(state -> {
+            switch (state) {
+                case WritableKVStateBase kv -> kv.commit();
+                case WritableSingletonStateBase singleton -> singleton.commit();
+                case WritableQueueStateBase queue -> queue.commit();
+                default -> throw new IllegalStateException(
+                        "Unknown state type " + state.getClass().getName());
+            }
+        });
+        if (onCommit != null) {
+            onCommit.run();
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "MapWritableStates{" + "states=" + states + '}';
     }
 }
