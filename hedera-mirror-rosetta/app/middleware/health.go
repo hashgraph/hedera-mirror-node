@@ -19,7 +19,6 @@ package middleware
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/coinbase/rosetta-sdk-go/client"
@@ -90,10 +89,6 @@ func (c *healthController) Routes() server.Routes {
 			c.readinessHealth.HandlerFunc,
 		},
 	}
-}
-
-func (c *healthController) ContextFromRequest(r *http.Request) context.Context {
-	return r.Context()
 }
 
 func checkNetworkStatus(port uint16) func(ctx context.Context) error {
