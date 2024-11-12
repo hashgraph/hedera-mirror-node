@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.state.utils;
+package com.hedera.mirror.web3.state.core;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.ReadableQueueState;
-import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.WritableQueueStateBase;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,18 +34,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MapReadableStatesTest {
+class MapWritableStatesTest {
 
-    private MapReadableStates states;
-
-    @Mock
-    private ReadableKVState<String, String> kvStateMock;
+    private MapWritableStates states;
 
     @Mock
-    private ReadableSingletonState<String> singletonStateMock;
+    private WritableKVStateBase<String, String> kvStateMock;
 
     @Mock
-    private ReadableQueueState<String> queueStateMock;
+    private WritableSingletonStateBase<String> singletonStateMock;
+
+    @Mock
+    private WritableQueueStateBase<String> queueStateMock;
 
     private static final String KV_STATE_KEY = "kvState";
     private static final String SINGLETON_KEY = "singleton";
@@ -50,7 +53,7 @@ class MapReadableStatesTest {
 
     @BeforeEach
     void setup() {
-        states = new MapReadableStates(
+        states = new MapWritableStates(
                 Map.of(KV_STATE_KEY, kvStateMock, SINGLETON_KEY, singletonStateMock, QUEUE_KEY, queueStateMock));
     }
 
@@ -124,8 +127,8 @@ class MapReadableStatesTest {
     }
 
     @Test
-    void testEqualsDifferentType() {
-        assertThat(states).isNotEqualTo("someString");
+    void testEqualsDifferentClass() {
+        assertThat(states).isNotEqualTo("other");
     }
 
     @Test
@@ -134,22 +137,34 @@ class MapReadableStatesTest {
     }
 
     @Test
-    void testEqualsSameValues() {
-        MapReadableStates other = new MapReadableStates(
-                Map.of(KV_STATE_KEY, kvStateMock, SINGLETON_KEY, singletonStateMock, QUEUE_KEY, queueStateMock));
-        assertThat(states).isEqualTo(other);
-    }
-
-    @Test
-    void testEqualsDifferentValues() {
-        MapReadableStates other = new MapReadableStates(Map.of(KV_STATE_KEY, kvStateMock));
-        assertThat(states).isNotEqualTo(other);
-    }
-
-    @Test
     void testHashCode() {
-        MapReadableStates other = new MapReadableStates(
+        MapWritableStates other = new MapWritableStates(
                 Map.of(KV_STATE_KEY, kvStateMock, SINGLETON_KEY, singletonStateMock, QUEUE_KEY, queueStateMock));
         assertThat(states).hasSameHashCodeAs(other);
+    }
+
+    @Test
+    void testCommit() {
+        final var state = new MapWritableStates(
+                Map.of(KV_STATE_KEY, kvStateMock, SINGLETON_KEY, singletonStateMock, QUEUE_KEY, queueStateMock));
+        state.commit();
+        verify(kvStateMock, times(1)).commit();
+        verify(singletonStateMock, times(1)).commit();
+        verify(queueStateMock, times(1)).commit();
+    }
+
+    @Test
+    void testCommitWithListener() {
+        final Runnable onCommit = mock(Runnable.class);
+        final var state = new MapWritableStates(Map.of(KV_STATE_KEY, kvStateMock), onCommit);
+        state.commit();
+        verify(kvStateMock, times(1)).commit();
+        verify(onCommit, times(1)).run();
+    }
+
+    @Test
+    void testCommitUnknownValue() {
+        final var state = new MapWritableStates(Map.of("other", new Object()));
+        assertThatThrownBy(state::commit).isInstanceOf(IllegalStateException.class);
     }
 }
