@@ -17,11 +17,15 @@
 package com.hedera.mirror.web3.state;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.state.file.File;
+import com.hedera.mirror.web3.state.utils.ListWritableQueueState;
 import com.hedera.mirror.web3.state.utils.MapReadableKVState;
 import com.hedera.mirror.web3.state.utils.MapReadableStates;
 import com.hedera.mirror.web3.state.utils.MapWritableKVState;
@@ -30,8 +34,13 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.spi.validation.TruePredicate;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.StateChangeListener.StateType;
+import com.swirlds.state.spi.KVChangeListener;
+import com.swirlds.state.spi.QueueChangeListener;
+import com.swirlds.state.spi.SingletonChangeListener;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,6 +55,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
 class MirrorNodeStateTest {
 
@@ -300,6 +310,113 @@ class MirrorNodeStateTest {
         state.setWritableStates(writableStates);
         state.commit();
         verify(mockMapWritableState, times(1)).commit();
+    }
+
+    @Test
+    void testCommitWithUpdateKVListener() {
+        final var state = buildTestState();
+        final var writableKVState = new MapWritableKVState<FileID, File>("FILES", new HashMap<>());
+        final var backingStore = new HashMap<String, Object>();
+        backingStore.put("FILES", writableKVState);
+        final var mapWritableStates = new MapWritableStates(backingStore);
+        Map<String, WritableStates> writableStates = new ConcurrentHashMap<>();
+        writableStates.put(FileService.NAME, mapWritableStates);
+        writableKVState.put(FileID.DEFAULT, File.DEFAULT);
+
+        final var mockListener = mock(KVChangeListener.class);
+        writableKVState.registerListener(mockListener);
+        state.registerCommitListener(listener);
+        state.setWritableStates(writableStates);
+        state.commit();
+
+        verify(mockListener, times(1)).mapUpdateChange(any(), any());
+    }
+
+    @Test
+    void testCommitWithDeleteKVListener() {
+        final var state = buildTestState();
+        final var writableKVState = new MapWritableKVState<FileID, File>("FILES", new HashMap<>());
+        final var backingStore = new HashMap<String, Object>();
+        backingStore.put("FILES", writableKVState);
+        final var mapWritableStates = new MapWritableStates(backingStore);
+        Map<String, WritableStates> writableStates = new ConcurrentHashMap<>();
+        writableStates.put(FileService.NAME, mapWritableStates);
+        writableKVState.put(FileID.DEFAULT, File.DEFAULT);
+        writableKVState.remove(FileID.DEFAULT);
+
+        final var mockListener = mock(KVChangeListener.class);
+        writableKVState.registerListener(mockListener);
+        state.registerCommitListener(listener);
+        state.setWritableStates(writableStates);
+        state.commit();
+
+        verify(mockListener, times(1)).mapDeleteChange(any());
+    }
+
+    @Test
+    void testCommitWithUpdateSingletonListener() {
+        final var state = buildTestState();
+        final var ref = new AtomicReference<>();
+        final var backingStore = new HashMap<String, Object>();
+        final var writableState = new WritableSingletonStateBase<>("FILES", ref::get, ref::set);
+        backingStore.put("FILES", writableState);
+        final var mapWritableStates = new MapWritableStates(backingStore);
+        Map<String, WritableStates> writableStates = new ConcurrentHashMap<>();
+        writableStates.put(FileService.NAME, mapWritableStates);
+        writableState.put(1L);
+
+        final var mockListener = mock(SingletonChangeListener.class);
+        writableState.registerListener(mockListener);
+        state.registerCommitListener(listener);
+        state.setWritableStates(writableStates);
+        state.commit();
+
+        verify(mockListener, times(1)).singletonUpdateChange(any());
+    }
+
+    @Test
+    void testCommitWithQueuePushListener() {
+        final var state = buildTestState();
+        final var writableQueue = new ConcurrentLinkedDeque<>();
+        final var backingStore = new HashMap<String, Object>();
+        final var writableState = new ListWritableQueueState<>("FILES", writableQueue);
+        backingStore.put("FILES", writableState);
+        final var mapWritableStates = new MapWritableStates(backingStore);
+        Map<String, WritableStates> writableStates = new ConcurrentHashMap<>();
+        writableStates.put(FileService.NAME, mapWritableStates);
+        writableState.add(1L);
+
+        final var mockListener = mock(QueueChangeListener.class);
+        writableState.registerListener(mockListener);
+        state.registerCommitListener(listener);
+        state.setWritableStates(writableStates);
+        state.commit();
+
+        verify(mockListener, times(1)).queuePushChange(any());
+    }
+
+    @Test
+    void testCommitWithQueuePopListener() {
+        final var state = buildTestState();
+        final var backingStore = new HashMap<String, Object>();
+        final var writableQueue = new ConcurrentLinkedDeque<>();
+        final var writableState = new ListWritableQueueState<>("FILES", writableQueue);
+        backingStore.put("FILES", writableState);
+        writableQueue.push(1L);
+        final var mapWritableStates = new MapWritableStates(backingStore);
+        Map<String, WritableStates> writableStates = new ConcurrentHashMap<>();
+        writableStates.put(FileService.NAME, mapWritableStates);
+        writableState.add(1L);
+        writableState.peek();
+        writableState.removeIf(TruePredicate.INSTANCE);
+
+        final var mockListener = mock(QueueChangeListener.class);
+        writableState.registerListener(mockListener);
+        state.registerCommitListener(listener);
+        state.setWritableStates(writableStates);
+        state.commit();
+
+        verify(mockListener, times(1)).queuePopChange();
     }
 
     @Test

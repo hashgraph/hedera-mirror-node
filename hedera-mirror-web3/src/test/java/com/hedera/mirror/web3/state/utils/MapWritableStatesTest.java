@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.state.utils;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -144,14 +145,21 @@ class MapWritableStatesTest {
 
     @Test
     void testCommit() {
-        final Runnable onCommit = () -> {};
         final var state = new MapWritableStates(
-                Map.of(KV_STATE_KEY, kvStateMock, SINGLETON_KEY, singletonStateMock, QUEUE_KEY, queueStateMock),
-                onCommit);
+                Map.of(KV_STATE_KEY, kvStateMock, SINGLETON_KEY, singletonStateMock, QUEUE_KEY, queueStateMock));
         state.commit();
         verify(kvStateMock, times(1)).commit();
         verify(singletonStateMock, times(1)).commit();
         verify(queueStateMock, times(1)).commit();
+    }
+
+    @Test
+    void testCommitWithListener() {
+        final Runnable onCommit = mock(Runnable.class);
+        final var state = new MapWritableStates(Map.of(KV_STATE_KEY, kvStateMock), onCommit);
+        state.commit();
+        verify(kvStateMock, times(1)).commit();
+        verify(onCommit, times(1)).run();
     }
 
     @Test
