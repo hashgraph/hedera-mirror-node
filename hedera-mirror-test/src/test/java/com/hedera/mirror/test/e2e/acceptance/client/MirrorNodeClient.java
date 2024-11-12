@@ -125,6 +125,7 @@ public class MirrorNodeClient {
         // allow time for connection to be made and error to be caught
         await("responseEncountered")
                 .atMost(Durations.ONE_MINUTE)
+                .pollInterval(Durations.ONE_SECOND)
                 .pollDelay(Durations.ONE_HUNDRED_MILLISECONDS)
                 .until(() -> subscriptionResponse.hasResponse());
 
