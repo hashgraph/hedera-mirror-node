@@ -41,6 +41,10 @@ hedera:
           username: metrics
           uriPath: "/swagger"
         ipMetrics: false
+      transactions:
+        typesToInclude:
+          - CRYPTOCREATEACCOUNT
+          - CRYPTOUPDATEACCOUNT
       network:
         unreleasedSupplyAccounts:
           - from: 0.0.2

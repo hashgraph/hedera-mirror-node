@@ -188,6 +188,13 @@ const parseNetworkConfig = () => {
   }
 };
 
+const parseTransactionConfig = () => {
+  const {transactions} = getConfig();
+  if (!Array.isArray(transactions.typesToInclude)) {
+    throw new InvalidConfigError(`Invalid or missing transactions.typesToInclude: ${transactions.typesToInclude}`);
+  }
+};
+
 if (!loaded) {
   const configName = process.env.CONFIG_NAME || defaultConfigName;
   // always load the default configuration
@@ -199,6 +206,7 @@ if (!loaded) {
   parseDbPoolConfig();
   parseNetworkConfig();
   parseQueryConfig();
+  parseTransactionConfig();
   parseStateProofStreamsConfig();
   loaded = true;
   configureLogger(getConfig().log.level);
