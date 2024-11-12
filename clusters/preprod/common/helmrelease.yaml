@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-v2.yaml
-      version: '0.117.0-rc1'
+      version: '0.118.0-rc1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -39,18 +39,9 @@ spec:
         structuredConfig:
           ruler:
             external_url: https://mirrornode.grafana.net
-      singleBinary:
-        resources:
-          limits:
-            memory: 512Mi
     minio:
       enabled: false
     prometheus:
-      kube-state-metrics:
-        resources:
-          limits:
-            cpu: 20m
-            memory: 128Mi
       prometheus:
         prometheusSpec:
           externalLabels:
