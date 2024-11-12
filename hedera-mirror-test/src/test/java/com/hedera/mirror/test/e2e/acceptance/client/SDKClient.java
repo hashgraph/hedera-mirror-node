@@ -17,6 +17,7 @@
 package com.hedera.mirror.test.e2e.acceptance.client;
 
 import static com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties.HederaNetwork.OTHER;
+import static org.awaitility.Awaitility.await;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
@@ -49,6 +50,8 @@ import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
+import org.awaitility.Durations;
 import org.springframework.util.CollectionUtils;
 
 @CustomLog
@@ -56,6 +59,7 @@ import org.springframework.util.CollectionUtils;
 @Value
 public class SDKClient implements Cleanable {
 
+    private static final String RESET_IP = "1.0.0.0";
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final Client client;
@@ -152,7 +156,13 @@ public class SDKClient implements Cleanable {
 
         if (acceptanceTestProperties.isRetrieveAddressBook()) {
             try {
-                return toClient(getAddressBook());
+                log.info("Waiting for a valid address book");
+                var addressBook = await("retrieveAddressBook")
+                        .atMost(acceptanceTestProperties.getStartupTimeout())
+                        .pollDelay(Duration.ofMillis(100))
+                        .pollInterval(Durations.FIVE_SECONDS)
+                        .until(this::getAddressBook, ab -> !ab.isEmpty());
+                return toClient(addressBook);
             } catch (Exception e) {
                 log.warn("Error retrieving address book", e);
             }
@@ -283,7 +293,7 @@ public class SDKClient implements Cleanable {
             for (var serviceEndpoint : node.getServiceEndpoints()) {
                 var ip = serviceEndpoint.getIpAddressV4();
                 var port = serviceEndpoint.getPort();
-                if (port == 50211) {
+                if (port == 50211 && StringUtils.isNotBlank(ip) && !RESET_IP.equals(ip)) {
                     networkMap.putIfAbsent(ip + ":" + port, accountId);
                 }
             }
