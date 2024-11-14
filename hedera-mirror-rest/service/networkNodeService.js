@@ -20,6 +20,7 @@ import {
   AddressBook,
   AddressBookEntry,
   AddressBookServiceEndpoint,
+  Node,
   NetworkNode,
   NetworkStake,
   NodeStake,
@@ -44,6 +45,10 @@ class NetworkNodeService extends BaseService {
       from ${NodeStake.tableName}
       where ${NodeStake.CONSENSUS_TIMESTAMP} =
         (select max(${NodeStake.CONSENSUS_TIMESTAMP}) from ${NodeStake.tableName})
+    ),
+    ${Node.tableAlias} as (
+      select ${Node.ADMIN_KEY}, ${Node.NODE_ID}
+      from ${Node.tableName}
     )
     select ${AddressBookEntry.getFullName(AddressBookEntry.DESCRIPTION)},
       ${AddressBookEntry.getFullName(AddressBookEntry.MEMO)},
@@ -54,6 +59,7 @@ class NetworkNodeService extends BaseService {
       ${AddressBook.getFullName(AddressBook.FILE_ID)},
       ${AddressBook.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)},
       ${AddressBook.getFullName(AddressBook.END_CONSENSUS_TIMESTAMP)},
+      ${Node.getFullName(Node.ADMIN_KEY)},
       ${NodeStake.getFullName(NodeStake.MAX_STAKE)},
       ${NodeStake.getFullName(NodeStake.MIN_STAKE)},
       ${NodeStake.getFullName(NodeStake.REWARD_RATE)},
@@ -77,7 +83,10 @@ class NetworkNodeService extends BaseService {
     join ${AddressBook.tableAlias} on ${AddressBook.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)} =
       ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)}
     left join ${NodeStake.tableAlias} on ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)} =
-      ${NodeStake.getFullName(NodeStake.NODE_ID)}`;
+      ${NodeStake.getFullName(NodeStake.NODE_ID)}
+    left join ${Node.tableAlias} on ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)} =
+      ${Node.getFullName(Node.NODE_ID)}`;
+
   static networkStakeQuery = `select ${NetworkStake.MAX_STAKING_REWARD_RATE_PER_HBAR},
          ${NetworkStake.MAX_STAKE_REWARDED},
          ${NetworkStake.MAX_TOTAL_REWARD},

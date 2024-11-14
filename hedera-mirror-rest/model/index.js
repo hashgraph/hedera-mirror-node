@@ -34,6 +34,7 @@ import Entity from './entity';
 import EthereumTransaction from './ethereumTransaction';
 import ExchangeRate from './exchangeRate';
 import FileData from './fileData';
+import Node from './node';
 import NetworkNode from './networkNode';
 import NetworkStake from './networkStake';
 import Nft from './nft';
@@ -82,6 +83,7 @@ export {
   EthereumTransaction,
   ExchangeRate,
   FileData,
+  Node,
   NetworkNode,
   NetworkStake,
   Nft,

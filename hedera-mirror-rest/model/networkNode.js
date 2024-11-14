@@ -17,6 +17,7 @@
 import AddressBook from './addressBook';
 import AddressBookEntry from './addressBookEntry';
 import AddressBookServiceEndpoint from './addressBookServiceEndpoint';
+import Node from './node';
 import NodeStake from './nodeStake';
 
 class NetworkNode {
@@ -28,6 +29,7 @@ class NetworkNode {
     this.addressBookEntry = new AddressBookEntry(networkNodeDb);
     this.addressBookServiceEndpoints = networkNodeDb.service_endpoints.map((x) => new AddressBookServiceEndpoint(x));
     this.nodeStake = new NodeStake(networkNodeDb);
+    this.node = new Node(networkNodeDb);
   }
 }
 
