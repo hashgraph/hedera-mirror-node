@@ -41,10 +41,6 @@ hedera:
           username: metrics
           uriPath: "/swagger"
         ipMetrics: false
-      transactions:
-        typesToInclude:
-          - CRYPTOCREATEACCOUNT
-          - CRYPTOUPDATEACCOUNT
       network:
         unreleasedSupplyAccounts:
           - from: 0.0.2
@@ -76,6 +72,10 @@ hedera:
         maxTransactionsTimestampRange: 60d
         strictTimestampParam: true
         topicMessageLookup: false
+        transactions:
+          precedingTransactionTypes:
+            - 11 #CRYPTOCREATEACCOUNT
+            - 15 #CRYPTOUPDATEACCOUNT
       redis:
         commandTimeout: 10000
         connectTimeout: 10000

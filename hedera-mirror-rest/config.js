@@ -189,9 +189,9 @@ const parseNetworkConfig = () => {
 };
 
 const parseTransactionConfig = () => {
-  const {transactions} = getConfig();
-  if (!Array.isArray(transactions.typesToInclude)) {
-    throw new InvalidConfigError(`Invalid or missing transactions.typesToInclude: ${transactions.typesToInclude}`);
+  const {precedingTransactionTypes} = getConfig().query.transactions;
+  if (!Array.isArray(precedingTransactionTypes) || precedingTransactionTypes.length === 0) {
+    throw new InvalidConfigError(`Invalid or missing query.transactions.precedingTransactionTypes: ${precedingTransactionTypes}`);
   }
 };
 
