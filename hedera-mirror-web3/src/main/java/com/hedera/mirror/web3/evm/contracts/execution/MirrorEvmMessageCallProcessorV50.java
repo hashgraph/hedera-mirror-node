@@ -28,6 +28,7 @@ import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 @Named
+@SuppressWarnings("java:S110")
 public class MirrorEvmMessageCallProcessorV50 extends MirrorEvmMessageCallProcessor {
     public MirrorEvmMessageCallProcessorV50(
             final AbstractAutoCreationLogic autoCreationLogic,
