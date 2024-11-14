@@ -4,9 +4,8 @@
 
 [HIP-1056](https://hips.hedera.com/hip/hip-1056) introduces a new output data format for consensus nodes, called block streams, that replaces the existing
 record streams and signature files with one single stream. Support for block streams in the Mirror Node
-will be split into two phases. This design document concerns the first phase which will translate the block streams into the existing record stream format and parse the
-translated record streams just as we do today. The second phase (to be detailed in a separate design document) will remove the translation and parse the block streams directly and
-translate record streams into block streams to allow the mirror node to continue to ingest all record streams from the past.
+will be split into two phases. This design document concerns translating the block streams into the existing record stream format to parse the
+translated record streams just as we do today.
 
 ## Goals
 
@@ -203,7 +202,7 @@ public class BlockStreamVerifier {
 | contract_result.gas_limit                     | transaction_output.contract_create.contract_create_result.gas                                           |
 | contract_result.gas_used                      | transaction_output.contract_create.contract_create_result.gas_used                                      |
 | contract_result.payer_account_id              |                                                                                                         |
-| contract_result.sender_id                     | transaction_output.contract_create.contract_create_result.sender_id                                     |
+| contract_result.sender_id z                   | transaction_output.contract_create.contract_create_result.sender_id                                     |
 | contract_result.transaction_hash              |                                                                                                         |
 | contract_result.transaction_index             |                                                                                                         |
 | contract_result.transaction_nonce             | transaction_output.contract_create.contract_create_result.contract_nonces[i].nonce                      |
