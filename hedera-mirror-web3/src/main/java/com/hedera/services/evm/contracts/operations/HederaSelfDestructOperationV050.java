@@ -37,18 +37,18 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
  *
  * <p>Halts the execution of the EVM transaction with {@link
  * HederaExceptionalHaltReason#SELF_DESTRUCT_TO_SELF} if the beneficiary address is the same as the address being
- * destructed. This class is a copy of HederaSelfDestructOperationV046 from hedera-services mono
+ * destructed.
  */
-public class HederaSelfDestructOperationV046 extends HederaSelfDestructOperationBase {
+public class HederaSelfDestructOperationV050 extends HederaSelfDestructOperationBase {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
 
-    public HederaSelfDestructOperationV046(
-            final GasCalculator gasCalculator,
+    public HederaSelfDestructOperationV050(
+            GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
             final Predicate<Address> systemAccountDetector) {
-        super(gasCalculator, false);
+        super(gasCalculator, true);
         this.addressValidator = addressValidator;
         this.systemAccountDetector = systemAccountDetector;
     }

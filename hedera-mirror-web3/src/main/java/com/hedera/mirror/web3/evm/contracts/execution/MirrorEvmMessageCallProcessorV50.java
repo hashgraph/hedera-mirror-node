@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.hedera.mirror.web3.evm.contracts.execution;
 
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
+import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import jakarta.inject.Named;
 import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
@@ -26,15 +28,24 @@ import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 @Named
-public class MirrorEvmMessageCallProcessorV30 extends AbstractEvmMessageCallProcessor {
-
-    public MirrorEvmMessageCallProcessorV30(
-            @Named("evm030") EVM v30,
-            PrecompileContractRegistry precompiles,
+public class MirrorEvmMessageCallProcessorV50 extends MirrorEvmMessageCallProcessor {
+    public MirrorEvmMessageCallProcessorV50(
+            final AbstractAutoCreationLogic autoCreationLogic,
+            final EntityAddressSequencer entityAddressSequencer,
+            @Named("evm050") EVM v50,
+            final PrecompileContractRegistry precompiles,
             final PrecompiledContractProvider precompilesHolder,
             final GasCalculator gasCalculator,
             final Predicate<Address> systemAccountDetector) {
-        super(v30, precompiles, precompilesHolder.getHederaPrecompiles(), systemAccountDetector);
-        MainnetPrecompiledContracts.populateForIstanbul(precompiles, gasCalculator);
+        super(
+                autoCreationLogic,
+                entityAddressSequencer,
+                v50,
+                precompiles,
+                precompilesHolder,
+                gasCalculator,
+                systemAccountDetector);
+
+        MainnetPrecompiledContracts.populateForCancun(precompiles, gasCalculator);
     }
 }
