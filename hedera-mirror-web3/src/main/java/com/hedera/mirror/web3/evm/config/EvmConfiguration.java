@@ -409,7 +409,7 @@ public class EvmConfiguration {
 
     @Bean
     HederaSelfDestructOperationV046 hederaSelfDestructOperationV046(final GasCalculator gasCalculator) {
-        return new HederaSelfDestructOperationV046(gasCalculator, addressValidator, systemAccountDetector);
+        return new HederaSelfDestructOperationV046(gasCalculator, addressValidator, systemAccountDetector, false);
     }
 
     @Bean

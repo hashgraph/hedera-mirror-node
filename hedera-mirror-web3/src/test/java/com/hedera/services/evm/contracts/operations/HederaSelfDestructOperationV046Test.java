@@ -71,7 +71,7 @@ class HederaSelfDestructOperationV046Test {
 
     @BeforeEach
     void setUp() {
-        subject = new HederaSelfDestructOperationV046(gasCalculator, addressValidator, systemAccountDetector);
+        subject = new HederaSelfDestructOperationV046(gasCalculator, addressValidator, systemAccountDetector, false);
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(gasCalculator.selfDestructOperationGasCost(any(), eq(Wei.ONE))).willReturn(2L);

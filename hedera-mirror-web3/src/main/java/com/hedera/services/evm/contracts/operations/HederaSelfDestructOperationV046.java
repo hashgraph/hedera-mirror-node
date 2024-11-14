@@ -47,8 +47,9 @@ public class HederaSelfDestructOperationV046 extends HederaSelfDestructOperation
     public HederaSelfDestructOperationV046(
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Predicate<Address> systemAccountDetector) {
-        super(gasCalculator, false);
+            final Predicate<Address> systemAccountDetector,
+            final boolean useEIP6780Semantics) {
+        super(gasCalculator, useEIP6780Semantics);
         this.addressValidator = addressValidator;
         this.systemAccountDetector = systemAccountDetector;
     }
