@@ -59,6 +59,7 @@ import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyV
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
+import com.hederahashgraph.api.proto.java.ScheduleOuterClass;
 import com.swirlds.base.time.Time;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -187,6 +188,15 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @Test
     void setApprovalForAll() throws Exception {
         // Given
+        String testFlagValue = System.getProperty("testFlag", "false");
+        boolean testFlag = Boolean.parseBoolean(testFlagValue);
+
+        if(testFlag){
+            System.out.println("TEST FLAG IS SET TO TRUE");
+        } else {
+            System.out.println("TEST FLAG IS SET TO FALSE");
+        }
+
         final var spender = accountEntityPersist();
 
         final var tokenEntity =

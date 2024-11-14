@@ -8,6 +8,7 @@ on:
     branches:
       - "main"
       - "release/**"
+      - "flag-tests"
     tags:
       - "v*"
 
@@ -91,6 +92,12 @@ jobs:
         env:
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
+        run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
+
+      - name: TEST Execute with flag
+        env:
+          MIRROR_NODE_SCHEMA: ${{ matrix.project == 'web3'}}
+          SPRING_PROFILES_ACTIVE: ${{ matrix.schema == 'v1'}}
         run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
 
       - name: Upload coverage report
