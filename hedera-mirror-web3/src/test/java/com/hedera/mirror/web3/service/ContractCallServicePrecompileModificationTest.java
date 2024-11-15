@@ -68,10 +68,12 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Value;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
@@ -186,6 +188,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     }
 
     @Test
+    @Tag("run-this")
+//    @Value("${spring.test.reusableServicesFlag:false}")
     void TESTsetApprovalForAll() throws Exception {
         // Given
         String testFlagValue = System.getProperty("testFlag", "false");
