@@ -42,7 +42,7 @@ class ServicesRegistryImplTest {
     void testRegister() {
         Service service = new FileServiceImpl();
         servicesRegistry.register(service);
-        assertThat(servicesRegistry.registrations().size()).isEqualTo(1);
+        assertThat(servicesRegistry.registrations()).hasSize(1);
     }
 
     @Test
@@ -62,6 +62,6 @@ class ServicesRegistryImplTest {
         servicesRegistry.register(service2);
         ServicesRegistryImpl subRegistry = (ServicesRegistryImpl)
                 servicesRegistry.subRegistryFor(service.getServiceName(), service2.getServiceName());
-        assertThat(subRegistry.registrations().size()).isEqualTo(2);
+        assertThat(subRegistry.registrations()).hasSize(2);
     }
 }
