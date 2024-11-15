@@ -142,54 +142,55 @@ class ServiceMigratorImplTest {
         Registration registration1 = new Registration(service1, registry1);
         Registration registration2 = new Registration(service2, registry2);
         when(servicesRegistry.registrations()).thenReturn(Set.of(registration1, registration2));
-        var exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> serviceMigrator.doMigrations(
-                        mirrorNodeState,
-                        servicesRegistry,
-                        null,
-                        new ServicesSoftwareVersion(bootstrapConfig
-                                .getConfigData(VersionConfig.class)
-                                .servicesVersion()),
-                        new ConfigProviderImpl().getConfiguration(),
-                        networkInfo,
-                        metrics));
+
+        var servicesVersion = bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion();
+        var servicesSoftwareVersion = new ServicesSoftwareVersion(servicesVersion);
+        var configuration = new ConfigProviderImpl().getConfiguration();
+
+        var exception = assertThrows(IllegalArgumentException.class, () -> {
+            serviceMigrator.doMigrations(
+                    mirrorNodeState,
+                    servicesRegistry,
+                    null,
+                    servicesSoftwareVersion,
+                    configuration,
+                    networkInfo,
+                    metrics);
+        });
 
         assertThat(exception.getMessage()).isEqualTo("Can only be used with SchemaRegistryImpl instances");
     }
 
     @Test
     void doMigrationsInvalidState() {
-        var exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> serviceMigrator.doMigrations(
-                        mockState,
-                        servicesRegistry,
-                        null,
-                        new ServicesSoftwareVersion(bootstrapConfig
-                                .getConfigData(VersionConfig.class)
-                                .servicesVersion()),
-                        new ConfigProviderImpl().getConfiguration(),
-                        networkInfo,
-                        metrics));
+        var servicesVersion = bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion();
+        var servicesSoftwareVersion = new ServicesSoftwareVersion(servicesVersion);
+        var configuration = new ConfigProviderImpl().getConfiguration();
+
+        var exception = assertThrows(IllegalArgumentException.class, () -> {
+            serviceMigrator.doMigrations(
+                    mockState, servicesRegistry, null, servicesSoftwareVersion, configuration, networkInfo, metrics);
+        });
 
         assertThat(exception.getMessage()).isEqualTo("Can only be used with MirrorNodeState instances");
     }
 
     @Test
     void doMigrationsInvalidServicesRegistry() {
-        var exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> serviceMigrator.doMigrations(
-                        mirrorNodeState,
-                        mockServicesRegistry,
-                        null,
-                        new ServicesSoftwareVersion(bootstrapConfig
-                                .getConfigData(VersionConfig.class)
-                                .servicesVersion()),
-                        new ConfigProviderImpl().getConfiguration(),
-                        networkInfo,
-                        metrics));
+        var servicesVersion = bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion();
+        var servicesSoftwareVersion = new ServicesSoftwareVersion(servicesVersion);
+        var configuration = new ConfigProviderImpl().getConfiguration();
+
+        var exception = assertThrows(IllegalArgumentException.class, () -> {
+            serviceMigrator.doMigrations(
+                    mirrorNodeState,
+                    mockServicesRegistry,
+                    null,
+                    servicesSoftwareVersion,
+                    configuration,
+                    networkInfo,
+                    metrics);
+        });
 
         assertThat(exception.getMessage()).isEqualTo("Can only be used with ServicesRegistryImpl instances");
     }
@@ -199,18 +200,21 @@ class ServiceMigratorImplTest {
         final var mockServiceRegistration = mock(Registration.class);
         when(servicesRegistry.registrations()).thenReturn(Set.of(mockServiceRegistration));
         when(mockServiceRegistration.registry()).thenReturn(mockSchemaRegistry);
-        var exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> serviceMigrator.doMigrations(
-                        mirrorNodeState,
-                        servicesRegistry,
-                        null,
-                        new ServicesSoftwareVersion(bootstrapConfig
-                                .getConfigData(VersionConfig.class)
-                                .servicesVersion()),
-                        new ConfigProviderImpl().getConfiguration(),
-                        networkInfo,
-                        metrics));
+
+        var servicesVersion = bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion();
+        var servicesSoftwareVersion = new ServicesSoftwareVersion(servicesVersion);
+        var configuration = new ConfigProviderImpl().getConfiguration();
+
+        var exception = assertThrows(IllegalArgumentException.class, () -> {
+            serviceMigrator.doMigrations(
+                    mirrorNodeState,
+                    servicesRegistry,
+                    null,
+                    servicesSoftwareVersion,
+                    configuration,
+                    networkInfo,
+                    metrics);
+        });
 
         assertThat(exception.getMessage()).isEqualTo("Can only be used with SchemaRegistryImpl instances");
     }
