@@ -186,14 +186,14 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     }
 
     @Test
-    void setApprovalForAll() throws Exception {
+    void TESTsetApprovalForAll() throws Exception {
         // Given
         String testFlagValue = System.getProperty("testFlag", "false");
         boolean testFlag = Boolean.parseBoolean(testFlagValue);
 
         System.out.println(testFlagValue);
         System.out.println("TEST FLAG IS SET TO " + testFlagValue);
-        assertThat(testFlag).isFalse();
+        assertThat(testFlag).isTrue();
 //        if(testFlag){
 //            System.out.println("TEST FLAG IS SET TO TRUE");
 //        } else {
