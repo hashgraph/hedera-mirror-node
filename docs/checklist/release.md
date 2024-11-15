@@ -49,6 +49,7 @@ Deployed automatically on every tag.
 
 A GA tag will trigger an automatic deployment to NA. Upon success, a PR for EU will automatically get created.
 
+- [ ] Disk Snapshot for Citus is Taken (can be EU or NA)
 - [ ] Deployed NA
 - [ ] Deployed EU
 
@@ -66,6 +67,7 @@ These preprod environments are automatically deployed for any GA release. Ensure
 Wait about a week after the testnet deployment to give it time to bake, then deploy to NA first. Upon success, a PR for
 EU will automatically get created.
 
+- [ ] Disk Snapshot for Citus is Taken (can be EU or NA)
 - [ ] Deployed NA
 - [ ] Deployed EU
 
