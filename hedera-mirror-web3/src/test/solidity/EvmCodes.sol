@@ -130,7 +130,7 @@ contract EvmCodes {
         assembly {
             success := call(sub(gas(), 2000), 0x06, 0, input, 0xc0, r, 0x60)
         // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            switch success case 0 {invalid()}
         }
         require(success);
     }
@@ -146,9 +146,9 @@ contract EvmCodes {
         assembly {
             success := call(sub(gas(), 2000), 0x07, 0, input, 0x80, r, 0x60)
         // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            switch success case 0 {invalid()}
         }
-        require (success);
+        require(success);
     }
 
     // Function to perform a pairing check using AltBN128PairingPrecompiledContract.
@@ -175,7 +175,7 @@ contract EvmCodes {
         assembly {
             success := call(sub(gas(), 2000), 8, 0, add(input, 0x20), mul(inputSize, 0x20), out, 0x20)
         // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            switch success case 0 {invalid()}
         }
         require(success);
         return out[0] != 0;
@@ -232,5 +232,24 @@ contract EvmCodes {
 
     function destroyContract(address payable beneficiary) public {
         selfdestruct(beneficiary);
+    }
+
+    function tryKZGPrecompile() public view {
+        bytes memory byts = "Hello, World!";
+        address(0x0A).staticcall(byts);
+    }
+
+    function tryTransientStorage() public {
+        assembly {
+            tstore(10, 11111)
+            pop(tload(10))
+        }
+    }
+
+    function tryMcopy() public pure {
+        bytes memory byts = "Hello, World!";
+        assembly {
+            mcopy(0, 0, 32)
+        }
     }
 }

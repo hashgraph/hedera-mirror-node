@@ -24,14 +24,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.EthCall;
 import com.hedera.mirror.web3.web3j.generated.EvmCodes;
 import com.hedera.mirror.web3.web3j.generated.EvmCodes.G1Point;
@@ -41,6 +46,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,6 +61,7 @@ import org.web3j.abi.datatypes.Type;
 class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
     private static final String EMPTY_BLOCK_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
+    private static final Long EVM_46_BLOCK = 150L;
 
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
@@ -312,5 +319,80 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
                     MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
                     assertEquals(exception.getMessage(), INVALID_SOLIDITY_ADDRESS.name());
                 });
+    }
+
+    @Test
+    void testKZGCall() {
+        // Given
+        final var contract = testWeb3jService.deploy(EvmCodes::deploy);
+        final var functionCall = contract.send_tryKZGPrecompile();
+        // Then
+        assertDoesNotThrow(functionCall::send);
+    }
+
+    @Test
+    void testKZGCallEvm46() {
+        // Given
+        final var recordFile =
+                domainBuilder.recordFile().customize(f -> f.index(EVM_46_BLOCK)).persist();
+        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_46_BLOCK)));
+        testWeb3jService.setHistoricalRange(
+                Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
+        final var contract = testWeb3jService.deploy(EvmCodes::deploy);
+        final var functionCall = contract.send_tryKZGPrecompile();
+        // Then
+        MirrorEvmTransactionException exception = assertThrows(MirrorEvmTransactionException.class, functionCall::send);
+        AssertionsForClassTypes.assertThat(exception.getMessage())
+                .isEqualTo(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION.name());
+    }
+
+    @Test
+    void testTransientStorage() {
+        // Given
+        final var contract = testWeb3jService.deploy(EvmCodes::deploy);
+        final var functionCall = contract.send_tryTransientStorage();
+        // Then
+        assertDoesNotThrow(functionCall::send);
+    }
+
+    @Test
+    void testTransientStorageEvm46() {
+        // Given
+        final var recordFile =
+                domainBuilder.recordFile().customize(f -> f.index(EVM_46_BLOCK)).persist();
+        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_46_BLOCK)));
+        testWeb3jService.setHistoricalRange(
+                Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
+        final var contract = testWeb3jService.deploy(EvmCodes::deploy);
+        // When
+        final var functionCall = contract.send_tryTransientStorage();
+        MirrorEvmTransactionException exception = assertThrows(MirrorEvmTransactionException.class, functionCall::send);
+        AssertionsForClassTypes.assertThat(exception.getMessage())
+                .isEqualTo(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION.name());
+    }
+
+    @Test
+    void testMCopy() {
+        // Given
+        final var contract = testWeb3jService.deploy(EvmCodes::deploy);
+        final var functionCall = contract.send_tryMcopy();
+        // Then
+        assertDoesNotThrow(functionCall::send);
+    }
+
+    @Test
+    void testMCopyEvm46() {
+        // Given
+        final var recordFile =
+                domainBuilder.recordFile().customize(f -> f.index(EVM_46_BLOCK)).persist();
+        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_46_BLOCK)));
+        testWeb3jService.setHistoricalRange(
+                Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
+        final var contract = testWeb3jService.deploy(EvmCodes::deploy);
+        // When
+        final var functionCall = contract.send_tryMcopy();
+        MirrorEvmTransactionException exception = assertThrows(MirrorEvmTransactionException.class, functionCall::send);
+        AssertionsForClassTypes.assertThat(exception.getMessage())
+                .isEqualTo(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION.name());
     }
 }
