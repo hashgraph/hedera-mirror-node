@@ -22,12 +22,12 @@ import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.mirror.web3.state.utils.ListReadableQueueState;
-import com.hedera.mirror.web3.state.utils.ListWritableQueueState;
-import com.hedera.mirror.web3.state.utils.MapReadableKVState;
-import com.hedera.mirror.web3.state.utils.MapReadableStates;
-import com.hedera.mirror.web3.state.utils.MapWritableKVState;
-import com.hedera.mirror.web3.state.utils.MapWritableStates;
+import com.hedera.mirror.web3.state.core.ListReadableQueueState;
+import com.hedera.mirror.web3.state.core.ListWritableQueueState;
+import com.hedera.mirror.web3.state.core.MapReadableKVState;
+import com.hedera.mirror.web3.state.core.MapReadableStates;
+import com.hedera.mirror.web3.state.core.MapWritableKVState;
+import com.hedera.mirror.web3.state.core.MapWritableStates;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.spi.EmptyWritableStates;

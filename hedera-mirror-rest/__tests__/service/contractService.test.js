@@ -976,14 +976,14 @@ describe('ContractService.getContractStateChangesByTimestamps tests', () => {
 
 describe('ContractService.getContractIdByEvmAddress tests', () => {
   test('No match', async () => {
-    const evmAddressFilter = {shard: 0, realm: 0, create2_evm_address: Buffer.from('123', 'hex')};
+    const evmAddressFilter = {shard: 0, realm: 0, create2_evm_address: 'deadbeaf'};
     await expect(() => ContractService.getContractIdByEvmAddress(evmAddressFilter)).rejects.toThrow(
-      new NotFoundError(`No contract with the given evm address: ${JSON.stringify(evmAddressFilter)} has been found.`)
+      new NotFoundError(`No contract with the given evm address 0xdeadbeaf has been found.`)
     );
   });
 
   test('Multiple rows match', async () => {
-    const evmAddress = Buffer.from('3d4ffd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
+    const evmAddress = 'a25db2e7595e094b1074122a048030f90b76d526';
     await integrationDomainOps.loadContracts([
       {
         auto_renew_period: 7890000,
@@ -1046,7 +1046,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
 
     const evmAddressFilter = {shard: 0, realm: 0, create2_evm_address: evmAddress};
     await expect(() => ContractService.getContractIdByEvmAddress(evmAddressFilter)).rejects.toThrow(
-      new Error(`More than one contract with the evm address ${JSON.stringify(evmAddressFilter)} have been found.`)
+      new Error(`More than one contract with the evm address 0x${evmAddress} have been found.`)
     );
   });
 

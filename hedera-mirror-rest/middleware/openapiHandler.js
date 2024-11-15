@@ -159,14 +159,13 @@ const serveSwaggerDocs = (app) => {
 };
 
 const openApiValidator = (app) => {
+  const validateResponses = isTestEnv() ? {allErrors: true} : false;
   app.use(
     OpenApiValidator.middleware({
       apiSpec: path.resolve(process.cwd(), getSpecPath(1)),
       ignoreUndocumented: true,
       validateRequests: false,
-      validateResponses: {
-        allErrors: isTestEnv(),
-      },
+      validateResponses,
     })
   );
 };

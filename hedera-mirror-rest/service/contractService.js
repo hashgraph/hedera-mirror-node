@@ -513,19 +513,17 @@ class ContractService extends BaseService {
   }
 
   async getContractIdByEvmAddress(evmAddressFilter) {
+    const create2EvmAddress = evmAddressFilter.create2_evm_address;
+    evmAddressFilter.create2_evm_address = Buffer.from(create2EvmAddress, 'hex');
     const {params, conditions} = this.computeConditionsAndParamsFromEvmAddressFilter({evmAddressFilter});
     const query = `${ContractService.contractIdByEvmAddressQuery} and ${conditions.join(' and ')}`;
     const rows = await super.getRows(query, params);
     if (rows.length === 0) {
-      throw new NotFoundError(
-        `No contract with the given evm address: ${JSONStringify(evmAddressFilter)} has been found.`
-      );
+      throw new NotFoundError(`No contract with the given evm address 0x${create2EvmAddress} has been found.`);
     }
     // since evm_address is not a unique index, it is important to make this check.
     if (rows.length > 1) {
-      throw new Error(
-        `More than one contract with the evm address ${JSONStringify(evmAddressFilter)} have been found.`
-      );
+      throw new Error(`More than one contract with the evm address 0x${create2EvmAddress} have been found.`);
     }
 
     return rows[0].id;
@@ -535,7 +533,6 @@ class ContractService extends BaseService {
     const contractIdParts = EntityId.computeContractIdPartsFromContractIdValue(contractIdValue);
 
     if (contractIdParts.hasOwnProperty('create2_evm_address')) {
-      contractIdParts.create2_evm_address = Buffer.from(contractIdParts.create2_evm_address, 'hex');
       return this.getContractIdByEvmAddress(contractIdParts);
     }
 
