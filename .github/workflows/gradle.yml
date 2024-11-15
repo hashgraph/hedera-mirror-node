@@ -1,14 +1,14 @@
 name: "Gradle"
 on:
   pull_request:
-#    branches:
-#      - "main"
-#      - "release/**"
+    branches:
+      - "main"
+      - "release/**"
+
   push:
     branches:
       - "main"
       - "release/**"
-      - "flag-tests"
     tags:
       - "v*"
 
