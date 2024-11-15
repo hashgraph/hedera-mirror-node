@@ -108,7 +108,7 @@ jobs:
 #        if: ${{ matrix.schema == 'v1' && matrix.project != 'rest:monitoring' && matrix.project != 'test' && always() }}
 
   testReusable:
-    name: Reusable services test with flag
+    name: Test with Flag
     runs-on: mirror-node-linux-large
     strategy:
       matrix:

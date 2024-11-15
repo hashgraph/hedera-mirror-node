@@ -197,7 +197,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         System.out.println(testFlagValue);
         System.out.println("TEST FLAG IS SET TO " + testFlagValue);
-        assertThat(testFlag).isFalse();
+        assertThat(testFlag).isTrue();
 //        if(testFlag){
 //            System.out.println("TEST FLAG IS SET TO TRUE");
 //        } else {
