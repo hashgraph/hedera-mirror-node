@@ -208,11 +208,11 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
     @ParameterizedTest
     @CsvSource({
-        // function getCodeHash with parameter hedera system accounts, expected 0 bytes
-        "0000000000000000000000000000000000000000000000000000000000000167",
-        "0000000000000000000000000000000000000000000000000000000000000168",
-        "00000000000000000000000000000000000000000000000000000000000002ee",
-        "00000000000000000000000000000000000000000000000000000000000002e4",
+            // function getCodeHash with parameter hedera system accounts, expected 0 bytes
+            "0000000000000000000000000000000000000000000000000000000000000167",
+            "0000000000000000000000000000000000000000000000000000000000000168",
+            "00000000000000000000000000000000000000000000000000000000000002ee",
+            "00000000000000000000000000000000000000000000000000000000000002e4",
     })
     void testSystemContractCodeHash(String input) throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
@@ -229,11 +229,11 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
         final List<Bytes> capturedOutputs = new ArrayList<>();
         doAnswer(invocation -> {
-                    HederaEvmTransactionProcessingResult result =
-                            (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
-                    capturedOutputs.add(result.getOutput()); // Capture the result
-                    return result;
-                })
+            HederaEvmTransactionProcessingResult result =
+                    (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+            capturedOutputs.add(result.getOutput()); // Capture the result
+            return result;
+        })
                 .when(contractExecutionService)
                 .callContract(any(), any());
 
@@ -313,7 +313,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
         // Then
         assertThatThrownBy(() -> contract.send_destroyContract(systemAccountAddress.toUnprefixedHexString())
-                        .send())
+                .send())
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .satisfies(ex -> {
                     MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
@@ -364,7 +364,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
         testWeb3jService.setHistoricalRange(
                 Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
-        // When
+        // Then
         final var functionCall = contract.send_tryTransientStorage();
         MirrorEvmTransactionException exception = assertThrows(MirrorEvmTransactionException.class, functionCall::send);
         AssertionsForClassTypes.assertThat(exception.getMessage())
@@ -389,7 +389,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
         testWeb3jService.setHistoricalRange(
                 Range.closedOpen(recordFile.getConsensusStart(), recordFile.getConsensusEnd()));
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
-        // When
+        // Then
         final var functionCall = contract.send_tryMcopy();
         MirrorEvmTransactionException exception = assertThrows(MirrorEvmTransactionException.class, functionCall::send);
         AssertionsForClassTypes.assertThat(exception.getMessage())
