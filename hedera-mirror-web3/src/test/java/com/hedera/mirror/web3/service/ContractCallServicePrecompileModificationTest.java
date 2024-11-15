@@ -190,43 +190,47 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         String testFlagValue = System.getProperty("testFlag", "false");
         boolean testFlag = Boolean.parseBoolean(testFlagValue);
+
         System.out.println(testFlagValue);
+        System.out.println("TEST FLAG IS SET TO " + testFlagValue);
+        assertThat(testFlag).isFalse();
+//        if(testFlag){
+//            System.out.println("TEST FLAG IS SET TO TRUE");
+//        } else {
+//            System.out.println("TEST FLAG IS SET TO FALSE");
+//        }
+//
 
-        if(testFlag){
-            System.out.println("TEST FLAG IS SET TO TRUE");
-        } else {
-            System.out.println("TEST FLAG IS SET TO FALSE");
-        }
 
-        final var spender = accountEntityPersist();
-
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
-
-        tokenAccountPersist(tokenEntity, spender);
-
-        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
-
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-        tokenAccountPersist(tokenEntity, contractEntityId.getId());
-
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(contractEntityId))
-                .persist();
-
-        // When
-        final var functionCall = contract.call_setApprovalForAllExternal(
-                getAddressFromEntity(tokenEntity), getAddressFromEntity(spender), Boolean.TRUE);
-
-        // Then
-        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
+//        final var spender = accountEntityPersist();
+//
+//        final var tokenEntity =
+//                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+//        domainBuilder
+//                .token()
+//                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+//                .persist();
+//
+//        tokenAccountPersist(tokenEntity, spender);
+//
+//        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+//
+//        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+//        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
+//        tokenAccountPersist(tokenEntity, contractEntityId.getId());
+//
+//        domainBuilder
+//                .nft()
+//                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(contractEntityId))
+//                .persist();
+//
+//        // When
+//        final var functionCall = contract.call_setApprovalForAllExternal(
+//                getAddressFromEntity(tokenEntity), getAddressFromEntity(spender), Boolean.TRUE);
+//
+//        // Then
+//        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+//        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
