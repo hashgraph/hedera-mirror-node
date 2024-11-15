@@ -52,8 +52,13 @@ describe('NetworkNodeViewModel', () => {
       stakeRewarded: 4,
       stakingPeriod: '1654991999999999999',
     },
+    node: {
+      admin_key: '421050820e1485acdd59726088e0e4a2130ebbbb70009f640ad95c78dd5a7b38',
+      node_id: 0
+    }
   };
   const defaultExpected = {
+    admin_key: '421050820e1485acdd59726088e0e4a2130ebbbb70009f640ad95c78dd5a7b38',
     description: 'desc 1',
     file_id: '0.0.102',
     max_stake: 1000,
