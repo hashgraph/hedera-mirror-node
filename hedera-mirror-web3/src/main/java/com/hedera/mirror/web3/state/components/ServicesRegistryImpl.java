@@ -16,6 +16,15 @@
 
 package com.hedera.mirror.web3.state.components;
 
+import com.hedera.mirror.web3.state.AccountReadableKVState;
+import com.hedera.mirror.web3.state.AirdropsReadableKVState;
+import com.hedera.mirror.web3.state.AliasesReadableKVState;
+import com.hedera.mirror.web3.state.ContractBytecodeReadableKVState;
+import com.hedera.mirror.web3.state.ContractStorageReadableKVState;
+import com.hedera.mirror.web3.state.FileReadableKVState;
+import com.hedera.mirror.web3.state.NftReadableKVState;
+import com.hedera.mirror.web3.state.TokenReadableKVState;
+import com.hedera.mirror.web3.state.TokenRelationshipReadableKVState;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.state.spi.Service;
@@ -25,11 +34,23 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import lombok.RequiredArgsConstructor;
 
 @Named
+@RequiredArgsConstructor
 public class ServicesRegistryImpl implements ServicesRegistry {
 
     private final SortedSet<Registration> entries = new TreeSet<>();
+
+    private final AccountReadableKVState accountReadableKVState;
+    private final AirdropsReadableKVState airdropsReadableKVState;
+    private final AliasesReadableKVState aliasesReadableKVState;
+    private final ContractBytecodeReadableKVState contractBytecodeReadableKVState;
+    private final ContractStorageReadableKVState contractStorageReadableKVState;
+    private final FileReadableKVState fileReadableKVState;
+    private final NftReadableKVState nftReadableKVState;
+    private final TokenReadableKVState tokenReadableKVState;
+    private final TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
 
     @Nonnull
     @Override
@@ -39,7 +60,17 @@ public class ServicesRegistryImpl implements ServicesRegistry {
 
     @Override
     public void register(@Nonnull Service service) {
-        final var registry = new SchemaRegistryImpl(new SchemaApplications());
+        final var registry = new SchemaRegistryImpl(
+                new SchemaApplications(),
+                accountReadableKVState,
+                airdropsReadableKVState,
+                aliasesReadableKVState,
+                contractBytecodeReadableKVState,
+                contractStorageReadableKVState,
+                fileReadableKVState,
+                nftReadableKVState,
+                tokenReadableKVState,
+                tokenRelationshipReadableKVState);
         service.registerSchemas(registry);
         entries.add(new ServicesRegistryImpl.Registration(service, registry));
     }
@@ -48,7 +79,16 @@ public class ServicesRegistryImpl implements ServicesRegistry {
     @Override
     public ServicesRegistry subRegistryFor(@Nonnull String... serviceNames) {
         final var selections = Set.of(serviceNames);
-        final var subRegistry = new ServicesRegistryImpl();
+        final var subRegistry = new ServicesRegistryImpl(
+                accountReadableKVState,
+                airdropsReadableKVState,
+                aliasesReadableKVState,
+                contractBytecodeReadableKVState,
+                contractStorageReadableKVState,
+                fileReadableKVState,
+                nftReadableKVState,
+                tokenReadableKVState,
+                tokenRelationshipReadableKVState);
         subRegistry.entries.addAll(entries.stream()
                 .filter(registration -> selections.contains(registration.serviceName()))
                 .toList());

@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.state.components;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -82,7 +83,8 @@ public class NetworkInfoImpl implements NetworkInfo {
                 "",
                 "",
                 Bytes.EMPTY,
-                mirrorNodeEvmProperties.getSemanticEvmVersion(),
+                SemanticVersion.newBuilder().major(0).minor(46).patch(0).build(),
+                //                mirrorNodeEvmProperties.getSemanticEvmVersion(),
                 "");
     }
 }

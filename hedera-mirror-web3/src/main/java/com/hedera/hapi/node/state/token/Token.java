@@ -972,6 +972,10 @@ public record Token(
         }
     }
 
+    public List<CustomFee> customFees() {
+        return customFeesSupplier.get();
+    }
+
     /**
      * Return a builder for building a copy of this model object. It will be pre-populated with all the data from this
      * model object.

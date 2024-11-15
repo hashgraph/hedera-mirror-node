@@ -21,10 +21,12 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
+import com.swirlds.state.State;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
@@ -45,8 +47,18 @@ public class ContractExecutionService extends ContractCallService {
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
             RecordFileService recordFileService,
             ThrottleProperties throttleProperties,
-            Bucket gasLimitBucket) {
-        super(mirrorEvmTxProcessor, gasLimitBucket, throttleProperties, meterRegistry, recordFileService, store);
+            Bucket gasLimitBucket,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            State state) {
+        super(
+                mirrorEvmTxProcessor,
+                gasLimitBucket,
+                throttleProperties,
+                meterRegistry,
+                recordFileService,
+                store,
+                mirrorNodeEvmProperties,
+                state);
         this.binaryGasEstimator = binaryGasEstimator;
     }
 

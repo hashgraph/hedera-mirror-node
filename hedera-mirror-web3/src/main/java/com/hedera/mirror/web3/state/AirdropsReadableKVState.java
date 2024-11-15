@@ -48,7 +48,7 @@ public class AirdropsReadableKVState extends ReadableKVStateBase<PendingAirdropI
                 .getId();
         final var serialNumber =
                 key.hasNonFungibleToken() ? key.nonFungibleToken().serialNumber() : 0L;
-        final var timestamp = ContractCallContext.get().getTimestamp();
+        final var timestamp = ContractCallContext.getTimestamp();
 
         return timestamp
                 .map(t -> tokenAirdropRepository.findByIdAndTimestamp(senderId, receiverId, tokenId, serialNumber, t))

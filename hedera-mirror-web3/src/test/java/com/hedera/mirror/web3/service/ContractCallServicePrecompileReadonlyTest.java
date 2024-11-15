@@ -530,7 +530,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void getCustomFeesForTokenWithFractionalFee() throws Exception {
         // Given
-        final var collectorAccount = accountEntityPersist();
+        final var collectorAccount = accountEntityWithEvmAddressPersist();
         final var tokenEntity = persistFungibleToken();
         final var fractionalFee = FractionalFee.builder()
                 .collectorAccountId(collectorAccount.toEntityId())
@@ -654,7 +654,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         // Given
         final var amountGranted = 50L;
         final var owner = accountEntityPersist();
-        final var spender = accountEntityPersist();
+        final var spender = accountEntityWithEvmAddressPersist();
         final var tokenEntity = persistFungibleToken();
 
         domainBuilder
@@ -708,7 +708,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void getFungibleTokenInfo() throws Exception {
         // Given
-        final var treasury = accountEntityPersist();
+        final var treasury = accountEntityWithEvmAddressPersist();
         final var feeCollector = accountEntityPersist();
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();

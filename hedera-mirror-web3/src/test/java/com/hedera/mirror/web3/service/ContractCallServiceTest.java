@@ -715,7 +715,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 mirrorEvmTxProcessor,
                 recordFileService,
                 throttleProperties,
-                gasLimitBucket);
+                gasLimitBucket,
+                mirrorNodeEvmProperties,
+                state);
 
         // When
         try {
@@ -748,7 +750,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 mirrorEvmTxProcessor,
                 recordFileService,
                 throttleProperties,
-                gasLimitBucket);
+                gasLimitBucket,
+                mirrorNodeEvmProperties,
+                state);
 
         // When
         try {
@@ -782,7 +786,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 mirrorEvmTxProcessor,
                 recordFileService,
                 throttleProperties,
-                gasLimitBucket);
+                gasLimitBucket,
+                mirrorNodeEvmProperties,
+                state);
 
         // When
         try {

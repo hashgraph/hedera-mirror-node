@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import jakarta.annotation.Nonnull;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -31,6 +33,15 @@ public class CustomCallOperation extends CallOperation {
 
     public CustomCallOperation(@Nonnull final GasCalculator gasCalculator) {
         super(gasCalculator);
+    }
+
+    public CustomCallOperation(
+            @Nonnull final FeatureFlags featureFlags,
+            @Nonnull final GasCalculator gasCalculator,
+            @Nonnull final AddressChecks addressChecks) {
+        super(gasCalculator);
+        //        this.featureFlags = Objects.requireNonNull(featureFlags);
+        //        this.addressChecks = Objects.requireNonNull(addressChecks);
     }
 
     @Override

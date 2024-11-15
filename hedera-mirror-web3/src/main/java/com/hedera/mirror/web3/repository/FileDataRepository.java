@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.repository;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
@@ -48,4 +49,6 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
             ) and consensus_timestamp <= ?2""",
             nativeQuery = true)
     Optional<FileData> getFileAtTimestamp(long fileId, long timestamp);
+
+    Optional<FileData> findByEntityId(EntityId entityId);
 }

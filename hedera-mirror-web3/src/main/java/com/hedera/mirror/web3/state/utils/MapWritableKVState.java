@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.web3.state.utils;
 
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVStateBase;
 import jakarta.annotation.Nonnull;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +27,7 @@ import java.util.Objects;
 public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
 
     private final Map<K, V> backingStore;
+    private final ReadableKVState<K, V> readableBackingStore;
 
     /**
      * Create an instance using the given map as the backing store. This is useful when you want to
@@ -34,25 +37,33 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
      * @param stateKey The state key for this state
      * @param backingStore The backing store to use
      */
-    public MapWritableKVState(@Nonnull final String stateKey, @Nonnull final Map<K, V> backingStore) {
+    //    public MapWritableKVState(@Nonnull final String stateKey, @Nonnull final Map<K, V> backingStore) {
+    //        super(stateKey);
+    //        this.backingStore = Objects.requireNonNull(backingStore);
+    //    }
+
+    public MapWritableKVState(
+            @Nonnull final String stateKey, @Nonnull final ReadableKVState<K, V> readableBackingStore) {
         super(stateKey);
-        this.backingStore = Objects.requireNonNull(backingStore);
+        this.backingStore = new HashMap<>();
+        this.readableBackingStore = Objects.requireNonNull(readableBackingStore);
     }
 
     @Override
     protected V readFromDataSource(@Nonnull K key) {
-        return backingStore.get(key);
+        //        return backingStore.get(key);
+        return readableBackingStore.get(key);
     }
 
     @Nonnull
     @Override
     protected Iterator<K> iterateFromDataSource() {
-        return backingStore.keySet().iterator();
+        return readableBackingStore.keys();
     }
 
     @Override
     protected V getForModifyFromDataSource(@Nonnull K key) {
-        return backingStore.get(key);
+        return readableBackingStore.get(key);
     }
 
     @Override
