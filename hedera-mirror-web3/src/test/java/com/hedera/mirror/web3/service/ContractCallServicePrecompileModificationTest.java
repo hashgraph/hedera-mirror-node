@@ -190,6 +190,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         String testFlagValue = System.getProperty("testFlag", "false");
         boolean testFlag = Boolean.parseBoolean(testFlagValue);
+        System.out.println(testFlagValue);
 
         if(testFlag){
             System.out.println("TEST FLAG IS SET TO TRUE");

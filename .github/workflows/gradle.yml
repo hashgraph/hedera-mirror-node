@@ -95,10 +95,11 @@ jobs:
         run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
 
       - name: TEST Execute with flag
+        if: ${{ matrix.project == 'web3' }}
         env:
           MIRROR_NODE_SCHEMA: ${{ matrix.project == 'web3'}}
-          SPRING_PROFILES_ACTIVE: ${{ matrix.schema == 'v1'}}
-        run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
+          SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
+        run: ./gradlew :web3:test -DtestFlag=true --scan
 
       - name: Upload coverage report
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
