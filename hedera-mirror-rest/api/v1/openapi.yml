@@ -2774,9 +2774,26 @@ components:
           example: null
           nullable: true
           type: string
+    Node:
+      type: object
+      properties:
+        admin_key:
+          $ref: "#/components/schemas/Key"
+        created_timestamp:
+          $ref: "#/components/schemas/TimestampNullable"
+        deleted:
+          description: Whether the node is deleted or not
+          type: boolean
+        node_id:
+          description: An identifier for the node
+          format: int64
+          type: integer
+        timestamp_range:
+          $ref: "#/components/schemas/TimestampRange"
     NetworkNode:
       type: object
       required:
+        - admin_key
         - description
         - file_id
         - max_stake
@@ -2794,6 +2811,8 @@ components:
         - staking_period
         - timestamp
       properties:
+        admin_key:
+          $ref: "#/components/schemas/Key"
         description:
           description: a memo associated with the address book
           nullable: true
@@ -2862,6 +2881,7 @@ components:
         timestamp:
           $ref: "#/components/schemas/TimestampRange"
       example:
+        admin_key: "421050820e1485acdd59726088e0e4a2130ebbbb70009f640ad95c78dd5a7b38"
         description: "address book 1"
         file_id: "0.0.102"
         max_stake: 50000
@@ -3615,6 +3635,7 @@ components:
         - FILEDELETE
         - FILEUPDATE
         - FREEZE
+        - NODE
         - NODECREATE
         - NODEDELETE
         - NODESTAKEUPDATE
