@@ -123,6 +123,7 @@ public class TokenFeature extends AbstractFeature {
         tokenNftInfoMap.put(tokenId, new ArrayList<>());
     }
 
+    @RetryAsserts
     @Given("I ensure token has the correct properties")
     public void ensureTokenProperties() {
         var tokensResponse = mirrorClient.getTokens(tokenId.toString()).getTokens();
@@ -144,6 +145,7 @@ public class TokenFeature extends AbstractFeature {
         log.debug("Get token balances for token {}: {}", tokenId, balancesResponse);
     }
 
+    @RetryAsserts
     @Given("I ensure token has the expected metadata and key")
     public void ensureTokenInfoProperties() {
         var tokenInfo = mirrorClient.getTokenInfo(tokenId.toString());
