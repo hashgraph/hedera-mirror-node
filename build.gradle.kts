@@ -104,6 +104,7 @@ dependencies {
         api("software.amazon.awssdk:bom:2.29.9")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.7")
         api("org.web3j:core:4.12.2")
+        api("tech.pegasys:jc-kzg-4844:0.8.0")
     }
 }
 
