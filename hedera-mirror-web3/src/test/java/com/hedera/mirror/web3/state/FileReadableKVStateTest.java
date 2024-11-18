@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.state;
 import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 import static com.hedera.services.utils.EntityIdUtils.toFileId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
@@ -51,8 +52,8 @@ class FileReadableKVStateTest {
     private static final long REALM = 1L;
     private static final long FILE_NUM = 123L;
     private static final FileID FILE_ID = toFileId(SHARD, REALM, FILE_NUM);
-    private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final long FILE_ID_LONG = toEntityId(FILE_ID).getId();
+    private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final Optional<Long> TIMESTAMP = Optional.of(1234L);
     private static MockedStatic<ContractCallContext> contextMockedStatic;
     private FileData fileData;
@@ -149,7 +150,7 @@ class FileReadableKVStateTest {
     @Test
     void readFromDataSourceWithoutTimestamp() {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(fileDataRepository.findById(FILE_ID_LONG)).thenReturn(Optional.of(fileData));
+        when(fileDataRepository.getFileAtTimestamp(anyLong(), anyLong())).thenReturn(Optional.of(fileData));
         when(entityRepository.findByIdAndDeletedIsFalse(toEntityId(FILE_ID).getId()))
                 .thenReturn(Optional.of(entity));
 
