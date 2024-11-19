@@ -18,67 +18,21 @@ package com.hedera.mirror.web3.state.components;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.web3.state.AccountReadableKVState;
-import com.hedera.mirror.web3.state.AirdropsReadableKVState;
-import com.hedera.mirror.web3.state.AliasesReadableKVState;
-import com.hedera.mirror.web3.state.ContractBytecodeReadableKVState;
-import com.hedera.mirror.web3.state.ContractStorageReadableKVState;
-import com.hedera.mirror.web3.state.FileReadableKVState;
-import com.hedera.mirror.web3.state.NftReadableKVState;
-import com.hedera.mirror.web3.state.TokenReadableKVState;
-import com.hedera.mirror.web3.state.TokenRelationshipReadableKVState;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.swirlds.state.spi.Service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 
 class ServicesRegistryImplTest {
 
     private ServicesRegistryImpl servicesRegistry;
 
-    @Mock
-    private AccountReadableKVState accountReadableKVState;
-
-    @Mock
-    private AirdropsReadableKVState airdropsReadableKVState;
-
-    @Mock
-    private AliasesReadableKVState aliasesReadableKVState;
-
-    @Mock
-    private ContractBytecodeReadableKVState contractBytecodeReadableKVState;
-
-    @Mock
-    private ContractStorageReadableKVState contractStorageReadableKVState;
-
-    @Mock
-    private FileReadableKVState fileReadableKVState;
-
-    @Mock
-    private NftReadableKVState nftReadableKVState;
-
-    @Mock
-    private TokenReadableKVState tokenReadableKVState;
-
-    @Mock
-    private TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
-
     ServicesRegistryImplTest() {}
 
     @BeforeEach
     void setUp() {
-        servicesRegistry = new ServicesRegistryImpl(
-                accountReadableKVState,
-                airdropsReadableKVState,
-                aliasesReadableKVState,
-                contractBytecodeReadableKVState,
-                contractStorageReadableKVState,
-                fileReadableKVState,
-                nftReadableKVState,
-                tokenReadableKVState,
-                tokenRelationshipReadableKVState);
+        servicesRegistry = new ServicesRegistryImpl();
     }
 
     @Test

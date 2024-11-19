@@ -118,9 +118,9 @@ public class MapWritableStates extends AbstractMapReadableState implements Writa
                         "Unknown state type " + state.getClass().getName());
             }
         });
-        if (onCommit != null) {
-            onCommit.run();
-        }
+        //        if (onCommit != null) {
+        //            onCommit.run();
+        //        }
     }
 
     @Override

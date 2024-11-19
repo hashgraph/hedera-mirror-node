@@ -21,16 +21,7 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.mirror.web3.state.AccountReadableKVState;
-import com.hedera.mirror.web3.state.AirdropsReadableKVState;
-import com.hedera.mirror.web3.state.AliasesReadableKVState;
-import com.hedera.mirror.web3.state.ContractBytecodeReadableKVState;
-import com.hedera.mirror.web3.state.ContractStorageReadableKVState;
-import com.hedera.mirror.web3.state.FileReadableKVState;
 import com.hedera.mirror.web3.state.MirrorNodeState;
-import com.hedera.mirror.web3.state.NftReadableKVState;
-import com.hedera.mirror.web3.state.TokenReadableKVState;
-import com.hedera.mirror.web3.state.TokenRelationshipReadableKVState;
 import com.hedera.mirror.web3.state.utils.MapWritableStates;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
@@ -64,16 +55,6 @@ public class SchemaRegistryImpl implements SchemaRegistry {
 
     private final SchemaApplications schemaApplications;
 
-    private final AccountReadableKVState accountReadableKVState;
-    private final AirdropsReadableKVState airdropsReadableKVState;
-    private final AliasesReadableKVState aliasesReadableKVState;
-    private final ContractBytecodeReadableKVState contractBytecodeReadableKVState;
-    private final ContractStorageReadableKVState contractStorageReadableKVState;
-    private final FileReadableKVState fileReadableKVState;
-    private final NftReadableKVState nftReadableKVState;
-    private final TokenReadableKVState tokenReadableKVState;
-    private final TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
-
     /**
      * The ordered set of all schemas registered by the service
      */
@@ -87,7 +68,6 @@ public class SchemaRegistryImpl implements SchemaRegistry {
         return this;
     }
 
-    @SuppressWarnings("rawtypes")
     public void migrate(
             @Nonnull final String serviceName,
             @Nonnull final MirrorNodeState state,
@@ -216,24 +196,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             } else if (def.queue()) {
                 stateDataSources.put(def.stateKey(), new ConcurrentLinkedDeque<>());
             } else {
-                final var stateDataSource = new ConcurrentHashMap<>();
-                //                switch (def.stateKey()) {
-                //                    case "ACCOUNTS" -> stateDataSources.put(def.stateKey(), accountReadableKVState);
-                //                    case "PENDING_AIRDROPS" -> stateDataSources.put(def.stateKey(),
-                // airdropsReadableKVState);
-                //                    case "ALIASES" -> stateDataSources.put(def.stateKey(), aliasesReadableKVState);
-                //                    case "FILES" -> stateDataSources.put(def.stateKey(), fileReadableKVState);
-                //                    case "BYTECODE" -> stateDataSources.put(def.stateKey(),
-                // contractBytecodeReadableKVState);
-                //                    case "STORAGE" -> stateDataSources.put(def.stateKey(),
-                // contractStorageReadableKVState);
-                //                    case "NFTS" -> stateDataSources.put(def.stateKey(), nftReadableKVState);
-                //                    case "TOKENS" -> stateDataSources.put(def.stateKey(), tokenReadableKVState);
-                //                    case "TOKEN_RELS" -> stateDataSources.put(def.stateKey(),
-                // tokenRelationshipReadableKVState);
-                //                    default ->
-                stateDataSources.put(def.stateKey(), stateDataSource);
-                //                }
+                stateDataSources.put(def.stateKey(), new ConcurrentHashMap<>());
             }
         });
 

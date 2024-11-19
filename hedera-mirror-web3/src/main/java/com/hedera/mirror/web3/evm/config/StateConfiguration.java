@@ -78,26 +78,8 @@ public class StateConfiguration {
     }
 
     @Bean
-    ServicesRegistry servicesRegistry(
-            AccountReadableKVState accountReadableKVState,
-            AirdropsReadableKVState airdropsReadableKVState,
-            AliasesReadableKVState aliasesReadableKVState,
-            ContractBytecodeReadableKVState contractBytecodeReadableKVState,
-            ContractStorageReadableKVState contractStorageReadableKVState,
-            FileReadableKVState fileReadableKVState,
-            NftReadableKVState nftReadableKVState,
-            TokenReadableKVState tokenReadableKVState,
-            TokenRelationshipReadableKVState tokenRelationshipReadableKVState) {
-        return new ServicesRegistryImpl(
-                accountReadableKVState,
-                airdropsReadableKVState,
-                aliasesReadableKVState,
-                contractBytecodeReadableKVState,
-                contractStorageReadableKVState,
-                fileReadableKVState,
-                nftReadableKVState,
-                tokenReadableKVState,
-                tokenRelationshipReadableKVState);
+    ServicesRegistry servicesRegistry() {
+        return new ServicesRegistryImpl();
     }
 
     @Bean

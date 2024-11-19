@@ -25,10 +25,7 @@ import java.util.Objects;
 
 /**
  * A simple implementation of {@link ReadableKVState} backed by a
- * {@link Map}. Test code has the option of creating an instance disregarding the backing map, or by
- * supplying the backing map to use. This latter option is useful if you want to use Mockito to spy
- * on it, or if you want to pre-populate it, or use Mockito to make the map throw an exception in
- * some strange case, or in some other way work with the backing map directly.
+ * {@link Map}.
  *
  * @param <K> The key type
  * @param <V> The value type

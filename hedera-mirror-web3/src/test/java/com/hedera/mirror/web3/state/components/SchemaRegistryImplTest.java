@@ -25,16 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.mirror.web3.state.AccountReadableKVState;
-import com.hedera.mirror.web3.state.AirdropsReadableKVState;
-import com.hedera.mirror.web3.state.AliasesReadableKVState;
-import com.hedera.mirror.web3.state.ContractBytecodeReadableKVState;
-import com.hedera.mirror.web3.state.ContractStorageReadableKVState;
-import com.hedera.mirror.web3.state.FileReadableKVState;
 import com.hedera.mirror.web3.state.MirrorNodeState;
-import com.hedera.mirror.web3.state.NftReadableKVState;
-import com.hedera.mirror.web3.state.TokenReadableKVState;
-import com.hedera.mirror.web3.state.TokenRelationshipReadableKVState;
 import com.hedera.mirror.web3.state.utils.MapWritableStates;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.state.merkle.SchemaApplicationType;
@@ -82,33 +73,6 @@ class SchemaRegistryImplTest {
     private SchemaApplications schemaApplications;
 
     @Mock
-    private AccountReadableKVState accountReadableKVState;
-
-    @Mock
-    private AirdropsReadableKVState airdropsReadableKVState;
-
-    @Mock
-    private AliasesReadableKVState aliasesReadableKVState;
-
-    @Mock
-    private ContractBytecodeReadableKVState contractBytecodeReadableKVState;
-
-    @Mock
-    private ContractStorageReadableKVState contractStorageReadableKVState;
-
-    @Mock
-    private FileReadableKVState fileReadableKVState;
-
-    @Mock
-    private NftReadableKVState nftReadableKVState;
-
-    @Mock
-    private TokenReadableKVState tokenReadableKVState;
-
-    @Mock
-    private TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
-
-    @Mock
     private Codec<String> mockCodec;
 
     private Configuration config;
@@ -116,17 +80,7 @@ class SchemaRegistryImplTest {
 
     @BeforeEach
     void initialize() {
-        schemaRegistry = new SchemaRegistryImpl(
-                schemaApplications,
-                accountReadableKVState,
-                airdropsReadableKVState,
-                aliasesReadableKVState,
-                contractBytecodeReadableKVState,
-                contractStorageReadableKVState,
-                fileReadableKVState,
-                nftReadableKVState,
-                tokenReadableKVState,
-                tokenRelationshipReadableKVState);
+        schemaRegistry = new SchemaRegistryImpl(schemaApplications);
         config = new ConfigProviderImpl().getConfiguration();
     }
 
