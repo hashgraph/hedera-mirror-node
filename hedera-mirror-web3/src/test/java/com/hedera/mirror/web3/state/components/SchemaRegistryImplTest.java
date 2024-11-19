@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.state.MirrorNodeState;
-import com.hedera.mirror.web3.state.utils.MapWritableStates;
+import com.hedera.mirror.web3.state.core.MapWritableStates;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.state.merkle.SchemaApplicationType;
 import com.hedera.node.app.state.merkle.SchemaApplications;

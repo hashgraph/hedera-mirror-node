@@ -22,7 +22,7 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFIN
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.state.MirrorNodeState;
-import com.hedera.mirror.web3.state.utils.MapWritableStates;
+import com.hedera.mirror.web3.state.core.MapWritableStates;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.state.merkle.SchemaApplications;

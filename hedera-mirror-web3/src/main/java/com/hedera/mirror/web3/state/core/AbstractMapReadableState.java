@@ -27,7 +27,7 @@ abstract class AbstractMapReadableState implements ReadableStates {
 
     protected final Map<String, ?> states;
 
-    protected AbstractMapReadableState(@Nonnull final Map<String, ?> states) {
+    public AbstractMapReadableState(@Nonnull final Map<String, ?> states) {
         this.states = Objects.requireNonNull(states);
     }
 

@@ -17,8 +17,9 @@
 package com.hedera.mirror.web3.state.core;
 
 import com.swirlds.state.spi.ReadableQueueStateBase;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
@@ -47,7 +48,7 @@ public class ListReadableQueueState<E> extends ReadableQueueStateBase<E> {
         return backingStore.peek();
     }
 
-    @Nonnull
+    @NonNull
     @Override
     protected Iterator<E> iterateOnDataSource() {
         return backingStore.iterator();

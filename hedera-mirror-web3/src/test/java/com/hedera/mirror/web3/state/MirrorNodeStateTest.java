@@ -22,9 +22,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.state.utils.MapReadableStates;
-import com.hedera.mirror.web3.state.utils.MapWritableKVState;
-import com.hedera.mirror.web3.state.utils.MapWritableStates;
+import com.hedera.mirror.web3.state.core.MapReadableStates;
+import com.hedera.mirror.web3.state.core.MapWritableKVState;
+import com.hedera.mirror.web3.state.core.MapWritableStates;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
