@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CustomCallOperationTest {
+class HederaCustomCallOperationTest {
 
     @Mock
     private MessageFrame frame;
@@ -49,16 +49,16 @@ class CustomCallOperationTest {
     @Mock
     private WorldUpdater worldUpdater;
 
-    private CustomCallOperation subject;
+    private HederaCustomCallOperation subject;
 
     @BeforeEach
     void setUp() {
-        subject = new CustomCallOperation(gasCalculator);
+        subject = new HederaCustomCallOperation(gasCalculator);
     }
 
     @Test
     void testHappyPath() {
-        given(frame.getStackItem(anyInt())).willReturn(Bytes.wrap(new byte[] {1}));
+        given(frame.getStackItem(anyInt())).willReturn(Bytes.wrap(new byte[]{1}));
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(200L);
         given(frame.stackSize()).willReturn(7);
@@ -72,7 +72,7 @@ class CustomCallOperationTest {
 
     @Test
     void testInsufficientGas() {
-        given(frame.getStackItem(anyInt())).willReturn(Bytes.wrap(new byte[] {1}));
+        given(frame.getStackItem(anyInt())).willReturn(Bytes.wrap(new byte[]{1}));
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(50L);
         given(subject.cost(frame, false)).willReturn(100L);
