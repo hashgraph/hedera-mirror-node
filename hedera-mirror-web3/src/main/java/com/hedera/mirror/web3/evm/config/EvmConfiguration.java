@@ -22,6 +22,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV50;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
@@ -48,6 +49,7 @@ import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperation;
 import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV038;
 import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV046;
+import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV050;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
 import java.util.EnumMap;
@@ -70,6 +72,7 @@ import org.hyperledger.besu.evm.operation.BalanceOperation;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
+import org.hyperledger.besu.evm.precompile.KZGPointEvalPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
@@ -115,7 +118,8 @@ public class EvmConfiguration {
     public static final SemanticVersion EVM_VERSION_0_34 = new SemanticVersion(0, 34, 0, "", "");
     public static final SemanticVersion EVM_VERSION_0_38 = new SemanticVersion(0, 38, 0, "", "");
     public static final SemanticVersion EVM_VERSION_0_46 = new SemanticVersion(0, 46, 0, "", "");
-    public static final SemanticVersion EVM_VERSION = EVM_VERSION_0_46;
+    public static final SemanticVersion EVM_VERSION_0_50 = new SemanticVersion(0, 50, 0, "", "");
+    public static final SemanticVersion EVM_VERSION = EVM_VERSION_0_50;
     private final CacheProperties cacheProperties;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final GasCalculatorHederaV22 gasCalculator;
@@ -243,12 +247,14 @@ public class EvmConfiguration {
             final ContractCreationProcessor contractCreationProcessor30,
             final ContractCreationProcessor contractCreationProcessor34,
             final ContractCreationProcessor contractCreationProcessor38,
-            final ContractCreationProcessor contractCreationProcessor46) {
+            final ContractCreationProcessor contractCreationProcessor46,
+            final ContractCreationProcessor contractCreationProcessor50) {
         Map<SemanticVersion, Provider<ContractCreationProcessor>> processorsMap = new HashMap<>();
         processorsMap.put(EVM_VERSION_0_30, () -> contractCreationProcessor30);
         processorsMap.put(EVM_VERSION_0_34, () -> contractCreationProcessor34);
         processorsMap.put(EVM_VERSION_0_38, () -> contractCreationProcessor38);
         processorsMap.put(EVM_VERSION_0_46, () -> contractCreationProcessor46);
+        processorsMap.put(EVM_VERSION_0_50, () -> contractCreationProcessor50);
         return processorsMap;
     }
 
@@ -257,13 +263,14 @@ public class EvmConfiguration {
             MirrorEvmMessageCallProcessorV30 mirrorEvmMessageCallProcessor30,
             MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor34,
             MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor38,
-            MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor46) {
+            MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor46,
+            MirrorEvmMessageCallProcessorV50 mirrorEvmMessageCallProcessor50) {
         Map<SemanticVersion, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
         processorsMap.put(EVM_VERSION_0_30, () -> mirrorEvmMessageCallProcessor30);
         processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor34);
         processorsMap.put(EVM_VERSION_0_38, () -> mirrorEvmMessageCallProcessor38);
         processorsMap.put(EVM_VERSION_0_46, () -> mirrorEvmMessageCallProcessor46);
-
+        processorsMap.put(EVM_VERSION_0_50, () -> mirrorEvmMessageCallProcessor50);
         return processorsMap;
     }
 
@@ -357,6 +364,24 @@ public class EvmConfiguration {
     }
 
     @Bean
+    EVM evm050(
+            final HederaPrngSeedOperation prngSeedOperation,
+            final HederaSelfDestructOperationV050 hederaSelfDestructOperationV050,
+            final HederaBalanceOperationV038 hederaBalanceOperationV038) {
+        KZGPointEvalPrecompiledContract.init();
+        return evm(
+                gasCalculator,
+                mirrorNodeEvmProperties,
+                prngSeedOperation,
+                hederaBlockHashOperation,
+                hederaExtCodeHashOperationV038,
+                hederaSelfDestructOperationV050,
+                hederaBalanceOperationV038,
+                EvmSpecVersion.CANCUN,
+                MainnetEVMs::registerCancunOperations);
+    }
+
+    @Bean
     HederaPrngSeedOperation hederaPrngSeedOperation(final GasCalculator gasCalculator, final PrngLogic prngLogic) {
         return new HederaPrngSeedOperation(gasCalculator, prngLogic);
     }
@@ -384,7 +409,12 @@ public class EvmConfiguration {
 
     @Bean
     HederaSelfDestructOperationV046 hederaSelfDestructOperationV046(final GasCalculator gasCalculator) {
-        return new HederaSelfDestructOperationV046(gasCalculator, addressValidator, systemAccountDetector);
+        return new HederaSelfDestructOperationV046(gasCalculator, addressValidator, systemAccountDetector, false);
+    }
+
+    @Bean
+    HederaSelfDestructOperationV050 hederaSelfDestructOperationV050(final GasCalculator gasCalculator) {
+        return new HederaSelfDestructOperationV050(gasCalculator, addressValidator, systemAccountDetector);
     }
 
     @Bean
@@ -409,6 +439,11 @@ public class EvmConfiguration {
 
     @Bean
     public ContractCreationProcessor contractCreationProcessor46(@Qualifier("evm046") EVM evm) {
+        return contractCreationProcessor(evm);
+    }
+
+    @Bean
+    public ContractCreationProcessor contractCreationProcessor50(@Qualifier("evm050") EVM evm) {
         return contractCreationProcessor(evm);
     }
 

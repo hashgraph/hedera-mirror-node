@@ -35,7 +35,7 @@ extra.apply {
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.5")
     set("reactorGrpcVersion", "1.2.4")
-    set("vertxVersion", "4.5.10")
+    set("vertxVersion", "4.5.11")
     set("tuweniVersion", "2.3.1")
 }
 
@@ -65,7 +65,7 @@ dependencies {
         api("com.hedera.hashgraph:app:0.55.2")
         api("com.hedera.evm:hedera-evm:0.54.2")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.55.0")
-        api("com.hedera.hashgraph:sdk:2.43.0")
+        api("com.hedera.hashgraph:sdk:2.44.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.9")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
@@ -76,7 +76,7 @@ dependencies {
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-63:3.9.0")
-        api("io.projectreactor:reactor-core-micrometer:1.1.11")
+        api("io.projectreactor:reactor-core-micrometer:1.2.0")
         api("io.swagger:swagger-annotations:1.6.14")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
@@ -101,9 +101,10 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.3")
         api("org.testcontainers:junit-jupiter:1.20.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.29.9")
+        api("software.amazon.awssdk:bom:2.29.15")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.7")
         api("org.web3j:core:4.12.2")
+        api("tech.pegasys:jc-kzg-4844:0.8.0")
     }
 }
 

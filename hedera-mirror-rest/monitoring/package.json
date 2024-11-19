@@ -24,9 +24,9 @@
     "extensionless": "^1.9.9",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
-    "mathjs": "^13.2.1",
+    "mathjs": "^13.2.2",
     "parse-duration": "^1.1.0",
-    "pretty-ms": "^9.1.0"
+    "pretty-ms": "^9.2.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
@@ -39,6 +39,7 @@
     "outputName": "TEST-jest.xml"
   },
   "overrides": {
+    "cross-spawn": "^7.0.6",
     "micromatch": "^4.0.8"
   }
 }

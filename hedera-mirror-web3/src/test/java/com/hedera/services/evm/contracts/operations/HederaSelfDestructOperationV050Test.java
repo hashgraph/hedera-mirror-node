@@ -39,7 +39,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaSelfDestructOperationV046Test {
+class HederaSelfDestructOperationV050Test {
+
     static final Address BENEFICIARY = Address.fromHexString("0x0000000000000000000000000000000000000929");
     static final Address BENEFICIARY_SYSTEM_ACCOUNT =
             Address.fromHexString("0x00000000000000000000000000000000000002ED");
@@ -67,11 +68,11 @@ class HederaSelfDestructOperationV046Test {
     @Mock
     private Predicate<Address> systemAccountDetector;
 
-    private HederaSelfDestructOperationV046 subject;
+    private HederaSelfDestructOperationV050 subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HederaSelfDestructOperationV046(gasCalculator, addressValidator, systemAccountDetector, false);
+        subject = new HederaSelfDestructOperationV050(gasCalculator, addressValidator, systemAccountDetector);
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(gasCalculator.selfDestructOperationGasCost(any(), eq(Wei.ONE))).willReturn(2L);

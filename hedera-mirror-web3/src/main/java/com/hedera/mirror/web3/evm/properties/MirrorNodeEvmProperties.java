@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_3
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_50;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
@@ -84,7 +85,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @NotNull
-    private EvmSpecVersion evmSpecVersion = EvmSpecVersion.SHANGHAI;
+    private EvmSpecVersion evmSpecVersion = EvmSpecVersion.CANCUN;
 
     @Getter
     @NotNull
@@ -334,6 +335,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             evmVersionsMap.put(44029066L, EVM_VERSION_0_34);
             evmVersionsMap.put(49117794L, EVM_VERSION_0_38);
             evmVersionsMap.put(60258042L, EVM_VERSION_0_46);
+            evmVersionsMap.put(65435845L, EVM_VERSION_0_50);
+
             return Collections.unmodifiableNavigableMap(evmVersionsMap);
         }
     }

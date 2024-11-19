@@ -25,10 +25,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import lombok.RequiredArgsConstructor;
 
 @Named
-@RequiredArgsConstructor
 public class ServicesRegistryImpl implements ServicesRegistry {
 
     private final SortedSet<Registration> entries = new TreeSet<>();

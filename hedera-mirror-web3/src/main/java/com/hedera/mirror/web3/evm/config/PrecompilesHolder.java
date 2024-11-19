@@ -21,7 +21,6 @@ import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecomp
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
@@ -31,6 +30,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Named
@@ -42,7 +42,7 @@ public class PrecompilesHolder implements PrecompiledContractProvider {
     PrecompilesHolder(
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
-            final GasCalculatorHederaV22 gasCalculator,
+            final GasCalculator gasCalculator,
             final BasicHbarCentExchange basicHbarCentExchange,
             final HTSPrecompiledContract htsPrecompiledContract) {
         hederaPrecompiles = new HashMap<>();

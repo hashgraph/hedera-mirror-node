@@ -136,7 +136,7 @@ public abstract class ContractCallService {
                     mirrorNodeState,
                     Map.of(
                             "contracts.evm.version",
-                            "v0.46",
+                            "v0.50",
                             "contracts.evm.version.dynamic",
                             "true",
                             "contracts.maxRefundPercentOfGasLimit",
