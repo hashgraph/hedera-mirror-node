@@ -54,8 +54,8 @@ describe('NetworkNodeViewModel', () => {
     },
     node: {
       adminKey: null,
-      nodeId: 0
-    }
+      nodeId: 0,
+    },
   };
   const defaultExpected = {
     admin_key: null,
@@ -119,8 +119,8 @@ describe('NetworkNodeViewModel', () => {
           stakingPeriod: null,
         },
         node: {
-          adminKey: null
-        }
+          adminKey: null,
+        },
       })
     ).toEqual({
       ...defaultExpected,
