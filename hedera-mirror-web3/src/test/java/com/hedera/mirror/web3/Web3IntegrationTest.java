@@ -19,6 +19,9 @@ package com.hedera.mirror.web3;
 import com.hedera.mirror.common.config.CommonIntegrationTest;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -31,4 +34,18 @@ public abstract class Web3IntegrationTest extends CommonIntegrationTest {
 
     @Resource
     protected Store store;
+
+    protected static final byte[] EXCHANGE_RATES_SET = ExchangeRateSet.newBuilder()
+            .setCurrentRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(12)
+                    .setHbarEquiv(1)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
+                    .build())
+            .setNextRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(15)
+                    .setHbarEquiv(1)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
+                    .build())
+            .build()
+            .toByteArray();
 }

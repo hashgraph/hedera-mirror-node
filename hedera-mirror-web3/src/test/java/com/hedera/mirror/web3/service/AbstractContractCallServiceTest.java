@@ -42,10 +42,7 @@ import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
@@ -70,20 +67,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     protected State state;
-
-    private static final byte[] exchangeRatesSet300 = ExchangeRateSet.newBuilder()
-            .setCurrentRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(12)
-                    .setHbarEquiv(1)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
-                    .build())
-            .setNextRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(15)
-                    .setHbarEquiv(1)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
-                    .build())
-            .build()
-            .toByteArray();
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -114,7 +97,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
         domainBuilder
                 .fileData()
-                .customize(f -> f.entityId(EntityId.of(112)).fileData(exchangeRatesSet300))
+                .customize(f -> f.entityId(EntityId.of(112)).fileData(EXCHANGE_RATES_SET))
                 .persist();
         testWeb3jService.reset();
     }

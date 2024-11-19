@@ -22,6 +22,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -41,6 +42,18 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
     void setup() {
         // Persist needed entities
         domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(2L).num(2L).evmAddress(null).alias(null).balance(5000000000000000000L))
+                .persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(98L).num(98L).evmAddress(null).alias(null))
+                .persist();
+        domainBuilder
+                .fileData()
+                .customize(f -> f.entityId(EntityId.of(112)).fileData(EXCHANGE_RATES_SET))
+                .persist();
     }
 
     @Test
