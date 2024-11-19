@@ -101,7 +101,7 @@ app.set('port', port);
 app.set('query parser', requestQueryParser);
 
 serveSwaggerDocs(app);
-if (openApiValidatorEnabled) {
+if (openApiValidatorEnabled || isTestEnv()) {
   openApiValidator(app);
 }
 
