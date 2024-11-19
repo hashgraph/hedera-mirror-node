@@ -62,6 +62,8 @@ hedera:
       openapi:
         specFileName: "openapi"
         swaggerUIPath: "docs"
+        validation:
+          enabled: false
       port: 5551
       query:
         bindTimestampRange: false

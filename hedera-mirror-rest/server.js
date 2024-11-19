@@ -93,6 +93,7 @@ global.pool = pool;
 const app = addAsync(express());
 const {apiPrefix} = constants;
 const applicationCacheEnabled = config.cache.response.enabled && config.redis.enabled;
+const openApiValidatorEnabled = config.openapi.validation.enabled;
 
 app.disable('x-powered-by');
 app.set('trust proxy', true);
@@ -100,7 +101,9 @@ app.set('port', port);
 app.set('query parser', requestQueryParser);
 
 serveSwaggerDocs(app);
-openApiValidator(app);
+if (openApiValidatorEnabled) {
+  openApiValidator(app);
+}
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(
