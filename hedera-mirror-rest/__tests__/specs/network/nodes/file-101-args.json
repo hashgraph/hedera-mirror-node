@@ -160,7 +160,7 @@
   "responseJson": {
     "nodes": [
       {
-        "admin_key": "421050820e1485acdd59726088e0e4a2130ebbbb70009f640ad95c78dd5a7b38",
+        "admin_key": null,
         "description": "description",
         "file_id": "0.0.101",
         "max_stake": 2000,
@@ -191,7 +191,7 @@
         }
       },
       {
-        "admin_key": "421050820e1485acdd59726088e0e4a2130ebbbb70009f640ad95c78dd5a7b38",
+        "admin_key": null,
         "description": "description",
         "file_id": "0.0.101",
         "max_stake": 2000,

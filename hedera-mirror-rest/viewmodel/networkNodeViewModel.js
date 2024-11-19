@@ -29,7 +29,7 @@ class NetworkNodeViewModel {
    */
   constructor(networkNode) {
     const {addressBookEntry, nodeStake, node} = networkNode;
-    this.admin_key = node.adminKey;
+    this.admin_key = utils.encodeKey(node.adminKey);
     this.description = addressBookEntry.description;
     this.file_id = EntityId.parse(networkNode.addressBook.fileId).toString();
     this.max_stake = utils.asNullIfDefault(nodeStake.maxStake, -1);

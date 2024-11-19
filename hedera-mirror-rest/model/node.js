@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ class Node {
 
   static ADMIN_KEY = `admin_key`;
   static CREATED_TIMESTAMP = `created_timestamp`;
-
   static DELETED = `deleted`;
   static NODE_ID = `node_id`;
   static TIMESTAMP_RANGE = `timestamp_range`;

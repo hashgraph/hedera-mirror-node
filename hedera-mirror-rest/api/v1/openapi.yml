@@ -2766,7 +2766,7 @@ components:
           example: ProtobufEncoded
         key:
           type: string
-          example: "421050820e1485acdd59726088e0e4a2130ebbbb70009f640ad95c78dd5a7b38"
+          example: "15706b229b3ba33d4a5a41ff54ce1cfe0a3d308672a33ff382f81583e02bd743"
     Links:
       type: object
       properties:
@@ -2774,22 +2774,6 @@ components:
           example: null
           nullable: true
           type: string
-    Node:
-      type: object
-      properties:
-        admin_key:
-          $ref: "#/components/schemas/Key"
-        created_timestamp:
-          $ref: "#/components/schemas/TimestampNullable"
-        deleted:
-          description: Whether the node is deleted or not
-          type: boolean
-        node_id:
-          description: An identifier for the node
-          format: int64
-          type: integer
-        timestamp_range:
-          $ref: "#/components/schemas/TimestampRange"
     NetworkNode:
       type: object
       required:
@@ -2881,7 +2865,9 @@ components:
         timestamp:
           $ref: "#/components/schemas/TimestampRange"
       example:
-        admin_key: "421050820e1485acdd59726088e0e4a2130ebbbb70009f640ad95c78dd5a7b38"
+        admin_key:
+          _type: "ED25519"
+          key: "15706b229b3ba33d4a5a41ff54ce1cfe0a3d308672a33ff382f81583e02bd743"
         description: "address book 1"
         file_id: "0.0.102"
         max_stake: 50000
