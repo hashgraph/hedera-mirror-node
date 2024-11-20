@@ -27,11 +27,11 @@ import org.hyperledger.besu.evm.internal.UnderflowException;
 import org.hyperledger.besu.evm.operation.CallOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
-public class CustomCallOperation extends CallOperation {
+public class HederaCustomCallOperation extends CallOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
 
-    public CustomCallOperation(@Nonnull final GasCalculator gasCalculator) {
+    public HederaCustomCallOperation(@Nonnull final GasCalculator gasCalculator) {
         super(gasCalculator);
     }
 
