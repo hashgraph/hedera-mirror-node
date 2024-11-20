@@ -199,7 +199,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     protected Entity tokenEntityPersist() {
-        return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        return domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).alias(null))
+                .persist();
     }
 
     protected Entity accountEntityPersist() {

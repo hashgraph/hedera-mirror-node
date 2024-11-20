@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.common;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
@@ -23,6 +24,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.List;
@@ -73,6 +75,14 @@ public class ContractCallContext {
     @Setter
     private Optional<Long> timestamp = Optional.empty();
 
+    @Getter
+    @Setter
+    private Optional<FileID> fileID = Optional.empty();
+
+    @Getter
+    @Setter
+    private Optional<Bytes> initBytecode = Optional.empty();
+
     private ContractCallContext() {}
 
     public static ContractCallContext get() {
@@ -90,6 +100,8 @@ public class ContractCallContext {
     public void reset() {
         recordFile = null;
         stack = stackBase;
+        fileID = Optional.empty();
+        initBytecode = Optional.empty();
     }
 
     public int getStackHeight() {

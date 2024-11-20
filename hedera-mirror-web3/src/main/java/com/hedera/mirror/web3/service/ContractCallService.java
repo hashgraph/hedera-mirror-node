@@ -29,6 +29,8 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
@@ -39,8 +41,12 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.standalone.TransactionExecutors;
+import com.hedera.node.config.data.EntitiesConfig;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.Counter;
@@ -68,6 +74,8 @@ public abstract class ContractCallService {
     private final Bucket gasLimitBucket;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final State mirrorNodeState;
+
+    private static final Configuration DEFAULT_CONFIG = new ConfigProviderImpl().getConfiguration();
 
     protected ContractCallService(
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
@@ -142,59 +150,57 @@ public abstract class ContractCallService {
                             "contracts.maxRefundPercentOfGasLimit",
                             "100"),
                     null);
-            TransactionBody transactionBody = null;
+            TransactionBody transactionBody;
             if (isContractCreate) {
-
-            } else {
+                // Upload the init bytecode
+                final var maxLifetime =
+                        DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
                 transactionBody = TransactionBody.newBuilder()
-                        .contractCall(ContractCallTransactionBody.newBuilder()
-                                .contractID(ContractID.newBuilder()
-                                        .evmAddress(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
-                                                params.getReceiver().toArrayUnsafe()))
-                                        .build())
-                                .functionParameters(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
+                        .fileCreate(FileCreateTransactionBody.newBuilder()
+                                .contents(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
                                         params.getCallData().toArray()))
-                                .gas(estimatedGas)
+                                .expirationTime(new Timestamp(maxLifetime, 0))
                                 .build())
-                        .nodeAccountID(AccountID.newBuilder().accountNum(2).build())
                         .transactionID(TransactionID.newBuilder()
                                 .transactionValidStart(new Timestamp(0, 0))
                                 .accountID(AccountID.newBuilder().accountNum(2).build())
                                 .build())
+                        .nodeAccountID(AccountID.newBuilder().accountNum(2).build())
                         .transactionValidDuration(new Duration(15))
                         .build();
+                var uploadReceipt = executor.execute(transactionBody, Instant.EPOCH);
+                final var fileID = uploadReceipt
+                        .getFirst()
+                        .transactionRecord()
+                        .receiptOrThrow()
+                        .fileIDOrThrow();
+                ContractCallContext.get().setFileID(Optional.of(fileID));
+                ContractCallContext.get()
+                        .setInitBytecode(Optional.of(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
+                                params.getCallData().toFastHex(false).getBytes())));
+
+                // Create the contract with the init bytecode
+                transactionBody = TransactionBody.newBuilder()
+                        .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
+                                .fileID(fileID)
+                                .gas(estimatedGas)
+                                .autoRenewPeriod(new Duration(maxLifetime))
+                                .build())
+                        .transactionID(TransactionID.newBuilder()
+                                .transactionValidStart(new Timestamp(0, 0))
+                                .accountID(AccountID.newBuilder().accountNum(2).build())
+                                .build())
+                        .nodeAccountID(AccountID.newBuilder().accountNum(2).build())
+                        .transactionValidDuration(new Duration(15))
+                        .build();
+            } else {
+                transactionBody = buildContractCallTransactionBody(params, estimatedGas);
             }
             var receipt = executor.execute(transactionBody, Instant.EPOCH);
-
-            if (receipt.getFirst().transactionRecord().receipt().status() == ResponseCodeEnum.SUCCESS) {
-                result = HederaEvmTransactionProcessingResult.successful(
-                        List.of(),
-                        receipt.getFirst()
-                                .transactionRecord()
-                                .contractCallResult()
-                                .gasUsed(),
-                        0L,
-                        0L,
-                        Bytes.wrap(receipt.getFirst()
-                                .transactionRecord()
-                                .contractCallResult()
-                                .contractCallResult()
-                                .toByteArray()),
-                        params.getReceiver());
+            if (receipt.getFirst().transactionRecord().receiptOrThrow().status() == ResponseCodeEnum.SUCCESS) {
+                result = buildSuccessResult(isContractCreate, receipt, params);
             } else {
-                result = HederaEvmTransactionProcessingResult.failed(
-                        receipt.getFirst()
-                                .transactionRecord()
-                                .contractCallResult()
-                                .gasUsed(),
-                        0L,
-                        0L,
-                        Optional.of(Bytes.wrap(receipt.getFirst()
-                                .transactionRecord()
-                                .contractCallResult()
-                                .errorMessage()
-                                .getBytes())),
-                        Optional.empty());
+                result = buildFailedResult(receipt, isContractCreate);
             }
             //            }
 
@@ -207,6 +213,58 @@ public abstract class ContractCallService {
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }
+    }
+
+    private HederaEvmTransactionProcessingResult buildSuccessResult(
+            final boolean isContractCreate,
+            final List<SingleTransactionRecord> receipt,
+            final CallServiceParameters params) {
+        var result = isContractCreate
+                ? receipt.getFirst().transactionRecord().contractCreateResult()
+                : receipt.getFirst().transactionRecord().contractCallResult();
+
+        return HederaEvmTransactionProcessingResult.successful(
+                List.of(),
+                result.gasUsed(),
+                0L,
+                0L,
+                Bytes.wrap(result.contractCallResult().toByteArray()),
+                params.getReceiver());
+    }
+
+    private HederaEvmTransactionProcessingResult buildFailedResult(
+            final List<SingleTransactionRecord> receipt, final boolean isContractCreate) {
+        var result = isContractCreate
+                ? receipt.getFirst().transactionRecord().contractCreateResult()
+                : receipt.getFirst().transactionRecord().contractCallResult();
+
+        return HederaEvmTransactionProcessingResult.failed(
+                result.gasUsed(),
+                0L,
+                0L,
+                Optional.of(Bytes.wrap(result.errorMessage().getBytes())),
+                Optional.empty());
+    }
+
+    private TransactionBody buildContractCallTransactionBody(
+            final CallServiceParameters params, final long estimatedGas) {
+        return TransactionBody.newBuilder()
+                .contractCall(ContractCallTransactionBody.newBuilder()
+                        .contractID(ContractID.newBuilder()
+                                .evmAddress(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
+                                        params.getReceiver().toArrayUnsafe()))
+                                .build())
+                        .functionParameters(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
+                                params.getCallData().toArray()))
+                        .gas(estimatedGas)
+                        .build())
+                .nodeAccountID(AccountID.newBuilder().accountNum(2).build())
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(new Timestamp(0, 0))
+                        .accountID(AccountID.newBuilder().accountNum(2).build())
+                        .build())
+                .transactionValidDuration(new Duration(15))
+                .build();
     }
 
     private void restoreGasToBucket(HederaEvmTransactionProcessingResult result, long gasLimit) {
