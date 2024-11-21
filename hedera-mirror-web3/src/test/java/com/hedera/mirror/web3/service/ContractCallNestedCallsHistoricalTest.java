@@ -60,8 +60,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
     @Test
     void testGetHistoricalInfo() throws Exception {
         // Given
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+        final var ownerEntityId = ownerEntityPersistHistorical();
         final var spenderAddress = toAddress(1016);
         final var spenderPublicKeyHistorical = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
         final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress, spenderPublicKeyHistorical);
@@ -93,8 +92,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
     @Test
     void testGetApprovedHistorical() throws Exception {
         // When
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+        final var ownerEntityId = ownerEntityPersistHistorical();
         final var spenderAddress = toAddress(1016);
         final var spenderPublicKey = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
         final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress, spenderPublicKey);
@@ -127,8 +125,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
     @Test
     void testMintTokenHistorical() throws Exception {
         // Given
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
+        final var ownerEntityId = ownerEntityPersistHistorical();
         final var spenderAddress = toAddress(1016);
         final var spenderPublicKeyHistorical = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
         final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress, spenderPublicKeyHistorical);
@@ -245,8 +242,8 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
         return nftEntityId;
     }
 
-    private EntityId ownerEntityPersistHistorical(Address address) {
-        final var ownerEntityId = entityIdFromEvmAddress(address);
+    private EntityId ownerEntityPersistHistorical() {
+        final var ownerEntityId = domainBuilder.entityId();
         domainBuilder
                 .entity()
                 .customize(e -> e.id(ownerEntityId.getId())

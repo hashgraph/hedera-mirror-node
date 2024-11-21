@@ -144,7 +144,13 @@ public abstract class ContractCallService {
                     mirrorNodeState,
                     Map.of(
                             "contracts.evm.version",
-                            "v0.50",
+                            "v"
+                                    + mirrorNodeEvmProperties
+                                            .getSemanticEvmVersion()
+                                            .major() + "."
+                                    + mirrorNodeEvmProperties
+                                            .getSemanticEvmVersion()
+                                            .minor(),
                             "contracts.evm.version.dynamic",
                             "true",
                             "contracts.maxRefundPercentOfGasLimit",
@@ -235,8 +241,8 @@ public abstract class ContractCallService {
     private HederaEvmTransactionProcessingResult buildFailedResult(
             final List<SingleTransactionRecord> receipt, final boolean isContractCreate) {
         var result = isContractCreate
-                ? receipt.getFirst().transactionRecord().contractCreateResult()
-                : receipt.getFirst().transactionRecord().contractCallResult();
+                ? receipt.getFirst().transactionRecord().contractCreateResultOrThrow()
+                : receipt.getFirst().transactionRecord().contractCallResultOrThrow();
 
         return HederaEvmTransactionProcessingResult.failed(
                 result.gasUsed(),
