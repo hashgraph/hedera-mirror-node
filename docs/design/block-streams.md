@@ -3,9 +3,11 @@
 ## Purpose
 
 [HIP-1056](https://hips.hedera.com/hip/hip-1056) introduces a new output data format for consensus nodes, called block streams, that replaces the existing
-record streams and signature files with one single stream. Support for block streams in the Mirror Node
-will be split into two phases. This design document concerns translating the block streams into the existing record stream format to parse the
-translated record streams just as we do today.
+record streams and signature files with one single stream. Support for block streams in the Mirror Node will be split
+into two phases. This design document concerns the first phase which will translate the block streams into the existing
+record stream format and parse the translated record streams just as we do today. The second phase (to be detailed in a
+separate design document) will remove the translation and parse the block streams directly and translate record streams
+into block streams to allow the mirror node to continue to ingest all record streams from the past.
 
 ## Goals
 
@@ -13,6 +15,7 @@ translated record streams just as we do today.
 
 ## Non-Goals
 
+- Refactoring the importer to support block streams natively and the removal of record stream parsing.
 - Support for Block Nodes will be covered in a separate design document.
 
 ## Architecture
@@ -22,9 +25,6 @@ translated record streams just as we do today.
 ![Data Flow](images/blockstream.png)
 
 ## Domain
-
-- Add a new type `BLOCK` to `StreamType` enum.
-- Add the new classes `BlockItem` and `BlockFile`.
 
 ### Interfaces and Classes
 
@@ -48,12 +48,6 @@ public class BlockFile implements StreamFile<BlockItem> {
 
 ## Importer
 
-- Add a new interface, `BlockFileReader`.
-- Add `ProtoBlockFileReader` that will generate a `BlockFile` from a `StreamFileData`.
-- Add `BlockStreamTranslator` that will translate a block file into a record file according to the mapping below.
-- Add `BlockStreamPoller` that will poll and download block stream files from an S3/GCP bucket. This downloader will poll the bucket for the next numbered block file and download it. It should not use any list operations.
-- Add `BlockStreamVerifier`.
-
 ### Interfaces and Classes
 
 #### BlockFileReader
@@ -71,7 +65,19 @@ public interface BlockFileReader extends StreamFileReader<BlockFile, BlockItem> 
 package com.hedera.mirror.importer.reader.block;
 
 public class ProtoBlockFileReader implements BlockFileReader {
+    // Generates a BlockFile from a StreamFileData
     public BlockFile read(StreamFileData streamFileData);
+}
+```
+
+#### StreamFileTranslator
+
+```java
+package com.hedera.mirror.importer.downloader;
+
+public interface StreamFileTranslator<T extends StreamFile<?>, S extends StreamFile<?>> {
+    // Used for translating a block file into a record file in phase one and for translating a record file into a block file in phase two.
+    T translate(S s);
 }
 ```
 
@@ -80,13 +86,31 @@ public class ProtoBlockFileReader implements BlockFileReader {
 ```java
 package com.hedera.mirror.importer.downloader.block;
 
-public class BlockFileTranslator {
+public class BlockFileTranslator implements StreamFileTranslator<RecordFile, BlockFile> {
 
-    // Translates the block file into a record file and calculates the hash chain
+    /**
+     *   Translates the block file into a record file and calculates the hash chain
+     *   The translation uses a mapping of block fields to record file fields
+     *   Block items are only iterated once in the translate method.
+     *   State changes are accumulated and used for calculating the block hash at the end of the block.
+     *
+     *   If the Block File contains a Wrapped Record File, then convert the Wrapped Record File to a Record File.
+     */
+    @Override
     public RecordFile translate(BlockFile block);
 
     // Block hashes are not included in the block. They must be calculated from the state changes within the block.
     private byte[] calculateBlockHash(byte[] previousBlockHash, List<StateChanges> stateChanges);
+}
+```
+
+#### StreamPoller
+
+```java
+package com.hedera.mirror.importer.downloader;
+
+public abstract class StreamPoller<StreamFile> {
+    public abstract void poll();
 }
 ```
 
@@ -95,60 +119,80 @@ public class BlockFileTranslator {
 ```java
 package com.hedera.mirror.importer.downloader.block;
 
-public class BlockStreamPoller {
+public class BlockStreamPoller extends StreamPoller<BlockFile> {
     private final BlockFileReader blockFileReader;
     private final BlockStreamVerifier blockStreamVerifier;
     private final StreamFileProvider streamFileProvider;
 
-    // Uses the previous block number to derive the name of the next block file to download
-    // Uses streamFileProvider to download the next block file
+    /**
+     * Polls and downloads block stream files from an S3/GCP bucket
+     * Uses the previous block number to derive the name of the next block file to download and should not use any bucket file list operations
+     * Uses streamFileProvider to download the block file
+     */
     @Scheduled
-    public void download();
+    public void poll();
 }
 ```
+
+#### StreamFileNotifier
+
+-Rename `verified` to `notify` as blocks will not be verifiable until each state change has been processed by the BlockStreamVerifier.
 
 #### BlockStreamVerifier
 
 ```java
 package com.hedera.mirror.importer.downloader.block;
 
-public class BlockStreamVerifier {
-    private final BlockFileTranslator blockFileTranslator;
+public class BlockStreamVerifier implements StreamFileNotifier, Closable {
+    private final StreamFileTranslator<RecordFile, BlockFile> blockFileTranslator;
     private final RecordFileParser recordFileParser;
 
     // Translates the block file into a record file, verifies the hash chain and then parses it
-    public void process(@Nonnull StreamFile<?> streamFile);
+    public void notify(@Nonnull StreamFile<?> streamFile);
+
+    /**
+     * The hash chain cannot be verified for block N until block N-1 has been translated by the blockFileTranslator.
+     * For Block N, the previousBlockHash (a value included in the Block protobuf) must be verified to match the hash calculated by the blockFileTranslator for Block N-1.
+     */
     private void verifyHashChain(String expected, String actual);
+
+    // Verifies that the number of the block file contained in its file name matches the block number within the block file
+    private void verifyBlockNumber(String expected, String actual);
 }
 ```
+
+### Database
+
+Add `software_version` to the `record_file` table. This is the consensus node version that generated the block.
+Add `congestionPricingMultiplier` to the `record_file` table.
+Rename `record_file` to `block_file`.
 
 ## Block protobuf to mirror node database mapping
 
 ### Record File
 
-| Database           | Block Item                                                                                        |
-| ------------------ | ------------------------------------------------------------------------------------------------- |
-| bytes              | raw bytes that comprise the blk file                                                              |
-| consensus_start    | block_header.first_transaction_consensus_time                                                     |
-| consensus_end      | consensus_timestamp of last transaction_output or transaction_result in the blk file              |
-| count              | Sum of the transaction_output and transaction_result typed block items in the blk file            |
-| digest_algorithm   | block_header.hash_algorithm. Currently SHA2_384                                                   |
-| file_hash          | Generated by mirror node                                                                          |
-| gas_used           | Sum of the gas_used of all block items of type 'transaction_output'                               |
-| hapi_version_major | block_header.hapi_proto_version.major                                                             |
-| hapi_version_minor | block_header.hapi_proto_version.minor                                                             |
-| hapi_version_patch | block_header.hapi_proto_version.patch                                                             |
-| hash               | Generated by mirror node. Calculated value must match the next block's previous_block_hash        |
-| index              | round_header.round_number -Note: HIP-1056 allows for multiple blocks in a single block file       |
-| load_start         | block_header.first_transaction_consensus_time -Note: No timestamp in blk file name                |
-| load_end           | Calculated by mirror node                                                                         |
-| logs_bloom         | Aggregate calculated by mirror node                                                               |
-| name               | Name of the blk file                                                                              |
-| node_id            |                                                                                                   |
-| prev_hash          | block_header.previous_block_hash                                                                  |
-| sidecar_count      | Count of all transaction*output.\_transaction type*.sidecars in the blk file                      |
-| size               | byte size of the blk file                                                                         |
-| version            | Record stream version - Perhaps a new version should be added to indicate "Translated from Block" |
+| Database           | Block Item                                                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| bytes              | raw bytes that comprise the blk file                                                                                                |
+| consensus_start    | block_header.first_transaction_consensus_time                                                                                       |
+| consensus_end      | consensus_timestamp of last transaction_output or transaction_result in the blk file                                                |
+| count              | Sum of the transaction_output and transaction_result typed block items in the blk file                                              |
+| digest_algorithm   | block_header.hash_algorithm. Currently SHA2_384                                                                                     |
+| gas_used           | Sum of the gas_used of all block items of type 'transaction_output'                                                                 |
+| hapi_version_major | block_header.hapi_proto_version.major                                                                                               |
+| hapi_version_minor | block_header.hapi_proto_version.minor                                                                                               |
+| hapi_version_patch | block_header.hapi_proto_version.patch                                                                                               |
+| hash               | Generated by the new mirror node class `BlockFileTranslator`. This calculated value must match the next block's previous_block_hash |
+| index              | block_header.number                                                                                                                 |
+| load_start         | System.currentTimeMillis() at beginning of parsing                                                                                  |
+| load_end           | System.currentTimeMillis() at end of parsing                                                                                        |
+| logs_bloom         | Aggregate calculated by mirror node                                                                                                 |
+| name               | Name of the blk file                                                                                                                |
+| node_id            |                                                                                                                                     |
+| prev_hash          | block_header.previous_block_hash                                                                                                    |
+| sidecar_count      | Count of all transaction*output.\_transaction type*.sidecars in the blk file                                                        |
+| size               | byte size of the blk file                                                                                                           |
+| version            | Record stream version - Perhaps a new version should be added to indicate "Translated from Block"                                   |
 
 ### Contract Create Transaction
 
@@ -237,11 +281,9 @@ public class BlockStreamVerifier {
 | entity.expiration_timestamp                   | state_changes[i].state_change.map_update.value.account_value.expiration_second                          |
 | entity.id                                     | state_changes[i].state_change.map_update.value.account_id_value                                         |
 | entity.key                                    | state_changes[i].state_change.map_update.value.account_value.key                                        |
-| entity.max_automatic_token_associations       | state_changes[i].state_change.map_update.value.account_value.                                           |
+| entity.max_automatic_token_associations       | state_changes[i].state_change.map_update.value.account_value.max_auto_associations                      |
 | entity.memo                                   | state_changes[i].state_change.map_update.value.account_value.memo                                       |
 | entity.num                                    | state_changes[i].state_change.map_update.value.account_id_value.accountNum                              |
-| entity.obtainer_id                            | Not updated in contract create                                                                          |
-| entity.permanent_removal                      | Not updated in contract create                                                                          |
 | entity.proxy_account_id                       |                                                                                                         |
 | entity.public_key                             |                                                                                                         |
 | entity.realm                                  | state_changes[i].state_change.map_update.value.account_id_value.realmNum                                |
@@ -251,8 +293,34 @@ public class BlockStreamVerifier {
 | entity.staked_node_id                         | state_changes[i].state_change.map_update.value.account_value.staked_node_id                             |
 | entity.stake_period_start                     | state_changes[i].state_change.map_update.value.account_value.stake_period_start                         |
 | entity.submit_key                             | state_changes[i].state_change.map_update.value.account_value.submit_key                                 |
-| entity.timestamp_range                        | Calculated by Mirror Node Upsert                                                                        |
 | entity.type                                   | state_changes[i].state_change.map_update.value: hasAccountValue/hasTokenValue                           |
+
+### Topic Create Transaction
+
+| Database                            | Block Item                                                    |
+| ----------------------------------- | ------------------------------------------------------------- |
+| topic_message.consensus_timestamp   | state_changes.consensus_timestamp                             |
+| topic_message.payer_account_id      |                                                               |
+| topic_message.running_hash          | state_changes[i].state_change.map_update.value.runningHash    |
+| topic_message.sequence_number       | state_changes[i].state_change.map_update.value.sequenceNumber |
+| topic_message.topic_id              | state_changes[i].state_change.map_update.value.topicId        |
+| topic_message.valid_start_timestamp |                                                               |
+
+### Topic Delete Transaction
+
+| Database       | Block Item                                             |
+| -------------- | ------------------------------------------------------ |
+| entity.id      | state_changes[i].state_change.map_update.value.topicId |
+| entity.deleted | state_changes[i].state_change.map_update.value.deleted |
+
+### UtilPrng Transaction
+
+| Database            | Block Item                                 |
+| ------------------- | ------------------------------------------ |
+| consensus_timestamp | transaction_result.consensus_timestamp     |
+| payer_account_id    |                                            |
+| prng_bytes          | transaction_output.util_prng.entropy.value |
+| prng_number         | transaction_output.util_prng.entropy.value |
 
 ## REST API
 
