@@ -28,7 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 @ExtendWith(MockitoExtension.class)
-public class MetricsImplTest {
+class MetricsImplTest {
 
     private MetricsImpl metrics;
 
