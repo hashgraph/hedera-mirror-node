@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.state;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.node.app.fees.FeeService;
@@ -60,7 +60,7 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
                 RecordCacheService.class));
 
         final var registeredServices = servicesRegistry.registrations();
-        assertThat(registeredServices.size()).isEqualTo(expectedServices.size());
+        assertThat(registeredServices).hasSameSizeAs(expectedServices);
 
         for (var expectedService : expectedServices) {
             assertThat(registeredServices.stream()
@@ -125,7 +125,7 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
         final var serviceState = states.get(serviceName);
         assertThat(serviceState).isNotNull();
         expectedDataSources.forEach((key, type) -> {
-            assertThat(serviceState.containsKey(key)).isTrue();
+            assertThat(serviceState).containsKey(key);
             assertThat(serviceState.get(key)).isInstanceOf(type);
         });
     }
