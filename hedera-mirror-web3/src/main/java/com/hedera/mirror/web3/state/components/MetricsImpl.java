@@ -28,42 +28,54 @@ public class MetricsImpl implements Metrics {
     @Nullable
     @Override
     public Metric getMetric(@Nonnull String category, @Nonnull String name) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Nonnull
     @Override
     public Collection<Metric> findMetricsByCategory(@Nonnull String category) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Nonnull
     @Override
     public Collection<Metric> getAll() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Nonnull
     @Override
     public <T extends Metric> T getOrCreate(@Nonnull MetricConfig<T, ?> config) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void remove(@Nonnull String category, @Nonnull String name) {}
+    public void remove(@Nonnull String category, @Nonnull String name) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
-    public void remove(@Nonnull Metric metric) {}
+    public void remove(@Nonnull Metric metric) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
-    public void remove(@Nonnull MetricConfig<?, ?> config) {}
+    public void remove(@Nonnull MetricConfig<?, ?> config) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
-    public void addUpdater(@Nonnull Runnable updater) {}
+    public void addUpdater(@Nonnull Runnable updater) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
-    public void removeUpdater(@Nonnull Runnable updater) {}
+    public void removeUpdater(@Nonnull Runnable updater) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
-    public void start() {}
+    public void start() {
+        throw new UnsupportedOperationException();
+    }
 }
