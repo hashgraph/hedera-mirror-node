@@ -72,7 +72,7 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
             return null;
         }
 
-        final var timestamp = ContractCallContext.get().getTimestamp();
+        final var timestamp = ContractCallContext.getTimestamp();
         // The accountId will always be in the format "shard.realm.num"
         return findTokenAccount(tokenId, accountId, timestamp)
                 .map(ta -> tokenRelationFromEntity(tokenId, accountId, ta, timestamp))

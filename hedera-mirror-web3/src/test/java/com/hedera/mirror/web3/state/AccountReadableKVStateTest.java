@@ -168,7 +168,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void accountFieldsMatchEntityFields() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         assertThat(accountReadableKVState.get(ACCOUNT_ID)).satisfies(account -> assertThat(account)
                 .returns(
@@ -188,7 +188,7 @@ class AccountReadableKVStateTest {
     @Test
     void accountFieldsWithEvmAddressAliasMatchEntityFields() {
         final var evmAddress = "0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb";
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         entity.setEvmAddress(Bytes.wrap(evmAddress).toByteArray());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         assertThat(accountReadableKVState.get(ACCOUNT_ID)).satisfies(account -> assertThat(account)
@@ -210,7 +210,7 @@ class AccountReadableKVStateTest {
     @Test
     void accountFieldsWithPublicKeyAliasMatchEntityFields() {
         final var ecdsaPublicKey = "0x03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d";
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         entity.setAlias(Bytes.wrap(ecdsaPublicKey).toByteArray());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         assertThat(accountReadableKVState.get(ACCOUNT_ID)).satisfies(account -> assertThat(account)
@@ -231,7 +231,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void whenExpirationTimestampIsNullThenExpiryIsBasedOnCreatedAndRenewTimestamps() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         entity.setExpirationTimestamp(null);
         entity.setCreatedTimestamp(987_000_000L);
@@ -244,7 +244,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void useDefaultValuesWhenFieldsAreNull() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         entity.setExpirationTimestamp(null);
         entity.setCreatedTimestamp(null);
@@ -267,7 +267,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void accountOwnedNftsMatchesValueFromRepository() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         long ownedNfts = 20;
         when(nftRepository.countByAccountIdNotDeleted(any())).thenReturn(ownedNfts);
@@ -282,7 +282,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void accountOwnedNftsMatchesValueFromRepositoryHistorical() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
         long ownedNfts = 20;
         when(nftRepository.countByAccountIdAndTimestampNotDeleted(entity.getId(), timestamp.get()))
@@ -298,7 +298,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void accountBalanceMatchesValueFromRepositoryHistorical() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
         long balance = 20;
         when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
@@ -315,7 +315,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void accountBalanceBeforeAccountCreation() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
         entity.setCreatedTimestamp(timestamp.get() + 1);
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
         long balance = 0;
@@ -326,7 +326,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void accountBalanceIsZeroHistorical() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
         entity.setCreatedTimestamp(timestamp.get() - 1);
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
         long balance = 0;
@@ -344,7 +344,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void accountBalanceWhenCreatedTimestampIsNull() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
         long balance = 20;
         entity.setCreatedTimestamp(null);
@@ -362,7 +362,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void cryptoAllowancesMatchValuesFromRepository() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         CryptoAllowance firstAllowance = new CryptoAllowance();
         firstAllowance.setSpender(123L);
@@ -393,7 +393,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void cryptoAllowancesMatchValuesFromRepositoryHistorical() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
         CryptoAllowance firstAllowance = new CryptoAllowance();
         firstAllowance.setSpender(123L);
@@ -423,7 +423,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void fungibleTokenAllowancesMatchValuesFromRepository() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         TokenAllowance firstAllowance = new TokenAllowance();
         firstAllowance.setOwner(entity.getId());
@@ -460,7 +460,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void fungibleTokenAllowancesMatchValuesFromRepositoryHistorical() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.of(timestamp.get()));
         when(commonEntityAccessor.get(ACCOUNT_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
         TokenAllowance firstAllowance = new TokenAllowance();
         firstAllowance.setOwner(entity.getId());
@@ -497,7 +497,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void approveForAllNftsMatchValuesFromRepository() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         NftAllowance firstAllowance = new NftAllowance();
         firstAllowance.setOwner(entity.getId());
@@ -528,7 +528,7 @@ class AccountReadableKVStateTest {
 
     @Test
     void numTokenAssociationsAndNumPositiveBalancesMatchValuesFromRepository() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(ACCOUNT_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(anyLong()))
                 .thenReturn(associationsCount);

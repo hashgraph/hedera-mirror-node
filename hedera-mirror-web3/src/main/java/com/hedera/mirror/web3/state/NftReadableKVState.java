@@ -52,7 +52,7 @@ public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
             return null;
         }
 
-        final var timestamp = ContractCallContext.get().getTimestamp();
+        final var timestamp = ContractCallContext.getTimestamp();
         final var nftId = EntityIdUtils.toEntityId(key.tokenId()).getId();
         return timestamp
                 .map(t -> nftRepository.findActiveByIdAndTimestamp(nftId, key.serialNumber(), t))

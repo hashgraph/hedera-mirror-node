@@ -79,6 +79,10 @@ public class ContractCallContext {
         return SCOPED_VALUE.get();
     }
 
+    public static Optional<Long> getTimestamp() {
+        return SCOPED_VALUE.isBound() ? SCOPED_VALUE.get().timestamp : Optional.empty();
+    }
+
     public static <T> T run(Function<ContractCallContext, T> function) {
         return ScopedValue.getWhere(SCOPED_VALUE, new ContractCallContext(), () -> function.apply(SCOPED_VALUE.get()));
     }
