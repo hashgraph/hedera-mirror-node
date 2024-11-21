@@ -80,7 +80,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
 
     @Override
     protected Token readFromDataSource(@Nonnull TokenID key) {
-        final var timestamp = ContractCallContext.get().getTimestamp();
+        final var timestamp = ContractCallContext.getTimestamp();
         final var entity = commonEntityAccessor.get(key, timestamp).orElse(null);
 
         if (entity == null) {

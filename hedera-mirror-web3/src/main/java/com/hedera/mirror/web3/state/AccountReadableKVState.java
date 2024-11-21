@@ -89,7 +89,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
 
     @Override
     protected Account readFromDataSource(@Nonnull AccountID key) {
-        final var timestamp = ContractCallContext.get().getTimestamp();
+        final var timestamp = ContractCallContext.getTimestamp();
         return commonEntityAccessor
                 .get(key, timestamp)
                 .map(entity -> accountFromEntity(entity, timestamp))

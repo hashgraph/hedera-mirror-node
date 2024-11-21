@@ -44,7 +44,7 @@ public class ContractStorageReadableKVState extends ReadableKVStateBase<SlotKey,
             return null;
         }
 
-        final var timestamp = ContractCallContext.get().getTimestamp();
+        final var timestamp = ContractCallContext.getTimestamp();
         final var contractID = slotKey.contractID();
         final var entityId = EntityIdUtils.entityIdFromContractId(contractID).getId();
         final var keyBytes = slotKey.key().toByteArray();

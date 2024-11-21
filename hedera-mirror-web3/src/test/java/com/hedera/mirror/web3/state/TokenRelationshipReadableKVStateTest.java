@@ -156,7 +156,7 @@ class TokenRelationshipReadableKVStateTest {
                 .tokenId(TOKEN_ID)
                 .accountId(ACCOUNT_ID)
                 .build();
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.empty());
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isNull();
     }
@@ -176,7 +176,7 @@ class TokenRelationshipReadableKVStateTest {
                 .kycGranted(true)
                 .automaticAssociation(true)
                 .build();
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
     }
@@ -196,7 +196,7 @@ class TokenRelationshipReadableKVStateTest {
                 .kycGranted(true)
                 .automaticAssociation(true)
                 .build();
-        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
         when(tokenRepository.findTypeByTokenId(anyLong())).thenReturn(Optional.of(TokenTypeEnum.FUNGIBLE_COMMON));
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
@@ -230,7 +230,7 @@ class TokenRelationshipReadableKVStateTest {
                 .kycGranted(areFlagsEnabled)
                 .automaticAssociation(areFlagsEnabled)
                 .build();
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);
     }
@@ -250,7 +250,7 @@ class TokenRelationshipReadableKVStateTest {
                 .kycGranted(true)
                 .automaticAssociation(true)
                 .build();
-        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
         when(tokenRepository.findTypeByTokenId(anyLong())).thenReturn(Optional.of(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
@@ -274,7 +274,7 @@ class TokenRelationshipReadableKVStateTest {
                 .kycGranted(true)
                 .automaticAssociation(true)
                 .build();
-        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
         when(tokenAccountRepository.findByIdAndTimestamp(anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.of(tokenAccount));
         assertThat(tokenRelationshipReadableKVState.get(entityIDPair)).isEqualTo(expected);

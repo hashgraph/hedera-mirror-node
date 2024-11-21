@@ -81,7 +81,7 @@ class ContractStorageReadableKVStateTest {
 
     @Test
     void whenTimestampIsNullReturnsLatestSlot() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(contractStateRepository.findStorage(ENTITY_ID.getId(), BYTES.toByteArray()))
                 .thenReturn(Optional.of(BYTES.toByteArray()));
         assertThat(contractStorageReadableKVState.get(SLOT_KEY))
@@ -91,7 +91,7 @@ class ContractStorageReadableKVStateTest {
     @Test
     void whenTimestampIsNotNullReturnsHistoricalSlot() {
         final var blockTimestamp = 1234567L;
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(blockTimestamp));
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.of(blockTimestamp));
         when(contractStateRepository.findStorageByBlockTimestamp(
                         ENTITY_ID.getId(), BYTES.toByteArray(), blockTimestamp))
                 .thenReturn(Optional.of(BYTES.toByteArray()));
@@ -101,7 +101,7 @@ class ContractStorageReadableKVStateTest {
 
     @Test
     void whenSlotNotFoundReturnsNullForLatestBlock() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(contractStateRepository.findStorage(anyLong(), any())).thenReturn(Optional.empty());
         assertThat(contractStorageReadableKVState.get(SLOT_KEY))
                 .satisfies(slotValue -> assertThat(slotValue).isNull());
@@ -110,7 +110,7 @@ class ContractStorageReadableKVStateTest {
     @Test
     void whenSlotNotFoundReturnsNullForHistoricalBlock() {
         final var blockTimestamp = 1234567L;
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.of(blockTimestamp));
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.of(blockTimestamp));
         when(contractStateRepository.findStorageByBlockTimestamp(anyLong(), any(), anyLong()))
                 .thenReturn(Optional.empty());
         assertThat(contractStorageReadableKVState.get(SLOT_KEY))
