@@ -49,7 +49,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 class ReleaseHealthIndicatorTest {
 
     private static final String HELM_RELEASE_PATH =
-            "/apis/helm.toolkit.fluxcd.io/v2beta1/namespaces/test/helmreleases/mirror";
+            "/apis/helm.toolkit.fluxcd.io/v2/namespaces/test/helmreleases/mirror";
     private static final String HOSTNAME = "test-pod";
     private static final String POD_REQUEST_PATH = "/api/v1/namespaces/test/pods/" + HOSTNAME;
     private static final Map<String, String> POD_LABELS = Map.of("app.kubernetes.io/instance", "mirror");
