@@ -32,13 +32,12 @@ import com.hedera.mirror.rest.model.NetworkNode;
 import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.CollectionUtils;
@@ -55,9 +54,8 @@ public class NodeSupplier {
     private final MonitorProperties monitorProperties;
     private final RestApiClient restApiClient;
 
+    private final AtomicLong counter = new AtomicLong(0L);
     private final CopyOnWriteArrayList<NodeProperties> nodes = new CopyOnWriteArrayList<>();
-    private final Map<String, NodeProperties> nodeMap = new ConcurrentHashMap<>();
-    private final SecureRandom secureRandom = new SecureRandom();
 
     @PostConstruct
     public void init() {
@@ -91,12 +89,8 @@ public class NodeSupplier {
             throw new IllegalArgumentException("No valid nodes available");
         }
 
-        int nodeIndex = secureRandom.nextInt(nodes.size());
-        return nodes.get(nodeIndex);
-    }
-
-    public NodeProperties get(String accountId) {
-        return nodeMap.get(accountId);
+        long nodeIndex = counter.getAndIncrement() % nodes.size();
+        return nodes.get((int) nodeIndex);
     }
 
     public synchronized Flux<NodeProperties> refresh() {
@@ -120,7 +114,6 @@ public class NodeSupplier {
                 .doOnNext(n -> {
                     if (empty) {
                         nodes.addIfAbsent(n);
-                        nodeMap.put(n.getAccountId(), n);
                     }
                 }); // Populate on startup before validation
     }
@@ -166,7 +159,6 @@ public class NodeSupplier {
         client.setMinBackoff(validationProperties.getMinBackoff());
         client.setOperator(operatorId, operatorPrivateKey);
         client.setRequestTimeout(validationProperties.getRequestTimeout());
-        client.setVerifyCertificates(false);
         return client;
     }
 
@@ -174,7 +166,6 @@ public class NodeSupplier {
     boolean validateNode(NodeProperties node) {
         if (!monitorProperties.getNodeValidation().isEnabled()) {
             nodes.addIfAbsent(node);
-            nodeMap.put(node.getAccountId(), node);
             log.info("Adding node {} without validation", node.getAccountId());
             return true;
         }
@@ -195,7 +186,6 @@ public class NodeSupplier {
             if (receiptStatus == SUCCESS) {
                 log.info("Validated node {} successfully", nodeAccountId);
                 nodes.addIfAbsent(node);
-                nodeMap.put(node.getAccountId(), node);
                 return true;
             }
 
@@ -206,7 +196,6 @@ public class NodeSupplier {
             log.warn("Unable to validate node {}: ", node, e);
         }
 
-        nodeMap.remove(node.getAccountId());
         nodes.remove(node);
         return false;
     }
