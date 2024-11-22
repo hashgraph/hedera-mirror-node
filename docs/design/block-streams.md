@@ -128,6 +128,7 @@ public class BlockStreamPoller extends StreamPoller<BlockFile> {
      * Polls and downloads block stream files from an S3/GCP bucket
      * Uses the previous block number to derive the name of the next block file to download and should not use any bucket file list operations
      * Uses streamFileProvider to download the block file
+     * Passes block files on to the blockStreamVerifier
      */
     @Scheduled
     public void poll();
@@ -227,7 +228,6 @@ Rename `record_file` to `block_file`.
 | contract_log.contract_id                      | transaction_output.contract_create.contract_create_result.log_info[i].contract_ID                       |
 | contract_log.data                             | transaction_output.contract_create.contract_create_result.log_info[i].data                              |
 | contract_log.index                            | Index i of transaction_output.contract_create.contract_create_result.log_info[i]                        |
-| contract_log.payer_account_id                 |                                                                                                         |
 | contract_log.root_contract_id                 | transaction_output.contract_create.contract_create_result.contractID                                    |
 | contract_log.topic0                           | transaction_output.contract_create.contract_create_result.log_info[i].topic[0]                          |
 | contract_log.topic1                           | transaction_output.contract_create.contract_create_result.log_info[i].topic[1]                          |
@@ -248,8 +248,7 @@ Rename `record_file` to `block_file`.
 | contract_result.gas_consumed                  | Calculated by mirror node                                                                               |
 | contract_result.gas_limit                     | transaction_output.contract_create.contract_create_result.gas                                           |
 | contract_result.gas_used                      | transaction_output.contract_create.contract_create_result.gas_used                                      |
-| contract_result.payer_account_id              |                                                                                                         |
-| contract_result.sender_id z                   | transaction_output.contract_create.contract_create_result.sender_id                                     |
+| contract_result.sender_id                     | transaction_output.contract_create.contract_create_result.sender_id                                     |
 | contract_result.transaction_hash              |                                                                                                         |
 | contract_result.transaction_index             |                                                                                                         |
 | contract_result.transaction_nonce             | transaction_output.contract_create.contract_create_result.contract_nonces[i].nonce                      |
@@ -298,12 +297,21 @@ Rename `record_file` to `block_file`.
 | entity.submit_key                             | state_changes[i].state_change.map_update.value.account_value.submit_key                                 |
 | entity.type                                   | state_changes[i].state_change.map_update.value: hasAccountValue/hasTokenValue                           |
 
+### CryptoTransfer Transaction
+
+| Database                                        | Block Item                                                       |
+| ----------------------------------------------- | ---------------------------------------------------------------- |
+| assessed_custom_fee.amount                      | transaction_output.assessedCustomFees[i].amount                  |
+| assessed_custom_fee.collector_account_id        | transaction_output.assessedCustomFees[i].feeCollectorAccountId   |
+| assessed_custom_fee.consensus_timestamp         | transaction_result.consensus_timestamp                           |
+| assessed_custom_fee.effective_payer_account_ids | transaction_output.assessedCustomFees[i].effectivePayerAccountId |
+| assessed_custom_fee.token_id                    | transaction_output.assessedCustomFees[i].tokenId                 |
+
 ### Topic Create Transaction
 
 | Database                            | Block Item                                                    |
 | ----------------------------------- | ------------------------------------------------------------- |
 | topic_message.consensus_timestamp   | state_changes.consensus_timestamp                             |
-| topic_message.payer_account_id      |                                                               |
 | topic_message.running_hash          | state_changes[i].state_change.map_update.value.runningHash    |
 | topic_message.sequence_number       | state_changes[i].state_change.map_update.value.sequenceNumber |
 | topic_message.topic_id              | state_changes[i].state_change.map_update.value.topicId        |
@@ -321,7 +329,6 @@ Rename `record_file` to `block_file`.
 | Database            | Block Item                                 |
 | ------------------- | ------------------------------------------ |
 | consensus_timestamp | transaction_result.consensus_timestamp     |
-| payer_account_id    |                                            |
 | prng_bytes          | transaction_output.util_prng.entropy.value |
 | prng_number         | transaction_output.util_prng.entropy.value |
 
