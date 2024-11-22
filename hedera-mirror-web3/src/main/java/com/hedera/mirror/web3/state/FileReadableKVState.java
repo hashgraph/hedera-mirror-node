@@ -56,7 +56,19 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
     @Override
     protected File readFromDataSource(@Nonnull FileID key) {
         final var timestamp = ContractCallContext.getTimestamp();
-        final var fileId = toEntityId(key).getId();
+        final var fileEntityId = toEntityId(key);
+        final var fileId = fileEntityId.getId();
+
+        final var contextFileId = ContractCallContext.get().getFileID();
+        // If we are in a contract create case, the fileID and the init bytecode are in the ContractCallContext.
+        if (contextFileId.isPresent()
+                && contextFileId.get().equals(key)
+                && ContractCallContext.get().getInitBytecode().isPresent()) {
+            return File.newBuilder()
+                    .fileId(key)
+                    .contents(ContractCallContext.get().getInitBytecode().get())
+                    .build();
+        }
 
         return timestamp
                 .map(t -> fileDataRepository.getFileAtTimestamp(fileId, t))
