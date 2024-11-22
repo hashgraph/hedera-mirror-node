@@ -16,6 +16,7 @@ NODE_ID_MAP=$(echo -e "${ZFS_VOLUMES}" |
                            }
                          }
                       )|add')
+TEMP_DISK_DEVICE="sdc"
 
 function configureAndValidate() {
   GCP_PROJECT="$(readUserInput "Enter GCP Project for target: ")"
@@ -60,6 +61,7 @@ function configureAndValidate() {
     log "POOL_NAME can not be empty. Exiting"
     exit 1
   fi
+  TEMP_POOL_NAME="${POOL_NAME}-new"
 
   RECORD_SIZE="$(kubectl get storageclasses.storage.k8s.io zfs -o jsonpath='{.parameters.recordsize}')"
   if [[ -z "${RECORD_SIZE}" ]]; then
@@ -131,7 +133,7 @@ function reduceDiskSizes() {
     --disk "${NEW_DISK_NAME}" \
     --zone "${DISK_ZONE}" \
     --project "${GCP_PROJECT}" \
-    --device-name=sdc
+    --device-name="${TEMP_DISK_DEVICE}"
     cat >"/tmp/${INSTANCE_NAME}.yaml" <<EOF
 apiVersion: apps/v1
 kind: DaemonSet
@@ -179,21 +181,19 @@ spec:
           operator: Equal
           value: "true"
 EOF
-
     kubectl apply -f "/tmp/${INSTANCE_NAME}.yaml"
-
     log "Waiting for helper pod to be ready"
     kubectl wait --for=condition=Ready pod -n "${COMMON_NAMESPACE}" -l "instance=${INSTANCE_NAME}" --timeout=-1s
     DAEMONSET_POD=$(kubectl get pods \
     -n "${COMMON_NAMESPACE}" \
     -l instance="${INSTANCE_NAME}" \
-     -o jsonpath='{.items[*].metadata.name}')
+    -o jsonpath='{.items[*].metadata.name}')
     kubectl exec -n "${COMMON_NAMESPACE}" "${DAEMONSET_POD}" -- bash \
     -c "chroot /node-fs /bin/bash -c \
-       'zpool create -o autoexpand=on ${POOL_NAME}-new /dev/sdc'"
+       'zpool create -o autoexpand=on ${TEMP_POOL_NAME} /dev/${TEMP_DISK_DEVICE}'"
+
     PVCS=$(echo "${NODE_ID_MAP}" | jq -r --arg DISK_NODE_ID "${DISK_NODE_ID}" '.[$DISK_NODE_ID].pvcs')
     NODE_PVC_COUNT=$(echo "${PVCS}" | jq -r 'length - 1')
-
     for pvcIndex in $(seq 0 "${NODE_PVC_COUNT}"); do
       PVC=$(echo "${PVCS}" | jq -r --arg INDEX "$pvcIndex" '.[$INDEX | tonumber]')
       PVC_VOLUME=$(echo "${PVC}" | jq -r '.volumeName')
@@ -221,17 +221,17 @@ EOF
       -o recordsize=${RECORD_SIZE} \
       -o reservation=${RESERVATION} \
       -o mountpoint=legacy \
-      ${POOL_NAME}-new/${PVC_VOLUME} && \
-      zfs destroy ${POOL_NAME}-new/${PVC_VOLUME}@initial'"
+      ${TEMP_POOL_NAME}/${PVC_VOLUME} && \
+      zfs destroy ${TEMP_POOL_NAME}/${PVC_VOLUME}@initial'"
 
-      log "Finished copy for pvc ${PVC_VOLUME} to ${POOL_NAME}-new/${PVC_VOLUME}"
+      log "Finished copy for pvc ${PVC_VOLUME} to ${TEMP_POOL_NAME}/${PVC_VOLUME}"
     done
 
     kubectl exec -it -n "${COMMON_NAMESPACE}" "${DAEMONSET_POD}" -- bash -c \
       "chroot /node-fs /bin/bash -c \
       'zpool destroy ${POOL_NAME} && \
-       zpool export ${POOL_NAME}-new && \
-       zpool import ${POOL_NAME}-new ${POOL_NAME} && \
+       zpool export ${TEMP_POOL_NAME} && \
+       zpool import ${TEMP_POOL_NAME} ${POOL_NAME} && \
        zpool export ${POOL_NAME}'"
 
     DISK_REGION=$(echo "${DISK_ZONE}" | cut -d '-' -f 1-2)
@@ -306,7 +306,8 @@ function updateK8sResources() {
 
     IS_WORKER="$(echo "${newVolume}" | jq -r '.citusCluster.isCoordinator | not')"
     WORKER_OVERRIDES=$(kubectl get sgshardedclusters.stackgres.io -n "${NAMESPACE}" \
-                      "${SHARDED_CLUSTER}" -o jsonpath='{.spec.shards.overrides}')
+                      "${SHARDED_CLUSTER}" -o jsonpath='{.spec.shards.overrides}' |
+                       jq -r 'sort_by(.index)')
     COORDINATOR_SIZE="$(kubectl get sgshardedclusters.stackgres.io -n "${NAMESPACE}" \
                        "${SHARDED_CLUSTER}" -o jsonpath='{.spec.coordinator.pods.persistentVolume.size}')"
     if [[ "${IS_WORKER}" == "true" ]]; then
@@ -315,8 +316,6 @@ function updateK8sResources() {
       if [[ -z "${WORKER_OVERRIDES}" ]]; then
         WORKER_OVERRIDES="[]"
       fi
-
-      WORKER_OVERRIDES=$(echo "${WORKER_OVERRIDES}" | jq 'sort_by(.index)')
       if [[ "${NEW_PVC_SIZE%Gi}" -ne "${WORKER_DEFAULT_SIZE%Gi}" ]]; then
         INDEX=$(echo "${CLUSTER}" | grep -oE '[0-9]+$')
         PVC_OVERRIDE=$(echo "${WORKER_OVERRIDES}" | jq -r --arg INDEX "${INDEX}" \
@@ -381,17 +380,17 @@ NEW_VOLUMES=()
 reduceDiskSizes
 updateK8sResources
 
-log "Restarting stackgres pod"
+log "Restarting Stackgres pod"
 kubectl delete pods -n "${COMMON_NAMESPACE}" -l 'app=StackGresConfig'
 sleep 5
 kubectl wait --for=condition=Ready pod -n "${COMMON_NAMESPACE}" -l 'app=StackGresConfig' --timeout=-1s
 
-log "Restarting zfs-init daemonset"
+log "Restarting ZFS init daemonset"
 kubectl delete pods -n "${COMMON_NAMESPACE}" -l 'app=zfs-init'
 sleep 5
 kubectl wait --for=condition=Ready pod -n "${COMMON_NAMESPACE}" -l 'app=zfs-init' --timeout=-1s
 
-log "Restarting zfs node pods"
+log "Restarting ZFS node pods"
 kubectl delete pods -n "${COMMON_NAMESPACE}" -l 'component=openebs-zfs-node'
 sleep 5
 kubectl wait --for=condition=Ready pod -n "${COMMON_NAMESPACE}" -l 'component=openebs-zfs-node' --timeout=-1s
