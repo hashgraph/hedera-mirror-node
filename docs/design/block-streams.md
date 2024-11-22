@@ -89,12 +89,12 @@ package com.hedera.mirror.importer.downloader.block;
 public class BlockFileTranslator implements StreamFileTranslator<RecordFile, BlockFile> {
 
     /**
-     *   Translates the block file into a record file and calculates the hash chain
+     *   Translates the block file into a record file and calculates the block hash
      *   The translation uses a mapping of block fields to record file fields
-     *   Block items are only iterated once in the translate method.
-     *   State changes are accumulated and used for calculating the block hash at the end of the block.
+     *   Block items are only iterated once in the translate method
+     *   State changes are accumulated and used for calculating the block hash
      *
-     *   If the Block File contains a Wrapped Record File, then convert the Wrapped Record File to a Record File.
+     *   If the Block File contains a Wrapped Record File, then convert the Wrapped Record File to a Record File
      */
     @Override
     public RecordFile translate(BlockFile block);
@@ -147,12 +147,15 @@ public class BlockStreamVerifier implements StreamFileNotifier, Closable {
     private final StreamFileTranslator<RecordFile, BlockFile> blockFileTranslator;
     private final RecordFileParser recordFileParser;
 
-    // Translates the block file into a record file, verifies the hash chain and then parses it
+    /**
+     * Translates the block file into a record file, verifies the hash chain and then parses it
+     * Does not parse Block N until Block N+1 has been downloaded and used to verify Block N
+     */
     public void notify(@Nonnull StreamFile<?> streamFile);
 
     /**
-     * The hash chain cannot be verified for block N until block N-1 has been translated by the blockFileTranslator.
-     * For Block N, the previousBlockHash (a value included in the Block protobuf) must be verified to match the hash calculated by the blockFileTranslator for Block N-1.
+     * The hash chain cannot be verified for Block N until Block N+1 has been downloaded.
+     * For Block N the hash must be verified to match the previousBlockHash protobuf value provided by Block N+1
      */
     private void verifyHashChain(String expected, String actual);
 
