@@ -12,7 +12,7 @@ else
   gcloud projects describe "${GCP_PROJECT}" > /dev/null
 fi
 
-DISK_PREFIX="$(readUserInput "Enter the disk prefix of target cluster (value of zfs.init.diskPrefix in values.yaml): ")"
+DISK_PREFIX="$(kubectl -n "${COMMON_NAMESPACE}" get daemonsets -l 'app=zfs-init' -o json | jq -r '.items[0].spec.template.spec.initContainers[0].env[] | select (.name == "DISK_PREFIX") | .value')"
 if [[ -z "${DISK_PREFIX}" ]]; then
   log "DISK_PREFIX can not be empty. Exiting"
   exit 1
@@ -21,7 +21,7 @@ fi
 log "Finding disks with prefix ${DISK_PREFIX}"
 DISKS_TO_SNAPSHOT=$(gcloud compute disks list --project "${GCP_PROJECT}"  --filter="name~${DISK_PREFIX}.*-zfs" --format="json(name, sizeGb, users, zone)")
 if [[ "${DISKS_TO_SNAPSHOT}" == "[]" ]]; then
-  log "No disks found for prefix. Exiting"
+  log "No disks found for prefix. Exiting ${DISK_PREFIX}"
   exit 1
 fi
 
@@ -32,9 +32,6 @@ doContinue
 ZFS_VOLUMES=$(getZFSVolumes)
 
 NAMESPACES=($(echo $ZFS_VOLUMES | jq -r '.[].namespace'| tr ' ' '\n' | sort -u | tr '\n' ' '))
-
-log "Will spin down importer and citus in the namespaces (${NAMESPACES[*]}) for context ${CURRENT_CONTEXT}"
-doContinue
 
 for namespace in "${NAMESPACES[@]}"
 do
