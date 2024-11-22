@@ -337,6 +337,48 @@ class EntityIdUtilsTest {
     }
 
     @Test
+    void toAccountNumIdFromEntityWithEvmAddressAndAlias() {
+        final var domainBuilder = new DomainBuilder();
+        final var entity = domainBuilder.entity().get();
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entity.getShard())
+                .realmNum(entity.getRealm())
+                .accountNum(entity.getNum())
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountNumId(entity));
+    }
+
+    @Test
+    void toAccountNumIdFromEntityWithAlias() {
+        final var domainBuilder = new DomainBuilder();
+        final var entity = domainBuilder.entity().get();
+        entity.setEvmAddress(null);
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entity.getShard())
+                .realmNum(entity.getRealm())
+                .accountNum(entity.getNum())
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountNumId(entity));
+    }
+
+    @Test
+    void toAccountNumIdFromEntity() {
+        final var domainBuilder = new DomainBuilder();
+        final var entity = domainBuilder.entity().get();
+        entity.setEvmAddress(null);
+        entity.setAlias(null);
+
+        final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
+                .shardNum(entity.getShard())
+                .realmNum(entity.getRealm())
+                .accountNum(entity.getNum())
+                .build();
+        assertEquals(expectedAccountId, EntityIdUtils.toAccountNumId(entity));
+    }
+
+    @Test
     void toAccountIdWithShardRealmAndNum() {
         final long shard = 0L;
         final long realm = 0L;
