@@ -180,6 +180,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     private int feesTokenTransferUsageMultiplier = 380;
 
+    @Getter
+    private boolean modularizedServices;
+
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
     }

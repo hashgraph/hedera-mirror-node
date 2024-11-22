@@ -43,6 +43,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
+import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -64,6 +65,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     @Resource
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    protected State state;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
