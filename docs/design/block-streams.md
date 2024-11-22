@@ -297,6 +297,23 @@ Rename `record_file` to `block_file`.
 | entity.submit_key                             | state_changes[i].state_change.map_update.value.account_value.submit_key                                 |
 | entity.type                                   | state_changes[i].state_change.map_update.value: hasAccountValue/hasTokenValue                           |
 
+### Token Airdrop
+
+| Database                          | Block Item                                                                                    |
+| --------------------------------- | --------------------------------------------------------------------------------------------- |
+| token_airdrop.amount              | state_changes[i].state_change.map_update.value.accountPendingAirdropValue.pendingAirdropValue |
+| token_airdrop.receiver_account_id | state_changes[i].state_change.map_update.key.receiverId                                       |
+| token_airdrop.sender_account_id   | state_changes[i].state_change.map_update.key.senderId                                         |
+| token_airdrop.serial_number       | state_changes[i].state_change.map_update.key.tokenReference.serial                            |
+| token_airdrop.token_id            | state_changes[i].state_change.map_update.key.tokenReference.tokenId                           |
+
+### File Create/Update
+
+| Database                      | Block Item                                             |
+| ----------------------------- | ------------------------------------------------------ |
+| file_data.consensus_timestamp | transaction_result.consensus_timestamp                 |
+| file_data.entity_id           | state_changes[i].state_change.map_update.key.fileIdKey |
+
 ### CryptoTransfer Transaction
 
 | Database                                        | Block Item                                                       |
