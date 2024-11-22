@@ -122,14 +122,8 @@ function configureAndValidate() {
 }
 
 function prepareDiskReplacement() {
-  log "Will spin down importer and citus in the namespaces (${NAMESPACES[*]}) for context ${CURRENT_CONTEXT}"
-
   for namespace in "${NAMESPACES[@]}"; do
-
-    # Unroute traffic
     unrouteTraffic "${namespace}"
-
-    # Pause Citus
     pauseCitus "${namespace}"
   done
 
