@@ -18,7 +18,6 @@ package com.hedera.mirror.monitor.publish;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.platform.commons.util.ReflectionUtils.getDeclaredConstructor;
-import static org.mockito.Mockito.doReturn;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -80,7 +79,6 @@ class PublishMetricsTest {
         node.setAccountId("0.0.3");
         node.setHost("127.0.0.1");
         node.setNodeId(0L);
-        doReturn(node).when(nodeSupplier).get(node.getAccountId());
     }
 
     @Test
@@ -234,6 +232,7 @@ class PublishMetricsTest {
 
     private PublishRequest request() {
         return PublishRequest.builder()
+                .node(node)
                 .scenario(publishScenario)
                 .timestamp(Instant.now().minusSeconds(5L))
                 .transaction(new TopicMessageSubmitTransaction().setNodeAccountIds(node.getAccountIds()))
