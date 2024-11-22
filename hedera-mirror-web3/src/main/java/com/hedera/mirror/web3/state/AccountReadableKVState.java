@@ -116,7 +116,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         }
 
         return Account.newBuilder()
-                .accountId(EntityIdUtils.toAccountNumId(entity))
+                .accountId(EntityIdUtils.toAccountId(entity.toEntityId()))
                 .alias(Bytes.wrap(alias))
                 .approveForAllNftAllowances(getApproveForAllNfts(entity.getId(), timestamp))
                 .autoRenewAccountId(toAccountId(entity.getAutoRenewAccountId()))

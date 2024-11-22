@@ -188,14 +188,6 @@ public final class EntityIdUtils {
         return accountIdWithAlias != null ? accountIdWithAlias : toAccountId(entity.toEntityId());
     }
 
-    public static com.hedera.hapi.node.base.AccountID toAccountNumId(final Entity entity) {
-        if (entity == null) {
-            return com.hedera.hapi.node.base.AccountID.DEFAULT;
-        }
-
-        return toAccountId(entity.toEntityId());
-    }
-
     public static com.hedera.hapi.node.base.AccountID toAccountId(final EntityId entityId) {
         return com.hedera.hapi.node.base.AccountID.newBuilder()
                 .shardNum(entityId.getShard())
