@@ -46,7 +46,7 @@ const {
   response: {
     limit: {default: defaultResponseLimit},
   },
-  transactions: {typesToInclude},
+  transactions: {precedingTransactionTypes},
 } = config;
 
 const cache = new Cache();

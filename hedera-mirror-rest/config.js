@@ -175,6 +175,12 @@ const durationQueryConfigKeys = [
 
 const parseQueryConfig = () => {
   const {query} = getConfig();
+  const { precedingTransactionTypes } = query.transactions;
+  if (!Array.isArray(precedingTransactionTypes) || precedingTransactionTypes.length === 0) {
+    throw new InvalidConfigError(
+        `Invalid or missing query.transactions.precedingTransactionTypes: ${precedingTransactionTypes}`
+    );
+  }
   durationQueryConfigKeys.forEach((key) => (query[`${key}Ns`] = parseDurationConfig(`query.${key}`, query[key])));
 };
 
@@ -185,13 +191,6 @@ const parseNetworkConfig = () => {
     if (!validValues.includes(currencyFormat)) {
       throw new InvalidConfigError(`invalid currencyFormat ${currencyFormat}`);
     }
-  }
-};
-
-const parseTransactionConfig = () => {
-  const {precedingTransactionTypes} = getConfig().query.transactions;
-  if (!Array.isArray(precedingTransactionTypes) || precedingTransactionTypes.length === 0) {
-    throw new InvalidConfigError(`Invalid or missing query.transactions.precedingTransactionTypes: ${precedingTransactionTypes}`);
   }
 };
 
