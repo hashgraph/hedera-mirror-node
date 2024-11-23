@@ -28,8 +28,8 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
 
 public class HederaSelfDestructOperationBase extends SelfDestructOperation {
 
-    public HederaSelfDestructOperationBase(final GasCalculator gasCalculator) {
-        super(gasCalculator);
+    public HederaSelfDestructOperationBase(final GasCalculator gasCalculator, final boolean eip6780Semantics) {
+        super(gasCalculator, eip6780Semantics);
     }
 
     @Nullable

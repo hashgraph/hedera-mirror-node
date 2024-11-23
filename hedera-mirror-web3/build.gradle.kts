@@ -64,7 +64,7 @@ web3j {
 }
 
 val historicalSolidityVersion = "0.8.7"
-val latestSolidityVersion = "0.8.24"
+val latestSolidityVersion = "0.8.25"
 
 // Define "testHistorical" source set needed for the test historical solidity contracts and web3j
 sourceSets {

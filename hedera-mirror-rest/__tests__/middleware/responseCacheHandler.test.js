@@ -81,13 +81,13 @@ describe('Response cache middleware', () => {
       getHeaders: jest.fn(),
       headers: {
         'cache-control': `public, max-age=${cacheControlMaxAge}`,
-        'content-encoding': 'gzip'
       },
       locals: [],
       removeHeader: jest.fn(),
       send: jest.fn(),
       set: jest.fn(),
       status: jest.fn(),
+      setHeader: jest.fn(),
     };
   });
 
@@ -246,7 +246,8 @@ describe('Response cache middleware', () => {
 
         await responseCacheCheckHandler(mockRequest, mockResponse, null);
         expect(mockResponse.send).toBeCalledWith(cachedBody);
-        expect(mockResponse.set).toHaveBeenNthCalledWith(1, Object.assign(cachedHeaders, {'content-encoding': 'gzip'}));
+        expect(mockResponse.set).toHaveBeenNthCalledWith(1, cachedHeaders);
+        expect(mockResponse.setHeader).toHaveBeenNthCalledWith(1, 'content-encoding', 'gzip');
         expect(mockResponse.status).toBeCalledWith(httpStatusCodes.OK.code);
       });
 
@@ -264,6 +265,7 @@ describe('Response cache middleware', () => {
         await responseCacheCheckHandler(mockRequest, mockResponse, null);
         expect(mockResponse.send).toBeCalledWith(cachedBody);
         expect(mockResponse.set).toHaveBeenNthCalledWith(1, cachedHeaders);
+        expect(mockResponse.setHeader).not.toBeCalled();
         expect(mockResponse.status).toBeCalledWith(httpStatusCodes.OK.code);
       });
     });

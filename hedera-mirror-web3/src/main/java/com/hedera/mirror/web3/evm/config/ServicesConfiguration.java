@@ -141,6 +141,22 @@ public class ServicesConfiguration {
     private static final int STRICT_SYSTEM_ACCOUNT_BOUNDARY = 999;
 
     @Bean
+    static Predicate<Address> systemAccountDetector() {
+        // all addresses between 0-750 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && Integer.compareUnsigned(address.getInt(16), SYSTEM_ACCOUNT_BOUNDARY) <= 0;
+    }
+
+    @Bean
+    static Predicate<Address> strictSystemAccountDetector() {
+        // all addresses between 0-999 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing ExtCode operations
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && Integer.compareUnsigned(address.getInt(16), STRICT_SYSTEM_ACCOUNT_BOUNDARY) <= 0;
+    }
+
+    @Bean
     GasCalculatorHederaV22 gasCalculatorHederaV22(
             final BasicFcfsUsagePrices usagePricesProvider, final BasicHbarCentExchange hbarCentExchange) {
         return new GasCalculatorHederaV22(usagePricesProvider, hbarCentExchange);
@@ -686,12 +702,11 @@ public class ServicesConfiguration {
 
     @Bean
     PrngSystemPrecompiledContract prngSystemPrecompiledContract(
-            final GasCalculatorHederaV22 gasCalculatorHederaV22,
+            final GasCalculator gasCalculator,
             final PrngLogic prngLogic,
             final LivePricesSource livePricesSource,
             final PrecompilePricingUtils precompilePricingUtils) {
-        return new PrngSystemPrecompiledContract(
-                gasCalculatorHederaV22, prngLogic, livePricesSource, precompilePricingUtils);
+        return new PrngSystemPrecompiledContract(gasCalculator, prngLogic, livePricesSource, precompilePricingUtils);
     }
 
     @Bean
@@ -779,22 +794,6 @@ public class ServicesConfiguration {
     @Bean
     BiPredicate<Address, MessageFrame> preV38AddressValidator() {
         return (address, frame) -> frame.getWorldUpdater().get(address) != null;
-    }
-
-    @Bean
-    static Predicate<Address> systemAccountDetector() {
-        // all addresses between 0-750 (inclusive) are treated as system accounts
-        // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
-        return address -> address.numberOfLeadingZeroBytes() >= 18
-                && Integer.compareUnsigned(address.getInt(16), SYSTEM_ACCOUNT_BOUNDARY) <= 0;
-    }
-
-    @Bean
-    static Predicate<Address> strictSystemAccountDetector() {
-        // all addresses between 0-999 (inclusive) are treated as system accounts
-        // from the perspective of the EVM when executing ExtCode operations
-        return address -> address.numberOfLeadingZeroBytes() >= 18
-                && Integer.compareUnsigned(address.getInt(16), STRICT_SYSTEM_ACCOUNT_BOUNDARY) <= 0;
     }
 
     @Bean

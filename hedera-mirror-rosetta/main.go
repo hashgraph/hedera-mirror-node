@@ -87,7 +87,7 @@ func newBlockchainOnlineRouter(
 	baseService := services.NewOnlineBaseService(blockRepo, transactionRepo)
 
 	networkAPIService := services.NewNetworkAPIService(baseService, addressBookEntryRepo, network, version)
-	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter, nil)
+	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
 	blockAPIService := services.NewBlockAPIService(
 		accountRepo,
@@ -96,10 +96,10 @@ func newBlockchainOnlineRouter(
 		rosettaConfig.Response.MaxTransactionsInBlock,
 		serverContext,
 	)
-	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter, nil)
+	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
 	mempoolAPIService := services.NewMempoolAPIService()
-	mempoolAPIController := server.NewMempoolAPIController(mempoolAPIService, asserter, nil)
+	mempoolAPIController := server.NewMempoolAPIController(mempoolAPIService, asserter)
 
 	constructionAPIService, err := services.NewConstructionAPIService(
 		accountRepo,
@@ -110,10 +110,10 @@ func newBlockchainOnlineRouter(
 	if err != nil {
 		return nil, err
 	}
-	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter, nil)
+	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
 
 	accountAPIService := services.NewAccountAPIService(baseService, accountRepo, rosettaConfig.Shard, rosettaConfig.Realm)
-	accountAPIController := server.NewAccountAPIController(accountAPIService, asserter, nil)
+	accountAPIController := server.NewAccountAPIController(accountAPIService, asserter)
 	healthController, err := middleware.NewHealthController(rosettaConfig)
 	metricsController := middleware.NewMetricsController()
 	if err != nil {
@@ -151,7 +151,7 @@ func newBlockchainOfflineRouter(
 	if err != nil {
 		return nil, err
 	}
-	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter, nil)
+	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
 	healthController, err := middleware.NewHealthController(rosettaConfig)
 	if err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func newBlockchainOfflineRouter(
 
 	metricsController := middleware.NewMetricsController()
 	networkAPIService := services.NewNetworkAPIService(baseService, nil, network, version)
-	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter, nil)
+	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
 	return server.NewRouter(constructionAPIController, healthController, metricsController, networkAPIController), nil
 }

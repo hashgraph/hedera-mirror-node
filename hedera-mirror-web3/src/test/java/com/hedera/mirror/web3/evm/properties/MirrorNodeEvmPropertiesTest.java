@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_3
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_50;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
@@ -66,6 +67,7 @@ class MirrorNodeEvmPropertiesTest {
         evmVersions.put(50L, EVM_VERSION_0_34);
         evmVersions.put(100L, EVM_VERSION_0_38);
         evmVersions.put(150L, EVM_VERSION_0_46);
+        evmVersions.put(200L, EVM_VERSION_0_50);
         return Collections.unmodifiableNavigableMap(evmVersions);
     }
 
@@ -75,6 +77,7 @@ class MirrorNodeEvmPropertiesTest {
         evmVersions.put(44029066L, EVM_VERSION_0_34);
         evmVersions.put(49117794L, EVM_VERSION_0_38);
         evmVersions.put(60258042L, EVM_VERSION_0_46);
+        evmVersions.put(65435845L, EVM_VERSION_0_50);
         return Collections.unmodifiableNavigableMap(evmVersions);
     }
 

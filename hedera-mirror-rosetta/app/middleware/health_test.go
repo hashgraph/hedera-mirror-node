@@ -74,11 +74,3 @@ func TestReadiness(t *testing.T) {
 		require.Equal(t, httpStatus, tracingResponseWriter.statusCode)
 	}
 }
-
-func TestHealthContextFromRequest(t *testing.T) {
-	healthController, err := NewHealthController(&config.Config{})
-	require.NoError(t, err)
-
-	request := httptest.NewRequest("GET", "http://localhost"+readinessPath, nil)
-	require.Equal(t, request.Context(), healthController.ContextFromRequest(request))
-}

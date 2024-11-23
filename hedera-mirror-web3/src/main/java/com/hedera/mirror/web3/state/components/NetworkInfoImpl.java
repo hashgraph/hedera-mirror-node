@@ -50,7 +50,7 @@ public class NetworkInfoImpl implements NetworkInfo {
     @Nonnull
     @Override
     public List<NodeInfo> addressBook() {
-        throw new UnsupportedOperationException("Address book is not supported.");
+        return List.of(mockSelfNodeInfo());
     }
 
     @Nullable

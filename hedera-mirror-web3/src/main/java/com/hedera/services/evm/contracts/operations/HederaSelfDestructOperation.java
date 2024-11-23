@@ -30,13 +30,12 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
  * Hedera adapted version of the {@link SelfDestructOperation}.
  *
  * <p>Performs an existence check on the beneficiary {@link Address} Halts the execution of the EVM
- * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
- * not exist, or it is deleted.
+ * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does not exist, or it is
+ * deleted.
  *
  * <p>Halts the execution of the EVM transaction with {@link
- * HederaExceptionalHaltReason#SELF_DESTRUCT_TO_SELF} if the beneficiary address is the same as the
- * address being destructed
- * This class is a copy of HederaSelfDestructOperation from hedera-services mono
+ * HederaExceptionalHaltReason#SELF_DESTRUCT_TO_SELF} if the beneficiary address is the same as the address being
+ * destructed This class is a copy of HederaSelfDestructOperation from hedera-services mono
  */
 public class HederaSelfDestructOperation extends HederaSelfDestructOperationBase {
 
@@ -44,7 +43,7 @@ public class HederaSelfDestructOperation extends HederaSelfDestructOperationBase
 
     public HederaSelfDestructOperation(
             final GasCalculator gasCalculator, final BiPredicate<Address, MessageFrame> addressValidator) {
-        super(gasCalculator);
+        super(gasCalculator, false);
         this.addressValidator = addressValidator;
     }
 

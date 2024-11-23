@@ -90,12 +90,12 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {
-        Transaction<?> transaction = request.getTransaction();
+        var transaction = request.getTransaction();
 
-        // set transaction node where applicable
-        if (transaction.getNodeAccountIds() == null) {
+        if (request.getNode() == null) {
             var node = nodeSupplier.get();
             transaction.setNodeAccountIds(node.getAccountIds());
+            request.setNode(node);
         }
 
         return execute(client, transaction);
@@ -157,7 +157,6 @@ public class TransactionPublisher implements AutoCloseable {
         Client client = Client.forNetwork(nodes);
         client.setNodeMaxBackoff(publishProperties.getNodeMaxBackoff());
         client.setOperator(operatorId, operatorPrivateKey);
-        client.setVerifyCertificates(false); // SDK doesn't support setting a custom address book with cert hash
         return client;
     }
 }

@@ -42,12 +42,11 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
- * Stateless invariant copy of its hedera-services counterpart. It is used to process EVM transactions in
- * an asynchronous manner.
- *
+ * Stateless invariant copy of its hedera-services counterpart. It is used to process EVM transactions in an
+ * asynchronous manner.
+ * <p>
  * All class fields are final and immutable and some of them moved in the execute method.
- *
- * */
+ */
 public class HederaEvmTxProcessor {
     private static final int MAX_STACK_SIZE = 1024;
 
@@ -85,17 +84,15 @@ public class HederaEvmTxProcessor {
     /**
      * Executes the {@link MessageFrame} of the EVM transaction and fills execution results into a field.
      *
-     * @param sender The origin {@link MutableAccount} that initiates the transaction
-     * @param receiver the priority form of the receiving {@link Address} (i.e., EIP-1014 if
-     *     present); or the newly created address
-     * @param gasPrice GasPrice to use for gas calculations
-     * @param gasLimit Externally provided gas limit
-     * @param value transaction value
-     * @param payload transaction payload. For Create transactions, the bytecode + constructor
-     *     arguments
-     * @param isStatic Whether the execution is static
-     * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created
-     *     address
+     * @param sender         The origin {@link MutableAccount} that initiates the transaction
+     * @param receiver       the priority form of the receiving {@link Address} (i.e., EIP-1014 if present); or the
+     *                       newly created address
+     * @param gasPrice       GasPrice to use for gas calculations
+     * @param gasLimit       Externally provided gas limit
+     * @param value          transaction value
+     * @param payload        transaction payload. For Create transactions, the bytecode + constructor arguments
+     * @param isStatic       Whether the execution is static
+     * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created address
      */
     @SuppressWarnings("java:S107")
     public HederaEvmTransactionProcessingResult execute(

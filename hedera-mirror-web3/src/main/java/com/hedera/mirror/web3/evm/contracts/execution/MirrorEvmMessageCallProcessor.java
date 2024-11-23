@@ -24,7 +24,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
@@ -40,6 +39,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
@@ -54,7 +54,7 @@ public class MirrorEvmMessageCallProcessor extends AbstractEvmMessageCallProcess
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final PrecompiledContractProvider precompilesHolder,
-            final GasCalculatorHederaV22 gasCalculator,
+            final GasCalculator gasCalculator,
             final Predicate<Address> systemAccountDetector) {
         super(evm, precompiles, precompilesHolder.getHederaPrecompiles(), systemAccountDetector);
         this.autoCreationLogic = autoCreationLogic;
@@ -65,6 +65,7 @@ public class MirrorEvmMessageCallProcessor extends AbstractEvmMessageCallProcess
 
     /**
      * This logic is copied from hedera-services HederaMessageCallProcessor.
+     *
      * @param frame
      * @param operationTracer
      */

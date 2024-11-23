@@ -36,9 +36,3 @@ func TestMetrics(t *testing.T) {
 	require.Contains(t, responseWriter.Header().Get("Content-Type"), "text/plain")
 	require.Contains(t, response, "promhttp_metric_handler_requests_total")
 }
-
-func TestMetricsContextFromRequest(t *testing.T) {
-	metricsController := NewMetricsController()
-	request := httptest.NewRequest("GET", "http://localhost"+metricsPath, nil)
-	require.Equal(t, request.Context(), metricsController.ContextFromRequest(request))
-}
