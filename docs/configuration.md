@@ -503,7 +503,11 @@ The following table lists the available properties along with their default valu
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
 | Name                                                               | Default                 | Description                                                                                                                                                                                   |
+<<<<<<< HEAD
 | ------------------------------------------------------------------ |-------------------------| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+=======
+| ------------------------------------------------------------------ | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+>>>>>>> a82aadb7cccee905f274aa795e813d7cd0ece838
 | `hedera.mirror.rest.cache.entityId.maxAge`                         | 1800                    | The number of seconds until the entityId cache entry expires                                                                                                                                  |
 | `hedera.mirror.rest.cache.entityId.maxSize`                        | 100000                  | The maximum number of entries in the entityId cache                                                                                                                                           |
 | `hedera.mirror.rest.cache.token.maxSize`                           | 100000                  | The maximum number of entries in the token cache                                                                                                                                              |
