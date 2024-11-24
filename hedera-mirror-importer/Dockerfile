@@ -1,9 +1,9 @@
-FROM eclipse-temurin:21-jre-jammy as builder
+FROM eclipse-temurin:21-jre-noble as builder
 WORKDIR /app
 COPY build/libs/*.jar ./
 RUN java -Djarmode=layertools -jar *.jar extract
 
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:21-jre-noble
 ENV JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=80"
 HEALTHCHECK --interval=30s --retries=3 --start-period=60s --timeout=2s CMD curl -f http://localhost:8080/actuator/health/liveness
 WORKDIR /app
