@@ -12,12 +12,7 @@ else
   gcloud projects describe "${GCP_PROJECT}" > /dev/null
 fi
 
-DISK_PREFIX="$(readUserInput "Enter the disk prefix of target cluster (value of zfs.init.diskPrefix in values.yaml): ")"
-if [[ -z "${DISK_PREFIX}" ]]; then
-  log "DISK_PREFIX can not be empty. Exiting"
-  exit 1
-fi
-
+getDiskPrefix
 log "Finding disks with prefix ${DISK_PREFIX}"
 DISKS_TO_SNAPSHOT=$(gcloud compute disks list --project "${GCP_PROJECT}"  --filter="name~${DISK_PREFIX}.*-zfs" --format="json(name, sizeGb, users, zone)")
 if [[ "${DISKS_TO_SNAPSHOT}" == "[]" ]]; then
@@ -31,7 +26,7 @@ doContinue
 
 ZFS_VOLUMES=$(getZFSVolumes)
 
-NAMESPACES=($(echo $ZFS_VOLUMES | jq -r '.[].namespace'| tr ' ' '\n' | sort -u | tr '\n' ' '))
+NAMESPACES=($(echo $ZFS_VOLUMES | jq -r '.[].namespace' | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
 log "Will spin down importer and citus in the namespaces (${NAMESPACES[*]}) for context ${CURRENT_CONTEXT}"
 doContinue

@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
+shopt -s expand_aliases
 
 function checkCitusMetadataSyncStatus() {
+  TIMEOUT_SECONDS=600
   local namespace="${1}"
 
-  deadline=$((SECONDS+300))
+  deadline=$((SECONDS+TIMEOUT_SECONDS))
   while [[ "$SECONDS" -lt "$deadline" ]]; do
     synced=$(kubectl exec -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U postgres -d mirror_node -P format=unaligned -t -c "select bool_and(metadatasynced) from pg_dist_node")
     if [[ "${synced}" == "t" ]]; then
@@ -16,12 +19,15 @@ function checkCitusMetadataSyncStatus() {
     fi
   done
 
-  log "Citus metadata did not sync in 300 seconds"
+  log "Citus metadata did not sync in ${TIMEOUT_SECONDS} seconds"
   exit 1
 }
 
 function doContinue() {
-  read -p "Continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
+  while true; do
+    read -p "Continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && return || \
+      { [[ -n "$confirm" ]] && exit 1 || true; }
+  done
 }
 
 function log() {
@@ -80,8 +86,8 @@ function routeTraffic() {
   checkCitusMetadataSyncStatus "${namespace}"
 
   log "Running test queries"
-  kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U mirror_rest -d mirror_node -c "select * from transaction limit 10"
-  kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U mirror_node -d mirror_node -c "select * from transaction limit 10"
+  kubectl exec -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U mirror_rest -d mirror_node -c "select consensus_timestamp from transaction limit 10"
+  kubectl exec -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U mirror_node -d mirror_node -c "select consensus_timestamp from transaction limit 10"
   doContinue
   scaleDeployment "${namespace}" 1 "app.kubernetes.io/component=importer"
   while true; do
@@ -169,6 +175,15 @@ function getCitusClusters() {
              )'
 }
 
+function getDiskPrefix() {
+  DISK_PREFIX=$(kubectl_common get daemonsets -l 'app=zfs-init' -o json | \
+    jq -r '.items[0].spec.template.spec.initContainers[0].env[] | select (.name == "DISK_PREFIX") | .value')
+  if [[ -z "${DISK_PREFIX}" ]]; then
+    log "DISK_PREFIX can not be empty. Exiting"
+    exit 1
+  fi
+}
+
 function getZFSVolumes () {
   kubectl get pv -o json |
       jq -r --arg CITUS_CLUSTERS "${CITUS_CLUSTERS}" \
@@ -225,10 +240,13 @@ function resizeCitusNodePools() {
   fi
 }
 
-COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
-HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
-CURRENT_CONTEXT="$(kubectl config current-context)"
-CITUS_CLUSTERS="$(getCitusClusters)"
 AUTO_UNROUTE="${AUTO_UNROUTE:-true}"
+CITUS_CLUSTERS="$(getCitusClusters)"
+COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
+CURRENT_CONTEXT="$(kubectl config current-context)"
+DISK_PREFIX=
 GCP_COORDINATOR_POOL_NAME="${GCP_COORDINATOR_POOL_NAME:-citus-coordinator}"
 GCP_WORKER_POOL_NAME="${GCP_WORKER_POOL_NAME:-citus-worker}"
+HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
+
+alias kubectl_common="kubectl -n ${COMMON_NAMESPACE}"

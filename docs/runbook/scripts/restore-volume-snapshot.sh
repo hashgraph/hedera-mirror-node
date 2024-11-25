@@ -64,11 +64,7 @@ function configureAndValidate() {
     fi
   fi
 
-  DISK_PREFIX=$(kubectl -n "${COMMON_NAMESPACE}" get daemonsets -l 'app=zfs-init' -o json | jq -r '.items[0].spec.template.spec.initContainers[0].env[] | select (.name == "DISK_PREFIX") | .value')
-  if [[ -z "${DISK_PREFIX}" ]]; then
-    log "DISK_PREFIX can not be empty. Exiting"
-    exit 1
-  fi
+  getDiskPrefix
   log "Target disk prefix is ${DISK_PREFIX}"
 
   if [[ -z "${ZFS_POOL_NAME}" ]]; then
@@ -140,7 +136,7 @@ function prepareDiskReplacement() {
 
 function renameZfsVolumes() {
   log "Waiting for zfs pods to be ready"
-  kubectl wait --for=condition=Ready pod -n "${COMMON_NAMESPACE}" -l 'component=openebs-zfs-node' --timeout=-1s
+  kubectl_common wait --for=condition=Ready pod -l 'component=openebs-zfs-node' --timeout=-1s
 
   local zfsNodePods=$(kubectl get pods -A -o wide -o json -l 'component=openebs-zfs-node' | jq -r '.items|map({node: (.spec.nodeName), podName: (.metadata.name)})')
   local zfsNodes=$(kubectl get zfsnodes.zfs.openebs.io -A -o json | jq -r '.items|map({nodeId: .metadata.name, node: .metadata.ownerReferences[0].name})')
@@ -165,12 +161,12 @@ function renameZfsVolumes() {
 
       if [[ "${pvcVolumeName}" != "${snapshotPvcVolumeName}" ]]; then
         log "Renaming snapshot pvc ${ZFS_POOL_NAME}/${snapshotPvcVolumeName} to ${ZFS_POOL_NAME}/${pvcVolumeName}"
-        kubectl exec -n "${COMMON_NAMESPACE}" "${podInfo}" -c openebs-zfs-plugin -- zfs rename "${ZFS_POOL_NAME}/${snapshotPvcVolumeName}" "${ZFS_POOL_NAME}/${pvcVolumeName}"
+        kubectl_common exec "${podInfo}" -c openebs-zfs-plugin -- zfs rename "${ZFS_POOL_NAME}/${snapshotPvcVolumeName}" "${ZFS_POOL_NAME}/${pvcVolumeName}"
       else
         log "Snapshot pvc ${ZFS_POOL_NAME}/${snapshotPvcVolumeName} already matches pvc ${ZFS_POOL_NAME}/${pvcVolumeName}"
       fi
     done
-    kubectl exec -n "${COMMON_NAMESPACE}" "${podInfo}" -c openebs-zfs-plugin -- zfs list
+    kubectl_common exec "${podInfo}" -c openebs-zfs-plugin -- zfs list
   done
   log "ZFS datasets renamed"
 }
@@ -281,18 +277,19 @@ function markAndConfigurePrimaries() {
   local web3Username=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_USERNAME')
   local web3Password=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_PASSWORD')
   local dbName=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_NAME')
-  local sqlCommands=(
-  "alter user ${superuserUsername} with password '${superuserPassword}';"
-  "alter user ${graphqlUsername} with password '${graphqlPassword}';"
-  "alter user ${grpcUsername} with password '${grpcPassword}';"
-  "alter user ${importerUsername} with password '${importerPassword}';"
-  "alter user ${ownerUsername} with password '${ownerPassword}';"
-  "alter user ${restUsername} with password '${restPassword}';"
-  "alter user ${restJavaUsername} with password '${restJavaPassword}';"
-  "alter user ${rosettaUsername} with password '${rosettaPassword}';"
-  "alter user ${web3Username} with password '${web3Password}';"
-  "alter user ${replicationUsername} with password '${replicationPassword}';"
-  "alter user ${authenticatorUsername} with password '${authenticatorPassword}';")
+  local updatePasswordsSql=$(cat <<EOF
+alter user ${superuserUsername} with password '${superuserPassword}';
+alter user ${graphqlUsername} with password '${graphqlPassword}';
+alter user ${grpcUsername} with password '${grpcPassword}';
+alter user ${importerUsername} with password '${importerPassword}';
+alter user ${ownerUsername} with password '${ownerPassword}';
+alter user ${restUsername} with password '${restPassword}';
+alter user ${restJavaUsername} with password '${restJavaPassword}';
+alter user ${rosettaUsername} with password '${rosettaPassword}';
+alter user ${web3Username} with password '${web3Password}';
+alter user ${replicationUsername} with password '${replicationPassword}';
+alter user ${authenticatorUsername} with password '${authenticatorPassword}';
+EOF)
 
   local clusterGroups=$(echo "${pvcsInNamespace}" |
     jq -r 'group_by(.citusCluster.clusterName)|
@@ -342,14 +339,10 @@ group ${citusGroup}. Will failover"
     fi
     log "Patching cluster ${clusterName} in namespace ${namespace} with ${clusterPatch}"
     kubectl patch sgclusters.stackgres.io -n "${namespace}" "${clusterName}" --type merge -p "${clusterPatch}"
-    kubectl exec -n "${namespace}" "${primaryPod}" -c postgres-util \
-                -- psql -U "${superuserUsername}" \
-                        -c "ALTER USER ${superuserUsername} WITH PASSWORD '${superuserPassword}';"
-    for sql in "${sqlCommands[@]}"; do
-          log "Executing sql command for cluster ${clusterName}: ${sql}"
-          kubectl exec -n "${namespace}" "${primaryPod}" -c postgres-util \
-            -- psql -U "${superuserUsername}" -c "${sql}"
-    done
+
+    log "Executing sql command for cluster ${clusterName}: ${updatePasswordsSql}"
+    kubectl exec -n "${namespace}"  "${primaryPod}" -c postgres-util -- \
+      psql -U "${superuserUsername}" -c "${updatePasswordsSql}"
 
     kubectl exec -n "${namespace}" "${primaryPod}" -c postgres-util \
           -- psql -U "${superuserUsername}" -d "${dbName}" -c \
