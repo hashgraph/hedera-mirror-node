@@ -113,22 +113,26 @@ kill_descendants() {
 # Handle script termination
 cleanup() {
   disable_pipefail
-  log "Script interrupted. Terminating background jobs..." "ERROR"
-  # Ignore further signals during cleanup
-  trap '' SIGINT SIGTERM
 
-  # Kill all background jobs and their descendants
-  for pid in "${pids[@]}"; do
-    kill_descendants "$pid"
-  done
+  local trap_type="$1"
 
-  wait 2>/dev/null
-  log "All background jobs terminated."
+  if [[ "$trap_type" == "INT" || "$trap_type" == "TERM" ]]; then
+    log "Script interrupted. Terminating background jobs..." "ERROR"
 
-  # Cleanup on termination
-  rm -f $PID_FILE $LOCK_FILE
+    # Kill all background jobs and their descendants
+    for pid in "${pids[@]}"; do
+      kill_descendants "$pid"
+    done
 
-  exit 1
+    wait 2>/dev/null
+    log "All background jobs terminated."
+
+    # Exit with a non-zero status to indicate interruption
+    exit 1
+  fi
+
+  # Normal cleanup actions (on EXIT)
+  rm -f "$PID_FILE" "$LOCK_FILE"
 }
 
 # Safely write to the tracking file with a lock
@@ -167,7 +171,7 @@ write_discrepancy() {
   local actual_count="$3"
 
   # Only write if not already imported successfully
-  discrepancy_entry="$filename: expected $expected_count, got $actual_count rows"
+  discrepancy_entry="$file: expected $expected_count, got $actual_count rows"
   if ! grep -q "^${file} IMPORTED$" "$TRACKING_FILE" 2>/dev/null; then
     echo "$discrepancy_entry" >> "$DISCREPANCY_FILE"
   fi
@@ -608,8 +612,11 @@ else
   exit 1
 fi
 
-# Trap signals for cleanup
-trap 'cleanup' SIGINT SIGTERM EXIT
+# Trap SIGINT and SIGTERM to handle interruptions
+trap 'cleanup INT' SIGINT
+trap 'cleanup TERM' SIGTERM
+# Trap EXIT to perform normal cleanup without logging interruption
+trap 'cleanup EXIT' EXIT
 
 # Log the start of the import process
 log "Starting DB import."
