@@ -19,6 +19,7 @@ REQUIRED_BASH_MINOR=3
 LOG_FILE="bootstrap.log"
 TRACKING_FILE="bootstrap_tracking.txt"
 LOCK_FILE="bootstrap_tracking.lock"
+DISCREPANCY_FILE="discrepancies.log"
 
 # Required tools
 REQUIRED_TOOLS=("psql" "gunzip" "realpath" "flock" "curl")
@@ -37,13 +38,11 @@ IMPORT_DIR="$(realpath "$IMPORT_DIR")"
 AVAILABLE_CORES=$(($(nproc) - 1))        # Leave one core free for the local system
 DB_AVAILABLE_CORES=$((DB_CPU_CORES - 1)) # Leave one core free for the DB instance
 
-# Read manifest.csv into an associative array
-declare -A manifest_counts
+# Set file paths
 MANIFEST_FILE="${IMPORT_DIR}/manifest.csv"
-DISCREPANCY_FILE="discrepancies.log"
-
-# Get the version from MIRRORNODE_VERSION file
 MIRRORNODE_VERSION_FILE="$IMPORT_DIR/MIRRORNODE_VERSION"
+
+declare -A manifest_counts
 
 ####################################
 # Functions
