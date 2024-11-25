@@ -200,7 +200,7 @@ stackgres:
           prometheus-postgres-exporter:
             cpu: 100m
     persistentVolume:
-      size: 3000Gi
+      size: 300Gi
       storageClass: zfs
 
 test:
