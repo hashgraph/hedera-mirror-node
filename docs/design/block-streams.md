@@ -171,6 +171,13 @@ Add `software_version` to the `record_file` table. This is the consensus node ve
 Add `congestionPricingMultiplier` to the `record_file` table.
 Rename `record_file` to `block_file`.
 
+### Block to Record File Translation
+
+Blocks are composed of block items. A record item may be translated from a set of multiple block items.
+Beginning from an `EventTransaction` block item, a record item is composed of one `TransactionResult` block item, zero to N `TransactionOutput` block items and zero to N `StateChange` block items.
+
+![Translation](images/translation.png)
+
 ## Block protobuf to mirror node database mapping
 
 ### Record File
