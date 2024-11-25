@@ -27,7 +27,7 @@ require (
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 	google.golang.org/protobuf v1.35.2
 	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/driver/postgres v1.5.9
+	gorm.io/driver/postgres v1.5.10
 	gorm.io/gorm v1.25.12
 )
 
