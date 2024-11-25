@@ -528,6 +528,12 @@ import_file() {
 # Execution
 ####################################
 
+# Trap SIGINT and SIGTERM to handle interruptions
+trap 'cleanup INT' SIGINT
+trap 'cleanup TERM' SIGTERM
+# Trap EXIT to perform normal cleanup without logging interruption
+trap 'cleanup EXIT' EXIT
+
 # Perform the Bash version check
 check_bash_version
 
@@ -610,12 +616,6 @@ else
   echo "Error: MIRRORNODE_VERSION file not found in $IMPORT_DIR."
   exit 1
 fi
-
-# Trap SIGINT and SIGTERM to handle interruptions
-trap 'cleanup INT' SIGINT
-trap 'cleanup TERM' SIGTERM
-# Trap EXIT to perform normal cleanup without logging interruption
-trap 'cleanup EXIT' EXIT
 
 # Log the start of the import process
 log "Starting DB import."
