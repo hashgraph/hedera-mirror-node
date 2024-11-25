@@ -32,16 +32,23 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Named
 @RequiredArgsConstructor
 public class PartitionMaintenance {
+
     private static final String RUN_MAINTENANCE_QUERY = "call create_mirror_node_time_partitions()";
 
     @Owner
     private final JdbcTemplate jdbcTemplate;
 
+    private final PartitionProperties partitionProperties;
+
     @EventListener(ApplicationReadyEvent.class)
     @Leader
     @Retryable
-    @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 * * ?}")
+    @Scheduled(cron = "${hedera.mirror.importer.db.partition.cron:0 0 0 * * ?}")
     public synchronized void runMaintenance() {
+        if (!partitionProperties.isEnabled()) {
+            return;
+        }
+
         log.info("Running partition maintenance");
         Stopwatch stopwatch = Stopwatch.createStarted();
         jdbcTemplate.execute(RUN_MAINTENANCE_QUERY);

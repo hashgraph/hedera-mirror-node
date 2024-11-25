@@ -20,6 +20,7 @@ import com.google.common.collect.Sets;
 import com.hedera.mirror.monitor.subscribe.grpc.GrpcSubscriberProperties;
 import com.hedera.mirror.monitor.subscribe.rest.RestSubscriberProperties;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -45,14 +46,16 @@ public class SubscribeProperties {
     private boolean enabled = true;
 
     @NotNull
+    @Valid
     private Map<String, GrpcSubscriberProperties> grpc = new LinkedHashMap<>();
 
     @NotNull
+    @Valid
     private Map<String, RestSubscriberProperties> rest = new LinkedHashMap<>();
 
     @DurationMin(seconds = 1L)
     @NotNull
-    protected Duration statusFrequency = Duration.ofSeconds(10L);
+    private Duration statusFrequency = Duration.ofSeconds(10L);
 
     @PostConstruct
     void validate() {

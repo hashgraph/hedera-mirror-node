@@ -51,13 +51,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Profiles;
 import org.springframework.test.context.ContextConfiguration;
 
+@DisablePartitionMaintenance
 @ContextConfiguration(initializers = FixAirdropTokenAssociationMigrationTest.Initializer.class)
 @DisableRepeatableSqlMigration
-@Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
 class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
 

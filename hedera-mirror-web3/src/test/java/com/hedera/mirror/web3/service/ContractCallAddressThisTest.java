@@ -44,8 +44,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
@@ -64,7 +64,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
     @Resource
     private ObjectMapper objectMapper;
 
-    @SpyBean
+    @MockitoSpyBean
     private ContractExecutionService contractExecutionService;
 
     @SneakyThrows

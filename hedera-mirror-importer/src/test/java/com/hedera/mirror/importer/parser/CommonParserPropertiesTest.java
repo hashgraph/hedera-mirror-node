@@ -288,7 +288,8 @@ class CommonParserPropertiesTest {
     @ParameterizedTest(name = "with expression {0}")
     @CsvSource({"sld&#$$", "transactionBody|consensusTimeStamp ge 32"})
     void filterExpressionParseErrors(String expression) {
-        assertThatThrownBy(() -> filter(null, expression, null))
+        var filter = filter(null, expression, null);
+        assertThatThrownBy(filter::getParsedExpression)
                 .isInstanceOf(InvalidConfigurationException.class)
                 .hasCauseInstanceOf(ParseException.class);
     }
@@ -338,9 +339,14 @@ class CommonParserPropertiesTest {
     }
 
     private TransactionFilter filter(String entity, String expression, TransactionType transaction) {
-        return new TransactionFilter(
-                StringUtils.isNotBlank(entity) ? List.of(EntityId.of(entity)) : null,
-                expression,
-                transaction != null ? List.of(transaction) : null);
+        var transactionFilter = new TransactionFilter();
+        if (StringUtils.isNotBlank(entity)) {
+            transactionFilter.setEntity(List.of(EntityId.of(entity)));
+        }
+        transactionFilter.setExpression(expression);
+        if (transaction != null) {
+            transactionFilter.setTransaction(List.of(transaction));
+        }
+        return transactionFilter;
     }
 }

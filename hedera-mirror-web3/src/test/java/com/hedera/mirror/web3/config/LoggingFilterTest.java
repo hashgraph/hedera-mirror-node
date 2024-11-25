@@ -140,7 +140,7 @@ class LoggingFilterTest {
     @SneakyThrows
     void postLargeContent(CapturedOutput output) {
         int maxSize = web3Properties.getMaxPayloadLogSize();
-        var content = RandomStringUtils.random(maxSize + 1, "abcdef0123456789");
+        var content = RandomStringUtils.secure().next(maxSize + 1, "abcdef0123456789");
         var request = new MockHttpServletRequest("POST", "/");
         request.setContent(content.getBytes(StandardCharsets.UTF_8));
         response.setStatus(HttpStatus.OK.value());
