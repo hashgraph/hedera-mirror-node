@@ -324,6 +324,16 @@ Rename `record_file` to `block_file`.
 | assessed_custom_fee.effective_payer_account_ids | transaction_output.assessedCustomFees[i].effectivePayerAccountId |
 | assessed_custom_fee.token_id                    | transaction_output.assessedCustomFees[i].tokenId                 |
 
+### Token Transfer
+
+| Database                           | Block Item                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------ |
+| token_transfer.account_id          | transaction_result.tokenTransferLists.tokenTransferList[i].transfers[j].accountAmount.accountID  |
+| token_transfer.amount              | transaction_result.tokenTransferLists.tokenTransferList[i].transfers[j].accountAmount.amount     |
+| token_transfer.consensus_timestamp | transaction_result.consensus_timestamp                                                           |
+| token_transfer.is_approval         | transaction_result.tokenTransferLists.tokenTransferList[i].transfers[j].accountAmount.isApproval |
+| token_transfer.token_id            | transaction_result.tokenTransferLists.tokenTransferList[i].token.tokenID                         |
+
 ### Topic Create Transaction
 
 | Database                            | Block Item                                                    |
@@ -340,6 +350,16 @@ Rename `record_file` to `block_file`.
 | -------------- | ------------------------------------------------------ |
 | entity.id      | state_changes[i].state_change.map_update.value.topicId |
 | entity.deleted | state_changes[i].state_change.map_update.value.deleted |
+
+### Transaction
+
+| Database                               | Block Item                                                               |
+| -------------------------------------- | ------------------------------------------------------------------------ |
+| transaction.consensus_timestamp        | transaction_result.consensus_timestamp                                   |
+| transaction.nft_transfer               | transaction_result.tokenTransferLists.tokenTransferList[i].nft_transfers |
+| transaction.parent_consensus_timestamp | transaction_result.parentConsensusTimestamp                              |
+| transaction.result                     | transaction_result.status                                                |
+| transaction.scheduled                  | transaction_result.hasScheduleRef                                        |
 
 ### UtilPrng Transaction
 
