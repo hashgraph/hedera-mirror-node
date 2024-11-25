@@ -41,13 +41,10 @@ import {AssessedCustomFeeViewModel, NftTransferViewModel} from './viewmodel';
 
 const SUCCESS_PROTO_IDS = TransactionResult.getSuccessProtoIds();
 
-const {
-  query: {maxTransactionConsensusTimestampRangeNs},
-  response: {
-    limit: {default: defaultResponseLimit},
-  },
-  transactions: {precedingTransactionTypes},
-} = config;
+const { query: {maxTransactionConsensusTimestampRangeNs,
+  transactions: {precedingTransactionTypes}},
+  response: { limit: {default: defaultResponseLimit},},
+ } = config;
 
 const cache = new Cache();
 
@@ -346,7 +343,7 @@ const getTransferDistinctTimestampsQuery = (
 // the condition to exclude synthetic transactions attached to a user submitted transaction
 const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(Transaction.NONCE)} = 0 or
   ${Transaction.getFullName(Transaction.PARENT_CONSENSUS_TIMESTAMP)} is not null
-${query.transactions.precedingTransactionTypes.length > 0 ? `or ${Transaction.getFullName(Transaction.TYPE)} in (${query.transactions.precedingTransactionTypes.join(', ')})` : ''}`;
+${precedingTransactionTypes.length > 0 ? `or ${Transaction.getFullName(Transaction.TYPE)} in (${precedingTransactionTypes.join(', ')})` : ''}`;
 
 const getQueryWithEqualValues = (column, params, values) => {
   if (values.length === 0) {

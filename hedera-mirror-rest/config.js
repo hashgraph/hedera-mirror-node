@@ -176,7 +176,7 @@ const durationQueryConfigKeys = [
 const parseQueryConfig = () => {
   const {query} = getConfig();
   const { precedingTransactionTypes } = query.transactions;
-  if (!Array.isArray(precedingTransactionTypes) || precedingTransactionTypes.length === 0) {
+  if (!Array.isArray(precedingTransactionTypes)) {
     throw new InvalidConfigError(
         `Invalid or missing query.transactions.precedingTransactionTypes: ${precedingTransactionTypes}`
     );
