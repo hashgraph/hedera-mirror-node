@@ -17,6 +17,8 @@ NODE_ID_MAP=$(echo -e "${ZFS_VOLUMES}" |
                          }
                       )|add')
 TEMP_DISK_DEVICE="sdc"
+SG_WEBHOOK_FILE="/tmp/sg-webhook-${EPOCH_SECONDS}.yaml"
+WORKER_DEFAULT_SIZE="${WORKER_DEFAULT_SIZE:-300Gi}"
 
 function configureAndValidate() {
   GCP_PROJECT="$(readUserInput "Enter GCP Project for target: ")"
@@ -182,6 +184,7 @@ spec:
           value: "true"
 EOF
     kubectl apply -f "/tmp/${INSTANCE_NAME}.yaml"
+    sleep 5
     log "Waiting for helper pod to be ready"
     kubectl wait --for=condition=Ready pod -n "${COMMON_NAMESPACE}" -l "instance=${INSTANCE_NAME}" --timeout=-1s
     DAEMONSET_POD=$(kubectl get pods \
@@ -272,7 +275,7 @@ EOF
 
 function updateK8sResources() {
   kubectl get validatingwebhookconfigurations.admissionregistration.k8s.io \
-  "${HELM_RELEASE_NAME}" -o yaml > "/tmp/sg-webhook-${EPOCH_SECONDS}.yaml"
+  "${HELM_RELEASE_NAME}" -o yaml > "${SG_WEBHOOK_FILE}"
   kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io "${HELM_RELEASE_NAME}"
 
   for newVolume in "${NEW_VOLUMES[@]}"; do
@@ -311,24 +314,20 @@ function updateK8sResources() {
     COORDINATOR_SIZE="$(kubectl get sgshardedclusters.stackgres.io -n "${NAMESPACE}" \
                        "${SHARDED_CLUSTER}" -o jsonpath='{.spec.coordinator.pods.persistentVolume.size}')"
     if [[ "${IS_WORKER}" == "true" ]]; then
-      WORKER_DEFAULT_SIZE="$(kubectl get sgshardedclusters.stackgres.io -n "${NAMESPACE}" \
-                            "${SHARDED_CLUSTER}" -o jsonpath='{.spec.shards.pods.persistentVolume.size}')"
       if [[ -z "${WORKER_OVERRIDES}" ]]; then
         WORKER_OVERRIDES="[]"
       fi
-      if [[ "${NEW_PVC_SIZE%Gi}" -ne "${WORKER_DEFAULT_SIZE%Gi}" ]]; then
-        INDEX=$(echo "${CLUSTER}" | grep -oE '[0-9]+$')
-        PVC_OVERRIDE=$(echo "${WORKER_OVERRIDES}" | jq -r --arg INDEX "${INDEX}" \
-        '.[] | select(.index == ($INDEX|tonumber))')
+      INDEX=$(echo "${CLUSTER}" | grep -oE '[0-9]+$')
+      PVC_OVERRIDE=$(echo "${WORKER_OVERRIDES}" | jq -r --arg INDEX "${INDEX}" \
+      '.[] | select(.index == ($INDEX|tonumber))')
 
-        if [[ -z "${PVC_OVERRIDE}" ]]; then
-          PVC_OVERRIDE="{\"index\": ${INDEX}, \"pods\": {\"persistentVolume\": {\"size\": \"${NEW_PVC_SIZE}\"}}}"
-          WORKER_OVERRIDES=$(echo "${WORKER_OVERRIDES}" | jq ". += [${PVC_OVERRIDE}]")
-        else
-          WORKER_OVERRIDES=$(echo "${WORKER_OVERRIDES}" |
-          jq --arg NEW_PVC_SIZE "${NEW_PVC_SIZE}" --arg INDEX "${INDEX}" \
-          '(.[] | select(.index == ($INDEX|tonumber)).pods.persistentVolume).size |= $NEW_PVC_SIZE')
-        fi
+      if [[ -z "${PVC_OVERRIDE}" ]]; then
+        PVC_OVERRIDE="{\"index\": ${INDEX}, \"pods\": {\"persistentVolume\": {\"size\": \"${NEW_PVC_SIZE}\"}}}"
+        WORKER_OVERRIDES=$(echo "${WORKER_OVERRIDES}" | jq ". += [${PVC_OVERRIDE}]")
+      else
+        WORKER_OVERRIDES=$(echo "${WORKER_OVERRIDES}" |
+        jq --arg NEW_PVC_SIZE "${NEW_PVC_SIZE}" --arg INDEX "${INDEX}" \
+        '(.[] | select(.index == ($INDEX|tonumber)).pods.persistentVolume).size |= $NEW_PVC_SIZE')
       fi
     else
       COORDINATOR_SIZE="${NEW_PVC_SIZE}"
@@ -344,28 +343,22 @@ function updateK8sResources() {
                                    }
                                  },
                                  \"shards\": {
-                                   \"overrides\": ${WORKER_OVERRIDES}
+                                   \"overrides\": ${WORKER_OVERRIDES},
+                                   \"pods\": {
+                                      \"persistentVolume\": {
+                                        \"size\": \"${WORKER_DEFAULT_SIZE}\"
+                                      }
+                                    }
                                  }
                               }
                           }"
-      log "Patching sharded cluster ${SHARDED_CLUSTER} in namespace ${NAMESPACE} with ${SHARDED_CLUSTER_PATCH}"
-      kubectl patch sgshardedclusters.stackgres.io "${SHARDED_CLUSTER}" \
-       -n "${NAMESPACE}" \
-       --type merge \
-       -p "${SHARDED_CLUSTER_PATCH}"
-      log "
-      **** IMPORTANT ****
-      Please configure your helm values.yaml for namespace ${namespace} to have the following values:
-
-      stackgres.coordinator.pods.persistentVolume.size=${COORDINATOR_SIZE}
-
-      stackgres.worker.overrides=${WORKER_OVERRIDES}
-      "
-      log "Continue to acknowledge config change is saved to be applied on next helm release"
-      doContinue
-
+    log "Patching sharded cluster ${SHARDED_CLUSTER} in namespace ${NAMESPACE} with ${SHARDED_CLUSTER_PATCH}"
+    kubectl patch sgshardedclusters.stackgres.io "${SHARDED_CLUSTER}" \
+     -n "${NAMESPACE}" \
+     --type merge \
+     -p "${SHARDED_CLUSTER_PATCH}"
   done
-  kubectl apply -f "/tmp/sg-webhook-${EPOCH_SECONDS}.yaml"
+  kubectl apply -f "${SG_WEBHOOK_FILE}"
 }
 
 configureAndValidate
@@ -379,6 +372,30 @@ done
 NEW_VOLUMES=()
 reduceDiskSizes
 updateK8sResources
+
+NEW_VOLUMES_JSON=$(echo "${NEW_VOLUMES[@]}" | jq -s)
+MODIFIED_NAMESPACES=($(echo "${NEW_VOLUMES_JSON}" | jq -r '.[].namespace' | tr ' ' '\n' | sort -u | tr '\n' ' '))
+for namespace in "${MODIFIED_NAMESPACES[@]}"; do
+  PVC_INFO=$(echo "${NEW_VOLUMES_JSON}" | jq -r --arg NAMESPACE "${namespace}" 'map(select(.namespace == $NAMESPACE))[0]')
+  SHARDED_CLUSTER="$(echo "${PVC_INFO}" | jq -r '.citusCluster.shardedClusterName')"
+  WORKER_OVERRIDES=$(kubectl get sgshardedclusters.stackgres.io -n "${namespace}" \
+                    "${SHARDED_CLUSTER}" -o jsonpath='{.spec.shards.overrides}' |
+                      jq -r 'sort_by(.index)')
+  COORDINATOR_SIZE="$(kubectl get sgshardedclusters.stackgres.io -n "${NAMESPACE}" \
+                         "${SHARDED_CLUSTER}" -o jsonpath='{.spec.coordinator.pods.persistentVolume.size}')"
+  log "
+        **** IMPORTANT ****
+        Please configure your helm values.yaml for namespace ${namespace} to have the following values:
+
+        stackgres.coordinator.pods.persistentVolume.size=${COORDINATOR_SIZE}
+
+        stackgres.worker.overrides=${WORKER_OVERRIDES}
+
+        stackgres.worker.pods.persistentVolume.size=${WORKER_DEFAULT_SIZE}
+        "
+  log "Continue to acknowledge these values have been applied to the helm values.yaml."
+  doContinue
+done
 
 log "Restarting Stackgres pod"
 kubectl delete pods -n "${COMMON_NAMESPACE}" -l 'app=StackGresConfig'
@@ -395,7 +412,6 @@ kubectl delete pods -n "${COMMON_NAMESPACE}" -l 'component=openebs-zfs-node'
 sleep 5
 kubectl wait --for=condition=Ready pod -n "${COMMON_NAMESPACE}" -l 'component=openebs-zfs-node' --timeout=-1s
 
-NAMESPACES=($(echo $ZFS_VOLUMES | jq -r '.[].namespace' | tr ' ' '\n' | sort -u | tr '\n' ' '))
 for namespace in "${NAMESPACES[@]}"; do
   unpauseCitus "${namespace}"
   routeTraffic "${namespace}"
