@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.monitor.publish;
 
-import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -24,7 +23,6 @@ import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
 import jakarta.inject.Named;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,18 +61,7 @@ public class PublishMetrics {
 
     private void recordMetric(PublishRequest request, PublishResponse response, String status) {
         try {
-            String nodeAccount = Optional.ofNullable(request.getTransaction().getNodeAccountIds())
-                    .filter(l -> !l.isEmpty())
-                    .map(l -> l.get(0))
-                    .map(AccountId::toString)
-                    .orElse(UNKNOWN);
-
-            var node = nodeSupplier.get(nodeAccount);
-            if (node == null) {
-                log.warn("Unable to find node {}", nodeAccount);
-                return;
-            }
-
+            var node = request.getNode();
             long startTime = request.getTimestamp().toEpochMilli();
             long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
             Tags tags = new Tags(node, request.getScenario(), status);
