@@ -53,12 +53,18 @@ describe('NetworkNodeViewModel', () => {
       stakingPeriod: '1654991999999999999',
     },
     node: {
-      adminKey: null,
+      adminKey: '122049cddef8b8e974b8c8862cb48bf80ffcb565b0edad096f78ba8a9ca39c43f7bc',
       nodeId: 0,
+      created_timestamp: 1664365660048674966,
+      deleted: false,
+      timestamp_range: '[0,)',
     },
   };
   const defaultExpected = {
-    admin_key: null,
+    admin_key: {
+      _type: 'ED25519',
+      key: '49cddef8b8e974b8c8862cb48bf80ffcb565b0edad096f78ba8a9ca39c43f7bc',
+    },
     description: 'desc 1',
     file_id: '0.0.102',
     max_stake: 1000,
