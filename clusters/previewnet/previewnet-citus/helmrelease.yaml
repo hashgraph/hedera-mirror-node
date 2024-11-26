@@ -63,6 +63,13 @@ spec:
       enabled: true
     restjava:
       enabled: true
+    stackgres:
+      coordinator:
+        persistentVolume:
+          size: 65Gi
+      worker:
+        persistentVolume:
+          size: 90Gi
     test:
       enabled: true
     web3:
