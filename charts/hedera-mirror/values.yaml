@@ -72,6 +72,21 @@ db:
 fullnameOverride: ""
 
 global:
+  gateway:
+    annotations: {}
+    className: "gke-l7-global-external-managed"
+    enabled: false
+    gcpGatewayPolicy: {}
+    hostnames: []
+    http:
+      enabled: true
+      port: 80
+      redirect: false
+    https:
+      enabled: false
+      port: 443
+      tls:
+        mode: Terminate
   hostname: ""
   image: {}
   namespaceOverride: ""

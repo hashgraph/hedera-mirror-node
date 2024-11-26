@@ -81,6 +81,8 @@ describe('Response cache middleware', () => {
       getHeaders: jest.fn(),
       headers: {
         'cache-control': `public, max-age=${cacheControlMaxAge}`,
+        'content-encoding': 'gzip',
+        'content-type': 'application/json; charset=utf-8',
       },
       locals: [],
       removeHeader: jest.fn(),
@@ -227,6 +229,9 @@ describe('Response cache middleware', () => {
         expect(cachedResponse.ttl).toBeLessThanOrEqual(cacheControlMaxAge);
         expect(cachedResponse.value?.compressed).toEqual(false);
         expect(cachedResponse.value?.body).toEqual(expectedBody);
+
+        const expectedHeaders = {'content-type': 'application/json; charset=utf-8'};
+        expect(cachedResponse.value?.headers).toEqual(expectedHeaders);
       });
     });
   });
@@ -287,6 +292,9 @@ describe('Response cache middleware', () => {
         expect(cachedResponse.ttl).toBeLessThanOrEqual(cacheControlMaxAge);
         expect(cachedResponse.value?.compressed).toEqual(true);
         expect(unzipSync(Buffer.from(cachedResponse.value?.body)).toString()).toEqual(expectedBody);
+
+        const expectedHeaders = {'content-type': 'application/json; charset=utf-8'};
+        expect(cachedResponse.value?.headers).toEqual(expectedHeaders);
       });
     });
   });

@@ -88,6 +88,7 @@ const responseCacheUpdateHandler = async (req, res, next) => {
 
       // Delete headers that will be re-computed when response later served by cache hit.
       delete headers[CACHE_CONTROL_HEADER];
+      delete headers[CONTENT_ENCODING_HEADER];
 
       const body = compressionEnabled ? gzipSync(responseBody) : responseBody;
       const cachedResponse = new CachedApiResponse(res.locals.statusCode, headers, body, compressionEnabled);
