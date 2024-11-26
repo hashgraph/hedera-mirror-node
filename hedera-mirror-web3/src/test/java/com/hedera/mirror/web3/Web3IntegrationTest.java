@@ -53,6 +53,7 @@ public abstract class Web3IntegrationTest extends CommonIntegrationTest {
 
     @BeforeEach
     protected void setup() {
+        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         domainBuilder
                 .entity()
                 .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))

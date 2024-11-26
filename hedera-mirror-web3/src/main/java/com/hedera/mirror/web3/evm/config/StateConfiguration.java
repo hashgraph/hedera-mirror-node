@@ -89,6 +89,6 @@ public class StateConfiguration {
 
     @Bean
     NetworkInfo networkInfo() {
-        return new NetworkInfoImpl(mirrorNodeEvmProperties);
+        return new NetworkInfoImpl();
     }
 }

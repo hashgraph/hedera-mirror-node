@@ -88,19 +88,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     @BeforeEach
     protected final void setup() {
         super.setup();
-        domainBuilder.recordFile().persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(2L).num(2L).evmAddress(null).alias(null).balance(5000000000000000000L))
-                .persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(98L).num(98L).evmAddress(null).alias(null))
-                .persist();
-        domainBuilder
-                .fileData()
-                .customize(f -> f.entityId(EntityId.of(112)).fileData(EXCHANGE_RATES_SET))
-                .persist();
         testWeb3jService.reset();
     }
 
