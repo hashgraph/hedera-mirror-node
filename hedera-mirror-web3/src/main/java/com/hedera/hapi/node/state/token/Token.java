@@ -972,6 +972,22 @@ public record Token(
         }
     }
 
+    public List<CustomFee> customFees() {
+        return customFeesSupplier.get();
+    }
+
+    public long totalSupply() {
+        return totalSupplySupplier.get();
+    }
+
+    public AccountID autoRenewAccountId() {
+        return autoRenewAccountIdSupplier.get();
+    }
+
+    public AccountID treasuryAccountId() {
+        return treasuryAccountIdSupplier.get();
+    }
+
     /**
      * Return a builder for building a copy of this model object. It will be pre-populated with all the data from this
      * model object.

@@ -38,7 +38,8 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
     private final ContractExecutionService contractCallService;
 
     @BeforeEach
-    void setup() {
+    protected void setup() {
+        super.setup();
         // Persist needed entities
         domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
     }

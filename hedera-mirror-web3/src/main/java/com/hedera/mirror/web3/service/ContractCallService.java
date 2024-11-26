@@ -167,10 +167,10 @@ public abstract class ContractCallService {
                             .transactionRecord()
                             .receiptOrThrow()
                             .fileIDOrThrow();
-                    //                ContractCallContext.get().setFileID(Optional.of(fileID));
-                    //                ContractCallContext.get()
-                    //                        .setInitBytecode(Optional.of(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
-                    //                                params.getCallData().toFastHex(false).getBytes())));
+                    ContractCallContext.get().setFileID(Optional.of(fileID));
+                    ContractCallContext.get()
+                            .setInitBytecode(Optional.of(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
+                                    params.getCallData().toFastHex(false).getBytes())));
 
                     // Create the contract with the init bytecode
                     transactionBody = TransactionBody.newBuilder()
@@ -215,6 +215,9 @@ public abstract class ContractCallService {
                 "v"
                         + mirrorNodeEvmProperties.getSemanticEvmVersion().major() + "."
                         + mirrorNodeEvmProperties.getSemanticEvmVersion().minor());
+        mirrorNodeProperties.put(
+                "ledger.id",
+                Bytes.wrap(mirrorNodeEvmProperties.getNetwork().getLedgerId()).toHexString());
         return mirrorNodeProperties;
     }
 
@@ -240,13 +243,18 @@ public abstract class ContractCallService {
         var result = isContractCreate
                 ? receipt.getFirst().transactionRecord().contractCreateResultOrThrow()
                 : receipt.getFirst().transactionRecord().contractCallResultOrThrow();
+        var status = receipt.getFirst().transactionRecord().receipt().status();
 
+        //        throw new MirrorEvmTransactionException(status, detail, revertReason.toHexString();
         return HederaEvmTransactionProcessingResult.failed(
                 result.gasUsed(),
                 0L,
                 0L,
-                Optional.of(Bytes.wrap(result.errorMessage().getBytes())),
+                Optional.of(Bytes.wrap(status.protoName().getBytes())),
                 Optional.empty());
+        //                result.errorMessage().startsWith("0x") ?
+        // Optional.of(Bytes.fromHexString(result.errorMessage())) :
+        // Optional.of(Bytes.wrap(result.errorMessage().getBytes())));
     }
 
     private TransactionBody buildContractCallTransactionBody(

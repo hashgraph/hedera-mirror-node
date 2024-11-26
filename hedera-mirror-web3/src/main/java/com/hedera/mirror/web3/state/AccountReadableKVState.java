@@ -115,8 +115,9 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
             alias = entity.getAlias();
         }
 
-        return Account.newBuilder()
-                .accountId(EntityIdUtils.toAccountId(entity))
+        return Account.newBuilder() // TODO: Remove when the other PR is merged
+                //                .accountId(EntityIdUtils.toAccountId(entity))
+                .accountId(EntityIdUtils.toAccountId(entity.getShard(), entity.getRealm(), entity.getNum()))
                 .alias(Bytes.wrap(alias))
                 .approveForAllNftAllowances(getApproveForAllNfts(entity.getId(), timestamp))
                 .autoRenewAccountId(toAccountId(entity.getAutoRenewAccountId()))

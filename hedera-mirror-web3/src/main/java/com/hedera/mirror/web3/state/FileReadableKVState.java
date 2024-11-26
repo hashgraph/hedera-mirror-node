@@ -72,7 +72,9 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
 
         return timestamp
                 .map(t -> fileDataRepository.getFileAtTimestamp(fileId, t))
-                .orElseGet(() -> fileDataRepository.findById(fileId))
+                //                .orElseGet(() -> fileDataRepository.findById(fileId))
+                .orElseGet(() ->
+                        fileDataRepository.findByEntityId(fileEntityId)) // TODO: Remove when the other PR is merged
                 .map(fileData -> mapToFile(fileData, key, timestamp))
                 .orElse(null);
     }

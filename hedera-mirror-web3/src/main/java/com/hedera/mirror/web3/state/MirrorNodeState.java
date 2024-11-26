@@ -141,6 +141,9 @@ public class MirrorNodeState implements State {
                             .build());
         });
         ((CommittableWritableStates) fileServiceStates).commit();
+        accountReadableKVState
+                .reset(); // Remove cached accounts as they remain with keys and empty objects in the cache at this
+        // point.
     }
 
     public MirrorNodeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
