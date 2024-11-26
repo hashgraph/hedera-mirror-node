@@ -14,7 +14,7 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.118.0-rc1'
+      version: '0.119.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -55,10 +55,7 @@ spec:
         enabled: false
       coordinator:
         persistentVolume:
-          size: 96Gi
-      worker:
-        persistentVolume:
-          size: 512Gi
+          size: 90Gi
     test:
       enabled: false
       config:
