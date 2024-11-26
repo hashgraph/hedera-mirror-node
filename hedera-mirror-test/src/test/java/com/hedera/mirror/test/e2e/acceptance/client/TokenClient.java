@@ -499,7 +499,7 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) {
         PublicKey publicKey = expandedAccountId.getPublicKey();
-        String newSymbol = RandomStringUtils.randomAlphabetic(4).toUpperCase();
+        String newSymbol = RandomStringUtils.secure().nextAlphabetic(4).toUpperCase();
         String memo = getMemo("Update token");
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAdminKey(publicKey)

@@ -1259,7 +1259,7 @@ public class RecordItemBuilder {
     }
 
     public String text(int characters) {
-        return RandomStringUtils.randomAlphanumeric(characters);
+        return RandomStringUtils.secure().nextAlphanumeric(characters);
     }
 
     public Timestamp timestamp() {

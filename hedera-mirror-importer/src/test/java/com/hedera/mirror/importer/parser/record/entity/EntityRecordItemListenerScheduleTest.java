@@ -465,7 +465,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
     private SignatureMap getSigMap(int signatureCount, boolean isEd25519) {
         SignatureMap.Builder builder = SignatureMap.newBuilder();
-        String salt = RandomStringUtils.randomAlphabetic(5);
+        String salt = RandomStringUtils.secure().nextAlphabetic(5);
 
         for (int i = 0; i < signatureCount; i++) {
             SignaturePair.Builder signaturePairBuilder = SignaturePair.newBuilder();

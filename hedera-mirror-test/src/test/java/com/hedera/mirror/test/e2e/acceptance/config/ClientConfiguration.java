@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.web.client.ClientHttpRequestFactories;
-import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.boot.web.client.RestClientCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,7 +45,7 @@ class ClientConfiguration {
     RestClientCustomizer restClientCustomizer() {
         var baseUrl = acceptanceTestProperties.getRestProperties().getBaseUrl();
         var clientProperties = acceptanceTestProperties.getWebClientProperties();
-        var factorySettings = ClientHttpRequestFactorySettings.DEFAULTS
+        var factorySettings = ClientHttpRequestFactorySettings.defaults()
                 .withConnectTimeout(clientProperties.getConnectionTimeout())
                 .withReadTimeout(clientProperties.getReadTimeout());
         var logger = LoggerFactory.getLogger(MirrorNodeClient.class);
@@ -56,7 +56,7 @@ class ClientConfiguration {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setCacheControl(CacheControl.noStore());
                 })
-                .requestFactory(ClientHttpRequestFactories.get(factorySettings))
+                .requestFactory(ClientHttpRequestFactoryBuilder.detect().build(factorySettings))
                 .requestInterceptor((request, body, execution) -> {
                     var response = execution.execute(request, body);
                     var statusCode = response.getStatusCode();
