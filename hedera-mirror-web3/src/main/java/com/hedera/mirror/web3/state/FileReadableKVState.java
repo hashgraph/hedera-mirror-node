@@ -23,6 +23,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.FileDataRepository;
@@ -31,6 +32,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
@@ -38,8 +40,8 @@ import java.util.function.Supplier;
 
 /**
  * This class serves as a repository layer between hedera app services read only state and the Postgres database in
- * mirror-node. The file data, which is read from the database is converted to the PBJ generated format, so that it can properly be
- * utilized by the hedera app components
+ * mirror-node. The file data, which is read from the database is converted to the PBJ generated format, so that it can
+ * properly be utilized by the hedera app components
  */
 @Named
 public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
@@ -56,25 +58,11 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
     @Override
     protected File readFromDataSource(@Nonnull FileID key) {
         final var timestamp = ContractCallContext.getTimestamp();
-        final var fileEntityId = toEntityId(key);
-        final var fileId = fileEntityId.getId();
-
-        final var contextFileId = ContractCallContext.get().getFileID();
-        // If we are in a contract create case, the fileID and the init bytecode are in the ContractCallContext.
-        if (contextFileId.isPresent()
-                && contextFileId.get().equals(key)
-                && ContractCallContext.get().getInitBytecode().isPresent()) {
-            return File.newBuilder()
-                    .fileId(key)
-                    .contents(ContractCallContext.get().getInitBytecode().get())
-                    .build();
-        }
+        final var fileId = toEntityId(key).getId();
 
         return timestamp
                 .map(t -> fileDataRepository.getFileAtTimestamp(fileId, t))
-                //                .orElseGet(() -> fileDataRepository.findById(fileId))
-                .orElseGet(() ->
-                        fileDataRepository.findByEntityId(fileEntityId)) // TODO: Remove when the other PR is merged
+                .orElseGet(() -> fileDataRepository.getFileAtTimestamp(fileId, getCurrentTimestamp()))
                 .map(fileData -> mapToFile(fileData, key, timestamp))
                 .orElse(null);
     }
@@ -104,5 +92,10 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(entityId.getId()))
                 .map(AbstractEntity::getExpirationTimestamp)
                 .orElse(null));
+    }
+
+    private long getCurrentTimestamp() {
+        final var now = Instant.now();
+        return DomainUtils.convertToNanos(now.getEpochSecond(), now.getNano());
     }
 }

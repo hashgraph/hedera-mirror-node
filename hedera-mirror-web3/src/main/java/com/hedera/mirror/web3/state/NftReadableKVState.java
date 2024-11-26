@@ -79,10 +79,7 @@ public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
                 .mintTime(convertToTimestamp(nft.getCreatedTimestamp()))
                 .nftId(new NftID(tokenID, nft.getSerialNumber()))
                 .ownerId(EntityIdUtils.toAccountId(nft.getAccountId()))
-                .spenderId(EntityIdUtils.toAccountId(
-                        nft.getSpender() != null
-                                ? nft.getSpender()
-                                : EntityId.EMPTY)) // TODO: remove when the other PR is merged
+                .spenderId(EntityIdUtils.toAccountId(nft.getSpender() != null ? nft.getSpender() : EntityId.EMPTY))
                 .build();
     }
 }

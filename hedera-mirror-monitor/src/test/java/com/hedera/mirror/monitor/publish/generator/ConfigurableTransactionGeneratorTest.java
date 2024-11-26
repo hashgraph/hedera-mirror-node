@@ -212,7 +212,6 @@ class ConfigurableTransactionGeneratorTest {
     private void assertRequests(List<PublishRequest> publishRequests, int size) {
         assertThat(publishRequests).hasSize(size).allSatisfy(publishRequest -> assertThat(publishRequest)
                 .isNotNull()
-                .hasNoNullFieldsOrProperties()
                 .hasFieldOrPropertyWithValue("receipt", true)
                 .hasFieldOrPropertyWithValue("sendRecord", true)
                 .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID))
