@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.state.components;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -33,8 +32,6 @@ import lombok.RequiredArgsConstructor;
 @Named
 @RequiredArgsConstructor
 public class NetworkInfoImpl implements NetworkInfo {
-
-    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Nonnull
     @Override
@@ -83,8 +80,13 @@ public class NetworkInfoImpl implements NetworkInfo {
                 "",
                 "",
                 Bytes.EMPTY,
-                SemanticVersion.newBuilder().major(0).minor(46).patch(0).build(),
-                //                mirrorNodeEvmProperties.getSemanticEvmVersion(),
+                new SemanticVersion(
+                        0,
+                        47,
+                        0,
+                        "SNAPSHOT",
+                        ""), // Hardcoded as this field is probably going to be removed in the next version as the
+                // NetworkInfo class was changed in services
                 "");
     }
 }

@@ -17,12 +17,14 @@
 package com.hedera.mirror.web3;
 
 import com.hedera.mirror.common.config.CommonIntegrationTest;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import jakarta.annotation.Resource;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 
@@ -48,4 +50,17 @@ public abstract class Web3IntegrationTest extends CommonIntegrationTest {
                     .build())
             .build()
             .toByteArray();
+
+    @BeforeEach
+    protected void setup() {
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
+                .persist();
+        domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
+        domainBuilder
+                .fileData()
+                .customize(f -> f.entityId(EntityId.of(112)).fileData(EXCHANGE_RATES_SET))
+                .persist();
+    }
 }

@@ -441,9 +441,12 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var owner = accountEntityPersist();
 
         final var tokenEntity = tokenEntityPersist();
+        final var treasuryAccount = accountEntityPersist();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
                 .persist();
 
         tokenAccountPersist(tokenEntity, owner);
@@ -465,9 +468,12 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var owner = accountEntityPersist();
 
         final var tokenEntity = tokenEntityPersist();
+        final var treasuryAccount = accountEntityPersist();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
                 .persist();
 
         tokenAccountPersist(tokenEntity, owner);
@@ -539,9 +545,12 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void deleteToken() throws Exception {
         // Given
         final var tokenEntity = tokenEntityPersist();
+        final var treasuryAccount = accountEntityPersist();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
                 .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
@@ -604,9 +613,12 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void pauseToken() throws Exception {
         // Given
         final var tokenEntity = tokenEntityPersist();
+        final var treasuryAccount = accountEntityPersist();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
                 .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);

@@ -49,7 +49,7 @@ public class ContractExecutionService extends ContractCallService {
             ThrottleProperties throttleProperties,
             Bucket gasLimitBucket,
             MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            State state) {
+            State mirrorNodeState) {
         super(
                 mirrorEvmTxProcessor,
                 gasLimitBucket,
@@ -58,7 +58,7 @@ public class ContractExecutionService extends ContractCallService {
                 recordFileService,
                 store,
                 mirrorNodeEvmProperties,
-                state);
+                mirrorNodeState);
         this.binaryGasEstimator = binaryGasEstimator;
     }
 

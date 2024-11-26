@@ -50,5 +50,5 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
             nativeQuery = true)
     Optional<FileData> getFileAtTimestamp(long fileId, long timestamp);
 
-    Optional<FileData> findByEntityId(EntityId entityId);
+    Optional<FileData> findByEntityId(EntityId entityId); // TODO: Remove when the other PR is merged
 }

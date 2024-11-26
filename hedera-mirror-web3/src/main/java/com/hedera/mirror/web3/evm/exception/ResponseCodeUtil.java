@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.exception;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
@@ -32,6 +33,7 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Stream;
 import lombok.experimental.UtilityClass;
@@ -66,7 +68,19 @@ public class ResponseCodeUtil {
             } else if (ExceptionalHaltReason.INSUFFICIENT_GAS == haltReason) {
                 return ResponseCodeEnum.INSUFFICIENT_GAS;
             } else if (HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS == haltReason) {
-                return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+                return INVALID_SOLIDITY_ADDRESS;
+            }
+        }
+
+        if (result.getRevertReason().isPresent()) {
+            if (Arrays.equals(
+                    result.getRevertReason().get().toArrayUnsafe(),
+                    CONTRACT_EXECUTION_EXCEPTION.name().getBytes())) {
+                return CONTRACT_EXECUTION_EXCEPTION;
+            } else if (Arrays.equals(
+                    result.getRevertReason().get().toArrayUnsafe(),
+                    INVALID_SOLIDITY_ADDRESS.name().getBytes())) {
+                return INVALID_SOLIDITY_ADDRESS;
             }
         }
 

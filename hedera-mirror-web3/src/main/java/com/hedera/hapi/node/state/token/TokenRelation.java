@@ -346,6 +346,10 @@ public record TokenRelation(
         }
     }
 
+    public long balance() {
+        return balanceSupplier.get();
+    }
+
     /**
      * Return a builder for building a copy of this model object. It will be pre-populated with all the data from this
      * model object.

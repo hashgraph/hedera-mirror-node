@@ -69,6 +69,7 @@ class MapWritableKVStateTest {
 
     @Test
     void testIterateFromDataSourceReturnsEmptyIterator() {
+        when(readableKVState.keys()).thenReturn(Collections.emptyIterator());
         assertThat(mapWritableKVState.iterateFromDataSource()).isEqualTo(Collections.emptyIterator());
     }
 
@@ -120,6 +121,7 @@ class MapWritableKVStateTest {
     void testEqualsDifferentValues() {
         final var readableKVStateMock = mock(ReadableKVState.class);
         MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", readableKVStateMock);
+        other.put(accountID, account);
         assertThat(mapWritableKVState).isNotEqualTo(other);
     }
 

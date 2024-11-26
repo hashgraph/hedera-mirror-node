@@ -76,6 +76,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +87,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
-import org.hyperledger.besu.evm.precompile.KZGPointEvalPrecompiledContract;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 @Named
@@ -128,8 +128,8 @@ public class MirrorNodeState implements State {
                 networkInfo,
                 new MetricsImpl());
 
-        final var writableStates = this.getWritableStates(FileService.NAME);
-        final var files = writableStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
+        final var fileServiceStates = this.getWritableStates(FileService.NAME);
+        final var files = fileServiceStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
         genesisContentProviders(networkInfo, bootstrapConfig).forEach((fileNum, provider) -> {
             final var fileId = createFileID(fileNum, bootstrapConfig);
             files.put(
@@ -140,13 +140,10 @@ public class MirrorNodeState implements State {
                             .contents(provider.apply(bootstrapConfig))
                             .build());
         });
-        ((CommittableWritableStates) writableStates).commit();
-        try {
-            KZGPointEvalPrecompiledContract.init();
-        } catch (NoSuchMethodError e) {
-            // ignore
-        }
-        accountReadableKVState.reset();
+        ((CommittableWritableStates) fileServiceStates).commit();
+        accountReadableKVState
+                .reset(); // Remove cached accounts as they remain with keys and empty objects in the cache at this
+        // point.
     }
 
     public MirrorNodeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
@@ -234,7 +231,7 @@ public class MirrorNodeState implements State {
                     data.put(
                             stateName,
                             withAnyRegisteredListeners(serviceName, new ListWritableQueueState<>(stateName, queue)));
-                } else if (state instanceof Map<?, ?> map) {
+                } else if (state instanceof Map<?, ?>) {
                     data.put(
                             stateName,
                             withAnyRegisteredListeners(
@@ -366,6 +363,11 @@ public class MirrorNodeState implements State {
     @VisibleForTesting
     void setWritableStates(final Map<String, WritableStates> writableStates) {
         this.writableStates.putAll(writableStates);
+    }
+
+    @VisibleForTesting
+    Map<String, Map<String, Object>> getStates() {
+        return Collections.unmodifiableMap(states);
     }
 
     private void registerServices(ServicesRegistry servicesRegistry) {

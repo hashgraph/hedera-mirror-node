@@ -193,7 +193,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
     void getLatestBlockHashIsNotEmpty() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_getLatestBlockHash().send();
-        var expectedResult = ByteString.fromHex((EMPTY_BLOCK_HASH)).toByteArray();
+        var expectedResult = ByteString.fromHex(EMPTY_BLOCK_HASH).toByteArray();
         assertThat(result).isNotEqualTo(expectedResult);
     }
 

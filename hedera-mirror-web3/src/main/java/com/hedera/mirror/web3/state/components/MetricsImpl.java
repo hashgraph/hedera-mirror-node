@@ -19,51 +19,63 @@ package com.hedera.mirror.web3.state.components;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.MetricConfig;
 import com.swirlds.metrics.api.Metrics;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Collection;
 
 public class MetricsImpl implements Metrics {
 
     @Nullable
     @Override
-    public Metric getMetric(@NonNull String category, @NonNull String name) {
-        return null;
+    public Metric getMetric(@Nonnull String category, @Nonnull String name) {
+        throw new UnsupportedOperationException();
     }
 
-    @NonNull
+    @Nonnull
     @Override
-    public Collection<Metric> findMetricsByCategory(@NonNull String category) {
-        return null;
+    public Collection<Metric> findMetricsByCategory(@Nonnull String category) {
+        throw new UnsupportedOperationException();
     }
 
-    @NonNull
+    @Nonnull
     @Override
     public Collection<Metric> getAll() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
-    @NonNull
+    @Nonnull
     @Override
-    public <T extends Metric> T getOrCreate(@NonNull MetricConfig<T, ?> config) {
-        return null;
+    public <T extends Metric> T getOrCreate(@Nonnull MetricConfig<T, ?> config) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void remove(@NonNull String category, @NonNull String name) {}
+    public void remove(@Nonnull String category, @Nonnull String name) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
-    public void remove(@NonNull Metric metric) {}
+    public void remove(@Nonnull Metric metric) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
-    public void remove(@NonNull MetricConfig<?, ?> config) {}
+    public void remove(@Nonnull MetricConfig<?, ?> config) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
-    public void addUpdater(@NonNull Runnable updater) {}
+    public void addUpdater(@Nonnull Runnable updater) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
-    public void removeUpdater(@NonNull Runnable updater) {}
+    public void removeUpdater(@Nonnull Runnable updater) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
-    public void start() {}
+    public void start() {
+        throw new UnsupportedOperationException();
+    }
 }

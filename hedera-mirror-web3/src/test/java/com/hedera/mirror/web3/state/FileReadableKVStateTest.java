@@ -19,13 +19,15 @@ package com.hedera.mirror.web3.state;
 import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 import static com.hedera.services.utils.EntityIdUtils.toFileId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.web3.common.ContractCallContext;
@@ -52,8 +54,8 @@ class FileReadableKVStateTest {
     private static final long REALM = 1L;
     private static final long FILE_NUM = 123L;
     private static final FileID FILE_ID = toFileId(SHARD, REALM, FILE_NUM);
+    private static final long FILE_ID_LONG = toEntityId(FILE_ID).getId();
     private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
-    private static final EntityId FILE_ID_ENTITY_ID = toEntityId(FILE_ID);
     private static final Optional<Long> TIMESTAMP = Optional.of(1234L);
     private static MockedStatic<ContractCallContext> contextMockedStatic;
     private FileData fileData;
@@ -67,6 +69,9 @@ class FileReadableKVStateTest {
 
     @Mock
     private EntityRepository entityRepository;
+
+    @Mock
+    private Bytes initBytecode;
 
     @Spy
     private ContractCallContext contractCallContext;
@@ -106,7 +111,7 @@ class FileReadableKVStateTest {
 
         long internalFileId = toEntityId(FILE_ID).getId();
 
-        when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
+        when(ContractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
         when(fileDataRepository.getFileAtTimestamp(internalFileId, TIMESTAMP.get()))
                 .thenReturn(Optional.of(fileDataTest));
         when(entityRepository.findActiveByIdAndTimestamp(toEntityId(FILE_ID).getId(), TIMESTAMP.get()))
@@ -122,8 +127,8 @@ class FileReadableKVStateTest {
 
     @Test
     void fileFieldsReturnNullWhenFileDataNotFound() {
-        when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
-        long fileIdLong = FILE_ID_ENTITY_ID.getId();
+        when(ContractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
+        long fileIdLong = toEntityId(FILE_ID).getId();
         when(fileDataRepository.getFileAtTimestamp(fileIdLong, TIMESTAMP.get())).thenReturn(Optional.empty());
 
         File file = fileReadableKVState.get(FILE_ID);
@@ -133,10 +138,10 @@ class FileReadableKVStateTest {
 
     @Test
     void readFromDataSourceWithTimestamp() {
-        when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
-        when(fileDataRepository.getFileAtTimestamp(FILE_ID_ENTITY_ID.getId(), TIMESTAMP.get()))
+        when(ContractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
+        when(fileDataRepository.getFileAtTimestamp(FILE_ID_LONG, TIMESTAMP.get()))
                 .thenReturn(Optional.of(fileData));
-        when(entityRepository.findActiveByIdAndTimestamp(FILE_ID_ENTITY_ID.getId(), TIMESTAMP.get()))
+        when(entityRepository.findActiveByIdAndTimestamp(toEntityId(FILE_ID).getId(), TIMESTAMP.get()))
                 .thenReturn(Optional.ofNullable(entity));
 
         File result = fileReadableKVState.readFromDataSource(FILE_ID);
@@ -149,8 +154,8 @@ class FileReadableKVStateTest {
 
     @Test
     void readFromDataSourceWithoutTimestamp() {
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(fileDataRepository.findByEntityId(FILE_ID_ENTITY_ID)).thenReturn(Optional.of(fileData));
+        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(fileDataRepository.getFileAtTimestamp(anyLong(), anyLong())).thenReturn(Optional.of(fileData));
         when(entityRepository.findByIdAndDeletedIsFalse(toEntityId(FILE_ID).getId()))
                 .thenReturn(Optional.of(entity));
 
@@ -164,13 +169,27 @@ class FileReadableKVStateTest {
 
     @Test
     void readFromDataSourceFileNotFound() {
-        when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
-        when(fileDataRepository.getFileAtTimestamp(FILE_ID_ENTITY_ID.getId(), TIMESTAMP.get()))
+        when(ContractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
+        when(fileDataRepository.getFileAtTimestamp(FILE_ID_LONG, TIMESTAMP.get()))
                 .thenReturn(Optional.empty());
 
         File result = fileReadableKVState.readFromDataSource(FILE_ID);
 
         assertThat(result).isNull();
+    }
+
+    @Test
+    void readFromDataSourceWhenThereIsContext() {
+        when(ContractCallContext.get().getFileID()).thenReturn(Optional.of(FILE_ID));
+        when(ContractCallContext.get().getInitBytecode()).thenReturn(Optional.of(initBytecode));
+
+        File result = fileReadableKVState.readFromDataSource(FILE_ID);
+
+        assertThat(result)
+                .isEqualTo(
+                        File.newBuilder().fileId(FILE_ID).contents(initBytecode).build());
+        verify(fileDataRepository, times(0)).findById(anyLong());
+        verify(fileDataRepository, times(0)).getFileAtTimestamp(anyLong(), anyLong());
     }
 
     @Test

@@ -32,6 +32,7 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -85,7 +86,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     @BeforeEach
-    final void setup() {
+    protected final void setup() {
+        super.setup();
         domainBuilder.recordFile().persist();
         domainBuilder
                 .entity()
@@ -239,7 +241,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     protected String getAddressFromEntity(Entity entity) {
-        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
+        return EvmTokenUtils.toAddress(entity.toEntityId()).toHexString();
+        //        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
     }
 
     protected String getAliasFromEntity(Entity entity) {

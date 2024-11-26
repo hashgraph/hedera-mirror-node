@@ -19,20 +19,16 @@ package com.hedera.mirror.web3.state.core;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVStateBase;
 import jakarta.annotation.Nonnull;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Objects;
 
 public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
 
-    private final Map<K, V> backingStore;
     private final ReadableKVState<K, V> readableBackingStore;
 
     public MapWritableKVState(
             @Nonnull final String stateKey, @Nonnull final ReadableKVState<K, V> readableBackingStore) {
         super(stateKey);
-        this.backingStore = new HashMap<>();
         this.readableBackingStore = Objects.requireNonNull(readableBackingStore);
     }
 
@@ -54,22 +50,22 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
 
     @Override
     protected void putIntoDataSource(@Nonnull K key, @Nonnull V value) {
-        backingStore.put(key, value);
+        put(key, value);
     }
 
     @Override
     protected void removeFromDataSource(@Nonnull K key) {
-        backingStore.remove(key);
+        remove(key);
     }
 
     @Override
     public long sizeOfDataSource() {
-        return backingStore.size();
+        return readableBackingStore.size();
     }
 
     @Override
     public String toString() {
-        return "MapWritableKVState{" + "backingStore=" + backingStore + '}';
+        return "MapWritableKVState{" + "readableBackingStore=" + readableBackingStore + '}';
     }
 
     @Override
@@ -77,11 +73,12 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MapWritableKVState<?, ?> that = (MapWritableKVState<?, ?>) o;
-        return Objects.equals(getStateKey(), that.getStateKey()) && Objects.equals(backingStore, that.backingStore);
+        return Objects.equals(getStateKey(), that.getStateKey())
+                && Objects.equals(readableBackingStore, that.readableBackingStore);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getStateKey(), backingStore);
+        return Objects.hash(getStateKey(), readableBackingStore);
     }
 }
