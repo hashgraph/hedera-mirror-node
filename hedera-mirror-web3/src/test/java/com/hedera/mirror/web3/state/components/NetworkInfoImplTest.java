@@ -21,18 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 class NetworkInfoImplTest extends Web3IntegrationTest {
 
     private static final int NODE_ID = 2;
-
-    @Resource
-    private MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Resource
     private NetworkInfoImpl networkInfoImpl;
@@ -45,12 +41,21 @@ class NetworkInfoImplTest extends Web3IntegrationTest {
 
     @Test
     void testSelfNodeInfo() {
-        SelfNodeInfo selfNodeInfo = networkInfoImpl.selfNodeInfo();
+        NodeInfo selfNodeInfo = networkInfoImpl.selfNodeInfo();
         assertThat(selfNodeInfo).isNotNull().satisfies(info -> {
             assertThat(info.nodeId()).isZero();
             assertThat(info.accountId()).isEqualTo(AccountID.DEFAULT);
-            assertThat(info.hapiVersion()).isEqualTo(mirrorNodeEvmProperties.getSemanticEvmVersion());
+            assertThat(info.stake()).isZero();
+            assertThat(info.sigCertBytes()).isEqualTo(Bytes.EMPTY);
+            assertThat(info.gossipEndpoints()).isEmpty();
+            assertThat(info.hexEncodedPublicKey()).isEmpty();
         });
+    }
+
+    @Test
+    void testUpdateFrom() {
+        final var exception = assertThrows(UnsupportedOperationException.class, () -> networkInfoImpl.updateFrom(null));
+        assertThat(exception.getMessage()).isEqualTo("Not implemented");
     }
 
     @Test
