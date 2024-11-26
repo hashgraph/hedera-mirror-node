@@ -217,6 +217,5 @@ public class SchemaRegistryImpl implements SchemaRegistry {
      * @param beforeStates the writable states before applying the schema's state definitions
      * @param afterStates  the writable states after applying the schema's state definitions
      */
-    private record RedefinedWritableStates(WritableStates beforeStates, WritableStates afterStates) {
-    }
+    private record RedefinedWritableStates(WritableStates beforeStates, WritableStates afterStates) {}
 }
