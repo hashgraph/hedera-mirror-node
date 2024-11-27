@@ -106,7 +106,7 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
 
         verify(tokenAssociateTransactionHandler)
-                .associateToken(receiver.getId(), EntityId.of(token).getId(), timestamp);
+                .addTokenAccount(receiver.getId(), EntityId.of(token).getId(), timestamp);
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())
                 .returns(receiver.getNum(), TokenAirdrop::getReceiverAccountId)

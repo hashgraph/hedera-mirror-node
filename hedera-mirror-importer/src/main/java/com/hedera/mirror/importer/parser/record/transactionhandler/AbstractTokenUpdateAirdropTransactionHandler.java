@@ -85,7 +85,7 @@ abstract class AbstractTokenUpdateAirdropTransactionHandler extends AbstractTran
 
             if (state == TokenAirdropStateEnum.CLAIMED) {
                 // Associate the token with the receiver account
-                tokenAssociateTransactionHandler.associateToken(
+                tokenAssociateTransactionHandler.addTokenAccount(
                         receiver.getId(), tokenEntityId.getId(), consensusTimestamp);
             }
 

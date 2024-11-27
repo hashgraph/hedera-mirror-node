@@ -54,12 +54,12 @@ class TokenAssociateTransactionHandler extends AbstractTransactionHandler {
 
         transactionBody.getTokensList().forEach(token -> {
             var tokenId = EntityId.of(token);
-            associateToken(transaction.getEntityId().getId(), tokenId.getId(), consensusTimestamp);
+            addTokenAccount(transaction.getEntityId().getId(), tokenId.getId(), consensusTimestamp);
             recordItem.addEntityId(tokenId);
         });
     }
 
-    protected void associateToken(long accountId, long tokenId, long consensusTimestamp) {
+    protected void addTokenAccount(long accountId, long tokenId, long consensusTimestamp) {
         var tokenAccount = new TokenAccount();
         tokenAccount.setAccountId(accountId);
         tokenAccount.setAssociated(true);
