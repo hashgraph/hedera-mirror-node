@@ -36,8 +36,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 
 class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Mock
+    private final TokenAssociateTransactionHandler tokenAssociateTransactionHandler =
+            new TokenAssociateTransactionHandler(entityListener, entityProperties);
+
     private final EntityId receiver = domainBuilder.entityId();
     private final AccountID receiverAccountId = recordItemBuilder.accountId();
     private final EntityId sender = domainBuilder.entityId();
@@ -45,7 +50,8 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenClaimAirdropTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new TokenClaimAirdropTransactionHandler(
+                entityIdService, entityListener, entityProperties, tokenAssociateTransactionHandler);
     }
 
     @Override
@@ -99,6 +105,8 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
         // then
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
 
+        verify(tokenAssociateTransactionHandler)
+                .associateToken(receiver.getId(), EntityId.of(token).getId(), timestamp);
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())
                 .returns(receiver.getNum(), TokenAirdrop::getReceiverAccountId)

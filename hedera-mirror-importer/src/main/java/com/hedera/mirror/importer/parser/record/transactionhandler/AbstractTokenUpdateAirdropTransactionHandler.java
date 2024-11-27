@@ -41,6 +41,7 @@ abstract class AbstractTokenUpdateAirdropTransactionHandler extends AbstractTran
     private final EntityProperties entityProperties;
     private final Function<RecordItem, List<PendingAirdropId>> extractor;
     private final TokenAirdropStateEnum state;
+    private final TokenAssociateTransactionHandler tokenAssociateTransactionHandler;
     private final TransactionType type;
 
     @Override
@@ -49,14 +50,14 @@ abstract class AbstractTokenUpdateAirdropTransactionHandler extends AbstractTran
             return;
         }
 
+        var consensusTimestamp = recordItem.getConsensusTimestamp();
         var pendingAirdropIds = extractor.apply(recordItem);
         for (var pendingAirdropId : pendingAirdropIds) {
             var receiver =
                     entityIdService.lookup(pendingAirdropId.getReceiverId()).orElse(EntityId.EMPTY);
             var sender = entityIdService.lookup(pendingAirdropId.getSenderId()).orElse(EntityId.EMPTY);
             if (EntityId.isEmpty(receiver) || EntityId.isEmpty(sender)) {
-                Utility.handleRecoverableError(
-                        "Invalid update token airdrop entity id at {}", recordItem.getConsensusTimestamp());
+                Utility.handleRecoverableError("Invalid update token airdrop entity id at {}", consensusTimestamp);
                 continue;
             }
 
@@ -67,7 +68,7 @@ abstract class AbstractTokenUpdateAirdropTransactionHandler extends AbstractTran
             tokenAirdrop.setState(state);
             tokenAirdrop.setReceiverAccountId(receiver.getId());
             tokenAirdrop.setSenderAccountId(sender.getId());
-            tokenAirdrop.setTimestampRange(Range.atLeast(recordItem.getConsensusTimestamp()));
+            tokenAirdrop.setTimestampRange(Range.atLeast(consensusTimestamp));
 
             TokenID tokenId;
             if (pendingAirdropId.hasFungibleTokenType()) {
@@ -81,6 +82,13 @@ abstract class AbstractTokenUpdateAirdropTransactionHandler extends AbstractTran
             var tokenEntityId = EntityId.of(tokenId);
             recordItem.addEntityId(tokenEntityId);
             tokenAirdrop.setTokenId(tokenEntityId.getId());
+
+            if (state == TokenAirdropStateEnum.CLAIMED) {
+                // Associate the token with the receiver account
+                tokenAssociateTransactionHandler.associateToken(
+                        receiver.getId(), tokenEntityId.getId(), consensusTimestamp);
+            }
+
             entityListener.onTokenAirdrop(tokenAirdrop);
         }
     }

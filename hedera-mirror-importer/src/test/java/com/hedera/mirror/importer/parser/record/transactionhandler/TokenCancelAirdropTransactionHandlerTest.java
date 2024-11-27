@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
@@ -36,8 +37,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 
 class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    @Mock
+    private final TokenAssociateTransactionHandler tokenAssociateTransactionHandler =
+            new TokenAssociateTransactionHandler(entityListener, entityProperties);
+
     private final EntityId receiver = domainBuilder.entityId();
     private final AccountID receiverAccountId = recordItemBuilder.accountId();
     private final EntityId sender = domainBuilder.entityId();
@@ -45,7 +51,8 @@ class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandle
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenCancelAirdropTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new TokenCancelAirdropTransactionHandler(
+                entityIdService, entityListener, entityProperties, tokenAssociateTransactionHandler);
     }
 
     @Override
@@ -99,6 +106,7 @@ class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandle
         // then
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
 
+        verifyNoInteractions(tokenAssociateTransactionHandler);
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())
                 .returns(receiver.getNum(), TokenAirdrop::getReceiverAccountId)

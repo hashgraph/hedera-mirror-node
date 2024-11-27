@@ -54,18 +54,21 @@ class TokenAssociateTransactionHandler extends AbstractTransactionHandler {
 
         transactionBody.getTokensList().forEach(token -> {
             var tokenId = EntityId.of(token);
-            var tokenAccount = new TokenAccount();
-            tokenAccount.setAccountId(transaction.getEntityId().getId());
-            tokenAccount.setAssociated(true);
-            tokenAccount.setAutomaticAssociation(false);
-            tokenAccount.setBalance(0L);
-            tokenAccount.setBalanceTimestamp(consensusTimestamp);
-            tokenAccount.setCreatedTimestamp(consensusTimestamp);
-            tokenAccount.setTimestampLower(consensusTimestamp);
-            tokenAccount.setTokenId(tokenId.getId());
-            entityListener.onTokenAccount(tokenAccount);
-
+            associateToken(transaction.getEntityId().getId(), tokenId.getId(), consensusTimestamp);
             recordItem.addEntityId(tokenId);
         });
+    }
+
+    protected void associateToken(long accountId, long tokenId, long consensusTimestamp) {
+        var tokenAccount = new TokenAccount();
+        tokenAccount.setAccountId(accountId);
+        tokenAccount.setAssociated(true);
+        tokenAccount.setAutomaticAssociation(false);
+        tokenAccount.setBalance(0L);
+        tokenAccount.setBalanceTimestamp(consensusTimestamp);
+        tokenAccount.setCreatedTimestamp(consensusTimestamp);
+        tokenAccount.setTimestampLower(consensusTimestamp);
+        tokenAccount.setTokenId(tokenId);
+        entityListener.onTokenAccount(tokenAccount);
     }
 }

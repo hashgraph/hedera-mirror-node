@@ -34,13 +34,17 @@ class TokenCancelAirdropTransactionHandler extends AbstractTokenUpdateAirdropTra
             r -> r.getTransactionBody().getTokenCancelAirdrop().getPendingAirdropsList();
 
     public TokenCancelAirdropTransactionHandler(
-            EntityIdService entityIdService, EntityListener entityListener, EntityProperties entityProperties) {
+            EntityIdService entityIdService,
+            EntityListener entityListener,
+            EntityProperties entityProperties,
+            TokenAssociateTransactionHandler tokenAssociateTransactionHandler) {
         super(
                 entityIdService,
                 entityListener,
                 entityProperties,
                 airdropExtractor,
                 TokenAirdropStateEnum.CANCELLED,
+                tokenAssociateTransactionHandler,
                 TransactionType.TOKENCANCELAIRDROP);
     }
 }
