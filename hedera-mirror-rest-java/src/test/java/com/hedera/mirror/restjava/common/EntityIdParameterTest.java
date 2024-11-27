@@ -16,6 +16,10 @@
 
 package com.hedera.mirror.restjava.common;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
+
 import com.google.common.io.BaseEncoding;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.InvalidEntityException;
@@ -34,13 +38,8 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class EntityIdParameterTest {
-
 
     @Mock
     private RestJavaProperties properties;
@@ -92,49 +91,47 @@ class EntityIdParameterTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"0.0.0,0,0,0",
-    "0,0,0,0",
-            "0.1,0,0,1",
-    "0.0.4294967295,0,0,4294967295",
-    "65535.000000001,0,65535,1",
-    "32767.65535.4294967295,32767,65535,4294967295",
-    "4294967295,0,0,4294967295"})
-    void valueOfId(String givenEntityId,long expectedShard,long expectedRealm,long expectedNum) {
-        assertThat(EntityId.of(expectedShard, expectedRealm, expectedNum)).isEqualTo(((EntityIdNumParameter) EntityIdParameter.valueOf(givenEntityId)).id());
+    @CsvSource({
+        "0.0.0,0,0,0",
+        "0,0,0,0",
+        "0.1,0,0,1",
+        "0.0.4294967295,0,0,4294967295",
+        "65535.000000001,0,65535,1",
+        "32767.65535.4294967295,32767,65535,4294967295",
+        "4294967295,0,0,4294967295"
+    })
+    void valueOfId(String givenEntityId, long expectedShard, long expectedRealm, long expectedNum) {
+        assertThat(EntityId.of(expectedShard, expectedRealm, expectedNum))
+                .isEqualTo(((EntityIdNumParameter) EntityIdParameter.valueOf(givenEntityId)).id());
     }
 
     @ParameterizedTest
-    @CsvSource({"0x0000000000000000000000000000000000000001,0,0,0000000000000000000000000000000000000001",
-            "0000000000000000000000000000000000000001,0,0,0000000000000000000000000000000000000001",
-            "0x0000000100000000000000020000000000000003,0,0,0000000100000000000000020000000000000003",
-            "0000000100000000000000020000000000000003,0,0,0000000100000000000000020000000000000003",
-            "1.2.0000000100000000000000020000000000000003,1,2,0000000100000000000000020000000000000003",
-            "0x00007fff000000000000ffff00000000ffffffff,0,0,00007fff000000000000ffff00000000ffffffff",
-            "0.0.000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b",
-            "0.0x000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b",
-            "0.0.0x000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b",
-            "0.000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b",
-            "000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b",
-            "0x000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b"
+    @CsvSource({
+        "0x0000000000000000000000000000000000000001,0,0,0000000000000000000000000000000000000001",
+        "0000000000000000000000000000000000000001,0,0,0000000000000000000000000000000000000001",
+        "0x0000000100000000000000020000000000000003,0,0,0000000100000000000000020000000000000003",
+        "0000000100000000000000020000000000000003,0,0,0000000100000000000000020000000000000003",
+        "1.2.0000000100000000000000020000000000000003,1,2,0000000100000000000000020000000000000003",
+        "0x00007fff000000000000ffff00000000ffffffff,0,0,00007fff000000000000ffff00000000ffffffff",
+        "0.0.000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b",
+        "0.0x000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b",
+        "0.0.0x000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b",
+        "0.000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b",
+        "000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b",
+        "0x000000000000000000000000000000000186Fb1b,0,0,000000000000000000000000000000000186Fb1b"
     })
     void valueOfEvmAddress(String givenEvmAddress, long expectedShard, long expectedRealm, String expectedEvmAddress) {
-        var given = ((EntityIdEvmAddressParameter)
-                EntityIdParameter.valueOf(givenEvmAddress));
-        assertThat(Hex.decode(expectedEvmAddress))
-                .isEqualTo( given.evmAddress());
+        var given = ((EntityIdEvmAddressParameter) EntityIdParameter.valueOf(givenEvmAddress));
+        assertThat(Hex.decode(expectedEvmAddress)).isEqualTo(given.evmAddress());
         assertThat(expectedShard).isEqualTo(given.shard());
         assertThat(expectedRealm).isEqualTo(given.realm());
     }
 
     @ParameterizedTest
-    @CsvSource({"AABBCC22,0,0,AABBCC22",
-            "1.AABBCC22,0,1,AABBCC22",
-            "1.2.AABBCC22,1,2,AABBCC22"
-    })
-    void valueOfAlias(String givenAlias, long expectedShard,long expectedRealm, String expectedAlias) {
+    @CsvSource({"AABBCC22,0,0,AABBCC22", "1.AABBCC22,0,1,AABBCC22", "1.2.AABBCC22,1,2,AABBCC22"})
+    void valueOfAlias(String givenAlias, long expectedShard, long expectedRealm, String expectedAlias) {
         var given = ((EntityIdAliasParameter) EntityIdParameter.valueOf(givenAlias));
-        assertThat(BaseEncoding.base32().omitPadding().decode(expectedAlias))
-                .isEqualTo(given.alias());
+        assertThat(BaseEncoding.base32().omitPadding().decode(expectedAlias)).isEqualTo(given.alias());
         assertThat(expectedShard).isEqualTo(given.shard());
         assertThat(expectedRealm).isEqualTo(given.realm());
     }

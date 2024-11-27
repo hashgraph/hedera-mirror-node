@@ -50,7 +50,7 @@ const responseCacheCheckHandler = async (req, res, next) => {
     res.status(statusCode);
 
     if (isHead || clientCached) {
-        res.end();
+      res.end();
     } else {
       if (cachedResponse.compressed) {
         cachedResponse.body = Buffer.from(cachedResponse.body);
@@ -61,7 +61,7 @@ const responseCacheCheckHandler = async (req, res, next) => {
           res.setHeader(CONTENT_ENCODING_HEADER, 'gzip');
         }
       }
-      
+
       res.send(cachedResponse.body);
     }
 
@@ -79,7 +79,8 @@ const responseCacheUpdateHandler = async (req, res, next) => {
   const compressionEnabled = config.cache.response.compress;
   const responseCacheKey = res.locals[responseCacheKeyLabel];
   const responseBody = res.locals[responseBodyLabel];
-  const isSuccessfulResponse = res.statusCode === httpStatusCodes.UNMODIFIED.code || httpStatusCodes.isSuccess(res.statusCode);
+  const isSuccessfulResponse =
+    res.statusCode === httpStatusCodes.UNMODIFIED.code || httpStatusCodes.isSuccess(res.statusCode);
 
   if (responseBody && responseCacheKey && isSuccessfulResponse) {
     const ttl = getCacheControlExpiryOrDefault(res.getHeaders()[CACHE_CONTROL_HEADER]);

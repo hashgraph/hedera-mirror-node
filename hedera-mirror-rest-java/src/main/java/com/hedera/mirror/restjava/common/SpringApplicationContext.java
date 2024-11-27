@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.mirror.restjava.common;
 
 import jakarta.inject.Named;
+import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 @Named
 public class SpringApplicationContext implements ApplicationContextAware {
 
-   private static final AtomicReference<ApplicationContext> CONTEXT = new AtomicReference<>();
+    private static final AtomicReference<ApplicationContext> CONTEXT = new AtomicReference<>();
 
     public static <T extends Object> T getBean(Class<T> beanClass) {
         return CONTEXT.get().getBean(beanClass);
@@ -35,5 +35,4 @@ public class SpringApplicationContext implements ApplicationContextAware {
     public void setApplicationContext(ApplicationContext context) throws BeansException {
         CONTEXT.set(context);
     }
-
 }

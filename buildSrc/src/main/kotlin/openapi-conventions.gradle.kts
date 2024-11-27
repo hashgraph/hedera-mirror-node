@@ -23,6 +23,7 @@ plugins {
 }
 
 val openApiPackage = "com.hedera.mirror.rest"
+
 openApiGenerate {
     apiPackage = "${openApiPackage}.api"
     configOptions =
@@ -58,4 +59,5 @@ openApiGenerate {
 }
 
 tasks.withType<JavaCompile> { dependsOn("openApiGenerate") }
+
 java.sourceSets["main"].java { srcDir(openApiGenerate.outputDir) }
