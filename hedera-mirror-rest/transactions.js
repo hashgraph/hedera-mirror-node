@@ -738,6 +738,18 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
       .map((pos) => `$${pos}`)
       .join(',');
     mainConditions.push(`${Transaction.CONSENSUS_TIMESTAMP} in (${timestampPositions})`);
+    let nonce;
+    for (const filter of filters) {
+      if (filter.key === constants.filterKeys.NONCE) {
+        nonce = filter.value;
+        break;
+      }
+    }
+
+    if (nonce !== undefined) {
+      params.push(nonce);
+      mainConditions.push(`${Transaction.NONCE} = $${params.length}`);
+    }
     // timestamp range condition
     commonConditions.push(
       `${Transaction.CONSENSUS_TIMESTAMP} >= $${minTimestampPosition}`,
