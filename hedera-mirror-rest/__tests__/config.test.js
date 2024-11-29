@@ -215,8 +215,8 @@ describe('Override query config', () => {
       strictTimestampParam: true,
       topicMessageLookup: false,
       transactions: {
-        precedingTransactionTypes: [11, 15]
-      }
+        precedingTransactionTypes: [11, 15],
+      },
     };
     const config = await loadCustomConfig(customConfig(queryConfig));
     expect(config.query).toEqual(expected);

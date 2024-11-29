@@ -58,7 +58,7 @@ class HederaCustomCallOperationTest {
 
     @Test
     void testHappyPath() {
-        given(frame.getStackItem(anyInt())).willReturn(Bytes.wrap(new byte[]{1}));
+        given(frame.getStackItem(anyInt())).willReturn(Bytes.wrap(new byte[] {1}));
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(200L);
         given(frame.stackSize()).willReturn(7);
@@ -72,7 +72,7 @@ class HederaCustomCallOperationTest {
 
     @Test
     void testInsufficientGas() {
-        given(frame.getStackItem(anyInt())).willReturn(Bytes.wrap(new byte[]{1}));
+        given(frame.getStackItem(anyInt())).willReturn(Bytes.wrap(new byte[] {1}));
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(50L);
         given(subject.cost(frame, false)).willReturn(100L);
