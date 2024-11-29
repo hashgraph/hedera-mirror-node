@@ -138,7 +138,7 @@ class NftReadableKVStateTest {
     }
 
     @Test
-    void getNftMappedValuesMissingSpenderWithoutTimestamp(){
+    void getNftMappedValuesMissingSpenderWithoutTimestamp() {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         Nft nftDomain = setupNftMissingSpender(Optional.empty());
         assertThat(nftReadableKVState.readFromDataSource(NFT_ID)).satisfies(nft -> assertThat(nft)
@@ -147,10 +147,7 @@ class NftReadableKVStateTest {
                         EntityIdUtils.toAccountId(nftDomain.getAccountId()),
                         com.hedera.hapi.node.state.token.Nft::ownerId)
                 .returns(
-                        new AccountID(
-                                0L,
-                                0L,
-                                new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 0L)),
+                        new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 0L)),
                         com.hedera.hapi.node.state.token.Nft::spenderId)
                 .returns(
                         convertToTimestamp(nftDomain.getCreatedTimestamp()),
@@ -161,7 +158,7 @@ class NftReadableKVStateTest {
     }
 
     @Test
-    void getNftMappedValuesMissingSpenderWithTimestamp(){
+    void getNftMappedValuesMissingSpenderWithTimestamp() {
         when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         Nft nftDomain = setupNftMissingSpender(timestamp);
         assertThat(nftReadableKVState.readFromDataSource(NFT_ID)).satisfies(nft -> assertThat(nft)
@@ -170,10 +167,7 @@ class NftReadableKVStateTest {
                         EntityIdUtils.toAccountId(nftDomain.getAccountId()),
                         com.hedera.hapi.node.state.token.Nft::ownerId)
                 .returns(
-                        new AccountID(
-                                0L,
-                                0L,
-                                new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 0L)),
+                        new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 0L)),
                         com.hedera.hapi.node.state.token.Nft::spenderId)
                 .returns(
                         convertToTimestamp(nftDomain.getCreatedTimestamp()),
@@ -221,8 +215,7 @@ class NftReadableKVStateTest {
     private Nft setupNftMissingSpender(Optional<Long> timestamp) {
         Nft databaseNft = domainBuilder
                 .nft()
-                .customize(t -> t.tokenId(entity.getId())
-                        .serialNumber(NFT_ID.serialNumber()))
+                .customize(t -> t.tokenId(entity.getId()).serialNumber(NFT_ID.serialNumber()))
                 .get();
 
         if (timestamp.isPresent()) {
@@ -235,7 +228,6 @@ class NftReadableKVStateTest {
         }
         return databaseNft;
     }
-
 
     private Timestamp convertToTimestamp(long timestamp) {
         var instant = Instant.ofEpochMilli(timestamp);
