@@ -44,7 +44,52 @@ envFrom: []
 
 fullnameOverride: ""
 
+gateway:
+  gcp:
+    backendPolicy:
+      connectionDraining:
+        drainingTimeoutSec: 10
+      logging:
+        enabled: false
+      maxRatePerEndpoint: 250  # Requires a change to HPA to take effect
+      sessionAffinity:
+        type: CLIENT_IP
+      timeoutSec: 20
+    enabled: true
+    healthCheckPolicy:
+      config:
+        httpHealthCheck:
+          port: 8084
+          requestPath: "{{ .Values.readinessProbe.httpGet.path }}"
+        type: HTTP
+      healthyThreshold: 1
+  rules:
+    - backendRefs:
+        - group: "{{ .Values.gateway.target.group }}"
+          kind: "{{ .Values.gateway.target.kind }}"
+          name: "{{ include \"hedera-mirror-rest-java.fullname\" $ }}"
+          port: 80
+      matches:
+        - path:
+            type: RegularExpression  # GKE does not yet support RegularExpression type
+            value: '/api/v1/accounts/(\d+\.){0,2}(\d+|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))/allowances/nfts'
+        - path:
+            type: RegularExpression
+            value: '/api/v1/accounts/(\d+\.){0,2}(\d+|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))/airdrops/outstanding'
+        - path:
+            type: RegularExpression
+            value: '/api/v1/accounts/(\d+\.){0,2}(\d+|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))/airdrops/pending'
+        - path:
+            type: RegularExpression
+            value: '/api/v1/topics/(\d+\.){0,2}\d+$'
+  target:
+    group: ""
+    kind: Service
+
 global:
+  gateway:
+    enabled: false
+    hostnames: []
   image: {}
   middleware: false
   namespaceOverride: ""

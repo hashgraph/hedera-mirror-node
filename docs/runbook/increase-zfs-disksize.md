@@ -75,3 +75,4 @@ The pvc for a shard is running out of space and needs to be increased beyond cur
    ```
 6. Deploy the changes. Be sure to leave wiggle room for zfs rounding
    see [here](https://github.com/openebs/zfs-localpv/blob/develop/docs/faq.md#7-why-the-zfs-volume-size-is-different-than-the-reqeusted-size-in-pvc)
+   and use [this site](https://www.gbmb.org/gib-to-gb) for conversion

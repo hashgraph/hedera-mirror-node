@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 shopt -s expand_aliases
 
@@ -86,8 +85,8 @@ function routeTraffic() {
   checkCitusMetadataSyncStatus "${namespace}"
 
   log "Running test queries"
-  kubectl exec -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U mirror_rest -d mirror_node -c "select consensus_timestamp from transaction limit 10"
-  kubectl exec -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -U mirror_node -d mirror_node -c "select consensus_timestamp from transaction limit 10"
+  kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -P pager=off -U mirror_rest -d mirror_node -c "select * from transaction limit 10"
+  kubectl exec -it -n "${namespace}" "${HELM_RELEASE_NAME}-citus-coord-0" -c postgres-util -- psql -P pager=off -U mirror_node -d mirror_node -c "select * from transaction limit 10"
   doContinue
   scaleDeployment "${namespace}" 1 "app.kubernetes.io/component=importer"
   while true; do

@@ -74,6 +74,10 @@ hedera:
         maxTransactionsTimestampRange: 60d
         strictTimestampParam: true
         topicMessageLookup: false
+        transactions:
+          precedingTransactionTypes:
+            - 11 #CRYPTOCREATEACCOUNT
+            - 15 #CRYPTOUPDATEACCOUNT
       redis:
         commandTimeout: 10000
         connectTimeout: 10000

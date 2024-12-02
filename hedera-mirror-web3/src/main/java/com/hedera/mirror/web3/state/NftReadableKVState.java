@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.state.Utils.convertToTimestamp;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -78,7 +79,7 @@ public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
                 .mintTime(convertToTimestamp(nft.getCreatedTimestamp()))
                 .nftId(new NftID(tokenID, nft.getSerialNumber()))
                 .ownerId(EntityIdUtils.toAccountId(nft.getAccountId()))
-                .spenderId(EntityIdUtils.toAccountId(nft.getSpender()))
+                .spenderId(EntityIdUtils.toAccountId(nft.getSpender() != null ? nft.getSpender() : EntityId.EMPTY))
                 .build();
     }
 }

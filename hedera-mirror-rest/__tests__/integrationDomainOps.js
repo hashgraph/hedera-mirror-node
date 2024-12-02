@@ -61,6 +61,7 @@ const setup = async (testDataJson) => {
   await loadFileData(testDataJson.filedata);
   await loadNetworkStakes(testDataJson.networkstakes);
   await loadNfts(testDataJson.nfts);
+  await loadNodes(testDataJson.nodes);
   await loadNodeStakes(testDataJson.nodestakes);
   await loadRecordFiles(testDataJson.recordFiles);
   await loadSchedules(testDataJson.schedules);
@@ -380,6 +381,16 @@ const loadNetworkStakes = async (networkStakes) => {
 
   for (const networkStake of networkStakes) {
     await addNetworkStake(networkStake);
+  }
+};
+
+const loadNodes = async (nodes) => {
+  if (nodes == null) {
+    return;
+  }
+
+  for (const node of nodes) {
+    await addNode(node);
   }
 };
 
@@ -1055,6 +1066,14 @@ const contractStateDefaults = {
   value: 1,
 };
 
+const nodeDefaults = {
+  admin_key: 'OiG1sc5qQaLDwUfqfBg8urypfFGcwlesArZzBDsEgvyr0MQ',
+  created_timestamp: 1664365660048674966,
+  deleted: false,
+  node_id: 0,
+  timestamp_range: '[0,)',
+};
+
 const addContractAction = async (contractActionInput) => {
   const action = {
     ...contractActionDefaults,
@@ -1547,6 +1566,16 @@ const addNft = async (custom) => {
   await insertDomainObject(getTableName('nft', nft), insertFields, nft);
 };
 
+const addNode = async (nodeInput) => {
+  const node = {
+    ...nodeDefaults,
+    ...nodeInput,
+  };
+
+  convertByteaFields(['admin_key'], node);
+  await insertDomainObject('node', Object.keys(nodeDefaults), node);
+};
+
 const addNodeStake = async (nodeStakeInput) => {
   const stakingPeriodEnd = 86_400_000_000_000n - 1n;
   const nodeStake = {
@@ -1662,6 +1691,7 @@ export default {
   loadEthereumTransactions,
   loadFileData,
   loadNetworkStakes,
+  loadNodes,
   loadNodeStakes,
   loadRecordFiles,
   loadStakingRewardTransfers,
