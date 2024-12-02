@@ -266,8 +266,6 @@ jobs:
         uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4
 
       - name: Execute Gradle
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew spotlessCheck
 
       - name: Fail on Unformatted Files
