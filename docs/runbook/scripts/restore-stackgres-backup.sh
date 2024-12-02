@@ -67,8 +67,8 @@ spec:
         persistentVolumeClaim:
           claimName: ${pvc}
 EOF
-  kubectl wait --for=condition=complete job/coord-data-wiper --timeout=-1s
-  kubectl delete job/coord-data-wiper
+    kubectl wait --for=condition=complete job/coord-data-wiper --timeout=-1s
+    kubectl delete job/coord-data-wiper
   done
 }
 
