@@ -73,7 +73,6 @@ class AccountReadableKVStateTest {
     private static final long REALM = 1L;
     private static final long NUM = 1252L;
     private static final long TOKEN_NUM = 1253L;
-    ;
     private static final AccountID ACCOUNT_ID =
             new AccountID(SHARD, REALM, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, NUM));
     private static final AccountID ACCOUNT_ID_TOKEN =
