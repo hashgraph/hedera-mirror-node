@@ -14,7 +14,8 @@ Need to update k8s version for Citus Node Pool(s)
 
 1. Follow the steps to [create a disk snapshot for Citus cluster](./create-disk-snapshot-for-citus-cluster.md)
    to backup the current cluster data
-2.  Run
-   ```bash
-   ./upgrade-k8s-version-citus.sh
-   ```
+2. Run
+
+```bash
+./upgrade-k8s-version-citus.sh
+```
