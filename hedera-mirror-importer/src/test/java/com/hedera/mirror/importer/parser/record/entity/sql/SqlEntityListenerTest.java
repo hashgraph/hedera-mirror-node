@@ -2782,11 +2782,11 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     @CsvSource(
             textBlock =
                     """
-                            CANCELLED, 1
-                            CANCELLED, 2
-                            CLAIMED,   1
-                            CLAIMED,   2
-                            """)
+            CANCELLED, 1
+            CANCELLED, 2
+            CLAIMED,   1
+            CLAIMED,   2
+            """)
     void onTokenAirdropUpdate(TokenAirdropStateEnum state, int commitIndex) {
         // given
         var tokenAirdrop =

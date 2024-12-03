@@ -64,6 +64,7 @@ class TokenAssociateTransactionHandler extends AbstractTransactionHandler {
             tokenAccount.setTimestampLower(consensusTimestamp);
             tokenAccount.setTokenId(tokenId.getId());
             entityListener.onTokenAccount(tokenAccount);
+
             recordItem.addEntityId(tokenId);
         });
     }

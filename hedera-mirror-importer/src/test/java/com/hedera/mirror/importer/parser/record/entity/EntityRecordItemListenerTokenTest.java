@@ -3900,7 +3900,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(findHistory(TokenAirdrop.class)).isEmpty();
 
         if (airdropType == TokenAirdropStateEnum.CLAIMED) {
-            assertThat(tokenAccountRepository.findAll()).hasSize(2);
+            assertThat(tokenAccountRepository.count()).isEqualTo(2);
         } else {
             assertThat(tokenAccountRepository.count()).isZero();
         }

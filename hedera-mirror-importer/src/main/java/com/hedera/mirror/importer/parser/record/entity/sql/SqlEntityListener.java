@@ -36,6 +36,7 @@ import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount.Id;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftTransfer;
@@ -303,7 +304,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         context.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
     }
 
-    private boolean hasExistingTokenAccount(TokenAccount.Id id) {
+    private boolean hasExistingTokenAccount(Id id) {
         return context.get(TokenAccount.class, id) != null
                 || tokenAccountRepository.findById(id).isPresent();
     }

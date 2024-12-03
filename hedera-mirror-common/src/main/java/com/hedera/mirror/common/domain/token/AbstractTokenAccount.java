@@ -50,15 +50,16 @@ public class AbstractTokenAccount implements History {
     @UpsertColumn(
             coalesce =
                     """
-                            case when created_timestamp is not null then {0}
-                                 else coalesce(e_{0}, 0) + coalesce({0}, 0)
-                            end
-                            """)
+            case when created_timestamp is not null then {0}
+                 else coalesce(e_{0}, 0) + coalesce({0}, 0)
+            end
+            """)
     private long balance;
 
     private Long balanceTimestamp;
 
     @JsonIgnore
+    @SuppressWarnings("java:S2065")
     @Transient
     private transient boolean claim;
 
@@ -68,20 +69,20 @@ public class AbstractTokenAccount implements History {
     @UpsertColumn(
             coalesce =
                     """
-                            case when created_timestamp is not null then {0}
-                                 else coalesce({0}, e_{0})
-                            end
-                            """)
+            case when created_timestamp is not null then {0}
+                 else coalesce({0}, e_{0})
+            end
+            """)
     private TokenFreezeStatusEnum freezeStatus;
 
     @Enumerated(EnumType.ORDINAL)
     @UpsertColumn(
             coalesce =
                     """
-                            case when created_timestamp is not null then {0}
-                                 else coalesce({0}, e_{0})
-                            end
-                            """)
+            case when created_timestamp is not null then {0}
+                 else coalesce({0}, e_{0})
+            end
+            """)
     private TokenKycStatusEnum kycStatus;
 
     private Range<Long> timestampRange;
