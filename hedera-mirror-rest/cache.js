@@ -79,11 +79,11 @@ export class Cache {
     }
 
     const result = await this.redis
-        .multi()
-        .ttl(key)
-        .get(key)
-        .exec()
-        .catch((err) => logger.warn(`Redis error during ttl/get: ${err.message}`));
+      .multi()
+      .ttl(key)
+      .get(key)
+      .exec()
+      .catch((err) => logger.warn(`Redis error during ttl/get: ${err.message}`));
 
     // result is [[null, ttl], [null, value]], with value === null on cache miss.
     const rawValue = result[1][1];

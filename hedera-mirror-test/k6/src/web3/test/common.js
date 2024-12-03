@@ -93,9 +93,9 @@ function ContractCallTestScenarioBuilder() {
         }
 
         const response = jsonPost(that._url, JSON.stringify(payload));
-        check(response, {[`${that._name}`]: (r) => that._shouldRevert
-              ? !isNonErrorResponse(r)
-              : isNonErrorResponse(r)});
+        check(response, {
+          [`${that._name}`]: (r) => (that._shouldRevert ? !isNonErrorResponse(r) : isNonErrorResponse(r)),
+        });
 
         if (sleepSecs > 0) {
           sleep(sleepSecs);
