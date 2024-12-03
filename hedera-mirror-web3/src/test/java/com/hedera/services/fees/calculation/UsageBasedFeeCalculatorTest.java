@@ -285,8 +285,7 @@ class UsageBasedFeeCalculatorTest {
     void failsWithNseeGetQueryUsageEstimator() {
         FeeData usgPrices = currentPrices.get(DEFAULT);
         final Exception exception = assertThrows(
-                NoSuchElementException.class,
-                () -> subject.estimatePayment(query, usgPrices, at, ANSWER_ONLY));
+                NoSuchElementException.class, () -> subject.estimatePayment(query, usgPrices, at, ANSWER_ONLY));
         assertEquals("No estimator exists for the given query", exception.getMessage());
     }
 
