@@ -154,7 +154,7 @@ class AccountReadableKVStateTest {
     @BeforeEach
     void setup() {
         entity = new Entity();
-        entity.setId(EntityIdUtils.toAccountId(SHARD, REALM, TOKEN_NUM).accountNum());
+        entity.setId(EntityIdUtils.toAccountId(SHARD, REALM, NUM).accountNum());
         entity.setCreatedTimestamp(timestamp.get());
         entity.setShard(SHARD);
         entity.setRealm(REALM);
