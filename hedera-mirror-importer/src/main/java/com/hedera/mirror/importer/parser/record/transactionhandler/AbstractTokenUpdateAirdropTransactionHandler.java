@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -41,8 +42,12 @@ abstract class AbstractTokenUpdateAirdropTransactionHandler extends AbstractTran
     private final EntityProperties entityProperties;
     private final Function<RecordItem, List<PendingAirdropId>> extractor;
     private final TokenAirdropStateEnum state;
-    private final TokenAssociateTransactionHandler tokenAssociateTransactionHandler;
     private final TransactionType type;
+
+    @Override
+    public TransactionType getType() {
+        return type;
+    }
 
     @Override
     public void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
@@ -84,17 +89,24 @@ abstract class AbstractTokenUpdateAirdropTransactionHandler extends AbstractTran
             tokenAirdrop.setTokenId(tokenEntityId.getId());
 
             if (state == TokenAirdropStateEnum.CLAIMED) {
-                // Associate the token with the receiver account
-                tokenAssociateTransactionHandler.addTokenAccount(
-                        receiver.getId(), tokenEntityId.getId(), consensusTimestamp);
+                associateTokenAccount(tokenEntityId, receiver, consensusTimestamp);
             }
 
             entityListener.onTokenAirdrop(tokenAirdrop);
         }
     }
 
-    @Override
-    public TransactionType getType() {
-        return type;
+    private void associateTokenAccount(EntityId token, EntityId receiver, long consensusTimestamp) {
+        var tokenAccount = new TokenAccount();
+        tokenAccount.setAccountId(receiver.getId());
+        tokenAccount.setAssociated(true);
+        tokenAccount.setAutomaticAssociation(false);
+        tokenAccount.setBalance(0L);
+        tokenAccount.setBalanceTimestamp(consensusTimestamp);
+        tokenAccount.setClaim(true);
+        tokenAccount.setCreatedTimestamp(consensusTimestamp);
+        tokenAccount.setTimestampLower(consensusTimestamp);
+        tokenAccount.setTokenId(token.getId());
+        entityListener.onTokenAccount(tokenAccount);
     }
 }

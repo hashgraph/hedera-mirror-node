@@ -34,17 +34,13 @@ class TokenClaimAirdropTransactionHandler extends AbstractTokenUpdateAirdropTran
             r -> r.getTransactionBody().getTokenClaimAirdrop().getPendingAirdropsList();
 
     public TokenClaimAirdropTransactionHandler(
-            EntityIdService entityIdService,
-            EntityListener entityListener,
-            EntityProperties entityProperties,
-            TokenAssociateTransactionHandler tokenAssociateTransactionHandler) {
+            EntityIdService entityIdService, EntityListener entityListener, EntityProperties entityProperties) {
         super(
                 entityIdService,
                 entityListener,
                 entityProperties,
                 airdropExtractor,
                 TokenAirdropStateEnum.CLAIMED,
-                tokenAssociateTransactionHandler,
                 TransactionType.TOKENCLAIMAIRDROP);
     }
 }

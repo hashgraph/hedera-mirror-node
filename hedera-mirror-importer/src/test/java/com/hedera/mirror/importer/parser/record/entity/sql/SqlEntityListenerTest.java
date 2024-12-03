@@ -2400,6 +2400,46 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     }
 
     @Test
+    void onTokenAccountClaimNoExisting() {
+        var tokenAccount =
+                domainBuilder.tokenAccount().customize(ta -> ta.claim(true)).get();
+
+        // when
+        sqlEntityListener.onTokenAccount(tokenAccount);
+        completeFileAndCommit();
+
+        // then
+        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccount);
+        assertThat(findHistory(TokenAccount.class)).isEmpty();
+    }
+
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void onTokenAccountClaimExisting(boolean database) {
+        var tokenAccountAssociate = domainBuilder.tokenAccount().get();
+        var tokenAccountClaim = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.claim(true)
+                        .accountId(tokenAccountAssociate.getAccountId())
+                        .tokenId(tokenAccountAssociate.getTokenId()))
+                .get();
+
+        sqlEntityListener.onTokenAccount(tokenAccountAssociate);
+
+        if (database) {
+            completeFileAndCommit();
+        }
+
+        // when
+        sqlEntityListener.onTokenAccount(tokenAccountClaim);
+        completeFileAndCommit();
+
+        // then
+        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccountAssociate);
+        assertThat(findHistory(TokenAccount.class)).isEmpty();
+    }
+
+    @Test
     void onTokenAccountDissociate() {
         EntityId tokenId1 = EntityId.of("0.0.3");
 
@@ -2742,11 +2782,11 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     @CsvSource(
             textBlock =
                     """
-            CANCELLED, 1
-            CANCELLED, 2
-            CLAIMED,   1
-            CLAIMED,   2
-            """)
+                            CANCELLED, 1
+                            CANCELLED, 2
+                            CLAIMED,   1
+                            CLAIMED,   2
+                            """)
     void onTokenAirdropUpdate(TokenAirdropStateEnum state, int commitIndex) {
         // given
         var tokenAirdrop =

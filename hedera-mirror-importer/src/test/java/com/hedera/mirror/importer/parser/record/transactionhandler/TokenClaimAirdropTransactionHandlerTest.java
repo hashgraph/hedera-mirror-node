@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
@@ -36,12 +37,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
 
 class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest {
-    @Mock
-    private final TokenAssociateTransactionHandler tokenAssociateTransactionHandler =
-            new TokenAssociateTransactionHandler(entityListener, entityProperties);
 
     private final EntityId receiver = domainBuilder.entityId();
     private final AccountID receiverAccountId = recordItemBuilder.accountId();
@@ -50,8 +47,7 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenClaimAirdropTransactionHandler(
-                entityIdService, entityListener, entityProperties, tokenAssociateTransactionHandler);
+        return new TokenClaimAirdropTransactionHandler(entityIdService, entityListener, entityProperties);
     }
 
     @Override
@@ -78,6 +74,7 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
         // given
         var tokenAirdrop = ArgumentCaptor.forClass(TokenAirdrop.class);
         var token = recordItemBuilder.tokenId();
+        var tokenId = EntityId.of(token);
         var pendingAirdropId =
                 PendingAirdropId.newBuilder().setReceiverId(receiverAccountId).setSenderId(senderAccountId);
         if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
@@ -97,7 +94,7 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
                 .get();
 
         var expectedEntityTransactions =
-                getExpectedEntityTransactions(recordItem, transaction, receiver, sender, EntityId.of(token));
+                getExpectedEntityTransactions(recordItem, transaction, receiver, sender, tokenId);
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -105,8 +102,17 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
         // then
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
 
-        verify(tokenAssociateTransactionHandler)
-                .addTokenAccount(receiver.getId(), EntityId.of(token).getId(), timestamp);
+        var tokenAccount = new TokenAccount();
+        tokenAccount.setAccountId(receiver.getId());
+        tokenAccount.setAssociated(true);
+        tokenAccount.setAutomaticAssociation(false);
+        tokenAccount.setBalance(0L);
+        tokenAccount.setBalanceTimestamp(timestamp);
+        tokenAccount.setClaim(true);
+        tokenAccount.setCreatedTimestamp(timestamp);
+        tokenAccount.setTimestampLower(timestamp);
+        tokenAccount.setTokenId(tokenId.getId());
+        verify(entityListener).onTokenAccount(tokenAccount);
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())
                 .returns(receiver.getNum(), TokenAirdrop::getReceiverAccountId)

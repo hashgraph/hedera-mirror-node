@@ -3632,6 +3632,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenAirdropRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
         assertThat(findHistory(TokenAirdrop.class)).isEmpty();
+        assertThat(tokenAccountRepository.count()).isEqualTo(2);
 
         // when
         long updateTimestamp = 30L;
@@ -3676,6 +3677,16 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         expectedPendingNft.setTimestampRange(Range.atLeast(updateTimestamp));
         assertThat(tokenAirdropRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+
+        if (airdropType == TokenAirdropStateEnum.CLAIMED) {
+            var tokenAccountFungible = tokenAccount(TOKEN_ID, RECEIVER, updateTimestamp);
+            var tokenAccountNonFungible = tokenAccount(protoNftId.getTokenID(), RECEIVER, updateTimestamp);
+            assertThat(tokenAccountRepository.findAll())
+                    .hasSize(4)
+                    .contains(tokenAccountFungible, tokenAccountNonFungible);
+        } else {
+            assertThat(tokenAccountRepository.count()).isEqualTo(2);
+        }
     }
 
     @ParameterizedTest(name = "{0}")
@@ -3700,6 +3711,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .setConsensusTimestamp(TestUtils.toTimestamp(createTimestamp)))
                 .build();
         parseRecordItemAndCommit(tokenCreateRecordItem);
+        var tokenAccounts = tokenAccountRepository.findAll();
 
         var tokenMintRecordItem = recordItemBuilder
                 .tokenMint()
@@ -3795,6 +3807,31 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         expectedPendingNft.setTimestampRange(Range.atLeast(updateTimestamp));
         assertThat(tokenAirdropRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+
+        if (airdropType == TokenAirdropStateEnum.CLAIMED) {
+            var tokenAccountFungible = tokenAccount(TOKEN_ID, RECEIVER, updateTimestamp);
+            var tokenAccountNonFungible = tokenAccount(protoNftId.getTokenID(), RECEIVER, updateTimestamp);
+            assertThat(tokenAccountRepository.findAll())
+                    .hasSize(4)
+                    .containsAnyElementsOf(tokenAccounts)
+                    .contains(tokenAccountFungible, tokenAccountNonFungible);
+        } else {
+            assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
+        }
+    }
+
+    private TokenAccount tokenAccount(TokenID tokenId, AccountID accountId, long consensusTimestamp) {
+        var tokenAccount = new TokenAccount();
+        tokenAccount.setAccountId(EntityId.of(accountId).getId());
+        tokenAccount.setAssociated(true);
+        tokenAccount.setAutomaticAssociation(false);
+        tokenAccount.setBalance(0L);
+        tokenAccount.setBalanceTimestamp(consensusTimestamp);
+        tokenAccount.setClaim(true);
+        tokenAccount.setCreatedTimestamp(consensusTimestamp);
+        tokenAccount.setTimestampLower(consensusTimestamp);
+        tokenAccount.setTokenId(EntityId.of(tokenId).getId());
+        return tokenAccount;
     }
 
     @ParameterizedTest(name = "{0}")
@@ -3861,6 +3898,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenAirdropRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
         assertThat(findHistory(TokenAirdrop.class)).isEmpty();
+
+        if (airdropType == TokenAirdropStateEnum.CLAIMED) {
+            assertThat(tokenAccountRepository.findAll()).hasSize(2);
+        } else {
+            assertThat(tokenAccountRepository.count()).isZero();
+        }
     }
 
     @ParameterizedTest

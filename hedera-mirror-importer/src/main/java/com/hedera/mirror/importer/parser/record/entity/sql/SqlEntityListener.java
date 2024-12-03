@@ -65,6 +65,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import java.util.Collection;
@@ -90,6 +91,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityIdService entityIdService;
     private final EntityProperties entityProperties;
     private final NftRepository nftRepository;
+    private final TokenAccountRepository tokenAccountRepository;
     private final SqlProperties sqlProperties;
 
     @Override
@@ -293,7 +295,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+        // Users might have already manually associated to this token before claiming the airdrop
+        if (tokenAccount.isClaim() && hasExistingTokenAccount(tokenAccount.getId())) {
+            return;
+        }
+
         context.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
+    }
+
+    private boolean hasExistingTokenAccount(TokenAccount.Id id) {
+        return context.get(TokenAccount.class, id) != null
+                || tokenAccountRepository.findById(id).isPresent();
     }
 
     @Override

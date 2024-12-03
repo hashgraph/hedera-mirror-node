@@ -25,6 +25,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 import java.io.Serial;
 import java.io.Serializable;
 import lombok.Data;
@@ -49,13 +50,17 @@ public class AbstractTokenAccount implements History {
     @UpsertColumn(
             coalesce =
                     """
-            case when created_timestamp is not null then {0}
-                 else coalesce(e_{0}, 0) + coalesce({0}, 0)
-            end
-            """)
+                            case when created_timestamp is not null then {0}
+                                 else coalesce(e_{0}, 0) + coalesce({0}, 0)
+                            end
+                            """)
     private long balance;
 
     private Long balanceTimestamp;
+
+    @JsonIgnore
+    @Transient
+    private transient boolean claim;
 
     private Long createdTimestamp;
 
@@ -63,20 +68,20 @@ public class AbstractTokenAccount implements History {
     @UpsertColumn(
             coalesce =
                     """
-            case when created_timestamp is not null then {0}
-                 else coalesce({0}, e_{0})
-            end
-            """)
+                            case when created_timestamp is not null then {0}
+                                 else coalesce({0}, e_{0})
+                            end
+                            """)
     private TokenFreezeStatusEnum freezeStatus;
 
     @Enumerated(EnumType.ORDINAL)
     @UpsertColumn(
             coalesce =
                     """
-            case when created_timestamp is not null then {0}
-                 else coalesce({0}, e_{0})
-            end
-            """)
+                            case when created_timestamp is not null then {0}
+                                 else coalesce({0}, e_{0})
+                            end
+                            """)
     private TokenKycStatusEnum kycStatus;
 
     private Range<Long> timestampRange;
