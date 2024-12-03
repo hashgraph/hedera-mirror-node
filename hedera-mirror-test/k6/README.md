@@ -91,7 +91,7 @@ The following parameters can be used to configure a REST test:
 The following parameters can be used to configure a rest-java test:
 
 | Name                                      | Default | Description                                     |
-|-------------------------------------------| ------- |-------------------------------------------------|
+| ----------------------------------------- | ------- | ----------------------------------------------- |
 | DEFAULT_ACCOUNT_ID_AIRDROP_RECEIVER       |         | The account to be used for pending airdrops     |
 | DEFAULT_ACCOUNT_ID_AIRDROP_SENDER         |         | The account to be used for outstanding airdrops |
 | DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_OWNER   |         |                                                 |
@@ -117,7 +117,7 @@ The following parameters can be used to configure a rosetta test:
 The following parameters can be used to configure a web3 test:
 
 | Name                         | Default | Description                                                                                        |
-|------------------------------|---------|----------------------------------------------------------------------------------------------------|
+| ---------------------------- | ------- | -------------------------------------------------------------------------------------------------- |
 | ACCOUNT_ADDRESS              |         | 64 character hex encoded account address without `0x` prefix                                       |
 | AMOUNT                       |         | 64 character hex encoded amount without `0x` prefix                                                |
 | DEFAULT_ACCOUNT_ADDRESS      |         | 40 character hex encoded account address without `0x` prefix                                       |
