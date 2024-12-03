@@ -70,6 +70,8 @@ class TokenReadableKVStateTest {
 
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().shardNum(0L).realmNum(0L).tokenNum(1252L).build();
+    private static final TokenID TOKEN_ID_ACCOUNT =
+            TokenID.newBuilder().shardNum(0L).realmNum(0L).tokenNum(1253L).build();
     private static final Long TOKEN_ENCODED_ID = EntityId.of(
                     TOKEN_ID.shardNum(), TOKEN_ID.realmNum(), TOKEN_ID.tokenNum())
             .getId();
@@ -106,6 +108,7 @@ class TokenReadableKVStateTest {
 
     private DomainBuilder domainBuilder;
     private Entity entity;
+    private Entity account;
     private Entity collector;
 
     @Spy
@@ -130,6 +133,14 @@ class TokenReadableKVStateTest {
                     e.id(TOKEN_ID.tokenNum());
                     e.num(TOKEN_ID.tokenNum());
                     e.type(EntityType.TOKEN);
+                })
+                .get();
+        account = domainBuilder
+                .entity()
+                .customize(e -> {
+                    e.id(TOKEN_ID_ACCOUNT.tokenNum());
+                    e.num(TOKEN_ID_ACCOUNT.tokenNum());
+                    e.type(EntityType.ACCOUNT);
                 })
                 .get();
         collector = domainBuilder
@@ -180,6 +191,13 @@ class TokenReadableKVStateTest {
                 .returns(entity.getAutoRenewPeriod(), Token::autoRenewSeconds);
 
         assertThat(token.totalSupplySupplier().get()).isEqualTo(databaseToken.getTotalSupply());
+    }
+
+    @Test
+    void getTokenReturnsNullWhenIdIsAnAccount() {
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(commonEntityAccessor.get(TOKEN_ID_ACCOUNT, Optional.empty())).thenReturn(Optional.ofNullable(account));
+        assertThat(tokenReadableKVState.readFromDataSource(TOKEN_ID_ACCOUNT)).isNull();
     }
 
     @Test

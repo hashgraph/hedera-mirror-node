@@ -72,8 +72,12 @@ class AccountReadableKVStateTest {
     private static final long SHARD = 0L;
     private static final long REALM = 1L;
     private static final long NUM = 1252L;
+    private static final long TOKEN_NUM = 1253L;
+    ;
     private static final AccountID ACCOUNT_ID =
             new AccountID(SHARD, REALM, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, NUM));
+    private static final AccountID ACCOUNT_ID_TOKEN =
+            new AccountID(SHARD, REALM, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, TOKEN_NUM));
     private static final EntityId AUTO_RENEW_ACCOUNT_ID = EntityId.of(SHARD, REALM, NUM + 1);
     private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final long BALANCE = 3L;
@@ -108,6 +112,7 @@ class AccountReadableKVStateTest {
             });
     private static MockedStatic<ContractCallContext> contextMockedStatic;
     private Entity entity;
+    private Entity token;
 
     @InjectMocks
     private AccountReadableKVState accountReadableKVState;
@@ -163,6 +168,14 @@ class AccountReadableKVStateTest {
         entity.setMaxAutomaticTokenAssociations(MAX_AUTOMATIC_TOKEN_ASSOCIATIONS);
         entity.setType(EntityType.ACCOUNT);
 
+        token = new Entity();
+        token.setId(TOKEN_NUM);
+        token.setCreatedTimestamp(timestamp.get());
+        token.setShard(SHARD);
+        token.setRealm(REALM);
+        token.setNum(TOKEN_NUM);
+        token.setType(EntityType.TOKEN);
+
         contextMockedStatic.when(ContractCallContext::get).thenReturn(contractCallContext);
     }
 
@@ -183,6 +196,13 @@ class AccountReadableKVStateTest {
                 .returns(entity.getBalance(), Account::tinybarBalance)
                 .returns(entity.getAutoRenewPeriod(), Account::autoRenewSeconds)
                 .returns(entity.getMaxAutomaticTokenAssociations(), Account::maxAutoAssociations));
+    }
+
+    @Test
+    void accountIsNullWhenTheAccountIdIsToken() {
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(commonEntityAccessor.get(ACCOUNT_ID_TOKEN, Optional.empty())).thenReturn(Optional.ofNullable(token));
+        assertThat(accountReadableKVState.get(ACCOUNT_ID_TOKEN)).isNull();
     }
 
     @Test
