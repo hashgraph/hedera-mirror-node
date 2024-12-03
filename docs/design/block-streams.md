@@ -4,14 +4,14 @@
 
 [HIP-1056](https://hips.hedera.com/hip/hip-1056) introduces a new output data format for consensus nodes, called block streams, that replaces the existing
 record streams and signature files with one single stream. Support for block streams in the Mirror Node will be split
-into two phases. This design document concerns the first phase which will translate the block streams into the existing
-record stream format and parse the translated record streams just as we do today. The second phase (to be detailed in a
-separate design document) will remove the translation and parse the block streams directly and translate record streams
-into block streams to allow the mirror node to continue to ingest all record streams from the past.
+into two phases. This design document concerns the first phase which will transform the block streams into the existing
+record stream format and parse the transformed record streams just as we do today. The second phase (to be detailed in a
+separate design document) will remove the block to record transformation and parse the block streams directly and additionally
+transform record streams into block streams to allow the mirror node to continue to ingest all record streams from the past.
 
 ## Goals
 
-- Ingest block stream files downloaded from an S3/GCP bucket and translate them into record stream files.
+- Ingest block stream files downloaded from an S3/GCP bucket and transform them into record stream files.
 
 ## Non-Goals
 
@@ -70,37 +70,40 @@ public class ProtoBlockFileReader implements BlockFileReader {
 }
 ```
 
-#### StreamFileTranslator
+#### StreamFileTransformer
 
 ```java
 package com.hedera.mirror.importer.downloader;
 
-public interface StreamFileTranslator<T extends StreamFile<?>, S extends StreamFile<?>> {
-    // Used for translating a block file into a record file in phase one and for translating a record file into a block file in phase two.
-    T translate(S s);
+public interface StreamFileTransformer<T extends StreamFile<?>, S extends StreamFile<?>> {
+    // Used for transforming a block file into a record file in phase one and for transforming a record file into a block file in phase two.
+    T transform(S s);
 }
 ```
 
-#### BlockFileTranslator
+#### BlockFileTransformer
 
 ```java
 package com.hedera.mirror.importer.downloader.block;
 
-public class BlockFileTranslator implements StreamFileTranslator<RecordFile, BlockFile> {
+public class BlockFileTransformer implements StreamFileTransformer<RecordFile, BlockFile> {
 
     /**
-     *   Translates the block file into a record file and calculates the block hash
-     *   The translation uses a mapping of block fields to record file fields
-     *   Block items are only iterated once in the translate method
+     *   Transforms the block file into a record file and calculates the block hash
+     *   The transformation uses a mapping of block fields to record file fields
+     *   Block items are only iterated once in the transform method
      *   State changes are accumulated and used for calculating the block hash
      *
      *   If the Block File contains a Wrapped Record File, then convert the Wrapped Record File to a Record File
      */
     @Override
-    public RecordFile translate(BlockFile block);
+    public RecordFile transform(BlockFile block);
 
     // Block hashes are not included in the block. They must be calculated from the state changes within the block.
     private byte[] calculateBlockHash(byte[] previousBlockHash, List<StateChanges> stateChanges);
+
+    // The transaction hash will not be included in the block stream output so we will need to calculate it
+    private byte[] calculateTransactionHash(EventTransaction transaction);
 }
 ```
 
@@ -109,8 +112,8 @@ public class BlockFileTranslator implements StreamFileTranslator<RecordFile, Blo
 ```java
 package com.hedera.mirror.importer.downloader;
 
-public abstract class StreamPoller<StreamFile> {
-    public abstract void poll();
+public interface StreamPoller<StreamFile> {
+    void poll();
 }
 ```
 
@@ -129,6 +132,11 @@ public class BlockStreamPoller extends StreamPoller<BlockFile> {
      * Uses the previous block number to derive the name of the next block file to download and should not use any bucket file list operations
      * Uses streamFileProvider to download the block file
      * Passes block files on to the blockStreamVerifier
+     *
+     * Also of note is that block file names are left padded:
+     *    000000000000000000000000000000000001.blk.gz
+     *
+     * So we will want an efficient means of incrementing the block number
      */
     @Scheduled
     public void poll();
@@ -144,12 +152,13 @@ public class BlockStreamPoller extends StreamPoller<BlockFile> {
 ```java
 package com.hedera.mirror.importer.downloader.block;
 
-public class BlockStreamVerifier implements StreamFileNotifier, Closable {
-    private final StreamFileTranslator<RecordFile, BlockFile> blockFileTranslator;
+public class BlockStreamVerifier {
+    private final StreamFileNotifier streamFileNotifier;
+    private final StreamFileTransformer<RecordFile, BlockFile> blockFileTransformer;
     private final RecordFileParser recordFileParser;
 
     /**
-     * Translates the block file into a record file, verifies the hash chain and then parses it
+     * Transforms the block file into a record file, verifies the hash chain and then parses it
      * Does not parse Block N until Block N+1 has been downloaded and used to verify Block N
      */
     public void notify(@Nonnull StreamFile<?> streamFile);
@@ -167,16 +176,26 @@ public class BlockStreamVerifier implements StreamFileNotifier, Closable {
 
 ### Database
 
-Add `software_version` to the `record_file` table. This is the consensus node version that generated the block.
-Add `congestionPricingMultiplier` to the `record_file` table.
-Rename `record_file` to `block_file`.
+- Add `software_version` to the `record_file` table. This is the consensus node version that generated the block.
+- Add `congestionPricingMultiplier`, `round_start`, `round_end` to the `record_file` table, these come from the block.
+- Rename `record_file` to `block`. This will be a low priority task near the end of implementing phase one, as it requires a large number of changes.
 
-### Block to Record File Translation
+```sql
+alter table if exists record_file
+    add column if not exists software_version_major        int          null,
+    add column if not exists software_version_minor        int          null,
+    add column if not exists software_version_patch        int          null,
+    add column if not exists congestion_pricing_multiplier bigint       null,
+    add column if not exists round_start                   bigint       null,
+    add column if not exists round_end                     bigint       null;
+```
 
-Blocks are composed of block items. A record item may be translated from a set of multiple block items.
+### Block to Record File Transformation
+
+Blocks are composed of block items. A record item may be transformed from a set of multiple block items.
 Beginning from an `EventTransaction` block item, a record item is composed of one `TransactionResult` block item, zero to N `TransactionOutput` block items and zero to N `StateChange` block items.
 
-![Translation](images/translation.png)
+![Transformation](images/transformation.png)
 
 ## Block protobuf to mirror node database mapping
 
@@ -201,9 +220,9 @@ Beginning from an `EventTransaction` block item, a record item is composed of on
 | name               | Name of the blk file                                                                                                                |
 | node_id            |                                                                                                                                     |
 | prev_hash          | block_header.previous_block_hash                                                                                                    |
-| sidecar_count      | Count of all transaction*output.\_transaction type*.sidecars in the blk file                                                        |
+| sidecar_count      | Set to 0 as sidecar data is being integrated into the block                                                                         |
 | size               | byte size of the blk file                                                                                                           |
-| version            | Record stream version - Perhaps a new version should be added to indicate "Translated from Block"                                   |
+| version            | Set to 7                                                                                                                            |
 
 ### Contract Create Transaction
 
@@ -284,7 +303,7 @@ Beginning from an `EventTransaction` block item, a record item is composed of on
 | entity.balance_timestamp                      | state_changes.consensus_timestamp                                                                       |
 | entity.created_timestamp                      |                                                                                                         |
 | entity.decline_reward                         | state_changes[i].state_change.map_update.value.account_value.decline_reward                             |
-| entity.deleted                                | state_changes[i].state_change.map_update.value.account_value.deleted                                    |
+| entity.deleted                                | state_changes[i].state_change.map_delete.key.accountId                                                  |
 | entity.ethereum_nonce                         | state_changes[i].state_change.map_update.value.account_value.ethereum_nonce                             |
 | entity.evm_address                            | transaction_output.contract_create.contract_create_result.evm_address                                   |
 | entity.expiration_timestamp                   | state_changes[i].state_change.map_update.value.account_value.expiration_second                          |
@@ -356,7 +375,7 @@ Beginning from an `EventTransaction` block item, a record item is composed of on
 | Database       | Block Item                                             |
 | -------------- | ------------------------------------------------------ |
 | entity.id      | state_changes[i].state_change.map_update.value.topicId |
-| entity.deleted | state_changes[i].state_change.map_update.value.deleted |
+| entity.deleted | state_changes[i].state_change.map_delete.key.topicId   |
 
 ### Transaction
 
@@ -378,4 +397,4 @@ Beginning from an `EventTransaction` block item, a record item is composed of on
 
 ## REST API
 
--Deprecate the REST API's State Proof Alpha. The record files and signature files will no longer be provided in the cloud buckets.
+- Deprecate the REST API's State Proof Alpha. The record files and signature files will no longer be provided in the cloud buckets.
