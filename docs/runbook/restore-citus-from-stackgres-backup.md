@@ -11,7 +11,8 @@ Need to restore Citus cluster from a StackGres sharded backup
 - StackGresShardedCluster backup is enabled
 - All bash commands assume your working directory is `docs/runbook/scripts`
 - Only a single citus cluster is installed per namespace
-- The kubectl context is set to the cluster you want to restore backup to
+- The kubectl context is set to the cluster you want to restore backup to and the namespace is set to the one
+  `hedera-mirror` chart is installed in
 
 ## Steps
 
