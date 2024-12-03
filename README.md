@@ -96,14 +96,14 @@ documentation for more information.
 ## Documentation
 
 - Components
-    - [GraphQL API](docs/graphql/README.md)
-    - [gRPC API](docs/grpc/README.md)
-    - [Importer](docs/importer/README.md)
-    - [Monitor](docs/monitor/README.md)
-    - [REST API](docs/rest/README.md)
-    - [REST Java API](docs/rest-java/README.md)
-    - [Rosetta API](docs/rosetta/README.md)
-    - [Web3 API](docs/web3/README.md)
+  - [GraphQL API](docs/graphql/README.md)
+  - [gRPC API](docs/grpc/README.md)
+  - [Importer](docs/importer/README.md)
+  - [Monitor](docs/monitor/README.md)
+  - [REST API](docs/rest/README.md)
+  - [REST Java API](docs/rest-java/README.md)
+  - [Rosetta API](docs/rosetta/README.md)
+  - [Web3 API](docs/web3/README.md)
 - [Configuration](docs/configuration.md)
 - [Development Guide](docs/development.md)
 - [Contributing](docs/contributing.md)

@@ -21,6 +21,7 @@ Need to restore Citus cluster from disk snapshots
 ## Steps
 
 Run script and follow along with all prompts
+
 ```bash
 ./restore-volume-snapshot.sh
 ```
