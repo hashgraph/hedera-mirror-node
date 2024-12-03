@@ -50,6 +50,7 @@ import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.utils.EntityIdUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -153,7 +154,7 @@ class AccountReadableKVStateTest {
     @BeforeEach
     void setup() {
         entity = new Entity();
-        entity.setId(NUM);
+        entity.setId(EntityIdUtils.toAccountId(SHARD, REALM, TOKEN_NUM).accountNum());
         entity.setCreatedTimestamp(timestamp.get());
         entity.setShard(SHARD);
         entity.setRealm(REALM);
@@ -168,7 +169,7 @@ class AccountReadableKVStateTest {
         entity.setType(EntityType.ACCOUNT);
 
         token = new Entity();
-        token.setId(TOKEN_NUM);
+        token.setId(EntityIdUtils.toAccountId(SHARD, REALM, TOKEN_NUM).accountNum());
         token.setCreatedTimestamp(timestamp.get());
         token.setShard(SHARD);
         token.setRealm(REALM);

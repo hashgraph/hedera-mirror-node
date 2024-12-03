@@ -70,7 +70,7 @@ class TokenReadableKVStateTest {
 
     private static final TokenID TOKEN_ID =
             TokenID.newBuilder().shardNum(0L).realmNum(0L).tokenNum(1252L).build();
-    private static final TokenID TOKEN_ID_ACCOUNT =
+    private static final TokenID TOKEN_ID_FOR_NEGATIVE_TEST =
             TokenID.newBuilder().shardNum(0L).realmNum(0L).tokenNum(1253L).build();
     private static final Long TOKEN_ENCODED_ID = EntityId.of(
                     TOKEN_ID.shardNum(), TOKEN_ID.realmNum(), TOKEN_ID.tokenNum())
@@ -138,8 +138,8 @@ class TokenReadableKVStateTest {
         account = domainBuilder
                 .entity()
                 .customize(e -> {
-                    e.id(TOKEN_ID_ACCOUNT.tokenNum());
-                    e.num(TOKEN_ID_ACCOUNT.tokenNum());
+                    e.id(TOKEN_ID_FOR_NEGATIVE_TEST.tokenNum());
+                    e.num(TOKEN_ID_FOR_NEGATIVE_TEST.tokenNum());
                     e.type(EntityType.ACCOUNT);
                 })
                 .get();
@@ -196,8 +196,10 @@ class TokenReadableKVStateTest {
     @Test
     void getTokenReturnsNullWhenIdIsAnAccount() {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(commonEntityAccessor.get(TOKEN_ID_ACCOUNT, Optional.empty())).thenReturn(Optional.ofNullable(account));
-        assertThat(tokenReadableKVState.readFromDataSource(TOKEN_ID_ACCOUNT)).isNull();
+        when(commonEntityAccessor.get(TOKEN_ID_FOR_NEGATIVE_TEST, Optional.empty()))
+                .thenReturn(Optional.ofNullable(account));
+        assertThat(tokenReadableKVState.readFromDataSource(TOKEN_ID_FOR_NEGATIVE_TEST))
+                .isNull();
     }
 
     @Test
