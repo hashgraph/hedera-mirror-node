@@ -12,20 +12,11 @@ else
   gcloud projects describe "${GCP_PROJECT}" > /dev/null
 fi
 
-DISK_PREFIX="$(kubectl -n "${COMMON_NAMESPACE}" get daemonsets -l 'app=zfs-init' -o json |
-jq -r '.items[0].spec.template.spec.initContainers[0].env[] | select (.name == "DISK_PREFIX") | .value')"
-if [[ -z "${DISK_PREFIX}" ]]; then
-  log "DISK_PREFIX can not be empty. Exiting"
-  exit 1
-fi
-
+getDiskPrefix
 log "Finding disks with prefix ${DISK_PREFIX}"
-DISKS_TO_SNAPSHOT=$(gcloud compute disks list \
---project "${GCP_PROJECT}" \
---filter="name~${DISK_PREFIX}.*-zfs" \
---format="json(name, sizeGb, users, zone)")
+DISKS_TO_SNAPSHOT=$(gcloud compute disks list --project "${GCP_PROJECT}"  --filter="name~${DISK_PREFIX}.*-zfs" --format="json(name, sizeGb, users, zone)")
 if [[ "${DISKS_TO_SNAPSHOT}" == "[]" ]]; then
-  log "No disks found for prefix. Exiting ${DISK_PREFIX}"
+  log "No disks found for prefix. Exiting"
   exit 1
 fi
 
@@ -35,7 +26,7 @@ doContinue
 
 ZFS_VOLUMES=$(getZFSVolumes)
 
-NAMESPACES=($(echo $ZFS_VOLUMES | jq -r '.[].namespace'| tr ' ' '\n' | sort -u | tr '\n' ' '))
+NAMESPACES=($(echo $ZFS_VOLUMES | jq -r '.[].namespace' | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
 for namespace in "${NAMESPACES[@]}"
 do
