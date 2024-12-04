@@ -17,10 +17,17 @@
 package com.hedera.mirror.monitor;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.net.InetAddresses;
+import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.proto.AccountID;
+import com.hedera.hashgraph.sdk.proto.NodeAddress;
+import com.hedera.hashgraph.sdk.proto.ServiceEndpoint;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.List;
 import lombok.Data;
 import lombok.Getter;
@@ -40,6 +47,8 @@ public class NodeProperties {
     @JsonIgnore
     @ToString.Exclude
     private final List<AccountId> accountIds = List.of(AccountId.fromString(getAccountId()));
+
+    private String certHash;
 
     @NotBlank
     private String host;
@@ -69,5 +78,33 @@ public class NodeProperties {
             return nodeAccountId.num - 3;
         }
         return nodeId;
+    }
+
+    public NodeAddress toNodeAddress() {
+        try {
+            var ipAddressV4 = toIpAddressV4();
+            var nodeAccountId = getAccountIds().get(0);
+
+            return NodeAddress.newBuilder()
+                    .setNodeCertHash(certHash != null ? ByteString.copyFromUtf8(certHash) : ByteString.EMPTY)
+                    .setNodeAccountId(AccountID.parseFrom(nodeAccountId.toBytes()))
+                    .setNodeId(nodeId)
+                    .addServiceEndpoint(ServiceEndpoint.newBuilder()
+                            .setDomainName(ipAddressV4.isEmpty() ? host : "")
+                            .setIpAddressV4(ipAddressV4)
+                            .setPort(port))
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private ByteString toIpAddressV4() throws UnknownHostException {
+        if (!InetAddresses.isInetAddress(host)) {
+            return ByteString.EMPTY;
+        }
+
+        var address = InetAddress.getByName(host).getAddress();
+        return ByteString.copyFrom(address);
     }
 }
