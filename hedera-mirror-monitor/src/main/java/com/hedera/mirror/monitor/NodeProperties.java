@@ -32,6 +32,7 @@ import java.util.List;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import org.springframework.validation.annotation.Validated;
 
@@ -80,23 +81,20 @@ public class NodeProperties {
         return nodeId;
     }
 
+    @SneakyThrows
     public NodeAddress toNodeAddress() {
-        try {
-            var ipAddressV4 = toIpAddressV4();
-            var nodeAccountId = getAccountIds().get(0);
+        var ipAddressV4 = toIpAddressV4();
+        var nodeAccountId = getAccountIds().get(0);
 
-            return NodeAddress.newBuilder()
-                    .setNodeCertHash(certHash != null ? ByteString.copyFromUtf8(certHash) : ByteString.EMPTY)
-                    .setNodeAccountId(AccountID.parseFrom(nodeAccountId.toBytes()))
-                    .setNodeId(nodeId)
-                    .addServiceEndpoint(ServiceEndpoint.newBuilder()
-                            .setDomainName(ipAddressV4.isEmpty() ? host : "")
-                            .setIpAddressV4(ipAddressV4)
-                            .setPort(port))
-                    .build();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return NodeAddress.newBuilder()
+                .setNodeCertHash(certHash != null ? ByteString.copyFromUtf8(certHash) : ByteString.EMPTY)
+                .setNodeAccountId(AccountID.parseFrom(nodeAccountId.toBytes()))
+                .setNodeId(nodeId)
+                .addServiceEndpoint(ServiceEndpoint.newBuilder()
+                        .setDomainName(ipAddressV4.isEmpty() ? host : "")
+                        .setIpAddressV4(ipAddressV4)
+                        .setPort(port))
+                .build();
     }
 
     private ByteString toIpAddressV4() throws UnknownHostException {
