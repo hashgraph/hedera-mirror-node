@@ -49,7 +49,6 @@ import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
-import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
@@ -59,7 +58,6 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
@@ -74,31 +72,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class StoreImplTest {
 
-    private static final int POSITIVE_BALANCES = 7;
-    private static final int NEGATIVE_BALANCES = 8;
-    private static final List<TokenAccountAssociationsCount> associationsCount = Arrays.asList(
-            new TokenAccountAssociationsCount() {
-                @Override
-                public Integer getTokenCount() {
-                    return POSITIVE_BALANCES;
-                }
-
-                @Override
-                public boolean getIsPositiveBalance() {
-                    return true;
-                }
-            },
-            new TokenAccountAssociationsCount() {
-                @Override
-                public Integer getTokenCount() {
-                    return NEGATIVE_BALANCES;
-                }
-
-                @Override
-                public boolean getIsPositiveBalance() {
-                    return false;
-                }
-            });
     private static final Address TOKEN_ADDRESS = Address.ALTBN128_ADD;
     private static final Address ACCOUNT_ADDRESS = Address.BLS12_MAP_FP2_TO_G2;
     private static final String ALIAS_HEX = "0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb";

@@ -39,7 +39,7 @@ public class HexValidator implements ConstraintValidator<Hex, String> {
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        if (value == null || ((minLength == 0 || allowEmpty) && value.length() == 0)) {
+        if (value == null || ((minLength == 0 || allowEmpty) && value.isEmpty())) {
             return true;
         }
 

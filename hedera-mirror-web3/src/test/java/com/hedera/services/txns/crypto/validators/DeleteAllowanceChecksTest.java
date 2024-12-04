@@ -100,11 +100,6 @@ class DeleteAllowanceChecksTest {
             .setTokenId(nftToken)
             .addAllSerialNumbers(List.of(20L))
             .build();
-    private final NftRemoveAllowance nftAllowance3 = NftRemoveAllowance.newBuilder()
-            .setOwner(payerId)
-            .setTokenId(nftToken)
-            .addAllSerialNumbers(List.of(30L))
-            .build();
 
     private List<NftRemoveAllowance> nftAllowances = new ArrayList<>();
 

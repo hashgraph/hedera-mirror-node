@@ -95,24 +95,6 @@ class OverflowCheckingCalcTest {
         assertEquals(5, subject.safeAccumulateFour(1, 1, 1, 1, 1));
     }
 
-    private static final long multiplier = 2L;
-    private static final long veryHighFloorFee = Long.MAX_VALUE / 2;
-    private static final FeeComponents mockLowCeilFees = FeeComponents.newBuilder()
-            .setMax(1234567L)
-            .setConstant(1_234_567L)
-            .setBpr(1_000_000L)
-            .setBpt(2_000_000L)
-            .setRbh(3_000_000L)
-            .setSbh(4_000_000L)
-            .build();
-    private static final FeeComponents mockHighFloorFees = FeeComponents.newBuilder()
-            .setMin(veryHighFloorFee)
-            .setConstant(1_234_567L)
-            .setBpr(1_000_000L)
-            .setBpt(2_000_000L)
-            .setRbh(3_000_000L)
-            .setSbh(4_000_000L)
-            .build();
     private static final FeeComponents mockFees = FeeComponents.newBuilder()
             .setMax(Long.MAX_VALUE)
             .setConstant(1_234_567L)
@@ -128,16 +110,6 @@ class OverflowCheckingCalcTest {
             .setNetworkdata(mockFees)
             .setNodedata(mockFees)
             .setServicedata(mockFees)
-            .build();
-    private static final FeeData mockLowCeilPrices = FeeData.newBuilder()
-            .setNetworkdata(mockLowCeilFees)
-            .setNodedata(mockLowCeilFees)
-            .setServicedata(mockLowCeilFees)
-            .build();
-    private static final FeeData mockHighFloorPrices = FeeData.newBuilder()
-            .setNetworkdata(mockHighFloorFees)
-            .setNodedata(mockHighFloorFees)
-            .setServicedata(mockHighFloorFees)
             .build();
 
     private static final long one = 1;

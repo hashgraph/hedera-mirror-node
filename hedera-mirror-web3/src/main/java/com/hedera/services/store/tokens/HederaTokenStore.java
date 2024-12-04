@@ -626,7 +626,7 @@ public class HederaTokenStore {
 
     private Token updateTokenSymbolIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
         Token updatedToken = token;
-        if (changes.getSymbol().length() > 0) {
+        if (!changes.getSymbol().isEmpty()) {
             updatedToken = token.setSymbol(changes.getSymbol());
         }
         return updatedToken;
@@ -634,7 +634,7 @@ public class HederaTokenStore {
 
     private Token updateTokenNameIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
         Token updatedToken = token;
-        if (changes.getName().length() > 0) {
+        if (!changes.getName().isEmpty()) {
             updatedToken = token.setName(changes.getName());
         }
         return updatedToken;
@@ -687,8 +687,8 @@ public class HederaTokenStore {
                 && !op.hasTreasury()
                 && !op.hasPauseKey()
                 && !op.hasAutoRenewAccount()
-                && op.getSymbol().length() == 0
-                && op.getName().length() == 0
+                && op.getSymbol().isEmpty()
+                && op.getName().isEmpty()
                 && op.getAutoRenewPeriod().getSeconds() == 0
                 && !op.hasMemo();
     }

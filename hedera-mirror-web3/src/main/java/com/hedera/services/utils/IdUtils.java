@@ -28,6 +28,10 @@ import java.util.stream.Stream;
 
 public class IdUtils {
 
+    private IdUtils() {
+        throw new UnsupportedOperationException("Utility class should not be instantiated");
+    }
+
     public static BalanceChange hbarChange(final AccountID account, final long amount) {
         return BalanceChange.changingHbar(adjustFrom(account, amount), null);
     }

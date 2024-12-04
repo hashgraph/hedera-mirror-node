@@ -138,8 +138,8 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
             newMutableRb += BASIC_ENTITY_ID_SIZE;
         }
         newMutableRb += op.hasMemo() ? op.getMemo().getValue().length() : currentMemoLen;
-        newMutableRb += (op.getName().length() > 0) ? op.getName().length() : currentNameLen;
-        newMutableRb += (op.getSymbol().length() > 0) ? op.getSymbol().length() : currentSymbolLen;
+        newMutableRb += (!op.getName().isEmpty()) ? op.getName().length() : currentNameLen;
+        newMutableRb += (!op.getSymbol().isEmpty()) ? op.getSymbol().length() : currentSymbolLen;
         long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
                 this.op, Math.max(op.getExpiry().getSeconds(), currentExpiry));
         newLifetime = Math.min(newLifetime, MAX_ENTITY_LIFETIME);

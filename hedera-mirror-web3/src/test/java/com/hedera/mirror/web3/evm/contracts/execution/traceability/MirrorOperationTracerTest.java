@@ -45,7 +45,7 @@ class MirrorOperationTracerTest {
     private static final Address contract = Address.fromHexString("0x2");
     private static final Address recipient = Address.fromHexString("0x3");
     private static final Address sender = Address.fromHexString("0x4");
-    private static final long initialGas = 1000L;
+    private static final long INITIAL_GAS = 1000L;
     private static final Bytes input = Bytes.of("inputData".getBytes());
     private static final Operation operation = new BalanceOperation(null);
     private static final Bytes outputData = Bytes.of("outputData".getBytes());
@@ -98,7 +98,7 @@ class MirrorOperationTracerTest {
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getContractAddress()).willReturn(contract);
         given(messageFrame.getCurrentOperation()).willReturn(operation);
-        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getRemainingGas()).willReturn(INITIAL_GAS);
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getOutputData()).willReturn(outputData);
         given(messageFrame.getRecipientAddress()).willReturn(recipient);
@@ -145,7 +145,7 @@ class MirrorOperationTracerTest {
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getContractAddress()).willReturn(contract);
         given(messageFrame.getCurrentOperation()).willReturn(operation);
-        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getRemainingGas()).willReturn(INITIAL_GAS);
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getOutputData()).willReturn(outputData);
         given(messageFrame.getRecipientAddress()).willReturn(recipient);
@@ -178,7 +178,7 @@ class MirrorOperationTracerTest {
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getContractAddress()).willReturn(contract);
         given(messageFrame.getCurrentOperation()).willReturn(operation);
-        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getRemainingGas()).willReturn(INITIAL_GAS);
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getOutputData()).willReturn(outputData);
         given(messageFrame.getRecipientAddress()).willReturn(recipient);
@@ -190,7 +190,7 @@ class MirrorOperationTracerTest {
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getContractAddress()).willReturn(contract);
         given(messageFrame.getCurrentOperation()).willReturn(operation);
-        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getRemainingGas()).willReturn(INITIAL_GAS);
         given(messageFrame.getInputData()).willReturn(input);
         given(messageFrame.getOutputData()).willReturn(outputData);
         given(messageFrame.getRecipientAddress()).willReturn(recipient);

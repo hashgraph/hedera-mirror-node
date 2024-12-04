@@ -54,7 +54,6 @@ import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInf
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -79,9 +78,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SyntheticTxnFactoryTest {
     private static final long serialNo = 100;
     private static final long secondAmount = 200;
-    private static final long newExpiry = 1_234_567L;
-    private final EntityNum contractNum = EntityNum.fromLong(666);
-    private final EntityNum accountNum = EntityNum.fromLong(1234);
     private static final AccountID a = IdUtils.asAccount("0.0.2");
     private static final AccountID b = IdUtils.asAccount("0.0.3");
     private static final AccountID c = IdUtils.asAccount("0.0.4");
@@ -90,14 +86,12 @@ class SyntheticTxnFactoryTest {
     private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
     private static final List<ByteString> newMetadata =
             List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
-    private static final long valueInTinyBars = 123;
     public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
     public static final TokenID token = IdUtils.asToken("0.0.1");
     public static final AccountID payer = IdUtils.asAccount("0.0.12345");
     public static final AccountID sender = IdUtils.asAccount("0.0.2");
 
     public static final AccountID receiver = IdUtils.asAccount("0.0.3");
-    public static final Id payerId = Id.fromGrpcAccount(payer);
     public static final Id senderId = Id.fromGrpcAccount(sender);
 
     private SyntheticTxnFactory subject = new SyntheticTxnFactory();
