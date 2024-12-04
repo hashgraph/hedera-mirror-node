@@ -152,9 +152,6 @@ class TokenCreatePrecompileTest {
     private static final long TEST_SERVICE_FEE = 100L;
     private static final long TEST_NODE_FEE = 100_000L;
     private static final long TEST_NETWORK_FEE = 100L;
-    private static final long EXPECTED_TINYBARS_REQUIREMENT = (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
-            + (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / 5;
-    private static final long SENDER_INITIAL_BALANCE = 1_000_000L;
 
     @Mock
     private AssetsLoader assetLoader;

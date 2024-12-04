@@ -386,8 +386,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         var streamFile2 = getStreamFile();
 
         // when
-        assertThatThrownBy(() -> parser.parse(List.of(streamFile1, streamFile2)))
-                .isInstanceOf(HashMismatchException.class);
+        List<RecordFile> recordFiles = List.of(streamFile1, streamFile2);
+        assertThatThrownBy(() -> parser.parse(recordFiles)).isInstanceOf(HashMismatchException.class);
 
         // then
         verify(recordItemListener).onItem(recordItem1);
