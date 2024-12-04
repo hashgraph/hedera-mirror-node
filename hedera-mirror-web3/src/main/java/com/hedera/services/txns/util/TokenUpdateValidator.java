@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 public class TokenUpdateValidator {
 
     private TokenUpdateValidator() {
-        throw new UnsupportedOperationException("Utility class");
+        throw new UnsupportedOperationException("Utility class should not be instantiated");
     }
 
     public static ResponseCodeEnum validate(final TransactionBody txnBody, final OptionValidator validator) {
