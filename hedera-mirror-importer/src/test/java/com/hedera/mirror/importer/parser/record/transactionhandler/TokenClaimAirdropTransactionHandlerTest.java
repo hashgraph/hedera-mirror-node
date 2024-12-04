@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
@@ -38,6 +39,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
     private final EntityId receiver = domainBuilder.entityId();
     private final AccountID receiverAccountId = recordItemBuilder.accountId();
     private final EntityId sender = domainBuilder.entityId();
@@ -72,6 +74,7 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
         // given
         var tokenAirdrop = ArgumentCaptor.forClass(TokenAirdrop.class);
         var token = recordItemBuilder.tokenId();
+        var tokenId = EntityId.of(token);
         var pendingAirdropId =
                 PendingAirdropId.newBuilder().setReceiverId(receiverAccountId).setSenderId(senderAccountId);
         if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
@@ -91,7 +94,7 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
                 .get();
 
         var expectedEntityTransactions =
-                getExpectedEntityTransactions(recordItem, transaction, receiver, sender, EntityId.of(token));
+                getExpectedEntityTransactions(recordItem, transaction, receiver, sender, tokenId);
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -99,6 +102,17 @@ class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandler
         // then
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
 
+        var tokenAccount = new TokenAccount();
+        tokenAccount.setAccountId(receiver.getId());
+        tokenAccount.setAssociated(true);
+        tokenAccount.setAutomaticAssociation(false);
+        tokenAccount.setBalance(0L);
+        tokenAccount.setBalanceTimestamp(timestamp);
+        tokenAccount.setClaim(true);
+        tokenAccount.setCreatedTimestamp(timestamp);
+        tokenAccount.setTimestampLower(timestamp);
+        tokenAccount.setTokenId(tokenId.getId());
+        verify(entityListener).onTokenAccount(tokenAccount);
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())
                 .returns(receiver.getNum(), TokenAirdrop::getReceiverAccountId)
