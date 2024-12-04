@@ -24,7 +24,6 @@ plugins {
 
 dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor")
-
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
     implementation("io.github.mweirauch:micrometer-jvm-extras")
