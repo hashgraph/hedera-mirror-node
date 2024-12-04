@@ -296,17 +296,27 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+        var id = tokenAccount.getId();
+
         // Users might have already manually associated to this token before claiming the airdrop
-        if (tokenAccount.isClaim() && hasExistingTokenAccount(tokenAccount.getId())) {
+        if (tokenAccount.isClaim() && isTokenAccountAlreadyAssociated(id)) {
             return;
         }
 
-        context.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
+        context.merge(id, tokenAccount, this::mergeTokenAccount);
     }
 
-    private boolean hasExistingTokenAccount(Id id) {
-        return context.get(TokenAccount.class, id) != null
-                || tokenAccountRepository.findById(id).isPresent();
+    private boolean isTokenAccountAlreadyAssociated(Id id) {
+        var existing = context.get(TokenAccount.class, id);
+
+        if (existing != null) {
+            return Objects.requireNonNullElse(existing.getAssociated(), true);
+        }
+
+        return tokenAccountRepository
+                .findById(id)
+                .map(TokenAccount::getAssociated)
+                .orElse(false);
     }
 
     @Override

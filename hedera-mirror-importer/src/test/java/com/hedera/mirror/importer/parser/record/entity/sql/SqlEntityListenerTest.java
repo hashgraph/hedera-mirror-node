@@ -2413,10 +2413,56 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         assertThat(findHistory(TokenAccount.class)).isEmpty();
     }
 
-    @ValueSource(booleans = {true, false})
+    @CsvSource(
+            nullValues = "null",
+            textBlock = """
+            false, false
+            true, false
+            true, null
+            """)
     @ParameterizedTest
-    void onTokenAccountClaimExisting(boolean database) {
-        var tokenAccountAssociate = domainBuilder.tokenAccount().get();
+    void onTokenAccountClaimNoExistingAssociated(boolean database, Boolean associated) {
+        var tokenAccountDissociate = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.associated(associated))
+                .get();
+        var tokenAccountClaim = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.claim(true)
+                        .accountId(tokenAccountDissociate.getAccountId())
+                        .tokenId(tokenAccountDissociate.getTokenId()))
+                .get();
+
+        sqlEntityListener.onTokenAccount(tokenAccountDissociate);
+
+        if (database) {
+            completeFileAndCommit();
+        }
+
+        // when
+        sqlEntityListener.onTokenAccount(tokenAccountClaim);
+        completeFileAndCommit();
+
+        // then
+        tokenAccountDissociate.setAssociated(false);
+        tokenAccountDissociate.setTimestampUpper(tokenAccountClaim.getTimestampLower());
+        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccountClaim);
+        assertThat(findHistory(TokenAccount.class)).containsExactly(tokenAccountDissociate);
+    }
+
+    @CsvSource(
+            nullValues = "null",
+            textBlock = """
+            false, true
+            false, null
+            true, true
+            """)
+    @ParameterizedTest
+    void onTokenAccountClaimExistingAssociated(boolean database, Boolean associated) {
+        var tokenAccountAssociate = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.associated(associated))
+                .get();
         var tokenAccountClaim = domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.claim(true)
@@ -2435,7 +2481,10 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         completeFileAndCommit();
 
         // then
-        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccountAssociate);
+        if (associated == null) { // db defaults to false
+            tokenAccountAssociate.setAssociated(false);
+        }
+        assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccountAssociate);
         assertThat(findHistory(TokenAccount.class)).isEmpty();
     }
 
