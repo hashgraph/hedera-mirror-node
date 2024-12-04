@@ -34,12 +34,12 @@ import org.junit.jupiter.api.Test;
 @RequiredArgsConstructor
 class FileDataRepositoryTest extends Web3IntegrationTest {
 
-    private static final long expiry = 1_234_567_890L;
-    private static final byte[] exchangeRatesSet = ExchangeRateSet.newBuilder()
+    private static final long EXPIRY = 1_234_567_890L;
+    private static final byte[] EXCHANGE_RATES_SET = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
                     .setCentEquiv(1)
                     .setHbarEquiv(12)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expiry))
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(EXPIRY))
                     .build())
             .setNextRate(ExchangeRate.newBuilder()
                     .setCentEquiv(2)
@@ -49,7 +49,7 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
             .build()
             .toByteArray();
 
-    private static final byte[] exchangeRatesSet200 = ExchangeRateSet.newBuilder()
+    private static final byte[] EXCHANGE_RATES_SET_200 = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
                     .setCentEquiv(2)
                     .setHbarEquiv(13)
@@ -63,7 +63,7 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
             .build()
             .toByteArray();
 
-    private static final byte[] exchangeRatesSet300 = ExchangeRateSet.newBuilder()
+    private static final byte[] EXCHANGE_RATES_SET_300 = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
                     .setCentEquiv(3)
                     .setHbarEquiv(14)
@@ -77,9 +77,9 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
             .build()
             .toByteArray();
 
-    private static final byte[] feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
+    private static final byte[] FEE_SCHEDULES = CurrentAndNextFeeSchedule.newBuilder()
             .setCurrentFeeSchedule(FeeSchedule.newBuilder()
-                    .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
+                    .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(EXPIRY))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(ContractCall)
                             .addFees(FeeData.newBuilder().build())))
@@ -99,13 +99,13 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
     void getHistoricalFileForExchangeRates() {
         var expected1 = domainBuilder
                 .fileData()
-                .customize(f -> f.fileData(exchangeRatesSet200)
+                .customize(f -> f.fileData(EXCHANGE_RATES_SET_200)
                         .entityId(EXCHANGE_RATE_ENTITY_ID)
                         .consensusTimestamp(200L))
                 .persist();
         var expected2 = domainBuilder
                 .fileData()
-                .customize(f -> f.fileData(exchangeRatesSet300)
+                .customize(f -> f.fileData(EXCHANGE_RATES_SET_300)
                         .entityId(EXCHANGE_RATE_ENTITY_ID)
                         .consensusTimestamp(300L))
                 .persist();
@@ -134,12 +134,12 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
     void getFileForExchangeRates() {
         var expected = domainBuilder
                 .fileData()
-                .customize(f -> f.fileData(exchangeRatesSet)
+                .customize(f -> f.fileData(EXCHANGE_RATES_SET)
                         .entityId(EXCHANGE_RATE_ENTITY_ID)
-                        .consensusTimestamp(expiry))
+                        .consensusTimestamp(EXPIRY))
                 .persist();
 
-        assertThat(fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), expiry))
+        assertThat(fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), EXPIRY))
                 .get()
                 .usingRecursiveComparison()
                 .ignoringFields("transactionType")
@@ -150,12 +150,12 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
     void getFileForFeeSchedules() {
         var expected = domainBuilder
                 .fileData()
-                .customize(f -> f.fileData(feeSchedules)
+                .customize(f -> f.fileData(FEE_SCHEDULES)
                         .entityId(FEE_SCHEDULE_ENTITY_ID)
-                        .consensusTimestamp(expiry))
+                        .consensusTimestamp(EXPIRY))
                 .persist();
 
-        assertThat(fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getId(), expiry))
+        assertThat(fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getId(), EXPIRY))
                 .get()
                 .usingRecursiveComparison()
                 .ignoringFields("transactionType")

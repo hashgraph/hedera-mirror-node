@@ -99,40 +99,40 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaTokenStoreTest {
-    private static final Key key = Key.newBuilder()
+    private static final Key KEY = Key.newBuilder()
             .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .build();
-    private static final Key newKey = Key.newBuilder()
+    private static final Key NEW_KEY = Key.newBuilder()
             .setEd25519(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
             .build();
 
     private final JKey kycKey = asFcKeyUnchecked(
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
-    private static final int associatedTokensCount = 2;
-    private static final int numPositiveBalances = 1;
+    private static final int ASSOCIATED_TOKENS_COUNT = 2;
+    private static final int NUM_POSITIVE_BALANCES = 1;
     public static final long CONSENSUS_NOW = 1_234_567L;
-    private static final long expiry = CONSENSUS_NOW + 1_234_567L;
-    private static final long newExpiry = CONSENSUS_NOW + 1_432_765L;
-    private static final long treasuryBalance = 50_000L;
-    private static final TokenID misc = asToken("0.0.1");
-    private static final TokenID nonfungible = asToken("0.0.2");
-    private static final int maxAutoAssociations = 1234;
-    private static final AccountID payer = IdUtils.asAccount("0.0.12345");
-    private static final AccountID primaryTreasury = IdUtils.asAccount("0.0.9898");
-    private static final AccountID treasury = IdUtils.asAccount("0.0.3");
-    private static final AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.6");
-    private static final AccountID sponsor = IdUtils.asAccount("0.0.666");
-    private static final AccountID counterparty = IdUtils.asAccount("0.0.777");
-    private static final AccountID anotherFeeCollector = IdUtils.asAccount("0.0.777");
-    private static final TokenRelationshipKey sponsorNft = asTokenRelationshipKey(sponsor, nonfungible);
-    private static final TokenRelationshipKey counterpartyNft = asTokenRelationshipKey(counterparty, nonfungible);
-    private static final NftId aNft = new NftId(0, 0, 2, 1234);
-    private static final NftId tNft = new NftId(0, 0, 2, 12345);
-    private static final String newSymbol = "REALLYSOM";
-    private static final String newMemo = "NEWMEMO";
-    private static final String newName = "NEWNAME";
-    private static final AccountID newTreasury = IdUtils.asAccount("0.0.1");
-    private static final long newAutoRenewPeriod = 200_000L;
+    private static final long EXPIRY = CONSENSUS_NOW + 1_234_567L;
+    private static final long NEW_EXPIRY = CONSENSUS_NOW + 1_432_765L;
+    private static final long TREASURY_BALANCE = 50_000L;
+    private static final TokenID MISC = asToken("0.0.1");
+    private static final TokenID NONFUNGIBLE = asToken("0.0.2");
+    private static final int MAX_AUTO_ASSOCIATIONS = 1234;
+    private static final AccountID PAYER = IdUtils.asAccount("0.0.12345");
+    private static final AccountID PRIMARY_TREASURY = IdUtils.asAccount("0.0.9898");
+    private static final AccountID TREASURY = IdUtils.asAccount("0.0.3");
+    private static final AccountID NEW_AUTO_RENEW_ACCOUNT = IdUtils.asAccount("0.0.6");
+    private static final AccountID SPONSOR = IdUtils.asAccount("0.0.666");
+    private static final AccountID COUNTERPARTY = IdUtils.asAccount("0.0.777");
+    private static final AccountID ANOTHER_FEE_COLLECTOR = IdUtils.asAccount("0.0.777");
+    private static final TokenRelationshipKey SPONSOR_NFT = asTokenRelationshipKey(SPONSOR, NONFUNGIBLE);
+    private static final TokenRelationshipKey COUNTERPARTY_NFT = asTokenRelationshipKey(COUNTERPARTY, NONFUNGIBLE);
+    private static final NftId A_NFT = new NftId(0, 0, 2, 1234);
+    private static final NftId T_NFT = new NftId(0, 0, 2, 12345);
+    private static final String NEW_SYMBOL = "REALLYSOM";
+    private static final String NEW_MEMO = "NEWMEMO";
+    private static final String NEW_NAME = "NEWNAME";
+    private static final AccountID NEW_TREASURY = IdUtils.asAccount("0.0.1");
+    private static final long NEW_AUTO_RENEW_PERIOD = 200_000L;
     private static final EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
     private static final EnumSet<KeyType> ALL_KEYS = EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
     private StoreImpl store;
@@ -156,9 +156,9 @@ class HederaTokenStoreTest {
 
     @Test
     void getThrowsIseOnMissing() {
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
 
-        assertThrows(IllegalArgumentException.class, () -> subject.get(misc));
+        assertThrows(IllegalArgumentException.class, () -> subject.get(MISC));
     }
 
     @Test
@@ -171,162 +171,162 @@ class HederaTokenStoreTest {
 
     @Test
     void associatingRejectsDeletedTokens() {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
-        var token = new Token(Id.fromGrpcToken(misc)).setIsDeleted(true);
+        var account = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0);
+        var token = new Token(Id.fromGrpcToken(MISC)).setIsDeleted(true);
 
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willReturn(account);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
 
-        final var status = subject.autoAssociate(sponsor, misc);
+        final var status = subject.autoAssociate(SPONSOR, MISC);
 
         assertEquals(TOKEN_WAS_DELETED, status);
     }
 
     @Test
     void associatingRejectsMissingToken() {
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW))
-                .willReturn(new Account(0L, Id.fromGrpcAccount(sponsor), 0));
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW))
+                .willReturn(new Account(0L, Id.fromGrpcAccount(SPONSOR), 0));
 
-        final var status = subject.autoAssociate(sponsor, misc);
+        final var status = subject.autoAssociate(SPONSOR, MISC);
 
         assertEquals(INVALID_TOKEN_ID, status);
     }
 
     @Test
     void associatingRejectsMissingAccounts() {
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willThrow(new MissingEntityException(""));
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willThrow(new MissingEntityException(""));
 
-        final var status = subject.autoAssociate(sponsor, misc);
+        final var status = subject.autoAssociate(SPONSOR, MISC);
 
         assertEquals(INVALID_ACCOUNT_ID, status);
     }
 
     @Test
     void associatingRejectsAlreadyAssociatedTokens() {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var account = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0);
+        var token = new Token(Id.fromGrpcToken(MISC));
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, MISC), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(token, account));
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willReturn(account);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
 
-        final var status = subject.autoAssociate(sponsor, misc);
+        final var status = subject.autoAssociate(SPONSOR, MISC);
 
         assertEquals(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, status);
     }
 
     @Test
     void cannotAutoAssociateIfAccountReachedTokenAssociationLimit() {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var account = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0);
+        var token = new Token(Id.fromGrpcToken(MISC));
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, MISC), OnMissing.DONT_THROW))
                 .willReturn(TokenRelationship.getEmptyTokenRelationship());
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW))
-                .willReturn(account.setNumAssociations(associatedTokensCount));
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW))
+                .willReturn(account.setNumAssociations(ASSOCIATED_TOKENS_COUNT));
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
         given(mirrorNodeEvmProperties.isLimitTokenAssociations()).willReturn(true);
-        given(mirrorNodeEvmProperties.getMaxTokensPerAccount()).willReturn(associatedTokensCount);
+        given(mirrorNodeEvmProperties.getMaxTokensPerAccount()).willReturn(ASSOCIATED_TOKENS_COUNT);
 
-        final var status = subject.autoAssociate(sponsor, misc);
+        final var status = subject.autoAssociate(SPONSOR, MISC);
 
         assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
     }
 
     @Test
     void associatingFailsWhenAutoAssociationLimitReached() {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0)
-                .setNumAssociations(associatedTokensCount)
-                .setMaxAutoAssociations(maxAutoAssociations)
-                .setUsedAutoAssociations(maxAutoAssociations);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var account = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0)
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setMaxAutoAssociations(MAX_AUTO_ASSOCIATIONS)
+                .setUsedAutoAssociations(MAX_AUTO_ASSOCIATIONS);
+        var token = new Token(Id.fromGrpcToken(MISC));
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, MISC), OnMissing.DONT_THROW))
                 .willReturn(TokenRelationship.getEmptyTokenRelationship());
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willReturn(account);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
 
-        var status = subject.autoAssociate(sponsor, misc);
+        var status = subject.autoAssociate(SPONSOR, MISC);
         assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
     }
 
     @Test
     void adjustingRejectsMissingAccount() {
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(Account.getEmptyAccount());
 
-        final var status = subject.adjustBalance(sponsor, misc, 1);
+        final var status = subject.adjustBalance(SPONSOR, MISC, 1);
 
         assertEquals(INVALID_ACCOUNT_ID, status);
     }
 
     @Test
     void changingOwnerRejectsMissingSender() {
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(Account.getEmptyAccount());
 
-        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+        final var status = subject.changeOwner(A_NFT, SPONSOR, COUNTERPARTY);
 
         assertEquals(INVALID_ACCOUNT_ID, status);
     }
 
     @Test
     void changingOwnerRejectsMissingReceiver() {
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(Account.getEmptyAccount());
 
-        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+        final var status = subject.changeOwner(A_NFT, SPONSOR, COUNTERPARTY);
 
         assertEquals(INVALID_ACCOUNT_ID, status);
     }
 
     @Test
     void changingOwnerRejectsMissingNftInstance() {
-        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
-        var token = new Token(Id.fromGrpcToken(aNft.tokenId()));
+        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0);
+        var token = new Token(Id.fromGrpcToken(A_NFT.tokenId()));
 
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willReturn(sponsorAccount);
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(sponsorAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(token, sponsorAccount));
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(new TokenRelationship(token, counterpartyAccount));
-        given(store.getUniqueToken(aNft, OnMissing.DONT_THROW)).willReturn(UniqueToken.getEmptyUniqueToken());
+        given(store.getUniqueToken(A_NFT, OnMissing.DONT_THROW)).willReturn(UniqueToken.getEmptyUniqueToken());
 
-        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+        final var status = subject.changeOwner(A_NFT, SPONSOR, COUNTERPARTY);
 
         assertEquals(INVALID_NFT_ID, status);
     }
 
     @Test
     void changingOwnerRejectsUnassociatedReceiver() {
-        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
-        var token = new Token(Id.fromGrpcToken(aNft.tokenId())).setTreasury(sponsorAccount);
+        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0);
+        var token = new Token(Id.fromGrpcToken(A_NFT.tokenId())).setTreasury(sponsorAccount);
 
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willReturn(sponsorAccount);
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(sponsorAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(TokenRelationship.getEmptyTokenRelationship());
 
-        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+        final var status = subject.changeOwner(A_NFT, SPONSOR, COUNTERPARTY);
 
         assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
     }
@@ -338,36 +338,36 @@ class HederaTokenStoreTest {
         final long startSponsorANfts = 1;
         final long startCounterpartyANfts = 0;
 
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0)
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0)
                 .setMaxAutoAssociations(100)
-                .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances)
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES)
                 .setOwnedNfts(startCounterpartyNfts);
         final var updated1CounterpartyAccount = counterpartyAccount
-                .setNumAssociations(associatedTokensCount + 1)
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT + 1)
                 .setUsedAutoAssociations(1);
         final var updated2CounterpartyAccount = updated1CounterpartyAccount
                 .setOwnedNfts(updated1CounterpartyAccount.getOwnedNfts() + 1)
                 .setNumPositiveBalances(updated1CounterpartyAccount.getNumPositiveBalances() + 1);
 
-        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(sponsor), 0)
+        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0)
                 .setOwnedNfts(startSponsorNfts)
-                .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances);
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES);
 
-        var token = new Token(Id.fromGrpcToken(nonfungible)).setTreasury(sponsorAccount);
+        var token = new Token(Id.fromGrpcToken(NONFUNGIBLE)).setTreasury(sponsorAccount);
         var nft = new UniqueToken(
-                Id.fromGrpcToken(nonfungible),
+                Id.fromGrpcToken(NONFUNGIBLE),
                 1234,
                 RichInstant.MISSING_INSTANT,
-                Id.fromGrpcAccount(sponsor),
+                Id.fromGrpcAccount(SPONSOR),
                 Id.DEFAULT,
                 new byte[0]);
 
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyANfts);
         var sponsorRel = new TokenRelationship(token, sponsorAccount).setBalance(startSponsorANfts);
 
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.THROW))
                 .willReturn(
                         counterpartyAccount,
                         counterpartyAccount,
@@ -375,26 +375,26 @@ class HederaTokenStoreTest {
                         counterpartyAccount,
                         counterpartyAccount,
                         updated1CounterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willReturn(sponsorAccount);
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(sponsorAccount);
 
-        given(store.getToken(asTypedEvmAddress(nonfungible), OnMissing.THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(nonfungible), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(NONFUNGIBLE), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(NONFUNGIBLE), OnMissing.DONT_THROW))
                 .willReturn(token);
 
         given(store.getUniqueToken(nft.getNftId(), OnMissing.DONT_THROW)).willReturn(nft);
         given(store.getUniqueToken(nft.getNftId(), OnMissing.THROW)).willReturn(nft);
 
-        given(store.getTokenRelationship(counterpartyNft, OnMissing.THROW)).willReturn(counterpartyRel);
-        given(store.getTokenRelationship(counterpartyNft, OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(COUNTERPARTY_NFT, OnMissing.THROW)).willReturn(counterpartyRel);
+        given(store.getTokenRelationship(COUNTERPARTY_NFT, OnMissing.DONT_THROW))
                 .willReturn(TokenRelationship.getEmptyTokenRelationship());
-        given(store.getTokenRelationship(sponsorNft, OnMissing.THROW)).willReturn(sponsorRel);
-        given(store.getTokenRelationship(sponsorNft, OnMissing.DONT_THROW)).willReturn(sponsorRel);
+        given(store.getTokenRelationship(SPONSOR_NFT, OnMissing.THROW)).willReturn(sponsorRel);
+        given(store.getTokenRelationship(SPONSOR_NFT, OnMissing.DONT_THROW)).willReturn(sponsorRel);
 
-        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+        final var status = subject.changeOwner(A_NFT, SPONSOR, COUNTERPARTY);
 
         assertEquals(OK, status);
         verify(store).updateAccount(updated1CounterpartyAccount);
@@ -403,47 +403,47 @@ class HederaTokenStoreTest {
 
     @Test
     void changingOwnerRejectsIllegitimateOwner() {
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
-        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
-        var token = new Token(Id.fromGrpcToken(aNft.tokenId())).setTreasury(sponsorAccount);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0);
+        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0);
+        var token = new Token(Id.fromGrpcToken(A_NFT.tokenId())).setTreasury(sponsorAccount);
 
         // Set the owner to `counterparty` instead of `sponsor`
         var nft = new UniqueToken(
-                Id.fromGrpcToken(aNft.tokenId()),
+                Id.fromGrpcToken(A_NFT.tokenId()),
                 1234,
                 RichInstant.MISSING_INSTANT,
-                Id.fromGrpcAccount(counterparty),
+                Id.fromGrpcAccount(COUNTERPARTY),
                 Id.DEFAULT,
                 new byte[0]);
 
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount);
         var sponsorRel = new TokenRelationship(token, sponsorAccount);
 
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willReturn(sponsorAccount);
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(sponsorAccount);
 
-        given(store.getToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.THROW))
+        given(store.getToken(asTypedEvmAddress(A_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(token);
-        given(store.getToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
 
         given(store.getUniqueToken(nft.getNftId(), OnMissing.DONT_THROW)).willReturn(nft);
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, A_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, A_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(sponsorRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(sponsorRel);
 
-        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+        final var status = subject.changeOwner(A_NFT, SPONSOR, COUNTERPARTY);
 
         assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, status);
     }
@@ -455,57 +455,57 @@ class HederaTokenStoreTest {
         final long startSponsorANfts = 4;
         final long startCounterpartyANfts = 1;
 
-        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(sponsor), 0)
+        var sponsorAccount = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0)
                 .setOwnedNfts(startSponsorNfts)
-                .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances);
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0)
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0)
                 .setOwnedNfts(startCounterpartyNfts)
-                .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances);
-        var token = new Token(Id.fromGrpcToken(aNft.tokenId())).setTreasury(sponsorAccount);
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES);
+        var token = new Token(Id.fromGrpcToken(A_NFT.tokenId())).setTreasury(sponsorAccount);
         var nft = new UniqueToken(
-                Id.fromGrpcToken(aNft.tokenId()),
-                aNft.serialNo(),
+                Id.fromGrpcToken(A_NFT.tokenId()),
+                A_NFT.serialNo(),
                 RichInstant.MISSING_INSTANT,
-                Id.fromGrpcAccount(sponsor),
+                Id.fromGrpcAccount(SPONSOR),
                 Id.DEFAULT,
                 new byte[0]);
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyANfts);
         var sponsorRel = new TokenRelationship(token, sponsorAccount).setBalance(startSponsorANfts);
 
-        var updatedNft = nft.setOwner(Id.fromGrpcAccount(counterparty));
+        var updatedNft = nft.setOwner(Id.fromGrpcAccount(COUNTERPARTY));
         var updatedSponsorAccount = sponsorAccount.setOwnedNfts(startSponsorNfts - 1);
         var updatedCounterpartyAccount = counterpartyAccount.setOwnedNfts(startCounterpartyNfts + 1);
         var updatedSponsorRel = sponsorRel.setBalance(startSponsorANfts - 1);
         var updatedCounterpartyRel = counterpartyRel.setBalance(startCounterpartyANfts + 1);
 
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(sponsorAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willReturn(sponsorAccount);
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(sponsorAccount);
 
-        given(store.getToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.THROW))
+        given(store.getToken(asTypedEvmAddress(A_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(token);
-        given(store.getToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
 
         given(store.getUniqueToken(nft.getNftId(), OnMissing.DONT_THROW)).willReturn(nft);
         given(store.getUniqueToken(nft.getNftId(), OnMissing.THROW)).willReturn(nft);
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, A_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, A_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(sponsorRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, A_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(sponsorRel);
 
-        final var status = subject.changeOwner(aNft, sponsor, counterparty);
+        final var status = subject.changeOwner(A_NFT, SPONSOR, COUNTERPARTY);
 
         assertEquals(OK, status);
         verify(store).updateUniqueToken(updatedNft);
@@ -522,20 +522,20 @@ class HederaTokenStoreTest {
         final long startTreasuryTNfts = 4;
         final long startCounterpartyTNfts = 1;
 
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0)
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(PRIMARY_TREASURY), 0)
                 .setOwnedNfts(startTreasuryNfts)
-                .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances);
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0)
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0)
                 .setOwnedNfts(startCounterpartyNfts)
-                .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances);
-        var token = new Token(Id.fromGrpcToken(tNft.tokenId())).setTreasury(treasuryAccount);
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES);
+        var token = new Token(Id.fromGrpcToken(T_NFT.tokenId())).setTreasury(treasuryAccount);
         var nft = new UniqueToken(
-                Id.fromGrpcToken(tNft.tokenId()),
-                tNft.serialNo(),
+                Id.fromGrpcToken(T_NFT.tokenId()),
+                T_NFT.serialNo(),
                 RichInstant.MISSING_INSTANT,
-                Id.fromGrpcAccount(counterparty),
+                Id.fromGrpcAccount(COUNTERPARTY),
                 Id.DEFAULT,
                 new byte[0]);
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyTNfts);
@@ -545,37 +545,38 @@ class HederaTokenStoreTest {
         var updatedTreasuryAccount = treasuryAccount.setOwnedNfts(startTreasuryNfts + 1);
         var updatedCounterpartyAccount = counterpartyAccount
                 .setOwnedNfts(startCounterpartyNfts - 1)
-                .setNumPositiveBalances(numPositiveBalances - 1);
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES - 1);
         var updatedTreasuryRel = treasuryRel.setBalance(startTreasuryTNfts + 1);
         var updatedCounterpartyRel = counterpartyRel.setBalance(startCounterpartyTNfts - 1);
 
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.DONT_THROW))
                 .willReturn(treasuryAccount);
 
-        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.THROW))
+        given(store.getToken(asTypedEvmAddress(T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(token);
-        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
 
         given(store.getUniqueToken(nft.getNftId(), OnMissing.DONT_THROW)).willReturn(nft);
         given(store.getUniqueToken(nft.getNftId(), OnMissing.THROW)).willReturn(nft);
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(treasuryRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(
+                        asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(treasuryRel);
 
-        final var status = subject.changeOwner(tNft, counterparty, primaryTreasury);
+        final var status = subject.changeOwner(T_NFT, COUNTERPARTY, PRIMARY_TREASURY);
 
         assertEquals(OK, status);
         verify(store).updateUniqueToken(updatedNft);
@@ -592,58 +593,59 @@ class HederaTokenStoreTest {
         final long startTreasuryTNfts = 4;
         final long startCounterpartyTNfts = 1;
 
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0)
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(PRIMARY_TREASURY), 0)
                 .setOwnedNfts(startTreasuryNfts)
-                .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances);
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0)
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0)
                 .setOwnedNfts(startCounterpartyNfts)
-                .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances);
-        var token = new Token(Id.fromGrpcToken(tNft.tokenId())).setTreasury(treasuryAccount);
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES);
+        var token = new Token(Id.fromGrpcToken(T_NFT.tokenId())).setTreasury(treasuryAccount);
         var nft = new UniqueToken(
-                Id.fromGrpcToken(tNft.tokenId()),
-                tNft.serialNo(),
+                Id.fromGrpcToken(T_NFT.tokenId()),
+                T_NFT.serialNo(),
                 RichInstant.MISSING_INSTANT,
-                Id.fromGrpcAccount(primaryTreasury),
+                Id.fromGrpcAccount(PRIMARY_TREASURY),
                 Id.DEFAULT,
                 new byte[0]);
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyTNfts);
         var treasuryRel = new TokenRelationship(token, treasuryAccount).setBalance(startTreasuryTNfts);
 
-        var updatedNft = nft.setOwner(Id.fromGrpcAccount(counterparty));
+        var updatedNft = nft.setOwner(Id.fromGrpcAccount(COUNTERPARTY));
         var updatedTreasuryAccount = treasuryAccount.setOwnedNfts(startTreasuryNfts - 1);
         var updatedCounterpartyAccount = counterpartyAccount.setOwnedNfts(startCounterpartyNfts + 1);
         var updatedTreasuryRel = treasuryRel.setBalance(startTreasuryTNfts - 1);
         var updatedCounterpartyRel = counterpartyRel.setBalance(startCounterpartyTNfts + 1);
 
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.DONT_THROW))
                 .willReturn(treasuryAccount);
 
-        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.THROW))
+        given(store.getToken(asTypedEvmAddress(T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(token);
-        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
 
         given(store.getUniqueToken(nft.getNftId(), OnMissing.DONT_THROW)).willReturn(nft);
         given(store.getUniqueToken(nft.getNftId(), OnMissing.THROW)).willReturn(nft);
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(treasuryRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(
+                        asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(treasuryRel);
 
-        final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
+        final var status = subject.changeOwner(T_NFT, PRIMARY_TREASURY, COUNTERPARTY);
 
         assertEquals(OK, status);
 
@@ -656,242 +658,244 @@ class HederaTokenStoreTest {
 
     @Test
     void changingOwnerRejectsFromFreezeAndKYC() {
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
-        var token = new Token(Id.fromGrpcToken(tNft.tokenId())).setTreasury(treasuryAccount);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(PRIMARY_TREASURY), 0);
+        var token = new Token(Id.fromGrpcToken(T_NFT.tokenId())).setTreasury(treasuryAccount);
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount);
         var treasuryRel = new TokenRelationship(token, treasuryAccount).setFrozen(true);
         var nft = new UniqueToken(
-                Id.fromGrpcToken(tNft.tokenId()),
-                tNft.serialNo(),
+                Id.fromGrpcToken(T_NFT.tokenId()),
+                T_NFT.serialNo(),
                 RichInstant.MISSING_INSTANT,
-                Id.fromGrpcAccount(counterparty),
+                Id.fromGrpcAccount(COUNTERPARTY),
                 Id.DEFAULT,
                 new byte[0]);
 
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.DONT_THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
 
-        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
 
         given(store.getUniqueToken(nft.getNftId(), OnMissing.DONT_THROW)).willReturn(nft);
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(treasuryRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(
+                        asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(treasuryRel);
 
-        final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
+        final var status = subject.changeOwner(T_NFT, PRIMARY_TREASURY, COUNTERPARTY);
 
         assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
     }
 
     @Test
     void changingOwnerRejectsToFreezeAndKYC() {
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
-        var token = new Token(Id.fromGrpcToken(tNft.tokenId())).setTreasury(treasuryAccount);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(PRIMARY_TREASURY), 0);
+        var token = new Token(Id.fromGrpcToken(T_NFT.tokenId())).setTreasury(treasuryAccount);
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setFrozen(true);
         var treasuryRel = new TokenRelationship(token, treasuryAccount);
         var nft = new UniqueToken(
-                Id.fromGrpcToken(tNft.tokenId()),
-                tNft.serialNo(),
+                Id.fromGrpcToken(T_NFT.tokenId()),
+                T_NFT.serialNo(),
                 RichInstant.MISSING_INSTANT,
-                Id.fromGrpcAccount(counterparty),
+                Id.fromGrpcAccount(COUNTERPARTY),
                 Id.DEFAULT,
                 new byte[0]);
 
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.DONT_THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
 
-        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
 
         given(store.getUniqueToken(nft.getNftId(), OnMissing.DONT_THROW)).willReturn(nft);
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(treasuryRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(
+                        asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(treasuryRel);
 
-        final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
+        final var status = subject.changeOwner(T_NFT, PRIMARY_TREASURY, COUNTERPARTY);
 
         assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
     }
 
     @Test
     void adjustingRejectsMissingToken() {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
+        var account = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0);
 
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
 
-        final var status = subject.adjustBalance(sponsor, misc, 1);
+        final var status = subject.adjustBalance(SPONSOR, MISC, 1);
 
         assertEquals(INVALID_TOKEN_ID, status);
     }
 
     @Test
     void adjustingRejectsDeletedToken() {
-        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc)).setIsDeleted(true);
+        var account = new Account(0L, Id.fromGrpcAccount(TREASURY), 0);
+        var token = new Token(Id.fromGrpcToken(MISC)).setIsDeleted(true);
 
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
 
-        final var status = subject.adjustBalance(treasury, misc, 1);
+        final var status = subject.adjustBalance(TREASURY, MISC, 1);
 
         assertEquals(TOKEN_WAS_DELETED, status);
     }
 
     @Test
     void adjustingRejectsPausedToken() throws InvalidKeyException {
-        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc)).setPauseKey(JKey.mapKey(key));
+        var account = new Account(0L, Id.fromGrpcAccount(TREASURY), 0);
+        var token = new Token(Id.fromGrpcToken(MISC)).setPauseKey(JKey.mapKey(KEY));
         token = token.changePauseStatus(true);
 
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
 
-        final var status = subject.adjustBalance(treasury, misc, 1);
+        final var status = subject.adjustBalance(TREASURY, MISC, 1);
 
         assertEquals(TOKEN_IS_PAUSED, status);
     }
 
     @Test
     void adjustingRejectsFungibleUniqueToken() {
-        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc)).setType(TokenType.NON_FUNGIBLE_UNIQUE);
+        var account = new Account(0L, Id.fromGrpcAccount(TREASURY), 0);
+        var token = new Token(Id.fromGrpcToken(MISC)).setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
 
-        final var status = subject.adjustBalance(treasury, misc, 1);
+        final var status = subject.adjustBalance(TREASURY, MISC, 1);
 
         assertEquals(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, status);
     }
 
     @Test
     void refusesToAdjustFrozenRelationship() {
-        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var account = new Account(0L, Id.fromGrpcAccount(TREASURY), 0);
+        var token = new Token(Id.fromGrpcToken(MISC));
         var tokenRelationship = new TokenRelationship(token, account).setFrozen(true);
 
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(TREASURY, MISC), OnMissing.DONT_THROW))
                 .willReturn(tokenRelationship);
-        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(TREASURY, MISC), OnMissing.THROW))
                 .willReturn(tokenRelationship);
 
-        final var status = subject.adjustBalance(treasury, misc, -1);
+        final var status = subject.adjustBalance(TREASURY, MISC, -1);
 
         assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
     }
 
     @Test
     void refusesToAdjustRevokedKycRelationship() {
-        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc)).setKycKey(kycKey);
+        var account = new Account(0L, Id.fromGrpcAccount(TREASURY), 0);
+        var token = new Token(Id.fromGrpcToken(MISC)).setKycKey(kycKey);
         var tokenRelationship = new TokenRelationship(token, account).changeKycState(false);
 
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(TREASURY, MISC), OnMissing.DONT_THROW))
                 .willReturn(tokenRelationship);
-        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(TREASURY, MISC), OnMissing.THROW))
                 .willReturn(tokenRelationship);
 
-        final var status = subject.adjustBalance(treasury, misc, -1);
+        final var status = subject.adjustBalance(TREASURY, MISC, -1);
 
         assertEquals(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN, status);
     }
 
     @Test
     void refusesInvalidAdjustment() {
-        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var account = new Account(0L, Id.fromGrpcAccount(TREASURY), 0);
+        var token = new Token(Id.fromGrpcToken(MISC));
         var tokenRelationship = new TokenRelationship(token, account);
 
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(TREASURY, MISC), OnMissing.DONT_THROW))
                 .willReturn(tokenRelationship);
-        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(TREASURY, MISC), OnMissing.THROW))
                 .willReturn(tokenRelationship);
 
-        final var status = subject.adjustBalance(treasury, misc, -treasuryBalance - 1);
+        final var status = subject.adjustBalance(TREASURY, MISC, -TREASURY_BALANCE - 1);
 
         assertEquals(INSUFFICIENT_TOKEN_BALANCE, status);
     }
 
     @Test
     void adjustmentFailsOnAutomaticAssociationLimitNotSet() {
-        var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var account = new Account(0L, Id.fromGrpcAccount(ANOTHER_FEE_COLLECTOR), 0);
+        var token = new Token(Id.fromGrpcToken(MISC));
 
-        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(ANOTHER_FEE_COLLECTOR), OnMissing.THROW))
                 .willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(ANOTHER_FEE_COLLECTOR), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(anotherFeeCollector, misc), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(ANOTHER_FEE_COLLECTOR, MISC), OnMissing.DONT_THROW))
                 .willReturn(TokenRelationship.getEmptyTokenRelationship());
 
-        final var status = subject.adjustBalance(anotherFeeCollector, misc, -1);
+        final var status = subject.adjustBalance(ANOTHER_FEE_COLLECTOR, MISC, -1);
         assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
     }
 
     @Test
     void adjustmentFailsOnAutomaticAssociationLimitReached() {
-        var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0)
+        var account = new Account(0L, Id.fromGrpcAccount(ANOTHER_FEE_COLLECTOR), 0)
                 .setMaxAutoAssociations(3)
                 .setNumAssociations(3)
                 .setUsedAutoAssociations(3);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var token = new Token(Id.fromGrpcToken(MISC));
 
-        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(ANOTHER_FEE_COLLECTOR), OnMissing.THROW))
                 .willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(ANOTHER_FEE_COLLECTOR), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(anotherFeeCollector, misc), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(ANOTHER_FEE_COLLECTOR, MISC), OnMissing.DONT_THROW))
                 .willReturn(TokenRelationship.getEmptyTokenRelationship());
 
-        final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
+        final var status = subject.adjustBalance(ANOTHER_FEE_COLLECTOR, MISC, 1);
 
         assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
         verify(store, never()).updateTokenRelationship(any());
@@ -900,12 +904,12 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustmentWorksAndIncrementsAlreadyUsedAutoAssociationCountForNewAssociation() {
-        var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0)
+        var account = new Account(0L, Id.fromGrpcAccount(ANOTHER_FEE_COLLECTOR), 0)
                 .setMaxAutoAssociations(5)
-                .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances)
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES)
                 .setUsedAutoAssociations(3);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var token = new Token(Id.fromGrpcToken(MISC));
         var tokenRelationship = new TokenRelationship(token, account)
                 .setFrozen(false)
                 .setKycGranted(true)
@@ -913,20 +917,20 @@ class HederaTokenStoreTest {
 
         var updatedTokenRelationship = tokenRelationship.setBalance(1);
         var updatedAccount1 =
-                account.setNumAssociations(associatedTokensCount + 1).setUsedAutoAssociations(4);
-        var updatedAccount2 = updatedAccount1.setNumPositiveBalances(numPositiveBalances + 1);
+                account.setNumAssociations(ASSOCIATED_TOKENS_COUNT + 1).setUsedAutoAssociations(4);
+        var updatedAccount2 = updatedAccount1.setNumPositiveBalances(NUM_POSITIVE_BALANCES + 1);
 
-        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(ANOTHER_FEE_COLLECTOR), OnMissing.THROW))
                 .willReturn(account, account, account, account, account, updatedAccount1);
-        given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(ANOTHER_FEE_COLLECTOR), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(anotherFeeCollector, misc), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(ANOTHER_FEE_COLLECTOR, MISC), OnMissing.DONT_THROW))
                 .willReturn(TokenRelationship.getEmptyTokenRelationship());
-        given(store.getTokenRelationship(asTokenRelationshipKey(anotherFeeCollector, misc), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(ANOTHER_FEE_COLLECTOR, MISC), OnMissing.THROW))
                 .willReturn(tokenRelationship);
 
-        final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
+        final var status = subject.adjustBalance(ANOTHER_FEE_COLLECTOR, MISC, 1);
 
         assertEquals(OK, status);
         verify(store).updateTokenRelationship(updatedTokenRelationship);
@@ -936,25 +940,25 @@ class HederaTokenStoreTest {
 
     @Test
     void performsValidAdjustment() {
-        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0)
-                .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var account = new Account(0L, Id.fromGrpcAccount(TREASURY), 0)
+                .setNumAssociations(ASSOCIATED_TOKENS_COUNT)
+                .setNumPositiveBalances(NUM_POSITIVE_BALANCES);
+        var token = new Token(Id.fromGrpcToken(MISC));
         var tokenRelationship = new TokenRelationship(token, account).setBalance(1);
 
-        var updatedAccount = account.setNumPositiveBalances(numPositiveBalances - 1);
+        var updatedAccount = account.setNumPositiveBalances(NUM_POSITIVE_BALANCES - 1);
         var updatedTokenRelationship = tokenRelationship.setBalance(0);
 
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(TREASURY, MISC), OnMissing.DONT_THROW))
                 .willReturn(tokenRelationship);
-        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(TREASURY, MISC), OnMissing.THROW))
                 .willReturn(tokenRelationship);
 
-        subject.adjustBalance(treasury, misc, -1);
+        subject.adjustBalance(TREASURY, MISC, -1);
 
         verify(store).updateTokenRelationship(updatedTokenRelationship);
         verify(store).updateAccount(updatedAccount);
@@ -962,29 +966,29 @@ class HederaTokenStoreTest {
 
     @Test
     void adaptsBehaviorToFungibleType() {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0)
+        var account = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0)
                 .setNumAssociations(5)
                 .setNumPositiveBalances(2);
-        var token = new Token(Id.fromGrpcToken(misc)).setDecimals(2);
+        var token = new Token(Id.fromGrpcToken(MISC)).setDecimals(2);
         token = token.setKycKey(kycKey);
         var tokenRelationship =
                 new TokenRelationship(token, account).setFrozen(false).changeKycState(true);
 
         final var aa =
-                AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
-        final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
+                AccountAmount.newBuilder().setAccountID(SPONSOR).setAmount(100).build();
+        final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(MISC), MISC, aa, PAYER);
         fungibleChange.setExpectedDecimals(2);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.THROW)).willReturn(account);
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, MISC), OnMissing.THROW))
                 .willReturn(tokenRelationship);
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, MISC), OnMissing.DONT_THROW))
                 .willReturn(tokenRelationship);
 
-        assertEquals(2, subject.get(misc).getDecimals());
+        assertEquals(2, subject.get(MISC).getDecimals());
         assertEquals(2, fungibleChange.getExpectedDecimals());
 
         final var result = subject.tryTokenChange(fungibleChange);
@@ -993,17 +997,17 @@ class HederaTokenStoreTest {
 
     @Test
     void failsIfMismatchingDecimals() {
-        var token = new Token(Id.fromGrpcToken(misc)).setDecimals(2);
+        var token = new Token(Id.fromGrpcToken(MISC)).setDecimals(2);
         final var aa =
-                AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
-        final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
+                AccountAmount.newBuilder().setAccountID(SPONSOR).setAmount(100).build();
+        final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(MISC), MISC, aa, PAYER);
         assertFalse(fungibleChange.hasExpectedDecimals());
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
 
         fungibleChange.setExpectedDecimals(4);
 
-        assertEquals(2, subject.get(misc).getDecimals());
+        assertEquals(2, subject.get(MISC).getDecimals());
         assertEquals(4, fungibleChange.getExpectedDecimals());
 
         final var result = subject.tryTokenChange(fungibleChange);
@@ -1012,60 +1016,60 @@ class HederaTokenStoreTest {
 
     @Test
     void decimalMatchingWorks() {
-        var token = new Token(Id.fromGrpcToken(misc)).setDecimals(2);
+        var token = new Token(Id.fromGrpcToken(MISC)).setDecimals(2);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
 
-        assertEquals(2, subject.get(misc).getDecimals());
-        assertTrue(subject.matchesTokenDecimals(misc, 2));
-        assertFalse(subject.matchesTokenDecimals(misc, 4));
+        assertEquals(2, subject.get(MISC).getDecimals());
+        assertTrue(subject.matchesTokenDecimals(MISC, 2));
+        assertFalse(subject.matchesTokenDecimals(MISC, 4));
     }
 
     @Test
     void realAssociationsExist() {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var account = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0);
+        var token = new Token(Id.fromGrpcToken(MISC));
         var tokenRelationship = new TokenRelationship(token, account);
 
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(SPONSOR, MISC), OnMissing.DONT_THROW))
                 .willReturn(tokenRelationship);
-        assertTrue(subject.associationExists(sponsor, misc));
+        assertTrue(subject.associationExists(SPONSOR, MISC));
     }
 
     @Test
     void noAssociationsWithMissingAccounts() {
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(Account.getEmptyAccount());
 
-        assertFalse(subject.associationExists(sponsor, misc));
+        assertFalse(subject.associationExists(SPONSOR, MISC));
     }
 
     @Test
     void applicationRejectsMissing() {
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willThrow(InvalidTransactionException.class);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willThrow(InvalidTransactionException.class);
 
-        assertThrows(InvalidTransactionException.class, () -> subject.apply(misc, change));
+        assertThrows(InvalidTransactionException.class, () -> subject.apply(MISC, change));
     }
 
     @Test
     void applicationAlwaysReplacesModifiableToken() {
-        var token = new Token(Id.fromGrpcToken(misc));
+        var token = new Token(Id.fromGrpcToken(MISC));
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
         willThrow(IllegalStateException.class).given(change).apply(token);
 
-        assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
+        assertThrows(IllegalArgumentException.class, () -> subject.apply(MISC, change));
     }
 
     @Test
     void grantingKycRejectsMissingAccount() {
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(Account.getEmptyAccount());
 
-        final var status = subject.grantKyc(sponsor, misc);
+        final var status = subject.grantKyc(SPONSOR, MISC);
 
         assertEquals(INVALID_ACCOUNT_ID, status);
     }
@@ -1083,53 +1087,53 @@ class HederaTokenStoreTest {
         given(store.getAccount(asTypedEvmAddress(detachedSponsorId), OnMissing.THROW))
                 .willReturn(detachedSponsor);
 
-        final var status = subject.grantKyc(detachedSponsorId, misc);
+        final var status = subject.grantKyc(detachedSponsorId, MISC);
 
         assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
     }
 
     @Test
     void grantingKycRejectsDeletedAccount() {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0).setDeleted(true);
+        var account = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0).setDeleted(true);
 
-        given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(SPONSOR), OnMissing.DONT_THROW))
                 .willReturn(account);
 
-        final var status = subject.grantKyc(sponsor, misc);
+        final var status = subject.grantKyc(SPONSOR, MISC);
 
         assertEquals(ACCOUNT_DELETED, status);
     }
 
     @Test
     void grantingRejectsUnknowableToken() {
-        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var account = new Account(0L, Id.fromGrpcAccount(TREASURY), 0);
+        var token = new Token(Id.fromGrpcToken(MISC));
         var tokenRelationship = new TokenRelationship(token, account);
 
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(TREASURY, MISC), OnMissing.DONT_THROW))
                 .willReturn(tokenRelationship);
 
-        final var status = subject.grantKyc(treasury, misc);
+        final var status = subject.grantKyc(TREASURY, MISC);
 
         assertEquals(TOKEN_HAS_NO_KYC_KEY, status);
     }
 
     @Test
     void unfreezingInvalidWithoutFreezeKey() {
-        var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc));
+        var account = new Account(0L, Id.fromGrpcAccount(TREASURY), 0);
+        var token = new Token(Id.fromGrpcToken(MISC));
         var tokenRelationship = new TokenRelationship(token, account);
 
-        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(TREASURY), OnMissing.DONT_THROW))
                 .willReturn(account);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(treasury, misc), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getTokenRelationship(asTokenRelationshipKey(TREASURY, MISC), OnMissing.DONT_THROW))
                 .willReturn(tokenRelationship);
 
-        final var status = subject.unfreeze(treasury, misc);
+        final var status = subject.unfreeze(TREASURY, MISC);
 
         assertEquals(TOKEN_HAS_NO_FREEZE_KEY, status);
     }
@@ -1141,35 +1145,36 @@ class HederaTokenStoreTest {
         final long startTreasuryTNfts = 1;
         final long startCounterpartyTNfts = 0;
 
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0).setOwnedNfts(startTreasuryNfts);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(PRIMARY_TREASURY), 0).setOwnedNfts(startTreasuryNfts);
         var counterpartyAccount =
-                new Account(0L, Id.fromGrpcAccount(counterparty), 0).setOwnedNfts(startCounterpartyNfts);
-        var token = new Token(Id.fromGrpcToken(tNft.tokenId()));
+                new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0).setOwnedNfts(startCounterpartyNfts);
+        var token = new Token(Id.fromGrpcToken(T_NFT.tokenId()));
         var treasuryRel = new TokenRelationship(token, treasuryAccount).setBalance(startTreasuryTNfts);
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyTNfts);
 
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.DONT_THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
 
-        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
 
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(treasuryRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(
+                        asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(treasuryRel);
 
-        final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
+        final var status = subject.changeOwnerWildCard(T_NFT, PRIMARY_TREASURY, COUNTERPARTY);
 
         final var updatedPrimaryTreasury = treasuryAccount.setOwnedNfts(0);
         final var updatedCounterparty = counterpartyAccount.setOwnedNfts(1);
@@ -1185,72 +1190,74 @@ class HederaTokenStoreTest {
 
     @Test
     void changingOwnerWildCardRejectsFromFreezeAndKYC() {
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
-        var token = new Token(Id.fromGrpcToken(tNft.tokenId()));
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(PRIMARY_TREASURY), 0);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0);
+        var token = new Token(Id.fromGrpcToken(T_NFT.tokenId()));
         var treasuryRel = new TokenRelationship(token, treasuryAccount).setFrozen(true);
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount);
 
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.DONT_THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(
+                        asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(treasuryRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(treasuryRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(counterpartyRel);
 
-        final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
+        final var status = subject.changeOwnerWildCard(T_NFT, PRIMARY_TREASURY, COUNTERPARTY);
 
         assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
     }
 
     @Test
     void changingOwnerWildCardRejectsToFreezeAndKYC() {
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
-        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
-        var token = new Token(Id.fromGrpcToken(tNft.tokenId()));
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(PRIMARY_TREASURY), 0);
+        var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(COUNTERPARTY), 0);
+        var token = new Token(Id.fromGrpcToken(T_NFT.tokenId()));
         var treasuryRel = new TokenRelationship(token, treasuryAccount);
         var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setFrozen(true);
 
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.DONT_THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
+        given(store.getAccount(asTypedEvmAddress(PRIMARY_TREASURY), OnMissing.THROW))
                 .willReturn(treasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(COUNTERPARTY), OnMissing.DONT_THROW))
                 .willReturn(counterpartyAccount);
-        given(store.getToken(asTypedEvmAddress(tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(
+                        asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(treasuryRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(primaryTreasury, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(PRIMARY_TREASURY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(treasuryRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.DONT_THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(counterpartyRel);
-        given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, tNft.tokenId()), OnMissing.THROW))
+        given(store.getTokenRelationship(asTokenRelationshipKey(COUNTERPARTY, T_NFT.tokenId()), OnMissing.THROW))
                 .willReturn(counterpartyRel);
 
-        final var status = subject.changeOwnerWildCard(tNft, primaryTreasury, counterparty);
+        final var status = subject.changeOwnerWildCard(T_NFT, PRIMARY_TREASURY, COUNTERPARTY);
 
         assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
     }
 
     @Test
     void updateExpiryInfoRejectsInvalidExpiry() {
-        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry);
+        var token = new Token(Id.fromGrpcToken(MISC)).setExpiry(EXPIRY);
 
-        final var op = updateWith(NO_KEYS, misc, true, true, false).toBuilder()
-                .setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1))
+        final var op = updateWith(NO_KEYS, MISC, true, true, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(EXPIRY - 1))
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.updateExpiryInfo(op);
 
@@ -1259,13 +1266,13 @@ class HederaTokenStoreTest {
 
     @Test
     void updateExpiryInfoCanExtendImmutableExpiry() {
-        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry);
-        final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
-                .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+        var token = new Token(Id.fromGrpcToken(MISC)).setExpiry(EXPIRY);
+        final var op = updateWith(NO_KEYS, MISC, false, false, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(EXPIRY + 1_234))
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.updateExpiryInfo(op);
 
@@ -1274,11 +1281,11 @@ class HederaTokenStoreTest {
 
     @Test
     void updateExpiryInfoRejectsInvalidNewAutoRenew() {
-        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry);
-        final var op = updateWith(NO_KEYS, misc, true, true, false, true, false);
+        var token = new Token(Id.fromGrpcToken(MISC)).setExpiry(EXPIRY);
+        final var op = updateWith(NO_KEYS, MISC, true, true, false, true, false);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getAccount(asTypedEvmAddress(newAutoRenewAccount), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(NEW_AUTO_RENEW_ACCOUNT), OnMissing.DONT_THROW))
                 .willReturn(Account.getEmptyAccount());
 
         final var outcome = subject.updateExpiryInfo(op);
@@ -1288,14 +1295,14 @@ class HederaTokenStoreTest {
 
     @Test
     void updateExpiryInfoRejectsInvalidNewAutoRenewPeriod() {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0L);
-        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setAutoRenewAccount(account);
-        final var op = updateWith(NO_KEYS, misc, true, true, false, false, false).toBuilder()
+        var account = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0L);
+        var token = new Token(Id.fromGrpcToken(MISC)).setExpiry(EXPIRY).setAutoRenewAccount(account);
+        final var op = updateWith(NO_KEYS, MISC, true, true, false, false, false).toBuilder()
                 .setAutoRenewPeriod(enduring(-1L))
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.updateExpiryInfo(op);
 
@@ -1304,8 +1311,8 @@ class HederaTokenStoreTest {
 
     @Test
     void updateExpiryInfoRejectsMissingToken() {
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
-        final var op = updateWith(ALL_KEYS, misc, true, true, true);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
+        final var op = updateWith(ALL_KEYS, MISC, true, true, true);
 
         final var outcome = subject.updateExpiryInfo(op);
 
@@ -1314,13 +1321,13 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsInvalidExpiry() throws InvalidKeyException {
-        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setAdminKey(JKey.mapKey(key));
-        final var op = updateWith(NO_KEYS, misc, true, true, false).toBuilder()
-                .setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1))
+        var token = new Token(Id.fromGrpcToken(MISC)).setExpiry(EXPIRY).setAdminKey(JKey.mapKey(KEY));
+        final var op = updateWith(NO_KEYS, MISC, true, true, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(EXPIRY - 1))
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1329,13 +1336,13 @@ class HederaTokenStoreTest {
 
     @Test
     void canExtendImmutableExpiry() {
-        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setType(TokenType.FUNGIBLE_COMMON);
-        final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
-                .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+        var token = new Token(Id.fromGrpcToken(MISC)).setExpiry(EXPIRY).setType(TokenType.FUNGIBLE_COMMON);
+        final var op = updateWith(NO_KEYS, MISC, false, false, false).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(EXPIRY + 1_234))
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1344,15 +1351,15 @@ class HederaTokenStoreTest {
 
     @Test
     void cannotUpdateImmutableTokenWithNewFeeScheduleKey() throws InvalidKeyException {
-        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setFeeScheduleKey(JKey.mapKey(key));
+        var token = new Token(Id.fromGrpcToken(MISC)).setExpiry(EXPIRY).setFeeScheduleKey(JKey.mapKey(KEY));
 
-        final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
-                .setFeeScheduleKey(key)
-                .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+        final var op = updateWith(NO_KEYS, MISC, false, false, false).toBuilder()
+                .setFeeScheduleKey(KEY)
+                .setExpiry(Timestamp.newBuilder().setSeconds(EXPIRY + 1_234))
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1361,15 +1368,15 @@ class HederaTokenStoreTest {
 
     @Test
     void cannotUpdateImmutableTokenWithNewPauseKey() throws InvalidKeyException {
-        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setPauseKey(JKey.mapKey(key));
+        var token = new Token(Id.fromGrpcToken(MISC)).setExpiry(EXPIRY).setPauseKey(JKey.mapKey(KEY));
 
-        final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
-                .setPauseKey(key)
-                .setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234))
+        final var op = updateWith(NO_KEYS, MISC, false, false, false).toBuilder()
+                .setPauseKey(KEY)
+                .setExpiry(Timestamp.newBuilder().setSeconds(EXPIRY + 1_234))
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1378,13 +1385,13 @@ class HederaTokenStoreTest {
 
     @Test
     void ifImmutableWillStayImmutable() {
-        var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry);
-        final var op = updateWith(ALL_KEYS, misc, false, false, false).toBuilder()
-                .setFeeScheduleKey(key)
+        var token = new Token(Id.fromGrpcToken(MISC)).setExpiry(EXPIRY);
+        final var op = updateWith(ALL_KEYS, MISC, false, false, false).toBuilder()
+                .setFeeScheduleKey(KEY)
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1393,18 +1400,18 @@ class HederaTokenStoreTest {
 
     @Test
     void cannotUpdateNewPauseKeyIfTokenHasNoPauseKey() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var token = new Token(Id.fromGrpcToken(misc))
-                .setExpiry(expiry)
+        var jKey = JKey.mapKey(KEY);
+        var token = new Token(Id.fromGrpcToken(MISC))
+                .setExpiry(EXPIRY)
                 .setWipeKey(jKey)
                 .setSupplyKey(jKey)
                 .setAdminKey(jKey);
-        final var op = updateWith(ALL_KEYS, misc, false, false, false).toBuilder()
-                .setPauseKey(key)
+        final var op = updateWith(ALL_KEYS, MISC, false, false, false).toBuilder()
+                .setPauseKey(KEY)
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1413,11 +1420,11 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsInvalidNewAutoRenew() {
-        var token = new Token(Id.fromGrpcToken(misc));
-        final var op = updateWith(NO_KEYS, misc, true, true, false, true, false);
+        var token = new Token(Id.fromGrpcToken(MISC));
+        final var op = updateWith(NO_KEYS, MISC, true, true, false, true, false);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getAccount(asTypedEvmAddress(newAutoRenewAccount), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(NEW_AUTO_RENEW_ACCOUNT), OnMissing.DONT_THROW))
                 .willReturn(Account.getEmptyAccount());
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
@@ -1427,22 +1434,22 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsInvalidNewAutoRenewPeriod() throws InvalidKeyException {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0L);
-        var jKey = JKey.mapKey(key);
-        var token = new Token(Id.fromGrpcToken(misc))
-                .setExpiry(expiry)
+        var account = new Account(0L, Id.fromGrpcAccount(SPONSOR), 0L);
+        var jKey = JKey.mapKey(KEY);
+        var token = new Token(Id.fromGrpcToken(MISC))
+                .setExpiry(EXPIRY)
                 .setKycKey(jKey)
                 .setFreezeKey(jKey)
                 .setWipeKey(jKey)
                 .setSupplyKey(jKey)
                 .setAdminKey(jKey)
                 .setAutoRenewAccount(account);
-        final var op = updateWith(NO_KEYS, misc, true, true, false, false, false).toBuilder()
+        final var op = updateWith(NO_KEYS, MISC, true, true, false, false, false).toBuilder()
                 .setAutoRenewPeriod(enduring(-1L))
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1451,9 +1458,9 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsMissingToken() {
-        final var op = updateWith(ALL_KEYS, misc, true, true, true);
+        final var op = updateWith(ALL_KEYS, MISC, true, true, true);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(Token.getEmptyToken());
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1462,12 +1469,12 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsInappropriateKycKey() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var token = new Token(Id.fromGrpcToken(misc)).setAdminKey(jKey);
-        final var op = updateWith(EnumSet.of(KeyType.KYC), misc, false, false, false);
+        var jKey = JKey.mapKey(KEY);
+        var token = new Token(Id.fromGrpcToken(MISC)).setAdminKey(jKey);
+        final var op = updateWith(EnumSet.of(KeyType.KYC), MISC, false, false, false);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1476,13 +1483,13 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsInappropriateFreezeKey() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var token = new Token(Id.fromGrpcToken(misc)).setAdminKey(jKey);
+        var jKey = JKey.mapKey(KEY);
+        var token = new Token(Id.fromGrpcToken(MISC)).setAdminKey(jKey);
 
-        final var op = updateWith(EnumSet.of(KeyType.FREEZE), misc, false, false, false);
+        final var op = updateWith(EnumSet.of(KeyType.FREEZE), MISC, false, false, false);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1491,13 +1498,13 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsInappropriateWipeKey() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var token = new Token(Id.fromGrpcToken(misc)).setAdminKey(jKey);
+        var jKey = JKey.mapKey(KEY);
+        var token = new Token(Id.fromGrpcToken(MISC)).setAdminKey(jKey);
 
-        final var op = updateWith(EnumSet.of(KeyType.WIPE), misc, false, false, false);
+        final var op = updateWith(EnumSet.of(KeyType.WIPE), MISC, false, false, false);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1506,13 +1513,13 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsInappropriateSupplyKey() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var token = new Token(Id.fromGrpcToken(misc)).setAdminKey(jKey);
+        var jKey = JKey.mapKey(KEY);
+        var token = new Token(Id.fromGrpcToken(MISC)).setAdminKey(jKey);
 
-        final var op = updateWith(EnumSet.of(KeyType.SUPPLY), misc, false, false, false);
+        final var op = updateWith(EnumSet.of(KeyType.SUPPLY), MISC, false, false, false);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1521,26 +1528,26 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRejectsZeroTokenBalanceKey() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var account = new Account(0L, Id.fromGrpcAccount(newTreasury), 0L);
-        var token = new Token(Id.fromGrpcToken(nonfungible))
-                .setExpiry(expiry)
+        var jKey = JKey.mapKey(KEY);
+        var account = new Account(0L, Id.fromGrpcAccount(NEW_TREASURY), 0L);
+        var token = new Token(Id.fromGrpcToken(NONFUNGIBLE))
+                .setExpiry(EXPIRY)
                 .setKycKey(jKey)
                 .setFreezeKey(jKey)
                 .setWipeKey(jKey)
                 .setSupplyKey(jKey)
                 .setAdminKey(jKey)
                 .setType(TokenType.NON_FUNGIBLE_UNIQUE);
-        var tokenRelationshipKey = asTokenRelationshipKey(newTreasury, nonfungible);
+        var tokenRelationshipKey = asTokenRelationshipKey(NEW_TREASURY, NONFUNGIBLE);
         var tokenRelationship =
                 new TokenRelationship(token, account).changeKycState(true).setBalance(1L);
-        final var op = updateWith(ALL_KEYS, nonfungible, true, true, true).toBuilder()
+        final var op = updateWith(ALL_KEYS, NONFUNGIBLE, true, true, true).toBuilder()
                 .setExpiry(Timestamp.newBuilder().setSeconds(0))
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(nonfungible), OnMissing.DONT_THROW))
+        given(store.getToken(asTypedEvmAddress(NONFUNGIBLE), OnMissing.DONT_THROW))
                 .willReturn(token);
-        given(store.getToken(asTypedEvmAddress(nonfungible), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(NONFUNGIBLE), OnMissing.THROW)).willReturn(token);
         given(store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW)).willReturn(tokenRelationship);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
@@ -1550,12 +1557,12 @@ class HederaTokenStoreTest {
 
     @Test
     void updateHappyPathIgnoresZeroExpiry() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var newJkey = JKey.mapKey(newKey);
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
-        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(newTreasury), 0L);
-        var token = new Token(Id.fromGrpcToken(misc))
-                .setExpiry(expiry)
+        var jKey = JKey.mapKey(KEY);
+        var newJkey = JKey.mapKey(NEW_KEY);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(TREASURY), 0L);
+        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(NEW_TREASURY), 0L);
+        var token = new Token(Id.fromGrpcToken(MISC))
+                .setExpiry(EXPIRY)
                 .setKycKey(jKey)
                 .setFreezeKey(jKey)
                 .setWipeKey(jKey)
@@ -1563,19 +1570,20 @@ class HederaTokenStoreTest {
                 .setAdminKey(jKey)
                 .setType(TokenType.FUNGIBLE_COMMON)
                 .setTreasury(treasuryAccount);
-        final var op = updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
+        final var op = updateWith(ALL_KEYS, MISC, true, true, true).toBuilder()
                 .setExpiry(Timestamp.newBuilder().setSeconds(0))
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
-        given(store.getAccount(asTypedEvmAddress(newTreasury), OnMissing.THROW)).willReturn(newTreasuryAccount);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(NEW_TREASURY), OnMissing.THROW))
+                .willReturn(newTreasuryAccount);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
         final var updatedToken = token.setAdminKey(newJkey)
-                .setSymbol(newSymbol)
-                .setName(newName)
+                .setSymbol(NEW_SYMBOL)
+                .setName(NEW_NAME)
                 .setTreasury(newTreasuryAccount)
                 .setFreezeKey(newJkey)
                 .setKycKey(newJkey)
@@ -1588,10 +1596,10 @@ class HederaTokenStoreTest {
 
     @Test
     void updateRemovesAdminKeyWhenAppropos() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
-        var token = new Token(Id.fromGrpcToken(misc))
-                .setExpiry(expiry)
+        var jKey = JKey.mapKey(KEY);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(TREASURY), 0L);
+        var token = new Token(Id.fromGrpcToken(MISC))
+                .setExpiry(EXPIRY)
                 .setKycKey(jKey)
                 .setFreezeKey(jKey)
                 .setWipeKey(jKey)
@@ -1599,10 +1607,10 @@ class HederaTokenStoreTest {
                 .setAdminKey(jKey)
                 .setType(TokenType.FUNGIBLE_COMMON)
                 .setTreasury(treasuryAccount);
-        final var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), misc, false, false, false);
+        final var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), MISC, false, false, false);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
@@ -1614,12 +1622,12 @@ class HederaTokenStoreTest {
 
     @Test
     void updateHappyPathWorksForEverythingWithNewExpiry() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var newJkey = JKey.mapKey(newKey);
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
-        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(newTreasury), 0L);
-        var token = new Token(Id.fromGrpcToken(misc))
-                .setExpiry(expiry)
+        var jKey = JKey.mapKey(KEY);
+        var newJkey = JKey.mapKey(NEW_KEY);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(TREASURY), 0L);
+        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(NEW_TREASURY), 0L);
+        var token = new Token(Id.fromGrpcToken(MISC))
+                .setExpiry(EXPIRY)
                 .setKycKey(jKey)
                 .setFreezeKey(jKey)
                 .setWipeKey(jKey)
@@ -1628,21 +1636,22 @@ class HederaTokenStoreTest {
                 .setFeeScheduleKey(jKey)
                 .setType(TokenType.FUNGIBLE_COMMON)
                 .setTreasury(treasuryAccount);
-        final var op = updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
-                .setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
-                .setFeeScheduleKey(newKey)
+        final var op = updateWith(ALL_KEYS, MISC, true, true, true).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(NEW_EXPIRY))
+                .setFeeScheduleKey(NEW_KEY)
                 .build();
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
-        given(store.getAccount(asTypedEvmAddress(newTreasury), OnMissing.THROW)).willReturn(newTreasuryAccount);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(NEW_TREASURY), OnMissing.THROW))
+                .willReturn(newTreasuryAccount);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
         final var updatedToken = token.setAdminKey(newJkey)
-                .setSymbol(newSymbol)
-                .setName(newName)
-                .setExpiry(newExpiry)
+                .setSymbol(NEW_SYMBOL)
+                .setName(NEW_NAME)
+                .setExpiry(NEW_EXPIRY)
                 .setTreasury(newTreasuryAccount)
                 .setFreezeKey(newJkey)
                 .setKycKey(newJkey)
@@ -1656,10 +1665,10 @@ class HederaTokenStoreTest {
 
     @Test
     void updateHappyPathWorksWithNewMemo() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
-        var token = new Token(Id.fromGrpcToken(misc))
-                .setExpiry(expiry)
+        var jKey = JKey.mapKey(KEY);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(TREASURY), 0L);
+        var token = new Token(Id.fromGrpcToken(MISC))
+                .setExpiry(EXPIRY)
                 .setKycKey(jKey)
                 .setFreezeKey(jKey)
                 .setWipeKey(jKey)
@@ -1668,14 +1677,14 @@ class HederaTokenStoreTest {
                 .setFeeScheduleKey(jKey)
                 .setType(TokenType.FUNGIBLE_COMMON)
                 .setTreasury(treasuryAccount);
-        final var op = updateWith(NO_KEYS, misc, false, false, false, false, false, false, true);
+        final var op = updateWith(NO_KEYS, MISC, false, false, false, false, false, false, true);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
-        final var updatedToken = token.setMemo(newMemo);
+        final var updatedToken = token.setMemo(NEW_MEMO);
 
         assertEquals(OK, outcome);
         verify(store).updateToken(updatedToken);
@@ -1683,10 +1692,10 @@ class HederaTokenStoreTest {
 
     @Test
     void updateHappyPathWorksWithNewMemoForNonfungible() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
-        var token = new Token(Id.fromGrpcToken(misc))
-                .setExpiry(expiry)
+        var jKey = JKey.mapKey(KEY);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(TREASURY), 0L);
+        var token = new Token(Id.fromGrpcToken(MISC))
+                .setExpiry(EXPIRY)
                 .setKycKey(jKey)
                 .setFreezeKey(jKey)
                 .setWipeKey(jKey)
@@ -1695,14 +1704,14 @@ class HederaTokenStoreTest {
                 .setFeeScheduleKey(jKey)
                 .setType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .setTreasury(treasuryAccount);
-        final var op = updateWith(NO_KEYS, misc, false, false, false, false, false, false, true);
+        final var op = updateWith(NO_KEYS, MISC, false, false, false, false, false, false, true);
 
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
-        final var updatedToken = token.setMemo(newMemo);
+        final var updatedToken = token.setMemo(NEW_MEMO);
 
         assertEquals(OK, outcome);
         verify(store).updateToken(updatedToken);
@@ -1710,13 +1719,13 @@ class HederaTokenStoreTest {
 
     @Test
     void updateHappyPathWorksWithNewAutoRenewAccount() throws InvalidKeyException {
-        var jKey = JKey.mapKey(key);
-        var newJkey = JKey.mapKey(newKey);
-        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
-        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(newTreasury), 0L);
-        var newAccount = new Account(0L, Id.fromGrpcAccount(newAutoRenewAccount), 0L);
-        var token = new Token(Id.fromGrpcToken(misc))
-                .setExpiry(expiry)
+        var jKey = JKey.mapKey(KEY);
+        var newJkey = JKey.mapKey(NEW_KEY);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(TREASURY), 0L);
+        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(NEW_TREASURY), 0L);
+        var newAccount = new Account(0L, Id.fromGrpcAccount(NEW_AUTO_RENEW_ACCOUNT), 0L);
+        var token = new Token(Id.fromGrpcToken(MISC))
+                .setExpiry(EXPIRY)
                 .setKycKey(jKey)
                 .setFreezeKey(jKey)
                 .setWipeKey(jKey)
@@ -1725,25 +1734,26 @@ class HederaTokenStoreTest {
                 .setFeeScheduleKey(jKey)
                 .setType(TokenType.FUNGIBLE_COMMON)
                 .setTreasury(treasuryAccount);
-        final var op = updateWith(ALL_KEYS, misc, true, true, true, true, true);
+        final var op = updateWith(ALL_KEYS, MISC, true, true, true, true, true);
 
         given(mirrorNodeEvmProperties.getMinAutoRenewDuration()).willReturn(1L);
         given(mirrorNodeEvmProperties.getMaxAutoRenewDuration()).willReturn(1_000_000_000L);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
-        given(store.getAccount(asTypedEvmAddress(newTreasury), OnMissing.THROW)).willReturn(newTreasuryAccount);
-        given(store.getAccount(asTypedEvmAddress(newAutoRenewAccount), OnMissing.THROW))
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(MISC), OnMissing.THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(NEW_TREASURY), OnMissing.THROW))
+                .willReturn(newTreasuryAccount);
+        given(store.getAccount(asTypedEvmAddress(NEW_AUTO_RENEW_ACCOUNT), OnMissing.THROW))
                 .willReturn(newAccount);
-        given(store.getAccount(asTypedEvmAddress(newAutoRenewAccount), OnMissing.DONT_THROW))
+        given(store.getAccount(asTypedEvmAddress(NEW_AUTO_RENEW_ACCOUNT), OnMissing.DONT_THROW))
                 .willReturn(newAccount);
 
         final var outcome = subject.update(op, CONSENSUS_NOW);
 
-        final var updatedToken = token.setSymbol(newSymbol)
-                .setName(newName)
+        final var updatedToken = token.setSymbol(NEW_SYMBOL)
+                .setName(NEW_NAME)
                 .setTreasury(newTreasuryAccount)
                 .setAutoRenewAccount(newAccount)
-                .setAutoRenewPeriod(newAutoRenewPeriod)
+                .setAutoRenewPeriod(NEW_AUTO_RENEW_PERIOD)
                 .setAdminKey(newJkey)
                 .setKycKey(newJkey)
                 .setFreezeKey(newJkey)
@@ -1796,30 +1806,30 @@ class HederaTokenStoreTest {
         final var invalidKey = Key.getDefaultInstance();
         final var op = TokenUpdateTransactionBody.newBuilder().setToken(tokenId);
         if (useNewSymbol) {
-            op.setSymbol(newSymbol);
+            op.setSymbol(NEW_SYMBOL);
         }
         if (useNewName) {
-            op.setName(newName);
+            op.setName(NEW_NAME);
         }
         if (useNewMemo) {
-            op.setMemo(StringValue.newBuilder().setValue(newMemo).build());
+            op.setMemo(StringValue.newBuilder().setValue(NEW_MEMO).build());
         }
         if (useNewTreasury) {
-            op.setTreasury(newTreasury);
+            op.setTreasury(NEW_TREASURY);
         }
         if (useNewAutoRenewAccount) {
-            op.setAutoRenewAccount(newAutoRenewAccount);
+            op.setAutoRenewAccount(NEW_AUTO_RENEW_ACCOUNT);
         }
         if (useNewAutoRenewPeriod) {
-            op.setAutoRenewPeriod(enduring(newAutoRenewPeriod));
+            op.setAutoRenewPeriod(enduring(NEW_AUTO_RENEW_PERIOD));
         }
         for (final var key : keys) {
             switch (key) {
-                case WIPE -> op.setWipeKey(setInvalidKeys ? invalidKey : newKey);
-                case FREEZE -> op.setFreezeKey(setInvalidKeys ? invalidKey : newKey);
-                case SUPPLY -> op.setSupplyKey(setInvalidKeys ? invalidKey : newKey);
-                case KYC -> op.setKycKey(setInvalidKeys ? invalidKey : newKey);
-                case ADMIN -> op.setAdminKey(setInvalidKeys ? invalidKey : newKey);
+                case WIPE -> op.setWipeKey(setInvalidKeys ? invalidKey : NEW_KEY);
+                case FREEZE -> op.setFreezeKey(setInvalidKeys ? invalidKey : NEW_KEY);
+                case SUPPLY -> op.setSupplyKey(setInvalidKeys ? invalidKey : NEW_KEY);
+                case KYC -> op.setKycKey(setInvalidKeys ? invalidKey : NEW_KEY);
+                case ADMIN -> op.setAdminKey(setInvalidKeys ? invalidKey : NEW_KEY);
                 case EMPTY_ADMIN -> op.setAdminKey(ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY);
             }
         }
