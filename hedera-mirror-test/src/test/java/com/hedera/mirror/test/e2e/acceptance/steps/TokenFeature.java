@@ -332,7 +332,7 @@ public class TokenFeature extends AbstractFeature {
         this.networkTransactionResponse = tokenResponse.response();
     }
 
-    //We need this type of token to test automatic association upon claim airdrop
+    // We need this type of token to test automatic association upon claim airdrop
     @Given("I successfully create a new unfrozen token with KYC not applicable")
     public void createNewTokenKycNotApplicable() {
         this.tokenResponse = tokenClient.getToken(TokenNameEnum.FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN);
