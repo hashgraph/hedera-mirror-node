@@ -332,6 +332,14 @@ public class TokenFeature extends AbstractFeature {
         this.networkTransactionResponse = tokenResponse.response();
     }
 
+    //We need this type of token to test automatic association upon claim airdrop
+    @Given("I successfully create a new unfrozen token with KYC not applicable")
+    public void createNewTokenKycNotApplicable() {
+        this.tokenResponse = tokenClient.getToken(TokenNameEnum.FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN);
+        this.tokenId = tokenResponse.tokenId();
+        this.networkTransactionResponse = tokenResponse.response();
+    }
+
     @Given("I successfully create a new nft with infinite supplyType")
     public void createNewNft() {
         this.tokenResponse = tokenClient.getToken(TokenNameEnum.NFT_DELETABLE);
@@ -690,10 +698,10 @@ public class TokenFeature extends AbstractFeature {
         verifyTokenWithCustomFeesSchedule(tokenId, transaction.getConsensusTimestamp());
     }
 
-    @Then("the mirror node REST API should return the token relationship for token")
+    @Then("the mirror node REST API should return the token relationship for token for {account}")
     @RetryAsserts
-    public void verifyMirrorTokenRelationshipTokenAPIResponses() {
-        TokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId);
+    public void verifyMirrorTokenRelationshipTokenAPIResponses(AccountNameEnum accountName) {
+        TokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId, accountName);
         // Asserting values
         assertTokenRelationship(mirrorTokenRelationship);
         TokenRelationship token = mirrorTokenRelationship.getTokens().getFirst();
@@ -703,10 +711,10 @@ public class TokenFeature extends AbstractFeature {
         assertThat(token.getDecimals()).isNotNull();
     }
 
-    @Then("the mirror node REST API should return the token relationship for nft")
+    @Then("the mirror node REST API should return the token relationship for nft for {account}")
     @RetryAsserts
-    public void verifyMirrorTokenRelationshipNftAPIResponses() {
-        TokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId);
+    public void verifyMirrorTokenRelationshipNftAPIResponses(AccountNameEnum accountName) {
+        TokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId, accountName);
         // Asserting values
         assertTokenRelationship(mirrorTokenRelationship);
         TokenRelationship token = mirrorTokenRelationship.getTokens().getFirst();
@@ -1134,8 +1142,8 @@ public class TokenFeature extends AbstractFeature {
         return index != null ? index : 0;
     }
 
-    private TokenRelationshipResponse callTokenRelationship(TokenId tokenId) {
-        var accountId = accountClient.getAccount(AccountNameEnum.ALICE);
+    private TokenRelationshipResponse callTokenRelationship(TokenId tokenId, AccountNameEnum accountName) {
+        var accountId = accountClient.getAccount(accountName);
         return mirrorClient.getTokenRelationships(accountId.getAccountId(), tokenId);
     }
 

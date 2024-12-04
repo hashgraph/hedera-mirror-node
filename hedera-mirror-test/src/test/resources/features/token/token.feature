@@ -15,7 +15,7 @@ Feature: HTS Base Coverage Feature
     And I ensure token has the expected metadata and key
     When I associate ALICE with token
     Then the mirror node REST API should return the transaction
-    Then the mirror node REST API should return the token relationship for token
+    Then the mirror node REST API should return the token relationship for token for ALICE
     And I set account freeze status to <freezeStatus> for ALICE
     Then the mirror node REST API should return the transaction
     And I set account kyc status to <kycStatus> for ALICE
@@ -24,25 +24,6 @@ Feature: HTS Base Coverage Feature
     Then the mirror node REST API should return the transaction for token fund flow
     Then I update the token
     And the mirror node REST API should confirm token update
-    Then I airdrop <amount> tokens to CAROL
-    Then the mirror node REST API should return the transaction
-    And I verify "pending" airdrop of <amount> tokens to CAROL
-    Then I cancel the airdrop to CAROL
-    Then the mirror node REST API should return the transaction
-    And I verify "cancelled" airdrop of <amount> tokens to CAROL
-    Then I airdrop <amount> tokens to CAROL
-    Then the mirror node REST API should return the transaction
-    And I associate CAROL with token
-    And I set account kyc status to <kycStatus> for CAROL
-    Then the mirror node REST API should return the transaction
-    Then CAROL claims the airdrop
-    Then the mirror node REST API should return the transaction
-    And I verify "successful" airdrop of <amount> tokens to CAROL
-    Then CAROL rejects the fungible token
-    Then the mirror node REST API should return the transaction CAROL returns <amount> fungible token to OPERATOR
-    Then I airdrop <amount> tokens to CAROL
-    Then the mirror node REST API should return the transaction
-    And I verify "successful" airdrop of <amount> tokens to CAROL
     Then I burn <modifySupplyAmount> from the token
     And the mirror node REST API should return the transaction
     Then I mint <modifySupplyAmount> from the token
@@ -77,7 +58,7 @@ Feature: HTS Base Coverage Feature
     And I ensure token has the expected metadata and key
     When I associate ALICE with token
     And the mirror node REST API should return the transaction
-    Then the mirror node REST API should return the token relationship for nft
+    Then the mirror node REST API should return the token relationship for nft for ALICE
     Then I mint a serial number from the token
     And the mirror node REST API should return the transaction for token serial number index 0 transaction flow
     Then I transfer serial number index 0 to ALICE
@@ -91,30 +72,11 @@ Feature: HTS Base Coverage Feature
     And the mirror node REST API should return the transaction for token serial number index 1 transaction flow
     Given I mint a serial number from the token
     Then the mirror node REST API should return the transaction for token serial number index 2 transaction flow
-    Then I airdrop serial number index 2 to CAROL
-    Then the mirror node REST API should return the transaction
-    And I verify "pending" airdrop of serial number index 2 to CAROL
-    Then I cancel the NFT with serial number index 2 airdrop to CAROL
-    Then the mirror node REST API should return the transaction
-    And I verify "cancelled" airdrop of serial number index 2 to CAROL
-    Then I airdrop serial number index 2 to CAROL
-    Then the mirror node REST API should return the transaction
-    And I associate CAROL with token
-    And the mirror node REST API should return the transaction
-    Then the mirror node REST API should return the token relationship for nft
-    Then CAROL claims airdrop for NFT with serial number index 2
-    Then the mirror node REST API should return the transaction
-    And I verify "successful" airdrop of serial number index 2 to CAROL
-    And CAROL rejects serial number index 2
-    Then the mirror node REST API should return the transaction CAROL returns serial number index 2 to OPERATOR
-    Then I airdrop serial number index 2 to CAROL
-    Then the mirror node REST API should return the transaction
-    And I verify "successful" airdrop of serial number index 2 to CAROL
     Then I wipe serial number index 0 from token for ALICE
     And the mirror node REST API should return the transaction for token serial number index 0 transaction flow
     Then I burn serial number index 1 from token
     And the mirror node REST API should return the transaction for token serial number index 1 transaction flow
-        #TODO This test should be updated when services enables the ability to change NFT treasury accounts.
+      #TODO This test should be updated when services enables the ability to change NFT treasury accounts.
     Then I update the treasury of token to ALICE
     And the mirror node REST API should return the transaction
     Then I update the treasury of token to operator
@@ -153,3 +115,79 @@ Feature: HTS Base Coverage Feature
     Examples:
       | fundAmount |
       | 3000       |
+
+  @fungible @critical @release @airdrops
+  Scenario Outline: Validate Token Airdrop for Fungible tokens - Token Airdrop, Reject, Claim, Cancel
+    Given I successfully create a new unfrozen token with KYC not applicable
+    Then the mirror node REST API should return the transaction
+    Then I ensure token has the correct properties
+    And I ensure token has the expected metadata and key
+    Then I airdrop <amount> tokens to CAROL
+    Then the mirror node REST API should return the transaction
+    And I verify "pending" airdrop of <amount> tokens to CAROL
+    Then I cancel the airdrop to CAROL
+    Then the mirror node REST API should return the transaction
+    And I verify "cancelled" airdrop of <amount> tokens to CAROL
+#    CAROL is not associated to the token and is associated before claim
+    Then I airdrop <amount> tokens to CAROL
+    Then the mirror node REST API should return the transaction
+    And I associate CAROL with token
+    Then the mirror node REST API should return the transaction
+    Then CAROL claims the airdrop
+    Then the mirror node REST API should return the transaction
+    And I verify "successful" airdrop of <amount> tokens to CAROL
+    Then CAROL rejects the fungible token
+    Then the mirror node REST API should return the transaction CAROL returns <amount> fungible token to OPERATOR
+#    CAROL is already associated to the token - no need for association
+    Then I airdrop <amount> tokens to CAROL
+    Then the mirror node REST API should return the transaction
+    And I verify "successful" airdrop of <amount> tokens to CAROL
+#    DAVE is not associated to the token and the association happens upon claim
+    Then I airdrop <amount> tokens to DAVE
+    Then the mirror node REST API should return the transaction
+    And I verify "pending" airdrop of <amount> tokens to DAVE
+    Then DAVE claims the airdrop
+    Then the mirror node REST API should return the transaction
+    And I verify "successful" airdrop of <amount> tokens to DAVE
+
+    Examples:
+      | amount | freezeStatus | kycStatus | modifySupplyAmount |
+      | 2350   | 2            | 1         | 100                |
+
+  @nft @critical @release @airdrops
+  Scenario: Validate Token Airdrop for NFT - Token Airdrop, Reject, Claim, Cancel
+    Given I successfully create a new nft with infinite supplyType
+    Then the mirror node REST API should return the transaction
+    And I ensure token has the correct properties
+    And I ensure token has the expected metadata and key
+    Given I mint a serial number from the token
+    Then the mirror node REST API should return the transaction for token serial number index 0 transaction flow
+    Then I airdrop serial number index 0 to CAROL
+    Then the mirror node REST API should return the transaction
+    And I verify "pending" airdrop of serial number index 0 to CAROL
+    Then I cancel the NFT with serial number index 0 airdrop to CAROL
+    Then the mirror node REST API should return the transaction
+    And I verify "cancelled" airdrop of serial number index 0 to CAROL
+    #    CAROL is not associated to the token and is associated before claim
+    Then I airdrop serial number index 0 to CAROL
+    Then the mirror node REST API should return the transaction
+    And I associate CAROL with token
+    And the mirror node REST API should return the transaction
+    Then the mirror node REST API should return the token relationship for nft for CAROL
+    Then CAROL claims airdrop for NFT with serial number index 0
+    Then the mirror node REST API should return the transaction
+    And I verify "successful" airdrop of serial number index 0 to CAROL
+    And CAROL rejects serial number index 0
+    Then the mirror node REST API should return the transaction CAROL returns serial number index 0 to OPERATOR
+    #    CAROL is already associated to the token - no need for association
+    Then I airdrop serial number index 0 to CAROL
+    Then the mirror node REST API should return the transaction
+    And I verify "successful" airdrop of serial number index 0 to CAROL
+    #    DAVE is not associated to the token and the association happens upon claim
+    Given I mint a serial number from the token
+    Then the mirror node REST API should return the transaction for token serial number index 1 transaction flow
+    Then I airdrop serial number index 1 to DAVE
+    Then the mirror node REST API should return the transaction
+    Then DAVE claims airdrop for NFT with serial number index 1
+    Then the mirror node REST API should return the transaction
+    And I verify "successful" airdrop of serial number index 1 to DAVE
