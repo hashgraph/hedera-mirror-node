@@ -25,11 +25,11 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.TransferTransaction;
+import com.hedera.hashgraph.sdk.proto.NodeAddressBook;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 import com.hedera.mirror.rest.model.NetworkNode;
-import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
 import java.time.Duration;
@@ -40,6 +40,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -139,6 +141,7 @@ public class NodeSupplier {
                     : serviceEndpoint.getIpAddressV4();
             var nodeProperties = new NodeProperties();
             nodeProperties.setAccountId(networkNode.getNodeAccountId());
+            nodeProperties.setCertHash(StringUtils.remove(networkNode.getNodeCertHash(), "0x"));
             nodeProperties.setHost(host);
             nodeProperties.setNodeId(networkNode.getNodeId());
             nodeProperties.setPort(serviceEndpoint.getPort());
@@ -146,14 +149,21 @@ public class NodeSupplier {
         }));
     }
 
-    private Client toClient(Map<String, AccountId> nodes) {
-        AccountId operatorId =
-                AccountId.fromString(monitorProperties.getOperator().getAccountId());
-        PrivateKey operatorPrivateKey =
+    @SneakyThrows
+    private Client toClient(NodeProperties node) {
+        var operatorId = AccountId.fromString(monitorProperties.getOperator().getAccountId());
+        var operatorPrivateKey =
                 PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
         var validationProperties = monitorProperties.getNodeValidation();
 
-        Client client = Client.forNetwork(nodes);
+        var network = Map.of(node.getEndpoint(), AccountId.fromString(node.getAccountId()));
+        var nodeAddress = node.toNodeAddress();
+        var nodeAddressBook =
+                NodeAddressBook.newBuilder().addNodeAddress(nodeAddress).build().toByteString();
+
+        var client = Client.forNetwork(Map.of());
+        client.setNetworkFromAddressBook(com.hedera.hashgraph.sdk.NodeAddressBook.fromBytes(nodeAddressBook));
+        client.setNetwork(network);
         client.setMaxAttempts(validationProperties.getMaxAttempts());
         client.setMaxBackoff(validationProperties.getMaxBackoff());
         client.setMinBackoff(validationProperties.getMinBackoff());
@@ -174,7 +184,7 @@ public class NodeSupplier {
         Hbar hbar = Hbar.fromTinybars(1L);
         AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
 
-        try (Client client = toClient(Map.of(node.getEndpoint(), nodeAccountId))) {
+        try (Client client = toClient(node)) {
             Status receiptStatus = new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
