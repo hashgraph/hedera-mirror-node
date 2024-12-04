@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
@@ -38,6 +39,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
     private final EntityId receiver = domainBuilder.entityId();
     private final AccountID receiverAccountId = recordItemBuilder.accountId();
     private final EntityId sender = domainBuilder.entityId();
@@ -106,5 +108,6 @@ class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandle
                 .returns(TokenAirdropStateEnum.CANCELLED, TokenAirdrop::getState)
                 .returns(Range.atLeast(timestamp), TokenAirdrop::getTimestampRange)
                 .returns(token.getTokenNum(), TokenAirdrop::getTokenId);
+        verifyNoMoreInteractions(entityListener);
     }
 }
