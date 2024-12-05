@@ -211,9 +211,10 @@ class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigration {
               update token_account_history as th
               set timestamp_range = int8range(lower(th.timestamp_range), :timestamp)
               from previous as p
-              where th.account_id = p.account_id
+              where upper(p.timestamp_range) is not null
+                and th.account_id = p.account_id
                 and th.token_id = p.token_id
-                and th.timestamp_range = p.timestamp_range
+                and lower(th.timestamp_range) = lower(p.timestamp_range)
             ), append_previous as (
               insert into token_account_history (
                 account_id,
