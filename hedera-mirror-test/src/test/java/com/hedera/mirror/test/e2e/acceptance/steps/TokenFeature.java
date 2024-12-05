@@ -104,6 +104,8 @@ public class TokenFeature extends AbstractFeature {
 
     private TokenResponse tokenResponse;
 
+    private String consensusTimestamp;
+
     @Given("I ensure token {token} has been created")
     public void createNamedToken(TokenNameEnum tokenName) {
         var tokenAndResponse = tokenClient.getToken(tokenName);
@@ -629,6 +631,12 @@ public class TokenFeature extends AbstractFeature {
         verifyTransactions();
     }
 
+    @Then("the mirror node REST API should return the transaction and get consensus timestamp")
+    @RetryAsserts
+    public void verifyMirrorAPIResponsesAndGetConsensusTimestamp() {
+        consensusTimestamp = verifyTransactions().getConsensusTimestamp();
+    }
+
     @Then("the mirror node REST API should return the transaction for token serial number index {int} transaction flow")
     @RetryAsserts
     public void verifyMirrorNftTransactionsAPIResponses(Integer serialNumberIndex) {
@@ -766,7 +774,7 @@ public class TokenFeature extends AbstractFeature {
         var sender = accountClient.getAccount(AccountNameEnum.OPERATOR);
 
         switch (status) {
-            case "successful" -> verifySuccessfulAirdrop(tokenId, sender, receiver, amount);
+            case "successful" -> verifySuccessfulAirdrop(tokenId, sender, receiver, amount, consensusTimestamp);
             case "pending" -> verifyPendingAirdrop(tokenId, sender, receiver, amount);
             case "cancelled" -> verifyCancelledAirdrop(tokenId, sender, receiver);
             default -> throw new IllegalArgumentException("Invalid airdrop status");
@@ -781,7 +789,8 @@ public class TokenFeature extends AbstractFeature {
         var sender = accountClient.getAccount(AccountNameEnum.OPERATOR);
 
         switch (status) {
-            case "successful" -> verifySuccessfulNFTAirdrop(tokenId, sender, receiver, serialNumber);
+            case "successful" -> verifySuccessfulNFTAirdrop(
+                    tokenId, sender, receiver, serialNumber, consensusTimestamp);
             case "pending" -> verifyPendingNftAirdrop(tokenId, sender, receiver, serialNumber);
             case "cancelled" -> verifyCancelledNftAirdrop(tokenId, sender, receiver, serialNumber);
             default -> throw new IllegalArgumentException("Invalid airdrop status");
@@ -1218,7 +1227,11 @@ public class TokenFeature extends AbstractFeature {
     }
 
     private void verifySuccessfulAirdrop(
-            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, long amount) {
+            TokenId tokenId,
+            ExpandedAccountId sender,
+            ExpandedAccountId receiver,
+            long amount,
+            String consensusTimestamp) {
         assertThat(getPendingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
                 .isNull();
         assertThat(getOutstandingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
@@ -1228,12 +1241,17 @@ public class TokenFeature extends AbstractFeature {
         assertThat(tokenRelationshipReceiver.getTokens())
                 .hasSize(1)
                 .first()
-                .returns(tokenId.toString(), TokenRelationship::getTokenId);
+                .returns(tokenId.toString(), TokenRelationship::getTokenId)
+                .returns(consensusTimestamp, TokenRelationship::getCreatedTimestamp);
         assertThat(getTokenBalance(receiver.getAccountId(), tokenId)).isEqualTo(amount);
     }
 
     private void verifySuccessfulNFTAirdrop(
-            TokenId tokenId, ExpandedAccountId sender, ExpandedAccountId receiver, long serialNumber) {
+            TokenId tokenId,
+            ExpandedAccountId sender,
+            ExpandedAccountId receiver,
+            long serialNumber,
+            String consensusTimestamp) {
         assertThat(getPendingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
                 .isNull();
         assertThat(getOutstandingAirdrop(tokenId, sender.getAccountId(), receiver.getAccountId()))
@@ -1243,7 +1261,8 @@ public class TokenFeature extends AbstractFeature {
         assertThat(tokenRelationshipReceiver.getTokens())
                 .hasSize(1)
                 .first()
-                .returns(tokenId.toString(), TokenRelationship::getTokenId);
+                .returns(tokenId.toString(), TokenRelationship::getTokenId)
+                .returns(consensusTimestamp, TokenRelationship::getCreatedTimestamp);
         var nftInfo = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
         assertThat(nftInfo.getAccountId()).isEqualTo(receiver.toString());
         assertThat(getNftAccountRelationship(receiver, tokenId, serialNumber)).isNotNull();
