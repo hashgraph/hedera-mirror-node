@@ -25,6 +25,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 import java.io.Serial;
 import java.io.Serializable;
 import lombok.Data;
@@ -56,6 +57,11 @@ public class AbstractTokenAccount implements History {
     private long balance;
 
     private Long balanceTimestamp;
+
+    @JsonIgnore
+    @SuppressWarnings("java:S2065")
+    @Transient
+    private transient boolean claim;
 
     private Long createdTimestamp;
 

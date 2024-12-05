@@ -83,7 +83,7 @@ import org.springframework.web.client.HttpClientErrorException;
 @CustomLog
 @RequiredArgsConstructor
 public class PrecompileContractFeature extends AbstractFeature {
-    private static final long firstNftSerialNumber = 1;
+    private static final long FIRST_NFT_SERIAL_NUMBER = 1;
     private final TokenClient tokenClient;
     private final MirrorNodeClient mirrorClient;
     private final AccountClient accountClient;
@@ -162,7 +162,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertNotNull(receipt);
         assertThat(receipt.serials.size()).isOne();
 
-        verifyNft(nonFungibleTokenId, firstNftSerialNumber);
+        verifyNft(nonFungibleTokenId, FIRST_NFT_SERIAL_NUMBER);
     }
 
     @Then("the mirror node REST API should return status {int} for the latest transaction")
@@ -435,7 +435,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 PRECOMPILE,
                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR,
                 asAddress(nonFungibleTokenId),
-                firstNftSerialNumber);
+                FIRST_NFT_SERIAL_NUMBER);
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getInformationForNonFungibleToken", response);
@@ -450,7 +450,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         String spenderId = tokenInfo.get(5).toString();
 
         assertThat(token).isNotEmpty();
-        assertThat(serialNumber).isEqualTo(firstNftSerialNumber);
+        assertThat(serialNumber).isEqualTo(FIRST_NFT_SERIAL_NUMBER);
         assertThat(ownerId).isNotBlank();
         assertThat(creationTime).isPositive();
         assertThat(metadata).isNotEmpty();

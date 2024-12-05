@@ -79,7 +79,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
 
     private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
-    private static final long firstNftSerialNumber = 1;
+    private static final long FIRST_NFT_SERIAL_NUMBER = 1;
     private final TokenClient tokenClient;
     private final AccountClient accountClient;
     private TokenId fungibleKycUnfrozenTokenId;
@@ -416,7 +416,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @And("I approve receiver account to use the NFT with id 1")
     public void approveNonFungibleWithReceiver() {
-        NftId id = new NftId(nonFungibleTokenId, firstNftSerialNumber);
+        NftId id = new NftId(nonFungibleTokenId, FIRST_NFT_SERIAL_NUMBER);
         networkTransactionResponse = accountClient.approveNft(id, receiverAccount.getAccountId());
     }
 
@@ -717,7 +717,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 nonFungibleTokenId,
                 admin,
                 receiverAccount.getAccountId(),
-                Collections.singletonList(firstNftSerialNumber),
+                Collections.singletonList(FIRST_NFT_SERIAL_NUMBER),
                 receiverAccount.getPrivateKey(),
                 null,
                 false);

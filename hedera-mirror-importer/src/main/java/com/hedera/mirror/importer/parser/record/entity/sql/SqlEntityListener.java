@@ -36,6 +36,7 @@ import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount.Id;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftTransfer;
@@ -65,6 +66,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import java.util.Collection;
@@ -90,6 +92,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityIdService entityIdService;
     private final EntityProperties entityProperties;
     private final NftRepository nftRepository;
+    private final TokenAccountRepository tokenAccountRepository;
     private final SqlProperties sqlProperties;
 
     @Override
@@ -293,7 +296,27 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-        context.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
+        var id = tokenAccount.getId();
+
+        // Users might have already manually associated to this token before claiming the airdrop
+        if (tokenAccount.isClaim() && isTokenAccountAlreadyAssociated(id)) {
+            return;
+        }
+
+        context.merge(id, tokenAccount, this::mergeTokenAccount);
+    }
+
+    private boolean isTokenAccountAlreadyAssociated(Id id) {
+        var existing = context.get(TokenAccount.class, id);
+
+        if (existing != null) {
+            return Objects.requireNonNullElse(existing.getAssociated(), true);
+        }
+
+        return tokenAccountRepository
+                .findById(id)
+                .map(TokenAccount::getAssociated)
+                .orElse(false);
     }
 
     @Override

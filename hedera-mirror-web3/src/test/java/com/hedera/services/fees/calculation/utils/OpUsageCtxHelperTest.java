@@ -107,7 +107,7 @@ class OpUsageCtxHelperTest {
         given(merkleAccount.getExpiry()).willReturn(now);
         given(merkleAccount.getMaxAutoAssociations()).willReturn(maxAutomaticAssociations);
         given(merkleAccount.getProxy()).willReturn(Id.DEFAULT);
-        given(merkleAccount.getCryptoAllowances()).willReturn(cryptoAllowance);
+        given(merkleAccount.getCryptoAllowances()).willReturn(CRYPTO_ALLOWANCE);
         given(merkleAccount.getFungibleTokenAllowances()).willReturn(tokenAllowance);
         given(merkleAccount.getApproveForAllNfts()).willReturn(nftAllowance);
         given(accessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
@@ -116,7 +116,7 @@ class OpUsageCtxHelperTest {
         final var ctx = subject.ctxForCryptoAllowance(accessor);
 
         assertEquals(maxAutomaticAssociations, ctx.currentMaxAutomaticAssociations());
-        assertEquals(Map.of(spender1.getAccountNum(), 10L), ctx.currentCryptoAllowances());
+        assertEquals(Map.of(SPENDER_1.getAccountNum(), 10L), ctx.currentCryptoAllowances());
         assertEquals(1, ctx.currentTokenAllowances().size());
         assertEquals(1, ctx.currentTokenAllowances().size());
         assertEquals(1, ctx.currentNftAllowances().size());
@@ -152,7 +152,7 @@ class OpUsageCtxHelperTest {
         final TransactionBody txn = getTxnBody(mintTxnBody);
         final Token extant = new Token(
                 0L,
-                Id.fromGrpcToken(token1),
+                Id.fromGrpcToken(TOKEN_1),
                 new ArrayList<>(),
                 new ArrayList<>(),
                 new HashMap<>(),
@@ -218,26 +218,25 @@ class OpUsageCtxHelperTest {
     private final Key key = Key.newBuilder()
             .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .build();
-    private final String memo = "accountInfo";
     private final int maxAutomaticAssociations = 12;
     private final TokenID target = IdUtils.asToken("0.0.1003");
-    private static final AccountID spender1 = asAccount("0.0.123");
-    private static final TokenID token1 = asToken("0.0.100");
-    private static final SortedMap<EntityNum, Long> cryptoAllowance = new TreeMap<>() {
+    private static final AccountID SPENDER_1 = asAccount("0.0.123");
+    private static final TokenID TOKEN_1 = asToken("0.0.100");
+    private static final SortedMap<EntityNum, Long> CRYPTO_ALLOWANCE = new TreeMap<>() {
         {
-            put(EntityNum.fromAccountId(spender1), 10L);
+            put(EntityNum.fromAccountId(SPENDER_1), 10L);
         }
     };
 
     private static final SortedMap<FcTokenAllowanceId, Long> tokenAllowance = new TreeMap<>() {
         {
-            put(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)), 10L);
+            put(FcTokenAllowanceId.from(EntityNum.fromTokenId(TOKEN_1), EntityNum.fromAccountId(SPENDER_1)), 10L);
         }
     };
 
     private final SortedSet<FcTokenAllowanceId> nftAllowance = new TreeSet<>() {
         {
-            add(FcTokenAllowanceId.from(new EntityNum(1000), EntityNum.fromAccountId(spender1)));
+            add(FcTokenAllowanceId.from(new EntityNum(1000), EntityNum.fromAccountId(SPENDER_1)));
         }
     };
 }

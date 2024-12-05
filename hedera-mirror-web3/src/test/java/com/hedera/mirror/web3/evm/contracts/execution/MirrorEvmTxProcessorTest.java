@@ -144,7 +144,6 @@ class MirrorEvmTxProcessorTest {
 
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
     private SemanticVersion mcpVersion;
-    private SemanticVersion ccpVersion;
 
     static Stream<Arguments> provideIsEstimateParameters() {
         return Stream.of(Arguments.of(true), Arguments.of(false));

@@ -37,7 +37,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class AccountBalanceLineParserV2Test {
 
-    private static final long timestamp = 1596340377922333444L;
+    private static final long TIMESTAMP = 1596340377922333444L;
     private AccountBalanceLineParserV2 parser;
     private ImporterProperties importerProperties;
 
@@ -94,14 +94,14 @@ class AccountBalanceLineParserV2Test {
             String tokenBalances)
             throws IOException {
         if (!expectThrow) {
-            AccountBalance accountBalance = parser.parse(line, timestamp);
+            AccountBalance accountBalance = parser.parse(line, TIMESTAMP);
             var id = accountBalance.getId();
 
             assertThat(accountBalance.getBalance()).isEqualTo(expectedBalance);
             assertThat(id).isNotNull();
             assertThat(id.getAccountId().getRealm()).isEqualTo(expectedRealm);
             assertThat(id.getAccountId().getNum()).isEqualTo(expectedAccount);
-            assertThat(id.getConsensusTimestamp()).isEqualTo(timestamp);
+            assertThat(id.getConsensusTimestamp()).isEqualTo(TIMESTAMP);
 
             List<TokenBalance> actualTokenBalanceList = accountBalance.getTokenBalances();
             if (StringUtils.isNotBlank(tokenBalances)) {
@@ -121,7 +121,7 @@ class AccountBalanceLineParserV2Test {
                             .isEqualTo(expectedTokenBalances.get(
                                     actualId.getTokenId().getNum()));
                     assertThat(actualId).isNotNull();
-                    assertThat(actualId.getConsensusTimestamp()).isEqualTo(timestamp);
+                    assertThat(actualId.getConsensusTimestamp()).isEqualTo(TIMESTAMP);
                     assertThat(actualId.getAccountId().getShard()).isEqualTo(importerProperties.getShard());
                     assertThat(actualId.getAccountId().getRealm()).isEqualTo(expectedRealm);
                     assertThat(actualId.getAccountId().getNum()).isEqualTo(expectedAccount);
@@ -134,7 +134,7 @@ class AccountBalanceLineParserV2Test {
             }
         } else {
             assertThrows(InvalidDatasetException.class, () -> {
-                parser.parse(line, timestamp);
+                parser.parse(line, TIMESTAMP);
             });
         }
     }
@@ -142,7 +142,7 @@ class AccountBalanceLineParserV2Test {
     @Test
     void parseNullLine() {
         assertThrows(InvalidDatasetException.class, () -> {
-            parser.parse(null, timestamp);
+            parser.parse(null, TIMESTAMP);
         });
     }
 }

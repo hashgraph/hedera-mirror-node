@@ -57,7 +57,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Deque;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
@@ -167,7 +167,8 @@ class AssociatePrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices =
+                new EnumMap<>(HederaFunctionality.class);
         canonicalPrices.put(TokenAssociateToAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
 
