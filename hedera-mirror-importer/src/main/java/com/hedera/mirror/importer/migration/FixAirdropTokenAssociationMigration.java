@@ -54,6 +54,16 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Named
 public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigration {
 
+    private static final String ACCOUNT_ID = "accountId";
+    private static final String ASSOCIATED = "associated";
+    private static final String BALANCE = "balance";
+    private static final String BALANCE_TIMESTAMP = "balanceTimestamp";
+    private static final String CREATED_TIMESTAMP = "createdTimestamp";
+    private static final String FROM = "from";
+    private static final String TO = "to";
+    private static final String TOKEN_ID = "tokenId";
+    private static final String TIMESTAMP = "timestamp";
+
     private static final String GET_BALANCE_SNAPSHOT_TIMESTAMPS_SQL =
             """
             select consensus_timestamp
@@ -312,6 +322,7 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
     }
 
     @Override
+    @SuppressWarnings("java:S3776")
     protected void doMigrate() throws IOException {
         transactionTemplate.executeWithoutResult(status -> {
             var stopwatch = Stopwatch.createStarted();
@@ -326,7 +337,7 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
             long firstTokenAccountTimestamp =
                     missingTokenAccounts.getFirst().getTokenAccount().getCreatedTimestamp();
             var params = new MapSqlParameterSource(
-                    "timestamp", claimedAirdrops.getFirst().getConsensusTimestamp());
+                    TIMESTAMP, claimedAirdrops.getFirst().getConsensusTimestamp());
             var balanceSnapshotTimestamps =
                     jdbcTemplate.queryForList(GET_BALANCE_SNAPSHOT_TIMESTAMPS_SQL, params, Long.class);
             // Add max long as a sentinel value so the iterating logic can also work for partial mirrornode where
@@ -428,9 +439,9 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
                 .queryForStream(GET_CLAIMED_AIRDROPS_SQL, CLAIMED_AIRDROP_ROW_MAPPER)
                 .filter(claimedAirdrop -> {
                     var params = new MapSqlParameterSource()
-                            .addValue("accountId", claimedAirdrop.getAccountId())
-                            .addValue("tokenId", claimedAirdrop.getTokenId())
-                            .addValue("timestamp", claimedAirdrop.getConsensusTimestamp());
+                            .addValue(ACCOUNT_ID, claimedAirdrop.getAccountId())
+                            .addValue(TOKEN_ID, claimedAirdrop.getTokenId())
+                            .addValue(TIMESTAMP, claimedAirdrop.getConsensusTimestamp());
                     return BooleanUtils.isTrue(
                             jdbcTemplate.queryForObject(IS_TOKEN_ACCOUNT_MISSING_SQL, params, Boolean.class));
                 })
@@ -444,10 +455,10 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
         fromTimestamp = Math.max(fromTimestamp, tokenAccount.getCreatedTimestamp() - 1);
         toTimestamp = Math.min(toTimestamp, tokenAccountMeta.getValidToTimestamp());
         var params = new MapSqlParameterSource()
-                .addValue("accountId", tokenAccount.getAccountId())
-                .addValue("tokenId", tokenAccount.getTokenId())
-                .addValue("from", fromTimestamp)
-                .addValue("to", toTimestamp);
+                .addValue(ACCOUNT_ID, tokenAccount.getAccountId())
+                .addValue(TOKEN_ID, tokenAccount.getTokenId())
+                .addValue(FROM, fromTimestamp)
+                .addValue(TO, toTimestamp);
 
         try {
             return Objects.requireNonNull(jdbcTemplate.queryForObject(
@@ -494,9 +505,9 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
             long validToTimestamp = Long.MAX_VALUE;
             try {
                 var params = new MapSqlParameterSource()
-                        .addValue("accountId", id.getAccountId())
-                        .addValue("tokenId", id.getTokenId())
-                        .addValue("timestamp", createdTimestamp);
+                        .addValue(ACCOUNT_ID, id.getAccountId())
+                        .addValue(TOKEN_ID, id.getTokenId())
+                        .addValue(TIMESTAMP, createdTimestamp);
                 validToTimestamp = Objects.requireNonNull(
                         jdbcTemplate.queryForObject(GET_TOKEN_ACCOUNT_VALID_TO_TIMESTAMP_SQL, params, Long.class));
             } catch (IncorrectResultSizeDataAccessException ex) {
@@ -526,21 +537,19 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
 
         for (var nftTransfer : nftTransfers) {
             long consensusTimestamp = nftTransfer.getConsensusTimestamp();
-            if (consensusTimestamp < createdTimestamp) {
-                continue;
-            }
+            if (consensusTimestamp >= createdTimestamp) {
+                if (consensusTimestamp > validToTimestamp) {
+                    break;
+                }
 
-            if (consensusTimestamp > validToTimestamp) {
-                break;
-            }
-
-            if (nftTransfer.getTokenId() == tokenAccount.getTokenId()) {
-                if (Objects.equals(nftTransfer.getReceiverAccountId(), accountId)) {
-                    change++;
-                    lastTimestamp = consensusTimestamp;
-                } else if (Objects.equals(nftTransfer.getSenderAccountId(), accountId)) {
-                    change--;
-                    lastTimestamp = consensusTimestamp;
+                if (nftTransfer.getTokenId() == tokenAccount.getTokenId()) {
+                    if (Objects.equals(nftTransfer.getReceiverAccountId(), accountId)) {
+                        change++;
+                        lastTimestamp = consensusTimestamp;
+                    } else if (Objects.equals(nftTransfer.getSenderAccountId(), accountId)) {
+                        change--;
+                        lastTimestamp = consensusTimestamp;
+                    }
                 }
             }
         }
@@ -554,7 +563,7 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
     }
 
     private List<NftTransfer> getNftTransfers(long fromTimestamp, long toTimestamp) {
-        var params = new MapSqlParameterSource().addValue("from", fromTimestamp).addValue("to", toTimestamp);
+        var params = new MapSqlParameterSource().addValue(FROM, fromTimestamp).addValue(TO, toTimestamp);
         return jdbcTemplate.query(GET_NFT_TRANSFERS_SQL, params, NFT_TRANSFER_ROW_MAPPER);
     }
 
@@ -562,13 +571,13 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
         var batchParams = tokenAccountMetas.stream()
                 .map(TokenAccountMeta::getTokenAccount)
                 .map(ta -> new MapSqlParameterSource()
-                        .addValue("accountId", ta.getAccountId())
-                        .addValue("associated", ta.getAssociated())
-                        .addValue("balance", ta.getBalance())
-                        .addValue("balanceTimestamp", ta.getBalanceTimestamp())
-                        .addValue("createdTimestamp", ta.getCreatedTimestamp())
-                        .addValue("timestamp", ta.getTimestampLower())
-                        .addValue("tokenId", ta.getTokenId()))
+                        .addValue(ACCOUNT_ID, ta.getAccountId())
+                        .addValue(ASSOCIATED, ta.getAssociated())
+                        .addValue(BALANCE, ta.getBalance())
+                        .addValue(BALANCE_TIMESTAMP, ta.getBalanceTimestamp())
+                        .addValue(CREATED_TIMESTAMP, ta.getCreatedTimestamp())
+                        .addValue(TIMESTAMP, ta.getTimestampLower())
+                        .addValue(TOKEN_ID, ta.getTokenId()))
                 .toArray(SqlParameterSource[]::new);
         jdbcTemplate.batchUpdate(PATCH_TOKEN_ACCOUNT_SQL, batchParams);
     }
