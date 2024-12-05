@@ -87,6 +87,7 @@ class NodeSupplierTest {
     @BeforeEach
     void setup() throws IOException {
         node = new NodeProperties("0.0.3", "in-process:" + SERVER);
+        node.setNodeId(0L);
         networkNode = new NetworkNode();
         networkNode.setNodeAccountId(node.getAccountId());
         networkNode.addServiceEndpointsItem(
@@ -290,6 +291,7 @@ class NodeSupplierTest {
 
         try {
             var node2 = new NodeProperties("0.0.4", "in-process:" + server3);
+            node2.setNodeId(1L);
             monitorProperties.setNodes(Set.of(node, node2));
 
             // Validate good node
