@@ -37,10 +37,10 @@ import org.springframework.http.HttpStatus;
 @CustomLog
 @RequiredArgsConstructor
 public class FileFeature {
-    private static final String originalFileContents = "Mirror Node v1";
-    private static final String updateBaseFileContents = "Mirror Node v2,";
-    private static final String appendFileContents = " new and improved";
-    private static final String updatedFileContents = updateBaseFileContents + appendFileContents;
+    private static final String ORIGINAL_FILE_CONTENTS = "Mirror Node v1";
+    private static final String UPDATE_BASE_FILE_CONTENTS = "Mirror Node v2,";
+    private static final String APPEND_FILE_CONTENTS = " new and improved";
+    private static final String UPDATED_FILE_CONTENTS = UPDATE_BASE_FILE_CONTENTS + APPEND_FILE_CONTENTS;
 
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
@@ -51,7 +51,7 @@ public class FileFeature {
 
     @Given("I successfully create a file")
     public void createNewFile() {
-        networkTransactionResponse = fileClient.createFile(originalFileContents.getBytes(StandardCharsets.UTF_8));
+        networkTransactionResponse = fileClient.createFile(ORIGINAL_FILE_CONTENTS.getBytes(StandardCharsets.UTF_8));
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -63,7 +63,7 @@ public class FileFeature {
     @Given("I successfully update the file")
     public void updateFile() {
         networkTransactionResponse =
-                fileClient.updateFile(fileId, updateBaseFileContents.getBytes(StandardCharsets.UTF_8));
+                fileClient.updateFile(fileId, UPDATE_BASE_FILE_CONTENTS.getBytes(StandardCharsets.UTF_8));
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -71,7 +71,8 @@ public class FileFeature {
 
     @Given("I successfully append to the file")
     public void appendFile() {
-        networkTransactionResponse = fileClient.appendFile(fileId, appendFileContents.getBytes(StandardCharsets.UTF_8));
+        networkTransactionResponse =
+                fileClient.appendFile(fileId, APPEND_FILE_CONTENTS.getBytes(StandardCharsets.UTF_8));
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());

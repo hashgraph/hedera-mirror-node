@@ -31,18 +31,19 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class StreamTypeTest {
 
-    private static final Map<StreamType, List<String>> dataExtensions = ImmutableMap.<StreamType, List<String>>builder()
-            .put(StreamType.BALANCE, List.of("csv", "pb"))
-            .put(StreamType.RECORD, List.of("rcd"))
-            .build();
-    private static final Map<StreamType, List<String>> signatureExtensions =
+    private static final Map<StreamType, List<String>> DATA_EXTENSIONS =
+            ImmutableMap.<StreamType, List<String>>builder()
+                    .put(StreamType.BALANCE, List.of("csv", "pb"))
+                    .put(StreamType.RECORD, List.of("rcd"))
+                    .build();
+    private static final Map<StreamType, List<String>> SIGNATURE_EXTENSIONS =
             ImmutableMap.<StreamType, List<String>>builder()
                     .put(StreamType.BALANCE, List.of("csv_sig", "pb_sig"))
                     .put(StreamType.RECORD, List.of("rcd_sig"))
                     .build();
 
     private static Stream<Arguments> provideTypeAndExtensions(boolean isDataExtension) {
-        Map<StreamType, List<String>> extensionsMap = isDataExtension ? dataExtensions : signatureExtensions;
+        Map<StreamType, List<String>> extensionsMap = isDataExtension ? DATA_EXTENSIONS : SIGNATURE_EXTENSIONS;
         List<Arguments> argumentsList = new ArrayList<>();
         for (StreamType streamType : StreamType.values()) {
             List<String> extensions = extensionsMap.get(streamType);

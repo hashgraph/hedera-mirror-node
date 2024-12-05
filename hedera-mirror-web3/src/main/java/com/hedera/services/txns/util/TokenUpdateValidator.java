@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 public class TokenUpdateValidator {
 
     private TokenUpdateValidator() {
-        throw new UnsupportedOperationException("Utility class");
+        throw new UnsupportedOperationException("Utility class should not be instantiated");
     }
 
     public static ResponseCodeEnum validate(final TransactionBody txnBody, final OptionValidator validator) {
@@ -43,7 +43,7 @@ public class TokenUpdateValidator {
             return validity;
         }
 
-        final var hasNewSymbol = op.getSymbol().length() > 0;
+        final var hasNewSymbol = !op.getSymbol().isEmpty();
         if (hasNewSymbol) {
             validity = validator.tokenSymbolCheck(op.getSymbol());
             if (validity != OK) {
@@ -51,7 +51,7 @@ public class TokenUpdateValidator {
             }
         }
 
-        final var hasNewTokenName = op.getName().length() > 0;
+        final var hasNewTokenName = !op.getName().isEmpty();
         if (hasNewTokenName) {
             validity = validator.tokenNameCheck(op.getName());
             if (validity != OK) {

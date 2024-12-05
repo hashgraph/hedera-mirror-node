@@ -45,9 +45,9 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     private static final SignatureType signatureType = SignatureType.SHA_384_WITH_RSA;
     private static final byte VERSION = 5;
 
-    private static final String entireFileHashBase64 =
+    private static final String ENTIRE_FILE_HASH_BASE_64 =
             "L+OAVq+qeyicnL+lVSL5XIBy8JSYGaTVGa9ADG59s" + "+ZOUHcTaAHR3KxX0Cooc5Jo";
-    private static final String entireFileSignatureBase64 = "LN5tEHPqE6VRQPGXSWWEG1LOquVtOgHRu5LFGNCLrH7"
+    private static final String ENTIRE_FILE_SIGNATURE_BASE_64 = "LN5tEHPqE6VRQPGXSWWEG1LOquVtOgHRu5LFGNCLrH7"
             + "/cCd4xbC1RnOeQ+E9czLwdZaHWxQsc80ooD62oRLcw33XFMZGgVvXRWvG9lltUP0TRfDSRNAxz"
             + "+31CAnvVa9ds7Q3eKGUHskB7rwIeJRQXVz6UHonA7WAmypeRbKFJ3x7AdLef8EaH6X83Bs3vmX5LnUWVQ"
             + "/m8vPNwC089hheWhbkRIZlwJ1lN6Jy+rQev/5kAGGhxUgfQls4nQwNq4OjleVQTChwLKi0nHVhdbEouoMOBS"
@@ -55,8 +55,9 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
             + "/4xDq1LvssNlKSKKrMYMsdcS4nTz3AkdSAMLxkIq7hB+ZC12RcODEaqyglnNawWHY4ril7L1lo0Bt"
             + "/TtFQsK7JcBGVPBqb5MO5DtSWfFAkxpOwFSOc63gyyqZwYx6ieC+mgFToLjxh/7rbG1+spLN4YhfMosr";
 
-    private static final String metadataHashBase64 = "yySh8+IzClpzk6Q/TQK18D33jqVNN6iZmZqd5p9QN21tUs2ESCGeim32ANIfoapi";
-    private static final String metadataSignatureBase64 = "g6xHyKexXgyFWLxcnnQ/8H7efoswLAWRS9T0KGLBSdUVV0cu9d+cQr3"
+    private static final String METADATA_HASH_BASE_64 =
+            "yySh8+IzClpzk6Q/TQK18D33jqVNN6iZmZqd5p9QN21tUs2ESCGeim32ANIfoapi";
+    private static final String METADATA_SIGNATURE_BASE_64 = "g6xHyKexXgyFWLxcnnQ/8H7efoswLAWRS9T0KGLBSdUVV0cu9d+cQr3"
             + "/8gwrTb7yGN/7fvHrNoGtXDlEK9TiBHeqn6iVG/EIkJqpBZLUReGrZRwDPMO+stj1aDlEOl143jOesMiMNYsl"
             + "+27uerYfXLrkrdW3dlznCYu16frBMugQKuH2oTck2cT0AZmtHqLFkKKsjBWnxlmx+z2dlp"
             + "/LhIg4ajM0ZZmYU7GBL8akE4iIljwOVbrQpHmvhhNS6uCuUW0qAg/JIoR8a6fXRki4USyRCrv"
@@ -77,10 +78,12 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
         assertNotNull(streamFileSignature);
         assertThat(streamFileSignature.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
-        assertArrayEquals(base64Codec.decode(entireFileHashBase64), streamFileSignature.getFileHash());
-        assertArrayEquals(base64Codec.decode(entireFileSignatureBase64), streamFileSignature.getFileHashSignature());
-        assertArrayEquals(base64Codec.decode(metadataHashBase64), streamFileSignature.getMetadataHash());
-        assertArrayEquals(base64Codec.decode(metadataSignatureBase64), streamFileSignature.getMetadataHashSignature());
+        assertArrayEquals(base64Codec.decode(ENTIRE_FILE_HASH_BASE_64), streamFileSignature.getFileHash());
+        assertArrayEquals(
+                base64Codec.decode(ENTIRE_FILE_SIGNATURE_BASE_64), streamFileSignature.getFileHashSignature());
+        assertArrayEquals(base64Codec.decode(METADATA_HASH_BASE_64), streamFileSignature.getMetadataHash());
+        assertArrayEquals(
+                base64Codec.decode(METADATA_SIGNATURE_BASE_64), streamFileSignature.getMetadataHashSignature());
         assertEquals(VERSION, streamFileSignature.getVersion());
     }
 
