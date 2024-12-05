@@ -36,13 +36,18 @@ import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import jakarta.annotation.Resource;
+import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
+import kotlin.text.Charsets;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -61,6 +66,9 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
     @Resource
     private FixAirdropTokenAssociationMigration migration;
 
+    @Value("classpath:db/migration/v2/R__03_view.sql")
+    private File createViewSql;
+
     @Resource
     private TimePartitionService timePartitionService;
 
@@ -73,6 +81,14 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
     private List<TokenAccount> expectedTokenAccounts;
     private List<TokenBalance> expectedTokenBalances;
     private List<TokenAccount> expectedHistoricalTokenAccounts;
+
+    @BeforeEach
+    @SneakyThrows
+    void beforeEach() {
+        if (!isV1()) {
+            jdbcOperations.update(FileUtils.readFileToString(createViewSql, Charsets.UTF_8));
+        }
+    }
 
     @Test
     void empty() {
