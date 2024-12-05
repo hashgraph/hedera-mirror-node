@@ -747,18 +747,6 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
       .map((pos) => `$${pos}`)
       .join(',');
     mainConditions.push(`${Transaction.CONSENSUS_TIMESTAMP} in (${timestampPositions})`);
-    let nonce;
-    for (const filter of filters) {
-      if (filter.key === constants.filterKeys.NONCE) {
-        nonce = filter.value;
-        break;
-      }
-    }
-
-    if (nonce !== undefined) {
-      params.push(nonce);
-      mainConditions.push(`${Transaction.NONCE} = $${params.length}`);
-    }
     // timestamp range condition
     commonConditions.push(
       `${Transaction.CONSENSUS_TIMESTAMP} >= $${minTimestampPosition}`,
@@ -776,35 +764,34 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
       `${Transaction.CONSENSUS_TIMESTAMP} <= $3`
     );
     mainConditions.push(`${Transaction.VALID_START_NS} = $2`);
+  }
 
-    // only parse nonce and scheduled query filters if the path parameter is transaction id
-    let nonce;
-    let scheduled;
+  // only parse nonce and scheduled query filters if the path parameter is transaction id or hash
+  let nonce;
+  let scheduled;
 
-    for (const filter of filters) {
-      // honor the last for both nonce and scheduled
-      switch (filter.key) {
-        case constants.filterKeys.NONCE:
-          nonce = filter.value;
-          break;
-        case constants.filterKeys.SCHEDULED:
-          scheduled = filter.value;
-          scheduledParamExists = true;
-          break;
-      }
-    }
-
-    if (nonce !== undefined) {
-      params.push(nonce);
-      mainConditions.push(`${Transaction.NONCE} = $${params.length}`);
-    }
-
-    if (scheduled !== undefined) {
-      params.push(scheduled);
-      mainConditions.push(`${Transaction.SCHEDULED} = $${params.length}`);
+  for (const filter of filters) {
+    // honor the last for both nonce and scheduled
+    switch (filter.key) {
+      case constants.filterKeys.NONCE:
+        nonce = filter.value;
+        break;
+      case constants.filterKeys.SCHEDULED:
+        scheduled = filter.value;
+        scheduledParamExists = true;
+        break;
     }
   }
 
+  if (nonce !== undefined) {
+    params.push(nonce);
+    mainConditions.push(`${Transaction.NONCE} = $${params.length}`);
+  }
+
+  if (scheduled !== undefined) {
+    params.push(scheduled);
+    mainConditions.push(`${Transaction.SCHEDULED} = $${params.length}`);
+  }
   mainConditions.unshift(...commonConditions);
   return {
     query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')),

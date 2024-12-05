@@ -76,6 +76,69 @@
             "amount": 3
           }
         ]
+      },
+      {
+        "charged_tx_fee": 7,
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.4",
+        "consensus_timestamp": "1234567890000000055",
+        "valid_start_timestamp": "1234567890000000001",
+        "name": "CRYPTOTRANSFER",
+        "nonce": 1000,
+        "scheduled": false,
+        "type": 14,
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 100
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "charged_tx_fee": 7,
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.4",
+        "consensus_timestamp": "1234567890000000060",
+        "valid_start_timestamp": "1234567890000000001",
+        "name": "CRYPTOTRANSFER",
+        "nonce": 0,
+        "scheduled": false,
+        "type": 14,
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 100
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ]
+      },
+      {
+        "charged_tx_fee": 7,
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.4",
+        "consensus_timestamp": "1234567890000000065",
+        "valid_start_timestamp": "1234567890000000001",
+        "name": "CRYPTOTRANSFER",
+        "nonce": 1000,
+        "scheduled": true,
+        "type": 14,
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 100
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ]
       }
     ]
   },
