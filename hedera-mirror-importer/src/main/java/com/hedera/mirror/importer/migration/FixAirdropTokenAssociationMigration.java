@@ -328,7 +328,7 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
             var stopwatch = Stopwatch.createStarted();
             var claimedAirdrops = getClaimedAirdrops();
             if (claimedAirdrops.isEmpty()) {
-                log.info("There is no claimed airdrops with missing token association");
+                log.info("There are no claimed airdrops with missing token associations");
                 return;
             }
 
