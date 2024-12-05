@@ -128,7 +128,7 @@ Feature: HTS Base Coverage Feature
     Then I cancel the airdrop to CAROL
     Then the mirror node REST API should return the transaction
     And I verify "cancelled" airdrop of <amount> tokens to CAROL
-#    CAROL is not associated to the token and is associated before claim
+#    CAROL is associated before claim
     Then I airdrop <amount> tokens to CAROL
     Then the mirror node REST API should return the transaction
     And I associate CAROL with token
@@ -168,7 +168,7 @@ Feature: HTS Base Coverage Feature
     Then I cancel the NFT with serial number index 0 airdrop to CAROL
     Then the mirror node REST API should return the transaction
     And I verify "cancelled" airdrop of serial number index 0 to CAROL
-    #    CAROL is not associated to the token and is associated before claim
+    #    CAROL is associated before claim
     Then I airdrop serial number index 0 to CAROL
     Then the mirror node REST API should return the transaction
     And I associate CAROL with token
