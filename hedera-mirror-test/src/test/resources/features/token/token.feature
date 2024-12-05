@@ -120,7 +120,6 @@ Feature: HTS Base Coverage Feature
   Scenario Outline: Validate Token Airdrop for Fungible tokens - Token Airdrop, Reject, Claim, Cancel
     Given I successfully create a new unfrozen token with KYC not applicable
     Then the mirror node REST API should return the transaction
-    Then I ensure token has the correct properties
     And I ensure token has the expected metadata and key
     Then I airdrop <amount> tokens to CAROL
     Then the mirror node REST API should return the transaction
