@@ -17,7 +17,9 @@
 import AddressBookServiceEndpointViewModel from './addressBookServiceEndpointViewModel';
 import EntityId from '../entityId';
 import * as utils from '../utils';
+import {getIncludeAdminKey} from '../config';
 
+const includeAdminKey = getIncludeAdminKey();
 /**
  * Network node view model
  */
@@ -29,7 +31,9 @@ class NetworkNodeViewModel {
    */
   constructor(networkNode) {
     const {addressBookEntry, nodeStake, node} = networkNode;
-    this.admin_key = utils.encodeKey(node.adminKey);
+    if (includeAdminKey) {
+      this.admin_key = utils.encodeKey(node.adminKey);
+    }
     this.description = addressBookEntry.description;
     this.file_id = EntityId.parse(networkNode.addressBook.fileId).toString();
     this.max_stake = utils.asNullIfDefault(nodeStake.maxStake, -1);

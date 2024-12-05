@@ -116,6 +116,10 @@ function getConfig() {
   return config.hedera && config.hedera.mirror ? config.hedera.mirror.rest : config;
 }
 
+function getIncludeAdminKey() {
+  return getConfig().response.includeAdminKey;
+}
+
 function getResponseLimit() {
   return getConfig().response.limit;
 }
@@ -212,4 +216,5 @@ if (!loaded) {
 
 export default getConfig();
 
+export {getIncludeAdminKey};
 export {getResponseLimit};
