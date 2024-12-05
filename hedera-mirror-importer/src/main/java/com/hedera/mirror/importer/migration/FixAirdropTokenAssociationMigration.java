@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,9 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.db.TimePartitionService;
 import jakarta.inject.Named;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,7 +50,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Named
-public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigration {
+class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigration {
 
     private static final String ACCOUNT_ID = "accountId";
     private static final String ASSOCIATED = "associated";
@@ -306,6 +304,7 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
             new DataClassRowMapper<>(TokenBalanceChange.class);
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final TimePartitionService timePartitionService;
     private final TransactionTemplate transactionTemplate;
     private final boolean v2;
 
@@ -314,9 +313,11 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
             Environment environment,
             ImporterProperties importerProperties,
             NamedParameterJdbcTemplate jdbcTemplate,
+            TimePartitionService timePartitionService,
             TransactionTemplate transactionTemplate) {
         super(importerProperties.getMigration());
         this.jdbcTemplate = jdbcTemplate;
+        this.timePartitionService = timePartitionService;
         this.transactionTemplate = transactionTemplate;
         this.v2 = environment.acceptsProfiles(Profiles.of("v2"));
     }
@@ -333,6 +334,10 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
             }
 
             var missingTokenAccounts = getMissingTokenAccounts(claimedAirdrops);
+            if (missingTokenAccounts.isEmpty()) {
+                log.info("No missing token accounts");
+                return;
+            }
 
             long firstTokenAccountTimestamp =
                     missingTokenAccounts.getFirst().getTokenAccount().getCreatedTimestamp();
@@ -400,15 +405,11 @@ public class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigrati
         return v2 ? MigrationVersion.fromVersion("2.6.0") : MigrationVersion.fromVersion("1.101.0");
     }
 
-    private static LocalDate getUtcDate(long nanos) {
-        return LocalDate.ofInstant(Instant.ofEpochSecond(0, nanos), ZoneOffset.UTC);
-    }
-
     private boolean isCurrentSnapshotFull(long previousTimestamp, long currentTimestamp) {
-        var previousDate = getUtcDate(previousTimestamp);
-        var currentDate = getUtcDate(currentTimestamp);
-
-        return currentDate.getYear() != previousDate.getYear() || currentDate.getMonth() != previousDate.getMonth();
+        return timePartitionService
+                        .getOverlappingTimePartitions("account_balance", previousTimestamp, currentTimestamp)
+                        .size()
+                > 1;
     }
 
     /**

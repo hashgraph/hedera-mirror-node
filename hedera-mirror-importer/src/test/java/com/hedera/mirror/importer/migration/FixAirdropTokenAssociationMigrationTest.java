@@ -32,12 +32,11 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import jakarta.annotation.Resource;
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
@@ -61,6 +60,9 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
 
     @Resource
     private FixAirdropTokenAssociationMigration migration;
+
+    @Resource
+    private TimePartitionService timePartitionService;
 
     @Resource
     private TokenAccountRepository tokenAccountRepository;
@@ -235,8 +237,12 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
         expectedHistoricalTokenAccounts = new ArrayList<>();
 
         // The second one should be a full balance snapshot
+        var lastPartitionRange = timePartitionService
+                .getTimePartitions("account_balance")
+                .getLast()
+                .getTimestampRange();
         long firstSnapshotTimestamp =
-                LocalDateTime.of(2024, 11, 30, 23, 5).toEpochSecond(ZoneOffset.UTC) * 1_000_000_000L;
+                lastPartitionRange.lowerEndpoint() - Duration.ofMinutes(50).toNanos();
         long secondSnapshotTimestamp = firstSnapshotTimestamp + BALANCE_SNAPSHOT_INTERVAL;
         long thirdSnapshotTimestamp = secondSnapshotTimestamp + BALANCE_SNAPSHOT_INTERVAL;
         persistAccountBalance(firstSnapshotTimestamp);
