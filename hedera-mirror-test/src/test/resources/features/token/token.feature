@@ -46,7 +46,7 @@ Feature: HTS Base Coverage Feature
 
   @nft @critical @release
   Scenario: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Update Treasury, Delete
-    Given I successfully create a new nft with infinite supplyType
+    Given I successfully create a new nft NFT_DELETABLE with infinite supplyType
     Then the mirror node REST API should return the transaction
     And I ensure token has the correct properties
     And I ensure token has the expected metadata and key
@@ -155,7 +155,7 @@ Feature: HTS Base Coverage Feature
 
   @nft @critical @release @airdrops
   Scenario: Validate Token Airdrop for NFT - Token Airdrop, Reject, Claim, Cancel
-    Given I successfully create a new nft with infinite supplyType
+    Given I successfully create a new nft NFT_AIRDROP with infinite supplyType
     Then the mirror node REST API should return the transaction
     And I ensure token has the correct properties
     And I ensure token has the expected metadata and key
