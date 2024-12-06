@@ -71,7 +71,10 @@
       }
     ]
   },
-  "url": "/api/v1/transactions/0.0.10-1234567890-000000002?scheduled=true",
+  "url": [
+    "/api/v1/transactions/0.0.10-1234567890-000000002?scheduled=true",
+    "/api/v1/transactions/r6rpaXaYCvy9pPnCfO0f64IoDf0TrnNU0dHfFFbeOeBvhivdO+2BrcP134dCb44LkA?scheduled=true"
+  ],
   "responseStatus": 404,
   "responseJson": {
     "_status": {
