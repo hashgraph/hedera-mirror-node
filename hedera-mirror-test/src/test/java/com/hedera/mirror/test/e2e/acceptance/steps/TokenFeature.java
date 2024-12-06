@@ -104,7 +104,7 @@ public class TokenFeature extends AbstractFeature {
 
     private TokenResponse tokenResponse;
 
-    private TransactionDetail transactionDetail;
+    private TransactionDetail transactionDetails;
 
     @Given("I ensure token {token} has been created")
     public void createNamedToken(TokenNameEnum tokenName) {
@@ -634,7 +634,7 @@ public class TokenFeature extends AbstractFeature {
     @Then("the mirror node REST API should return the transaction and get transaction detail")
     @RetryAsserts
     public void verifyMirrorAPIResponsesAndGetConsensusTimestamp() {
-        transactionDetail = verifyTransactions();
+        transactionDetails = verifyTransactions();
     }
 
     @Then("the mirror node REST API should return the transaction for token serial number index {int} transaction flow")
@@ -1237,7 +1237,7 @@ public class TokenFeature extends AbstractFeature {
                 .hasSize(1)
                 .first()
                 .returns(tokenId.toString(), TokenRelationship::getTokenId)
-                .returns(transactionDetail.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp)
+                .returns(transactionDetails.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp)
                 .returns(amount, TokenRelationship::getBalance);
         assertThat(getTokenBalance(receiver.getAccountId(), tokenId)).isEqualTo(amount);
     }
@@ -1254,7 +1254,7 @@ public class TokenFeature extends AbstractFeature {
                 .hasSize(1)
                 .first()
                 .returns(tokenId.toString(), TokenRelationship::getTokenId)
-                .returns(transactionDetail.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp)
+                .returns(transactionDetails.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp)
                 .returns(1L, TokenRelationship::getBalance);
         var nftInfo = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
         assertThat(nftInfo.getAccountId()).isEqualTo(receiver.toString());
