@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.lang3.BooleanUtils;
@@ -352,6 +353,9 @@ class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigration {
 
             // Previous snapshot timestamp is exclusive and current balance snapshot timestamp is inclusive
             long previousSnapshotTimestamp = firstTokenAccountTimestamp - 1;
+            int processed = 0;
+            long lastElapsed = 0;
+
             for (long snapshotTimestamp : balanceSnapshotTimestamps) {
                 var activeTokenAccounts =
                         getActiveTokenAccounts(missingTokenAccounts, previousSnapshotTimestamp, snapshotTimestamp);
@@ -384,11 +388,19 @@ class FixAirdropTokenAssociationMigration extends ConfigurableJavaMigration {
                 }
 
                 persistTokenBalanceSnapshot(tokenBalanceSnapshot);
-                log.info(
-                        "Processed {} active token accounts for balance snapshot at {}",
-                        activeTokenAccounts.size(),
-                        snapshotTimestamp);
                 previousSnapshotTimestamp = snapshotTimestamp;
+                processed++;
+
+                long elapsed = stopwatch.elapsed(TimeUnit.SECONDS);
+                if (elapsed - lastElapsed >= 10) {
+                    log.info(
+                            "{}/{} - Completed balance snapshot {}, processed {} active token accounts",
+                            processed,
+                            balanceSnapshotTimestamps.size(),
+                            snapshotTimestamp,
+                            activeTokenAccounts.size());
+                    lastElapsed = elapsed;
+                }
             }
 
             persistTokenAccounts(missingTokenAccounts);
