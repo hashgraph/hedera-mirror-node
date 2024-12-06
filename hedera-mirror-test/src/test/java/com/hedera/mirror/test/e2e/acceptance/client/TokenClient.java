@@ -861,6 +861,12 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenKycStatus.Granted,
                 TokenFreezeStatus.Unfrozen,
                 false),
+        NFT_AIRDROP(
+                "non_fungible_airdrop",
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable,
+                true),
         NFT_DELETABLE(
                 "non_fungible_deletable",
                 TokenType.NON_FUNGIBLE_UNIQUE,
@@ -887,6 +893,12 @@ public class TokenClient extends AbstractNetworkClient {
                 false),
         FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN(
                 "fungible_kyc_not_applicable_unfrozen",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.Unfrozen,
+                false),
+        FUNGIBLE_AIRDROP(
+                "fungible_airdrop",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.Unfrozen,
