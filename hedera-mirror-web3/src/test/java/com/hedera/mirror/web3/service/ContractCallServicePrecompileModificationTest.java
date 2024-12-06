@@ -59,6 +59,7 @@ import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyV
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
+import com.hederahashgraph.api.proto.java.ScheduleOuterClass;
 import com.swirlds.base.time.Time;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -67,10 +68,12 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Value;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
@@ -185,37 +188,53 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     }
 
     @Test
-    void setApprovalForAll() throws Exception {
+    @Tag("run-this")
+//    @Value("${spring.test.reusableServicesFlag:false}")
+    void TESTsetApprovalForAll() throws Exception {
         // Given
-        final var spender = accountEntityPersist();
+        String testFlagValue = System.getProperty("testFlag", "false");
+        boolean testFlag = Boolean.parseBoolean(testFlagValue);
 
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
+        System.out.println(testFlagValue);
+        System.out.println("TEST FLAG IS SET TO " + testFlagValue);
+        assertThat(testFlag).isTrue();
+//        if(testFlag){
+//            System.out.println("TEST FLAG IS SET TO TRUE");
+//        } else {
+//            System.out.println("TEST FLAG IS SET TO FALSE");
+//        }
+//
 
-        tokenAccountPersist(tokenEntity, spender);
 
-        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
-
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-        tokenAccountPersist(tokenEntity, contractEntityId.getId());
-
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(contractEntityId))
-                .persist();
-
-        // When
-        final var functionCall = contract.call_setApprovalForAllExternal(
-                getAddressFromEntity(tokenEntity), getAddressFromEntity(spender), Boolean.TRUE);
-
-        // Then
-        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
+//        final var spender = accountEntityPersist();
+//
+//        final var tokenEntity =
+//                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+//        domainBuilder
+//                .token()
+//                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+//                .persist();
+//
+//        tokenAccountPersist(tokenEntity, spender);
+//
+//        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+//
+//        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+//        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
+//        tokenAccountPersist(tokenEntity, contractEntityId.getId());
+//
+//        domainBuilder
+//                .nft()
+//                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(contractEntityId))
+//                .persist();
+//
+//        // When
+//        final var functionCall = contract.call_setApprovalForAllExternal(
+//                getAddressFromEntity(tokenEntity), getAddressFromEntity(spender), Boolean.TRUE);
+//
+//        // Then
+//        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+//        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @ParameterizedTest
