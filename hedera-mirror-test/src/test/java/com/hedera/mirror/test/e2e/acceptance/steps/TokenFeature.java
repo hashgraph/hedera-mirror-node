@@ -104,7 +104,7 @@ public class TokenFeature extends AbstractFeature {
 
     private TokenResponse tokenResponse;
 
-    private TransactionDetail transactionDetails;
+    private TransactionDetail transactionDetail;
 
     @Given("I ensure token {token} has been created")
     public void createNamedToken(TokenNameEnum tokenName) {
@@ -486,8 +486,8 @@ public class TokenFeature extends AbstractFeature {
         var sender = accountClient.getAccount(senderName).getAccountId();
         var treasury = accountClient.getAccount(treasuryName).getAccountId();
 
-        var transactionDetail = verifyTransactions();
-        assertThat(transactionDetail.getTokenTransfers())
+        var transactionDetails = verifyTransactions();
+        assertThat(transactionDetails.getTokenTransfers())
                 .containsExactlyInAnyOrder(
                         new TransactionTokenTransfersInner()
                                 .account(sender.toString())
@@ -529,8 +529,8 @@ public class TokenFeature extends AbstractFeature {
         var treasury = accountClient.getAccount(treasuryName).getAccountId();
         long serialNumber = tokenNftInfoMap.get(tokenId).get(index).serialNumber();
 
-        var transactionDetail = verifyTransactions();
-        assertThat(transactionDetail.getNftTransfers())
+        var transactionDetails = verifyTransactions();
+        assertThat(transactionDetails.getNftTransfers())
                 .containsExactly(new TransactionNftTransfersInner()
                         .isApproval(false)
                         .receiverAccountId(treasury.toString())
@@ -633,8 +633,8 @@ public class TokenFeature extends AbstractFeature {
 
     @Then("the mirror node REST API should return the transaction and get transaction detail")
     @RetryAsserts
-    public void verifyMirrorAPIResponsesAndGetConsensusTimestamp() {
-        transactionDetails = verifyTransactions();
+    public void verifyMirrorAPIResponsesAndGetTransactionDetail() {
+        transactionDetail = verifyTransactions();
     }
 
     @Then("the mirror node REST API should return the transaction for token serial number index {int} transaction flow")
@@ -1237,7 +1237,7 @@ public class TokenFeature extends AbstractFeature {
                 .hasSize(1)
                 .first()
                 .returns(tokenId.toString(), TokenRelationship::getTokenId)
-                .returns(transactionDetails.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp)
+                .returns(transactionDetail.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp)
                 .returns(amount, TokenRelationship::getBalance);
         assertThat(getTokenBalance(receiver.getAccountId(), tokenId)).isEqualTo(amount);
     }
@@ -1254,7 +1254,7 @@ public class TokenFeature extends AbstractFeature {
                 .hasSize(1)
                 .first()
                 .returns(tokenId.toString(), TokenRelationship::getTokenId)
-                .returns(transactionDetails.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp)
+                .returns(transactionDetail.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp)
                 .returns(1L, TokenRelationship::getBalance);
         var nftInfo = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
         assertThat(nftInfo.getAccountId()).isEqualTo(receiver.toString());
