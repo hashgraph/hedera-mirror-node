@@ -131,7 +131,7 @@ Feature: HTS Base Coverage Feature
     Then I airdrop <amount> tokens to CAROL
     Then the mirror node REST API should return the transaction
     And I associate CAROL with token
-    Then the mirror node REST API should return the transaction and get consensus timestamp
+    Then the mirror node REST API should return the transaction and get transaction detail
     Then CAROL claims the airdrop
     Then the mirror node REST API should return the transaction
     And I verify "successful" airdrop of <amount> tokens to CAROL
@@ -146,7 +146,7 @@ Feature: HTS Base Coverage Feature
     Then the mirror node REST API should return the transaction
     And I verify "pending" airdrop of <amount> tokens to DAVE
     Then DAVE claims the airdrop
-    Then the mirror node REST API should return the transaction and get consensus timestamp
+    Then the mirror node REST API should return the transaction and get transaction detail
     And I verify "successful" airdrop of <amount> tokens to DAVE
 
     Examples:
@@ -171,7 +171,7 @@ Feature: HTS Base Coverage Feature
     Then I airdrop serial number index 0 to CAROL
     Then the mirror node REST API should return the transaction
     And I associate CAROL with token
-    And the mirror node REST API should return the transaction and get consensus timestamp
+    And the mirror node REST API should return the transaction and get transaction detail
     Then CAROL claims airdrop for NFT with serial number index 0
     Then the mirror node REST API should return the transaction
     And I verify "successful" airdrop of serial number index 0 to CAROL
@@ -187,5 +187,5 @@ Feature: HTS Base Coverage Feature
     Then I airdrop serial number index 1 to DAVE
     Then the mirror node REST API should return the transaction
     Then DAVE claims airdrop for NFT with serial number index 1
-    Then the mirror node REST API should return the transaction and get consensus timestamp
+    Then the mirror node REST API should return the transaction and get transaction detail
     And I verify "successful" airdrop of serial number index 1 to DAVE
