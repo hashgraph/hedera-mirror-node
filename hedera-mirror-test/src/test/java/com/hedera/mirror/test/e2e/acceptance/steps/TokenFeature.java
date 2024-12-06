@@ -342,9 +342,9 @@ public class TokenFeature extends AbstractFeature {
         this.networkTransactionResponse = tokenResponse.response();
     }
 
-    @Given("I successfully create a new nft with infinite supplyType")
-    public void createNewNft() {
-        this.tokenResponse = tokenClient.getToken(TokenNameEnum.NFT_DELETABLE);
+    @Given("I successfully create a new nft {token} with infinite supplyType")
+    public void createNewNft(TokenNameEnum tokenNameEnum) {
+        this.tokenResponse = tokenClient.getToken(tokenNameEnum);
         this.networkTransactionResponse = tokenResponse.response();
         this.tokenId = tokenResponse.tokenId();
         tokenNftInfoMap.put(tokenId, new ArrayList<>());
