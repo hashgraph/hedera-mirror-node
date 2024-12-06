@@ -1237,7 +1237,8 @@ public class TokenFeature extends AbstractFeature {
                 .hasSize(1)
                 .first()
                 .returns(tokenId.toString(), TokenRelationship::getTokenId)
-                .returns(transactionDetail.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp);
+                .returns(transactionDetail.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp)
+                .returns(amount, TokenRelationship::getBalance);
         assertThat(getTokenBalance(receiver.getAccountId(), tokenId)).isEqualTo(amount);
     }
 
@@ -1253,7 +1254,8 @@ public class TokenFeature extends AbstractFeature {
                 .hasSize(1)
                 .first()
                 .returns(tokenId.toString(), TokenRelationship::getTokenId)
-                .returns(transactionDetail.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp);
+                .returns(transactionDetail.getConsensusTimestamp(), TokenRelationship::getCreatedTimestamp)
+                .returns(1L, TokenRelationship::getBalance);
         var nftInfo = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
         assertThat(nftInfo.getAccountId()).isEqualTo(receiver.toString());
         assertThat(getNftAccountRelationship(receiver, tokenId, serialNumber)).isNotNull();
