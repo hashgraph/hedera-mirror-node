@@ -68,9 +68,12 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
     stackgres:
+      coordinator:
+        persistentVolume:
+          size: 65Gi
       worker:
         persistentVolume:
-          size: 900Gi
+          size: 90Gi
     test:
       cucumberTags: "@acceptance and not @estimateprecompile"
       enabled: true
