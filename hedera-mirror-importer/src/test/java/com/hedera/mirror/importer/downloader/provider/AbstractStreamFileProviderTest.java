@@ -82,8 +82,8 @@ abstract class AbstractStreamFileProviderTest {
     @Test
     void get() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        get(fileCopier, node);
+        var nodeFileCopier = getFileCopier(node);
+        get(nodeFileCopier, node);
     }
 
     @Test

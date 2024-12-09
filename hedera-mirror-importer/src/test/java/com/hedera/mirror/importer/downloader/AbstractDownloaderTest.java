@@ -225,9 +225,9 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     }
 
     boolean isStreamFile(Path path) {
-        StreamType streamType = downloaderProperties.getStreamType();
+        StreamType configuredStreamType = downloaderProperties.getStreamType();
 
-        for (StreamType.Extension extension : streamType.getDataExtensions()) {
+        for (StreamType.Extension extension : configuredStreamType.getDataExtensions()) {
             if (path.toString().contains("." + extension.getName())) {
                 return true;
             }
