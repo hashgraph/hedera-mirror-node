@@ -172,6 +172,7 @@ public class TestWeb3jService implements Web3jService {
         final var res = new EthSendTransaction();
         String runtimeCode;
         if (useContractCallDeploy) {
+            // TODO: add the feature flag and the TransactionExecutors
             var serviceParameters =
                     serviceParametersForTopLevelContractCreate(rawTransaction.getData(), ETH_CALL, sender);
             runtimeCode = contractExecutionService.processCall(serviceParameters);

@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.exception;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
@@ -81,6 +82,10 @@ public class ResponseCodeUtil {
                     result.getRevertReason().get().toArrayUnsafe(),
                     INVALID_SOLIDITY_ADDRESS.name().getBytes())) {
                 return INVALID_SOLIDITY_ADDRESS;
+            } else if (Arrays.equals(
+                    result.getRevertReason().get().toArrayUnsafe(),
+                    INVALID_FILE_ID.name().getBytes())) {
+                return INVALID_FILE_ID;
             }
         }
 

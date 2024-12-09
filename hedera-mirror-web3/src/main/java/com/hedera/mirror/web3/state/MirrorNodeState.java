@@ -58,7 +58,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
-import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.KVChangeListener;
 import com.swirlds.state.spi.QueueChangeListener;
@@ -109,6 +108,7 @@ public class MirrorNodeState implements State {
     private final NftReadableKVState nftReadableKVState;
     private final TokenReadableKVState tokenReadableKVState;
     private final TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
+    private final BlockInfoReadableKVState blockInfoReadableKVState;
 
     private final ServicesRegistry servicesRegistry;
     private final ServiceMigrator serviceMigrator;
@@ -140,7 +140,7 @@ public class MirrorNodeState implements State {
                             .contents(provider.apply(bootstrapConfig))
                             .build());
         });
-        ((CommittableWritableStates) fileServiceStates).commit();
+        //        ((CommittableWritableStates) fileServiceStates).commit();
         accountReadableKVState
                 .reset(); // Remove cached accounts as they remain with keys and empty objects in the cache at this
         // point.
@@ -205,6 +205,7 @@ public class MirrorNodeState implements State {
                         case "NFTS" -> data.put(stateName, nftReadableKVState);
                         case "TOKENS" -> data.put(stateName, tokenReadableKVState);
                         case "TOKEN_RELS" -> data.put(stateName, tokenRelationshipReadableKVState);
+                        case "BLOCKS" -> data.put(stateName, blockInfoReadableKVState);
                         default -> data.put(stateName, new MapReadableKVState(stateName, map));
                     }
                 } else if (state instanceof AtomicReference ref) {

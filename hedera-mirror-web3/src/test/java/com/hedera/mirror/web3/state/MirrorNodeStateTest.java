@@ -82,6 +82,9 @@ class MirrorNodeStateTest {
     private TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
 
     @Mock
+    private BlockInfoReadableKVState blockInfoReadableKVState;
+
+    @Mock
     private ServicesRegistry servicesRegistry;
 
     @Mock
@@ -368,6 +371,7 @@ class MirrorNodeStateTest {
                 nftReadableKVState,
                 tokenReadableKVState,
                 tokenRelationshipReadableKVState,
+                blockInfoReadableKVState,
                 servicesRegistry,
                 serviceMigrator,
                 networkInfo);

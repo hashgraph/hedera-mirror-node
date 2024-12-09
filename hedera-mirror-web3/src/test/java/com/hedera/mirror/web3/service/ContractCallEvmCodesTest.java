@@ -57,6 +57,7 @@ import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.AbiTypes;
 import org.web3j.abi.datatypes.Type;
 
+@SuppressWarnings({"unchecked", "rawtypes"})
 @RequiredArgsConstructor
 class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
@@ -65,8 +66,56 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
+    //    @Mock
+    //    private AccountReadableKVState accountReadableKVState;
+    //
+    //    @Mock
+    //    private AirdropsReadableKVState airdropsReadableKVState;
+    //
+    //    @Mock
+    //    private AliasesReadableKVState aliasesReadableKVState;
+    //
+    //    @Mock
+    //    private ContractBytecodeReadableKVState contractBytecodeReadableKVState;
+    //
+    //    @Mock
+    //    private ContractStorageReadableKVState contractStorageReadableKVState;
+    //
+    //    @Mock
+    //    private FileReadableKVState fileReadableKVState;
+    //
+    //    @Mock
+    //    private NftReadableKVState nftReadableKVState;
+    //
+    //    @Mock
+    //    private TokenReadableKVState tokenReadableKVState;
+    //
+    //    @Mock
+    //    private TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
+    //
+    //    @Mock
+    //    private ServicesRegistry servicesRegistry;
+    //
+    //    @Mock
+    //    private ServiceMigrator serviceMigrator;
+    //
+    //    @Mock
+    //    private NetworkInfo networkInfo;
+
     @SpyBean
     private ContractExecutionService contractExecutionService;
+
+    //    @MockBean
+    //    private MirrorNodeState mirrorNodeState;
+
+    //    @Mock
+    //    private MapReadableStates mapReadableStates;
+    //
+    //    @Mock
+    //    private ReadableSingletonState readableSingletonStateRunningHash;
+    //
+    //    @Mock
+    //    private ReadableSingletonState readableSingletonStateBlocks;
 
     @Test
     void chainId() throws Exception {
@@ -167,8 +216,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
     void getBlockHashReturnsCorrectHash() throws Exception {
         testWeb3jService.setUseContractCallDeploy(true);
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
-        final var recordFileForBlockHash =
-                domainBuilder.recordFile().customize(r -> r.index(0L)).persist();
+        final var recordFileForBlockHash = domainBuilder.recordFile().persist();
         var result = contract.call_getBlockHash(BigInteger.valueOf(recordFileForBlockHash.getIndex()))
                 .send();
         var expectedResult = ByteString.fromHex(recordFileForBlockHash.getHash().substring(0, 64))
@@ -180,18 +228,20 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
     void getGenesisBlockHashReturnsCorrectBlock() throws Exception {
         testWeb3jService.setUseContractCallDeploy(true);
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
-        final var genesisRecordFileForBlockHash =
-                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         var result = contract.call_getBlockHash(BigInteger.ZERO).send();
-        var expectedResult = ByteString.fromHex(
-                        genesisRecordFileForBlockHash.getHash().substring(0, 64))
-                .toByteArray();
+        var expectedResult = ByteString.fromHex(EMPTY_BLOCK_HASH).toByteArray();
         assertThat(result).isEqualTo(expectedResult);
     }
 
     @Test
     void getLatestBlockHashIsNotEmpty() throws Exception {
+        final var hashLength = EMPTY_BLOCK_HASH.getBytes().length;
+        domainBuilder
+                .recordFile()
+                .customize(r -> r.index(1L).hash(domainBuilder.hash(hashLength)))
+                .persist();
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
+
         var result = contract.call_getLatestBlockHash().send();
         var expectedResult = ByteString.fromHex(EMPTY_BLOCK_HASH).toByteArray();
         assertThat(result).isNotEqualTo(expectedResult);
