@@ -67,7 +67,7 @@ spec:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-testnet-na"} } }'
     zfs:
       coordinator:
-        initialDiskSize: 75Gi
+        initialDiskSize: 75GB
       init:
         diskPrefix: testnet-na
       worker:
