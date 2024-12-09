@@ -25,6 +25,7 @@ import static org.apache.logging.log4j.util.Strings.EMPTY;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
@@ -147,20 +148,7 @@ public abstract class ContractCallService {
                     // Upload the init bytecode
                     final var maxLifetime =
                             DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
-                    transactionBody = TransactionBody.newBuilder()
-                            .fileCreate(FileCreateTransactionBody.newBuilder()
-                                    .contents(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
-                                            params.getCallData().toArray()))
-                                    .expirationTime(new Timestamp(maxLifetime, 0))
-                                    .build())
-                            .transactionID(TransactionID.newBuilder()
-                                    .transactionValidStart(new Timestamp(0, 0))
-                                    .accountID(
-                                            AccountID.newBuilder().accountNum(2).build())
-                                    .build())
-                            .nodeAccountID(AccountID.newBuilder().accountNum(2).build())
-                            .transactionValidDuration(new Duration(15))
-                            .build();
+                    transactionBody = buildFileCreateTransactionBody(params, maxLifetime);
                     var uploadReceipt = executor.execute(transactionBody, Instant.EPOCH);
                     final var fileID = uploadReceipt
                             .getFirst()
@@ -173,20 +161,7 @@ public abstract class ContractCallService {
                                     params.getCallData().toFastHex(false).getBytes())));
 
                     // Create the contract with the init bytecode
-                    transactionBody = TransactionBody.newBuilder()
-                            .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
-                                    .fileID(fileID)
-                                    .gas(estimatedGas)
-                                    .autoRenewPeriod(new Duration(maxLifetime))
-                                    .build())
-                            .transactionID(TransactionID.newBuilder()
-                                    .transactionValidStart(new Timestamp(0, 0))
-                                    .accountID(
-                                            AccountID.newBuilder().accountNum(2).build())
-                                    .build())
-                            .nodeAccountID(AccountID.newBuilder().accountNum(2).build())
-                            .transactionValidDuration(new Duration(15))
-                            .build();
+                    transactionBody = buildContractCreateTransactionBody(fileID, estimatedGas, maxLifetime);
                 } else {
                     transactionBody = buildContractCallTransactionBody(params, estimatedGas);
                 }
@@ -255,6 +230,38 @@ public abstract class ContractCallService {
         //                result.errorMessage().startsWith("0x") ?
         // Optional.of(Bytes.fromHexString(result.errorMessage())) :
         // Optional.of(Bytes.wrap(result.errorMessage().getBytes())));
+    }
+
+    private TransactionBody buildFileCreateTransactionBody(final CallServiceParameters params, long maxLifetime) {
+        return TransactionBody.newBuilder()
+                .fileCreate(FileCreateTransactionBody.newBuilder()
+                        .contents(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
+                                params.getCallData().toArray()))
+                        .expirationTime(new Timestamp(maxLifetime, 0))
+                        .build())
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(new Timestamp(0, 0))
+                        .accountID(AccountID.newBuilder().accountNum(2).build())
+                        .build())
+                .transactionValidDuration(new Duration(15))
+                .build();
+    }
+
+    private TransactionBody buildContractCreateTransactionBody(
+            final FileID fileID, long estimatedGas, long maxLifetime) {
+        return TransactionBody.newBuilder()
+                .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
+                        .fileID(fileID)
+                        .gas(estimatedGas)
+                        .autoRenewPeriod(new Duration(maxLifetime))
+                        .build())
+                .transactionID(TransactionID.newBuilder()
+                        .transactionValidStart(new Timestamp(0, 0))
+                        .accountID(AccountID.newBuilder().accountNum(2).build())
+                        .build())
+                .nodeAccountID(AccountID.newBuilder().accountNum(2).build())
+                .transactionValidDuration(new Duration(15))
+                .build();
     }
 
     private TransactionBody buildContractCallTransactionBody(

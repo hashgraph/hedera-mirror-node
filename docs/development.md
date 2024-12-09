@@ -14,12 +14,14 @@ Hedera Mirror Node requires **Java 21** or a later version for development.
 - **Install Java 21**:
 
   On Ubuntu and macOS:
+
   ```bash
   curl -s "https://get.sdkman.io" | bash
   sdk install java 21-tem
   ```
 
 - **Verify Installation**:
+
   ```bash
   java -version
   ```
@@ -40,6 +42,7 @@ Docker is used to manage and run containerized services (such as databases) for 
 - **Install Docker**:
 
   On Ubuntu:
+
   ```bash
   sudo apt update
   sudo apt install docker.io
@@ -48,6 +51,7 @@ Docker is used to manage and run containerized services (such as databases) for 
   ```
 
   On macOS:
+
   ```bash
   brew install --cask docker
   open /Applications/Docker.app
@@ -81,38 +85,43 @@ for IntelliJ IDEA.
 ### IntelliJ IDEA Setup
 
 1. **Install IntelliJ IDEA**:
-    - Download from [IntelliJ IDEA website](https://www.jetbrains.com/idea/).
+
+   - Download from [IntelliJ IDEA website](https://www.jetbrains.com/idea/).
 
 2. **Set up Project SDK**:
-    - Go to `File > Project Structure > Project`.
-    - Set **Project SDK** to `Java 21` (or higher).
-    - Set **Project language level** to `21 - Record patterns, pattern matching for switch`.
+
+   - Go to `File > Project Structure > Project`.
+   - Set **Project SDK** to `Java 21` (or higher).
+   - Set **Project language level** to `21 - Record patterns, pattern matching for switch`.
 
 3. **Gradle Configuration**:
-    - Ensure **Gradle JVM** is set to **Java 21**: Go to
-      `File > Settings > Build, Execution, Deployment > Build Tools > Gradle` and set the **Gradle JVM** to Java 21.
+
+   - Ensure **Gradle JVM** is set to **Java 21**: Go to
+     `File > Settings > Build, Execution, Deployment > Build Tools > Gradle` and set the **Gradle JVM** to Java 21.
 
 4. **Enable Save Actions**:
-    - Go to `File > Settings > Tools > Actions on Save`
-    - Enable the following save actions:
-        - `Reformat code`: Ensures consistent code style by reformatting code on save.
-        - `Optimize imports`: Automatically removes unused imports and arranges them.
-        - `Rearrange code`: Arranges code based on predefined rules.
-        - `Run code cleanup`: Cleans up unnecessary elements in the code.
-        - `Build project`: Automatically builds the project upon saving if needed.
+
+   - Go to `File > Settings > Tools > Actions on Save`
+   - Enable the following save actions:
+     - `Reformat code`: Ensures consistent code style by reformatting code on save.
+     - `Optimize imports`: Automatically removes unused imports and arranges them.
+     - `Rearrange code`: Arranges code based on predefined rules.
+     - `Run code cleanup`: Cleans up unnecessary elements in the code.
+     - `Build project`: Automatically builds the project upon saving if needed.
 
 5. **Import Java Code Style**:
-    - `Download`
-      the Java code file located in the repository at [docs/palantir-style.xml](docs/palantir-style.xml)
-    - In IntelliJ, go to `File > Settings > Editor > Code Style`.
-    - Click on `Java` under `Code Style`.
-    - In the Code Style section for Java, look for an option to import the downloaded code style file. This can
-      typically be found by clicking on the `gear icon (⚙️)` or the `Scheme dropdown`.
-    - Choose `Import Scheme > IntelliJ IDEA code style XML` or a similar option.
-    - `Import` the downloaded Java code style file to ensure consistent formatting across the project.
+
+   - `Download`
+     the Java code file located in the repository at [docs/palantir-style.xml](docs/palantir-style.xml)
+   - In IntelliJ, go to `File > Settings > Editor > Code Style`.
+   - Click on `Java` under `Code Style`.
+   - In the Code Style section for Java, look for an option to import the downloaded code style file. This can
+     typically be found by clicking on the `gear icon (⚙️)` or the `Scheme dropdown`.
+   - Choose `Import Scheme > IntelliJ IDEA code style XML` or a similar option.
+   - `Import` the downloaded Java code style file to ensure consistent formatting across the project.
 
 6. **Enable Docker Integration**:
-    - Enable Docker integration in IntelliJ if you are running containerized services directly from the IDE.
+   - Enable Docker integration in IntelliJ if you are running containerized services directly from the IDE.
 
 ## Compiling the Project
 
@@ -126,10 +135,11 @@ The Hedera Mirror Node uses **Gradle** for building and managing dependencies.
    ```
 
    This command will:
-    - Clean previous builds.
-    - Compile the source code.
-    - Download any required dependencies.
-    - Run tests.
+
+   - Clean previous builds.
+   - Compile the source code.
+   - Download any required dependencies.
+   - Run tests.
 
 2. **Compile Specific Subprojects**:
    If you want to build a specific subproject (e.g., `monitor`), run:
@@ -212,6 +222,7 @@ For production or deployment, you may need to generate Docker images.
       -PdockerPlatform=linux/amd64 \
       -PdockerRegistry=docker.io \
       -PdockerTag=1.0.0-SNAPSHOT
-   ```   
+   ```
+
    NB: Ensure you are logged into the Docker registry if authentication is required. This command will push the image
    with the specified tag to the registry.

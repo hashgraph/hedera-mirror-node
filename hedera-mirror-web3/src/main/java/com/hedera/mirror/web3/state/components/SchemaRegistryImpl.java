@@ -168,7 +168,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             }
 
             @Override
-            public NetworkInfo networkInfo() {
+            public NetworkInfo genesisNetworkInfo() {
                 return networkInfo;
             }
 

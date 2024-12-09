@@ -45,8 +45,6 @@ class AccountAccessorImplTest {
             Bytes.wrap(recoverAddressFromPubKey(ECDSA_KEY.substring(2).toByteArray())));
     private static final Address ADDRESS = Address.fromHexString(HEX);
     private static final Address ALIAS_ADDRESS = Address.fromHexString(ALIAS_HEX);
-    private static final Bytes BYTES = Bytes.fromHexString(HEX);
-    private static final byte[] DATA = BYTES.toArrayUnsafe();
     public AccountAccessorImpl accountAccessor;
 
     @Mock

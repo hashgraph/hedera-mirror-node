@@ -20,8 +20,6 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getFeeObject;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getTinybarsFromTinyCents;
 import static com.hedera.services.utils.IdUtils.asAccount;
-import static com.hedera.services.utils.IdUtils.asToken;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
@@ -42,29 +40,21 @@ import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
-
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,64 +90,9 @@ class UsageBasedFeeCalculatorTest {
     private HbarCentExchange exchange;
     private UsagePricesProvider usagePrices;
     private TxnResourceUsageEstimator correctOpEstimator;
-    private final long currentExpiry = 1_234_567;
-    private final long nextExpiry = currentExpiry + 1_000;
-    private final FeeComponents nextResourceUsagePrices = FeeComponents.newBuilder()
-            .setMin(nextExpiry)
-            .setMax(nextExpiry)
-            .setBpr(2_000_000L)
-            .setBpt(3_000_000L)
-            .setRbh(4_000_000L)
-            .setSbh(5_000_000L)
-            .build();
-    private final FeeComponents currResourceUsagePrices = FeeComponents.newBuilder()
-            .setMin(currentExpiry)
-            .setMax(currentExpiry)
-            .setBpr(1_000_000L)
-            .setBpt(2_000_000L)
-            .setRbh(3_000_000L)
-            .setSbh(4_000_000L)
-            .build();
-    private final FeeData nextUsagePrices = FeeData.newBuilder()
-            .setNetworkdata(nextResourceUsagePrices)
-            .setNodedata(nextResourceUsagePrices)
-            .setServicedata(nextResourceUsagePrices)
-            .build();
-
-    private final FeeData currUsagePrices = FeeData.newBuilder()
-            .setNetworkdata(currResourceUsagePrices)
-            .setNodedata(currResourceUsagePrices)
-            .setServicedata(currResourceUsagePrices)
-            .build();
-    private final Map<SubType, FeeData> nextUsagePricesMap = Map.of(DEFAULT, nextUsagePrices);
-    private final Map<SubType, FeeData> currUsagePricesMap = Map.of(DEFAULT, currUsagePrices);
-    private final Map<SubType, FeeData> nextContractCallPrices = nextUsagePricesMap;
-    private final Map<SubType, FeeData> currentContractCallPrices = currUsagePricesMap;
-    private final FeeSchedule nextFeeSchedule = FeeSchedule.newBuilder()
-            .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(nextExpiry))
-            .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                    .setHederaFunctionality(ContractCall)
-                    .addFees(nextContractCallPrices.get(DEFAULT)))
-            .build();
-    private final FeeSchedule currentFeeSchedule = FeeSchedule.newBuilder()
-            .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(currentExpiry))
-            .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                    .setHederaFunctionality(ContractCall)
-                    .addFees(currentContractCallPrices.get(DEFAULT)))
-            .build();
-    private final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
-            .setCurrentFeeSchedule(currentFeeSchedule)
-            .setNextFeeSchedule(nextFeeSchedule)
-            .build();
-    private TxnResourceUsageEstimator incorrectOpEstimator;
     private QueryResourceUsageEstimator correctQueryEstimator;
     private QueryResourceUsageEstimator incorrectQueryEstimator;
     private Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
-    private final long balance = 1_234_567L;
-    private final AccountID payer = asAccount("0.0.75231");
-    private final AccountID receiver = asAccount("0.0.86342");
-
-    private final TokenID tokenId = asToken("0.0.123456");
 
     /* Has nine simple keys. */
     private JKey payerKey;
@@ -185,7 +120,6 @@ class UsageBasedFeeCalculatorTest {
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
         usagePrices = mock(UsagePricesProvider.class);
         correctOpEstimator = mock(TxnResourceUsageEstimator.class);
-        incorrectOpEstimator = mock(TxnResourceUsageEstimator.class);
         correctQueryEstimator = mock(QueryResourceUsageEstimator.class);
         incorrectQueryEstimator = mock(QueryResourceUsageEstimator.class);
         pricedUsageCalculator = mock(PricedUsageCalculator.class);
@@ -278,15 +212,16 @@ class UsageBasedFeeCalculatorTest {
 
     @Test
     void failsWithNseeGetTxnUsageEstimator() {
-        final Exception exception = assertThrows(NoSuchElementException.class,
-                () -> subject.computeFee(accessor, payerKey, at));
+        final Exception exception =
+                assertThrows(NoSuchElementException.class, () -> subject.computeFee(accessor, payerKey, at));
         assertEquals("No estimator exists for the given transaction", exception.getMessage());
     }
 
     @Test
     void failsWithNseeGetQueryUsageEstimator() {
-        final Exception exception = assertThrows(NoSuchElementException.class,
-                () -> subject.estimatePayment(query, currentPrices.get(SubType.DEFAULT), at, ANSWER_ONLY));
+        FeeData usgPrices = currentPrices.get(DEFAULT);
+        final Exception exception = assertThrows(
+                NoSuchElementException.class, () -> subject.estimatePayment(query, usgPrices, at, ANSWER_ONLY));
         assertEquals("No estimator exists for the given query", exception.getMessage());
     }
 

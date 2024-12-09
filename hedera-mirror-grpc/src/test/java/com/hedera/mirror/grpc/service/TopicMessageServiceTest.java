@@ -51,7 +51,7 @@ import reactor.test.StepVerifier;
 class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     private static final Duration WAIT = Duration.ofSeconds(10L);
-    private static final EntityId topicId = EntityId.of(100L);
+    private static final EntityId TOPIC_ID = EntityId.of(100L);
 
     private final long now = DomainUtils.now();
     private final long future = now + 30L * NANOS_PER_SECOND;
@@ -102,7 +102,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(now)
                 .endTime(now - 86400 * NANOS_PER_SECOND)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         assertThatThrownBy(() -> topicMessageService.subscribeTopic(filter))
@@ -115,7 +115,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(now)
                 .endTime(now)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         assertThatThrownBy(() -> topicMessageService.subscribeTopic(filter))
@@ -127,7 +127,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     void startTimeAfterNow() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(now + 60 * 60 * NANOS_PER_SECOND)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         assertThatThrownBy(() -> topicMessageService.subscribeTopic(filter))
@@ -165,7 +165,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     void invalidTopic() {
         domainBuilder.entity(e -> e.type(EntityType.ACCOUNT).num(100L).id(100L)).block();
         TopicMessageFilter filter =
-                TopicMessageFilter.builder().topicId(topicId).build();
+                TopicMessageFilter.builder().topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
                 .thenAwait(WAIT)
@@ -176,7 +176,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void noMessages() {
         TopicMessageFilter filter =
-                TopicMessageFilter.builder().topicId(topicId).build();
+                TopicMessageFilter.builder().topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
                 .thenAwait(WAIT)
@@ -190,7 +190,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(0)
                 .endTime(1L)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
@@ -207,7 +207,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(now)
                 .endTime(endTime)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         topicMessageService
@@ -226,7 +226,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter =
-                TopicMessageFilter.builder().startTime(0).topicId(topicId).build();
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
                 .thenAwait(WAIT)
@@ -244,7 +244,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(0)
                 .endTime(topicMessage3.getConsensusTimestamp() + 1)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
@@ -264,7 +264,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(0)
                 .endTime(topicMessage4.getConsensusTimestamp())
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
@@ -287,7 +287,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(0)
                 .endTime(topicMessage4.getConsensusTimestamp())
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
@@ -310,7 +310,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(2)
                 .startTime(0)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
@@ -324,7 +324,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void incomingMessages() {
         TopicMessageFilter filter =
-                TopicMessageFilter.builder().startTime(0).topicId(topicId).build();
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(
                         () -> topicMessageService.subscribeTopic(filter).map(TopicMessage::getSequenceNumber))
@@ -340,7 +340,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(2)
                 .startTime(0)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         StepVerifier.withVirtualTime(
@@ -360,7 +360,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(0)
                 .endTime(endTime)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         topicMessageService
@@ -381,7 +381,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(0)
                 .endTime(future)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         StepVerifier.withVirtualTime(
@@ -400,7 +400,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(5)
                 .startTime(0)
-                .topicId(topicId)
+                .topicId(TOPIC_ID)
                 .build();
 
         StepVerifier.withVirtualTime(
@@ -458,7 +458,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 new SimpleMeterRegistry());
 
         TopicMessageFilter retrieverFilter =
-                TopicMessageFilter.builder().startTime(0).topicId(topicId).build();
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         Mockito.when(entityRepository.findById(retrieverFilter.getTopicId().getId()))
                 .thenReturn(optionalEntity());
@@ -490,7 +490,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 new SimpleMeterRegistry());
 
         TopicMessageFilter filter =
-                TopicMessageFilter.builder().startTime(0).topicId(topicId).build();
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         TopicMessage beforeMissing = topicMessage(1);
         TopicMessage afterMissing = topicMessage(4);
@@ -516,7 +516,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void missingMessagesFromListenerAllRetrieved() {
         TopicMessageFilter filter =
-                TopicMessageFilter.builder().startTime(0).topicId(topicId).build();
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         missingMessagesFromListenerTest(filter, Flux.just(topicMessage(5), topicMessage(6), topicMessage(7)));
 
@@ -531,7 +531,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void missingMessagesFromListenerSomeRetrieved() {
         TopicMessageFilter filter =
-                TopicMessageFilter.builder().startTime(0).topicId(topicId).build();
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         missingMessagesFromListenerTest(filter, Flux.just(topicMessage(5), topicMessage(6)));
 
@@ -546,7 +546,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void missingMessagesFromListenerNoneRetrieved() {
         TopicMessageFilter filter =
-                TopicMessageFilter.builder().startTime(0).topicId(topicId).build();
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         missingMessagesFromListenerTest(filter, Flux.empty());
 
@@ -571,7 +571,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 new SimpleMeterRegistry());
 
         TopicMessageFilter retrieverFilter =
-                TopicMessageFilter.builder().startTime(0).topicId(topicId).build();
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         TopicMessage retrieved1 = topicMessage(1);
         TopicMessage retrieved2 = topicMessage(2);

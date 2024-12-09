@@ -19,14 +19,12 @@ package com.hedera.services.fees.calculation.crypto.queries;
 import static com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage.MISSING_RECORD_STANDIN;
 import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.hapi.utils.fees.CryptoFeeBuilder;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
@@ -36,15 +34,12 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GetTxnRecordResourceUsageTest {
-    private Store store;
     private CryptoFeeBuilder usageEstimator;
-    private TransactionRecord desiredRecord;
     private GetTxnRecordResourceUsage subject;
 
     private static final TransactionID targetTxnId = TransactionID.newBuilder()
@@ -56,9 +51,7 @@ class GetTxnRecordResourceUsageTest {
         return Query.newBuilder().setTransactionGetRecord(op).build();
     }
 
-    private static final TransactionGetRecordQuery satisfiableCostAnswer = txnRecordQuery(targetTxnId, COST_ANSWER);
     private static final TransactionGetRecordQuery satisfiableAnswerOnly = txnRecordQuery(targetTxnId, ANSWER_ONLY);
-    private static final Query satisfiableCostAnswerQuery = queryOf(satisfiableCostAnswer);
     private static final Query satisfiableAnswerOnlyQuery = queryOf(satisfiableAnswerOnly);
 
     public static TransactionGetRecordQuery txnRecordQuery(final TransactionID txnId, final ResponseType type) {
@@ -102,9 +95,6 @@ class GetTxnRecordResourceUsageTest {
 
     @BeforeEach
     void setup() {
-        desiredRecord = mock(TransactionRecord.class);
-        store = mock(Store.class);
-
         usageEstimator = mock(CryptoFeeBuilder.class);
         subject = new GetTxnRecordResourceUsage(usageEstimator);
     }

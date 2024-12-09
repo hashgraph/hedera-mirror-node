@@ -48,6 +48,7 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.AppContext.Gossip;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
@@ -372,7 +373,8 @@ public class MirrorNodeState implements State {
 
     private void registerServices(ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
-        final var appContext = new AppContextImpl(InstantSource.system(), signatureVerifier());
+        final var appContext =
+                new AppContextImpl(InstantSource.system(), signatureVerifier(), Gossip.UNAVAILABLE_GOSSIP);
         Set.of(
                         new EntityIdService(),
                         new TokenServiceImpl(),
