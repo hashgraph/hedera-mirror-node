@@ -66,9 +66,12 @@ spec:
           contract:
             contractId: "0.0.2664875"
     stackgres:
+      coordinator:
+        persistentVolume:
+          size: 65Gi
       worker:
         persistentVolume:
-          size: 900Gi
+          size: 90Gi
     test:
       cucumberTags: "@acceptance and not @estimateprecompile"
       enabled: true
