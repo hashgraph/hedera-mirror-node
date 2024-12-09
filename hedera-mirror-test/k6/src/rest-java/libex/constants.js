@@ -16,4 +16,3 @@
 
 export const accountNftAllowanceListName = 'allowances';
 export const airdrops = 'airdrops';
-

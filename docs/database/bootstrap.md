@@ -295,7 +295,7 @@ If you need to stop the script before it completes:
 
 #### **Start the Mirrornode Importer**
 
-  - Once the bootstrap process completes without errors, you may start the Mirrornode Importer.
+- Once the bootstrap process completes without errors, you may start the Mirrornode Importer.
 
 ---
 

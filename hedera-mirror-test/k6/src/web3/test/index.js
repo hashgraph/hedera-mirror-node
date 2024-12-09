@@ -106,7 +106,7 @@ const tests = {
   rampUp,
 };
 
-if (__ENV.RUN_ESTIMATE_TESTS !=="false") {
+if (__ENV.RUN_ESTIMATE_TESTS !== 'false') {
   Object.assign(tests, {
     contractCallEstimateFungibleTokenCustomFees,
     contractCallEstimateNftCustomFees,
@@ -129,7 +129,7 @@ if (__ENV.RUN_ESTIMATE_TESTS !=="false") {
   });
 }
 
-if (__ENV.RUN_MODIFICATION_TESTS !=="false") {
+if (__ENV.RUN_MODIFICATION_TESTS !== 'false') {
   Object.assign(tests, {
     contractCallPrecompileApprove,
     contractCallPrecompileAssociate,

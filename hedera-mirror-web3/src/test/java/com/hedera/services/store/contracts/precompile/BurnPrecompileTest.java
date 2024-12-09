@@ -70,7 +70,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -239,7 +239,8 @@ class BurnPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices =
+                new EnumMap<>(HederaFunctionality.class);
         canonicalPrices.put(
                 HederaFunctionality.TokenBurn, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);

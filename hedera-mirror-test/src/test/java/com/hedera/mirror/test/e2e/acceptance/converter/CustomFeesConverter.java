@@ -47,7 +47,8 @@ public class CustomFeesConverter {
         assessedCustomFee.setCollectorAccountId(collector.getAccountId().toString());
         if (StringUtils.isNotEmpty(effectivePayer)) {
             var effectivePayerAccountId = accountClient.getAccount(AccountNameEnum.valueOf(effectivePayer));
-            assessedCustomFee.setEffectivePayerAccountIds(List.of(effectivePayerAccountId.getAccountId().toString()));
+            assessedCustomFee.setEffectivePayerAccountIds(
+                    List.of(effectivePayerAccountId.getAccountId().toString()));
         }
         assessedCustomFee.setTokenId(getToken(entry.get("token")));
         return assessedCustomFee;

@@ -30,7 +30,7 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.68.1")
+    set("grpcVersion", "1.68.2")
     set("mapStructVersion", "1.6.3")
     set("nodeJsVersion", "18.20.5")
     set("protobufVersion", "3.25.5")
@@ -62,10 +62,10 @@ dependencies {
         api("com.graphql-java-generator:graphql-java-client-runtime:2.8")
         api("com.graphql-java:graphql-java-extended-scalars:22.0")
         api("com.graphql-java:graphql-java-extended-validation:22.0")
-        api("com.hedera.hashgraph:app:0.55.2")
+        api("com.hedera.hashgraph:app:0.56.6")
         api("com.hedera.evm:hedera-evm:0.54.2")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.56.2")
-        api("com.hedera.hashgraph:sdk:2.44.0")
+        api("com.hedera.hashgraph:sdk:2.45.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.9")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
@@ -98,13 +98,13 @@ dependencies {
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.8")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.8.0")
-        api("org.springframework.cloud:spring-cloud-dependencies:2023.0.3")
-        api("org.testcontainers:junit-jupiter:1.20.3")
+        api("org.springframework.cloud:spring-cloud-dependencies:2023.0.4")
+        api("org.testcontainers:junit-jupiter:1.20.4")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.29.20")
+        api("software.amazon.awssdk:bom:2.29.23")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.7")
         api("org.web3j:core:4.12.2")
-        api("tech.pegasys:jc-kzg-4844:0.8.0")
+        api("tech.pegasys:jc-kzg-4844:1.0.0")
     }
 }
 

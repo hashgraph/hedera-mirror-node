@@ -180,7 +180,7 @@ class SchemaRegistryImplTest {
             assertThat(c.previousStates()).isEqualTo(readableStates);
             assertThat(c.newStates()).isEqualTo(writableStates);
             assertThat(c.configuration()).isEqualTo(config);
-            assertThat(c.networkInfo()).isEqualTo(networkInfo);
+            assertThat(c.genesisNetworkInfo()).isEqualTo(networkInfo);
             assertThat(c.newEntityNum()).isEqualTo(1);
             assertThat(c.sharedValues()).isEqualTo(EMPTY_MAP);
         });

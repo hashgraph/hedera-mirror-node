@@ -70,7 +70,6 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -216,8 +215,6 @@ class TransferPrecompileTest {
     private SyntheticTxnFactory syntheticTxnFactory;
 
     private HTSPrecompiledContract subject;
-
-    private MockedStatic<ContractCallContext> staticMock;
 
     private final TransactionBody.Builder transactionBody =
             TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder());

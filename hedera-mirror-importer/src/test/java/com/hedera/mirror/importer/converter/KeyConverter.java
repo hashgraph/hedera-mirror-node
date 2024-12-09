@@ -32,7 +32,7 @@ public final class KeyConverter implements ArgumentConverter {
             throw new ArgumentConversionException(input + " is not a string");
         }
         var inputString = (String) input;
-        if (0 == inputString.length()) {
+        if (inputString.isEmpty()) {
             return Key.newBuilder().build();
         } else {
             return Key.newBuilder()

@@ -22,7 +22,11 @@ function PrecompileModificationTestTemplate(key, shouldRevert) {
     return JSON.parse(open('../resources/modificationFunctions.json'))[key];
   });
 
-  const {options, run} = new ContractCallTestScenarioBuilder().name(key).vuData(data).shouldRevert(shouldRevert).build();
+  const {options, run} = new ContractCallTestScenarioBuilder()
+    .name(key)
+    .vuData(data)
+    .shouldRevert(shouldRevert)
+    .build();
 
   return {options, run};
 }

@@ -17,15 +17,15 @@
 package com.hedera.mirror.web3.state.components;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.info.SelfNodeInfoImpl;
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.State;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 
@@ -41,14 +41,14 @@ public class NetworkInfoImpl implements NetworkInfo {
 
     @Nonnull
     @Override
-    public SelfNodeInfo selfNodeInfo() {
-        return mockSelfNodeInfo();
+    public NodeInfo selfNodeInfo() {
+        return nodeInfo();
     }
 
     @Nonnull
     @Override
     public List<NodeInfo> addressBook() {
-        return List.of(mockSelfNodeInfo());
+        return List.of(nodeInfo());
     }
 
     @Nullable
@@ -62,31 +62,48 @@ public class NetworkInfoImpl implements NetworkInfo {
         return nodeInfo(nodeId) != null;
     }
 
+    @Override
+    public void updateFrom(State state) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     /**
-     * Returns a {@link SelfNodeInfo} that is a complete mock other than the software version present in the given
+     * Returns a {@link NodeInfo} that is a complete mock other than the software version present in the given
      * configuration.
      *
      * @return a mock self node info
      */
-    private SelfNodeInfo mockSelfNodeInfo() {
-        return new SelfNodeInfoImpl(
-                0,
-                AccountID.DEFAULT,
-                0,
-                "",
-                0,
-                "",
-                0,
-                "",
-                "",
-                Bytes.EMPTY,
-                new SemanticVersion(
-                        0,
-                        47,
-                        0,
-                        "SNAPSHOT",
-                        ""), // Hardcoded as this field is probably going to be removed in the next version as the
-                // NetworkInfo class was changed in services
-                "");
+    private NodeInfo nodeInfo() {
+        return new NodeInfo() {
+            @Override
+            public long nodeId() {
+                return 0;
+            }
+
+            @Override
+            public AccountID accountId() {
+                return AccountID.DEFAULT;
+            }
+
+            @Override
+            public long stake() {
+                return 0;
+            }
+
+            @Override
+            public Bytes sigCertBytes() {
+                return Bytes.EMPTY;
+            }
+
+            @Override
+            public List<ServiceEndpoint> gossipEndpoints() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String hexEncodedPublicKey() {
+                return "";
+            }
+        };
     }
 }
