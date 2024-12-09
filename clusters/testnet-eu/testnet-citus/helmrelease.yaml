@@ -14,7 +14,7 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.118.1'
+      version: '0.119.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -68,9 +68,12 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
     stackgres:
+      coordinator:
+        persistentVolume:
+          size: 65Gi
       worker:
         persistentVolume:
-          size: 900Gi
+          size: 90Gi
     test:
       cucumberTags: "@acceptance and not @estimateprecompile"
       enabled: true

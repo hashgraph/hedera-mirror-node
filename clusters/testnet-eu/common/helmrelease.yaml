@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-v2.yaml
-      version: '0.118.1'
+      version: '0.119.0'
   driftDetection:
     mode: enabled
     ignore:
@@ -66,7 +66,9 @@ spec:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-testnet-eu"} } }'
     zfs:
+      coordinator:
+        initialDiskSize: 75GB
       init:
         diskPrefix: testnet-eu
       worker:
-        initialDiskSize: 1000GB
+        initialDiskSize: 100GB
