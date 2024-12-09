@@ -82,36 +82,36 @@ import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("deprecation")
 class SignedTxnAccessorTest {
-    private static final String memo = "Eternal sunshine of the spotless mind";
-    private static final String zeroByteMemo = "Eternal s\u0000nshine of the spotless mind";
-    private static final byte[] memoUtf8Bytes = memo.getBytes();
-    private static final byte[] zeroByteMemoUtf8Bytes = zeroByteMemo.getBytes();
+    private static final String MEMO = "Eternal sunshine of the spotless mind";
+    private static final String ZERO_BYTE_MEMO = "Eternal s\u0000nshine of the spotless mind";
+    private static final byte[] MEMO_UTF_8_BYTES = MEMO.getBytes();
+    private static final byte[] ZERO_BYTE_MEMO_UTF_8_BYTES = ZERO_BYTE_MEMO.getBytes();
 
-    private static final AccountID spender1 = asAccount("0.0.1000");
-    private static final AccountID owner = asAccount("0.0.1001");
-    private static final TokenID token1 = asToken("0.0.2000");
-    private static final TokenID token2 = asToken("0.0.3000");
-    private static final CryptoAllowance cryptoAllowance1 =
-            CryptoAllowance.newBuilder().setSpender(spender1).setAmount(10L).build();
-    private static final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder()
-            .setSpender(spender1)
+    private static final AccountID SPENDER_1 = asAccount("0.0.1000");
+    private static final AccountID OWNER = asAccount("0.0.1001");
+    private static final TokenID TOKEN_1 = asToken("0.0.2000");
+    private static final TokenID TOKEN_2 = asToken("0.0.3000");
+    private static final CryptoAllowance CRYPTO_ALLOWANCE_1 =
+            CryptoAllowance.newBuilder().setSpender(SPENDER_1).setAmount(10L).build();
+    private static final TokenAllowance TOKEN_ALLOWANCE_1 = TokenAllowance.newBuilder()
+            .setSpender(SPENDER_1)
             .setAmount(10L)
-            .setTokenId(token1)
+            .setTokenId(TOKEN_1)
             .build();
-    private static final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
-            .setSpender(spender1)
-            .setTokenId(token2)
+    private static final NftAllowance NFT_ALLOWANCE_1 = NftAllowance.newBuilder()
+            .setSpender(SPENDER_1)
+            .setTokenId(TOKEN_2)
             .setApprovedForAll(BoolValue.of(false))
             .addAllSerialNumbers(List.of(1L, 10L))
             .build();
 
-    private static final NftRemoveAllowance nftRemoveAllowance = NftRemoveAllowance.newBuilder()
-            .setOwner(owner)
-            .setTokenId(token2)
+    private static final NftRemoveAllowance NFT_REMOVE_ALLOWANCE = NftRemoveAllowance.newBuilder()
+            .setOwner(OWNER)
+            .setTokenId(TOKEN_2)
             .addAllSerialNumbers(List.of(1L, 10L))
             .build();
 
-    private static final SignatureMap expectedMap = SignatureMap.newBuilder()
+    private static final SignatureMap EXPECTED_MAP = SignatureMap.newBuilder()
             .addSigPair(SignaturePair.newBuilder()
                     .setPubKeyPrefix(ByteString.copyFromUtf8("f"))
                     .setEd25519(ByteString.copyFromUtf8("irst")))
@@ -148,12 +148,12 @@ class SignedTxnAccessorTest {
                 Timestamp.getDefaultInstance(),
                 Duration.getDefaultInstance(),
                 false,
-                zeroByteMemo,
+                ZERO_BYTE_MEMO,
                 5678l,
                 -70000l,
                 5679l,
                 70000l);
-        xferNoAliases = xferNoAliases.toBuilder().setSigMap(expectedMap).build();
+        xferNoAliases = xferNoAliases.toBuilder().setSigMap(EXPECTED_MAP).build();
         var xferWithAutoCreation = RequestBuilderUtils.getHbarCryptoTransferRequestToAlias(
                 1234l,
                 0l,
@@ -165,13 +165,13 @@ class SignedTxnAccessorTest {
                 Timestamp.getDefaultInstance(),
                 Duration.getDefaultInstance(),
                 false,
-                zeroByteMemo,
+                ZERO_BYTE_MEMO,
                 5678l,
                 -70000l,
                 aNewAlias,
                 70000l);
         xferWithAutoCreation =
-                xferWithAutoCreation.toBuilder().setSigMap(expectedMap).build();
+                xferWithAutoCreation.toBuilder().setSigMap(EXPECTED_MAP).build();
         var xferWithAliasesNoAutoCreation = RequestBuilderUtils.getTokenTransferRequestToAlias(
                 1234l,
                 0l,
@@ -183,17 +183,18 @@ class SignedTxnAccessorTest {
                 Timestamp.getDefaultInstance(),
                 Duration.getDefaultInstance(),
                 false,
-                zeroByteMemo,
+                ZERO_BYTE_MEMO,
                 5678l,
                 5555l,
                 -70000l,
                 ByteString.copyFromUtf8("aaaa"),
                 70000l);
-        xferWithAliasesNoAutoCreation =
-                xferWithAliasesNoAutoCreation.toBuilder().setSigMap(expectedMap).build();
+        xferWithAliasesNoAutoCreation = xferWithAliasesNoAutoCreation.toBuilder()
+                .setSigMap(EXPECTED_MAP)
+                .build();
         final var body = TransactionBody.parseFrom(extractTransactionBodyByteString(xferNoAliases));
 
-        final var signedTransaction = TxnUtils.signedTransactionFrom(body, expectedMap);
+        final var signedTransaction = TxnUtils.signedTransactionFrom(body, EXPECTED_MAP);
         final var newTransaction = buildTransactionFrom(signedTransaction.toByteString());
         var accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
         final var txnUsageMeta = accessor.baseUsageMeta();
@@ -205,10 +206,10 @@ class SignedTxnAccessorTest {
         assertEquals(1234l, accessor.getPayer().getAccountNum());
         assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
         assertArrayEquals(noThrowSha384HashOf(signedTransaction.toByteArray()), accessor.getHash());
-        assertEquals(expectedMap, accessor.getSigMap());
-        assertArrayEquals(zeroByteMemoUtf8Bytes, accessor.getMemoUtf8Bytes());
-        assertEquals(zeroByteMemo, accessor.getMemo());
-        assertEquals(memoUtf8Bytes.length, txnUsageMeta.memoUtf8Bytes());
+        assertEquals(EXPECTED_MAP, accessor.getSigMap());
+        assertArrayEquals(ZERO_BYTE_MEMO_UTF_8_BYTES, accessor.getMemoUtf8Bytes());
+        assertEquals(ZERO_BYTE_MEMO, accessor.getMemo());
+        assertEquals(MEMO_UTF_8_BYTES.length, txnUsageMeta.memoUtf8Bytes());
     }
 
     @Test
@@ -262,15 +263,15 @@ class SignedTxnAccessorTest {
     @Test
     void fetchesSubTypeAsExpected() throws InvalidProtocolBufferException {
         final var nftTransfers = TokenTransferList.newBuilder()
-                .setToken(anId)
+                .setToken(AN_ID)
                 .addNftTransfers(NftTransfer.newBuilder()
-                        .setSenderAccountID(a)
-                        .setReceiverAccountID(b)
+                        .setSenderAccountID(A)
+                        .setReceiverAccountID(B)
                         .setSerialNumber(1))
                 .build();
         final var fungibleTokenXfers = TokenTransferList.newBuilder()
-                .setToken(anotherId)
-                .addAllTransfers(List.of(adjustFrom(a, -50), adjustFrom(b, 25), adjustFrom(c, 25)))
+                .setToken(ANOTHER_ID)
+                .addAllTransfers(List.of(adjustFrom(A, -50), adjustFrom(B, 25), adjustFrom(C, 25)))
                 .build();
 
         var txn = buildTokenTransferTxn(nftTransfers);
@@ -336,13 +337,13 @@ class SignedTxnAccessorTest {
                 Timestamp.getDefaultInstance(),
                 Duration.getDefaultInstance(),
                 false,
-                memo,
+                MEMO,
                 5678l,
                 -70000l,
                 5679l,
                 70000l);
         final var body = extractTransactionBody(transaction);
-        final var signedTransaction = TxnUtils.signedTransactionFrom(body, expectedMap);
+        final var signedTransaction = TxnUtils.signedTransactionFrom(body, EXPECTED_MAP);
         final var newTransaction = buildTransactionFrom(signedTransaction.toByteString());
         final var accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
 
@@ -353,9 +354,9 @@ class SignedTxnAccessorTest {
         assertEquals(1234l, accessor.getPayer().getAccountNum());
         assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
         assertArrayEquals(noThrowSha384HashOf(signedTransaction.toByteArray()), accessor.getHash());
-        assertEquals(expectedMap, accessor.getSigMap());
-        assertArrayEquals(memoUtf8Bytes, accessor.getMemoUtf8Bytes());
-        assertEquals(memo, accessor.getMemo());
+        assertEquals(EXPECTED_MAP, accessor.getSigMap());
+        assertArrayEquals(MEMO_UTF_8_BYTES, accessor.getMemoUtf8Bytes());
+        assertEquals(MEMO, accessor.getMemo());
     }
 
     @Test
@@ -407,7 +408,7 @@ class SignedTxnAccessorTest {
                 .setToken(TokenID.newBuilder().setTokenNum(123).build());
         final var txnBody = TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setTokenPause(op)
                 .build();
         final var txn = buildTransactionFrom(txnBody);
@@ -425,7 +426,7 @@ class SignedTxnAccessorTest {
                 .setToken(TokenID.newBuilder().setTokenNum(123).build());
         final var txnBody = TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setTokenUnpause(op)
                 .build();
         final var txn = buildTransactionFrom(txnBody);
@@ -446,7 +447,7 @@ class SignedTxnAccessorTest {
         final var expandedMeta = spanMapAccessor.getCryptoCreateMeta(accessor);
 
         assertEquals(137, expandedMeta.getBaseSize());
-        assertEquals(autoRenewPeriod, expandedMeta.getLifeTime());
+        assertEquals(AUTO_RENEW_PERIOD, expandedMeta.getLifeTime());
         assertEquals(10, expandedMeta.getMaxAutomaticAssociations());
     }
 
@@ -460,9 +461,9 @@ class SignedTxnAccessorTest {
 
         assertEquals(100, expandedMeta.getKeyBytesUsed());
         assertEquals(197, expandedMeta.getMsgBytesUsed());
-        assertEquals(now, expandedMeta.getEffectiveNow());
-        assertEquals(now + autoRenewPeriod, expandedMeta.getExpiry());
-        assertEquals(memo.getBytes().length, expandedMeta.getMemoSize());
+        assertEquals(NOW, expandedMeta.getEffectiveNow());
+        assertEquals(NOW + AUTO_RENEW_PERIOD, expandedMeta.getExpiry());
+        assertEquals(MEMO.getBytes().length, expandedMeta.getMemoSize());
         assertEquals(25, expandedMeta.getMaxAutomaticAssociations());
         assertTrue(expandedMeta.hasProxy());
     }
@@ -476,7 +477,7 @@ class SignedTxnAccessorTest {
         final var expandedMeta = spanMapAccessor.getCryptoApproveMeta(accessor);
 
         assertEquals(128, expandedMeta.getMsgBytesUsed());
-        assertEquals(now, expandedMeta.getEffectiveNow());
+        assertEquals(NOW, expandedMeta.getEffectiveNow());
     }
 
     @Test
@@ -488,7 +489,7 @@ class SignedTxnAccessorTest {
         final var expandedMeta = spanMapAccessor.getCryptoDeleteAllowanceMeta(accessor);
 
         assertEquals(64, expandedMeta.getMsgBytesUsed());
-        assertEquals(now, expandedMeta.getEffectiveNow());
+        assertEquals(NOW, expandedMeta.getEffectiveNow());
     }
 
     private Transaction signedCryptoCreateTxn() {
@@ -509,51 +510,51 @@ class SignedTxnAccessorTest {
 
     private TransactionBody cryptoCreateOp() {
         final var op = CryptoCreateTransactionBody.newBuilder()
-                .setMemo(memo)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                .setKey(adminKey)
+                .setMemo(MEMO)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(AUTO_RENEW_PERIOD))
+                .setKey(ADMIN_KEY)
                 .setMaxAutomaticTokenAssociations(10);
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setCryptoCreateAccount(op)
                 .build();
     }
 
     private TransactionBody cryptoUpdateOp() {
         final var op = CryptoUpdateTransactionBody.newBuilder()
-                .setExpirationTime(Timestamp.newBuilder().setSeconds(now + autoRenewPeriod))
-                .setProxyAccountID(autoRenewAccount)
-                .setMemo(StringValue.newBuilder().setValue(memo))
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(NOW + AUTO_RENEW_PERIOD))
+                .setProxyAccountID(AUTO_RENEW_ACCOUNT)
+                .setMemo(StringValue.newBuilder().setValue(MEMO))
                 .setMaxAutomaticTokenAssociations(Int32Value.of(25))
-                .setKey(adminKey);
+                .setKey(ADMIN_KEY);
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setCryptoUpdateAccount(op)
                 .build();
     }
 
     private TransactionBody cryptoApproveOp() {
         final var op = CryptoApproveAllowanceTransactionBody.newBuilder()
-                .addAllCryptoAllowances(List.of(cryptoAllowance1))
-                .addAllTokenAllowances(List.of(tokenAllowance1))
-                .addAllNftAllowances(List.of(nftAllowance1))
+                .addAllCryptoAllowances(List.of(CRYPTO_ALLOWANCE_1))
+                .addAllTokenAllowances(List.of(TOKEN_ALLOWANCE_1))
+                .addAllNftAllowances(List.of(NFT_ALLOWANCE_1))
                 .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setCryptoApproveAllowance(op)
                 .build();
     }
 
     private TransactionBody cryptoDeleteAllowanceOp() {
         final var op = CryptoDeleteAllowanceTransactionBody.newBuilder()
-                .addAllNftAllowances(List.of(nftRemoveAllowance))
+                .addAllNftAllowances(List.of(NFT_REMOVE_ALLOWANCE))
                 .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setCryptoDeleteAllowance(op)
                 .build();
     }
@@ -563,9 +564,9 @@ class SignedTxnAccessorTest {
                 .addTokenTransfers(tokenTransferList)
                 .build();
         final var txnBody = TransactionBody.newBuilder()
-                .setMemo(memo)
+                .setMemo(MEMO)
                 .setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setCryptoTransfer(op)
                 .build();
 
@@ -582,27 +583,27 @@ class SignedTxnAccessorTest {
 
     private TransactionBody tokenXfers() {
         final var hbarAdjusts = TransferList.newBuilder()
-                .addAccountAmounts(adjustFrom(a, -100))
-                .addAccountAmounts(adjustFrom(b, 50))
-                .addAccountAmounts(adjustFrom(c, 50))
+                .addAccountAmounts(adjustFrom(A, -100))
+                .addAccountAmounts(adjustFrom(B, 50))
+                .addAccountAmounts(adjustFrom(C, 50))
                 .build();
         final var op = CryptoTransferTransactionBody.newBuilder()
                 .setTransfers(hbarAdjusts)
                 .addTokenTransfers(TokenTransferList.newBuilder()
-                        .setToken(anotherId)
-                        .addAllTransfers(List.of(adjustFrom(a, -50), adjustFrom(b, 25), adjustFrom(c, 25))))
+                        .setToken(ANOTHER_ID)
+                        .addAllTransfers(List.of(adjustFrom(A, -50), adjustFrom(B, 25), adjustFrom(C, 25))))
                 .addTokenTransfers(TokenTransferList.newBuilder()
-                        .setToken(anId)
-                        .addAllTransfers(List.of(adjustFrom(b, -100), adjustFrom(c, 100))))
+                        .setToken(AN_ID)
+                        .addAllTransfers(List.of(adjustFrom(B, -100), adjustFrom(C, 100))))
                 .addTokenTransfers(TokenTransferList.newBuilder()
-                        .setToken(yetAnotherId)
-                        .addAllTransfers(List.of(adjustFrom(a, -15), adjustFrom(b, 15))))
+                        .setToken(YET_ANOTHER_ID)
+                        .addAllTransfers(List.of(adjustFrom(A, -15), adjustFrom(B, 15))))
                 .build();
 
         return TransactionBody.newBuilder()
-                .setMemo(memo)
+                .setMemo(MEMO)
                 .setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setCryptoTransfer(op)
                 .build();
     }
@@ -620,42 +621,42 @@ class SignedTxnAccessorTest {
 
     private TransactionBody givenAutoRenewBasedOp() {
         final var op = TokenCreateTransactionBody.newBuilder()
-                .setAutoRenewAccount(autoRenewAccount)
-                .setMemo(memo)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                .setSymbol(symbol)
-                .setName(name)
-                .setKycKey(kycKey)
-                .setAdminKey(adminKey)
-                .setFreezeKey(freezeKey)
-                .setSupplyKey(supplyKey)
-                .setWipeKey(wipeKey)
+                .setAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                .setMemo(MEMO)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(AUTO_RENEW_PERIOD))
+                .setSymbol(SYMBOL)
+                .setName(NAME)
+                .setKycKey(KYC_KEY)
+                .setAdminKey(ADMIN_KEY)
+                .setFreezeKey(FREEZE_KEY)
+                .setSupplyKey(SUPPLY_KEY)
+                .setWipeKey(WIPE_KEY)
                 .setInitialSupply(1);
         final var txn = TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setTokenCreation(op)
                 .build();
         return txn;
     }
 
-    private static final Key kycKey = A_COMPLEX_KEY;
-    private static final Key adminKey = A_THRESHOLD_KEY;
-    private static final Key freezeKey = A_KEY_LIST;
-    private static final Key supplyKey = B_COMPLEX_KEY;
-    private static final Key wipeKey = C_COMPLEX_KEY;
-    private static final long autoRenewPeriod = 1_234_567L;
-    private static final String symbol = "ABCDEFGH";
-    private static final String name = "WhyWhyWHy";
-    private static final AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
+    private static final Key KYC_KEY = A_COMPLEX_KEY;
+    private static final Key ADMIN_KEY = A_THRESHOLD_KEY;
+    private static final Key FREEZE_KEY = A_KEY_LIST;
+    private static final Key SUPPLY_KEY = B_COMPLEX_KEY;
+    private static final Key WIPE_KEY = C_COMPLEX_KEY;
+    private static final long AUTO_RENEW_PERIOD = 1_234_567L;
+    private static final String SYMBOL = "ABCDEFGH";
+    private static final String NAME = "WhyWhyWHy";
+    private static final AccountID AUTO_RENEW_ACCOUNT = IdUtils.asAccount("0.0.75231");
 
-    private static final long now = 1_234_567L;
-    private static final AccountID a = asAccount("1.2.3");
-    private static final AccountID b = asAccount("2.3.4");
-    private static final AccountID c = asAccount("3.4.5");
-    private static final TokenID anId = IdUtils.asToken("0.0.75231");
-    private static final TokenID anotherId = IdUtils.asToken("0.0.75232");
-    private static final TokenID yetAnotherId = IdUtils.asToken("0.0.75233");
+    private static final long NOW = 1_234_567L;
+    private static final AccountID A = asAccount("1.2.3");
+    private static final AccountID B = asAccount("2.3.4");
+    private static final AccountID C = asAccount("3.4.5");
+    private static final TokenID AN_ID = IdUtils.asToken("0.0.75231");
+    private static final TokenID ANOTHER_ID = IdUtils.asToken("0.0.75232");
+    private static final TokenID YET_ANOTHER_ID = IdUtils.asToken("0.0.75233");
 
     static ByteString extractTransactionBodyByteString(final TransactionOrBuilder transaction)
             throws InvalidProtocolBufferException {

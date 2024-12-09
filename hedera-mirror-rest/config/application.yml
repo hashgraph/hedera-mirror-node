@@ -74,6 +74,10 @@ hedera:
         maxTransactionsTimestampRange: 60d
         strictTimestampParam: true
         topicMessageLookup: false
+        transactions:
+          precedingTransactionTypes:
+            - 11 #CRYPTOCREATEACCOUNT
+            - 15 #CRYPTOUPDATEACCOUNT
       redis:
         commandTimeout: 10000
         connectTimeout: 10000
@@ -133,6 +137,7 @@ hedera:
               { "cache-control": "public, max-age=600" }
             /api/v1/transactions/:transactionId/stateproof:
               { "cache-control": "public, max-age=600" }
+        includeAdminKey: false
         includeHostInLink: false
         limit:
           default: 25

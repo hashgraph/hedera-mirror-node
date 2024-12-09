@@ -214,6 +214,9 @@ describe('Override query config', () => {
       maxTransactionsTimestampRangeNs: 1728000000000000n,
       strictTimestampParam: true,
       topicMessageLookup: false,
+      transactions: {
+        precedingTransactionTypes: [11, 15],
+      },
     };
     const config = await loadCustomConfig(customConfig(queryConfig));
     expect(config.query).toEqual(expected);

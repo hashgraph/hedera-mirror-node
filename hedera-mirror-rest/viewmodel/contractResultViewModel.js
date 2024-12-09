@@ -39,7 +39,9 @@ class ContractResultViewModel {
     this.contract_id = contractId.toString();
     this.created_contract_ids = _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString());
     this.error_message = _.isEmpty(contractResult.errorMessage) ? null : contractResult.errorMessage;
-    this.from = EntityId.parse(contractResult.senderId, {isNullable: true}).toEvmAddress() || this.#extractSenderFromFunctionResult(contractResult);
+    this.from =
+      EntityId.parse(contractResult.senderId, {isNullable: true}).toEvmAddress() ||
+      this.#extractSenderFromFunctionResult(contractResult);
     this.function_parameters = toHexString(contractResult.functionParameters, true);
     this.gas_consumed = contractResult.gasConsumed;
     this.gas_limit = contractResult.gasLimit;

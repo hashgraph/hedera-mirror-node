@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Write the script's own PID to bootstrap.pid
-echo $$ > bootstrap.pid
+PID_FILE="bootstrap.pid"
+echo $$ > $PID_FILE
 
 # Enable job control
 set -m
@@ -18,6 +19,7 @@ REQUIRED_BASH_MINOR=3
 LOG_FILE="bootstrap.log"
 TRACKING_FILE="bootstrap_tracking.txt"
 LOCK_FILE="bootstrap_tracking.lock"
+DISCREPANCY_FILE="discrepancies.log"
 
 # Required tools
 REQUIRED_TOOLS=("psql" "gunzip" "realpath" "flock" "curl")
@@ -33,12 +35,28 @@ IMPORT_DIR="$2"
 IMPORT_DIR="$(realpath "$IMPORT_DIR")"
 
 # Calculate available CPU cores
-AVAILABLE_CORES=$(( $(nproc) - 1 ))          # Leave one core free for the local system
-DB_AVAILABLE_CORES=$((DB_CPU_CORES - 1))     # Leave one core free for the DB instance
+AVAILABLE_CORES=$(($(nproc) - 1))        # Leave one core free for the local system
+DB_AVAILABLE_CORES=$((DB_CPU_CORES - 1)) # Leave one core free for the DB instance
+
+# Set file paths
+MANIFEST_FILE="${IMPORT_DIR}/manifest.csv"
+MIRRORNODE_VERSION_FILE="$IMPORT_DIR/MIRRORNODE_VERSION"
+
+declare -A manifest_counts
 
 ####################################
 # Functions
 ####################################
+
+enable_pipefail() {
+  set -euo pipefail
+}
+
+disable_pipefail() {
+  set +euo pipefail
+}
+
+export -f enable_pipefail disable_pipefail
 
 # Log messages with UTC timestamps
 log() {
@@ -47,7 +65,7 @@ log() {
   local timestamp
   timestamp=$(date -u '+%Y-%m-%d %H:%M:%S')
 
-  echo "$timestamp - $level - $msg" >> "$LOG_FILE"
+  echo "[$timestamp] [$level] $msg" >> "$LOG_FILE"
 }
 
 # Display help message
@@ -74,8 +92,8 @@ check_bash_version() {
   local current_minor=${BASH_VERSINFO[1]}
 
   if (( current_major < REQUIRED_BASH_MAJOR )) || \
-     (( current_major == REQUIRED_BASH_MAJOR && current_minor < REQUIRED_BASH_MINOR )); then
-    echo "Error: Bash version ${REQUIRED_BASH_MAJOR}.${REQUIRED_BASH_MINOR}+ is required. Current version is ${BASH_VERSION}."
+    (( current_major == REQUIRED_BASH_MAJOR && current_minor < REQUIRED_BASH_MINOR )); then
+    echo "Error: Bash version ${REQUIRED_BASH_MAJOR}.${REQUIRED_BASH_MINOR}+ is required. Current version is ${BASH_VERSION}." >&2
     exit 1
   fi
 }
@@ -93,18 +111,27 @@ kill_descendants() {
 
 # Handle script termination
 cleanup() {
-  log "Script interrupted. Terminating background jobs..." "ERROR"
-  # Ignore further signals during cleanup
-  trap '' SIGINT SIGTERM
+  disable_pipefail
 
-  # Kill all background jobs and their descendants
-  for pid in "${pids[@]}"; do
-    kill_descendants "$pid"
-  done
+  local trap_type="$1"
 
-  wait 2>/dev/null
-  log "All background jobs terminated."
-  exit 1
+  if [[ "$trap_type" == "INT" || "$trap_type" == "TERM" ]]; then
+    log "Script interrupted. Terminating background jobs..." "ERROR"
+
+    # Kill all background jobs and their descendants
+    for pid in "${pids[@]}"; do
+      kill_descendants "$pid"
+    done
+
+    wait 2>/dev/null
+    log "All background jobs terminated."
+
+    # Exit with a non-zero status to indicate interruption
+    exit 1
+  fi
+
+  # Normal cleanup actions (on EXIT)
+  rm -f "$PID_FILE" "$LOCK_FILE"
 }
 
 # Safely write to the tracking file with a lock
@@ -131,15 +158,27 @@ read_tracking_status() {
 
 # Collect all import tasks (compressed CSV files)
 collect_import_tasks() {
+  enable_pipefail
+  trap 'disable_pipefail' RETURN
+
   find "$IMPORT_DIR" -type f -name "*.csv.gz"
 }
 
-# Initialize the database using init.sh
-initialize_database() {
-  # Declare the bootstrap environment file as a local variable
+write_discrepancy() {
+  local file="$1"
+  local expected_count="$2"
+  local actual_count="$3"
+
+  # Only write if not already imported successfully
+  discrepancy_entry="$file: expected $expected_count, got $actual_count rows"
+  if ! grep -q "^${file} IMPORTED$" "$TRACKING_FILE" 2>/dev/null; then
+    echo "$discrepancy_entry" >> "$DISCREPANCY_FILE"
+  fi
+}
+
+source_bootstrap_env() {
   local BOOTSTRAP_ENV_FILE="bootstrap.env"
 
-  # Source the bootstrap.env file
   if [[ -f "$BOOTSTRAP_ENV_FILE" ]]; then
     log "Sourcing $BOOTSTRAP_ENV_FILE to set environment variables."
     set -a  # Automatically export all variables
@@ -149,6 +188,116 @@ initialize_database() {
     log "Error: $BOOTSTRAP_ENV_FILE file not found." "ERROR"
     exit 1
   fi
+}
+
+process_manifest() {
+  enable_pipefail
+  trap 'disable_pipefail' RETURN
+
+  # Declare manifest_counts and manifest_tables as global associative arrays
+  declare -g -A manifest_counts
+  declare -g -A manifest_tables
+  declare -a missing_files=()
+
+  # Check if the manifest file exists
+  if [[ ! -f "$MANIFEST_FILE" ]]; then
+    log "Error: Manifest file '$MANIFEST_FILE' not found." "ERROR"
+    exit 1
+  fi
+
+  # Validate file count
+  log "Validating file count" "INFO"
+  # Count files in manifest (excluding header)
+  manifest_file_count=$(tail -n +2 "$MANIFEST_FILE" | wc -l)
+
+  # Count actual .gz files in IMPORT_DIR (recursively)
+  actual_file_count=$(find "$IMPORT_DIR" -type f -name "*.gz" | wc -l)
+
+  if [[ "$manifest_file_count" != "$actual_file_count" ]]; then
+    log "File count mismatch! Manifest: $manifest_file_count, Directory: $actual_file_count" "ERROR"
+    exit 1
+  else
+    log "File count validation successful" "INFO"
+  fi
+
+  # Populate manifest_counts, manifest_tables, and run file validations
+  while IFS=',' read -r filename expected_count expected_size expected_crc32; do
+    # Skip header line
+    if [[ "$filename" == "filename" ]]; then
+      continue
+    fi
+
+    # Find the file in IMPORT_DIR
+    file_path=$(find "$IMPORT_DIR" -type f -name "$filename")
+
+    if [[ -f "$file_path" ]]; then
+      # Get CRC32 from GZIP footer and file-size
+      actual_crc32=$(tail -c 8 "$file_path" | head -c 4 | tr -d '\000' | xxd -p)
+      actual_size=$(stat -c%s "$file_path")
+
+      # Compare file sizes (strip any whitespace from both values)
+      if [[ "$actual_size" != "$expected_size" ]]; then
+          log "File size mismatch for $filename. Expected: $expected_size bytes, Actual: $actual_size bytes" "ERROR"
+          exit 1
+      fi
+
+      # Compare CRC32 values
+      if [[ "$actual_crc32" != "$expected_crc32" ]]; then
+        log "CRC32 mismatch for $filename. Expected: $expected_crc32, Actual: $actual_crc32" "ERROR"
+        exit 1
+      fi
+
+      log "Successfully validated file-size and CRC32 for $filename"
+
+      # Skip non-data files and entries with 'N/A' expected count
+      if [[ "$expected_count" == "N/A" ]]; then
+        continue
+      fi
+      manifest_counts["$filename"]="$expected_count"
+
+      # Extract table name
+      if [[ "$filename" == "topic_message_low_vol_topic_ids.csv.gz" ]]; then
+        table="topic_message"
+      elif [[ "$filename" =~ ^([^/]+)_part_ ]]; then
+        table="${BASH_REMATCH[1]}"
+      elif [[ "$filename" =~ ^([^/]+)\.csv\.gz$ ]]; then
+        table="${BASH_REMATCH[1]}"
+      else
+        log "Could not determine table name from filename: $filename" "ERROR"
+        continue
+      fi
+
+      # Store table name in manifest_tables
+      manifest_tables["$table"]=1
+    else
+      missing_files+=("$filename")
+    fi
+  done <"$MANIFEST_FILE"
+
+  # If there are missing files, report and exit
+  if [[ ${#missing_files[@]} -gt 0 ]]; then
+    log "The following files are listed in the manifest but are missing from the data directory:" "ERROR"
+    for missing_file in "${missing_files[@]}"; do
+      log "- $missing_file" "ERROR"
+    done
+    exit 1
+  fi
+}
+
+# Initialize the database using init.sh
+initialize_database() {
+  enable_pipefail
+  trap 'disable_pipefail' RETURN
+
+  # Declare the bootstrap environment file as a local variable
+  local BOOTSTRAP_ENV_FILE="bootstrap.env"
+
+  # Reconstruct manifest_tables
+  declare -A manifest_tables
+  eval "$MANIFEST_TABLES_SERIALIZED"
+
+  # Source the bootstrap.env file
+  source_bootstrap_env
 
   # Construct the URL for init.sh
   INIT_SH_URL="https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/refs/heads/main/hedera-mirror-importer/src/main/resources/db/scripts/init.sh"
@@ -186,7 +335,7 @@ initialize_database() {
   # Set up the schema in the database
   if [[ -f "$IMPORT_DIR/schema.sql" ]]; then
     log "Executing schema.sql from $IMPORT_DIR"
-    if psql -f "$IMPORT_DIR/schema.sql"; then
+    if psql -v ON_ERROR_STOP=1 -f "$IMPORT_DIR/schema.sql"; then
       log "schema.sql executed successfully"
     else
       log "Error: Failed to execute schema.sql" "ERROR"
@@ -196,18 +345,95 @@ initialize_database() {
     log "Error: schema.sql not found in $IMPORT_DIR" "ERROR"
     exit 1
   fi
+
+  # Check that each table exists in the database
+  # Test database connectivity
+  if ! psql -v ON_ERROR_STOP=1 -c '\q' >/dev/null 2>&1; then
+    log "Error: Unable to connect to the PostgreSQL database." "ERROR"
+    exit 1
+  fi
+  log "Successfully connected to the PostgreSQL database." "INFO"
+
+  missing_tables=()
+  declare -A checked_tables_map=()
+  log "Checking table existence in the database"
+
+  for table in "${!manifest_tables[@]}"; do
+    log "Verifying existence of table: $table" "INFO"
+
+    # Avoid duplicate checks
+    if [[ -n "${checked_tables_map["$table"]:-}" ]]; then
+      log "Table $table has already been checked. Skipping." "INFO"
+      continue
+    fi
+    checked_tables_map["$table"]=1
+
+    # Check if the table exists in the database, with a timeout
+    if ! timeout 10 psql -v ON_ERROR_STOP=1 -qt -c "SELECT 1 FROM pg_class WHERE relname = '$table' AND relnamespace = 'public'::regnamespace;" | grep -q 1; then
+      missing_tables+=("$table")
+      log "$table missing from database" "ERROR"
+    else
+      log "$table exists in the database" "INFO"
+    fi
+  done
+
+  # If any tables are missing, report and exit
+  if [[ ${#missing_tables[@]} -gt 0 ]]; then
+    log "====================================================" "ERROR"
+    log "The following tables are missing in the database:" "ERROR"
+    for table in "${missing_tables[@]}"; do
+      log "- $table" "ERROR"
+    done
+    log "====================================================" "ERROR"
+    exit 1
+  else
+    log "All tables exist in the database." "INFO"
+  fi
 }
 
 # Import a single file into the database
 import_file() {
+  enable_pipefail
+  trap 'disable_pipefail' RETURN
+
   local file="$1"
   local table
+  local filename
+  local expected_count
+  local actual_count
+
+  # Declare manifest_counts as an associative array, and reconstruct it in each background job from the serialized data
+  declare -A manifest_counts
+  eval "$MANIFEST_COUNTS_SERIALIZED"
 
   # Determine the table name
   if [[ "$(dirname "$file")" == "$IMPORT_DIR" ]]; then
-    table=$(basename "$file" .csv.gz)
+    # Small table
+    filename=$(basename "$file")
+
+    # Skip non-table files
+    if [[ "$filename" == "MIRRORNODE_VERSION" || "$filename" == "schema.sql" ]]; then
+      log "Skipping non-table file: $filename" "INFO"
+      return 0
+    fi
+
+    # Handle special case for topic_message_low_vol_topic_ids.csv.gz
+    if [[ "$filename" == "topic_message_low_vol_topic_ids.csv.gz" ]]; then
+      table="topic_message"
+      log "Mapped $filename to table $table" "INFO"
+    else
+      table=$(basename "$file" .csv.gz)
+    fi
+
+    # Assign expected_count from manifest_counts
+    expected_count="${manifest_counts["$filename"]}"
   else
+    # Large table part
+    filename="$(basename "$file")"
     table=$(basename "$(dirname "$file")")
+
+    # Assign expected_count from manifest_counts
+    expected_count="${manifest_counts["$filename"]}"
   fi
 
   # Update status to IN_PROGRESS
@@ -215,21 +441,98 @@ import_file() {
   log "Importing table $table from $file"
 
   # Execute the import within a transaction
-  if gunzip -c "$file" | psql -q -v ON_ERROR_STOP=1 --single-transaction -c "COPY $table FROM STDIN WITH CSV HEADER;"; then
-    log "Successfully imported $file into $table"
-    # Update the status to IMPORTED
-    write_tracking_file "$file" "IMPORTED"
-  else
-    log "Failed to import $file into $table" "ERROR"
-    # Update the status to FAILED_TO_IMPORT
-    write_tracking_file "$file" "FAILED_TO_IMPORT"
-    return 1
+  if gunzip -c "$file" | PGAPPNAME="$filename" psql -q -v ON_ERROR_STOP=1 --single-transaction -c "COPY $table FROM STDIN WITH CSV HEADER;"; then
+    # Verification
+    if [[ -z "$expected_count" || "$expected_count" == "N/A" ]]; then
+      log "No expected row count for $filename in manifest, skipping verification."
+      write_tracking_file "$file" "IMPORTED"
+    else
+      # Special case for 0.111.0 topic_message_low_vol_topic_ids
+      if [[ "$MIRRORNODE_VERSION" == "0.111.0" && "$table" == "topic_message" && "$filename" == "topic_message_low_vol_topic_ids.csv.gz" ]]; then
+        local atma_topic_id="1693742"
+        if ! actual_count=$(psql -qt -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) FROM \"$table\" WHERE topic_id != $atma_topic_id;" | xargs); then
+          log "Error executing count query for $file" "ERROR"
+          write_tracking_file "$file" "FAILED_TO_IMPORT"
+          return 1
+        fi
+      # Common handling for small tables (both versions)
+      elif [[ "$(dirname "$file")" == "$IMPORT_DIR" ]]; then
+        if ! actual_count=$(psql -qt -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) FROM \"$table\";" | xargs); then
+          log "Error executing count query for $file" "ERROR"
+          write_tracking_file "$file" "FAILED_TO_IMPORT"
+          return 1
+        fi
+      # Large table handling (version specific)
+      else
+        local basename
+        basename=$(basename "$file" .csv.gz)
+        if [[ "$MIRRORNODE_VERSION" == "0.111.0" ]]; then
+          if [[ "$basename" =~ ^${table}_part_[0-9]+_([0-9]+)_([0-9]+)$ ]]; then
+            local start_ts="${BASH_REMATCH[1]}"
+            local end_ts="${BASH_REMATCH[2]}"
+
+            if ! actual_count=$(psql -qt -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) FROM \"$table\" WHERE consensus_timestamp BETWEEN $start_ts AND $end_ts;" | xargs); then
+              log "Error executing count query for $file" "ERROR"
+              write_tracking_file "$file" "FAILED_TO_IMPORT"
+              return 1
+            fi
+            log "Counted rows for table $table within timestamp range $start_ts to $end_ts" "INFO"
+          else
+            log "Error parsing timestamps from filename $basename" "ERROR"
+            write_tracking_file "$file" "FAILED_TO_IMPORT"
+          fi
+        # Newer versions handling
+        else
+          if [[ "$basename" =~ ^${table}_part_[0-9]+_([0-9]+)_([0-9]+)(_([0-9]+))?$ ]]; then
+            local start_ts="${BASH_REMATCH[1]}"
+            local end_ts="${BASH_REMATCH[2]}"
+            local topic_id="${BASH_REMATCH[4]}"
+
+            if [[ "$table" == "topic_message" && -n "$topic_id" ]]; then
+              # Topic message with topic_id suffix
+              if ! actual_count=$(psql -qt -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) FROM \"$table\" WHERE topic_id = $topic_id AND consensus_timestamp BETWEEN $start_ts AND $end_ts;" | xargs); then
+                log "Error executing count query for $file" "ERROR"
+                write_tracking_file "$file" "FAILED_TO_IMPORT"
+                return 1
+              fi
+            else
+              # Other part files
+              if ! actual_count=$(psql -qt -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) FROM \"$table\" WHERE consensus_timestamp BETWEEN $start_ts AND $end_ts;" | xargs); then
+                log "Error executing count query for $file" "ERROR"
+                write_tracking_file "$file" "FAILED_TO_IMPORT"
+                return 1
+              fi
+            fi
+          else
+            log "Error parsing timestamps from filename $basename" "ERROR"
+            write_tracking_file "$file" "FAILED_TO_IMPORT"
+          fi
+        fi
+      fi
+    fi
+
+    # Verify the count matches expected
+    if [[ "$actual_count" != "$expected_count" ]]; then
+      log "Row count mismatch for $file. Expected: $expected_count, Actual: $actual_count" "ERROR"
+      write_tracking_file "$file" "FAILED_TO_IMPORT"
+      write_discrepancy "$file" "$expected_count" "$actual_count"
+      return 1
+    fi
   fi
+
+  write_tracking_file "$file" "IMPORTED"
+  log "Row count verified, successfully imported $file" "INFO"
 }
 
 ####################################
 # Execution
 ####################################
+
+# Trap SIGINT and SIGTERM to handle interruptions
+trap 'cleanup INT' SIGINT
+trap 'cleanup TERM' SIGTERM
+# Trap EXIT to perform normal cleanup without logging interruption
+trap 'cleanup EXIT' EXIT
 
 # Perform the Bash version check
 check_bash_version
@@ -243,13 +546,13 @@ fi
 # Parse options
 while [[ "$#" -gt 0 ]]; do
   case $1 in
-    -h|--help|-H)
-      show_help
-      exit 0
-      ;;
-    *)
-      break
-      ;;
+  -h | --help | -H)
+    show_help
+    exit 0
+    ;;
+  *)
+    break
+    ;;
   esac
 done
 
@@ -290,8 +593,29 @@ else
   max_jobs="$DB_AVAILABLE_CORES"
 fi
 
-# Trap signals for cleanup
-trap 'cleanup' SIGINT SIGTERM
+# Process the manifest and check for missing files
+process_manifest
+
+# Decompress schema.sql and MIRRORNODE_VERSION
+for file in "$IMPORT_DIR/schema.sql.gz" "$IMPORT_DIR/MIRRORNODE_VERSION.gz"; do
+  if ! gunzip -k -f "$file"; then
+    log "Error decompressing $file" "ERROR"
+    exit 1
+  fi
+done
+
+# Serialize manifest_counts & manifest_tables arrays for export into the subshells
+MANIFEST_COUNTS_SERIALIZED=$(declare -p manifest_counts)
+MANIFEST_TABLES_SERIALIZED=$(declare -p manifest_tables)
+
+# Grab the compatible mirrornode version
+if [[ -f "$MIRRORNODE_VERSION_FILE" ]]; then
+  MIRRORNODE_VERSION=$(tr -d '[:space:]' < "$MIRRORNODE_VERSION_FILE")
+  log "Compatible Mirrornode version: $MIRRORNODE_VERSION"
+else
+  echo "Error: MIRRORNODE_VERSION file not found in $IMPORT_DIR."
+  exit 1
+fi
 
 # Log the start of the import process
 log "Starting DB import."
@@ -302,16 +626,7 @@ if [[ ! -f "$FLAG_FILE" ]]; then
   touch "$FLAG_FILE" # Create a flag to skip subsequent runs from running db init after it succeeded once
 else
   # Source the bootstrap.env to set OWNER_PASSWORD
-  BOOTSTRAP_ENV_FILE="bootstrap.env"
-  if [[ -f "$BOOTSTRAP_ENV_FILE" ]]; then
-    log "Sourcing $BOOTSTRAP_ENV_FILE to set environment variables."
-    set -a
-    source "$BOOTSTRAP_ENV_FILE"
-    set +a
-  else
-    log "Error: $BOOTSTRAP_ENV_FILE file not found." "ERROR"
-    exit 1
-  fi
+  source_bootstrap_env
 
   # Set PostgreSQL environment variables
   export PGUSER="mirror_node"
@@ -345,11 +660,11 @@ mapfile -t files < <(collect_import_tasks)
 
 # Initialize variables for background processes
 pids=()
-overall_success=0
+overall_success=1
 
 # Export necessary functions and variables for subshells
-export -f import_file log kill_descendants write_tracking_file read_tracking_status
-export IMPORT_DIR LOG_FILE TRACKING_FILE LOCK_FILE
+export -f import_file log kill_descendants write_tracking_file read_tracking_status process_manifest source_bootstrap_env
+export IMPORT_DIR LOG_FILE TRACKING_FILE LOCK_FILE MANIFEST_COUNTS_SERIALIZED DISCREPANCY_FILE MIRRORNODE_VERSION
 
 # Loop through files and manage parallel execution
 for file in "${files[@]}"; do
@@ -364,7 +679,7 @@ for file in "${files[@]}"; do
   while [[ ${#pids[@]} -ge $max_jobs ]]; do
     # Wait for any job to finish
     if ! wait -n; then
-      overall_success=1
+      overall_success=0
     fi
 
     # Remove completed PIDs from the array
@@ -385,17 +700,41 @@ done
 # Wait for all remaining jobs to finish
 for pid in "${pids[@]}"; do
   if ! wait "$pid"; then
-    overall_success=1
+    overall_success=0
   fi
 done
 
-# Log the final status of the import process
-if [[ $overall_success -eq 0 ]]; then
-  log "DB import completed successfully."
+# Summarize discrepancies
+if [[ -s "$DISCREPANCY_FILE" ]]; then
+  overall_success=0
+  echo "===================================================="
+  echo "Discrepancies detected during import:"
+  echo "The following files failed the row count verification:"
+  echo
+  while read -r line; do
+    echo "- $line"
+  done < "$DISCREPANCY_FILE"
+  echo "===================================================="
 else
-  log "DB import completed with errors" "ERROR"
-  exit 1
+  log "No discrepancies detected during import."
+  echo "No discrepancies detected during import."
 fi
 
-# After successful completion of all import tasks
-rm -f bootstrap.pid
+# Log the final status of the import process
+if [[ $overall_success -eq 1 ]]; then
+  log "DB import completed successfully. The database is fully identical to the data files."
+  echo "===================================================="
+  echo "DB import completed successfully."
+  echo "The database is fully identical to the data files."
+  echo "===================================================="
+else
+  log "The database import process encountered errors and is incomplete. Mirrornode requires a fully synchronized database." "ERROR"
+  echo "===================================================="
+  echo "The database import process encountered errors and is incomplete."
+  echo "Mirrornode requires a fully synchronized database."
+  echo "Please review the discrepancies above."
+  echo "===================================================="
+fi
+
+# Cleanup pid file
+rm -f $PID_FILE $LOCK_FILE

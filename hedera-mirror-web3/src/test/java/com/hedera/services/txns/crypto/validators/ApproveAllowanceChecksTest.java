@@ -102,7 +102,6 @@ class ApproveAllowanceChecksTest {
     private final TokenID token1 = asToken("0.0.100");
     private final TokenID token2 = asToken("0.0.200");
     private final AccountID ownerId1 = asAccount("0.0.5000");
-    private final AccountID ownerId2 = asAccount("0.0.5001");
     private final AccountID payer = asAccount("0.0.3000");
     private final Id tokenId1 = Id.fromGrpcToken(token1);
     private final Id tokenId2 = Id.fromGrpcToken(token2);
@@ -128,13 +127,7 @@ class ApproveAllowanceChecksTest {
             .setApprovedForAll(BoolValue.of(false))
             .addAllSerialNumbers(List.of(1L, 10L))
             .build();
-    private final NftAllowance nftAllowance2 = NftAllowance.newBuilder()
-            .setSpender(spender1)
-            .setOwner(ownerId2)
-            .setTokenId(token2)
-            .setApprovedForAll(BoolValue.of(false))
-            .addAllSerialNumbers(List.of(1L, 10L))
-            .build();
+
     private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
     private List<TokenAllowance> tokenAllowances = new ArrayList<>();
     private List<NftAllowance> nftAllowances = new ArrayList<>();

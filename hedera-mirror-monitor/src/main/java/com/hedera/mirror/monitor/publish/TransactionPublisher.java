@@ -26,15 +26,18 @@ import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
+import com.hedera.hashgraph.sdk.proto.NodeAddressBook;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import jakarta.inject.Named;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -90,12 +93,12 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {
-        Transaction<?> transaction = request.getTransaction();
+        var transaction = request.getTransaction();
 
-        // set transaction node where applicable
-        if (transaction.getNodeAccountIds() == null) {
+        if (request.getNode() == null) {
             var node = nodeSupplier.get();
             transaction.setNodeAccountIds(node.getAccountIds());
+            request.setNode(node);
         }
 
         return execute(client, transaction);
@@ -141,23 +144,32 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     private Flux<Client> getClients() {
-        return nodeSupplier
-                .refresh()
-                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())))
-                .flatMapMany(nodeMap -> Flux.range(0, publishProperties.getClients())
-                        .flatMap(i -> Mono.defer(() -> Mono.just(toClient(nodeMap)))));
+        return nodeSupplier.refresh().collect(Collectors.toList()).flatMapMany(nodes -> Flux.range(
+                        0, publishProperties.getClients())
+                .flatMap(i -> Mono.defer(() -> Mono.just(toClient(nodes)))));
     }
 
-    private Client toClient(Map<String, AccountId> nodes) {
+    @SneakyThrows
+    private Client toClient(List<NodeProperties> nodes) {
         AccountId operatorId =
                 AccountId.fromString(monitorProperties.getOperator().getAccountId());
         PrivateKey operatorPrivateKey =
                 PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
 
-        Client client = Client.forNetwork(nodes);
+        // setNetworkFromAddressBook() doesn't support in-process URIs so we have to set network too
+        var network = nodes.stream()
+                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
+        var nodeAddresses = nodes.stream().map(NodeProperties::toNodeAddress).toList();
+        var nodeAddressBook = NodeAddressBook.newBuilder()
+                .addAllNodeAddress(nodeAddresses)
+                .build()
+                .toByteString();
+
+        var client = Client.forNetwork(Map.of());
+        client.setNetworkFromAddressBook(com.hedera.hashgraph.sdk.NodeAddressBook.fromBytes(nodeAddressBook));
+        client.setNetwork(network);
         client.setNodeMaxBackoff(publishProperties.getNodeMaxBackoff());
         client.setOperator(operatorId, operatorPrivateKey);
-        client.setVerifyCertificates(false); // SDK doesn't support setting a custom address book with cert hash
         return client;
     }
 }

@@ -61,7 +61,7 @@ public class HistoricalBalanceProperties {
     @DurationMin(seconds = 30)
     @DurationUnit(ChronoUnit.SECONDS)
     @NotNull
-    private Duration transactionTimeout = Duration.ofMinutes(5);
+    private Duration transactionTimeout = Duration.ofMinutes(10);
 
     @PostConstruct
     void init() {

@@ -25,22 +25,23 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.TransferTransaction;
+import com.hedera.hashgraph.sdk.proto.NodeAddressBook;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 import com.hedera.mirror.rest.model.NetworkNode;
-import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -55,9 +56,8 @@ public class NodeSupplier {
     private final MonitorProperties monitorProperties;
     private final RestApiClient restApiClient;
 
+    private final AtomicLong counter = new AtomicLong(0L);
     private final CopyOnWriteArrayList<NodeProperties> nodes = new CopyOnWriteArrayList<>();
-    private final Map<String, NodeProperties> nodeMap = new ConcurrentHashMap<>();
-    private final SecureRandom secureRandom = new SecureRandom();
 
     @PostConstruct
     public void init() {
@@ -91,12 +91,8 @@ public class NodeSupplier {
             throw new IllegalArgumentException("No valid nodes available");
         }
 
-        int nodeIndex = secureRandom.nextInt(nodes.size());
-        return nodes.get(nodeIndex);
-    }
-
-    public NodeProperties get(String accountId) {
-        return nodeMap.get(accountId);
+        long nodeIndex = counter.getAndIncrement() % nodes.size();
+        return nodes.get((int) nodeIndex);
     }
 
     public synchronized Flux<NodeProperties> refresh() {
@@ -120,7 +116,6 @@ public class NodeSupplier {
                 .doOnNext(n -> {
                     if (empty) {
                         nodes.addIfAbsent(n);
-                        nodeMap.put(n.getAccountId(), n);
                     }
                 }); // Populate on startup before validation
     }
@@ -146,6 +141,7 @@ public class NodeSupplier {
                     : serviceEndpoint.getIpAddressV4();
             var nodeProperties = new NodeProperties();
             nodeProperties.setAccountId(networkNode.getNodeAccountId());
+            nodeProperties.setCertHash(StringUtils.remove(networkNode.getNodeCertHash(), "0x"));
             nodeProperties.setHost(host);
             nodeProperties.setNodeId(networkNode.getNodeId());
             nodeProperties.setPort(serviceEndpoint.getPort());
@@ -153,20 +149,26 @@ public class NodeSupplier {
         }));
     }
 
-    private Client toClient(Map<String, AccountId> nodes) {
-        AccountId operatorId =
-                AccountId.fromString(monitorProperties.getOperator().getAccountId());
-        PrivateKey operatorPrivateKey =
+    @SneakyThrows
+    private Client toClient(NodeProperties node) {
+        var operatorId = AccountId.fromString(monitorProperties.getOperator().getAccountId());
+        var operatorPrivateKey =
                 PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
         var validationProperties = monitorProperties.getNodeValidation();
 
-        Client client = Client.forNetwork(nodes);
+        var network = Map.of(node.getEndpoint(), AccountId.fromString(node.getAccountId()));
+        var nodeAddress = node.toNodeAddress();
+        var nodeAddressBook =
+                NodeAddressBook.newBuilder().addNodeAddress(nodeAddress).build().toByteString();
+
+        var client = Client.forNetwork(Map.of());
+        client.setNetworkFromAddressBook(com.hedera.hashgraph.sdk.NodeAddressBook.fromBytes(nodeAddressBook));
+        client.setNetwork(network);
         client.setMaxAttempts(validationProperties.getMaxAttempts());
         client.setMaxBackoff(validationProperties.getMaxBackoff());
         client.setMinBackoff(validationProperties.getMinBackoff());
         client.setOperator(operatorId, operatorPrivateKey);
         client.setRequestTimeout(validationProperties.getRequestTimeout());
-        client.setVerifyCertificates(false);
         return client;
     }
 
@@ -174,7 +176,6 @@ public class NodeSupplier {
     boolean validateNode(NodeProperties node) {
         if (!monitorProperties.getNodeValidation().isEnabled()) {
             nodes.addIfAbsent(node);
-            nodeMap.put(node.getAccountId(), node);
             log.info("Adding node {} without validation", node.getAccountId());
             return true;
         }
@@ -183,7 +184,7 @@ public class NodeSupplier {
         Hbar hbar = Hbar.fromTinybars(1L);
         AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
 
-        try (Client client = toClient(Map.of(node.getEndpoint(), nodeAccountId))) {
+        try (Client client = toClient(node)) {
             Status receiptStatus = new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
@@ -195,7 +196,6 @@ public class NodeSupplier {
             if (receiptStatus == SUCCESS) {
                 log.info("Validated node {} successfully", nodeAccountId);
                 nodes.addIfAbsent(node);
-                nodeMap.put(node.getAccountId(), node);
                 return true;
             }
 
@@ -206,7 +206,6 @@ public class NodeSupplier {
             log.warn("Unable to validate node {}: ", node, e);
         }
 
-        nodeMap.remove(node.getAccountId());
         nodes.remove(node);
         return false;
     }

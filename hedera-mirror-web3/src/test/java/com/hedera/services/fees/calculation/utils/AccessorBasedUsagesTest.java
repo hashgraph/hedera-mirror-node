@@ -60,7 +60,6 @@ import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.hapi.fees.usage.crypto.ExtantCryptoContext;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -79,7 +78,6 @@ class AccessorBasedUsagesTest {
     private final String memo = "Even the most cursory inspection would yield that...";
     private final long now = 1_234_567L;
     private final SigUsage sigUsage = new SigUsage(1, 2, 3);
-    private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private SignedTxnAccessor txnAccessor;
