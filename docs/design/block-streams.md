@@ -69,7 +69,9 @@ package com.hedera.mirror.importer.reader.block;
 
 public class ProtoBlockFileReader implements BlockFileReader {
     // Generates a BlockFile from a StreamFileData.
-    // Converts the protobuf BlockItems into mirror node BlockItems. Note that a protobuf BlockFile with no transactions will still produce a mirror node BlockFile and persist that block to the database.
+    // Converts the protobuf BlockItems into mirror node BlockItems.
+    // Protobuf BlockItems that do not represent a transaction will be filtered out here.
+    // Note that a protobuf BlockFile with no transactions will still produce a mirror node BlockFile and persist that block to the database.
     public BlockFile read(StreamFileData streamFileData);
 }
 ```
