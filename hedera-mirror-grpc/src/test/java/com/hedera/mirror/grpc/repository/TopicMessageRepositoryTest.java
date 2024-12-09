@@ -48,8 +48,6 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
     @Test
     void findByFilterNoMatch() {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(DomainUtils.convertToNanosMax(Instant.now().plusSeconds(10)))
@@ -65,8 +63,6 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
                 domainBuilder.topicMessage(t -> t.topicId(EntityId.of(1))).block();
         TopicMessage topicMessage2 =
                 domainBuilder.topicMessage(t -> t.topicId(EntityId.of(2))).block();
-        TopicMessage topicMessage3 =
-                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(3))).block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .topicId(EntityId.of(2L))
@@ -108,8 +104,6 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
     @Test
     void findByFilterWithLimit() {
         TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(1)

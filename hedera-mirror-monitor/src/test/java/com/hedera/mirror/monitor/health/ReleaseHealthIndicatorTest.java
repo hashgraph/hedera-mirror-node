@@ -32,7 +32,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -265,7 +264,7 @@ class ReleaseHealthIndicatorTest {
     }
 
     private GenericKubernetesResource helmRelease(List<ConditionBuilder> conditions) {
-        var builtConditions = conditions.stream().map(ConditionBuilder::build).collect(Collectors.toList());
+        var builtConditions = conditions.stream().map(ConditionBuilder::build).toList();
         Map<String, Object> properties = Map.of("status", Map.of("conditions", builtConditions));
         return new GenericKubernetesResourceBuilder()
                 .withKind("HelmRelease")

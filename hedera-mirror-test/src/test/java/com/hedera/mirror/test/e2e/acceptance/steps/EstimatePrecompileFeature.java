@@ -110,7 +110,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     }
 
     @Given("I create erc test contract with 0 balance")
-    public void createNewERCContract() throws IOException {
+    public void createNewERCContract() {
         deployedErcTestContract = getContract(ERC);
         ercTestContractSolidityAddress = deployedErcTestContract.contractId().toSolidityAddress();
     }
@@ -121,7 +121,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     }
 
     @Given("I successfully create Precompile contract with 0 balance")
-    public void createNewPrecompileTestContract() throws IOException {
+    public void createNewPrecompileTestContract() {
         deployedPrecompileContract = getContract(PRECOMPILE);
         precompileTestContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();

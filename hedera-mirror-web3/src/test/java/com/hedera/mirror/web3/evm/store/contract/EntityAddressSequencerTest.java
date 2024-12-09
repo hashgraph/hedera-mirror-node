@@ -29,8 +29,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class EntityAddressSequencerTest {
-    private static final long contractNum = 1_000_000_000L;
-    private static final Address sponsor = new Id(0, 0, contractNum).asEvmAddress();
+    private static final long CONTRACT_NUM = 1_000_000_000L;
+    private static final Address sponsor = new Id(0, 0, CONTRACT_NUM).asEvmAddress();
 
     @InjectMocks
     private EntityAddressSequencer entityAddressSequencer;
@@ -40,7 +40,7 @@ class EntityAddressSequencerTest {
         assertThat(entityAddressSequencer.getNewContractId(sponsor))
                 .returns(0L, ContractID::getShardNum)
                 .returns(0L, ContractID::getRealmNum)
-                .returns(contractNum, ContractID::getContractNum);
+                .returns(CONTRACT_NUM, ContractID::getContractNum);
     }
 
     @Test
@@ -58,7 +58,7 @@ class EntityAddressSequencerTest {
     @Test
     void getNextEntityIdReturnsNextId() {
         final var actualAddress = entityAddressSequencer.getNewContractId(sponsor);
-        assertThat(actualAddress.getContractNum()).isEqualTo(contractNum);
+        assertThat(actualAddress.getContractNum()).isEqualTo(CONTRACT_NUM);
     }
 
     @Test
@@ -67,6 +67,6 @@ class EntityAddressSequencerTest {
         entityAddressSequencer.getNewContractId(sponsor);
         final var actual = entityAddressSequencer.getNewContractId(sponsor);
 
-        assertThat(actual.getContractNum()).isEqualTo(contractNum + 2);
+        assertThat(actual.getContractNum()).isEqualTo(CONTRACT_NUM + 2);
     }
 }

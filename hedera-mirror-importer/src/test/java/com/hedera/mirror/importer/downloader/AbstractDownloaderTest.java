@@ -520,7 +520,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         List<String> expectedFiles = instantFilenamePairs.stream()
                 .filter(pair -> pair.getLeft().isAfter(startDate))
                 .map(Pair::getRight)
-                .collect(Collectors.toList());
+                .toList();
 
         fileCopier.copy();
         downloader.download();
@@ -542,7 +542,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         List<String> expectedFiles = instantFilenamePairs.stream()
                 .filter(pair -> !pair.getLeft().isAfter(importerProperties.getEndDate()))
                 .map(Pair::getRight)
-                .collect(Collectors.toList());
+                .toList();
         expectLastStreamFile(Instant.EPOCH);
 
         fileCopier.copy();

@@ -1399,7 +1399,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionBody transactionBody = getTransactionBody(transaction);
         var recordCryptoTransfers = cryptoTransfers.stream()
                 .map(transfer -> transfer.toBuilder().setIsApproval(false).build())
-                .collect(Collectors.toList());
+                .toList();
         TransactionRecord record = buildTransactionRecordWithNoTransactions(
                 builder -> builder.getTransferListBuilder().addAllAccountAmounts(recordCryptoTransfers),
                 transactionBody,

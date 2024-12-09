@@ -26,7 +26,6 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -113,7 +112,7 @@ class StreamFilenameTest {
         Set<StreamType.Extension> extensions =
                 fileType == DATA ? streamType.getDataExtensions() : streamType.getSignatureExtensions();
         List<String> names =
-                extensions.stream().map(StreamType.Extension::getName).collect(Collectors.toList());
+                extensions.stream().map(StreamType.Extension::getName).toList();
         assertThat(filename).startsWith(expectedPrefix);
         assertThat(extension).isIn(names);
     }

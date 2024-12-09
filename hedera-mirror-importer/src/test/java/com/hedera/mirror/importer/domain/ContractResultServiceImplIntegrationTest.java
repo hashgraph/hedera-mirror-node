@@ -738,7 +738,7 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         var functionResult = getFunctionResult(recordItem);
         var createdIds = functionResult.getCreatedContractIDsList().stream()
                 .map(x -> EntityId.of(x).getId())
-                .collect(Collectors.toList());
+                .toList();
         var failedInitcode = getFailedInitcode(recordItem);
         var hash = getTransactionHash(recordItem);
 

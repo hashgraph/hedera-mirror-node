@@ -47,7 +47,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
@@ -273,13 +272,13 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 .containsExactlyInAnyOrderElementsOf(
                         Stream.of(cryptoTransfersPair.getLeft(), cryptoTransfersPair.getRight())
                                 .flatMap(Collection::stream)
-                                .collect(Collectors.toList()));
+                                .toList());
 
         assertThat(tokenTransferRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(
                         Stream.of(tokenTransfersPair.getLeft(), tokenTransfersPair.getRight())
                                 .flatMap(Collection::stream)
-                                .collect(Collectors.toList()));
+                                .toList());
 
         var repositoryNftTransfers = new ArrayList<NftTransfer>();
         transactionRepository.findAll().forEach(t -> repositoryNftTransfers.addAll(t.getNftTransfer()));
@@ -287,7 +286,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 .containsExactlyInAnyOrderElementsOf(
                         Stream.of(nftTransfersTransactionPair.getLeft(), nftTransfersTransactionPair.getRight())
                                 .flatMap(Collection::stream)
-                                .collect(Collectors.toList()));
+                                .toList());
     }
 
     private void assertTransfers(
