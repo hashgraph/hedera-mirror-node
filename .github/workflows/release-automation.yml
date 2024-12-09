@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 
@@ -105,7 +105,7 @@ jobs:
       - name: Close the Milestone
         if: ${{ steps.version_parser.outputs.prerelease == '' }}
         id: milestone
-        uses: Akkjon/close-milestone@88d3cb00ca452cb8d33f18fc0a1e22a730306b61 # v2.1.0
+        uses: step-security/close-milestone@2ec61fc36f20d36256b3652d302aa89fd4ca2abf # v2.1.0
         with:
           milestone_name: ${{ steps.version_parser.outputs.release }}
         env:
@@ -152,7 +152,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
         with:
           egress-policy: audit
 

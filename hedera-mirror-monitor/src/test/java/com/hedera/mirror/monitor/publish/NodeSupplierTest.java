@@ -87,6 +87,7 @@ class NodeSupplierTest {
     @BeforeEach
     void setup() throws IOException {
         node = new NodeProperties("0.0.3", "in-process:" + SERVER);
+        node.setNodeId(0L);
         networkNode = new NetworkNode();
         networkNode.setNodeAccountId(node.getAccountId());
         networkNode.addServiceEndpointsItem(
@@ -133,18 +134,6 @@ class NodeSupplierTest {
         assertThatThrownBy(() -> nodeSupplier.get())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No valid nodes available");
-    }
-
-    @Test
-    void getByAccountId() {
-        monitorProperties.getNodeValidation().setEnabled(false);
-        nodeSupplier.validateNode(node);
-        assertThat(nodeSupplier.get(node.getAccountId())).isEqualTo(node);
-    }
-
-    @Test
-    void getByAccountIdMissing() {
-        assertThat(nodeSupplier.get("0.0.100000")).isNull();
     }
 
     @Test
@@ -224,6 +213,7 @@ class NodeSupplierTest {
     @Test
     void refreshAddressBookRetryError() {
         monitorProperties.setNodes(Set.of());
+        monitorProperties.getNodeValidation().setTls(TlsMode.PLAINTEXT);
         when(restApiClient.getNodes())
                 .thenReturn(Flux.error(new ConnectException("connection refused")))
                 .thenReturn(Flux.just(networkNode));
@@ -278,7 +268,6 @@ class NodeSupplierTest {
         assertThatThrownBy(() -> nodeSupplier.get())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No valid nodes available");
-        assertThat(nodeSupplier.get(node.getAccountId())).isNull();
 
         // When it recovers
         cryptoServiceStub.addQuery(Mono.just(receipt(SUCCESS)));
@@ -287,7 +276,6 @@ class NodeSupplierTest {
 
         // Then it is marked as healthy
         assertThat(nodeSupplier.get()).isEqualTo(node);
-        assertThat(nodeSupplier.get(node.getAccountId())).isEqualTo(node);
     }
 
     @Test
@@ -303,6 +291,7 @@ class NodeSupplierTest {
 
         try {
             var node2 = new NodeProperties("0.0.4", "in-process:" + server3);
+            node2.setNodeId(1L);
             monitorProperties.setNodes(Set.of(node, node2));
 
             // Validate good node

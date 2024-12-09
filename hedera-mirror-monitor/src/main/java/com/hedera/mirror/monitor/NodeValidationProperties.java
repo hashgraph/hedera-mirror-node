@@ -67,7 +67,7 @@ public class NodeValidationProperties {
 
     private boolean retrieveAddressBook = true;
 
-    private TlsMode tls = TlsMode.PLAINTEXT;
+    private TlsMode tls = TlsMode.BOTH;
 
     @Getter
     @RequiredArgsConstructor

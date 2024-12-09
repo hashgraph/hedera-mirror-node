@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
 import static com.hedera.mirror.web3.state.Utils.parseKey;
 import static com.hedera.services.utils.EntityIdUtils.toAccountId;
@@ -92,6 +93,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         final var timestamp = ContractCallContext.getTimestamp();
         return commonEntityAccessor
                 .get(key, timestamp)
+                .filter(entity -> entity.getType() != TOKEN)
                 .map(entity -> accountFromEntity(entity, timestamp))
                 .orElse(null);
     }
@@ -116,7 +118,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         }
 
         return Account.newBuilder()
-                .accountId(EntityIdUtils.toAccountId(entity))
+                .accountId(EntityIdUtils.toAccountId(entity.toEntityId()))
                 .alias(Bytes.wrap(alias))
                 .approveForAllNftAllowances(getApproveForAllNfts(entity.getId(), timestamp))
                 .autoRenewAccountId(toAccountId(entity.getAutoRenewAccountId()))

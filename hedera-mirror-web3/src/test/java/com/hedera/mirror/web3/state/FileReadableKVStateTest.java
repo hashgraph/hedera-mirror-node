@@ -54,8 +54,8 @@ class FileReadableKVStateTest {
     private static final long REALM = 1L;
     private static final long FILE_NUM = 123L;
     private static final FileID FILE_ID = toFileId(SHARD, REALM, FILE_NUM);
-    private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final long FILE_ID_LONG = toEntityId(FILE_ID).getId();
+    private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final Optional<Long> TIMESTAMP = Optional.of(1234L);
     private static MockedStatic<ContractCallContext> contextMockedStatic;
     private FileData fileData;
@@ -155,7 +155,7 @@ class FileReadableKVStateTest {
     @Test
     void readFromDataSourceWithoutTimestamp() {
         when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
-        when(fileDataRepository.findById(FILE_ID_LONG)).thenReturn(Optional.of(fileData));
+        when(fileDataRepository.getFileAtTimestamp(anyLong(), anyLong())).thenReturn(Optional.of(fileData));
         when(entityRepository.findByIdAndDeletedIsFalse(toEntityId(FILE_ID).getId()))
                 .thenReturn(Optional.of(entity));
 

@@ -92,7 +92,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Deque;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -152,9 +152,6 @@ class TokenCreatePrecompileTest {
     private static final long TEST_SERVICE_FEE = 100L;
     private static final long TEST_NODE_FEE = 100_000L;
     private static final long TEST_NETWORK_FEE = 100L;
-    private static final long EXPECTED_TINYBARS_REQUIREMENT = (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
-            + (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / 5;
-    private static final long SENDER_INITIAL_BALANCE = 1_000_000L;
 
     @Mock
     private AssetsLoader assetLoader;
@@ -239,7 +236,8 @@ class TokenCreatePrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices =
+                new EnumMap<>(HederaFunctionality.class);
         canonicalPrices.put(TokenCreate, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
 

@@ -43,7 +43,9 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
                                          stake_rewarded,
                                          staking_period
                                   from node_stake
-                                  where consensus_timestamp = (select max(consensus_timestamp) from node_stake))
+                                  where consensus_timestamp = (select max(consensus_timestamp) from node_stake)),
+                           n as (select admin_key, node_id
+                                 from node)
                       select abe.description,
                              abe.memo,
                              abe.node_id,
@@ -53,6 +55,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
                              adb.file_id,
                              adb.start_consensus_timestamp,
                              adb.end_consensus_timestamp,
+                             n.admin_key,
                              ns.max_stake,
                              ns.min_stake,
                              ns.reward_rate,
@@ -73,6 +76,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
                       from address_book_entry abe
                                join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
                                left join ns on abe.node_id = ns.node_id
+                               left join n on abe.node_id = n.node_id
                       order by abe.node_id asc
                       limit $2`;
     assertSqlQueryEqual(query, expected);
@@ -95,7 +99,9 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
                                          stake_rewarded,
                                          staking_period
                                   from node_stake
-                                  where consensus_timestamp = (select max(consensus_timestamp) from node_stake))
+                                  where consensus_timestamp = (select max(consensus_timestamp) from node_stake)),
+                           n as (select admin_key, node_id
+                                 from node)
                       select abe.description,
                              abe.memo,
                              abe.node_id,
@@ -105,6 +111,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
                              adb.file_id,
                              adb.start_consensus_timestamp,
                              adb.end_consensus_timestamp,
+                             n.admin_key,
                              ns.max_stake,
                              ns.min_stake,
                              ns.reward_rate,
@@ -125,6 +132,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
                       from address_book_entry abe
                                join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
                                left join ns on abe.node_id = ns.node_id
+                               left join n on abe.node_id = n.node_id
                       where abe.node_id = $2
                       order by abe.node_id asc
                       limit $3`;

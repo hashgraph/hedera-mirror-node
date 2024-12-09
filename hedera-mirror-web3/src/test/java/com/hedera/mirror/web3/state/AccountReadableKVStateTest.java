@@ -50,6 +50,7 @@ import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.utils.EntityIdUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,8 +73,11 @@ class AccountReadableKVStateTest {
     private static final long SHARD = 0L;
     private static final long REALM = 1L;
     private static final long NUM = 1252L;
+    private static final long TOKEN_NUM = 1253L;
     private static final AccountID ACCOUNT_ID =
             new AccountID(SHARD, REALM, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, NUM));
+    private static final AccountID ACCOUNT_ID_TOKEN =
+            new AccountID(SHARD, REALM, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, TOKEN_NUM));
     private static final EntityId AUTO_RENEW_ACCOUNT_ID = EntityId.of(SHARD, REALM, NUM + 1);
     private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final long BALANCE = 3L;
@@ -108,6 +112,7 @@ class AccountReadableKVStateTest {
             });
     private static MockedStatic<ContractCallContext> contextMockedStatic;
     private Entity entity;
+    private Entity token;
 
     @InjectMocks
     private AccountReadableKVState accountReadableKVState;
@@ -149,7 +154,7 @@ class AccountReadableKVStateTest {
     @BeforeEach
     void setup() {
         entity = new Entity();
-        entity.setId(NUM);
+        entity.setId(EntityIdUtils.toAccountId(SHARD, REALM, NUM).accountNum());
         entity.setCreatedTimestamp(timestamp.get());
         entity.setShard(SHARD);
         entity.setRealm(REALM);
@@ -162,6 +167,14 @@ class AccountReadableKVStateTest {
         entity.setAutoRenewAccountId(AUTO_RENEW_ACCOUNT_ID.getId());
         entity.setMaxAutomaticTokenAssociations(MAX_AUTOMATIC_TOKEN_ASSOCIATIONS);
         entity.setType(EntityType.ACCOUNT);
+
+        token = new Entity();
+        token.setId(EntityIdUtils.toAccountId(SHARD, REALM, TOKEN_NUM).accountNum());
+        token.setCreatedTimestamp(timestamp.get());
+        token.setShard(SHARD);
+        token.setRealm(REALM);
+        token.setNum(TOKEN_NUM);
+        token.setType(EntityType.TOKEN);
 
         contextMockedStatic.when(ContractCallContext::get).thenReturn(contractCallContext);
     }
@@ -186,6 +199,13 @@ class AccountReadableKVStateTest {
     }
 
     @Test
+    void accountIsNullWhenTheAccountIdIsToken() {
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(commonEntityAccessor.get(ACCOUNT_ID_TOKEN, Optional.empty())).thenReturn(Optional.ofNullable(token));
+        assertThat(accountReadableKVState.get(ACCOUNT_ID_TOKEN)).isNull();
+    }
+
+    @Test
     void accountFieldsWithEvmAddressAliasMatchEntityFields() {
         final var evmAddress = "0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb";
         when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
@@ -196,7 +216,7 @@ class AccountReadableKVStateTest {
                         new AccountID(
                                 entity.getShard(),
                                 entity.getRealm(),
-                                new OneOf<>(AccountOneOfType.ALIAS, Bytes.wrap(evmAddress))),
+                                new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getNum())),
                         com.hedera.hapi.node.state.token.Account::accountId)
                 .returns(
                         TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
@@ -218,7 +238,7 @@ class AccountReadableKVStateTest {
                         new AccountID(
                                 entity.getShard(),
                                 entity.getRealm(),
-                                new OneOf<>(AccountOneOfType.ALIAS, Bytes.wrap(ecdsaPublicKey))),
+                                new OneOf<>(AccountOneOfType.ACCOUNT_NUM, entity.getNum())),
                         com.hedera.hapi.node.state.token.Account::accountId)
                 .returns(
                         TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),

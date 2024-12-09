@@ -44,7 +44,49 @@ envFrom: []
 
 fullnameOverride: ""
 
+gateway:
+  gcp:
+    backendPolicy:
+      connectionDraining:
+        drainingTimeoutSec: 10
+      logging:
+        enabled: false
+      maxRatePerEndpoint: 250  # Requires a change to HPA to take effect
+      sessionAffinity:
+        type: CLIENT_IP
+      timeoutSec: 20
+    enabled: true
+    healthCheckPolicy:
+      config:
+        httpHealthCheck:
+          port: 5700
+          requestPath: "{{ .Values.readinessProbe.httpGet.path }}"
+        type: HTTP
+      healthyThreshold: 1
+  rules:
+    - backendRefs:
+        - group: "{{ .Values.gateway.target.group }}"
+          kind: "{{ .Values.gateway.target.kind }}"
+          name: "{{ include \"hedera-mirror-rosetta.fullname\" $ }}"
+          port: 80
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              replacePrefixMatch: "/"
+              type: ReplacePrefixMatch
+      matches:
+        - path:
+            type: PathPrefix
+            value: /rosetta
+  target:
+    group: ""
+    kind: Service
+
 global:
+  gateway:
+    enabled: false
+    hostnames: []
   image: {}
   middleware: false
   namespaceOverride: ""

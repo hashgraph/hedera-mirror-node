@@ -17,19 +17,12 @@
 package com.hedera.mirror.importer.migration;
 
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.api.MigrationVersion;
-import org.flywaydb.core.api.configuration.Configuration;
 
-abstract class RepeatableMigration extends AbstractJavaMigration {
-
-    private static final MigrationProperties DEFAULT_MIGRATION_PROPERTIES = new MigrationProperties();
-
-    protected final MigrationProperties migrationProperties;
+abstract class RepeatableMigration extends ConfigurableJavaMigration {
 
     protected RepeatableMigration(Map<String, MigrationProperties> migrationPropertiesMap) {
-        String propertiesKey = StringUtils.uncapitalize(getClass().getSimpleName());
-        migrationProperties = migrationPropertiesMap.getOrDefault(propertiesKey, DEFAULT_MIGRATION_PROPERTIES);
+        super(migrationPropertiesMap);
     }
 
     @Override
@@ -40,15 +33,5 @@ abstract class RepeatableMigration extends AbstractJavaMigration {
     @Override
     public final MigrationVersion getVersion() {
         return null; // Repeatable migration
-    }
-
-    @Override
-    protected boolean skipMigration(Configuration configuration) {
-        if (!migrationProperties.isEnabled()) {
-            log.info("Skip migration since it's disabled");
-            return true;
-        }
-
-        return super.skipMigration(configuration);
     }
 }

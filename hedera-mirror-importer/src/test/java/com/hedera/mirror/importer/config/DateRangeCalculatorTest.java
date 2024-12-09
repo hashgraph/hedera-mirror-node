@@ -40,7 +40,7 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,7 +56,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DateRangeCalculatorTest {
 
-    private final Map<StreamType, StreamFileRepository<?, ?>> streamFileRepositories = new HashMap<>();
+    private final Map<StreamType, StreamFileRepository<?, ?>> streamFileRepositories = new EnumMap<>(StreamType.class);
 
     @Mock
     private AccountBalanceFileRepository accountBalanceFileRepository;

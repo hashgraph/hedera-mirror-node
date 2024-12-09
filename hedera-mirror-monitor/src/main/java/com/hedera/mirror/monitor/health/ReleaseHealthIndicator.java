@@ -50,7 +50,7 @@ public class ReleaseHealthIndicator implements ReactiveHealthIndicator {
             .withKind("HelmRelease")
             .withNamespaced(true)
             .withPlural("helmreleases")
-            .withVersion("v2beta1")
+            .withVersion("v2")
             .build();
     private final KubernetesClient client;
     private final ReleaseHealthProperties properties;
