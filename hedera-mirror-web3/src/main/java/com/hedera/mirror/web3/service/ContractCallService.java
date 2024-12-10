@@ -198,7 +198,10 @@ public abstract class ContractCallService {
                 result.gasUsed(),
                 0L,
                 0L,
-                Optional.of(Bytes.wrap(status.protoName().getBytes())),
+                result.errorMessage().startsWith("0x")
+                        ? Optional.of(Bytes.fromHexString(result.errorMessage()))
+                        : Optional.of(Bytes.wrap(result.errorMessage().getBytes())),
+                //                Optional.of(Bytes.wrap(status.protoName().getBytes())),
                 Optional.empty());
     }
 
