@@ -76,76 +76,18 @@
             "amount": 3
           }
         ]
-      },
-      {
-        "charged_tx_fee": 7,
-        "payerAccountId": "0.0.10",
-        "nodeAccountId": "0.0.4",
-        "consensus_timestamp": "1234567890000000055",
-        "valid_start_timestamp": "1234567890000000001",
-        "name": "CRYPTOTRANSFER",
-        "nonce": 1000,
-        "scheduled": false,
-        "type": 14,
-        "transfers": [
-          {
-            "account": "0.0.9",
-            "amount": 100
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          }
-        ]
-      },
-      {
-        "charged_tx_fee": 7,
-        "payerAccountId": "0.0.10",
-        "nodeAccountId": "0.0.4",
-        "consensus_timestamp": "1234567890000000060",
-        "valid_start_timestamp": "1234567890000000001",
-        "name": "CRYPTOTRANSFER",
-        "nonce": 0,
-        "scheduled": false,
-        "type": 14,
-        "transfers": [
-          {
-            "account": "0.0.9",
-            "amount": 100
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          }
-        ]
-      },
-      {
-        "charged_tx_fee": 7,
-        "payerAccountId": "0.0.10",
-        "nodeAccountId": "0.0.4",
-        "consensus_timestamp": "1234567890000000065",
-        "valid_start_timestamp": "1234567890000000001",
-        "name": "CRYPTOTRANSFER",
-        "nonce": 1000,
-        "scheduled": true,
-        "type": 14,
-        "transfers": [
-          {
-            "account": "0.0.9",
-            "amount": 100
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          }
-        ]
       }
     ]
   },
   "urls": [
     "/api/v1/transactions/0.0.10-1234567890-000000001?nonce=3",
     "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=false&nonce=3",
-    "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=true&nonce=3"
+    "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=true&nonce=3",
+    "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=true&nonce=0",
+    "/api/v1/transactions/0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f30?nonce=3",
+    "/api/v1/transactions/0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f30?scheduled=false&nonce=3",
+    "/api/v1/transactions/0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f30?scheduled=true&nonce=3",
+    "/api/v1/transactions/0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f30?scheduled=true&nonce=0"
   ],
   "responseStatus": 404,
   "responseJson": {
