@@ -30,7 +30,9 @@ import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Collections;
@@ -53,6 +55,12 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
         super("FILES");
         this.fileDataRepository = fileDataRepository;
         this.entityRepository = entityRepository;
+    }
+
+    @Nullable
+    @Override
+    public File get(@NonNull FileID key) {
+        return readFromDataSource(key);
     }
 
     @Override

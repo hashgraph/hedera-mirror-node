@@ -24,7 +24,9 @@ import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.TokenAirdropRepository;
 import com.swirlds.state.spi.ReadableKVStateBase;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
@@ -37,6 +39,12 @@ public class AirdropsReadableKVState extends ReadableKVStateBase<PendingAirdropI
     protected AirdropsReadableKVState(final TokenAirdropRepository tokenAirdropRepository) {
         super("PENDING_AIRDROPS");
         this.tokenAirdropRepository = tokenAirdropRepository;
+    }
+
+    @Nullable
+    @Override
+    public AccountPendingAirdrop get(@NonNull PendingAirdropId key) {
+        return readFromDataSource(key);
     }
 
     @Override

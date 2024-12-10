@@ -40,6 +40,7 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -48,7 +49,6 @@ import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.standalone.TransactionExecutors;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.State;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
@@ -74,7 +74,7 @@ public abstract class ContractCallService {
     private final ThrottleProperties throttleProperties;
     private final Bucket gasLimitBucket;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
-    private final State mirrorNodeState;
+    private final MirrorNodeState mirrorNodeState;
 
     private static final Configuration DEFAULT_CONFIG = new ConfigProviderImpl().getConfiguration();
     private static final AccountID TREASURY_ACCOUNT_ID =
@@ -90,7 +90,7 @@ public abstract class ContractCallService {
             RecordFileService recordFileService,
             Store store,
             MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            State mirrorNodeState) {
+            MirrorNodeState mirrorNodeState) {
         this.gasLimitCounter = Counter.builder(GAS_LIMIT_METRIC)
                 .description("The amount of gas limit sent in the request")
                 .withRegistry(meterRegistry);
@@ -213,6 +213,7 @@ public abstract class ContractCallService {
                         .transactionValidStart(TRANSACTION_START)
                         .accountID(TREASURY_ACCOUNT_ID)
                         .build())
+                .nodeAccountID(TREASURY_ACCOUNT_ID)
                 .transactionValidDuration(TRANSACTION_DURATION)
                 .build();
     }
