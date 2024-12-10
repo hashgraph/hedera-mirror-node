@@ -252,7 +252,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
                 .build());
 
         assertAll(
-                () -> assertRowCountOnTwoFileTransactions(),
+                this::assertRowCountOnTwoFileTransactions,
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileEntityAndData(transactionBody.getFileUpdate(), record.getConsensusTimestamp()));
     }
@@ -329,7 +329,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
                 () -> assertArrayEquals(addressBook, newAddressBook.getFileData()));
 
         assertAll(
-                () -> assertRowCountOnAddressBookTransactions(),
+                this::assertRowCountOnAddressBookTransactions,
                 () -> assertTransactionAndRecord(transactionBodyUpdate, recordUpdate),
                 () -> assertTransactionAndRecord(transactionBodyAppend, recordAppend),
                 () -> assertFileData(fileAppendTransactionBody.getContents(), recordAppend.getConsensusTimestamp()),
@@ -446,7 +446,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
-                () -> assertRowCountOnTwoFileTransactions(),
+                this::assertRowCountOnTwoFileTransactions,
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileData(transactionBody.getFileUpdate().getContents(), record.getConsensusTimestamp()),
                 // Additional entity checks
@@ -507,7 +507,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 // TODO: Review row count of fileDataRepository with issue #294, probably should be 1
-                () -> assertRowCountOnTwoFileTransactions(),
+                this::assertRowCountOnTwoFileTransactions,
                 () -> assertTransactionAndRecord(transactionBody, record),
                 // Additional entity checks
                 () -> assertFalse(actualFile.getDeleted()),
@@ -575,7 +575,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 // TODO: Review row count of fileDataRepository with issue #294, probably should be 1
-                () -> assertRowCountOnTwoFileTransactions(),
+                this::assertRowCountOnTwoFileTransactions,
                 () -> assertTransactionAndRecord(transactionBody, record),
                 // Additional entity checks
                 () -> assertFalse(dbFileEntity.getDeleted()),

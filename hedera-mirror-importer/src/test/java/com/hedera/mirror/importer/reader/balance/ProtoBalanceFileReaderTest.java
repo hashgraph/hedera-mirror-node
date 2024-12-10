@@ -35,7 +35,6 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -152,11 +151,11 @@ class ProtoBalanceFileReaderTest {
                                         tokenBalance + i * 5L + j,
                                         new TokenBalance.Id(consensusTimestamp, accountId, tokenId));
                             })
-                            .collect(Collectors.toList());
+                            .toList();
                     return new AccountBalance(
                             hbarBalance + i, tokenBalances, new AccountBalance.Id(consensusTimestamp, accountId));
                 })
-                .collect(Collectors.toList());
+                .toList();
         return AccountBalanceFile.builder()
                 .bytes(streamFileData.getBytes())
                 .consensusTimestamp(consensusTimestamp)

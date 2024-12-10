@@ -59,7 +59,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setTps(100_000);
         properties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
         generator = Suppliers.memoize(
-                () -> new ConfigurableTransactionGenerator(p -> p, p -> Collections.unmodifiableMap(p), properties));
+                () -> new ConfigurableTransactionGenerator(p -> p, Collections::unmodifiableMap, properties));
     }
 
     @Test

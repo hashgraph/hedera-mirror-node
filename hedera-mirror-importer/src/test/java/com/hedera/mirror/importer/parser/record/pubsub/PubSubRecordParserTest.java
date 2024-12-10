@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
@@ -79,7 +78,7 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
         List<String> actualMessages = subscriberMessages.stream()
                 .map(PubsubMessage::getData)
                 .map(ByteString::toStringUtf8)
-                .collect(Collectors.toList());
+                .toList();
 
         // map timestamps to messages and compare individual message JSON strings
         Map<Long, String> expectedMessageMap = mapMessages(expectedMessages);

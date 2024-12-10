@@ -176,7 +176,7 @@ class UsageBasedFeeCalculatorTest {
     }
 
     @Test
-    void usesMultiplierAsExpected() throws Exception {
+    void usesMultiplierAsExpected() {
         // setup:
         final long multiplier = 1L;
         final FeeObject expectedFees =
@@ -198,7 +198,7 @@ class UsageBasedFeeCalculatorTest {
     }
 
     @Test
-    void defaultFeeIfAccountMissing() throws Exception {
+    void defaultFeeIfAccountMissing() {
         // setup:
         correctOpEstimator = new TokenDissociateResourceUsage(mock(EstimatorFactory.class), mock(StoreImpl.class));
         final FeeData expectedFeeData = FeeData.getDefaultInstance();

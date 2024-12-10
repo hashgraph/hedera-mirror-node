@@ -1342,7 +1342,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             ObjectAssert<ContractResult> contractResult) {
         List<Long> createdContractIds = result.getCreatedContractIDsList().stream()
                 .map(ContractID::getContractNum)
-                .collect(Collectors.toList());
+                .toList();
 
         contractResult
                 .returns(result.getBloom().toByteArray(), ContractResult::getBloom)

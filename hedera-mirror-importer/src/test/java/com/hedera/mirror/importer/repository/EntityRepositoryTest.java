@@ -113,7 +113,7 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
     void findByEvmAddress() {
         Entity entity = domainBuilder.entity().persist();
         Entity entityDeleted =
-                domainBuilder.entity().customize((b) -> b.deleted(true)).persist();
+                domainBuilder.entity().customize(b -> b.deleted(true)).persist();
         assertThat(entityRepository.findByEvmAddress(entity.getEvmAddress()))
                 .get()
                 .isEqualTo(entity.getId());

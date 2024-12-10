@@ -462,7 +462,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             List<TokenAccount> expectedTokenAccounts) {
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
                 .map(t -> EntityId.of(t.getAccountId()))
-                .collect(Collectors.toList());
+                .toList();
         tokenCreate(
                 customFees,
                 freezeDefault,
@@ -541,7 +541,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 CREATE_TIMESTAMP);
         var autoAssociatedAccounts = expectedTokenAccounts.stream()
                 .map(t -> EntityId.of(t.getAccountId()))
-                .collect(Collectors.toList());
+                .toList();
 
         // when
         createTokenEntity(

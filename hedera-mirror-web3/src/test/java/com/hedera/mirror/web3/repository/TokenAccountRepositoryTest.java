@@ -86,29 +86,29 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void countByAccountIdAndAssociatedGroupedByBalanceIsPositive() {
-        long accountId = 22L;
-        long nextAccountId = accountId + 1L;
+        long accId = 22L;
+        long nextAccountId = accId + 1L;
         domainBuilder
                 .tokenAccount()
-                .customize(a -> a.associated(true).balance(23).accountId(accountId))
+                .customize(a -> a.associated(true).balance(23).accountId(accId))
                 .persist();
         domainBuilder
                 .tokenAccount()
-                .customize(a -> a.associated(true).balance(24).accountId(accountId))
+                .customize(a -> a.associated(true).balance(24).accountId(accId))
                 .persist();
         domainBuilder
                 .tokenAccount()
-                .customize(a -> a.associated(true).balance(0).accountId(accountId))
+                .customize(a -> a.associated(true).balance(0).accountId(accId))
                 .persist();
         domainBuilder
                 .tokenAccount()
-                .customize(a -> a.associated(false).accountId(accountId))
+                .customize(a -> a.associated(false).accountId(accId))
                 .persist();
 
         domainBuilder.tokenAccount().customize(a -> a.accountId(nextAccountId)).persist();
 
         var expected = List.of(tuple(true, 2), tuple(false, 1));
-        assertThat(repository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId))
+        assertThat(repository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accId))
                 .extracting(
                         TokenAccountAssociationsCount::getIsPositiveBalance,
                         TokenAccountAssociationsCount::getTokenCount)
@@ -116,7 +116,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
 
         // Verify cached result
         repository.deleteAll();
-        assertThat(repository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId))
+        assertThat(repository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accId))
                 .extracting(
                         TokenAccountAssociationsCount::getIsPositiveBalance,
                         TokenAccountAssociationsCount::getTokenCount)
@@ -215,7 +215,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
             TokenKycStatusEnum kycStatus,
             TokenFreezeStatusEnum expectedFreezeStatus,
             TokenKycStatusEnum expectedKycStatus) {
-        long accountId = 2L;
+        long accId = 2L;
         final var token = domainBuilder
                 .token()
                 .customize(t -> t.freezeStatus(tokenFreezeStatus).kycStatus(tokenKycStatus))
@@ -223,7 +223,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
         final var tokenAccountHistory1 = domainBuilder
                 .tokenAccountHistory()
                 .customize(t -> t.tokenId(token.getTokenId())
-                        .accountId(accountId)
+                        .accountId(accId)
                         .freezeStatus(freezeStatus)
                         .kycStatus(kycStatus))
                 .persist();
@@ -231,7 +231,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
         final var tokenAccountHistory2 = domainBuilder
                 .tokenAccountHistory()
                 .customize(t -> t.tokenId(token.getTokenId())
-                        .accountId(accountId)
+                        .accountId(accId)
                         .freezeStatus(freezeStatus)
                         .kycStatus(kycStatus))
                 .persist();
@@ -256,12 +256,12 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
     @ParameterizedTest
     void findByIdAndTimestampHistoricalMissingTokenReturnsLatestEntry(
             TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus) {
-        long accountId = 2L;
+        long accId = 2L;
         long tokenId = 102L;
         final var tokenAccountHistory1 = domainBuilder
                 .tokenAccountHistory()
                 .customize(t -> t.tokenId(tokenId)
-                        .accountId(accountId)
+                        .accountId(accId)
                         .freezeStatus(freezeStatus)
                         .kycStatus(kycStatus))
                 .persist();
@@ -269,7 +269,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
         final var tokenAccountHistory2 = domainBuilder
                 .tokenAccountHistory()
                 .customize(t -> t.tokenId(tokenId)
-                        .accountId(accountId)
+                        .accountId(accId)
                         .freezeStatus(freezeStatus)
                         .kycStatus(kycStatus))
                 .persist();
@@ -401,22 +401,19 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void countByAccountIdAndTimestampHistoricalReturnsLatestEntry() {
-        long accountId = 2L;
+        long accId = 2L;
         domainBuilder
                 .tokenAccountHistory()
-                .customize(ta -> ta.accountId(accountId).balance(0))
+                .customize(ta -> ta.accountId(accId).balance(0))
                 .persist();
-        domainBuilder
-                .tokenAccountHistory()
-                .customize(ta -> ta.accountId(accountId))
-                .persist();
+        domainBuilder.tokenAccountHistory().customize(ta -> ta.accountId(accId)).persist();
         final var tokenAccountHistory = domainBuilder
                 .tokenAccountHistory()
-                .customize(ta -> ta.accountId(accountId))
+                .customize(ta -> ta.accountId(accId))
                 .persist();
 
         assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
-                        accountId, tokenAccountHistory.getTimestampLower() + 1))
+                        accId, tokenAccountHistory.getTimestampLower() + 1))
                 .hasSize(2)
                 .extracting(
                         TokenAccountAssociationsCount::getIsPositiveBalance,

@@ -614,7 +614,7 @@ class RecordItemTest {
         var recordItem = RecordItem.builder()
                 .payerAccountId(EntityId.of(payerAccountId))
                 .transaction(transaction)
-                .contractTransactionPredicate((entityId) -> true)
+                .contractTransactionPredicate(entityId -> true)
                 .transactionRecord(transactionRecord)
                 .build();
         var account = EntityId.of(id++);
@@ -652,7 +652,6 @@ class RecordItemTest {
         long id = random.nextLong(2000) + 2000L;
         var now = Instant.now();
         var payerAccountId = AccountID.newBuilder().setAccountNum(id++).build();
-        long consensusTimestamp = now.getEpochSecond() * 1_000_000_000 + now.getNano();
         var validStart =
                 Timestamp.newBuilder().setSeconds(now.getEpochSecond() - 1).setNanos(now.getNano());
         var transactionBody = TransactionBody.newBuilder()
@@ -675,7 +674,7 @@ class RecordItemTest {
         var recordItem = RecordItem.builder()
                 .payerAccountId(EntityId.of(payerAccountId))
                 .transaction(transaction)
-                .contractTransactionPredicate((entityId) -> false)
+                .contractTransactionPredicate(entityId -> false)
                 .transactionRecord(transactionRecord)
                 .build();
 

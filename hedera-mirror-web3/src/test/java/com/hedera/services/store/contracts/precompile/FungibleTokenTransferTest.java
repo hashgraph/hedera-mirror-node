@@ -26,15 +26,15 @@ import org.junit.jupiter.api.Test;
 
 class FungibleTokenTransferTest {
 
-    static final long secondAmount = 200;
-    static final AccountID a = asAccount("0.0.2");
-    static final AccountID b = asAccount("0.0.3");
-    static final TokenID fungible = asToken("0.0.555");
-    static final TokenID nonFungible = asToken("0.0.666");
+    static final long SECOND_AMOUNT = 200;
+    static final AccountID A = asAccount("0.0.2");
+    static final AccountID B = asAccount("0.0.3");
+    static final TokenID FUNGIBLE = asToken("0.0.555");
+    static final TokenID NON_FUNGIBLE = asToken("0.0.666");
 
     @Test
     void createsExpectedCryptoTransfer() {
-        final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
-        assertEquals(fungible, fungibleTransfer.getDenomination());
+        final var fungibleTransfer = new FungibleTokenTransfer(SECOND_AMOUNT, false, FUNGIBLE, B, A);
+        assertEquals(FUNGIBLE, fungibleTransfer.getDenomination());
     }
 }

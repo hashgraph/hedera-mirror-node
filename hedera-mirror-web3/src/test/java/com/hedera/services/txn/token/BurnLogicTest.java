@@ -28,11 +28,9 @@ import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -71,9 +69,6 @@ class BurnLogicTest {
 
     @Mock
     private TokenRelationship modifiedTreasuryRel;
-
-    @Mock
-    private UniqueToken uniqueToken;
 
     @Mock
     private Token tokenAfterBurn;
@@ -120,8 +115,6 @@ class BurnLogicTest {
     void followsHappyPathForUnique() {
         // setup:
         final var serials = List.of(1L, 2L);
-        final var firstNftId = new NftId(id.shard(), id.realm(), id.num(), 1);
-        final var secondNftId = new NftId(id.shard(), id.realm(), id.num(), 2);
         treasuryRel = new TokenRelationship(token, treasury);
 
         givenValidUniqueTxnCtx();

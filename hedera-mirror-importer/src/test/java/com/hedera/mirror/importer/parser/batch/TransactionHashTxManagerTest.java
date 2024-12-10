@@ -90,7 +90,7 @@ class TransactionHashTxManagerTest extends ImporterIntegrationTest {
             TestUtils.insertIntoTransactionHash(jdbcTemplate, hash4);
         });
 
-        transactionTemplate.executeWithoutResult((status) -> {
+        transactionTemplate.executeWithoutResult(status -> {
             try {
                 transactionHashTxManager.initialize(Collections.singleton(hash1), "transaction_hash");
                 assertThat(transactionHashTxManager.getItemCount()).isEqualTo(1);

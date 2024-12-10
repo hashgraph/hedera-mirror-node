@@ -127,7 +127,7 @@ public class MirrorNodeClient {
                 .atMost(Durations.ONE_MINUTE)
                 .pollInterval(Durations.ONE_SECOND)
                 .pollDelay(Durations.ONE_HUNDRED_MILLISECONDS)
-                .until(() -> subscriptionResponse.hasResponse());
+                .until(subscriptionResponse::hasResponse);
 
         if (subscriptionResponse.errorEncountered()) {
             throw subscriptionResponse.getResponseError();

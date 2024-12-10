@@ -70,7 +70,6 @@ import com.hedera.mirror.test.e2e.acceptance.util.ContractCallResponseWrapper;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import lombok.CustomLog;
@@ -95,7 +94,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     private String precompileTestContractSolidityAddress;
 
     @Given("I successfully create and verify a precompile contract from contract bytes")
-    public void createNewContract() throws IOException {
+    public void createNewContract() {
         deployedPrecompileContract = getContract(PRECOMPILE);
         precompileTestContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();

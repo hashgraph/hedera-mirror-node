@@ -66,8 +66,8 @@ abstract class RecordFileReaderTest {
 
         return DynamicTest.stream(
                 getFilteredFiles(false),
-                (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
-                (recordFile) -> {
+                recordFile -> String.format(template, recordFile.getVersion(), recordFile.getName()),
+                recordFile -> {
                     // given
                     Path testFile = getTestFile(recordFile);
                     StreamFileData streamFileData = StreamFileData.from(testFile.toFile());
@@ -85,7 +85,7 @@ abstract class RecordFileReaderTest {
 
                     List<Version> hapiVersions = actual.getItems().stream()
                             .map(RecordItem::getHapiVersion)
-                            .collect(Collectors.toList());
+                            .toList();
                     assertThat(hapiVersions)
                             .isNotEmpty()
                             .allSatisfy(version -> assertEquals(recordFile.getHapiVersion(), version));
@@ -99,12 +99,12 @@ abstract class RecordFileReaderTest {
 
                     List<Integer> transactionIndexes = actual.getItems().stream()
                             .map(RecordItem::getTransactionIndex)
-                            .collect(Collectors.toList());
+                            .toList();
                     assertThat(transactionIndexes).first().isEqualTo(0);
                     assertThat(transactionIndexes)
                             .isEqualTo(IntStream.range(0, recordFile.getCount().intValue())
                                     .boxed()
-                                    .collect(Collectors.toList()));
+                                    .toList());
                     assertThat(transactionIndexes).doesNotHaveDuplicates().isSorted();
                 });
     }
@@ -116,8 +116,8 @@ abstract class RecordFileReaderTest {
 
         return DynamicTest.stream(
                 getFilteredFiles(false),
-                (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
-                (recordFile) -> {
+                recordFile -> String.format(template, recordFile.getVersion(), recordFile.getName()),
+                recordFile -> {
                     // given
                     Path testFile = getTestFile(recordFile);
                     StreamFileData streamFileData = StreamFileData.from(testFile.toFile());
@@ -141,8 +141,8 @@ abstract class RecordFileReaderTest {
 
         return DynamicTest.stream(
                 getFilteredFiles(false),
-                (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
-                (recordFile) -> {
+                recordFile -> String.format(template, recordFile.getVersion(), recordFile.getName()),
+                recordFile -> {
                     // given
                     Path testFile = getTestFile(recordFile);
                     byte[] bytes = FileUtils.readFileToByteArray(testFile.toFile());
@@ -160,8 +160,8 @@ abstract class RecordFileReaderTest {
 
         return DynamicTest.stream(
                 getFilteredFiles(false),
-                (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
-                (recordFile) -> {
+                recordFile -> String.format(template, recordFile.getVersion(), recordFile.getName()),
+                recordFile -> {
                     // given
                     Path testFile = getTestFile(recordFile);
                     byte[] bytes = FileUtils.readFileToByteArray(testFile.toFile());

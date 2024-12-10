@@ -129,10 +129,6 @@ class SignedTxnAccessorTest {
 
     @Test
     void parsesLegacyCorrectly() throws Exception {
-        final Key aPrimitiveKey = Key.newBuilder()
-                .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
-                .build();
-        final ByteString aNewAlias = aPrimitiveKey.toByteString();
         final MirrorEvmContractAliases aliasManager = mock(MirrorEvmContractAliases.class);
         given(aliasManager.resolveForEvm(any())).willReturn(Address.ZERO);
 
@@ -154,44 +150,6 @@ class SignedTxnAccessorTest {
                 5679l,
                 70000l);
         xferNoAliases = xferNoAliases.toBuilder().setSigMap(EXPECTED_MAP).build();
-        var xferWithAutoCreation = RequestBuilderUtils.getHbarCryptoTransferRequestToAlias(
-                1234l,
-                0l,
-                0l,
-                3l,
-                0l,
-                0l,
-                offeredFee,
-                Timestamp.getDefaultInstance(),
-                Duration.getDefaultInstance(),
-                false,
-                ZERO_BYTE_MEMO,
-                5678l,
-                -70000l,
-                aNewAlias,
-                70000l);
-        xferWithAutoCreation =
-                xferWithAutoCreation.toBuilder().setSigMap(EXPECTED_MAP).build();
-        var xferWithAliasesNoAutoCreation = RequestBuilderUtils.getTokenTransferRequestToAlias(
-                1234l,
-                0l,
-                0l,
-                3l,
-                0l,
-                0l,
-                offeredFee,
-                Timestamp.getDefaultInstance(),
-                Duration.getDefaultInstance(),
-                false,
-                ZERO_BYTE_MEMO,
-                5678l,
-                5555l,
-                -70000l,
-                ByteString.copyFromUtf8("aaaa"),
-                70000l);
-        xferWithAliasesNoAutoCreation = xferWithAliasesNoAutoCreation.toBuilder()
-                .setSigMap(EXPECTED_MAP)
-                .build();
         final var body = TransactionBody.parseFrom(extractTransactionBodyByteString(xferNoAliases));
 
         final var signedTransaction = TxnUtils.signedTransactionFrom(body, EXPECTED_MAP);

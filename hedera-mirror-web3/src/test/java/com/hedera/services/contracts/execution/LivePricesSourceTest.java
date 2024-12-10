@@ -36,19 +36,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class LivePricesSourceTest {
-    private static final Instant now = Instant.ofEpochSecond(1_234_567L);
-    private static final Timestamp timeNow = asTimestamp(now);
-    private static final long gasPriceTinybars = 123;
-    private static final long sbhPriceTinybars = 456;
-    private static final FeeComponents servicePrices = FeeComponents.newBuilder()
-            .setGas(gasPriceTinybars * 1000)
-            .setSbh(sbhPriceTinybars * 1000)
+    private static final Instant NOW = Instant.ofEpochSecond(1_234_567L);
+    private static final Timestamp TIME_NOW = asTimestamp(NOW);
+    private static final long GAS_PRICE_TINYBARS = 123;
+    private static final long SBH_PRICE_TINYBARS = 456;
+    private static final FeeComponents SERVICE_PRICES = FeeComponents.newBuilder()
+            .setGas(GAS_PRICE_TINYBARS * 1000)
+            .setSbh(SBH_PRICE_TINYBARS * 1000)
             .build();
-    private static final FeeData providerPrices =
-            FeeData.newBuilder().setServicedata(servicePrices).build();
-    private static final ExchangeRate activeRate =
+    private static final FeeData PROVIDER_PRICES =
+            FeeData.newBuilder().setServicedata(SERVICE_PRICES).build();
+    private static final ExchangeRate ACTIVE_RATE =
             ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(12).build();
-    private static final long reasonableMultiplier = 1;
+    private static final long REASONABLE_MULTIPLIER = 1;
 
     @Mock
     private HbarCentExchange exchange;
@@ -72,15 +72,15 @@ class LivePricesSourceTest {
 
     @Test
     void getsExpectedGasPriceWithReasonableMultiplier() {
-        givenCollabsWithMultiplier(reasonableMultiplier);
+        givenCollabsWithMultiplier(REASONABLE_MULTIPLIER);
 
-        final var expected = getTinybarsFromTinyCents(activeRate, gasPriceTinybars) * reasonableMultiplier;
+        final var expected = getTinybarsFromTinyCents(ACTIVE_RATE, GAS_PRICE_TINYBARS) * REASONABLE_MULTIPLIER;
 
-        assertEquals(expected, subject.currentGasPrice(now, ContractCall));
+        assertEquals(expected, subject.currentGasPrice(NOW, ContractCall));
     }
 
     private void givenCollabsWithMultiplier(final long multiplier) {
-        given(exchange.rate(timeNow)).willReturn(activeRate);
-        given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
+        given(exchange.rate(TIME_NOW)).willReturn(ACTIVE_RATE);
+        given(usagePrices.defaultPricesGiven(ContractCall, TIME_NOW)).willReturn(PROVIDER_PRICES);
     }
 }

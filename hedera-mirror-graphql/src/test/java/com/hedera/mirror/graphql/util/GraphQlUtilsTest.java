@@ -83,7 +83,7 @@ class GraphQlUtilsTest {
     @Test
     void validateOneOf() {
         GraphQlUtils.validateOneOf("a");
-        assertThatThrownBy(() -> GraphQlUtils.validateOneOf()).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(GraphQlUtils::validateOneOf).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> GraphQlUtils.validateOneOf("a", "b")).isInstanceOf(IllegalArgumentException.class);
     }
 

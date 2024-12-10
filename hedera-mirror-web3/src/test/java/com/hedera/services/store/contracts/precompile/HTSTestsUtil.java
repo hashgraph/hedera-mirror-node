@@ -105,32 +105,32 @@ public class HTSTestsUtil {
             UInt256.valueOf(ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE_VALUE);
     public static final Bytes missingNftResult =
             UInt256.valueOf(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER_VALUE);
-    public static final Long serialNumber = 1L;
-    public static final Association associateOp = Association.singleAssociation(accountMerkleId, tokenMerkleId);
-    public static final Dissociation dissociateOp = Dissociation.singleDissociation(accountMerkleId, tokenMerkleId);
-    public static final TokenID fungible = IdUtils.asToken("0.0.888");
-    public static final Id nonFungibleId = Id.fromGrpcToken(nonFungible);
-    public static final Address nonFungibleTokenAddr = nonFungibleId.asEvmAddress();
-    public static final Id fungibleId = Id.fromGrpcToken(fungible);
+    public static final Long SERIAL_NUMBER = 1L;
+    public static final Association ASSOCIATE_OP = Association.singleAssociation(accountMerkleId, tokenMerkleId);
+    public static final Dissociation DISSOCIATE_OP = Dissociation.singleDissociation(accountMerkleId, tokenMerkleId);
+    public static final TokenID FUNGIBLE = IdUtils.asToken("0.0.888");
+    public static final Id NON_FUNGIBLE_ID = Id.fromGrpcToken(nonFungible);
+    public static final Address nonFungibleTokenAddr = NON_FUNGIBLE_ID.asEvmAddress();
+    public static final Id fungibleId = Id.fromGrpcToken(FUNGIBLE);
     public static final Address fungibleTokenAddr = fungibleId.asEvmAddress();
     public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper =
-            new OwnerOfAndTokenURIWrapper(serialNumber);
+            new OwnerOfAndTokenURIWrapper(SERIAL_NUMBER);
     public static final GetTokenDefaultFreezeStatusWrapper<TokenID> defaultFreezeStatusWrapper =
-            new GetTokenDefaultFreezeStatusWrapper<>(fungible);
+            new GetTokenDefaultFreezeStatusWrapper<>(FUNGIBLE);
     public static final GetTokenDefaultKycStatusWrapper<TokenID> defaultKycStatusWrapper =
-            new GetTokenDefaultKycStatusWrapper<>(fungible);
+            new GetTokenDefaultKycStatusWrapper<>(FUNGIBLE);
     public static final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper =
-            new GrantRevokeKycWrapper<>(fungible, account);
+            new GrantRevokeKycWrapper<>(FUNGIBLE, account);
 
     public static final TokenFreezeUnfreezeWrapper<TokenID, AccountID> tokenFreezeUnFreezeWrapper =
-            new TokenFreezeUnfreezeWrapper<>(fungible, account);
+            new TokenFreezeUnfreezeWrapper<>(FUNGIBLE, account);
 
     public static final Address recipientAddress = Address.ALTBN128_ADD;
 
     public static final Address contractAddress = Address.ALTBN128_MUL;
 
-    public static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
-    public static final BurnWrapper nonFungibleBurn = BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
+    public static final List<Long> TARGET_SERIAL_NOS = List.of(1L, 2L, 3L);
+    public static final BurnWrapper nonFungibleBurn = BurnWrapper.forNonFungible(nonFungible, TARGET_SERIAL_NOS);
     public static final Bytes burnSuccessResultWith49Supply = Bytes.fromHexString(
             "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000031");
     public static final Bytes burnSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
@@ -139,21 +139,22 @@ public class HTSTestsUtil {
     public static final List<ByteString> newMetadata =
             List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
     public static final MintWrapper nftMint = MintWrapper.forNonFungible(nonFungible, newMetadata);
-    public static final UnpauseWrapper fungibleUnpause = new UnpauseWrapper(fungible);
-    public static final WipeWrapper fungibleWipe = WipeWrapper.forFungible(fungible, account, AMOUNT);
-    public static final WipeWrapper nonFungibleWipe = WipeWrapper.forNonFungible(nonFungible, account, targetSerialNos);
-    public static final Bytes fungibleSuccessResultWith10Supply = Bytes.fromHexString(
+    public static final UnpauseWrapper fungibleUnpause = new UnpauseWrapper(FUNGIBLE);
+    public static final WipeWrapper fungibleWipe = WipeWrapper.forFungible(FUNGIBLE, account, AMOUNT);
+    public static final WipeWrapper nonFungibleWipe =
+            WipeWrapper.forNonFungible(nonFungible, account, TARGET_SERIAL_NOS);
+    public static final Bytes FUNGIBLE_SUCCESS_RESULT_WITH_10_SUPPLY = Bytes.fromHexString(
             "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     public static final Bytes fungibleSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
             "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000007fffffffffffffff00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
-    public static final PauseWrapper fungiblePause = new PauseWrapper(fungible);
+    public static final PauseWrapper fungiblePause = new PauseWrapper(FUNGIBLE);
     public static final Bytes failInvalidResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
     public static final Instant pendingChildConsTime = Instant.ofEpochSecond(1_234_567L, 890);
     public static final Address senderAddr = Address.ALTBN128_PAIRING;
     public static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
     public static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
-    public static final MintWrapper fungibleMint = MintWrapper.forFungible(fungible, AMOUNT);
-    public static final WipeWrapper fungibleWipeMaxAmount = WipeWrapper.forFungible(fungible, account, Long.MAX_VALUE);
+    public static final MintWrapper fungibleMint = MintWrapper.forFungible(FUNGIBLE, AMOUNT);
+    public static final WipeWrapper fungibleWipeMaxAmount = WipeWrapper.forFungible(FUNGIBLE, account, Long.MAX_VALUE);
     public static final TokenGetCustomFeesWrapper<TokenID> customFeesWrapper = new TokenGetCustomFeesWrapper<>(token);
     public static final GetTokenExpiryInfoWrapper<TokenID> getTokenExpiryInfoWrapper =
             new GetTokenExpiryInfoWrapper<>(token);
@@ -328,7 +329,7 @@ public class HTSTestsUtil {
 
     public static TokenUpdateWrapper createFungibleTokenUpdateWrapperWithKeys(final List<TokenKeyWrapper> keys) {
         return new TokenUpdateWrapper(
-                fungible, "fungible", "G", account, "G token memo", keys, new TokenExpiryWrapper(1L, account, 2L));
+                FUNGIBLE, "fungible", "G", account, "G token memo", keys, new TokenExpiryWrapper(1L, account, 2L));
     }
 
     public static TokenUpdateWrapper createNonFungibleTokenUpdateWrapperWithKeys(final List<TokenKeyWrapper> keys) {

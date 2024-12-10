@@ -43,7 +43,6 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -215,7 +214,7 @@ public class ERCContractFeature extends AbstractFeature {
     }
 
     @Given("I successfully create an erc contract from contract bytes with balance 0")
-    public void createNewContract() throws IOException {
+    public void createNewContract() {
         deployedErcContract = getContract(ERC);
         ercTestContractSolidityAddress = deployedErcContract.contractId().toSolidityAddress();
     }

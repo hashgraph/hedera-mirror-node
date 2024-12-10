@@ -21,7 +21,6 @@ import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,7 +52,7 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                 .listen(filterFast)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .expectNextSequence(LongStream.range(1, numMessages + 1).boxed().collect(Collectors.toList()))
+                .expectNextSequence(LongStream.range(1, numMessages + 1).boxed().toList())
                 .thenCancel()
                 .verifyLater();
 

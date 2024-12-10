@@ -35,14 +35,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class BasicHbarCentExchangeTest {
-    private static final long crossoverTime = 1_234_567L;
-    private static final ExchangeRateSet rates = ExchangeRateSet.newBuilder()
+    private static final long CROSSOVER_TIME = 1_234_567L;
+    private static final ExchangeRateSet RATES = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
                     .setHbarEquiv(1)
                     .setCentEquiv(12)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime)))
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(CROSSOVER_TIME)))
             .setNextRate(ExchangeRate.newBuilder()
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime * 2))
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(CROSSOVER_TIME * 2))
                     .setHbarEquiv(1)
                     .setCentEquiv(24))
             .build();
@@ -54,7 +54,7 @@ class BasicHbarCentExchangeTest {
 
     @BeforeEach
     void setUp() {
-        when(ratesAndFeesLoader.loadExchangeRates(anyLong())).thenReturn(rates);
+        when(ratesAndFeesLoader.loadExchangeRates(anyLong())).thenReturn(RATES);
 
         subject = new BasicHbarCentExchange(ratesAndFeesLoader);
     }
@@ -70,18 +70,18 @@ class BasicHbarCentExchangeTest {
     void returnsCurrentRatesWhenBeforeCrossTime() {
         final var result = subject.rate(beforeCrossTime);
 
-        assertEquals(rates.getCurrentRate(), result);
+        assertEquals(RATES.getCurrentRate(), result);
     }
 
     @Test
     void returnsNextRatesWhenAfterCrossTime() {
         final var result = subject.rate(afterCrossTime);
 
-        assertEquals(rates.getNextRate(), result);
+        assertEquals(RATES.getNextRate(), result);
     }
 
     private static final Timestamp beforeCrossTime =
-            Timestamp.newBuilder().setSeconds(crossoverTime - 1).build();
+            Timestamp.newBuilder().setSeconds(CROSSOVER_TIME - 1).build();
     private static final Timestamp afterCrossTime =
-            Timestamp.newBuilder().setSeconds(crossoverTime).build();
+            Timestamp.newBuilder().setSeconds(CROSSOVER_TIME).build();
 }

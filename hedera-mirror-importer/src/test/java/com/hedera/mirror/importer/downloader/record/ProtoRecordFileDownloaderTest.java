@@ -93,7 +93,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         super.verifyStreamFiles(List.of(file1, file2), actual -> {
             var transactionSidecarRecords = actual.getItems().stream()
                     .flatMap(r -> r.getSidecarRecords().stream())
-                    .collect(Collectors.toList());
+                    .toList();
             assertThat(transactionSidecarRecords).isEmpty();
         });
         assertThat(importerProperties.getDataPath()).isEmptyDirectory();
@@ -111,7 +111,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
             var sidecarTypes = recordFile.getItems().stream()
                     .flatMap(r -> r.getSidecarRecords().stream())
                     .map(TransactionSidecarRecord::getSidecarRecordsCase)
-                    .collect(Collectors.toList());
+                    .toList();
             if (Objects.equals(recordFile.getName(), RECORD_FILE_WITH_SIDECAR)) {
                 assertThat(sidecarTypes).containsExactly(TransactionSidecarRecord.SidecarRecordsCase.BYTECODE);
             } else {

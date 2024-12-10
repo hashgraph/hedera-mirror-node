@@ -23,7 +23,6 @@ import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.ReactiveDomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
@@ -278,7 +277,7 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
                 .then(firstBatch::blockLast)
                 .then(secondBatch::blockLast)
                 .thenAwait(WAIT)
-                .expectNextSequence(LongStream.range(1, 11).boxed().collect(Collectors.toList()))
+                .expectNextSequence(LongStream.range(1, 11).boxed().toList())
                 .expectComplete()
                 .verify(WAIT);
     }

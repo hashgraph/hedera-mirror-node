@@ -40,7 +40,7 @@ public class FileClient extends AbstractNetworkClient {
     @Override
     public void clean() {
         log.info("Deleting {} files", fileIds.size());
-        deleteAll(fileIds, id -> deleteFile(id));
+        deleteAll(fileIds, this::deleteFile);
     }
 
     public NetworkTransactionResponse createFile(byte[] content) {

@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.monitor.ScenarioStatus;
 import com.hedera.mirror.monitor.subscribe.grpc.GrpcSubscriberProperties;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -78,7 +79,7 @@ class SubscribeMetricsTest {
         assertThat(meterRegistry.find(METRIC_E2E).timers())
                 .hasSize(1)
                 .first()
-                .returns(1L, t -> t.count())
+                .returns(1L, Timer::count)
                 .returns(2.0, t -> t.mean(TimeUnit.SECONDS))
                 .returns(2.0, t -> t.max(TimeUnit.SECONDS))
                 .returns(subscription.getProtocol().toString(), t -> t.getId().getTag(TAG_PROTOCOL))
@@ -92,7 +93,7 @@ class SubscribeMetricsTest {
         assertThat(meterRegistry.find(METRIC_E2E).timers())
                 .hasSize(1)
                 .first()
-                .returns(2L, t -> t.count())
+                .returns(2L, Timer::count)
                 .returns(3.0, t -> t.mean(TimeUnit.SECONDS))
                 .returns(4.0, t -> t.max(TimeUnit.SECONDS))
                 .returns(subscription.getProtocol().toString(), t -> t.getId().getTag(TAG_PROTOCOL))

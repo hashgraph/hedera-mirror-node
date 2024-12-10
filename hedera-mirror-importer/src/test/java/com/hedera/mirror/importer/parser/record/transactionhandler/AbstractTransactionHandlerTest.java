@@ -265,7 +265,7 @@ abstract class AbstractTransactionHandlerTest {
             testSpecs = getUpdateEntityTestSpecs();
         }
 
-        return DynamicTest.stream(testSpecs.iterator(), UpdateEntityTestSpec::getDescription, (testSpec) -> {
+        return DynamicTest.stream(testSpecs.iterator(), UpdateEntityTestSpec::getDescription, testSpec -> {
             // when
             var transaction = new com.hedera.mirror.common.domain.transaction.Transaction();
             transaction.setEntityId(testSpec.getExpected().toEntityId());

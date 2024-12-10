@@ -143,7 +143,7 @@ class UnpausePrecompileTest {
             Bytes.fromHexString("0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000449");
 
     private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
-            .setTokenUnpause(TokenUnpauseTransactionBody.newBuilder().setToken(fungible));
+            .setTokenUnpause(TokenUnpauseTransactionBody.newBuilder().setToken(FUNGIBLE));
 
     private HTSPrecompiledContract subject;
     private MockedStatic<UnpausePrecompile> staticUnpausePrecompile;

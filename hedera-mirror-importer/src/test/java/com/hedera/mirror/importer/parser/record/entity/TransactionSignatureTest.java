@@ -55,7 +55,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -138,7 +137,7 @@ class TransactionSignatureTest {
                     transactionSignature.setType(SignaturePair.SignatureCase.ED25519.getNumber());
                     return transactionSignature;
                 })
-                .collect(Collectors.toList());
+                .toList();
         transactionSignatures = entityProperties.getPersist().getTransactionSignatures();
 
         doReturn(ENTITY_ID).when(transactionHandler).getEntity(any(RecordItem.class));

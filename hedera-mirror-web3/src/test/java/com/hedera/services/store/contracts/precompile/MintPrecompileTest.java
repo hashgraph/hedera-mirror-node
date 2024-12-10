@@ -18,9 +18,9 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.FUNGIBLE_SUCCESS_RESULT_WITH_10_SUPPLY;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleSuccessResultWith10Supply;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleSuccessResultWithLongMaxValueSupply;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
@@ -287,7 +287,7 @@ class MintPrecompileTest {
         subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
         // then:
-        assertEquals(fungibleSuccessResultWith10Supply, result);
+        assertEquals(FUNGIBLE_SUCCESS_RESULT_WITH_10_SUPPLY, result);
     }
 
     @Test
