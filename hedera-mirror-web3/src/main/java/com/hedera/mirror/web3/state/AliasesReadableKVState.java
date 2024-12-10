@@ -39,7 +39,7 @@ public class AliasesReadableKVState extends ReadableKVStateBase<ProtoBytes, Acco
 
     @Override
     protected AccountID readFromDataSource(@Nonnull ProtoBytes alias) {
-        final var timestamp = ContractCallContext.get().getTimestamp();
+        final var timestamp = ContractCallContext.getTimestamp();
         final var entity = commonEntityAccessor.get(alias.value(), timestamp);
         return entity.map(e -> toAccountId(e.getShard(), e.getRealm(), e.getNum()))
                 .orElse(null);

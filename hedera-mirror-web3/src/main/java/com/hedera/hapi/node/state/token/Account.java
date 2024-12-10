@@ -911,7 +911,7 @@ public record Account(
                 numberPendingAirdrops);
     }
 
-    public Long tinybarBalance() {
+    public long tinybarBalance() {
         return tinybarBalanceSupplier.get();
     }
 
