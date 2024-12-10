@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.state.components.MetricsImpl;
 import com.hedera.mirror.web3.state.core.ListReadableQueueState;
 import com.hedera.mirror.web3.state.core.ListWritableQueueState;
@@ -48,6 +49,7 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.AppContext.Gossip;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
@@ -114,8 +116,15 @@ public class MirrorNodeState implements State {
     private final ServiceMigrator serviceMigrator;
     private final NetworkInfo networkInfo;
 
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     @PostConstruct
     private void init() {
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            // If the flag is not enabled, we don't need to make any further initialization.
+            return;
+        }
+
         registerServices(servicesRegistry);
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         serviceMigrator.doMigrations(
@@ -141,6 +150,9 @@ public class MirrorNodeState implements State {
                             .build());
         });
         ((CommittableWritableStates) fileServiceStates).commit();
+        accountReadableKVState
+                .reset(); // Remove cached accounts as they remain with keys and empty objects in the cache at this
+        // point.
     }
 
     public MirrorNodeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
@@ -369,7 +381,8 @@ public class MirrorNodeState implements State {
 
     private void registerServices(ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
-        final var appContext = new AppContextImpl(InstantSource.system(), signatureVerifier());
+        final var appContext =
+                new AppContextImpl(InstantSource.system(), signatureVerifier(), Gossip.UNAVAILABLE_GOSSIP);
         Set.of(
                         new EntityIdService(),
                         new TokenServiceImpl(),
