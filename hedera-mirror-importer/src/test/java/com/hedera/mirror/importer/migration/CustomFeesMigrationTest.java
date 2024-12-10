@@ -286,10 +286,10 @@ class CustomFeesMigrationTest extends ImporterIntegrationTest {
     @SneakyThrows
     private void runMigration() {
         var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
-        var transactionTemplate = new TransactionTemplate(transactionManager);
+        var txnTemplate = new TransactionTemplate(transactionManager);
         try (var is = sql.getInputStream()) {
             String migrationSql = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-            transactionTemplate.executeWithoutResult(s -> {
+            txnTemplate.executeWithoutResult(s -> {
                 jdbcTemplate.update(migrationSql);
             });
         }

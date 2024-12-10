@@ -248,12 +248,11 @@ public class TokenOpsUsageUtilsTest {
             builder.setAutoRenewAccount(AUTO_RENEW_ACCOUNT)
                     .setAutoRenewPeriod(Duration.newBuilder().setSeconds(AUTO_RENEW_PERIOD));
         }
-        final var txn = TransactionBody.newBuilder()
+        return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
                         .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setTokenCreation(builder)
                 .build();
-        return txn;
     }
 
     private TransactionBody givenTokenWipeWith(final TokenType type) {
@@ -264,12 +263,11 @@ public class TokenOpsUsageUtilsTest {
         } else {
             op.addAllSerialNumbers(List.of(1L));
         }
-        final var txn = TransactionBody.newBuilder()
+        return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
                         .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setTokenWipe(op.build())
                 .build();
-        return txn;
     }
 
     private TransactionBody givenTokenBurnWith(final TokenType type) {
@@ -279,12 +277,11 @@ public class TokenOpsUsageUtilsTest {
         } else {
             op.addAllSerialNumbers(List.of(1L));
         }
-        final var txn = TransactionBody.newBuilder()
+        return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
                         .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setTokenBurn(op.build())
                 .build();
-        return txn;
     }
 
     private TransactionBody givenTokenMintWith(final TokenType type) {
@@ -294,12 +291,11 @@ public class TokenOpsUsageUtilsTest {
         } else {
             op.addAllMetadata(List.of(ByteString.copyFromUtf8("NFT meta1"), ByteString.copyFromUtf8("NFT meta2")));
         }
-        final var txn = TransactionBody.newBuilder()
+        return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
                         .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setTokenMint(op.build())
                 .build();
-        return txn;
     }
 
     public static Key A_THRESHOLD_KEY = Key.newBuilder()

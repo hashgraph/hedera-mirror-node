@@ -131,13 +131,14 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
                 .persist();
         long accountCreationTimestamp = account.getCreatedTimestamp();
 
-        // account creation initial transfer
         var initialTransfer = domainBuilder
                 .cryptoTransfer()
                 .customize(
                         b -> b.amount(initialBalance).entityId(accountId).consensusTimestamp(accountCreationTimestamp))
                 .persist();
-        var secondTransfer = domainBuilder
+
+        // second transfer
+        domainBuilder
                 .cryptoTransfer()
                 .customize(b -> b.amount(TRANSFER_AMOUNT)
                         .entityId(accountId)

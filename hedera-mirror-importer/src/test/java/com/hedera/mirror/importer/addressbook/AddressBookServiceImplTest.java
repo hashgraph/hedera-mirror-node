@@ -178,9 +178,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                 otherNetworkImporterProperties,
                 nodeStakeRepository,
                 transactionTemplate);
-        assertThrows(IllegalStateException.class, () -> {
-            customAddressBookService.getCurrent();
-        });
+        assertThrows(IllegalStateException.class, customAddressBookService::getCurrent);
         assertEquals(0, addressBookRepository.count());
     }
 

@@ -33,8 +33,8 @@ abstract class AbstractRecordFileReaderTest extends RecordFileReaderTest {
 
         return DynamicTest.stream(
                 getFilteredFiles(true),
-                (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
-                (recordFile) -> {
+                recordFile -> String.format(template, recordFile.getVersion(), recordFile.getName()),
+                recordFile -> {
                     // given
                     Path testFile = getTestFile(recordFile);
                     StreamFileData streamFileData = StreamFileData.from(testFile.toFile());

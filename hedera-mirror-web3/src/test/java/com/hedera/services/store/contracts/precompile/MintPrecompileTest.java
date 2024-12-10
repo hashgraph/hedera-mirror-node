@@ -18,9 +18,9 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.FUNGIBLE_SUCCESS_RESULT_WITH_10_SUPPLY;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleSuccessResultWith10Supply;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleSuccessResultWithLongMaxValueSupply;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
@@ -287,7 +287,7 @@ class MintPrecompileTest {
         subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
         // then:
-        assertEquals(fungibleSuccessResultWith10Supply, result);
+        assertEquals(FUNGIBLE_SUCCESS_RESULT_WITH_10_SUPPLY, result);
     }
 
     @Test
@@ -327,7 +327,7 @@ class MintPrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        final var transactionBody = TransactionBody.newBuilder().setTokenMint(TokenMintTransactionBody.newBuilder());
+        final var txnBody = TransactionBody.newBuilder().setTokenMint(TokenMintTransactionBody.newBuilder());
 
         given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
@@ -342,8 +342,7 @@ class MintPrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_MINT_INPUT, a -> a, precompileContext);
-        final long result =
-                subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
+        final long result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, txnBody, sender);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

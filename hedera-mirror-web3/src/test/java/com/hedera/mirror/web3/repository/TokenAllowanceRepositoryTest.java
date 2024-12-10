@@ -172,7 +172,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
                 .persist();
 
-        final var allowanceHistory = domainBuilder
+        // allowance history
+        domainBuilder
                 .tokenAllowanceHistory()
                 .customize(a -> a.owner(ownerId)
                         .amountGranted(initialAmount)
@@ -182,7 +183,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.open(tokenAllowanceTimestamp, tokenAllowanceTimestamp + 1000)))
                 .persist();
 
-        final var tokenTransfer = domainBuilder
+        // token transfer
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -194,7 +196,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        final var tokenTransfer1 = domainBuilder
+        // another token transfer
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -240,7 +243,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
                 .persist();
 
-        var allowance2 = domainBuilder
+        // another token allowance
+        domainBuilder
                 .tokenAllowance()
                 .customize(a -> a.owner(ownerId)
                         .amountGranted(initialAmount)
@@ -250,7 +254,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.atLeast(historyRange.lowerEndpoint())))
                 .persist();
 
-        var tokenTransfer = domainBuilder
+        // token transfer
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -274,7 +279,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        var allowanceHistory = domainBuilder
+        // allowance history
+        domainBuilder
                 .tokenAllowanceHistory()
                 .customize(a -> a.owner(ownerId)
                         .amountGranted(initialHistoryAmount)
@@ -307,7 +313,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        var contractResult = domainBuilder
+        // contract result
+        domainBuilder
                 .contractResult()
                 .customize(
                         c -> c.consensusTimestamp(contractCallTransfer.getId().getConsensusTimestamp())
@@ -361,7 +368,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
                 .persist();
 
-        final var allowanceHistory = domainBuilder
+        // allowance history
+        domainBuilder
                 .tokenAllowanceHistory()
                 .customize(a -> a.owner(ownerId)
                         .amountGranted(initialAmount)
@@ -371,7 +379,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.open(tokenAllowanceTimestamp, tokenAllowanceTimestamp + 1000)))
                 .persist();
 
-        final var tokenTransfer = domainBuilder
+        // token transfer
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -383,7 +392,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        final var tokenTransfer1 = domainBuilder
+        // another token transfer
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer1)
@@ -423,7 +433,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         // This transfer should not be selected and the amount should not be subtracted from the allowance.
-        final var tokenTransfer = domainBuilder
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(-1)
@@ -463,7 +473,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
                 .persist();
 
-        final var tokenTransfer = domainBuilder
+        // token transfer
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -507,7 +518,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
                 .persist();
 
-        final var tokenTransfer = domainBuilder
+        // token transfer
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -519,7 +531,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        final var contractResult = domainBuilder
+        // contract result
+        domainBuilder
                 .contractResult()
                 .customize(c -> c.consensusTimestamp(tokenTransferTimestamp).senderId(EntityId.of(senderId)))
                 .persist();
@@ -552,7 +565,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
                 .persist();
 
-        final var tokenTransfer = domainBuilder
+        // token transfer
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -564,7 +578,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        final var contractTokenTransfer = domainBuilder
+        // contract token transfer
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -576,7 +591,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        final var contractResult = domainBuilder
+        // contract result
+        domainBuilder
                 .contractResult()
                 .customize(c -> c.consensusTimestamp(tokenTransfer1Timestamp).senderId(EntityId.of(senderId)))
                 .persist();
@@ -611,7 +627,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
                 .persist();
 
-        final var allowance1 = domainBuilder
+        // another token allowance
+        domainBuilder
                 .tokenAllowance()
                 .customize(a -> a.owner(ownerId)
                         .amountGranted(initialAmount)
@@ -621,8 +638,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(Range.atLeast(tokenAllowanceTimestamp1)))
                 .persist();
 
-        // Must be decreased only for the second allowance
-        final var tokenTransfer = domainBuilder
+        // token transfer, must be decreased only for the second allowance
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -634,8 +651,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        // Must be decreased only for the first allowance
-        final var tokenTransfer1 = domainBuilder
+        // token transfer, must be decreased only for the first allowance
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -647,8 +664,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        // Must be decreased only for the first allowance
-        final var contractTokenTransfer = domainBuilder
+        // contract token transfer, must be decreased only for the first allowance
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -660,7 +677,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        final var contractResult = domainBuilder
+        // contact result
+        domainBuilder
                 .contractResult()
                 .customize(c -> c.consensusTimestamp(tokenTransfer2Timestamp).senderId(EntityId.of(senderId)))
                 .persist();
@@ -823,7 +841,6 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByOwnerSpenderTokenAndTimestampWithRegularTokenTransfersAndContractTokenTransfers() {
         long ownerId = 100L;
         long tokenId = 200L;
-        long spenderId = 300L;
         long senderId = 400L;
         long tokenAllowanceTimestamp = System.currentTimeMillis();
         long tokenTransferTimestamp = tokenAllowanceTimestamp + 100;

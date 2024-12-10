@@ -147,7 +147,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         var recordItem = recordItemBuilder.contractDelete().build();
         var body = recordItem.getTransactionBody().getContractDeleteInstance();
         var contractId = EntityId.of(body.getContractID());
-        var obtainerId = Optional.of(EntityId.of(body.getTransferAccountID()))
+        var recipientId = Optional.of(EntityId.of(body.getTransferAccountID()))
                 .filter(negate(EntityId::isEmpty))
                 .orElse(EntityId.of(body.getTransferContractID()));
         long timestamp = recordItem.getConsensusTimestamp();
@@ -157,12 +157,12 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
                 .get();
         var expectedEntity = contractId.toEntity().toBuilder()
                 .deleted(true)
-                .obtainerId(obtainerId)
+                .obtainerId(recipientId)
                 .permanentRemoval(body.getPermanentRemoval())
                 .timestampRange(Range.atLeast(timestamp))
                 .type(getExpectedEntityIdType())
                 .build();
-        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, obtainerId);
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, recipientId);
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);

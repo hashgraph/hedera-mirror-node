@@ -65,7 +65,7 @@ class BlockNumberMigrationTest extends ImporterIntegrationTest {
         List<Tuple> expectedBlockNumbersAndConsensusEnd =
                 insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END)).stream()
                         .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
-                        .collect(Collectors.toList());
+                        .toList();
 
         blockNumberMigration.doMigrate();
 
@@ -79,7 +79,7 @@ class BlockNumberMigrationTest extends ImporterIntegrationTest {
         long offset = CORRECT_BLOCK_NUMBER - 8L;
         List<Tuple> expectedBlockNumbersAndConsensusEnd = defaultRecordFiles.stream()
                 .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex() + offset))
-                .collect(Collectors.toList());
+                .toList();
 
         blockNumberMigration.doMigrate();
 
@@ -91,7 +91,7 @@ class BlockNumberMigrationTest extends ImporterIntegrationTest {
         List<Tuple> expectedBlockNumbersAndConsensusEnd =
                 insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END)).stream()
                         .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
-                        .collect(Collectors.toList());
+                        .toList();
 
         blockNumberMigration.doMigrate();
 
