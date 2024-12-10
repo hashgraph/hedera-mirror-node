@@ -51,6 +51,13 @@ public class BlockFile implements StreamFile<BlockItem> {
 
 ## Importer
 
+Update the handling of the topic message `runningHashVersion`:
+
+- Change TopicMessage.runningHashVersion from `int` to `Integer` to allow for null values.
+- Update `ConsensusSubmitMessageTransactionHandler` to account for block streams no longer sending the runningHashVersion value:
+  - If the TransactionReceipt runningHashVersion is 3 (the current value) set the runningHashVersion to null.
+  - If the TransactionReceipt runningHashVersion is not 3 set the runningHashVersion to that value.
+
 ### Interfaces and Classes
 
 #### BlockFileReader
@@ -185,6 +192,7 @@ public class BlockStreamVerifier {
 - Add `software_version` to the `record_file` table. This is the consensus node version that generated the block.
 - Add `congestionPricingMultiplier`, `round_start`, `round_end` to the `record_file` table, these come from the block.
 - Add a migration that sets the `software_version` to the hapi version to populate those fields for previous records. The `software_version` is always the `hapi_version` for records prior to the introduction of block streams. Also add `software_version` to the existing RecordFileReaders at the same time.
+- Update the `topic_message` table to allow for a null `running_hash_version`.
 - Rename `record_file` to `block`. This will be a low priority task near the end of implementing phase one, as it requires a large number of changes.
 
 ```sql
@@ -195,6 +203,9 @@ alter table if exists record_file
     add column if not exists congestion_pricing_multiplier bigint       null,
     add column if not exists round_start                   bigint       null,
     add column if not exists round_end                     bigint       null;
+
+alter table if exists topic_message
+    alter column if exists running_hash_version drop not null;
 ```
 
 ### Block to Record File Transformation
@@ -386,15 +397,9 @@ Beginning from an `EventTransaction` block item, a record item is composed of on
 
 ### Schedule Create Transaction
 
-| Database    | Block Item                                                  |
-| ----------- | ----------------------------------------------------------- |
-| schedule.id | transaction_output.schedule_create.scheduled_transaction_id |
-
-### Schedule Delete Transaction
-
-| Database    | Block Item                                                               |
-| ----------- | ------------------------------------------------------------------------ |
-| schedule.id | state_changes[i].state_change.map_update.value.schedule_value.scheduleID |
+| Database    | Block Item                                                 |
+| ----------- | ---------------------------------------------------------- |
+| schedule.id | state_changes[i].state_change.map_update.key.scheduleIdKey |
 
 ### Schedule Sign Transaction
 
@@ -463,13 +468,12 @@ Beginning from an `EventTransaction` block item, a record item is composed of on
 
 ### Topic Submit Message
 
-| Database                           | Block Item                                                                                            |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| topic_message.consensus_timestamp  | state_changes.consensus_timestamp                                                                     |
-| topic_message.running_hash         | state_changes[i].state_change.map_update.value.runningHash                                            |
-| topic_message.running_hash_version | No longer submitted by the block stream: This is a fixed value that is only updated with a HIP change |
-| topic_message.sequence_number      | state_changes[i].state_change.map_update.value.sequenceNumber                                         |
-| topic_message.topic_id             | state_changes[i].state_change.map_update.value.topicId                                                |
+| Database                           | Block Item                                                                                                                                                    |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| topic_message.consensus_timestamp  | state_changes.consensus_timestamp                                                                                                                             |
+| topic_message.running_hash         | state_changes[i].state_change.map_update.value.runningHash                                                                                                    |
+| topic_message.running_hash_version | Map this value to the current value of 3. This value is no longer submitted by the block stream: This is a fixed value that is only updated with a HIP change |
+| topic_message.sequence_number      | state_changes[i].state_change.map_update.value.sequenceNumber                                                                                                 |
 
 ### Transaction
 
