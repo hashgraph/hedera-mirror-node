@@ -1702,7 +1702,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimate gas that freezes NFT token, unfreezes and gets freeze status")
     public void estimateGasFreezeNftTokenGetFreezeStatusUnfreezeGetFreezeStatus() {
-        var data = encodeData(PRECOMPILE, FREEZE_UNFREEZE_GET_STATUS, asAddress(fungibleTokenId), asAddress(admin));
+        var data = encodeData(PRECOMPILE, FREEZE_UNFREEZE_GET_STATUS, asAddress(nonFungibleTokenId), asAddress(admin));
 
         validateGasEstimation(data, FREEZE_UNFREEZE_GET_STATUS, precompileTestContractSolidityAddress);
     }

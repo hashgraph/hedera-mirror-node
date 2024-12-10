@@ -590,12 +590,11 @@ class SignedTxnAccessorTest {
                 .setSupplyKey(SUPPLY_KEY)
                 .setWipeKey(WIPE_KEY)
                 .setInitialSupply(1);
-        final var txn = TransactionBody.newBuilder()
+        return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder()
                         .setTransactionValidStart(Timestamp.newBuilder().setSeconds(NOW)))
                 .setTokenCreation(op)
                 .build();
-        return txn;
     }
 
     private static final Key KYC_KEY = A_COMPLEX_KEY;

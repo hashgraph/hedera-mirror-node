@@ -261,14 +261,14 @@ public class SDKClient implements Cleanable {
         boolean valid = false;
         var stopwatch = Stopwatch.createStarted();
 
-        try (Client client = toClient(Map.of(endpoint, nodeAccountId))) {
+        try (Client networkClient = toClient(Map.of(endpoint, nodeAccountId))) {
             new AccountBalanceQuery()
                     .setAccountId(nodeAccountId)
                     .setGrpcDeadline(sdkProperties.getGrpcDeadline())
                     .setNodeAccountIds(List.of(nodeAccountId))
                     .setMaxAttempts(3)
                     .setMaxBackoff(Duration.ofSeconds(2))
-                    .execute(client, Duration.ofSeconds(10L));
+                    .execute(networkClient, Duration.ofSeconds(10L));
             log.info("Validated node {} in {}", nodeAccountId, stopwatch);
             valid = true;
         } catch (Exception e) {

@@ -113,11 +113,11 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
             entities.remove(topicId);
         }
 
-        var record = recordItem.getTransactionRecord();
+        var txnRecord = recordItem.getTransactionRecord();
         ContractFunctionResult contractFunctionResult = null;
-        switch (record.getBodyCase()) {
-            case CONTRACTCALLRESULT -> contractFunctionResult = record.getContractCallResult();
-            case CONTRACTCREATERESULT -> contractFunctionResult = record.getContractCreateResult();
+        switch (txnRecord.getBodyCase()) {
+            case CONTRACTCALLRESULT -> contractFunctionResult = txnRecord.getContractCallResult();
+            case CONTRACTCREATERESULT -> contractFunctionResult = txnRecord.getContractCreateResult();
         }
 
         if (contractFunctionResult != null

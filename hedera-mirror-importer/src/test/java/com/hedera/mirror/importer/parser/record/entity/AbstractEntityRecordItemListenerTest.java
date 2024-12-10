@@ -245,10 +245,10 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
         });
     }
 
-    protected void assertRecordTransfers(TransactionRecord record) {
-        long consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
+    protected void assertRecordTransfers(TransactionRecord txnRecord) {
+        long consensusTimestamp = DomainUtils.timeStampInNanos(txnRecord.getConsensusTimestamp());
         if (entityProperties.getPersist().isCryptoTransferAmounts()) {
-            TransferList transferList = record.getTransferList();
+            TransferList transferList = txnRecord.getTransferList();
             for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
                 EntityId account = EntityId.of(accountAmount.getAccountID());
                 assertThat(cryptoTransferRepository.findById(
@@ -264,23 +264,23 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
         assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord());
     }
 
-    protected void assertTransactionAndRecord(TransactionBody transactionBody, TransactionRecord record) {
-        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+    protected void assertTransactionAndRecord(TransactionBody transactionBody, TransactionRecord txnRecord) {
+        var dbTransaction = getDbTransaction(txnRecord.getConsensusTimestamp());
         assertTransaction(transactionBody, dbTransaction);
-        assertRecord(record, dbTransaction);
+        assertRecord(txnRecord, dbTransaction);
     }
 
-    private void assertRecord(TransactionRecord record, Transaction dbTransaction) {
+    private void assertRecord(TransactionRecord txnRecord, Transaction dbTransaction) {
         assertThat(dbTransaction)
                 .isNotNull()
                 .returns(
-                        DomainUtils.timeStampInNanos(record.getConsensusTimestamp()),
+                        DomainUtils.timeStampInNanos(txnRecord.getConsensusTimestamp()),
                         Transaction::getConsensusTimestamp)
-                .returns(record.getTransactionFee(), Transaction::getChargedTxFee)
-                .returns(record.getReceipt().getStatusValue(), Transaction::getResult)
-                .returns(record.getTransactionHash().toByteArray(), Transaction::getTransactionHash)
-                .returns(record.hasScheduleRef(), Transaction::isScheduled);
-        assertRecordTransfers(record);
+                .returns(txnRecord.getTransactionFee(), Transaction::getChargedTxFee)
+                .returns(txnRecord.getReceipt().getStatusValue(), Transaction::getResult)
+                .returns(txnRecord.getTransactionHash().toByteArray(), Transaction::getTransactionHash)
+                .returns(txnRecord.hasScheduleRef(), Transaction::isScheduled);
+        assertRecordTransfers(txnRecord);
     }
 
     private void assertTransaction(TransactionBody transactionBody, Transaction dbTransaction) {

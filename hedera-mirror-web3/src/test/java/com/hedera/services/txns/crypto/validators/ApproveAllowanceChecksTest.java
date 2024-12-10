@@ -109,18 +109,18 @@ class ApproveAllowanceChecksTest {
     private Token token1Model = new Token(tokenId1);
     private Token token2Model = new Token(tokenId2);
 
-    private final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder()
+    private final CryptoAllowance cryptoAllowanceOne = CryptoAllowance.newBuilder()
             .setSpender(spender1)
             .setAmount(10L)
             .setOwner(ownerId1)
             .build();
-    private final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder()
+    private final TokenAllowance tokenAllowanceOne = TokenAllowance.newBuilder()
             .setSpender(spender1)
             .setAmount(10L)
             .setTokenId(token1)
             .setOwner(ownerId1)
             .build();
-    private final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
+    private final NftAllowance nftAllowanceOne = NftAllowance.newBuilder()
             .setSpender(spender1)
             .setOwner(ownerId1)
             .setTokenId(token2)
@@ -140,9 +140,9 @@ class ApproveAllowanceChecksTest {
         token1Model = token1Model.setMaxSupply(5000L);
         token2Model = token2Model.setMaxSupply(5000L);
 
-        cryptoAllowances.add(cryptoAllowance1);
-        tokenAllowances.add(tokenAllowance1);
-        nftAllowances.add(nftAllowance1);
+        cryptoAllowances.add(cryptoAllowanceOne);
+        tokenAllowances.add(tokenAllowanceOne);
+        nftAllowances.add(nftAllowanceOne);
 
         subject = new ApproveAllowanceChecks();
     }
@@ -166,9 +166,9 @@ class ApproveAllowanceChecksTest {
     @Test
     void returnsValidationOnceFailed() {
         for (int i = 0; i < 20; i++) {
-            cryptoAllowances.add(cryptoAllowance1);
-            tokenAllowances.add(tokenAllowance1);
-            nftAllowances.add(nftAllowance1);
+            cryptoAllowances.add(cryptoAllowanceOne);
+            tokenAllowances.add(tokenAllowanceOne);
+            nftAllowances.add(nftAllowanceOne);
         }
 
         cryptoApproveAllowanceTxn = TransactionBody.newBuilder()

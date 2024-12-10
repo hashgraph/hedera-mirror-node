@@ -174,7 +174,7 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void publishWithRecord() {
-        cryptoServiceStub.addQuery(Mono.just(record(SUCCESS)));
+        cryptoServiceStub.addQuery(Mono.just(txnRecord(SUCCESS)));
         cryptoServiceStub.addTransaction(Mono.just(response(OK)));
 
         transactionPublisher
@@ -338,7 +338,7 @@ class TransactionPublisherTest {
                 .build();
     }
 
-    private Response record(ResponseCodeEnum responseCode) {
+    private Response txnRecord(ResponseCodeEnum responseCode) {
         ResponseHeader.Builder responseHeader = ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK);
         TransactionReceipt.Builder transactionReceipt =
                 TransactionReceipt.newBuilder().setStatus(responseCode);

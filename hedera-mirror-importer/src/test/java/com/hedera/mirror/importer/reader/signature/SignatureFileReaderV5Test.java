@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.reader.signature;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
@@ -31,6 +30,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.Base64.Decoder;
 import java.util.List;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -65,7 +66,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
             + "+xFHwmKhAvsKXyp2ZFIrB+PGMQI8wr1cCMYLKYpI4VceCkLTIB3XOOVKZPWZaOs8MK9Aj9ZeT3REqf"
             + "d252N19j2yA45x8Zs2kRIC2iKNNEPwcaUbGNHiPmsZ5Ezq0lnNKuomJECMsYHu";
 
-    private final BaseEncoding base64Codec = BaseEncoding.base64();
+    private final Decoder base64Codec = Base64.getDecoder();
     private final SignatureFileReaderV5 fileReaderV5 = new SignatureFileReaderV5();
     private final File signatureFile =
             TestUtils.getResource(Path.of("data", "signature", "v5", "2021-01-11T22_16_11.299356001Z.rcd_sig")

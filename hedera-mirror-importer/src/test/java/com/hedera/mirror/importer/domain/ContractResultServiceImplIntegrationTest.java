@@ -951,8 +951,10 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
     }
 
     private ContractFunctionResult getFunctionResult(RecordItem recordItem) {
-        var record = recordItem.getTransactionRecord();
-        return record.hasContractCreateResult() ? record.getContractCreateResult() : record.getContractCallResult();
+        var txnRecord = recordItem.getTransactionRecord();
+        return txnRecord.hasContractCreateResult()
+                ? txnRecord.getContractCreateResult()
+                : txnRecord.getContractCallResult();
     }
 
     private com.hedera.services.stream.proto.ContractAction contractAction(

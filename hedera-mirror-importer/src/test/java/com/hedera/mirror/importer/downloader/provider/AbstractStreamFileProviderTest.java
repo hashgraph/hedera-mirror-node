@@ -89,8 +89,8 @@ abstract class AbstractStreamFileProviderTest {
     @Test
     void getLargeFile() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        fileCopier.copy();
+        var nodeFileCopier = getFileCopier(node);
+        nodeFileCopier.copy();
         var data = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         StepVerifier.create(streamFileProvider.get(node, data.getStreamFilename()))
                 .thenAwait(Duration.ofSeconds(2L))
@@ -112,36 +112,36 @@ abstract class AbstractStreamFileProviderTest {
     @Test
     void getSidecar() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        getSidecar(fileCopier, node);
+        var nodeFileCopier = getFileCopier(node);
+        getSidecar(nodeFileCopier, node);
     }
 
     @Test
     void getNotFound() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        getNotFound(fileCopier, node);
+        var nodeFileCopier = getFileCopier(node);
+        getNotFound(nodeFileCopier, node);
     }
 
     @Test
     void getError() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        getError(fileCopier, node);
+        var nodeFileCopier = getFileCopier(node);
+        getError(nodeFileCopier, node);
     }
 
     @Test
     void list() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        list(fileCopier, node);
+        var nodeFileCopier = getFileCopier(node);
+        list(nodeFileCopier, node);
     }
 
     @Test
     void listThenGet() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        fileCopier.copy();
+        var nodeFileCopier = getFileCopier(node);
+        nodeFileCopier.copy();
         var last = StreamFilename.from("2022-07-13T08_46_08.041986003Z.rcd_sig");
         var recordFile = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd.gz");
         var sidecar = streamFileData(node, "2022-07-13T08_46_11.304284003Z_01.rcd.gz");
@@ -180,8 +180,8 @@ abstract class AbstractStreamFileProviderTest {
     @Test
     void listWhenBatchSizeLessThanFilesAvailable() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        fileCopier.copy();
+        var nodeFileCopier = getFileCopier(node);
+        nodeFileCopier.copy();
         streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd.gz");
         var sig1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd.gz");
@@ -197,36 +197,36 @@ abstract class AbstractStreamFileProviderTest {
     @Test
     void listAfter() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        listAfter(fileCopier, node);
+        var nodeFileCopier = getFileCopier(node);
+        listAfter(nodeFileCopier, node);
     }
 
     @Test
     void listNotFound() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        listNotFound(fileCopier, node);
+        var nodeFileCopier = getFileCopier(node);
+        listNotFound(nodeFileCopier, node);
     }
 
     @Test
     void listError() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        listError(fileCopier, node);
+        var nodeFileCopier = getFileCopier(node);
+        listError(nodeFileCopier, node);
     }
 
     @Test
     void listInvalidFilename() throws Exception {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        listInvalidFilename(fileCopier, node);
+        var nodeFileCopier = getFileCopier(node);
+        listInvalidFilename(nodeFileCopier, node);
     }
 
     @Test
     void listLargeFiles() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        fileCopier.copy();
+        var nodeFileCopier = getFileCopier(node);
+        nodeFileCopier.copy();
         var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
 

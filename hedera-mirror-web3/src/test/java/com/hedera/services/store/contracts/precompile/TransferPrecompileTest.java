@@ -267,7 +267,7 @@ class TransferPrecompileTest {
                 .when(() -> decodeTransferTokens(eq(pretendArguments), any()))
                 .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
 
-        final var transactionBody = TransactionBody.newBuilder()
+        final var txnBody = TransactionBody.newBuilder()
                 .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
                         .setTransfers(TransferList.newBuilder()
                                 .addAccountAmounts(AccountAmount.newBuilder()
@@ -287,7 +287,7 @@ class TransferPrecompileTest {
         given(stack.getLast()).willReturn(lastFrame);
         given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
         given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
-        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getTransactionBody()).willReturn(txnBody);
         given(precompileContext.getSenderAddress()).willReturn(contractAddress);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -531,7 +531,7 @@ class TransferPrecompileTest {
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER);
 
-        final var transactionBody = TransactionBody.newBuilder()
+        final var txnBody = TransactionBody.newBuilder()
                 .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
                         .addTokenTransfers(TokenTransferList.newBuilder()
                                 .setToken(HTSTestsUtil.token)
@@ -554,7 +554,7 @@ class TransferPrecompileTest {
         given(stack.getLast()).willReturn(lastFrame);
         given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
         given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
-        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getTransactionBody()).willReturn(txnBody);
         given(precompileContext.getSenderAddress()).willReturn(contractAddress);
         given(worldUpdater.getStore()).willReturn(store);
         final var lazyCreationFee = 500L;
@@ -597,9 +597,8 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars =
-                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
+        final var txnBody = transferPrecompile.body(input, a -> a, transferParams);
+        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, txnBody.build(), sender);
 
         // then
         assertEquals(TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
@@ -617,9 +616,8 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars =
-                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
+        final var txnBody = transferPrecompile.body(input, a -> a, transferParams);
+        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, txnBody.build(), sender);
 
         // then
         // expect 2 times the fee as there are two transfers
@@ -638,9 +636,8 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars =
-                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
+        final var txnBody = transferPrecompile.body(input, a -> a, transferParams);
+        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, txnBody.build(), sender);
 
         // then
         // 1 for hbars and 1 for fungible tokens
@@ -658,9 +655,8 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_NFT_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars =
-                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
+        final var txnBody = transferPrecompile.body(input, a -> a, transferParams);
+        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, txnBody.build(), sender);
 
         // then
         // 2 for nfts transfers and 1 for hbars
@@ -677,9 +673,8 @@ class TransferPrecompileTest {
                 .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
-        final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars =
-                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
+        final var txnBody = transferPrecompile.body(input, a -> a, transferParams);
+        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, txnBody.build(), sender);
 
         // then
         // 1 for fungible + 2 for nfts transfers + 1 for hbars

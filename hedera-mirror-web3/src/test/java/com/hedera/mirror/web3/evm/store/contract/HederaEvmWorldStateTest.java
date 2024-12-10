@@ -172,11 +172,11 @@ class HederaEvmWorldStateTest {
 
     @Test
     void returnsWorldStateAccount() {
-        final var address = Address.RIPEMD160;
-        when(hederaEvmEntityAccess.getBalance(address)).thenReturn(balance);
+        final var ripemd160Address = Address.RIPEMD160;
+        when(hederaEvmEntityAccess.getBalance(ripemd160Address)).thenReturn(balance);
         when(hederaEvmEntityAccess.isUsable(any())).thenReturn(true);
 
-        final var account = subject.get(address);
+        final var account = subject.get(ripemd160Address);
 
         assertThat(account.getCode().isEmpty()).isTrue();
         assertThat(account.hasCode()).isFalse();
@@ -184,11 +184,11 @@ class HederaEvmWorldStateTest {
 
     @Test
     void returnsHederaEvmWorldStateTokenAccount() {
-        final var address = Address.RIPEMD160;
-        when(hederaEvmEntityAccess.isTokenAccount(address)).thenReturn(true);
+        final var ripemd160Address = Address.RIPEMD160;
+        when(hederaEvmEntityAccess.isTokenAccount(ripemd160Address)).thenReturn(true);
         when(evmProperties.isRedirectTokenCallsEnabled()).thenReturn(true);
 
-        final var account = subject.get(address);
+        final var account = subject.get(ripemd160Address);
 
         assertThat(account.getCode().isEmpty()).isFalse();
         assertThat(account.hasCode()).isTrue();
@@ -196,11 +196,11 @@ class HederaEvmWorldStateTest {
 
     @Test
     void returnsNull2() {
-        final var address = Address.RIPEMD160;
-        when(hederaEvmEntityAccess.isTokenAccount(address)).thenReturn(true);
+        final var ripemd160Address = Address.RIPEMD160;
+        when(hederaEvmEntityAccess.isTokenAccount(ripemd160Address)).thenReturn(true);
         when(evmProperties.isRedirectTokenCallsEnabled()).thenReturn(false);
 
-        assertThat(subject.get(address)).isNull();
+        assertThat(subject.get(ripemd160Address)).isNull();
     }
 
     @Test

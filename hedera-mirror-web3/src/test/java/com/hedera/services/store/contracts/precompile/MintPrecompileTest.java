@@ -327,7 +327,7 @@ class MintPrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        final var transactionBody = TransactionBody.newBuilder().setTokenMint(TokenMintTransactionBody.newBuilder());
+        final var txnBody = TransactionBody.newBuilder().setTokenMint(TokenMintTransactionBody.newBuilder());
 
         given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
@@ -342,8 +342,7 @@ class MintPrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_MINT_INPUT, a -> a, precompileContext);
-        final long result =
-                subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
+        final long result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, txnBody, sender);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

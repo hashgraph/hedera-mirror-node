@@ -265,10 +265,10 @@ class ReleaseHealthIndicatorTest {
 
     private GenericKubernetesResource helmRelease(List<ConditionBuilder> conditions) {
         var builtConditions = conditions.stream().map(ConditionBuilder::build).toList();
-        Map<String, Object> properties = Map.of("status", Map.of("conditions", builtConditions));
+        Map<String, Object> statusProperties = Map.of("status", Map.of("conditions", builtConditions));
         return new GenericKubernetesResourceBuilder()
                 .withKind("HelmRelease")
-                .withAdditionalProperties(properties)
+                .withAdditionalProperties(statusProperties)
                 .build();
     }
 

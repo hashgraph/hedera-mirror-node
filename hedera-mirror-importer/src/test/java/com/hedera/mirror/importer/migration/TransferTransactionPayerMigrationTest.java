@@ -514,13 +514,12 @@ class TransferTransactionPayerMigrationTest extends ImporterIntegrationTest {
                     (Long[]) rs.getArray("effective_payer_account_ids").getArray());
             EntityId sender = ObjectUtils.isNotEmpty(effectivePayers) ? EntityId.of(effectivePayers.get(0)) : null;
             EntityId receiver = EntityId.of(rs.getLong("collector_account_id"));
-            SharedTransfer sharedTransfer = new SharedTransfer(
+            return new SharedTransfer(
                     rs.getLong("amount"),
                     rs.getLong("consensus_timestamp"),
                     EntityId.of(rs.getLong("payer_account_id")),
                     receiver,
                     sender);
-            return sharedTransfer;
         });
     }
 
