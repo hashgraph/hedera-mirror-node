@@ -83,12 +83,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AutoCreationLogicTest {
 
-    public static final AccountID payer = asAccount("0.0.12345");
-    public static final TokenID token = asToken("0.0.23456");
-    private static final long initialTransfer = 16L;
-    private static final AccountID created = asAccount("0.0.1234");
-    private static final FeeObject fees = new FeeObject(1L, 2L, 3L);
-    private static final long totalFee = 6L;
+    public static final AccountID PAYER = asAccount("0.0.12345");
+    public static final TokenID TOKEN = asToken("0.0.23456");
+    private static final long INITIAL_TRANSFER = 16L;
+    private static final AccountID CREATED = asAccount("0.0.1234");
+    private static final FeeObject FEES = new FeeObject(1L, 2L, 3L);
+    private static final long TOTAL_FEE = 6L;
     private static final byte[] ECDSA_PUBLIC_KEY =
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     private final Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
@@ -154,10 +154,10 @@ class AutoCreationLogicTest {
     void cannotCreateAccountFromUnaliasedChange() {
         final var input = BalanceChange.changingHbar(
                 AccountAmount.newBuilder()
-                        .setAmount(initialTransfer)
-                        .setAccountID(payer)
+                        .setAmount(INITIAL_TRANSFER)
+                        .setAccountID(PAYER)
                         .build(),
-                payer);
+                PAYER);
         final var changes = List.of(input);
         assertThatThrownBy(() -> subject.create(input, at, store, ids, changes))
                 .isInstanceOf(IllegalStateException.class)
@@ -179,8 +179,8 @@ class AutoCreationLogicTest {
                 TransactionBody.newBuilder().setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder());
 
         ContractCallContext.get().setRecordFile(recordFileWithVersion(hapiMinorVersion));
-        given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
-        given(ids.getNewAccountId()).willReturn(created);
+        given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(FEES);
+        given(ids.getNewAccountId()).willReturn(CREATED);
         given(syntheticTxnFactory.createHollowAccount(eq(evmAddressAlias), eq(0L), anyInt()))
                 .willReturn(syntheticHollowCreation);
 
@@ -190,13 +190,13 @@ class AutoCreationLogicTest {
 
         final var result = subject.create(input, at, store, ids, List.of(input));
 
-        assertEquals(initialTransfer, input.getAggregatedUnits());
-        assertEquals(initialTransfer, input.getNewBalance());
-        assertEquals(Pair.of(OK, totalFee * 2), result);
+        assertEquals(INITIAL_TRANSFER, input.getAggregatedUnits());
+        assertEquals(INITIAL_TRANSFER, input.getNewBalance());
+        assertEquals(Pair.of(OK, TOTAL_FEE * 2), result);
         verify(aliasManager)
                 .link(
                         Address.wrap(Bytes.wrap(evmAddressAlias.toByteArray())),
-                        Address.wrap(Bytes.wrap(asEvmAddress(created))));
+                        Address.wrap(Bytes.wrap(asEvmAddress(CREATED))));
         verify(syntheticTxnFactory)
                 .createHollowAccount(eq(evmAddressAlias), eq(0L), maxAutoAssociationsCaptor.capture());
         assertThat(maxAutoAssociationsCaptor.getValue()).isEqualTo(expectedMaxAutoAssociations);
@@ -225,8 +225,8 @@ class AutoCreationLogicTest {
         final var changes = List.of(input);
 
         ContractCallContext.get().setRecordFile(recordFileWithVersion(hapiMinorVersion));
-        given(ids.getNewAccountId()).willReturn(created);
-        given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
+        given(ids.getNewAccountId()).willReturn(CREATED);
+        given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(FEES);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(eq(edKeyAlias), eq(aPrimitiveKey), eq(0L), anyInt()))
                 .willReturn(syntheticEDAliasCreation);
@@ -234,10 +234,10 @@ class AutoCreationLogicTest {
         store.wrap();
         final var result = subject.create(input, at, store, ids, changes);
 
-        assertEquals(initialTransfer, input.getAggregatedUnits());
+        assertEquals(INITIAL_TRANSFER, input.getAggregatedUnits());
         verify(aliasManager)
-                .maybeLinkEvmAddress(JKey.mapKey(aPrimitiveKey), Address.wrap(Bytes.wrap(asEvmAddress(created))));
-        assertEquals(Pair.of(OK, totalFee), result);
+                .maybeLinkEvmAddress(JKey.mapKey(aPrimitiveKey), Address.wrap(Bytes.wrap(asEvmAddress(CREATED))));
+        assertEquals(Pair.of(OK, TOTAL_FEE), result);
         verify(syntheticTxnFactory)
                 .createAccount(eq(edKeyAlias), eq(aPrimitiveKey), eq(0L), maxAutoAssociationsCaptor.capture());
         assertThat(maxAutoAssociationsCaptor.getValue()).isEqualTo(expectedMaxAutoAssociations);
@@ -255,8 +255,8 @@ class AutoCreationLogicTest {
         final ByteString edKeyAlias = aPrimitiveKey.toByteString();
         final TransactionBody.Builder syntheticEDAliasCreation = TransactionBody.newBuilder()
                 .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setAlias(edKeyAlias));
-        given(ids.getNewAccountId()).willReturn(created);
-        given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
+        given(ids.getNewAccountId()).willReturn(CREATED);
+        given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(FEES);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 2))
                 .willReturn(syntheticEDAliasCreation);
@@ -266,29 +266,29 @@ class AutoCreationLogicTest {
 
         store.wrap();
         final var result = subject.create(input1, at, store, ids, List.of(input1, input2));
-        assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(Pair.of(OK, TOTAL_FEE), result);
 
         assertEquals(16L, input1.getAggregatedUnits());
     }
 
     private BalanceChange wellKnownTokenChange(final ByteString alias) {
         return BalanceChange.changingFtUnits(
-                fromGrpcToken(token),
-                token,
+                fromGrpcToken(TOKEN),
+                TOKEN,
                 AccountAmount.newBuilder()
-                        .setAmount(initialTransfer)
+                        .setAmount(INITIAL_TRANSFER)
                         .setAccountID(AccountID.newBuilder().setAlias(alias).build())
                         .build(),
-                payer);
+                PAYER);
     }
 
     private BalanceChange wellKnownChange(final ByteString alias) {
         return BalanceChange.changingHbar(
                 AccountAmount.newBuilder()
-                        .setAmount(initialTransfer)
+                        .setAmount(INITIAL_TRANSFER)
                         .setAccountID(AccountID.newBuilder().setAlias(alias).build())
                         .build(),
-                payer);
+                PAYER);
     }
 
     private BalanceChange anotherTokenChange() {
@@ -300,12 +300,12 @@ class AutoCreationLogicTest {
                 fromGrpcToken(token1),
                 token1,
                 AccountAmount.newBuilder()
-                        .setAmount(initialTransfer)
+                        .setAmount(INITIAL_TRANSFER)
                         .setAccountID(AccountID.newBuilder()
                                 .setAlias(primitiveKey.toByteString())
                                 .build())
                         .build(),
-                payer);
+                PAYER);
     }
 
     private RecordFile recordFileWithVersion(int hapiMinorVersion) {

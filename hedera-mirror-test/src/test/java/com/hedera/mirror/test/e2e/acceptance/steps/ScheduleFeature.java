@@ -49,7 +49,7 @@ import org.springframework.http.HttpStatus;
 public class ScheduleFeature {
 
     private static final int DEFAULT_TINY_HBAR = 1_000;
-    private static final int signatoryCountOffset = 1; // Schedule includes payer account which may not be a required
+    private static final int SIGNATORY_COUNT_OFFSET = 1; // Schedule includes payer account which may not be a required
 
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
@@ -62,7 +62,7 @@ public class ScheduleFeature {
 
     @Given("I successfully schedule a treasury HBAR disbursement to {string}")
     public void createNewHBarTransferSchedule(String accountName) {
-        currentSignersCount = signatoryCountOffset;
+        currentSignersCount = SIGNATORY_COUNT_OFFSET;
         var recipient =
                 accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName)); // receiverSigRequired
         var scheduledTransaction = accountClient.getCryptoTransferTransaction(

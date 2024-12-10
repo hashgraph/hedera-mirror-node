@@ -58,7 +58,6 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
-import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -113,7 +112,6 @@ class CryptoOpsUsageTest {
     private CryptoApproveAllowanceTransactionBody approveOp;
     private CryptoDeleteAllowanceTransactionBody deleteAllowanceOp;
     private TransactionBody txn;
-    private Query query;
 
     private final CryptoOpsUsage subject = new CryptoOpsUsage();
 

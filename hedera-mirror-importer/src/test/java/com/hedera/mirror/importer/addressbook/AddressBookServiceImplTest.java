@@ -81,8 +81,8 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
     private static final NodeAddressBook UPDATED = addressBook(10, 0);
     private static final NodeAddressBook FINAL = addressBook(15, 0);
     private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;
-    private static final String baseAccountId = "0.0.";
-    private static final int basePort = 50211;
+    private static final String BASE_ACCOUNT_ID = "0.0.";
+    private static final int BASE_PORT = 50211;
     private static byte[] initialAddressBookBytes;
 
     private final AddressBookEntryRepository addressBookEntryRepository;
@@ -669,7 +669,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
             nodeAddressList.add(getNodeAddress(
                     i,
-                    baseAccountId + i,
+                    BASE_ACCOUNT_ID + i,
                     null,
                     List.of(
                             String.format("127.0.%d.1", i),
@@ -702,7 +702,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         int numEndpointsPerNode = 1;
 
         for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
-            nodeAddressList.add(getNodeAddress(i, baseAccountId + i, String.format("127.0.%d.0", i), List.of()));
+            nodeAddressList.add(getNodeAddress(i, BASE_ACCOUNT_ID + i, String.format("127.0.%d.0", i), List.of()));
         }
 
         NodeAddressBook.Builder nodeAddressBookBuilder =
@@ -730,7 +730,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
             nodeAddressList.add(getNodeAddress(
                     i,
-                    baseAccountId + i,
+                    BASE_ACCOUNT_ID + i,
                     String.format("127.0.%d.0", i),
                     List.of(
                             String.format("127.0.%d.1", i),
@@ -794,19 +794,19 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
 
         for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
             // deprecated ip
-            nodeAddressList.add(getNodeAddress(i, baseAccountId + i, String.format("127.0.%d.0", i), List.of()));
+            nodeAddressList.add(getNodeAddress(i, BASE_ACCOUNT_ID + i, String.format("127.0.%d.0", i), List.of()));
 
             // subset of only service endpoints
             nodeAddressList.add(getNodeAddress(
                     i,
-                    baseAccountId + i,
+                    BASE_ACCOUNT_ID + i,
                     null,
                     List.of(String.format("127.0.%d.1", i), String.format("127.0.%d.2", i))));
 
             // another deprecated ip and more service endpoints
             nodeAddressList.add(getNodeAddress(
                     i,
-                    baseAccountId + i,
+                    BASE_ACCOUNT_ID + i,
                     String.format("128.0.%d.0", i),
                     List.of(String.format("127.0.%d.3", i), String.format("127.0.%d.4", i))));
         }
@@ -860,15 +860,15 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
 
         for (int i = nodeAccountStart; i < addressBookEntries + nodeAccountStart; i++) {
             // deprecated ip
-            nodeAddressList.add(getNodeAddress(i, baseAccountId + i, String.format("127.0.%d.0", i), List.of()));
+            nodeAddressList.add(getNodeAddress(i, BASE_ACCOUNT_ID + i, String.format("127.0.%d.0", i), List.of()));
 
             // subset of only service endpoints
-            nodeAddressList.add(getNodeAddress(i, baseAccountId + i, null, List.of(String.format("127.0.%d.0", i))));
+            nodeAddressList.add(getNodeAddress(i, BASE_ACCOUNT_ID + i, null, List.of(String.format("127.0.%d.0", i))));
 
             // another deprecated ip and more service endpoints
             nodeAddressList.add(getNodeAddress(
                     i,
-                    baseAccountId + i,
+                    BASE_ACCOUNT_ID + i,
                     String.format("127.0.%d.0", i),
                     List.of(String.format("127.0.%d.1", i), String.format("127.0.%d.2", i))));
         }
@@ -1115,7 +1115,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         if (StringUtils.isNotBlank(deprecatedIp)) {
             nodeAddressBuilder
                     .setIpAddress(ByteString.copyFromUtf8(deprecatedIp))
-                    .setPortno(basePort);
+                    .setPortno(BASE_PORT);
         }
 
         if (StringUtils.isNotBlank(deprecatedMemo)) {
@@ -1123,7 +1123,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         }
 
         for (String endpoint : serviceEndpoints) {
-            nodeAddressBuilder.addServiceEndpoint(getServiceEndpoint(endpoint, basePort));
+            nodeAddressBuilder.addServiceEndpoint(getServiceEndpoint(endpoint, BASE_PORT));
         }
 
         return nodeAddressBuilder.build();

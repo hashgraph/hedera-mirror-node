@@ -102,7 +102,7 @@ public class TokenUpdateLogic {
             validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
         }
         final var token = tokenStore.get(tokenID);
-        final var isOpMemoUnset = !op.hasMemo() || op.getMemo().getValue().length() == 0;
+        final var isOpMemoUnset = !op.hasMemo() || op.getMemo().getValue().isEmpty();
         if (isOpMemoUnset && mergeUnsetMemoFromExisting) {
             final var existingMemo = Optional.ofNullable(token.getMemo()).orElse("");
             op = op.toBuilder().setMemo(StringValue.of(existingMemo)).build();

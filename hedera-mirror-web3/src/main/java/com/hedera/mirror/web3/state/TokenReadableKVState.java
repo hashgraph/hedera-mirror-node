@@ -33,6 +33,7 @@ import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
@@ -83,7 +84,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
         final var timestamp = ContractCallContext.get().getTimestamp();
         final var entity = commonEntityAccessor.get(key, timestamp).orElse(null);
 
-        if (entity == null) {
+        if (entity == null || entity.getType() != EntityType.TOKEN) {
             return null;
         }
 

@@ -2400,6 +2400,95 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     }
 
     @Test
+    void onTokenAccountClaimNoExisting() {
+        var tokenAccount =
+                domainBuilder.tokenAccount().customize(ta -> ta.claim(true)).get();
+
+        // when
+        sqlEntityListener.onTokenAccount(tokenAccount);
+        completeFileAndCommit();
+
+        // then
+        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccount);
+        assertThat(findHistory(TokenAccount.class)).isEmpty();
+    }
+
+    @CsvSource(
+            nullValues = "null",
+            textBlock = """
+            false, false
+            true, false
+            true, null
+            """)
+    @ParameterizedTest
+    void onTokenAccountClaimNoExistingAssociated(boolean database, Boolean associated) {
+        var tokenAccountDissociate = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.associated(associated))
+                .get();
+        var tokenAccountClaim = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.claim(true)
+                        .accountId(tokenAccountDissociate.getAccountId())
+                        .tokenId(tokenAccountDissociate.getTokenId()))
+                .get();
+
+        sqlEntityListener.onTokenAccount(tokenAccountDissociate);
+
+        if (database) {
+            completeFileAndCommit();
+        }
+
+        // when
+        sqlEntityListener.onTokenAccount(tokenAccountClaim);
+        completeFileAndCommit();
+
+        // then
+        tokenAccountDissociate.setAssociated(false);
+        tokenAccountDissociate.setTimestampUpper(tokenAccountClaim.getTimestampLower());
+        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccountClaim);
+        assertThat(findHistory(TokenAccount.class)).containsExactly(tokenAccountDissociate);
+    }
+
+    @CsvSource(
+            nullValues = "null",
+            textBlock = """
+            false, true
+            false, null
+            true, true
+            """)
+    @ParameterizedTest
+    void onTokenAccountClaimExistingAssociated(boolean database, Boolean associated) {
+        var tokenAccountAssociate = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.associated(associated))
+                .get();
+        var tokenAccountClaim = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.claim(true)
+                        .accountId(tokenAccountAssociate.getAccountId())
+                        .tokenId(tokenAccountAssociate.getTokenId()))
+                .get();
+
+        sqlEntityListener.onTokenAccount(tokenAccountAssociate);
+
+        if (database) {
+            completeFileAndCommit();
+        }
+
+        // when
+        sqlEntityListener.onTokenAccount(tokenAccountClaim);
+        completeFileAndCommit();
+
+        // then
+        if (associated == null) { // db defaults to false
+            tokenAccountAssociate.setAssociated(false);
+        }
+        assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccountAssociate);
+        assertThat(findHistory(TokenAccount.class)).isEmpty();
+    }
+
+    @Test
     void onTokenAccountDissociate() {
         EntityId tokenId1 = EntityId.of("0.0.3");
 

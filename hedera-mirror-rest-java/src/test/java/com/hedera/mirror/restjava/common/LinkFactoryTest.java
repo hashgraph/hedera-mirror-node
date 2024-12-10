@@ -67,14 +67,14 @@ class LinkFactoryTest {
     private final NftAllowance nftAllowance =
             new NftAllowance().owner("0.0.1000").spender("0.0.2000").tokenId("0.0.6458");
 
-    private static final String uri = "/api";
+    private static final String URI = "/api";
 
     @BeforeEach
     void setUp() {
         context = Mockito.mockStatic(RequestContextHolder.class);
         context.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
         when(attributes.getRequest()).thenReturn(request);
-        when(request.getRequestURI()).thenReturn(uri);
+        when(request.getRequestURI()).thenReturn(URI);
         when(extractor.apply(nftAllowance))
                 .thenReturn(Map.of(ACCOUNT_ID, nftAllowance.getOwner(), TOKEN_ID, nftAllowance.getTokenId()));
     }

@@ -48,8 +48,6 @@ class SyntheticContractResultServiceImplTest {
     private RecordItem recordItem;
     private EntityId entityTokenId;
     private EntityId senderId;
-    private EntityId receiverId;
-    private long amount;
 
     @BeforeEach
     void beforeEach() {
@@ -59,9 +57,6 @@ class SyntheticContractResultServiceImplTest {
         TokenID tokenId = recordItem.getTransactionBody().getTokenMint().getToken();
         entityTokenId = EntityId.of(tokenId);
         senderId = EntityId.EMPTY;
-        receiverId =
-                EntityId.of(recordItem.getTransactionBody().getTransactionID().getAccountID());
-        amount = recordItem.getTransactionBody().getTokenMint().getAmount();
 
         entityProperties.getPersist().setSyntheticContractResults(true);
     }
