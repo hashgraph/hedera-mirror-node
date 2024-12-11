@@ -56,7 +56,7 @@ class CompositeSignatureFileReaderTest {
     }
 
     @Test
-    void testValidV2() throws Exception {
+    void testValidV2() {
         var signatureFileBytes = getSignatureFileBytes(SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH);
         var streamFileData = StreamFileData.from(SIGNATURE_FILENAME, signatureFileBytes);
         compositeBalanceFileReader.read(streamFileData);
@@ -66,7 +66,7 @@ class CompositeSignatureFileReaderTest {
     }
 
     @Test
-    void testValidV5() throws Exception {
+    void testValidV5() {
         var signatureFileBytes = getSignatureFileBytes(SignatureFileReaderV5.VERSION);
         var streamFileData = StreamFileData.from(SIGNATURE_FILENAME, signatureFileBytes);
         compositeBalanceFileReader.read(streamFileData);
@@ -76,7 +76,7 @@ class CompositeSignatureFileReaderTest {
     }
 
     @Test
-    void testValidV6() throws Exception {
+    void testValidV6() {
         var signatureFileBytes = getSignatureFileBytes(ProtoSignatureFileReader.VERSION);
         var streamFileData = StreamFileData.from(SIGNATURE_FILENAME, signatureFileBytes);
         compositeBalanceFileReader.read(streamFileData);

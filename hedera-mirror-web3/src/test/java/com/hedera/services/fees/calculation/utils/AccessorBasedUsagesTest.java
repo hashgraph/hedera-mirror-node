@@ -310,9 +310,9 @@ class AccessorBasedUsagesTest {
 
         subject.assess(sigUsage, txnAccessor, accumulator);
 
-        long THREE_MONTHS_IN_SECONDS = 7776000L;
+        long threeMonthsInSeconds = 7776000L;
         verify(cryptoOpsUsage)
-                .cryptoUpdateUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator, THREE_MONTHS_IN_SECONDS);
+                .cryptoUpdateUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator, threeMonthsInSeconds);
     }
 
     @Test

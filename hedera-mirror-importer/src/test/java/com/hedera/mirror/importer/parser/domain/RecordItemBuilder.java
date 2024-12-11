@@ -72,6 +72,7 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
@@ -158,9 +159,10 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -201,7 +203,7 @@ public class RecordItemBuilder {
             AccountID.newBuilder().setAccountNum(STAKING_REWARD_ACCOUNT).build();
 
     private final AtomicBoolean autoCreation = new AtomicBoolean(false);
-    private final Map<TransactionType, Supplier<Builder<?>>> builders = new HashMap<>();
+    private final Map<TransactionType, Supplier<Builder<?>>> builders = new EnumMap<>(TransactionType.class);
     private final AtomicLong entityId = new AtomicLong(INITIAL_ID);
     private final AtomicLong id = new AtomicLong(0L);
     private final SecureRandom random = new SecureRandom();
@@ -576,11 +578,15 @@ public class RecordItemBuilder {
         var accountId = accountId();
         var customFee =
                 CustomFee.newBuilder().setFeeCollectorAccountId(accountId).setAllCollectorsAreExempt(false);
-        switch (feeCase) {
-            case FIXED_FEE -> customFee.setFixedFee(fixedFee());
-            case ROYALTY_FEE -> customFee.setRoyaltyFee(royaltyFee());
-            case FRACTIONAL_FEE -> customFee.setFractionalFee(fractionalFee());
+
+        if (Objects.requireNonNull(feeCase) == FIXED_FEE) {
+            customFee.setFixedFee(fixedFee());
+        } else if (feeCase == FeeCase.ROYALTY_FEE) {
+            customFee.setRoyaltyFee(royaltyFee());
+        } else if (feeCase == FeeCase.FRACTIONAL_FEE) {
+            customFee.setFractionalFee(fractionalFee());
         }
+
         return customFee;
     }
 
@@ -1064,6 +1070,7 @@ public class RecordItemBuilder {
         switch (type) {
             case FUNGIBLE_COMMON -> transactionBody.setAmount(1000L);
             case NON_FUNGIBLE_UNIQUE -> transactionBody.addSerialNumbers(1L);
+            default -> throw new IllegalArgumentException("Unsupported token type: " + type);
         }
         return new Builder<>(TransactionType.TOKENWIPE, transactionBody).receipt(r -> r.setNewTotalSupply(2L));
     }

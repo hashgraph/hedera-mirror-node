@@ -51,12 +51,10 @@ class UpdatableReferenceCacheTest {
 
     void setInitialCacheLineState(@NonNull final ValueIs originalValueIs, @NonNull final ValueIs currentValueIs) {
         switch (originalValueIs) {
-            case MISSING -> {}
             case NULL -> sut.addNullToOriginal(THIS_KEY);
             case NON_NULL -> sut.addToOriginal(THIS_KEY, ORIGINAL_VALUE);
         }
         switch (currentValueIs) {
-            case MISSING -> {}
             case NULL -> sut.addNullToCurrent(THIS_KEY);
             case NON_NULL -> sut.addToCurrent(THIS_KEY, UPDATED_VALUE);
         }

@@ -119,13 +119,13 @@ class EntityTimestampMigrationTest extends ImporterIntegrationTest {
         return entity(id, entityType, null, null);
     }
 
-    private MigrationEntity entity(long id, EntityType EntityType, Long createdTimestamp, Long modifiedTimestamp) {
+    private MigrationEntity entity(long id, EntityType entityType, Long createdTimestamp, Long modifiedTimestamp) {
         MigrationEntity entity = new MigrationEntity();
         entity.setCreatedTimestamp(createdTimestamp);
         entity.setId(id);
         entity.setModifiedTimestamp(modifiedTimestamp);
         entity.setNum(id);
-        entity.setType(EntityType.getId());
+        entity.setType(entityType.getId());
         return entity;
     }
 

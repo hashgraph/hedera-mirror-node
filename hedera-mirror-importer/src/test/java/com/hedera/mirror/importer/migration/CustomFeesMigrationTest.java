@@ -296,28 +296,27 @@ class CustomFeesMigrationTest extends ImporterIntegrationTest {
     }
 
     private MigrationCustomFee.MigrationCustomFeeBuilder getEmptyFee() {
-        var id = new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id());
-        return MigrationCustomFee.builder().id(id).minimumAmount(0L);
+        return MigrationCustomFee.builder()
+                .id(new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id()))
+                .minimumAmount(0L);
     }
 
     private MigrationCustomFee.MigrationCustomFeeBuilder getFixedFee() {
-        var id = new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id());
         return MigrationCustomFee.builder()
                 .allCollectorsAreExempt(false)
                 .amount(domainBuilder.number())
                 .denominatingTokenId(domainBuilder.id())
-                .id(id)
+                .id(new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id()))
                 .collectorAccountId(domainBuilder.id());
     }
 
     private MigrationCustomFee.MigrationCustomFeeBuilder getFractionalFee() {
-        var id = new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id());
         return MigrationCustomFee.builder()
                 .allCollectorsAreExempt(false)
                 .amount(domainBuilder.number())
                 .denominatingTokenId(domainBuilder.id())
                 .amountDenominator(domainBuilder.number())
-                .id(id)
+                .id(new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id()))
                 .collectorAccountId(domainBuilder.id())
                 .maximumAmount(domainBuilder.number())
                 .minimumAmount(1L)
@@ -325,11 +324,10 @@ class CustomFeesMigrationTest extends ImporterIntegrationTest {
     }
 
     private MigrationCustomFee.MigrationCustomFeeBuilder getRoyaltyFee() {
-        var id = new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id());
         return MigrationCustomFee.builder()
                 .allCollectorsAreExempt(false)
                 .amount(domainBuilder.number())
-                .id(id)
+                .id(new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id()))
                 .collectorAccountId(domainBuilder.id())
                 .denominatingTokenId(domainBuilder.id())
                 .royaltyDenominator(10L)

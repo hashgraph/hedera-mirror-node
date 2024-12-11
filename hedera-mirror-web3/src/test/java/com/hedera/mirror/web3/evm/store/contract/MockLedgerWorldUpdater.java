@@ -55,5 +55,7 @@ public class MockLedgerWorldUpdater extends AbstractLedgerWorldUpdater<HederaEvm
     }
 
     @Override
-    public void commit() {}
+    public void commit() {
+        // No op
+    }
 }

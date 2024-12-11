@@ -87,6 +87,18 @@ class RecordItemTest {
             .setTransactionHash(ByteString.copyFrom(nextBytes(32)))
             .build();
 
+    private static final TransactionRecord TRANSACTION_RECORD_ETHEREUM_HASH = TransactionRecord.newBuilder()
+            .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
+            .setMemo("memo")
+            .setTransactionHash(ByteString.copyFrom(nextBytes(32)))
+            .build();
+
+    private static final TransactionRecord TRANSACTION_RECORD_HEDERA_HASH = TransactionRecord.newBuilder()
+            .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
+            .setMemo("memo")
+            .setTransactionHash(ByteString.copyFrom(nextBytes(48)))
+            .build();
+
     @CsvSource({
         ", FEE_SCHEDULE_FILE_PART_UPLOADED, true",
         ", SUCCESS, true",
@@ -128,10 +140,10 @@ class RecordItemTest {
     void getTransactionHashEthereum() {
         var recordItem = RecordItem.builder()
                 .transaction(DEFAULT_TRANSACTION)
-                .transactionRecord(TRANSACTION_RECORD)
+                .transactionRecord(TRANSACTION_RECORD_ETHEREUM_HASH)
                 .build();
         assertThat(recordItem.getTransactionHash())
-                .isEqualTo(TRANSACTION_RECORD.getTransactionHash().toByteArray());
+                .isEqualTo(TRANSACTION_RECORD_ETHEREUM_HASH.getTransactionHash().toByteArray());
     }
 
     @Test

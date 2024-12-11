@@ -16,7 +16,6 @@
 
 package com.hedera.services.fees.calculation.utils;
 
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
@@ -29,7 +28,6 @@ import static org.mockito.Mockito.mock;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
@@ -187,8 +185,6 @@ class OpUsageCtxHelperTest {
 
         given(accessor.getTxn()).willReturn(txn);
         given(accessor.getSubType()).willReturn(TOKEN_NON_FUNGIBLE_UNIQUE);
-
-        given(store.getToken(asTypedEvmAddress(target), OnMissing.THROW)).willReturn(extant);
 
         final var tokenMintMeta = subject.metaForTokenMint(accessor);
 

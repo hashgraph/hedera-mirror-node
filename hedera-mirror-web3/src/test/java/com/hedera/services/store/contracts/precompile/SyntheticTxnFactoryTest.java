@@ -39,8 +39,6 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
-import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
@@ -126,8 +124,6 @@ class SyntheticTxnFactoryTest {
         final Key key =
                 Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(bytes)).build();
         final var alias = key.toByteString();
-        final var evmAddress = ByteString.copyFrom(
-                EthSigsUtils.recoverAddressFromPubKey(JKey.mapKey(key).getECDSASecp256k1Key()));
         final var result = subject.createAccount(alias, key, balance, 0);
         final var txnBody = result.build();
 

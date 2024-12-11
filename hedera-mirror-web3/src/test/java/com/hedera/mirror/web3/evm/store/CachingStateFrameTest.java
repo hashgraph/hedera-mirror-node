@@ -218,7 +218,9 @@ class CachingStateFrameTest {
         }
 
         @Override
-        public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {}
+        public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
+            throw new UnsupportedOperationException("Missing implementation");
+        }
 
         @NonNull
         @Override
@@ -232,11 +234,15 @@ class CachingStateFrameTest {
                 @NonNull final Class<?> klass,
                 @NonNull final UpdatableReferenceCache<K> cache,
                 @NonNull final K key,
-                @NonNull final Object value) {}
+                @NonNull final Object value) {
+            // No op
+        }
 
         @Override
         protected void deleteValue(
-                @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {}
+                @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+            // No op
+        }
     }
 
     /** A spying `CachingStateFrame` that records accesses to the methods underlying value accessors */

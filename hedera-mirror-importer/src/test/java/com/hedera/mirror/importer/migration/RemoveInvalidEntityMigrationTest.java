@@ -87,15 +87,11 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
         insertEntity(5, EntityType.TOKEN);
 
         List<Transaction> transactionList = new ArrayList<>();
-        transactionList.add(
-                transaction(1, 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS, TransactionType.CRYPTOCREATEACCOUNT));
-        transactionList.add(transaction(
-                20, 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS, TransactionType.CONTRACTCREATEINSTANCE));
-        transactionList.add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionType.FILECREATE));
-        transactionList.add(
-                transaction(40, 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS, TransactionType.CONSENSUSCREATETOPIC));
-        transactionList.add(
-                transaction(50, 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS, TransactionType.TOKENCREATION));
+        transactionList.add(transaction(1, 1, ResponseCodeEnum.SUCCESS, TransactionType.CRYPTOCREATEACCOUNT));
+        transactionList.add(transaction(20, 2, ResponseCodeEnum.SUCCESS, TransactionType.CONTRACTCREATEINSTANCE));
+        transactionList.add(transaction(30, 3, ResponseCodeEnum.SUCCESS, TransactionType.FILECREATE));
+        transactionList.add(transaction(40, 4, ResponseCodeEnum.SUCCESS, TransactionType.CONSENSUSCREATETOPIC));
+        transactionList.add(transaction(50, 5, ResponseCodeEnum.SUCCESS, TransactionType.TOKENCREATION));
         transactionList.forEach(this::insertTransaction);
 
         // migration
@@ -114,19 +110,15 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
         var typeMismatchedTokenEntityId = insertEntity(5, EntityType.FILE);
 
         List<Transaction> transactionList = new ArrayList<>();
+        transactionList.add(transaction(1, 1, ResponseCodeEnum.SUCCESS, TransactionType.CRYPTOCREATEACCOUNT));
+        transactionList.add(transaction(20, 2, ResponseCodeEnum.SUCCESS, TransactionType.CONTRACTCREATEINSTANCE));
+        transactionList.add(transaction(30, 3, ResponseCodeEnum.SUCCESS, TransactionType.FILECREATE));
+        transactionList.add(transaction(40, 4, ResponseCodeEnum.SUCCESS, TransactionType.CONSENSUSCREATETOPIC));
+        transactionList.add(transaction(50, 5, ResponseCodeEnum.SUCCESS, TransactionType.TOKENCREATION));
         transactionList.add(
-                transaction(1, 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS, TransactionType.CRYPTOCREATEACCOUNT));
-        transactionList.add(transaction(
-                20, 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS, TransactionType.CONTRACTCREATEINSTANCE));
-        transactionList.add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionType.FILECREATE));
+                transaction(70, 50, ResponseCodeEnum.INVALID_TOPIC_ID, TransactionType.CONSENSUSSUBMITMESSAGE));
         transactionList.add(
-                transaction(40, 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS, TransactionType.CONSENSUSCREATETOPIC));
-        transactionList.add(
-                transaction(50, 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS, TransactionType.TOKENCREATION));
-        transactionList.add(transaction(
-                70, 50, EntityType.TOPIC, ResponseCodeEnum.INVALID_TOPIC_ID, TransactionType.CONSENSUSSUBMITMESSAGE));
-        transactionList.add(transaction(
-                80, 100, EntityType.TOPIC, ResponseCodeEnum.TOPIC_EXPIRED, TransactionType.CONSENSUSSUBMITMESSAGE));
+                transaction(80, 100, ResponseCodeEnum.TOPIC_EXPIRED, TransactionType.CONSENSUSSUBMITMESSAGE));
         transactionList.forEach(this::insertTransaction);
 
         // migration
@@ -168,28 +160,20 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
         var typeMismatchedTokenEntityId = insertEntity(10, EntityType.FILE);
 
         List<Transaction> transactionList = new ArrayList<>();
+        transactionList.add(transaction(1, 1, ResponseCodeEnum.SUCCESS, TransactionType.CRYPTOCREATEACCOUNT));
+        transactionList.add(transaction(20, 2, ResponseCodeEnum.SUCCESS, TransactionType.CONTRACTCREATEINSTANCE));
+        transactionList.add(transaction(30, 3, ResponseCodeEnum.SUCCESS, TransactionType.FILECREATE));
+        transactionList.add(transaction(40, 4, ResponseCodeEnum.SUCCESS, TransactionType.CONSENSUSCREATETOPIC));
+        transactionList.add(transaction(50, 5, ResponseCodeEnum.SUCCESS, TransactionType.TOKENCREATION));
+        transactionList.add(transaction(60, 6, ResponseCodeEnum.SUCCESS, TransactionType.CRYPTOCREATEACCOUNT));
+        transactionList.add(transaction(70, 7, ResponseCodeEnum.SUCCESS, TransactionType.CONTRACTCREATEINSTANCE));
+        transactionList.add(transaction(80, 8, ResponseCodeEnum.SUCCESS, TransactionType.FILECREATE));
+        transactionList.add(transaction(90, 9, ResponseCodeEnum.SUCCESS, TransactionType.CONSENSUSCREATETOPIC));
+        transactionList.add(transaction(100, 10, ResponseCodeEnum.SUCCESS, TransactionType.TOKENCREATION));
         transactionList.add(
-                transaction(1, 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS, TransactionType.CRYPTOCREATEACCOUNT));
-        transactionList.add(transaction(
-                20, 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS, TransactionType.CONTRACTCREATEINSTANCE));
-        transactionList.add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionType.FILECREATE));
+                transaction(500, 50, ResponseCodeEnum.INVALID_TOPIC_ID, TransactionType.CONSENSUSSUBMITMESSAGE));
         transactionList.add(
-                transaction(40, 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS, TransactionType.CONSENSUSCREATETOPIC));
-        transactionList.add(
-                transaction(50, 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS, TransactionType.TOKENCREATION));
-        transactionList.add(
-                transaction(60, 6, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS, TransactionType.CRYPTOCREATEACCOUNT));
-        transactionList.add(transaction(
-                70, 7, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS, TransactionType.CONTRACTCREATEINSTANCE));
-        transactionList.add(transaction(80, 8, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionType.FILECREATE));
-        transactionList.add(
-                transaction(90, 9, EntityType.TOPIC, ResponseCodeEnum.SUCCESS, TransactionType.CONSENSUSCREATETOPIC));
-        transactionList.add(
-                transaction(100, 10, EntityType.TOKEN, ResponseCodeEnum.SUCCESS, TransactionType.TOKENCREATION));
-        transactionList.add(transaction(
-                500, 50, EntityType.TOPIC, ResponseCodeEnum.INVALID_TOPIC_ID, TransactionType.CONSENSUSSUBMITMESSAGE));
-        transactionList.add(transaction(
-                1000, 100, EntityType.TOPIC, ResponseCodeEnum.TOPIC_EXPIRED, TransactionType.CONSENSUSSUBMITMESSAGE));
+                transaction(1000, 100, ResponseCodeEnum.TOPIC_EXPIRED, TransactionType.CONSENSUSSUBMITMESSAGE));
         transactionList.forEach(this::insertTransaction);
 
         // migration
@@ -217,11 +201,7 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
     }
 
     private Transaction transaction(
-            long consensusNs,
-            long id,
-            EntityType entityType,
-            ResponseCodeEnum result,
-            TransactionType transactionType) {
+            long consensusNs, long id, ResponseCodeEnum result, TransactionType transactionType) {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusTimestamp(consensusNs);
@@ -238,7 +218,7 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
         return transaction;
     }
 
-    private EntityId entityId(long id, EntityType entityType) {
+    private EntityId entityId(long id) {
         return EntityId.of(0, 1, id);
     }
 
@@ -280,7 +260,7 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
      * @param type EntityType
      */
     private Entity insertEntity(long id, EntityType type) {
-        var entityId = entityId(id, type);
+        var entityId = entityId(id);
         var entity = entityId.toEntity();
         entity.setType(type);
         entity.setMemo("abc" + (char) 0);

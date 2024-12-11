@@ -164,7 +164,6 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
                 .entity()
                 .customize(a -> a.id(accountId.getAccountId().getId()))
                 .persist();
-        long accountCreationTimestamp = account.getCreatedTimestamp();
         // not persisted
         var tokenBalance1 = domainBuilder
                 .tokenBalance()

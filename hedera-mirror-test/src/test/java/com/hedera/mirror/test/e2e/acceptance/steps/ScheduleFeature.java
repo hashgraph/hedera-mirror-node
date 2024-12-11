@@ -38,6 +38,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -158,11 +159,11 @@ public class ScheduleFeature {
                 .collect(Collectors.toSet());
         assertThat(signatureSet).hasSize(currentSignersCount);
 
-        switch (scheduleStatus) {
-            case DELETED, NON_EXECUTED -> assertThat(mirrorSchedule.getExecutedTimestamp())
-                    .isNull();
-            case EXECUTED -> assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
-            default -> {}
+        if (Objects.requireNonNull(scheduleStatus) == ScheduleStatus.DELETED
+                || scheduleStatus == ScheduleStatus.NON_EXECUTED) {
+            assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
+        } else if (scheduleStatus == ScheduleStatus.EXECUTED) {
+            assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
         }
 
         return mirrorSchedule;
