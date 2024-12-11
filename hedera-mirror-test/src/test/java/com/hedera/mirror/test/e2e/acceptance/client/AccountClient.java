@@ -119,11 +119,10 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public TransferTransaction getCryptoTransferTransaction(AccountId sender, AccountId recipient, Hbar hbarAmount) {
-        TransferTransaction transferTransaction = new TransferTransaction()
+        return new TransferTransaction()
                 .addHbarTransfer(sender, hbarAmount.negated())
                 .addHbarTransfer(recipient, hbarAmount)
                 .setTransactionMemo(getMemo("Crypto transfer"));
-        return transferTransaction;
     }
 
     public NetworkTransactionResponse sendApprovedCryptoTransfer(

@@ -68,31 +68,31 @@ class NodeStakeRepositoryTest extends GrpcIntegrationTest {
     @Test
     void findAllStakeByConsensusTimestamp() {
         long consensusTimestamp = 0L;
-        var nodeStake0_0 = nodeStake(consensusTimestamp, 0L, 0L);
-        var nodeStake0_1 = nodeStake(consensusTimestamp, 1L, 1L);
+        var nodeStakeZeroZero = nodeStake(consensusTimestamp, 0L, 0L);
+        var nodeStakeZeroOne = nodeStake(consensusTimestamp, 1L, 1L);
 
         assertThat(nodeStakeRepository.findAllStakeByConsensusTimestamp(consensusTimestamp))
                 .as("Latest timestamp 0 stakes")
                 .containsAllEntriesOf(Map.of(
-                        nodeStake0_0.getNodeId(),
-                        nodeStake0_0.getStake(),
-                        nodeStake0_1.getNodeId(),
-                        nodeStake0_1.getStake()));
+                        nodeStakeZeroZero.getNodeId(),
+                        nodeStakeZeroZero.getStake(),
+                        nodeStakeZeroOne.getNodeId(),
+                        nodeStakeZeroOne.getStake()));
 
         // Clear cache and load the next day's node stake info
         reset();
 
         consensusTimestamp++;
-        var nodeStake1_0 = nodeStake(consensusTimestamp, 0L, 10L);
-        var nodeStake1_1 = nodeStake(consensusTimestamp, 1L, 11L);
+        var nodeStakeOneZero = nodeStake(consensusTimestamp, 0L, 10L);
+        var nodeStakeOneOne = nodeStake(consensusTimestamp, 1L, 11L);
 
         assertThat(nodeStakeRepository.findAllStakeByConsensusTimestamp(consensusTimestamp))
                 .as("Latest timestamp 1 stakes")
                 .containsAllEntriesOf(Map.of(
-                        nodeStake1_0.getNodeId(),
-                        nodeStake1_0.getStake(),
-                        nodeStake1_1.getNodeId(),
-                        nodeStake1_1.getStake()));
+                        nodeStakeOneZero.getNodeId(),
+                        nodeStakeOneZero.getStake(),
+                        nodeStakeOneOne.getNodeId(),
+                        nodeStakeOneOne.getStake()));
     }
 
     private NodeStake nodeStake(long consensusTimestamp, long nodeId, long stake) {

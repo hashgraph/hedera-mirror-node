@@ -124,7 +124,7 @@ public final class MiscUtils {
             case TOKENDISSOCIATE -> TokenDissociateFromAccount;
             case TOKEN_PAUSE -> TokenPause;
             case TOKEN_UNPAUSE -> TokenUnpause;
-            default -> throw new Exception("Unknown HederaFunctionality for " + txn);
+            default -> throw new IllegalArgumentException("Unknown HederaFunctionality for " + txn);
         };
     }
 

@@ -141,7 +141,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(ERC, GET_APPROVED_SELECTOR, asAddress(nonFungibleTokenId), new BigInteger("1"));
         var getApprovedResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getApprovedResponse.getResultAsAddress()).isEqualTo("");
+        assertThat(getApprovedResponse.getResultAsAddress()).isEmpty();
     }
 
     @RetryAsserts

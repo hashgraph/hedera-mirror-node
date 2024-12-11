@@ -36,14 +36,11 @@ public class PublishException extends RuntimeException {
     public String getStatus() {
         Throwable throwable = Throwables.getRootCause(this);
 
-        if (throwable instanceof PrecheckStatusException pse) {
-            return pse.status.toString();
-        } else if (throwable instanceof ReceiptStatusException rse) {
-            return rse.receipt.status.toString();
-        } else if (throwable instanceof StatusRuntimeException sre) {
-            return sre.getStatus().getCode().toString();
-        } else {
-            return throwable.getClass().getSimpleName();
-        }
+        return switch (throwable) {
+            case PrecheckStatusException pse -> pse.status.toString();
+            case ReceiptStatusException rse -> rse.receipt.status.toString();
+            case StatusRuntimeException sre -> sre.getStatus().getCode().toString();
+            default -> throwable.getClass().getSimpleName();
+        };
     }
 }

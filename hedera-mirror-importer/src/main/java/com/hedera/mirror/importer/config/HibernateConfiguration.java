@@ -16,8 +16,9 @@
 
 package com.hedera.mirror.importer.config;
 
+import static org.hibernate.cfg.JdbcSettings.STATEMENT_INSPECTOR;
+
 import java.util.Map;
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
@@ -32,7 +33,7 @@ class HibernateConfiguration implements HibernatePropertiesCustomizer {
 
     @Override
     public void customize(Map<String, Object> hibernateProperties) {
-        hibernateProperties.put(AvailableSettings.STATEMENT_INSPECTOR, statementInspector());
+        hibernateProperties.put(STATEMENT_INSPECTOR, statementInspector());
     }
 
     /**

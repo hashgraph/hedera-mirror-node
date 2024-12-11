@@ -667,6 +667,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                         tokenId, admin, receiverAccountId.getAccountId(), receiverAccountId.getPrivateKey(), 10L);
                 networkTransactionResponse = tokenClient.wipeFungible(tokenId, 1L, receiverAccountId);
             }
+            default -> throw new IllegalArgumentException("Unsupported action: " + action);
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(
@@ -690,6 +691,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             case "burn" -> networkTransactionResponse = tokenClient.burnFungible(tokenId, 10L);
 
             case "mint" -> networkTransactionResponse = tokenClient.mint(tokenId, 10L);
+
+            default -> throw new IllegalArgumentException("Unsupported action: " + action);
         }
         if (account.equals("treasury")) {
             networkTransactionResponse =
@@ -738,6 +741,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                         tokenId, admin, receiverAccountId.getAccountId(), List.of(5L), null, null, false);
                 networkTransactionResponse = tokenClient.wipeNonFungible(tokenId, 5L, receiverAccountId);
             }
+            default -> throw new IllegalArgumentException("Unsupported action: " + action);
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(

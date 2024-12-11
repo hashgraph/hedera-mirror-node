@@ -22,7 +22,6 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungib
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApprovedForAll;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -130,15 +129,6 @@ public class OpUsageCtxHelper {
     }
 
     public TokenMintMeta metaForTokenMint(TxnAccessor accessor) {
-        final var subType = accessor.getSubType();
-
-        long lifeTime = 0L;
-        if (subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
-            final var token = accessor.getTxn().getTokenMint().getToken();
-            final var now = accessor.getTxnId().getTransactionValidStart().getSeconds();
-            final var tokenModel = store.getToken(Address.wrap(Bytes.wrap(asEvmAddress(token))), OnMissing.THROW);
-            lifeTime = tokenModel.isEmptyToken() ? 0 : Math.max(0L, tokenModel.getExpiry() - now);
-        }
-        return TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(accessor.getTxn(), subType, lifeTime);
+        return TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(accessor.getTxn(), accessor.getSubType());
     }
 }

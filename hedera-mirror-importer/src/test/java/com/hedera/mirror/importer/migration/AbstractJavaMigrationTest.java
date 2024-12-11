@@ -185,7 +185,9 @@ class AbstractJavaMigrationTest {
         }
 
         @Override
-        protected void doMigrate() {}
+        protected void doMigrate() {
+            throw new UnsupportedOperationException("Missing implementation");
+        }
 
         @Override
         public MigrationVersion getVersion() {

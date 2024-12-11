@@ -124,13 +124,13 @@ public class CallFeature extends AbstractFeature {
     }
 
     @Given("I successfully create ERC contract")
-    public void createNewERCtestContract() throws IOException {
+    public void createNewERCtestContract() {
         deployedErcTestContract = getContract(ERC);
         ercContractAddress = deployedErcTestContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create Precompile contract")
-    public void createNewPrecompileTestContract() throws IOException {
+    public void createNewPrecompileTestContract() {
         deployedPrecompileContract = getContract(PRECOMPILE);
         precompileContractAddress = deployedPrecompileContract.contractId().toSolidityAddress();
     }
@@ -203,14 +203,14 @@ public class CallFeature extends AbstractFeature {
     }
 
     @And("I associate precompile contract with the tokens")
-    public void associatePrecompileWithTokens() throws InvalidProtocolBufferException {
+    public void associatePrecompileWithTokens() {
         // In order to execute Approve, approveNFT, ercApprove we need to associate the contract with the token
         tokenClient.associate(deployedPrecompileContract.contractId(), fungibleTokenId);
         networkTransactionResponse = tokenClient.associate(deployedPrecompileContract.contractId(), nonFungibleTokenId);
     }
 
     @And("I associate FUNGIBLE_KYC_UNFROZEN token to receiver account")
-    public void associateReceiverWithFungibleKyc() throws InvalidProtocolBufferException {
+    public void associateReceiverWithFungibleKyc() {
         networkTransactionResponse = tokenClient.associate(secondReceiverAccount, fungibleKycUnfrozenTokenId);
     }
 

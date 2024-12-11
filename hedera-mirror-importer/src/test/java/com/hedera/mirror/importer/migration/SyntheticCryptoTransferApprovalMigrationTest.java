@@ -359,7 +359,6 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
         var tokenPastKeyAffectedEntity = entityPastKey(contractId2.getNum());
         return setupTokenTransfers(
                 contractId,
-                contractId2,
                 priorContractId,
                 currentKeyUnaffectedEntity,
                 currentKeyAffectedEntity,
@@ -577,7 +576,6 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
 
     private Pair<List<TokenTransfer>, List<TokenTransfer>> setupTokenTransfers(
             EntityId contractId,
-            EntityId contractId2,
             EntityId priorGrandfatheredContractId,
             Entity currentKeyUnaffectedEntity,
             Entity currentKeyAffectedEntity,
