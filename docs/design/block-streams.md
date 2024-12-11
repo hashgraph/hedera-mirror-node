@@ -112,8 +112,28 @@ public class BlockFileTransformer implements StreamFileTransformer<RecordFile, B
     @Override
     public RecordFile transform(BlockFile block);
 
-    // Block hashes are not included in the block. They must be calculated from the state changes within the block.
-    private byte[] calculateBlockHash(byte[] previousBlockHash, List<StateChanges> stateChanges);
+    /**
+     *   Block Items list needs to include the block items of the following type to calculate the
+     *   hash for the Root of Output Merkle Tree:
+     *      - BlockHeader
+     *      - TransactionOutput
+     *      - StateChange
+     */
+    private byte[] calculateOutputTreeRootHash(List<BlockItem> blockItems);
+
+    /**
+     *   Block hashes are not included in the block. They must be calculated from the contents of the block.
+     *
+     *   The `previousBlockHash` is located in the BlockHeader
+     *   The `inputTreeRootHash` is located in the BlockStreamInfo of the last StateChange of the block
+     *   The `startOfBlockStateRootHash` is located in the BlockProof
+    */
+    private byte[] calculateBlockHash(
+            byte[] previousBlockHash,
+            byte[] inputTreeRootHash,
+            byte[] outputTreeRootHash,
+            byte[] startOfBlockStateRootHash
+    );
 
     // The transaction hash will not be included in the block stream output so we will need to calculate it
     private byte[] calculateTransactionHash(EventTransaction transaction);
@@ -172,12 +192,10 @@ public class BlockStreamVerifier {
 
     /**
      * Transforms the block file into a record file, verifies the hash chain and then parses it
-     * Does not parse Block N until Block N+1 has been downloaded and used to verify Block N
      */
     public void notify(@Nonnull StreamFile<?> streamFile);
 
     /**
-     * The hash chain cannot be verified for Block N until Block N+1 has been downloaded.
      * For Block N the hash must be verified to match the previousBlockHash protobuf value provided by Block N+1
      */
     private void verifyHashChain(String expected, String actual);
@@ -190,7 +208,7 @@ public class BlockStreamVerifier {
 ### Database
 
 - Add `software_version` to the `record_file` table. This is the consensus node version that generated the block.
-- Add `congestionPricingMultiplier`, `round_start`, `round_end` to the `record_file` table, these come from the block.
+- Add `round_start`, `round_end` to the `record_file` table, these come from the block.
 - Add a migration that sets the `software_version` to the hapi version to populate those fields for previous records. The `software_version` is always the `hapi_version` for records prior to the introduction of block streams. Also add `software_version` to the existing RecordFileReaders at the same time.
 - Update the `topic_message` table to allow for a null `running_hash_version`.
 - Rename `record_file` to `block`. This will be a low priority task near the end of implementing phase one, as it requires a large number of changes.
@@ -200,7 +218,6 @@ alter table if exists record_file
     add column if not exists software_version_major        int          null,
     add column if not exists software_version_minor        int          null,
     add column if not exists software_version_patch        int          null,
-    add column if not exists congestion_pricing_multiplier bigint       null,
     add column if not exists round_start                   bigint       null,
     add column if not exists round_end                     bigint       null;
 
@@ -211,7 +228,7 @@ alter table if exists topic_message
 ### Block to Record File Transformation
 
 Blocks are composed of block items. A record item may be transformed from a set of multiple block items.
-Beginning from an `EventTransaction` block item, a record item is composed of one `TransactionResult` block item, zero to N `TransactionOutput` block items and zero to N `StateChange` block items.
+Beginning from an `EventTransaction` block item, a record item is composed of one `TransactionResult` block item, zero to N `TransactionOutput` block items and zero to one `StateChange` block items.
 
 ![Transformation](images/transformation.png)
 
@@ -409,21 +426,22 @@ Beginning from an `EventTransaction` block item, a record item is composed of on
 
 ### Token Airdrop
 
-| Database                           | Block Item                                                                                     |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------- |
-| token_airdrop.amount               | state_changes[i].state_change.map_update.value.accountPendingAirdropValue.pendingAirdropValue  |
-| token_airdrop.receiver_account_id  | state_changes[i].state_change.map_update.key.receiverId                                        |
-| token_airdrop.sender_account_id    | state_changes[i].state_change.map_update.key.senderId                                          |
-| token_airdrop.serial_number        | state_changes[i].state_change.map_update.key.tokenReference.serial                             |
-| token_airdrop.token_id             | state_changes[i].state_change.map_update.key.tokenReference.tokenId                            |
-| Updates accessed_custom_fee        | Similar to crypto_transfer, accessed at transaction_output.token_airdrop                       |
-| token_account.account_id           | transaction_output.token_airdrop.automatic_token_associations[i].accountId                     |
-| token_account.token_id             | transaction_output.token_airdrop.automatic_token_associations[i].tokenId                       |
-| token_transfer.account_id          | transaction_output.token_airdrop.token_transfer_lists[i].transfers[j].accountAmount.accountID  |
-| token_transfer.amount              | transaction_output.token_airdrop.token_transfer_lists[i].transfers[j].accountAmount.amount     |
-| token_transfer.consensus_timestamp | transaction_result.consensus_timestamp                                                         |
-| token_transfer.is_approval         | transaction_output.token_airdrop.token_transfer_lists[i].transfers[j].accountAmount.isApproval |
-| token_transfer.token_id            | transaction_output.token_airdrop.token_transfer_lists[i].token.tokenID                         |
+| Database                           | Block Item                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------- |
+| token_airdrop.amount               | state_changes[i].state_change.map_update.value.accountPendingAirdropValue.pendingAirdropValue     |
+| token_airdrop.receiver_account_id  | state_changes[i].state_change.map_update.key.receiverId                                           |
+| token_airdrop.sender_account_id    | state_changes[i].state_change.map_update.key.senderId                                             |
+| token_airdrop.serial_number        | state_changes[i].state_change.map_update.key.tokenReference.non_fungible_token.nftId.serialNumber |
+| token_airdrop.token_id (fungible)  | state_changes[i].state_change.map_update.key.tokenReference.fungible_token_type                   |
+| token_airdrop.token_id (nft)       | state_changes[i].state_change.map_update.key.tokenReference.non_fungible_token.nftId.tokenId      |
+| Updates accessed_custom_fee        | Similar to crypto_transfer, accessed at transaction_output.token_airdrop                          |
+| token_account.account_id           | transaction_output.token_airdrop.automatic_token_associations[i].accountId                        |
+| token_account.token_id             | transaction_output.token_airdrop.automatic_token_associations[i].tokenId                          |
+| token_transfer.account_id          | transaction_output.token_airdrop.token_transfer_lists[i].transfers[j].accountAmount.accountID     |
+| token_transfer.amount              | transaction_output.token_airdrop.token_transfer_lists[i].transfers[j].accountAmount.amount        |
+| token_transfer.consensus_timestamp | transaction_result.consensus_timestamp                                                            |
+| token_transfer.is_approval         | transaction_output.token_airdrop.token_transfer_lists[i].transfers[j].accountAmount.isApproval    |
+| token_transfer.token_id            | transaction_output.token_airdrop.token_transfer_lists[i].token.tokenID                            |
 
 ### Token Create Transaction
 
