@@ -34,7 +34,6 @@ import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.mirror.web3.utils.Suppliers;
 import com.swirlds.state.spi.ReadableKVStateBase;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
@@ -65,7 +64,7 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
 
     @Nullable
     @Override
-    public TokenRelation get(@NonNull EntityIDPair key) {
+    public TokenRelation get(@Nonnull EntityIDPair key) {
         return readFromDataSource(key);
     }
 

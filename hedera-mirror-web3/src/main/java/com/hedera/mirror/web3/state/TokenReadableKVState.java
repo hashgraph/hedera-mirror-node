@@ -47,7 +47,6 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
@@ -84,7 +83,7 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
 
     @Nullable
     @Override
-    public Token get(@NonNull TokenID key) {
+    public Token get(@Nonnull TokenID key) {
         return readFromDataSource(key);
     }
 

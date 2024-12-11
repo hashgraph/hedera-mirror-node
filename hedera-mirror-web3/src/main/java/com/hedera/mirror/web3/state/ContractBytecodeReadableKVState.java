@@ -27,7 +27,6 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVStateBase;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
@@ -51,7 +50,7 @@ public class ContractBytecodeReadableKVState extends ReadableKVStateBase<Contrac
 
     @Nullable
     @Override
-    public Bytecode get(@NonNull ContractID key) {
+    public Bytecode get(@Nonnull ContractID key) {
         return readFromDataSource(key);
     }
 

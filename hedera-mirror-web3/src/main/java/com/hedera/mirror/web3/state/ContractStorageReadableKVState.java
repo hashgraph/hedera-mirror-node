@@ -23,7 +23,6 @@ import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
@@ -42,7 +41,7 @@ public class ContractStorageReadableKVState extends ReadableKVStateBase<SlotKey,
 
     @Nullable
     @Override
-    public SlotValue get(@NonNull SlotKey key) {
+    public SlotValue get(@Nonnull SlotKey key) {
         return readFromDataSource(key);
     }
 

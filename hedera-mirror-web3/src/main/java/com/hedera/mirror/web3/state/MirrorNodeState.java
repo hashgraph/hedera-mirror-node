@@ -52,7 +52,6 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.AppContext.Gossip;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.VersionConfig;
@@ -390,7 +389,6 @@ public class MirrorNodeState implements State {
                         new ContractServiceImpl(appContext),
                         new BlockRecordService(),
                         new FeeService(),
-                        new CongestionThrottleService(),
                         new RecordCacheService())
                 .forEach(servicesRegistry::register);
     }
