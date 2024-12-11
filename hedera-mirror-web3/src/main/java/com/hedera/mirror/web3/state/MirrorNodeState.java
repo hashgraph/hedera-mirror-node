@@ -28,7 +28,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.mirror.web3.state.components.MetricsImpl;
 import com.hedera.mirror.web3.state.core.ListReadableQueueState;
 import com.hedera.mirror.web3.state.core.ListWritableQueueState;
 import com.hedera.mirror.web3.state.core.MapReadableKVState;
@@ -48,10 +47,12 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.AppContext.Gossip;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.app.workflows.handle.metric.UnavailableMetrics;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -62,6 +63,7 @@ import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.KVChangeListener;
 import com.swirlds.state.spi.QueueChangeListener;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableKVStateBase;
@@ -100,15 +102,7 @@ public class MirrorNodeState implements State {
     private final Map<String, Map<String, Object>> states = new ConcurrentHashMap<>();
     private final List<StateChangeListener> listeners = new ArrayList<>();
 
-    private final AccountReadableKVState accountReadableKVState;
-    private final AirdropsReadableKVState airdropsReadableKVState;
-    private final AliasesReadableKVState aliasesReadableKVState;
-    private final ContractBytecodeReadableKVState contractBytecodeReadableKVState;
-    private final ContractStorageReadableKVState contractStorageReadableKVState;
-    private final FileReadableKVState fileReadableKVState;
-    private final NftReadableKVState nftReadableKVState;
-    private final TokenReadableKVState tokenReadableKVState;
-    private final TokenRelationshipReadableKVState tokenRelationshipReadableKVState;
+    private final List<ReadableKVState> readableKVStates;
 
     private final ServicesRegistry servicesRegistry;
     private final ServiceMigrator serviceMigrator;
@@ -126,11 +120,11 @@ public class MirrorNodeState implements State {
                         bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
                 new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
-                new MetricsImpl());
+                UnavailableMetrics.UNAVAILABLE_METRICS);
 
         final var fileServiceStates = this.getWritableStates(FileService.NAME);
         final var files = fileServiceStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
-        genesisContentProviders(networkInfo, bootstrapConfig).forEach((fileNum, provider) -> {
+        genesisContentProviders(bootstrapConfig).forEach((fileNum, provider) -> {
             final var fileId = createFileID(fileNum, bootstrapConfig);
             files.put(
                     fileId,
@@ -192,17 +186,14 @@ public class MirrorNodeState implements State {
                 if (state instanceof Queue queue) {
                     data.put(stateName, new ListReadableQueueState(stateName, queue));
                 } else if (state instanceof Map map) {
-                    switch (stateName) {
-                        case "ACCOUNTS" -> data.put(stateName, accountReadableKVState);
-                        case "PENDING_AIRDROPS" -> data.put(stateName, airdropsReadableKVState);
-                        case "ALIASES" -> data.put(stateName, aliasesReadableKVState);
-                        case "FILES" -> data.put(stateName, fileReadableKVState);
-                        case "BYTECODE" -> data.put(stateName, contractBytecodeReadableKVState);
-                        case "STORAGE" -> data.put(stateName, contractStorageReadableKVState);
-                        case "NFTS" -> data.put(stateName, nftReadableKVState);
-                        case "TOKENS" -> data.put(stateName, tokenReadableKVState);
-                        case "TOKEN_RELS" -> data.put(stateName, tokenRelationshipReadableKVState);
-                        default -> data.put(stateName, new MapReadableKVState(stateName, map));
+                    final var readableKVState = readableKVStates.stream()
+                            .filter(r -> r.getStateKey().equals(stateName))
+                            .findFirst();
+
+                    if (readableKVState.isPresent()) {
+                        data.put(stateName, readableKVState.get());
+                    } else {
+                        data.put(stateName, new MapReadableKVState(stateName, map));
                     }
                 } else if (state instanceof AtomicReference ref) {
                     data.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
@@ -369,7 +360,8 @@ public class MirrorNodeState implements State {
 
     private void registerServices(ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
-        final var appContext = new AppContextImpl(InstantSource.system(), signatureVerifier());
+        final var appContext =
+                new AppContextImpl(InstantSource.system(), signatureVerifier(), Gossip.UNAVAILABLE_GOSSIP);
         Set.of(
                         new EntityIdService(),
                         new TokenServiceImpl(),
@@ -383,17 +375,12 @@ public class MirrorNodeState implements State {
     }
 
     private Map<Long, Function<Configuration, Bytes>> genesisContentProviders(
-            final NetworkInfo networkInfo, final com.swirlds.config.api.Configuration config) {
+            final com.swirlds.config.api.Configuration config) {
         final var genesisSchema = new V0490FileSchema();
         final var filesConfig = config.getConfigData(FilesConfig.class);
         return Map.of(
-                filesConfig.addressBook(), ignore -> genesisSchema.genesisAddressBook(networkInfo),
-                filesConfig.nodeDetails(), ignore -> genesisSchema.genesisNodeDetails(networkInfo),
                 filesConfig.feeSchedules(), genesisSchema::genesisFeeSchedules,
-                filesConfig.exchangeRates(), genesisSchema::genesisExchangeRates,
-                filesConfig.networkProperties(), genesisSchema::genesisNetworkProperties,
-                filesConfig.hapiPermissions(), genesisSchema::genesisHapiPermissions,
-                filesConfig.throttleDefinitions(), genesisSchema::genesisThrottleDefinitions);
+                filesConfig.exchangeRates(), genesisSchema::genesisExchangeRates);
     }
 
     private SignatureVerifier signatureVerifier() {
