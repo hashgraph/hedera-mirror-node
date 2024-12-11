@@ -51,6 +51,7 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.AppContext.Gossip;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.metric.UnavailableMetrics;
 import com.hedera.node.config.data.FilesConfig;
@@ -142,13 +143,6 @@ public class MirrorNodeState implements State {
                             .build());
         });
         ((CommittableWritableStates) fileServiceStates).commit();
-        final var accountReadableKVState = (AccountReadableKVState) readableKVStates.stream()
-                .filter(r -> r.getStateKey().equals("ACCOUNTS"))
-                .findFirst()
-                .orElseThrow();
-        accountReadableKVState
-                .reset(); // Remove cached accounts as they remain with keys and empty objects in the cache at this
-        // point.
     }
 
     public MirrorNodeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
@@ -383,6 +377,7 @@ public class MirrorNodeState implements State {
                         new ContractServiceImpl(appContext),
                         new BlockRecordService(),
                         new FeeService(),
+                        new CongestionThrottleService(),
                         new RecordCacheService())
                 .forEach(servicesRegistry::register);
     }
