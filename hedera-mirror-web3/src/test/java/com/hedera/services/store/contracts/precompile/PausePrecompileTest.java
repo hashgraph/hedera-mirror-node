@@ -142,7 +142,7 @@ class PausePrecompileTest {
             Bytes.fromHexString("0x7c41ad2c0000000000000000000000000000000000000000000000000000000000000445");
 
     private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
-            .setTokenPause(TokenPauseTransactionBody.newBuilder().setToken(fungible));
+            .setTokenPause(TokenPauseTransactionBody.newBuilder().setToken(FUNGIBLE));
 
     private HTSPrecompiledContract subject;
     private MockedStatic<PausePrecompile> staticPausePrecompile;

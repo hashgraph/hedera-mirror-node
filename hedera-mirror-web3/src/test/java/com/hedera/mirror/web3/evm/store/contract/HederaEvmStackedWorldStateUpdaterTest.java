@@ -58,11 +58,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class HederaEvmStackedWorldStateUpdaterTest {
-    private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
-    private static final Address alias2 = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
-    private static final Address sponsor = Address.fromHexString("0xcba");
-    private static final long aBalance = 1_000L;
-    private static final long aNonce = 1L;
+    private static final Address ALIAS = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+    private static final Address ALIAS_2 = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
+    private static final Address SPONSOR = Address.fromHexString("0xcba");
+    private static final long A_BALANCE = 1_000L;
+    private static final long A_NONCE = 1L;
     private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
     private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
 
@@ -136,11 +136,11 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 store);
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         store.wrap();
-        subject.createAccount(address, aNonce, Wei.of(aBalance));
+        subject.createAccount(address, A_NONCE, Wei.of(A_BALANCE));
         assertNull(updater.getAccount(address));
         subject.commit();
-        assertThat(subject.getAccount(address).getNonce()).isEqualTo(aNonce);
-        assertThat(updater.getAccount(address).getNonce()).isEqualTo(aNonce);
+        assertThat(subject.getAccount(address).getNonce()).isEqualTo(A_NONCE);
+        assertThat(updater.getAccount(address).getNonce()).isEqualTo(A_NONCE);
     }
 
     @Test
@@ -157,7 +157,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 store);
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         store.wrap();
-        subject.createAccount(address, aNonce, Wei.of(aBalance));
+        subject.createAccount(address, A_NONCE, Wei.of(A_BALANCE));
         subject.deleteAccount(address);
         assertThat(updater.getDeletedAccountAddresses()).isEmpty();
         subject.commit();
@@ -268,18 +268,18 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void usesAliasesForDecodingHelpForV38() {
-        given(mirrorEvmContractAliases.resolveForEvm(alias)).willReturn(sponsor);
-        given(tokenAccessor.canonicalAddress(alias)).willReturn(alias);
+        given(mirrorEvmContractAliases.resolveForEvm(ALIAS)).willReturn(SPONSOR);
+        given(tokenAccessor.canonicalAddress(ALIAS)).willReturn(ALIAS);
 
-        final var resolved = subject.unaliased(alias.toArrayUnsafe());
-        assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
+        final var resolved = subject.unaliased(ALIAS.toArrayUnsafe());
+        assertArrayEquals(SPONSOR.toArrayUnsafe(), resolved);
     }
 
     @Test
     void unaliasingFailsWhenNotUsingCanonicalAddressForV38() {
-        given(tokenAccessor.canonicalAddress(alias)).willReturn(alias2);
+        given(tokenAccessor.canonicalAddress(ALIAS)).willReturn(ALIAS_2);
 
-        assertArrayEquals(new byte[20], subject.unaliased(alias.toArrayUnsafe()));
+        assertArrayEquals(new byte[20], subject.unaliased(ALIAS.toArrayUnsafe()));
     }
 
     @Test
@@ -335,7 +335,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private com.hedera.services.store.models.Account createTestAccount(Address treasuryAddress) {
         when(mirrorEvmContractAliases.resolveForEvm(treasuryAddress)).thenReturn(treasuryAddress);
         store.wrap();
-        subject.createAccount(treasuryAddress, aNonce, Wei.of(aBalance));
+        subject.createAccount(treasuryAddress, A_NONCE, Wei.of(A_BALANCE));
         subject.commit();
         return store.getAccount(treasuryAddress, OnMissing.THROW);
     }

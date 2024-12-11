@@ -149,7 +149,7 @@ public class TestUtil {
     }
 
     public static Address[] asAddressArray(List<String> addressStrings) {
-        return addressStrings.stream().map(addr -> asAddress(addr)).toArray(Address[]::new);
+        return addressStrings.stream().map(TestUtil::asAddress).toArray(Address[]::new);
     }
 
     public static byte[][] asByteArray(List<String> hexStringList) {

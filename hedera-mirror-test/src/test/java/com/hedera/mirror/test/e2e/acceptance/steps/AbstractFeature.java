@@ -156,9 +156,9 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
     protected ContractId verifyCreateContractNetworkResponse() {
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        var contractId = networkTransactionResponse.getReceipt().contractId;
-        assertNotNull(contractId);
-        return contractId;
+        var createdContractId = networkTransactionResponse.getReceipt().contractId;
+        assertNotNull(createdContractId);
+        return createdContractId;
     }
 
     protected ContractCallResponseWrapper callContract(String data, String contractAddress) {

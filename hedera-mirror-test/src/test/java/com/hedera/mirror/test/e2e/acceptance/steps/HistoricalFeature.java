@@ -72,7 +72,6 @@ import com.hedera.mirror.test.e2e.acceptance.util.ContractCallResponseWrapper;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
@@ -103,26 +102,26 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     private ExpandedAccountId admin;
 
     @Given("I successfully create estimateGas contract")
-    public void createNewEstimateContract() throws IOException {
+    public void createNewEstimateContract() {
         deployedEstimateContract = getContract(ESTIMATE_GAS);
         estimateContractSolidityAddress = deployedEstimateContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create estimate precompile contract")
-    public void createNewEstimatePrecompileContract() throws IOException {
+    public void createNewEstimatePrecompileContract() {
         deployedEstimatePrecompileContract = getContract(ESTIMATE_PRECOMPILE);
         estimatePrecompileContractSolidityAddress =
                 deployedEstimatePrecompileContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create erc contract")
-    public void createNewErcContract() throws IOException {
+    public void createNewErcContract() {
         deployedErcContract = getContract(ERC);
         ercContractSolidityAddress = deployedErcContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create precompile contract")
-    public void createNewPrecompileContract() throws IOException {
+    public void createNewPrecompileContract() {
         deployedPrecompileContract = getContract(PRECOMPILE);
         precompileContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();
@@ -317,7 +316,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     }
 
     @Then("I verify that historical data for {token} is returned via getTokenInfo when doing mint")
-    public void getHistoricalDataForTokenInfoWhenDoingMint(TokenNameEnum tokenName) throws InterruptedException {
+    public void getHistoricalDataForTokenInfoWhenDoingMint(TokenNameEnum tokenName) {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
 
         var data = encodeData(PRECOMPILE, GET_TOKEN_INFO, asAddress(tokenId));
@@ -774,7 +773,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     }
 
     @Then("I verify historical data for {token} is returned for getTokenKey")
-    public void getHistoricalDataForGetTokenKey(TokenNameEnum tokenName) throws InterruptedException {
+    public void getHistoricalDataForGetTokenKey(TokenNameEnum tokenName) {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         BigInteger[] tokenKeyValues = {

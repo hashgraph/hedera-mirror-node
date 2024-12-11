@@ -305,8 +305,8 @@ class DissociatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var builder = TokenAssociateTransactionBody.newBuilder();
-        builder.setAccount(HTSTestsUtil.dissociateOp.accountId());
-        builder.addAllTokens(HTSTestsUtil.dissociateOp.tokenIds());
+        builder.setAccount(HTSTestsUtil.DISSOCIATE_OP.accountId());
+        builder.addAllTokens(HTSTestsUtil.DISSOCIATE_OP.tokenIds());
         given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);

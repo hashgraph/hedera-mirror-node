@@ -70,7 +70,7 @@ class RedisPublisherTest {
         });
 
         // when
-        when(redisOperations.executePipelined(any(SessionCallback.class))).then((callback) -> {
+        when(redisOperations.executePipelined(any(SessionCallback.class))).then(callback -> {
             Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(50L));
             sink.tryEmitNext(callback);
             return null;

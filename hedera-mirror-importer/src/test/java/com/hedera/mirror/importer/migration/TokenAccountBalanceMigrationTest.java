@@ -316,11 +316,11 @@ class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
         // given
         var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(
                 namedParameterJdbcTemplate.getJdbcTemplate().getDataSource()));
-        var transactionTemplate = new TransactionTemplate(transactionManager);
+        var txnTemplate = new TransactionTemplate(transactionManager);
         setup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 
-        transactionTemplate.executeWithoutResult(s -> tokenAccountBalanceMigration.onEnd(accountBalanceFile1));
+        txnTemplate.executeWithoutResult(s -> tokenAccountBalanceMigration.onEnd(accountBalanceFile1));
 
         long accountBalanceTimestamp3 = timestamp(Duration.ofMinutes(10));
         var accountBalanceFile3 = domainBuilder

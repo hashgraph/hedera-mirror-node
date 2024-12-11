@@ -48,21 +48,21 @@ class NodeStakeRepositoryTest extends GrpcIntegrationTest {
     @Test
     void findAllByConsensusTimestamp() {
         long consensusTimestamp = 0L;
-        var nodeStake0_0 = nodeStake(consensusTimestamp, 0L, 0L);
-        var nodeStake0_1 = nodeStake(consensusTimestamp, 1L, 1L);
+        var nodeStakeZeroZero = nodeStake(consensusTimestamp, 0L, 0L);
+        var nodeStakeZeroOne = nodeStake(consensusTimestamp, 1L, 1L);
 
         assertThat(nodeStakeRepository.findAllByConsensusTimestamp(consensusTimestamp))
                 .as("Latest timestamp 0 stakes")
-                .containsExactly(nodeStake0_0, nodeStake0_1);
+                .containsExactly(nodeStakeZeroZero, nodeStakeZeroOne);
 
         // Load the next day's node stake info. This repository method is not cached.
         consensusTimestamp++;
-        var nodeStake1_0 = nodeStake(consensusTimestamp, 0L, 10L);
-        var nodeStake1_1 = nodeStake(consensusTimestamp, 1L, 11L);
+        var nodeStakeOneZero = nodeStake(consensusTimestamp, 0L, 10L);
+        var nodeStakeOneOne = nodeStake(consensusTimestamp, 1L, 11L);
 
         assertThat(nodeStakeRepository.findAllByConsensusTimestamp(consensusTimestamp))
                 .as("Latest timestamp 1 stakes")
-                .containsExactly(nodeStake1_0, nodeStake1_1);
+                .containsExactly(nodeStakeOneZero, nodeStakeOneOne);
     }
 
     @Test

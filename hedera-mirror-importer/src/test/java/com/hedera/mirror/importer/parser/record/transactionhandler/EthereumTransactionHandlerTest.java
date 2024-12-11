@@ -471,12 +471,12 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {
-        var record = recordItem.getTransactionRecord();
+        var txnRecord = recordItem.getTransactionRecord();
         return getExpectedEntityTransactions(
                 recordItem,
                 transaction,
-                EntityId.of(record.getContractCallResult().getSenderId()),
-                EntityId.of(record.getContractCreateResult().getSenderId()),
+                EntityId.of(txnRecord.getContractCallResult().getSenderId()),
+                EntityId.of(txnRecord.getContractCreateResult().getSenderId()),
                 EntityId.of(
                         recordItem.getTransactionBody().getEthereumTransaction().getCallData()));
     }

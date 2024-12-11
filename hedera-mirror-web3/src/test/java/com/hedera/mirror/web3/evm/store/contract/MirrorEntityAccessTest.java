@@ -124,7 +124,6 @@ class MirrorEntityAccessTest {
     @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isNotUsableWithExpiredAutoRenewTimestamp() {
-        final long autoRenewPeriod = Instant.MAX.getEpochSecond();
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();

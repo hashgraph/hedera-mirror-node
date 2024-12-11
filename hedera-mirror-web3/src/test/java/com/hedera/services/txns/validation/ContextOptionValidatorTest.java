@@ -234,12 +234,12 @@ class ContextOptionValidatorTest {
         final var len = 1234L;
         final var duration = Duration.newBuilder().setSeconds(len).build();
 
-        final var subject = mock(OptionValidator.class);
-        doCallRealMethod().when(subject).isValidAutoRenewPeriod(len);
+        final var mockOptionValidatorSubject = mock(OptionValidator.class);
+        doCallRealMethod().when(mockOptionValidatorSubject).isValidAutoRenewPeriod(len);
 
-        subject.isValidAutoRenewPeriod(len);
+        mockOptionValidatorSubject.isValidAutoRenewPeriod(len);
 
-        verify(subject).isValidAutoRenewPeriod(duration);
+        verify(mockOptionValidatorSubject).isValidAutoRenewPeriod(duration);
     }
 
     @Test
