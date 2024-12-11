@@ -234,12 +234,11 @@ class UsageBasedFeeCalculatorTest {
     }
 
     private TransactionBody.Builder baseTxn() {
-        final TransactionBody.Builder txn = TransactionBody.newBuilder()
+        return TransactionBody.newBuilder()
                 .setNodeAccountID(asAccount("0.0.3"))
                 .setTransactionValidDuration(
                         Duration.newBuilder().setSeconds(68).build())
                 .setMemo("memo");
-        return txn;
     }
 
     private void givenApplicableButUnusableCalculator() {

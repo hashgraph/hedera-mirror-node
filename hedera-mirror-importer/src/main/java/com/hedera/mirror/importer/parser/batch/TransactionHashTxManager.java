@@ -52,18 +52,22 @@ public class TransactionHashTxManager implements TransactionSynchronization {
 
         for (ThreadState threadState : threadConnections.values()) {
             try (Connection connection = threadState.getConnection()) {
-                if (status == STATUS_COMMITTED) {
-                    connection.commit();
-                    successfulShards.addAll(threadState.getProcessedShards());
-                    threadState.setStatus(STATUS_COMMITTED);
-                } else if (status == STATUS_ROLLED_BACK) {
-                    connection.rollback();
-                    successfulShards.addAll(threadState.getProcessedShards());
-                    threadState.setStatus(STATUS_ROLLED_BACK);
-                } else {
-                    connection.rollback();
-                    failedShards.addAll(threadState.getProcessedShards());
-                    threadState.setStatus(STATUS_UNKNOWN);
+                switch (status) {
+                    case STATUS_COMMITTED -> {
+                        connection.commit();
+                        successfulShards.addAll(threadState.getProcessedShards());
+                        threadState.setStatus(STATUS_COMMITTED);
+                    }
+                    case STATUS_ROLLED_BACK -> {
+                        connection.rollback();
+                        successfulShards.addAll(threadState.getProcessedShards());
+                        threadState.setStatus(STATUS_ROLLED_BACK);
+                    }
+                    default -> {
+                        connection.rollback();
+                        failedShards.addAll(threadState.getProcessedShards());
+                        threadState.setStatus(STATUS_UNKNOWN);
+                    }
                 }
             } catch (Exception e) {
                 log.error(

@@ -17,7 +17,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
@@ -44,20 +43,15 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.pricing.AssetsLoader;
-import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Deque;
-import java.util.List;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
@@ -280,14 +274,5 @@ class TokenUpdateKeysPrecompileTest {
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-    }
-
-    private TokenUpdateKeysWrapper getUpdateWrapper() {
-        final var adminKey = new KeyValueWrapper(
-                false, null, new byte[] {}, new byte[] {}, EntityIdUtils.contractIdFromEvmAddress(contractAddress));
-        final var multiKey = new KeyValueWrapper(
-                false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
-        return new TokenUpdateKeysWrapper(
-                FUNGIBLE, List.of(new TokenKeyWrapper(112, multiKey), new TokenKeyWrapper(1, adminKey)));
     }
 }

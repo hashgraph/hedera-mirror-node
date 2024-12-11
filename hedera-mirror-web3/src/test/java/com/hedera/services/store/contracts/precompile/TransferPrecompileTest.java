@@ -17,7 +17,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
-import static com.hedera.services.hapi.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
@@ -40,7 +39,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAUL
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiverAliased;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
@@ -77,7 +75,6 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
@@ -85,9 +82,7 @@ import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -778,9 +773,6 @@ class TransferPrecompileTest {
         final var fungibleTransfers =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
-        final var nonLongZeroAlias = ByteStringUtils.wrapUnsafely(
-                java.util.HexFormat.of().parseHex("0000000000000000001000000000000000000441"));
-
         assertEquals(2, fungibleTransfers.size());
         assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
         assertTrue(fungibleTransfers.get(1).getDenomination().getTokenNum() > 0);
@@ -803,13 +795,6 @@ class TransferPrecompileTest {
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
         final var fungibleTransfers =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
-
-        final var longZeroAlias = wrapUnsafely(EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(1089).build())
-                .toArrayUnsafe());
-
-        final var nonLongZeroAlias =
-                wrapUnsafely(java.util.HexFormat.of().parseHex("0000000000000000001000000000000000000441"));
 
         assertEquals(2, fungibleTransfers.size());
         assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
@@ -881,11 +866,6 @@ class TransferPrecompileTest {
         final var nonFungibleTransfers =
                 decodedInput.tokenTransferWrappers().get(0).nftExchanges();
 
-        final var nonLongZeroAlias =
-                wrapUnsafely(java.util.HexFormat.of().parseHex("000000000000000000000010000000000000047c"));
-        final var expectedReceiver =
-                AccountID.newBuilder().setAlias(nonLongZeroAlias).build();
-
         assertEquals(2, nonFungibleTransfers.size());
         assertTrue(nonFungibleTransfers.get(0).asGrpc().getSenderAccountID().getAccountNum() > 0);
         assertTrue(nonFungibleTransfers.get(1).asGrpc().getSenderAccountID().getAccountNum() > 0);
@@ -915,18 +895,9 @@ class TransferPrecompileTest {
         final var nonFungibleTransfers =
                 decodedInput.tokenTransferWrappers().get(0).nftExchanges();
 
-        final var alias = wrapUnsafely(EntityIdUtils.asTypedEvmAddress(
-                        AccountID.newBuilder().setAccountNum(1148).build())
-                .toArrayUnsafe());
-        final var nonLongZeroAlias =
-                wrapUnsafely(java.util.HexFormat.of().parseHex("000000000000000000000010000000000000047c"));
-
         assertEquals(2, nonFungibleTransfers.size());
         assertTrue(nonFungibleTransfers.get(0).asGrpc().getSenderAccountID().getAccountNum() > 0);
         assertTrue(nonFungibleTransfers.get(1).asGrpc().getSenderAccountID().getAccountNum() > 0);
-        final var expectedReceiver = AccountID.newBuilder().setAlias(alias).build();
-        final var secondExpectedReceiver =
-                AccountID.newBuilder().setAlias(nonLongZeroAlias).build();
         assertTrue(nonFungibleTransfers.get(0).getTokenType().getTokenNum() > 0);
         assertTrue(nonFungibleTransfers.get(1).getTokenType().getTokenNum() > 0);
         assertEquals(123, nonFungibleTransfers.get(0).asGrpc().getSerialNumber());
@@ -1120,11 +1091,6 @@ class TransferPrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-    }
-
-    private void givenIfDelegateCall() {
-        given(frame.getContractAddress()).willReturn(contractAddress);
-        given(frame.getRecipientAddress()).willReturn(recipientAddress);
     }
 
     private boolean existsMock(Address address) {

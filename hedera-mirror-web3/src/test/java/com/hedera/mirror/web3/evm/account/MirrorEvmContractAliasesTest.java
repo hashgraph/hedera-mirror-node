@@ -154,10 +154,10 @@ class MirrorEvmContractAliasesTest {
 
     @Test
     void publicKeyCouldNotBeParsed() throws InvalidProtocolBufferException, InvalidKeyException {
-        final byte[] ECDSA_PUBLIC_KEY =
+        final byte[] ecdsaPublicKey =
                 Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
         Address recoveredAddress = Address.fromHexString("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
-        Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
+        Key key = Key.parseFrom(ecdsaPublicKey);
         JKey jKey = JKey.mapKey(key);
         mirrorEvmContractAliases.maybeLinkEvmAddress(jKey, ADDRESS);
 

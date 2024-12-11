@@ -26,7 +26,6 @@ import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplier
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 
 class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest {
@@ -59,7 +58,6 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
     @Test
     void createWithCustomData() {
         Duration autoRenewPeriod = Duration.ofSeconds(1);
-        Instant expirationTime = Instant.now().plus(1, ChronoUnit.DAYS);
         PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         TokenUpdateTransactionSupplier tokenUpdateTransactionSupplier = new TokenUpdateTransactionSupplier();

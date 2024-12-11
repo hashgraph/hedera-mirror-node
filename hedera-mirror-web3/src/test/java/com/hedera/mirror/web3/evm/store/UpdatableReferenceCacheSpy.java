@@ -32,8 +32,6 @@ public class UpdatableReferenceCacheSpy extends UpdatableReferenceCache<String> 
 
     public static final Class<Long> VALUE_CLASS = Long.class;
 
-    public UpdatableReferenceCacheSpy() {}
-
     @NonNull
     public UpdatableReferenceCacheSpy addToOriginal(@NonNull final String k, final long v) {
         original.put(k, v);

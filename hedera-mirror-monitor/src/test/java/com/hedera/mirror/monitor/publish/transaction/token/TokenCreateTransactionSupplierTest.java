@@ -97,8 +97,6 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
 
     @Test
     void createWithNonFungibleData() {
-        PublicKey key = PrivateKey.generateED25519().getPublicKey();
-
         TokenCreateTransactionSupplier tokenCreateTransactionSupplier = new TokenCreateTransactionSupplier();
         tokenCreateTransactionSupplier.setTreasuryAccountId(ACCOUNT_ID.toString());
         tokenCreateTransactionSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
