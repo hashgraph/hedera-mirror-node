@@ -54,6 +54,7 @@ class FileReadableKVStateTest {
     private static final long REALM = 1L;
     private static final long FILE_NUM = 123L;
     private static final FileID FILE_ID = toFileId(SHARD, REALM, FILE_NUM);
+    private static final File FILE = File.newBuilder().fileId(FILE_ID).build();
     private static final long FILE_ID_LONG = toEntityId(FILE_ID).getId();
     private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final Optional<Long> TIMESTAMP = Optional.of(1234L);
@@ -180,8 +181,7 @@ class FileReadableKVStateTest {
 
     @Test
     void readFromDataSourceWhenThereIsContext() {
-        when(ContractCallContext.get().getFileID()).thenReturn(Optional.of(FILE_ID));
-        when(ContractCallContext.get().getInitBytecode()).thenReturn(Optional.of(initBytecode));
+        when(ContractCallContext.get().getFile()).thenReturn(Optional.of(FILE));
 
         File result = fileReadableKVState.readFromDataSource(FILE_ID);
 

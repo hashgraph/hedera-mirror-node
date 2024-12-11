@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
@@ -274,12 +275,13 @@ public abstract class ContractCallService {
                     .transactionRecord()
                     .receiptOrThrow()
                     .fileIDOrThrow();
-
+            final var file = File.newBuilder()
+                    .fileId(fileID)
+                    .contents(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
+                            params.getCallData().toFastHex(false).getBytes()))
+                    .build();
             // Set the context variables for the uploaded contract.
-            ContractCallContext.get().setFileID(Optional.of(fileID));
-            ContractCallContext.get()
-                    .setInitBytecode(Optional.of(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
-                            params.getCallData().toFastHex(false).getBytes())));
+            ContractCallContext.get().setFile(Optional.of(file));
 
             // Create the contract with the init bytecode
             transactionBody = buildContractCreateTransactionBody(fileID, estimatedGas, maxLifetime);

@@ -16,9 +16,9 @@
 
 package com.hedera.mirror.web3.common;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
@@ -27,7 +27,6 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerO
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.state.FileReadableKVState;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.List;
@@ -88,14 +87,13 @@ public class ContractCallContext {
      * the {@link FileReadableKVState} is not able to populate the contract's bytecode from the DB
      * since it was never explicitly persisted in the DB.
      *
-     * This is the function of the fields "fileID" and "initBytecode" - to hold temporary these values
+     * This is the function of the field "file" to hold temporary the bytecode and the fileId
      * during contract deploy.
      */
     @Setter
-    private Optional<FileID> fileID = Optional.empty();
+    private Optional<File> file = Optional.empty();
 
-    @Setter
-    private Optional<Bytes> initBytecode = Optional.empty();
+    ;
 
     private ContractCallContext() {}
 
@@ -114,8 +112,7 @@ public class ContractCallContext {
     public void reset() {
         recordFile = null;
         stack = stackBase;
-        fileID = Optional.empty();
-        initBytecode = Optional.empty();
+        file = Optional.empty();
     }
 
     public int getStackHeight() {
