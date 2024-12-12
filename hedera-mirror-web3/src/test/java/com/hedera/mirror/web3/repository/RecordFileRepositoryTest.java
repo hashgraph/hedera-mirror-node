@@ -40,10 +40,11 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findEarliest() {
-        var earliest = domainBuilder.recordFile().persist();
+        final var genesisRecordFile =
+                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         domainBuilder.recordFile().persist();
 
-        assertThat(recordFileRepository.findEarliest()).get().isEqualTo(earliest);
+        assertThat(recordFileRepository.findEarliest()).get().isEqualTo(genesisRecordFile);
     }
 
     @Test

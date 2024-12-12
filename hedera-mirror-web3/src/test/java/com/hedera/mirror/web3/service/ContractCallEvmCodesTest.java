@@ -166,31 +166,29 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
     @Test
     void getBlockHashReturnsCorrectHash() throws Exception {
         testWeb3jService.setUseContractCallDeploy(true);
+        domainBuilder.recordFile().persist(); // Set a latest block - needed for the block hash operation
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
-        final var recordFileForBlockHash =
-                domainBuilder.recordFile().customize(r -> r.index(0L)).persist();
-        var result = contract.call_getBlockHash(BigInteger.valueOf(recordFileForBlockHash.getIndex()))
+        var result = contract.call_getBlockHash(BigInteger.valueOf(genesisRecordFile.getIndex()))
                 .send();
-        var expectedResult = ByteString.fromHex(recordFileForBlockHash.getHash().substring(0, 64))
-                .toByteArray();
+        var expectedResult =
+                ByteString.fromHex(genesisRecordFile.getHash().substring(0, 64)).toByteArray();
         assertThat(result).isEqualTo(expectedResult);
     }
 
     @Test
     void getGenesisBlockHashReturnsCorrectBlock() throws Exception {
         testWeb3jService.setUseContractCallDeploy(true);
+        domainBuilder.recordFile().persist(); // Set a latest block - needed for the block hash operation
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
-        final var genesisRecordFileForBlockHash =
-                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         var result = contract.call_getBlockHash(BigInteger.ZERO).send();
-        var expectedResult = ByteString.fromHex(
-                        genesisRecordFileForBlockHash.getHash().substring(0, 64))
-                .toByteArray();
+        var expectedResult =
+                ByteString.fromHex(genesisRecordFile.getHash().substring(0, 64)).toByteArray();
         assertThat(result).isEqualTo(expectedResult);
     }
 
     @Test
     void getLatestBlockHashIsNotEmpty() throws Exception {
+        domainBuilder.recordFile().persist();
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         var result = contract.call_getLatestBlockHash().send();
         var expectedResult = ByteString.fromHex((EMPTY_BLOCK_HASH)).toByteArray();
