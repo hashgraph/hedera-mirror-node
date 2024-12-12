@@ -42,11 +42,11 @@ class RecordFileServiceTest extends Web3IntegrationTest {
 
     @Test
     void testFindByBlockTypeEarliest() {
-        var recordFileEarliest =
+        final var genesisRecordFile =
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         domainBuilder.recordFile().customize(f -> f.index(1L)).persist();
         domainBuilder.recordFile().customize(f -> f.index(2L)).persist();
-        assertThat(recordFileService.findByBlockType(BlockType.EARLIEST)).contains(recordFileEarliest);
+        assertThat(recordFileService.findByBlockType(BlockType.EARLIEST)).contains(genesisRecordFile);
     }
 
     @Test
