@@ -37,9 +37,9 @@ import org.junit.jupiter.api.TestFactory;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
-    private static final String entireFileHashBase64 =
+    private static final String ENTIRE_FILE_HASH_BASE_64 =
             "WRVY4Fm9FinuOGxONaaHW0xnoJZxj10iV3KmUQQnFRiUFN99tViEle" + "+yqF3EoP/a";
-    private static final String entireFileSignatureBase64 = "nOVITUEb1WfYLJN4Jp2/aIEYTiqEzfTSMU5Y6KDKbCi55"
+    private static final String ENTIRE_FILE_SIGNATURE_BASE_64 = "nOVITUEb1WfYLJN4Jp2/aIEYTiqEzfTSMU5Y6KDKbCi55"
             + "+vsWasqfQaUE4JLGC+JO+Ky2Ui1WsnDHCDxxE/Jx0K+90n2eg8pFZLlA6xcMZ4fLchy6+mhQWYhtRSdCr6aO0JV4lOtFUSZ"
             + "/DC4qIiwo0VaHNkWCw+bhrERFKeTZcxzHtiElGEeggxwFMvNXBUigU2LoWWLm5BDS9N35iRrfEf6g0HybYe2tOiA717vlKvIMr0t"
             + "YJmlLLKUB9brEUpdSm8RRLs+jzEY76YT7Uv6WzIq04SetI+GUOMkEXDNvtcSKnE8625L7qmhbiiX4Ub90jCxCqt6JHXrCM1VsYWEn"
@@ -59,9 +59,10 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
         StreamFileSignature streamFileSignature = fileReaderV2.read(streamFileData);
         assertNotNull(streamFileSignature);
         assertThat(streamFileSignature.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
-        assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), streamFileSignature.getFileHash());
+        assertArrayEquals(Base64.decodeBase64(ENTIRE_FILE_HASH_BASE_64.getBytes()), streamFileSignature.getFileHash());
         assertArrayEquals(
-                Base64.decodeBase64(entireFileSignatureBase64.getBytes()), streamFileSignature.getFileHashSignature());
+                Base64.decodeBase64(ENTIRE_FILE_SIGNATURE_BASE_64.getBytes()),
+                streamFileSignature.getFileHashSignature());
         assertEquals(VERSION, streamFileSignature.getVersion());
     }
 

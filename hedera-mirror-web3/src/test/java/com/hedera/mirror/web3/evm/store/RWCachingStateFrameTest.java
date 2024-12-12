@@ -71,10 +71,10 @@ class RWCachingStateFrameTest {
     void updatesFromDownStreamCoalesceProperly() {
 
         enum CacheKind {
-            thisC,
-            thisS,
-            downC,
-            downS
+            THIS_C,
+            THIS_S,
+            DOWN_C,
+            DOWN_S
         }
 
         final EnumMap<CacheKind, UpdatableReferenceCache<Integer>> caches = new EnumMap<>(CacheKind.class);
@@ -87,9 +87,9 @@ class RWCachingStateFrameTest {
                 Mockito.spy(new BottomCachingStateFrame<Integer>(Optional.empty(), Character.class, String.class));
 
         final var sutInternalCaches =
-                Map.of(Character.class, caches.get(CacheKind.thisC), String.class, caches.get(CacheKind.thisS));
+                Map.of(Character.class, caches.get(CacheKind.THIS_C), String.class, caches.get(CacheKind.THIS_S));
         final var downstreamInternalCaches =
-                Map.of(Character.class, caches.get(CacheKind.downC), String.class, caches.get(CacheKind.downS));
+                Map.of(Character.class, caches.get(CacheKind.DOWN_C), String.class, caches.get(CacheKind.DOWN_S));
 
         final var sut = Mockito.spy(new RWCachingStateFrame<Integer>(Optional.empty(), Character.class, String.class));
 
@@ -98,7 +98,7 @@ class RWCachingStateFrameTest {
 
         sut.updatesFromDownstream(downstreamFrame);
 
-        verify(caches.get(CacheKind.thisC), times(1)).coalesceFrom(caches.get(CacheKind.downC));
-        verify(caches.get(CacheKind.thisS), times(1)).coalesceFrom(caches.get(CacheKind.downS));
+        verify(caches.get(CacheKind.THIS_C), times(1)).coalesceFrom(caches.get(CacheKind.DOWN_C));
+        verify(caches.get(CacheKind.THIS_S), times(1)).coalesceFrom(caches.get(CacheKind.DOWN_S));
     }
 }

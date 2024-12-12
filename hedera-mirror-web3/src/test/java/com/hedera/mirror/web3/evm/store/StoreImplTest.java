@@ -151,13 +151,13 @@ class StoreImplTest {
                 tokenBalanceRepository,
                 nftRepository);
         final var uniqueTokenDatabaseAccessor = new UniqueTokenDatabaseAccessor(nftRepository);
-        final var entityDatabaseAccessor = new EntityDatabaseAccessor(entityRepository);
+        final var entityDbAccessor = new EntityDatabaseAccessor(entityRepository);
         final List<DatabaseAccessor<Object, ?>> accessors = List.of(
                 accountDatabaseAccessor,
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor,
-                entityDatabaseAccessor);
+                entityDbAccessor);
         final var stackedStateFrames = new StackedStateFrames(accessors);
         subject = new StoreImpl(stackedStateFrames, validator);
     }
@@ -193,8 +193,8 @@ class StoreImplTest {
         when(tokenModel.getNum()).thenReturn(6L);
         when(tokenModel.getType()).thenReturn(EntityType.TOKEN);
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        final var token = subject.getToken(TOKEN_ADDRESS, OnMissing.DONT_THROW);
-        assertThat(token.getId()).isEqualTo(new Id(0, 0, 6L));
+        final var retrievedToken = subject.getToken(TOKEN_ADDRESS, OnMissing.DONT_THROW);
+        assertThat(retrievedToken.getId()).isEqualTo(new Id(0, 0, 6L));
     }
 
     @Test
@@ -205,10 +205,10 @@ class StoreImplTest {
 
     @Test
     void updateToken() {
-        final var token = new com.hedera.services.store.models.Token(TOKEN_ID);
+        final var retrievedToken = new com.hedera.services.store.models.Token(TOKEN_ID);
         subject.wrap();
-        subject.updateToken(token);
-        assertEquals(token, subject.getToken(TOKEN_ADDRESS, OnMissing.DONT_THROW));
+        subject.updateToken(retrievedToken);
+        assertEquals(retrievedToken, subject.getToken(TOKEN_ADDRESS, OnMissing.DONT_THROW));
     }
 
     @Test
@@ -305,7 +305,7 @@ class StoreImplTest {
     @Test
     void updateUniqueToken() {
         final var nftId = new NftId(0, 0, 0, 1);
-        final var nft = new UniqueToken(
+        final var newNft = new UniqueToken(
                 Id.DEFAULT,
                 1,
                 RichInstant.MISSING_INSTANT,
@@ -313,8 +313,8 @@ class StoreImplTest {
                 null,
                 null);
         subject.wrap();
-        subject.updateUniqueToken(nft);
-        assertEquals(nft, subject.getUniqueToken(nftId, OnMissing.DONT_THROW));
+        subject.updateUniqueToken(newNft);
+        assertEquals(newNft, subject.getUniqueToken(nftId, OnMissing.DONT_THROW));
     }
 
     @Test
@@ -325,8 +325,8 @@ class StoreImplTest {
         when(nft.getSerialNumber()).thenReturn(1L);
         when(nft.getTokenId()).thenReturn(6L);
         final var serials = List.of(nftId.serialNo());
-        final var token = new com.hedera.services.store.models.Token(TOKEN_ID);
-        final var updatedToken = subject.loadUniqueTokens(token, serials);
+        final var newToken = new com.hedera.services.store.models.Token(TOKEN_ID);
+        final var updatedToken = subject.loadUniqueTokens(newToken, serials);
         assertThat(updatedToken.getLoadedUniqueTokens()).hasSize(serials.size());
         assertThat(updatedToken.getLoadedUniqueTokens().get(nftId.serialNo()).getNftId())
                 .isEqualTo(nftId);
@@ -336,8 +336,8 @@ class StoreImplTest {
     void loadUniqueTokensThrowIfMissing() {
         final var nftId = new NftId(0, 0, 6, 1);
         final var serials = List.of(nftId.serialNo());
-        final var token = new com.hedera.services.store.models.Token(TOKEN_ID);
-        assertThatThrownBy(() -> subject.loadUniqueTokens(token, serials))
+        final var newToken = new com.hedera.services.store.models.Token(TOKEN_ID);
+        assertThatThrownBy(() -> subject.loadUniqueTokens(newToken, serials))
                 .isInstanceOf(InvalidTransactionException.class);
     }
 

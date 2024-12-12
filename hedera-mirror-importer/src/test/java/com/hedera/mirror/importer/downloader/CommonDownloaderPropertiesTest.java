@@ -47,10 +47,10 @@ class CommonDownloaderPropertiesTest {
         var properties = new CommonDownloaderProperties(mirrorProperties);
 
         mirrorProperties.setNetwork(HederaNetwork.OTHER);
-        assertThrows(IllegalArgumentException.class, () -> properties.init());
+        assertThrows(IllegalArgumentException.class, properties::init);
 
         mirrorProperties.setNetwork("mynetwork");
-        assertThrows(IllegalArgumentException.class, () -> properties.init());
+        assertThrows(IllegalArgumentException.class, properties::init);
     }
 
     @Test

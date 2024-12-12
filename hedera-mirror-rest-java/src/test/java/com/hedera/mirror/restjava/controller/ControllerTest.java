@@ -79,7 +79,7 @@ abstract class ControllerTest extends RestJavaIntegrationTest {
         assertThatThrownBy(callable)
                 .isInstanceOf(clazz)
                 .asInstanceOf(InstanceOfAssertFactories.type(clazz))
-                .satisfies(r -> e.set(r))
+                .satisfies(e::set)
                 .extracting(
                         r -> r.getResponseBodyAs(Error.class).getStatus().getMessages(),
                         list(ErrorStatusMessagesInner.class))

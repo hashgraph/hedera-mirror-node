@@ -547,9 +547,9 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
             long signTimestamp, ScheduleID scheduleID, ResponseCodeEnum responseCodeEnum) {
         var transaction = scheduledTransaction();
         var transactionBody = getTransactionBody(transaction);
-        var record = createTransactionRecord(signTimestamp, scheduleID, transactionBody, responseCodeEnum, true);
+        var txnRecord = createTransactionRecord(signTimestamp, scheduleID, transactionBody, responseCodeEnum, true);
         var recordItem = RecordItem.builder()
-                .transactionRecord(record)
+                .transactionRecord(txnRecord)
                 .transaction(transaction)
                 .build();
         parseRecordItemAndCommit(recordItem);

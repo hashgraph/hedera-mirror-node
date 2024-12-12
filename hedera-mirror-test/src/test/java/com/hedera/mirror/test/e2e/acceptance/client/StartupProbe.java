@@ -76,7 +76,7 @@ public class StartupProbe {
         client.setMaxNodeReadmitTime(WAIT);
 
         log.info("Creating a topic to confirm node connectivity");
-        var transactionId = executeTransaction(client, stopwatch, () -> new TopicCreateTransaction()).transactionId;
+        var transactionId = executeTransaction(client, stopwatch, TopicCreateTransaction::new).transactionId;
         var receiptQuery = new TransactionReceiptQuery().setTransactionId(transactionId);
         var receipt = executeQuery(client, stopwatch, () -> receiptQuery);
         var topicId = receipt.topicId;

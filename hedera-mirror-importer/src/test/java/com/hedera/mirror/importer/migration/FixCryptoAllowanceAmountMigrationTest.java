@@ -286,14 +286,14 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
     @ValueSource(booleans = {true, false})
     void skipMigration(boolean trackAllowance) {
         // given
-        var entityProperties = new EntityProperties();
-        entityProperties.getPersist().setTrackAllowance(trackAllowance);
-        var migration = new FixCryptoAllowanceAmountMigration(
-                dbProperties, entityProperties, new ImporterProperties(), jdbcTemplate);
-        var configuration = new FluentConfiguration().target(migration.getMinimumVersion());
+        var entityProps = new EntityProperties();
+        entityProps.getPersist().setTrackAllowance(trackAllowance);
+        var allowanceAmountMigration = new FixCryptoAllowanceAmountMigration(
+                dbProperties, entityProps, new ImporterProperties(), jdbcTemplate);
+        var configuration = new FluentConfiguration().target(allowanceAmountMigration.getMinimumVersion());
 
         // when, then
-        assertThat(migration.skipMigration(configuration)).isEqualTo(!trackAllowance);
+        assertThat(allowanceAmountMigration.skipMigration(configuration)).isEqualTo(!trackAllowance);
     }
 
     @SneakyThrows

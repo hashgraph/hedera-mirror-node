@@ -112,7 +112,7 @@ class FileReadableKVStateTest {
 
         long internalFileId = toEntityId(FILE_ID).getId();
 
-        when(ContractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
+        when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
         when(fileDataRepository.getFileAtTimestamp(internalFileId, TIMESTAMP.get()))
                 .thenReturn(Optional.of(fileDataTest));
         when(entityRepository.findActiveByIdAndTimestamp(toEntityId(FILE_ID).getId(), TIMESTAMP.get()))
@@ -128,7 +128,7 @@ class FileReadableKVStateTest {
 
     @Test
     void fileFieldsReturnNullWhenFileDataNotFound() {
-        when(ContractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
+        when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
         long fileIdLong = toEntityId(FILE_ID).getId();
         when(fileDataRepository.getFileAtTimestamp(fileIdLong, TIMESTAMP.get())).thenReturn(Optional.empty());
 
@@ -139,7 +139,7 @@ class FileReadableKVStateTest {
 
     @Test
     void readFromDataSourceWithTimestamp() {
-        when(ContractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
+        when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
         when(fileDataRepository.getFileAtTimestamp(FILE_ID_LONG, TIMESTAMP.get()))
                 .thenReturn(Optional.of(fileData));
         when(entityRepository.findActiveByIdAndTimestamp(toEntityId(FILE_ID).getId(), TIMESTAMP.get()))
@@ -155,7 +155,7 @@ class FileReadableKVStateTest {
 
     @Test
     void readFromDataSourceWithoutTimestamp() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(fileDataRepository.getFileAtTimestamp(anyLong(), anyLong())).thenReturn(Optional.of(fileData));
         when(entityRepository.findByIdAndDeletedIsFalse(toEntityId(FILE_ID).getId()))
                 .thenReturn(Optional.of(entity));
@@ -170,7 +170,7 @@ class FileReadableKVStateTest {
 
     @Test
     void readFromDataSourceFileNotFound() {
-        when(ContractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
+        when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
         when(fileDataRepository.getFileAtTimestamp(FILE_ID_LONG, TIMESTAMP.get()))
                 .thenReturn(Optional.empty());
 

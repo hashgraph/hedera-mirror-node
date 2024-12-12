@@ -233,11 +233,11 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
     void onEndEarlyReturn() {
         // given
         var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
-        var transactionTemplate = new TransactionTemplate(transactionManager);
+        var txnTemplate = new TransactionTemplate(transactionManager);
         setup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 
-        transactionTemplate.executeWithoutResult(s -> migration.onEnd(accountBalanceFile1));
+        txnTemplate.executeWithoutResult(s -> migration.onEnd(accountBalanceFile1));
 
         // then
         assertThat(entityRepository.findAll())

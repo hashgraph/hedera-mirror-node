@@ -312,16 +312,16 @@ class BurnPrecompileTest {
         given(precompileContext.getPrecompile()).willReturn(burnPrecompile);
         given(precompileContext.getSenderAddress()).willReturn(senderAddress);
 
-        final var transactionBody = TransactionBody.newBuilder()
+        final var txnBody = TransactionBody.newBuilder()
                 .setTokenBurn(
                         TokenBurnTransactionBody.newBuilder().setToken(tokenID).setAmount(33L));
 
-        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getTransactionBody()).willReturn(txnBody);
 
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a, precompileContext);
-        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, txnBody, sender);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -335,7 +335,7 @@ class BurnPrecompileTest {
         givenPricingUtilsContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        final var transactionBody = TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder());
+        final var txnBody = TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder());
 
         given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
@@ -351,8 +351,7 @@ class BurnPrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_BURN_INPUT_V1, a -> a, precompileContext);
-        final long result =
-                subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
+        final long result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, txnBody, sender);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

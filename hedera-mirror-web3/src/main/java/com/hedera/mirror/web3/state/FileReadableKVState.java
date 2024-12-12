@@ -64,7 +64,7 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
 
     @Override
     protected File readFromDataSource(@Nonnull FileID key) {
-        final var timestamp = ContractCallContext.getTimestamp();
+        final var timestamp = ContractCallContext.get().getTimestamp();
         final var fileEntityId = toEntityId(key);
         final var fileId = fileEntityId.getId();
 

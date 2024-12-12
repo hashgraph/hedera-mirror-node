@@ -32,9 +32,9 @@ class EntityRepositoryTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         byte[] alias = entity.getAlias();
         var entityDeleted =
-                domainBuilder.entity().customize((b) -> b.deleted(true)).persist();
+                domainBuilder.entity().customize(b -> b.deleted(true)).persist();
         var entityDeletedNull =
-                domainBuilder.entity().customize((b) -> b.deleted(null)).persist();
+                domainBuilder.entity().customize(b -> b.deleted(null)).persist();
 
         assertThat(entityRepository.findByAlias(alias)).get().isEqualTo(entity.getId());
         assertThat(entityRepository.findByAlias(entityDeleted.getAlias())).isEmpty();
@@ -45,9 +45,9 @@ class EntityRepositoryTest extends RestJavaIntegrationTest {
     void findByEvmAddress() {
         var entity = domainBuilder.entity().persist();
         var entityDeleted =
-                domainBuilder.entity().customize((b) -> b.deleted(true)).persist();
+                domainBuilder.entity().customize(b -> b.deleted(true)).persist();
         var entityDeletedNull =
-                domainBuilder.entity().customize((b) -> b.deleted(null)).persist();
+                domainBuilder.entity().customize(b -> b.deleted(null)).persist();
 
         assertThat(entityRepository.findByEvmAddress(entity.getEvmAddress()))
                 .get()

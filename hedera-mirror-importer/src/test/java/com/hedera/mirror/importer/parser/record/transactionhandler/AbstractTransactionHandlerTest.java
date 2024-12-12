@@ -265,7 +265,7 @@ abstract class AbstractTransactionHandlerTest {
             testSpecs = getUpdateEntityTestSpecs();
         }
 
-        return DynamicTest.stream(testSpecs.iterator(), UpdateEntityTestSpec::getDescription, (testSpec) -> {
+        return DynamicTest.stream(testSpecs.iterator(), UpdateEntityTestSpec::getDescription, testSpec -> {
             // when
             var transaction = new com.hedera.mirror.common.domain.transaction.Transaction();
             transaction.setEntityId(testSpec.getExpected().toEntityId());
@@ -580,7 +580,7 @@ abstract class AbstractTransactionHandlerTest {
                 getDefaultTransactionRecord().build());
     }
 
-    protected RecordItem getRecordItem(TransactionBody body, TransactionRecord record) {
+    protected RecordItem getRecordItem(TransactionBody body, TransactionRecord txnRecord) {
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(SignedTransaction.newBuilder()
                         .setBodyBytes(body.toByteString())
@@ -592,7 +592,7 @@ abstract class AbstractTransactionHandlerTest {
         return RecordItem.builder()
                 .entityTransactionPredicate(entityProperties.getPersist()::shouldPersistEntityTransaction)
                 .hapiVersion(new Version(0, 28, 0))
-                .transactionRecord(record)
+                .transactionRecord(txnRecord)
                 .transaction(transaction)
                 .build();
     }
