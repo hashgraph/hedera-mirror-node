@@ -16,43 +16,84 @@
 
 package com.hedera.mirror.web3.state;
 
+import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.state.file.File;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.state.core.ListReadableQueueState;
 import com.hedera.mirror.web3.state.core.ListWritableQueueState;
 import com.hedera.mirror.web3.state.core.MapReadableKVState;
 import com.hedera.mirror.web3.state.core.MapReadableStates;
 import com.hedera.mirror.web3.state.core.MapWritableKVState;
 import com.hedera.mirror.web3.state.core.MapWritableStates;
+import com.hedera.node.app.config.BootstrapConfigProviderImpl;
+import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.FeeService;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.services.AppContextImpl;
+import com.hedera.node.app.services.ServiceMigrator;
+import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.spi.AppContext.Gossip;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.app.workflows.handle.metric.UnavailableMetrics;
+import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.VersionConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.KVChangeListener;
 import com.swirlds.state.spi.QueueChangeListener;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableQueueStateBase;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
+import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import lombok.RequiredArgsConstructor;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 @Named
+@RequiredArgsConstructor
 public class MirrorNodeState implements State {
 
     private final Map<String, ReadableStates> readableStates = new ConcurrentHashMap<>();
@@ -61,6 +102,44 @@ public class MirrorNodeState implements State {
     // Key is Service, value is Map of state name to state datasource
     private final Map<String, Map<String, Object>> states = new ConcurrentHashMap<>();
     private final List<StateChangeListener> listeners = new ArrayList<>();
+
+    private final List<ReadableKVState> readableKVStates;
+
+    private final ServicesRegistry servicesRegistry;
+    private final ServiceMigrator serviceMigrator;
+    private final NetworkInfo networkInfo;
+
+    @PostConstruct
+    private void init() {
+        ContractCallContext.run(ctx -> {
+            registerServices(servicesRegistry);
+            final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
+            serviceMigrator.doMigrations(
+                    this,
+                    servicesRegistry,
+                    null,
+                    new ServicesSoftwareVersion(
+                            bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
+                    new ConfigProviderImpl().getConfiguration(),
+                    networkInfo,
+                    UnavailableMetrics.UNAVAILABLE_METRICS);
+
+            final var fileServiceStates = this.getWritableStates(FileService.NAME);
+            final var files = fileServiceStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
+            genesisContentProviders(bootstrapConfig).forEach((fileNum, provider) -> {
+                final var fileId = createFileID(fileNum, bootstrapConfig);
+                files.put(
+                        fileId,
+                        File.newBuilder()
+                                .fileId(fileId)
+                                .keys(KeyList.DEFAULT)
+                                .contents(provider.apply(bootstrapConfig))
+                                .build());
+            });
+            ((CommittableWritableStates) fileServiceStates).commit();
+            return ctx;
+        });
+    }
 
     public MirrorNodeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
         final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
@@ -111,7 +190,15 @@ public class MirrorNodeState implements State {
                 if (state instanceof Queue queue) {
                     data.put(stateName, new ListReadableQueueState(stateName, queue));
                 } else if (state instanceof Map map) {
-                    data.put(stateName, new MapReadableKVState(stateName, map));
+                    final var readableKVState = readableKVStates.stream()
+                            .filter(r -> r.getStateKey().equals(stateName))
+                            .findFirst();
+
+                    if (readableKVState.isPresent()) {
+                        data.put(stateName, readableKVState.get());
+                    } else {
+                        data.put(stateName, new MapReadableKVState(stateName, map));
+                    }
                 } else if (state instanceof AtomicReference ref) {
                     data.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
                 }
@@ -136,10 +223,14 @@ public class MirrorNodeState implements State {
                     data.put(
                             stateName,
                             withAnyRegisteredListeners(serviceName, new ListWritableQueueState<>(stateName, queue)));
-                } else if (state instanceof Map<?, ?> map) {
+                } else if (state instanceof Map<?, ?>) {
                     data.put(
                             stateName,
-                            withAnyRegisteredListeners(serviceName, new MapWritableKVState<>(stateName, map)));
+                            withAnyRegisteredListeners(
+                                    serviceName,
+                                    new MapWritableKVState<>(
+                                            stateName,
+                                            getReadableStates(serviceName).get(stateName))));
                 } else if (state instanceof AtomicReference<?> ref) {
                     data.put(stateName, withAnyRegisteredListeners(serviceName, stateName, ref));
                 }
@@ -264,5 +355,54 @@ public class MirrorNodeState implements State {
     @VisibleForTesting
     void setWritableStates(final Map<String, WritableStates> writableStates) {
         this.writableStates.putAll(writableStates);
+    }
+
+    @VisibleForTesting
+    Map<String, Map<String, Object>> getStates() {
+        return Collections.unmodifiableMap(states);
+    }
+
+    private void registerServices(ServicesRegistry servicesRegistry) {
+        // Register all service schema RuntimeConstructable factories before platform init
+        final var appContext =
+                new AppContextImpl(InstantSource.system(), signatureVerifier(), Gossip.UNAVAILABLE_GOSSIP);
+        Set.of(
+                        new EntityIdService(),
+                        new TokenServiceImpl(),
+                        new FileServiceImpl(),
+                        new ContractServiceImpl(appContext),
+                        new BlockRecordService(),
+                        new FeeService(),
+                        new CongestionThrottleService(),
+                        new RecordCacheService())
+                .forEach(servicesRegistry::register);
+    }
+
+    private Map<Long, Function<Configuration, Bytes>> genesisContentProviders(
+            final com.swirlds.config.api.Configuration config) {
+        final var genesisSchema = new V0490FileSchema();
+        final var filesConfig = config.getConfigData(FilesConfig.class);
+        return Map.of(
+                filesConfig.feeSchedules(), genesisSchema::genesisFeeSchedules,
+                filesConfig.exchangeRates(), genesisSchema::genesisExchangeRates);
+    }
+
+    private SignatureVerifier signatureVerifier() {
+        return new SignatureVerifier() {
+            @Override
+            public boolean verifySignature(
+                    @Nonnull Key key,
+                    @Nonnull com.hedera.pbj.runtime.io.buffer.Bytes bytes,
+                    @Nonnull com.hedera.node.app.spi.signatures.SignatureVerifier.MessageType messageType,
+                    @Nonnull SignatureMap signatureMap,
+                    @Nullable Function<Key, SimpleKeyStatus> simpleKeyVerifier) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+
+            @Override
+            public KeyCounts countSimpleKeys(@Nonnull Key key) {
+                throw new UnsupportedOperationException("Not implemented");
+            }
+        };
     }
 }
