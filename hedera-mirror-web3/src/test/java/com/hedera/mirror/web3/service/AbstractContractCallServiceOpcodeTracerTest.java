@@ -48,12 +48,16 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.web3j.tx.Contract;
 
 abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContractCallServiceHistoricalTest {
 
     @Resource
     protected ContractDebugService contractDebugService;
+
+    @SpyBean
+    protected TransactionExecutionService transactionExecutionService;
 
     @Captor
     private ArgumentCaptor<ContractDebugParameters> paramsCaptor;
@@ -69,15 +73,27 @@ abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContr
 
     @BeforeEach
     void setUpArgumentCaptors() {
-        doAnswer(invocation -> {
-                    final var transactionProcessingResult =
-                            (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
-                    resultCaptor = transactionProcessingResult;
-                    contextCaptor = ContractCallContext.get();
-                    return transactionProcessingResult;
-                })
-                .when(processor)
-                .execute(paramsCaptor.capture(), gasCaptor.capture());
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            doAnswer(invocation -> {
+                        final var transactionProcessingResult =
+                                (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                        resultCaptor = transactionProcessingResult;
+                        contextCaptor = ContractCallContext.get();
+                        return transactionProcessingResult;
+                    })
+                    .when(processor)
+                    .execute(paramsCaptor.capture(), gasCaptor.capture());
+        } else {
+            doAnswer(invocation -> {
+                        final var transactionProcessingResult =
+                                (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                        resultCaptor = transactionProcessingResult;
+                        contextCaptor = ContractCallContext.get();
+                        return transactionProcessingResult;
+                    })
+                    .when(transactionExecutionService)
+                    .execute(paramsCaptor.capture(), gasCaptor.capture());
+        }
     }
 
     protected void verifyOpcodeTracerCall(
