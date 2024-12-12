@@ -99,7 +99,6 @@ class AirdropsReadableKVStateTest {
         final var pendingAirdropValue =
                 PendingAirdropValue.newBuilder().amount(3L).build();
 
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(tokenAirdropRepository.findById(
                         toEntityId(senderId).getId(),
                         toEntityId(receiverId).getId(),
@@ -155,7 +154,6 @@ class AirdropsReadableKVStateTest {
         final var tokenId =
                 TokenID.newBuilder().shardNum(1L).realmNum(2L).tokenNum(3L).build();
 
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(tokenAirdropRepository.findById(anyLong(), anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.empty());
 
@@ -200,7 +198,6 @@ class AirdropsReadableKVStateTest {
                 .build();
         final var tokenAirdrop = TokenAirdrop.builder().build();
 
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(tokenAirdropRepository.findById(
                         toEntityId(senderId).getId(),
                         toEntityId(receiverId).getId(),
@@ -262,7 +259,6 @@ class AirdropsReadableKVStateTest {
                 .serialNumber(4L)
                 .build();
 
-        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(tokenAirdropRepository.findById(anyLong(), anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.empty());
 
