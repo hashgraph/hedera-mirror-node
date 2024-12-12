@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -91,8 +90,7 @@ class AccountBalanceLineParserV2Test {
             Long expectedRealm,
             Long expectedAccount,
             Long expectedBalance,
-            String tokenBalances)
-            throws IOException {
+            String tokenBalances) {
         if (!expectThrow) {
             AccountBalance accountBalance = parser.parse(line, TIMESTAMP);
             var id = accountBalance.getId();

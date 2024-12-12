@@ -127,7 +127,6 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         private final EvmProperties evmProperties;
         private final EntityAddressSequencer entityAddressSequencer;
         private final MirrorEvmContractAliases mirrorEvmContractAliases;
-        private final Store store;
 
         @SuppressWarnings("java:S107")
         protected Updater(
@@ -145,7 +144,6 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             this.evmProperties = evmProperties;
             this.entityAddressSequencer = contractAddressState;
             this.mirrorEvmContractAliases = mirrorEvmContractAliases;
-            this.store = store;
         }
 
         @Override

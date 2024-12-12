@@ -41,7 +41,9 @@ class UsageAccumulatorTest {
     private final UsageAccumulator subject = new UsageAccumulator();
 
     @BeforeEach
-    void setUp() {}
+    void setUp() {
+        // No op
+    }
 
     @Test
     void understandsNetworkPartitioning() {

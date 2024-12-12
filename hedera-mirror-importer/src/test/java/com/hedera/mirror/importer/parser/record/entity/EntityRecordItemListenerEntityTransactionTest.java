@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
+import static com.hederahashgraph.api.proto.java.TransactionRecord.BodyCase.CONTRACTCALLRESULT;
+import static com.hederahashgraph.api.proto.java.TransactionRecord.BodyCase.CONTRACTCREATERESULT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.GeneratedMessageV3;
@@ -115,9 +117,11 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
 
         var txnRecord = recordItem.getTransactionRecord();
         ContractFunctionResult contractFunctionResult = null;
-        switch (txnRecord.getBodyCase()) {
-            case CONTRACTCALLRESULT -> contractFunctionResult = txnRecord.getContractCallResult();
-            case CONTRACTCREATERESULT -> contractFunctionResult = txnRecord.getContractCreateResult();
+        var txnRecordBodyCase = txnRecord.getBodyCase();
+        if (txnRecordBodyCase == CONTRACTCALLRESULT) {
+            contractFunctionResult = txnRecord.getContractCallResult();
+        } else if (txnRecordBodyCase == CONTRACTCREATERESULT) {
+            contractFunctionResult = txnRecord.getContractCreateResult();
         }
 
         if (contractFunctionResult != null

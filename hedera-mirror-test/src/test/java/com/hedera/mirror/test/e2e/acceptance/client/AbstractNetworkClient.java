@@ -42,7 +42,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -82,7 +81,7 @@ public abstract class AbstractNetworkClient implements Cleanable {
                         }
                         return id;
                     })
-                    .collect(Collectors.toList());
+                    .toList();
 
             executorService.invokeAll(futures);
         } catch (Exception e) {

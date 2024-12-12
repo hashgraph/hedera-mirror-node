@@ -40,7 +40,9 @@ class CryptoDeleteAllowanceMetaTest {
             .build();
 
     @BeforeEach
-    void setUp() {}
+    void setUp() {
+        // No op
+    }
 
     @Test
     void allGettersAndToStringWork() {

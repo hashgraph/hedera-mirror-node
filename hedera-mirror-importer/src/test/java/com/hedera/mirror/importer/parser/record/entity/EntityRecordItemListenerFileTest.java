@@ -871,11 +871,12 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         assertFailedFileTransaction(transactionBody, txnRecord);
     }
 
-    private void assertFailedFileTransaction(TransactionBody transactionBody, TransactionRecord record) {
+    private void assertFailedFileTransaction(TransactionBody transactionBody, TransactionRecord txnRecord) {
         com.hedera.mirror.common.domain.transaction.Transaction transaction =
-                getDbTransaction(record.getConsensusTimestamp());
-        assertAll(() -> assertTransactionAndRecord(transactionBody, record), () -> assertThat(transaction.getEntityId())
-                .isEqualTo(EntityId.of(record.getReceipt().getFileID())));
+                getDbTransaction(txnRecord.getConsensusTimestamp());
+        assertAll(() -> assertTransactionAndRecord(transactionBody, txnRecord), () -> assertThat(
+                        transaction.getEntityId())
+                .isEqualTo(EntityId.of(txnRecord.getReceipt().getFileID())));
     }
 
     private void assertFileEntity(FileCreateTransactionBody expected, Timestamp consensusTimestamp) {

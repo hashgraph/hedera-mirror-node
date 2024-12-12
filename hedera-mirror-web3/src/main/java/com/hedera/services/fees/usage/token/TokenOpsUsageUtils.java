@@ -87,8 +87,7 @@ public enum TokenOpsUsageUtils {
                 .build();
     }
 
-    public TokenMintMeta tokenMintUsageFrom(
-            final TransactionBody txn, final SubType subType, final long expectedLifeTime) {
+    public TokenMintMeta tokenMintUsageFrom(final TransactionBody txn, final SubType subType) {
         final var op = txn.getTokenMint();
         int bpt = 0;
         long rbs = 0;
