@@ -2,7 +2,6 @@ hedera:
   mirror:
     web3:
       evm:
-        modularizedServices: false
         properties:
           contracts.allowCreate2: "false"
           contracts.chainId: "297"
