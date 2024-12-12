@@ -26,7 +26,6 @@ import com.hedera.mirror.importer.PubSubIntegrationTest.Configuration;
 import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
 import jakarta.annotation.Resource;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -76,7 +75,7 @@ public abstract class PubSubIntegrationTest extends ImporterIntegrationTest {
                     m.ack();
                     return m.getPubsubMessage();
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @TestConfiguration

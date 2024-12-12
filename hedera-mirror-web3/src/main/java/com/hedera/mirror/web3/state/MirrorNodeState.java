@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.state.core.ListReadableQueueState;
 import com.hedera.mirror.web3.state.core.ListWritableQueueState;
 import com.hedera.mirror.web3.state.core.MapReadableKVState;
@@ -110,31 +111,34 @@ public class MirrorNodeState implements State {
 
     @PostConstruct
     private void init() {
-        registerServices(servicesRegistry);
-        final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
-        serviceMigrator.doMigrations(
-                this,
-                servicesRegistry,
-                null,
-                new ServicesSoftwareVersion(
-                        bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
-                new ConfigProviderImpl().getConfiguration(),
-                networkInfo,
-                UnavailableMetrics.UNAVAILABLE_METRICS);
+        ContractCallContext.run(ctx -> {
+            registerServices(servicesRegistry);
+            final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
+            serviceMigrator.doMigrations(
+                    this,
+                    servicesRegistry,
+                    null,
+                    new ServicesSoftwareVersion(
+                            bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
+                    new ConfigProviderImpl().getConfiguration(),
+                    networkInfo,
+                    UnavailableMetrics.UNAVAILABLE_METRICS);
 
-        final var fileServiceStates = this.getWritableStates(FileService.NAME);
-        final var files = fileServiceStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
-        genesisContentProviders(bootstrapConfig).forEach((fileNum, provider) -> {
-            final var fileId = createFileID(fileNum, bootstrapConfig);
-            files.put(
-                    fileId,
-                    File.newBuilder()
-                            .fileId(fileId)
-                            .keys(KeyList.DEFAULT)
-                            .contents(provider.apply(bootstrapConfig))
-                            .build());
+            final var fileServiceStates = this.getWritableStates(FileService.NAME);
+            final var files = fileServiceStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
+            genesisContentProviders(bootstrapConfig).forEach((fileNum, provider) -> {
+                final var fileId = createFileID(fileNum, bootstrapConfig);
+                files.put(
+                        fileId,
+                        File.newBuilder()
+                                .fileId(fileId)
+                                .keys(KeyList.DEFAULT)
+                                .contents(provider.apply(bootstrapConfig))
+                                .build());
+            });
+            ((CommittableWritableStates) fileServiceStates).commit();
+            return ctx;
         });
-        ((CommittableWritableStates) fileServiceStates).commit();
     }
 
     public MirrorNodeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {

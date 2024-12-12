@@ -17,9 +17,9 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -288,6 +288,6 @@ class TokenUpdateKeysPrecompileTest {
         final var multiKey = new KeyValueWrapper(
                 false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
         return new TokenUpdateKeysWrapper(
-                fungible, List.of(new TokenKeyWrapper(112, multiKey), new TokenKeyWrapper(1, adminKey)));
+                FUNGIBLE, List.of(new TokenKeyWrapper(112, multiKey), new TokenKeyWrapper(1, adminKey)));
     }
 }

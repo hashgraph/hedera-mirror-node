@@ -35,7 +35,6 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,8 +74,9 @@ class ProtoBalanceFileReaderTest {
     void emptyProtobuf() {
         AllAccountBalances allAccountBalances = AllAccountBalances.newBuilder().build();
         byte[] bytes = allAccountBalances.toByteArray();
-        StreamFileData streamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
-        assertThrows(InvalidStreamFileException.class, () -> protoBalanceFileReader.read(streamFileData));
+        StreamFileData allAccountBalancesStreamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
+        assertThrows(
+                InvalidStreamFileException.class, () -> protoBalanceFileReader.read(allAccountBalancesStreamFileData));
     }
 
     @Test
@@ -85,8 +85,9 @@ class ProtoBalanceFileReaderTest {
                 .addAllAccounts(SingleAccountBalances.newBuilder().build())
                 .build();
         byte[] bytes = allAccountBalances.toByteArray();
-        StreamFileData streamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
-        assertThrows(InvalidStreamFileException.class, () -> protoBalanceFileReader.read(streamFileData));
+        StreamFileData allAccountBalancesStreamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
+        assertThrows(
+                InvalidStreamFileException.class, () -> protoBalanceFileReader.read(allAccountBalancesStreamFileData));
     }
 
     @Test
@@ -100,8 +101,8 @@ class ProtoBalanceFileReaderTest {
                 .addAllAccounts(SingleAccountBalances.newBuilder().build())
                 .build();
         byte[] bytes = allAccountBalances.toByteArray();
-        StreamFileData streamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
-        AccountBalanceFile accountBalanceFile = protoBalanceFileReader.read(streamFileData);
+        StreamFileData allAccountBalancesStreamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
+        AccountBalanceFile accountBalanceFile = protoBalanceFileReader.read(allAccountBalancesStreamFileData);
         assertThat(accountBalanceFile).isNotNull();
         assertThat(accountBalanceFile.getItems()).hasSize(1);
     }
@@ -116,15 +117,15 @@ class ProtoBalanceFileReaderTest {
     @ParameterizedTest(name = "supports {0}")
     @ValueSource(strings = {"2021-03-10T16:00:00Z_Balances.pb.gz", "2021-03-10T16:00:00Z_Balances.pb"})
     void supports(String filename) {
-        StreamFileData streamFileData = StreamFileData.from(filename, new byte[] {1, 2, 3});
-        assertThat(protoBalanceFileReader.supports(streamFileData)).isTrue();
+        StreamFileData balancesStreamFileData = StreamFileData.from(filename, new byte[] {1, 2, 3});
+        assertThat(protoBalanceFileReader.supports(balancesStreamFileData)).isTrue();
     }
 
     @ParameterizedTest(name = "does not support {0}")
     @ValueSource(strings = {"2021-03-10T16:00:00Z_Balances.csv", "2021-03-10T16:00:00Z_Balances.csv.gz"})
     void unsupported(String filename) {
-        StreamFileData streamFileData = StreamFileData.from(filename, new byte[] {1, 2, 3});
-        assertThat(protoBalanceFileReader.supports(streamFileData)).isFalse();
+        StreamFileData balancesStreamFileData = StreamFileData.from(filename, new byte[] {1, 2, 3});
+        assertThat(protoBalanceFileReader.supports(balancesStreamFileData)).isFalse();
     }
 
     private void corrupt(byte[] bytes) {
@@ -152,11 +153,11 @@ class ProtoBalanceFileReaderTest {
                                         tokenBalance + i * 5L + j,
                                         new TokenBalance.Id(consensusTimestamp, accountId, tokenId));
                             })
-                            .collect(Collectors.toList());
+                            .toList();
                     return new AccountBalance(
                             hbarBalance + i, tokenBalances, new AccountBalance.Id(consensusTimestamp, accountId));
                 })
-                .collect(Collectors.toList());
+                .toList();
         return AccountBalanceFile.builder()
                 .bytes(streamFileData.getBytes())
                 .consensusTimestamp(consensusTimestamp)

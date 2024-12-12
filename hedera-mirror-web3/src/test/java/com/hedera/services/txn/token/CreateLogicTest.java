@@ -115,9 +115,9 @@ class CreateLogicTest {
     void throwExceptionIfTokenIsExpired() {
         given(op.hasExpiry()).willReturn(true);
         given(op.getExpiry()).willReturn(Timestamp.getDefaultInstance());
-        final var treasury = AccountID.getDefaultInstance();
-        given(op.getTreasury()).willReturn(treasury);
-        staticMock.when(() -> Id.fromGrpcAccount(treasury)).thenReturn(accountId);
+        final var treasuryAccount = AccountID.getDefaultInstance();
+        given(op.getTreasury()).willReturn(treasuryAccount);
+        staticMock.when(() -> Id.fromGrpcAccount(treasuryAccount)).thenReturn(accountId);
         assertThatThrownBy(this::runCreateLogic).isInstanceOf(InvalidTransactionException.class);
     }
 
@@ -128,9 +128,9 @@ class CreateLogicTest {
     @Test
     void throwIfTooManyFees() {
         given(op.hasExpiry()).willReturn(false);
-        final var treasury = AccountID.getDefaultInstance();
-        given(op.getTreasury()).willReturn(treasury);
-        staticMock.when(() -> Id.fromGrpcAccount(treasury)).thenReturn(accountId);
+        final var treasuryAccount = AccountID.getDefaultInstance();
+        given(op.getTreasury()).willReturn(treasuryAccount);
+        staticMock.when(() -> Id.fromGrpcAccount(treasuryAccount)).thenReturn(accountId);
         given(op.hasAutoRenewAccount()).willReturn(false);
         given(op.getCustomFeesCount()).willReturn(11);
         assertThatThrownBy(this::runCreateLogic).isInstanceOf(InvalidTransactionException.class);

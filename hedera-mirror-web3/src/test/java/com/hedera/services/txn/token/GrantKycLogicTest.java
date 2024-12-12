@@ -110,18 +110,18 @@ class GrantKycLogicTest {
 
     @Test
     void rejectChangeKycStateWithoutTokenKYCKey() {
-        final TokenRelationship tokenRelationship = TokenRelationship.getEmptyTokenRelationship();
+        final TokenRelationship accountTokenRelationship = TokenRelationship.getEmptyTokenRelationship();
 
         // given:
         given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW))
-                .willReturn(tokenRelationship);
+                .willReturn(accountTokenRelationship);
 
         // expect:
-        assertFalse(tokenRelationship.getToken().hasKycKey());
+        assertFalse(accountTokenRelationship.getToken().hasKycKey());
         assertFailsWith(() -> subject.grantKyc(idOfToken, idOfAccount, store), TOKEN_HAS_NO_KYC_KEY);
 
         // verify:
-        verify(store, never()).updateTokenRelationship(tokenRelationship);
+        verify(store, never()).updateTokenRelationship(accountTokenRelationship);
     }
 
     private void givenValidTxnCtx() {
