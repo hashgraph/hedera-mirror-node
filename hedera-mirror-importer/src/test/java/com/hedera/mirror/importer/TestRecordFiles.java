@@ -143,7 +143,7 @@ public class TestRecordFiles {
                 .size(498)
                 .version(5)
                 .build();
-        var recordFileVersionSixTwo = RecordFile.builder()
+        var recordFileVersionSixOne = RecordFile.builder()
                 .consensusStart(1657701968041986003L)
                 .consensusEnd(1657701968041986003L)
                 .count(1L)
@@ -187,7 +187,7 @@ public class TestRecordFiles {
         var transactionSidecarRecords = List.of(transactionSidecarRecord1, transactionSidecarRecord2);
         var sidecarFileHash = Hex.decodeHex(
                 "1ed54ea01aab5e726a087e94a0dd52c0f49b149d7a773ae71a3dc099f623bcf1840393db68f8db476ab11e6159f030f2");
-        var recordFileV6_2 = RecordFile.builder()
+        var recordFileVersionSixTwo = RecordFile.builder()
                 .consensusStart(1657701971304284003L)
                 .consensusEnd(1657701971304284004L)
                 .count(2L)
@@ -203,7 +203,7 @@ public class TestRecordFiles {
                 .metadataHash(
                         "b13a2b638c5688dbec43b97dbee8ad637d2d42376fc313c628a990ac65aefdbd39832cf5ece42b925a520ed2d2bf8eac")
                 .name("2022-07-13T08_46_11.304284003Z.rcd.gz")
-                .previousHash(recordFileVersionSixTwo.getHash())
+                .previousHash(recordFileVersionSixOne.getHash())
                 .size(805)
                 .sidecarCount(1)
                 .sidecars(List.of(SidecarFile.builder()
@@ -228,8 +228,8 @@ public class TestRecordFiles {
                 recordFileVersionTwoTwo,
                 recordFileVersionFiveOne,
                 recordFileVersionFiveTwo,
-                recordFileVersionSixTwo,
-                recordFileV6_2);
+                recordFileVersionSixOne,
+                recordFileVersionSixTwo);
         return Collections.unmodifiableMap(allFiles.stream().collect(Collectors.toMap(RecordFile::getName, rf -> rf)));
     }
 

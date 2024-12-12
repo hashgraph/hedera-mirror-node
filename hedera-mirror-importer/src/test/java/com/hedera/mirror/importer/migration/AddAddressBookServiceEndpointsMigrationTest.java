@@ -486,18 +486,25 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
         jdbcOperations.execute("drop table if exists address_book_service_endpoint cascade;");
 
         // drop describe and stake columns. Also drop primary key
-        jdbcOperations.execute("alter table if exists address_book_entry\n" + "    drop column if exists description,\n"
-                + "    drop column if exists stake,\n"
-                + "drop constraint if exists address_book_entry_pkey;");
+        jdbcOperations.execute(
+                """
+                            alter table if exists address_book_entry
+                                drop column if exists description,
+                                drop column if exists stake,
+                                drop constraint if exists address_book_entry_pkey;
+                            """);
 
         // restore id, ip and port columns. Also restore primary key
         jdbcOperations.execute(
-                "alter table if exists address_book_entry\n" + "    add column if not exists id integer,\n"
-                        + "    add column if not exists ip varchar(128) null,\n"
-                        + "    add column if not exists port integer null,\n"
-                        + "alter column node_account_id drop not null,\n"
-                        + "alter column node_id drop not null,\n"
-                        + "add primary key (id);");
+                """
+                            alter table if exists address_book_entry
+                                add column if not exists id integer,
+                                add column if not exists ip varchar(128) null,
+                                add column if not exists port integer null,
+                                alter column node_account_id drop not null,
+                                alter column node_id drop not null,
+                                add primary key (id);
+                            """);
     }
 
     // Use a custom class for address_book_service_endpoint table since its columns have changed from the current domain

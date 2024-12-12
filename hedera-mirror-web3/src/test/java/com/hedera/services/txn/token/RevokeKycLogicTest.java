@@ -22,7 +22,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -38,6 +37,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +45,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RevokeKycLogicTest {
+class RevokeKycLogicTest {
 
     private final AccountID accountID = IdUtils.asAccount("1.2.4");
     private final TokenID tokenID = IdUtils.asToken("1.2.3");
@@ -112,18 +112,18 @@ public class RevokeKycLogicTest {
 
     @Test
     void rejectChangeKycStateWithoutTokenKYCKey() {
-        final TokenRelationship tokenRelationship = TokenRelationship.getEmptyTokenRelationship();
+        final TokenRelationship emptyTokenRelationship = TokenRelationship.getEmptyTokenRelationship();
 
         // given:
         given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW))
-                .willReturn(tokenRelationship);
+                .willReturn(emptyTokenRelationship);
 
         // expect:
-        assertFalse(tokenRelationship.getToken().hasKycKey());
+        Assertions.assertFalse(emptyTokenRelationship.getToken().hasKycKey());
         assertFailsWith(() -> subject.revokeKyc(idOfToken, idOfAccount, store), TOKEN_HAS_NO_KYC_KEY);
 
         // verify:
-        verify(store, never()).updateTokenRelationship(tokenRelationship);
+        verify(store, never()).updateTokenRelationship(emptyTokenRelationship);
     }
 
     private void givenValidTxnCtx() {

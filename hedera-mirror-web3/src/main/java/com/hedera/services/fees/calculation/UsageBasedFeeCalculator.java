@@ -45,8 +45,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Implements a {@link FeeCalculator} in terms of injected usage prices, exchange rates, and collections of estimators
@@ -61,8 +59,6 @@ import org.apache.logging.log4j.Logger;
  *  3. Remove unused methods: init, estimatedNonFeePayerAdjustments, estimateFee, computePayment, assessCryptoAutoRenewal
  */
 public class UsageBasedFeeCalculator implements FeeCalculator {
-    private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
-
     private final HbarCentExchange exchange;
     private final UsagePricesProvider usagePrices;
     private final List<QueryResourceUsageEstimator> queryUsageEstimators;

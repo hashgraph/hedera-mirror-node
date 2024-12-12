@@ -22,7 +22,7 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.evm.store.StackedStateFramesTest.BareDatabaseAccessor;
+import com.hedera.mirror.web3.utils.BareDatabaseAccessor;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

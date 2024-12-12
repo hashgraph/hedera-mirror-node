@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.mirror.web3.utils.BareDatabaseAccessor;
 import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ContextExtension.class)
-public class StackedStateFramesTest {
+class StackedStateFramesTest {
 
     @Test
     void constructionHappyPath() {
@@ -120,13 +120,5 @@ public class StackedStateFramesTest {
         final var newTos = new RWCachingStateFrame<>(
                 Optional.of(new RWCachingStateFrame<>(Optional.empty(), Character.class)), Character.class);
         assertThatIllegalArgumentException().isThrownBy(() -> sut.push(newTos));
-    }
-
-    public static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
-        @NonNull
-        @Override
-        public Optional<V> get(@NonNull final K key, Optional<Long> timestamp) {
-            throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
-        }
     }
 }
