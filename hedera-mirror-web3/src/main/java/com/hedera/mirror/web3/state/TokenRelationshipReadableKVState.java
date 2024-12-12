@@ -35,6 +35,7 @@ import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.mirror.web3.utils.Suppliers;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
@@ -59,6 +60,12 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
         this.tokenAccountRepository = tokenAccountRepository;
         this.tokenBalanceRepository = tokenBalanceRepository;
         this.tokenRepository = tokenRepository;
+    }
+
+    @Nullable
+    @Override
+    public TokenRelation get(@Nonnull EntityIDPair key) {
+        return readFromDataSource(key);
     }
 
     @Override

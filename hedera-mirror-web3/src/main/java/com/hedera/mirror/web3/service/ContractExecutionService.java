@@ -25,8 +25,8 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
+import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
-import com.swirlds.state.State;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
@@ -49,7 +49,7 @@ public class ContractExecutionService extends ContractCallService {
             ThrottleProperties throttleProperties,
             Bucket gasLimitBucket,
             MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            State mirrorNodeState) {
+            MirrorNodeState mirrorNodeState) {
         super(
                 mirrorEvmTxProcessor,
                 gasLimitBucket,

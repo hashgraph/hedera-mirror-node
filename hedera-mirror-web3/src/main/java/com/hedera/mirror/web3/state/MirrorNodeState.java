@@ -125,14 +125,6 @@ public class MirrorNodeState implements State {
                     new ConfigProviderImpl().getConfiguration(),
                     networkInfo,
                     UnavailableMetrics.UNAVAILABLE_METRICS);
-
-            final var accountReadableKVState = (AccountReadableKVState) readableKVStates.stream()
-                    .filter(r -> r.getStateKey().equals("ACCOUNTS"))
-                    .findFirst()
-                    .orElseThrow();
-            accountReadableKVState
-                    .reset(); // Remove cached accounts as they remain with keys and empty objects in the cache at this
-            // point.
             return ctx;
         });
     }

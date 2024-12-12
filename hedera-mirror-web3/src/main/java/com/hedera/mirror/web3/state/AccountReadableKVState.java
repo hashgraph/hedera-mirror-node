@@ -45,6 +45,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
@@ -86,6 +87,12 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         this.nftRepository = nftRepository;
         this.tokenAccountRepository = tokenAccountRepository;
         this.tokenAllowanceRepository = tokenAllowanceRepository;
+    }
+
+    @Nullable
+    @Override
+    public Account get(@Nonnull AccountID key) {
+        return readFromDataSource(key);
     }
 
     @Override
