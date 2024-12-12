@@ -347,7 +347,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                                 expectedNftAllowance.getSpender(),
                                 expectedNftAllowance.getTokenId())
                         .filter(negate(Objects::isNull))
-                        .map(id -> EntityId.of(id)));
+                        .map(EntityId::of));
         return getExpectedEntityTransactions(recordItem, transaction, entityIds.toArray(EntityId[]::new));
     }
 

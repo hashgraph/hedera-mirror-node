@@ -132,8 +132,8 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
                                 ? null
                                 : Hbar.fromTinybars(contractResource.initialBalance),
                         null);
-                ContractId contractId = verifyCreateContractNetworkResponse();
-                return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
+                ContractId networkTransactionResponseContractId = verifyCreateContractNetworkResponse();
+                return new DeployedContract(fileId, networkTransactionResponseContractId, compiledSolidityArtifact);
             } catch (IOException e) {
                 log.warn("Issue creating contract: {}, ex: {}", contractResource, e);
                 throw new RuntimeException(e);

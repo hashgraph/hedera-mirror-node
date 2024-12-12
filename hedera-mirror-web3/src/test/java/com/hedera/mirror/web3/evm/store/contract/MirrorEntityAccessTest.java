@@ -30,6 +30,7 @@ import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import java.time.Instant;
 import java.util.Optional;
@@ -98,7 +99,9 @@ class MirrorEntityAccessTest {
     @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isNotUsableWithExpiredTimestamp() {
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        Account nonEmptyAccount = new Account(1234L, new Id(0, 0, 1234), 200L);
+        nonEmptyAccount.setExpiry(-1);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(nonEmptyAccount);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();
     }
@@ -106,7 +109,9 @@ class MirrorEntityAccessTest {
     @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isNotUsableWithExpiredTimestampAndNullBalance() {
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
+        Account nullBalanceAccount = new Account(1234L, new Id(0, 0, 1234), 0L);
+        nullBalanceAccount.setExpiry(-1);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(nullBalanceAccount);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();
     }

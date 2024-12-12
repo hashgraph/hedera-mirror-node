@@ -52,7 +52,7 @@ public abstract class CachingStateFrame<K> {
         }
 
         this.upstreamFrame = upstreamFrame;
-        this.accessors = new HashMap<>(klassesToCache.length);
+        this.accessors = HashMap.newHashMap(klassesToCache.length);
         Arrays.stream(klassesToCache).distinct().forEach(klass -> {
             Objects.requireNonNull(klass, "klassesToCache element");
             final var cache = new UpdatableReferenceCache<K>();

@@ -204,7 +204,7 @@ abstract class CsvBalanceFileReaderTest {
         long otherShard = importerProperties.getShard() + 1;
         FileUtils.writeStringToFile(
                 testFile,
-                String.format("\n%d,0,3,340\n%d,0,4,340\n", otherShard, otherShard),
+                String.format("%n%d,0,3,340%n%d,0,4,340%n", otherShard, otherShard),
                 CsvBalanceFileReader.CHARSET,
                 true);
 
@@ -294,6 +294,7 @@ abstract class CsvBalanceFileReaderTest {
                     AccountBalance actualItem = accountBalanceIter.next();
                     assertThat(actualItem).isEqualTo(expectedItem);
                 } catch (InvalidDatasetException ex) {
+                    //                    Assertions.fail("Unexpected InvalidDatasetException: " + ex.getMessage());
                 }
             }
 
