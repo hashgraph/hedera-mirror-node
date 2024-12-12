@@ -18,9 +18,9 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -92,7 +92,7 @@ class WipeFungiblePrecompileTest {
             "0xefef57f900000000000000000000000000000000000000000000000000000000000006aa00000000000000000000000000000000000000000000000000000000000006a8000000000000000000000000000000000000000000000000000000000000000a");
     private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
             .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                    .setToken(fungible)
+                    .setToken(FUNGIBLE)
                     .setAccount(HTSTestsUtil.contract));
 
     @Mock

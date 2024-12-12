@@ -314,11 +314,11 @@ class TransactionHashBatchInserterTest extends ImporterIntegrationTest {
         });
 
         shardMap.forEach((shard, items) -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate))
-                .isEqualTo(items.stream().filter(TransactionHash::hashIsValid).collect(Collectors.toList())));
+                .isEqualTo(items.stream().filter(TransactionHash::hashIsValid).toList()));
         assertThat(transactionHashRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(transactionHashes.stream()
                         .filter(TransactionHash::hashIsValid)
-                        .collect(Collectors.toList()));
+                        .toList());
     }
 
     @SneakyThrows

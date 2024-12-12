@@ -66,7 +66,6 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -76,23 +75,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SyntheticTxnFactoryTest {
-    private static final long serialNo = 100;
-    private static final long secondAmount = 200;
-    private static final AccountID a = IdUtils.asAccount("0.0.2");
-    private static final AccountID b = IdUtils.asAccount("0.0.3");
-    private static final AccountID c = IdUtils.asAccount("0.0.4");
-    private static final TokenID fungible = IdUtils.asToken("0.0.555");
-    private static final TokenID nonFungible = IdUtils.asToken("0.0.666");
-    private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
-    private static final List<ByteString> newMetadata =
+    private static final long SERIAL_NO = 100;
+    private static final long SECOND_AMOUNT = 200;
+    private static final AccountID ACCOUNT_A = IdUtils.asAccount("0.0.2");
+    private static final AccountID ACCOUNT_B = IdUtils.asAccount("0.0.3");
+    private static final AccountID ACCOUNT_C = IdUtils.asAccount("0.0.4");
+    private static final TokenID FUNGIBLE = IdUtils.asToken("0.0.555");
+    private static final TokenID NON_FUNGIBLE = IdUtils.asToken("0.0.666");
+    private static final List<Long> TARGET_SERIAL_NOS = List.of(1L, 2L, 3L);
+    private static final List<ByteString> NEW_METADATA =
             List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
     public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
-    public static final TokenID token = IdUtils.asToken("0.0.1");
-    public static final AccountID payer = IdUtils.asAccount("0.0.12345");
-    public static final AccountID sender = IdUtils.asAccount("0.0.2");
+    public static final TokenID TOKEN = IdUtils.asToken("0.0.1");
+    public static final AccountID PAYER = IdUtils.asAccount("0.0.12345");
+    public static final AccountID SENDER = IdUtils.asAccount("0.0.2");
 
-    public static final AccountID receiver = IdUtils.asAccount("0.0.3");
-    public static final Id senderId = Id.fromGrpcAccount(sender);
+    public static final AccountID RECEIVER = IdUtils.asAccount("0.0.3");
+    public static final Id SENDER_ID = Id.fromGrpcAccount(SENDER);
 
     private SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
@@ -120,7 +119,7 @@ class SyntheticTxnFactoryTest {
     }
 
     @Test
-    void createsExpectedCryptoCreateWithECKeyAlias() throws InvalidKeyException, DecoderException {
+    void createsExpectedCryptoCreateWithECKeyAlias() throws InvalidKeyException {
         final var balance = 10L;
         final var bytes = new byte[33];
         bytes[0] = 0x02;
@@ -189,126 +188,126 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedAssociations() {
-        final var tokens = List.of(fungible, nonFungible);
-        final var associations = multiAssociation(a, tokens);
+        final var tokens = List.of(FUNGIBLE, NON_FUNGIBLE);
+        final var associations = multiAssociation(ACCOUNT_A, tokens);
 
         final var result = subject.createAssociate(associations);
         final var txnBody = result.build();
 
-        assertEquals(a, txnBody.getTokenAssociate().getAccount());
+        assertEquals(ACCOUNT_A, txnBody.getTokenAssociate().getAccount());
         assertEquals(tokens, txnBody.getTokenAssociate().getTokensList());
     }
 
     @Test
     void createsExpectedDissociations() {
-        final var tokens = List.of(fungible, nonFungible);
-        final var associations = Dissociation.multiDissociation(a, tokens);
+        final var tokens = List.of(FUNGIBLE, NON_FUNGIBLE);
+        final var associations = Dissociation.multiDissociation(ACCOUNT_A, tokens);
 
         final var result = subject.createDissociate(associations);
         final var txnBody = result.build();
 
-        assertEquals(a, txnBody.getTokenDissociate().getAccount());
+        assertEquals(ACCOUNT_A, txnBody.getTokenDissociate().getAccount());
         assertEquals(tokens, txnBody.getTokenDissociate().getTokensList());
     }
 
     @Test
     void createsExpectedNftMint() {
-        final var nftMints = MintWrapper.forNonFungible(nonFungible, newMetadata);
+        final var nftMints = MintWrapper.forNonFungible(NON_FUNGIBLE, NEW_METADATA);
 
         final var result = subject.createMint(nftMints);
         final var txnBody = result.build();
 
-        assertEquals(nonFungible, txnBody.getTokenMint().getToken());
-        assertEquals(newMetadata, txnBody.getTokenMint().getMetadataList());
+        assertEquals(NON_FUNGIBLE, txnBody.getTokenMint().getToken());
+        assertEquals(NEW_METADATA, txnBody.getTokenMint().getMetadataList());
     }
 
     @Test
     void createsExpectedNftBurn() {
-        final var nftBurns = BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
+        final var nftBurns = BurnWrapper.forNonFungible(NON_FUNGIBLE, TARGET_SERIAL_NOS);
 
         final var result = subject.createBurn(nftBurns);
         final var txnBody = result.build();
 
-        assertEquals(nonFungible, txnBody.getTokenBurn().getToken());
-        assertEquals(targetSerialNos, txnBody.getTokenBurn().getSerialNumbersList());
+        assertEquals(NON_FUNGIBLE, txnBody.getTokenBurn().getToken());
+        assertEquals(TARGET_SERIAL_NOS, txnBody.getTokenBurn().getSerialNumbersList());
     }
 
     @Test
     void createsExpectedFungibleMint() {
         final var amount = 1234L;
-        final var funMints = MintWrapper.forFungible(fungible, amount);
+        final var funMints = MintWrapper.forFungible(FUNGIBLE, amount);
 
         final var result = subject.createMint(funMints);
         final var txnBody = result.build();
 
-        assertEquals(fungible, txnBody.getTokenMint().getToken());
+        assertEquals(FUNGIBLE, txnBody.getTokenMint().getToken());
         assertEquals(amount, txnBody.getTokenMint().getAmount());
     }
 
     @Test
     void createsExpectedFungibleBurn() {
         final var amount = 1234L;
-        final var funBurns = BurnWrapper.forFungible(fungible, amount);
+        final var funBurns = BurnWrapper.forFungible(FUNGIBLE, amount);
 
         final var result = subject.createBurn(funBurns);
         final var txnBody = result.build();
 
-        assertEquals(fungible, txnBody.getTokenBurn().getToken());
+        assertEquals(FUNGIBLE, txnBody.getTokenBurn().getToken());
         assertEquals(amount, txnBody.getTokenBurn().getAmount());
     }
 
     @Test
     void createsExpectedGrantKycCall() {
-        final var grantWrapper = new GrantRevokeKycWrapper<>(fungible, a);
+        final var grantWrapper = new GrantRevokeKycWrapper<>(FUNGIBLE, ACCOUNT_A);
         final var result = subject.createGrantKyc(grantWrapper);
         final var txnBody = result.build();
 
-        assertEquals(fungible, txnBody.getTokenGrantKyc().getToken());
-        assertEquals(a, txnBody.getTokenGrantKyc().getAccount());
+        assertEquals(FUNGIBLE, txnBody.getTokenGrantKyc().getToken());
+        assertEquals(ACCOUNT_A, txnBody.getTokenGrantKyc().getAccount());
     }
 
     @Test
     void createsExpectedFungibleWipe() {
         final var amount = 1234L;
-        final var fungibleWipe = WipeWrapper.forFungible(fungible, a, amount);
+        final var fungibleWipe = WipeWrapper.forFungible(FUNGIBLE, ACCOUNT_A, amount);
 
         final var result = subject.createWipe(fungibleWipe);
         final var txnBody = result.build();
 
-        assertEquals(fungible, txnBody.getTokenWipe().getToken());
+        assertEquals(FUNGIBLE, txnBody.getTokenWipe().getToken());
         assertEquals(amount, txnBody.getTokenWipe().getAmount());
-        assertEquals(a, txnBody.getTokenWipe().getAccount());
+        assertEquals(ACCOUNT_A, txnBody.getTokenWipe().getAccount());
     }
 
     @Test
     void createsExpectedFungibleApproveAllowance() {
         final var amount = BigInteger.ONE;
-        final var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, true, false);
+        final var allowances = new ApproveWrapper(TOKEN, RECEIVER, amount, BigInteger.ZERO, true, false);
 
-        final var result = subject.createFungibleApproval(allowances, senderId);
+        final var result = subject.createFungibleApproval(allowances, SENDER_ID);
         final var txnBody = result.build();
 
         assertEquals(
                 amount.longValue(),
                 txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getAmount());
         assertEquals(
-                token, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
+                TOKEN, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
         final var allowance = txnBody.getCryptoApproveAllowance().getTokenAllowances(0);
-        assertEquals(senderId.asGrpcAccount(), allowance.getOwner());
-        assertEquals(receiver, allowance.getSpender());
+        assertEquals(SENDER_ID.asGrpcAccount(), allowance.getOwner());
+        assertEquals(RECEIVER, allowance.getSpender());
     }
 
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithOwnerAsOperator() {
-        final var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false, false);
+        final var allowances = new ApproveWrapper(TOKEN, RECEIVER, BigInteger.ZERO, BigInteger.ONE, false, false);
         final var ownerId = new Id(0, 0, 666);
 
         final var result = subject.createNonfungibleApproval(allowances, ownerId, ownerId);
         final var txnBody = result.build();
 
         final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
-        assertEquals(token, allowance.getTokenId());
-        assertEquals(receiver, allowance.getSpender());
+        assertEquals(TOKEN, allowance.getTokenId());
+        assertEquals(RECEIVER, allowance.getSpender());
         assertEquals(ownerId.asGrpcAccount(), allowance.getOwner());
         assertEquals(AccountID.getDefaultInstance(), allowance.getDelegatingSpender());
         assertEquals(1L, allowance.getSerialNumbers(0));
@@ -316,7 +315,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithNonOwnerOperator() {
-        final var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false, false);
+        final var allowances = new ApproveWrapper(TOKEN, RECEIVER, BigInteger.ZERO, BigInteger.ONE, false, false);
         final var ownerId = new Id(0, 0, 666);
         final var operatorId = new Id(0, 0, 777);
 
@@ -324,8 +323,8 @@ class SyntheticTxnFactoryTest {
         final var txnBody = result.build();
 
         final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
-        assertEquals(token, allowance.getTokenId());
-        assertEquals(receiver, allowance.getSpender());
+        assertEquals(TOKEN, allowance.getTokenId());
+        assertEquals(RECEIVER, allowance.getSpender());
         assertEquals(ownerId.asGrpcAccount(), allowance.getOwner());
         assertEquals(operatorId.asGrpcAccount(), allowance.getDelegatingSpender());
         assertEquals(1L, allowance.getSerialNumbers(0));
@@ -333,28 +332,28 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithoutOwner() {
-        final var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false, false);
+        final var allowances = new ApproveWrapper(TOKEN, RECEIVER, BigInteger.ZERO, BigInteger.ONE, false, false);
         final var operatorId = new Id(0, 0, 666);
 
         final var result = subject.createNonfungibleApproval(allowances, null, operatorId);
         final var txnBody = result.build();
 
         final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
-        assertEquals(token, allowance.getTokenId());
-        assertEquals(receiver, allowance.getSpender());
+        assertEquals(TOKEN, allowance.getTokenId());
+        assertEquals(RECEIVER, allowance.getSpender());
         assertEquals(AccountID.getDefaultInstance(), allowance.getOwner());
         assertEquals(1L, allowance.getSerialNumbers(0));
     }
 
     @Test
     void createsDeleteAllowance() {
-        final var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false, false);
+        final var allowances = new ApproveWrapper(TOKEN, RECEIVER, BigInteger.ZERO, BigInteger.ONE, false, false);
 
-        final var result = subject.createDeleteAllowance(allowances, senderId);
+        final var result = subject.createDeleteAllowance(allowances, SENDER_ID);
         final var txnBody = result.build();
 
         assertEquals(
-                token, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
+                TOKEN, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
         assertEquals(1L, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getSerialNumbers(0));
         assertEquals(
                 HTSTestsUtil.sender,
@@ -363,30 +362,30 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedNftWipe() {
-        final var nftWipe = WipeWrapper.forNonFungible(nonFungible, a, targetSerialNos);
+        final var nftWipe = WipeWrapper.forNonFungible(NON_FUNGIBLE, ACCOUNT_A, TARGET_SERIAL_NOS);
 
         final var result = subject.createWipe(nftWipe);
         final var txnBody = result.build();
 
-        assertEquals(nonFungible, txnBody.getTokenWipe().getToken());
-        assertEquals(a, txnBody.getTokenWipe().getAccount());
-        assertEquals(targetSerialNos, txnBody.getTokenWipe().getSerialNumbersList());
+        assertEquals(NON_FUNGIBLE, txnBody.getTokenWipe().getToken());
+        assertEquals(ACCOUNT_A, txnBody.getTokenWipe().getAccount());
+        assertEquals(TARGET_SERIAL_NOS, txnBody.getTokenWipe().getSerialNumbersList());
     }
 
     @Test
     void createsAdjustAllowanceForAllNFT() {
-        final var allowances = new SetApprovalForAllWrapper(nonFungible, receiver, true);
+        final var allowances = new SetApprovalForAllWrapper(NON_FUNGIBLE, RECEIVER, true);
 
-        final var result = subject.createApproveAllowanceForAllNFT(allowances, senderId);
+        final var result = subject.createApproveAllowanceForAllNFT(allowances, SENDER_ID);
         final var txnBody = result.build();
 
         assertEquals(
-                receiver,
+                RECEIVER,
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
         assertEquals(
-                sender, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getOwner());
+                SENDER, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getOwner());
         assertEquals(
-                nonFungible,
+                NON_FUNGIBLE,
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
         assertEquals(
                 BoolValue.of(true),
@@ -395,40 +394,40 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedFreeze() {
-        final var freezeWrapper = TokenFreezeUnfreezeWrapper.forFreeze(fungible, a);
+        final var freezeWrapper = TokenFreezeUnfreezeWrapper.forFreeze(FUNGIBLE, ACCOUNT_A);
         final var result = subject.createFreeze(freezeWrapper);
         final var txnBody = result.build();
 
-        assertEquals(fungible, txnBody.getTokenFreeze().getToken());
-        assertEquals(a, txnBody.getTokenFreeze().getAccount());
+        assertEquals(FUNGIBLE, txnBody.getTokenFreeze().getToken());
+        assertEquals(ACCOUNT_A, txnBody.getTokenFreeze().getAccount());
     }
 
     @Test
     void createsExpectedUnfreeze() {
-        final var unfreezeWrapper = TokenFreezeUnfreezeWrapper.forUnfreeze(fungible, a);
+        final var unfreezeWrapper = TokenFreezeUnfreezeWrapper.forUnfreeze(FUNGIBLE, ACCOUNT_A);
         final var result = subject.createUnfreeze(unfreezeWrapper);
         final var txnBody = result.build();
 
-        assertEquals(fungible, txnBody.getTokenUnfreeze().getToken());
-        assertEquals(a, txnBody.getTokenUnfreeze().getAccount());
+        assertEquals(FUNGIBLE, txnBody.getTokenUnfreeze().getToken());
+        assertEquals(ACCOUNT_A, txnBody.getTokenUnfreeze().getAccount());
     }
 
     @Test
     void createsExpectedPause() {
-        final var pauseWrapper = new PauseWrapper(fungible);
+        final var pauseWrapper = new PauseWrapper(FUNGIBLE);
         final var result = subject.createPause(pauseWrapper);
         final var txnBody = result.build();
 
-        assertEquals(fungible, txnBody.getTokenPause().getToken());
+        assertEquals(FUNGIBLE, txnBody.getTokenPause().getToken());
     }
 
     @Test
     void createsExpectedUnpause() {
-        final var unpauseWrapper = new UnpauseWrapper(fungible);
+        final var unpauseWrapper = new UnpauseWrapper(FUNGIBLE);
         final var result = subject.createUnpause(unpauseWrapper);
         final var txnBody = result.build();
 
-        assertEquals(fungible, txnBody.getTokenUnpause().getToken());
+        assertEquals(FUNGIBLE, txnBody.getTokenUnpause().getToken());
     }
 
     @Test
@@ -449,7 +448,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedCryptoTransfer() {
-        final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var fungibleTransfer = new FungibleTokenTransfer(SECOND_AMOUNT, false, FUNGIBLE, ACCOUNT_B, ACCOUNT_A);
 
         final var result = subject.createCryptoTransfer(
                 List.of(new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
@@ -457,7 +456,7 @@ class SyntheticTxnFactoryTest {
 
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
         final var expFungibleTransfer = tokenTransfers.get(0);
-        assertEquals(fungible, expFungibleTransfer.getToken());
+        assertEquals(FUNGIBLE, expFungibleTransfer.getToken());
         assertEquals(
                 List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
                 expFungibleTransfer.getTransfersList());
@@ -465,8 +464,8 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void mergesRepeatedTokenIds() {
-        final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
-        final var nonFungibleTransfer = new NftExchange(1L, nonFungible, a, b);
+        final var fungibleTransfer = new FungibleTokenTransfer(SECOND_AMOUNT, false, FUNGIBLE, ACCOUNT_B, ACCOUNT_A);
+        final var nonFungibleTransfer = new NftExchange(1L, NON_FUNGIBLE, ACCOUNT_A, ACCOUNT_B);
         assertFalse(nonFungibleTransfer.isApproval());
 
         final var result = subject.createCryptoTransfer(List.of(
@@ -479,14 +478,15 @@ class SyntheticTxnFactoryTest {
         final var finalTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
         assertEquals(2, finalTransfers.size());
         final var mergedFungible = finalTransfers.get(0);
-        assertEquals(fungible, mergedFungible.getToken());
+        assertEquals(FUNGIBLE, mergedFungible.getToken());
         assertEquals(
-                List.of(aaWith(b, -2 * secondAmount), aaWith(a, +2 * secondAmount)), mergedFungible.getTransfersList());
+                List.of(aaWith(ACCOUNT_B, -2 * SECOND_AMOUNT), aaWith(ACCOUNT_A, +2 * SECOND_AMOUNT)),
+                mergedFungible.getTransfersList());
     }
 
     @Test
     void createsExpectedCryptoTransferForNFTTransfer() {
-        final var nftExchange = new NftExchange(serialNo, nonFungible, a, c);
+        final var nftExchange = new NftExchange(SERIAL_NO, NON_FUNGIBLE, ACCOUNT_A, ACCOUNT_C);
 
         final var result = subject.createCryptoTransfer(
                 Collections.singletonList(new TokenTransferWrapper(List.of(nftExchange), Collections.emptyList())));
@@ -494,14 +494,14 @@ class SyntheticTxnFactoryTest {
 
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
         final var expNftTransfer = tokenTransfers.get(0);
-        assertEquals(nonFungible, expNftTransfer.getToken());
+        assertEquals(NON_FUNGIBLE, expNftTransfer.getToken());
         assertEquals(List.of(nftExchange.asGrpc()), expNftTransfer.getNftTransfersList());
         assertEquals(1, tokenTransfers.size());
     }
 
     @Test
     void createsExpectedCryptoTransferForFungibleTransfer() {
-        final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var fungibleTransfer = new FungibleTokenTransfer(SECOND_AMOUNT, false, FUNGIBLE, ACCOUNT_B, ACCOUNT_A);
 
         final var result = subject.createCryptoTransfer(Collections.singletonList(
                 new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
@@ -509,7 +509,7 @@ class SyntheticTxnFactoryTest {
 
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
         final var expFungibleTransfer = tokenTransfers.get(0);
-        assertEquals(fungible, expFungibleTransfer.getToken());
+        assertEquals(FUNGIBLE, expFungibleTransfer.getToken());
         assertEquals(
                 List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
                 expFungibleTransfer.getTransfersList());
@@ -518,8 +518,8 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedCryptoTransfersForMultipleTransferWrappers() {
-        final var nftExchange = new NftExchange(serialNo, nonFungible, a, c);
-        final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var nftExchange = new NftExchange(SERIAL_NO, NON_FUNGIBLE, ACCOUNT_A, ACCOUNT_C);
+        final var fungibleTransfer = new FungibleTokenTransfer(SECOND_AMOUNT, false, FUNGIBLE, ACCOUNT_B, ACCOUNT_A);
 
         final var result = subject.createCryptoTransfer(List.of(
                 new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer)),
@@ -529,37 +529,39 @@ class SyntheticTxnFactoryTest {
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
 
         final var expFungibleTransfer = tokenTransfers.get(0);
-        assertEquals(fungible, expFungibleTransfer.getToken());
+        assertEquals(FUNGIBLE, expFungibleTransfer.getToken());
         assertEquals(
                 List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
                 expFungibleTransfer.getTransfersList());
 
         final var expNftTransfer = tokenTransfers.get(1);
-        assertEquals(nonFungible, expNftTransfer.getToken());
+        assertEquals(NON_FUNGIBLE, expNftTransfer.getToken());
         assertEquals(List.of(nftExchange.asGrpc()), expNftTransfer.getNftTransfersList());
     }
 
     @Test
     void mergesFungibleTransfersAsExpected() {
         final var source = new TokenTransferWrapper(
-                        Collections.emptyList(), List.of(new FungibleTokenTransfer(1, false, fungible, a, b)))
+                        Collections.emptyList(),
+                        List.of(new FungibleTokenTransfer(1, false, FUNGIBLE, ACCOUNT_A, ACCOUNT_B)))
                 .asGrpcBuilder();
         final var target = new TokenTransferWrapper(
-                        Collections.emptyList(), List.of(new FungibleTokenTransfer(2, false, fungible, b, c)))
+                        Collections.emptyList(),
+                        List.of(new FungibleTokenTransfer(2, false, FUNGIBLE, ACCOUNT_B, ACCOUNT_C)))
                 .asGrpcBuilder();
 
         SyntheticTxnFactory.mergeTokenTransfers(target, source);
 
-        assertEquals(fungible, target.getToken());
+        assertEquals(FUNGIBLE, target.getToken());
         final var transfers = target.getTransfersList();
-        assertEquals(List.of(aaWith(b, -1), aaWith(c, +2), aaWith(a, -1)), transfers);
+        assertEquals(List.of(aaWith(ACCOUNT_B, -1), aaWith(ACCOUNT_C, +2), aaWith(ACCOUNT_A, -1)), transfers);
     }
 
     @Test
     void createsExpectedCryptoTransferForFungibleAndHbarTransfer() {
-        final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var fungibleTransfer = new FungibleTokenTransfer(SECOND_AMOUNT, false, FUNGIBLE, ACCOUNT_B, ACCOUNT_A);
 
-        final var hbarTransfer = new HbarTransfer(secondAmount, false, a, b);
+        final var hbarTransfer = new HbarTransfer(SECOND_AMOUNT, false, ACCOUNT_A, ACCOUNT_B);
 
         final var result = subject.createCryptoTransfer(Collections.singletonList(
                 new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
@@ -571,7 +573,7 @@ class SyntheticTxnFactoryTest {
 
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
         final var expFungibleTransfer = tokenTransfers.get(0);
-        assertEquals(fungible, expFungibleTransfer.getToken());
+        assertEquals(FUNGIBLE, expFungibleTransfer.getToken());
         assertEquals(
                 List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
                 expFungibleTransfer.getTransfersList());
@@ -587,8 +589,8 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedCryptoTransferForNFTAndHbarTransfer() {
-        final var nftExchange = new NftExchange(serialNo, nonFungible, a, c);
-        final var hbarTransfer = new HbarTransfer(secondAmount, false, a, b);
+        final var nftExchange = new NftExchange(SERIAL_NO, NON_FUNGIBLE, ACCOUNT_A, ACCOUNT_C);
+        final var hbarTransfer = new HbarTransfer(SECOND_AMOUNT, false, ACCOUNT_A, ACCOUNT_B);
 
         final var result = subject.createCryptoTransfer(
                 Collections.singletonList(new TokenTransferWrapper(List.of(nftExchange), Collections.emptyList())));
@@ -600,7 +602,7 @@ class SyntheticTxnFactoryTest {
 
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
         final var expNftTransfer = tokenTransfers.get(0);
-        assertEquals(nonFungible, expNftTransfer.getToken());
+        assertEquals(NON_FUNGIBLE, expNftTransfer.getToken());
         assertEquals(List.of(nftExchange.asGrpc()), expNftTransfer.getNftTransfersList());
         assertEquals(1, tokenTransfers.size());
 
@@ -614,7 +616,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedCryptoTransferHbarOnlyTransfer() {
-        final var hbarTransfer = new HbarTransfer(secondAmount, false, a, b);
+        final var hbarTransfer = new HbarTransfer(SECOND_AMOUNT, false, ACCOUNT_A, ACCOUNT_B);
 
         final var result = subject.createCryptoTransfer(Collections.emptyList());
         final var resultHBar = subject.createCryptoTransferForHbar(new TransferWrapper(List.of(hbarTransfer)));
@@ -636,8 +638,8 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedCryptoTransferTokensOnlyTransfer() {
-        final var nftExchange = new NftExchange(serialNo, nonFungible, a, c);
-        final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var nftExchange = new NftExchange(SERIAL_NO, NON_FUNGIBLE, ACCOUNT_A, ACCOUNT_C);
+        final var fungibleTransfer = new FungibleTokenTransfer(SECOND_AMOUNT, false, FUNGIBLE, ACCOUNT_B, ACCOUNT_A);
 
         final var result = subject.createCryptoTransfer(List.of(
                 new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer)),
@@ -650,13 +652,13 @@ class SyntheticTxnFactoryTest {
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
 
         final var expFungibleTransfer = tokenTransfers.get(0);
-        assertEquals(fungible, expFungibleTransfer.getToken());
+        assertEquals(FUNGIBLE, expFungibleTransfer.getToken());
         assertEquals(
                 List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
                 expFungibleTransfer.getTransfersList());
 
         final var expNftTransfer = tokenTransfers.get(1);
-        assertEquals(nonFungible, expNftTransfer.getToken());
+        assertEquals(NON_FUNGIBLE, expNftTransfer.getToken());
         assertEquals(List.of(nftExchange.asGrpc()), expNftTransfer.getNftTransfersList());
 
         final var hbarTransfers = txnBody.getCryptoTransfer().getTransfers();
@@ -684,7 +686,7 @@ class SyntheticTxnFactoryTest {
         final var result = subject.createTokenUpdate(tokenUpdateWrapper);
         final var txnBody = result.build().getTokenUpdate();
 
-        assertEquals(HTSTestsUtil.fungible, txnBody.getToken());
+        assertEquals(HTSTestsUtil.FUNGIBLE, txnBody.getToken());
 
         assertEquals("fungible", txnBody.getName());
         assertEquals("G", txnBody.getSymbol());
@@ -698,15 +700,15 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedTokenUpdateCallForNonFungible() {
         // given
-        final var ComplexKey = new KeyValueWrapper(
+        final var complexKey = new KeyValueWrapper(
                 false, null, new byte[] {}, new byte[] {}, contractIdFromEvmAddress(contractAddress));
         final var multiKey = new KeyValueWrapper(
                 false, contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
         final var wrapper = createNonFungibleTokenUpdateWrapperWithKeys(List.of(
                 new TokenKeyWrapper(112, multiKey),
-                new TokenKeyWrapper(2, ComplexKey),
-                new TokenKeyWrapper(4, ComplexKey),
-                new TokenKeyWrapper(8, ComplexKey)));
+                new TokenKeyWrapper(2, complexKey),
+                new TokenKeyWrapper(4, complexKey),
+                new TokenKeyWrapper(8, complexKey)));
 
         // when
         final var result = subject.createTokenUpdate(wrapper);
@@ -721,38 +723,38 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithZeroExpiry() {
-        final var updateExpiryInfo = new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(0L, payer, 555L));
+        final var updateExpiryInfo = new TokenUpdateExpiryInfoWrapper(TOKEN, new TokenExpiryWrapper(0L, PAYER, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
 
-        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(TOKEN, txnBody.getTokenUpdate().getToken());
         assertEquals(0L, txnBody.getTokenUpdate().getExpiry().getSeconds());
-        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(PAYER, txnBody.getTokenUpdate().getAutoRenewAccount());
         assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
     }
 
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithZeroAutoRenewPeriod() {
-        final var updateExpiryInfo = new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 0L));
+        final var updateExpiryInfo = new TokenUpdateExpiryInfoWrapper(TOKEN, new TokenExpiryWrapper(442L, PAYER, 0L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
 
-        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(TOKEN, txnBody.getTokenUpdate().getToken());
         assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
-        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(PAYER, txnBody.getTokenUpdate().getAutoRenewAccount());
         assertEquals(0L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
     }
 
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithNoAutoRenewAccount() {
-        final var updateExpiryInfo = new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, null, 555L));
+        final var updateExpiryInfo = new TokenUpdateExpiryInfoWrapper(TOKEN, new TokenExpiryWrapper(442L, null, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
 
-        assertEquals(token, txnBody.getTokenUpdate().getToken());
+        assertEquals(TOKEN, txnBody.getTokenUpdate().getToken());
         assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
         assertTrue(txnBody.getTokenUpdate().getAutoRenewAccount().toString().isEmpty());
         assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
@@ -789,7 +791,7 @@ class SyntheticTxnFactoryTest {
         assertFalse(txnBody.getFreezeDefault());
         assertEquals(442L, txnBody.getExpiry().getSeconds());
         assertEquals(555L, txnBody.getAutoRenewPeriod().getSeconds());
-        assertEquals(payer, txnBody.getAutoRenewAccount());
+        assertEquals(PAYER, txnBody.getAutoRenewAccount());
 
         // keys assertions
         assertKeys(txnBody, adminKey, multiKey);

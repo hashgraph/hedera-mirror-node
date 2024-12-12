@@ -137,9 +137,9 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
 
         // add current tokens, and the expected current tokens
         tokens.forEach(
-                (t) -> t.timestampRange = Range.atLeast(t.getTimestampRange().upperEndpoint()));
+                t -> t.timestampRange = Range.atLeast(t.getTimestampRange().upperEndpoint()));
         var expectedCurrent = expectedHistory.stream()
-                .map((t) -> t.toBuilder()
+                .map(t -> t.toBuilder()
                         .timestampRange(Range.atLeast(t.getTimestampRange().upperEndpoint()))
                         .build())
                 .toList();

@@ -49,8 +49,8 @@ class RecordFileReaderImplV5Test extends AbstractRecordFileReaderTest {
         return DynamicTest.stream(
                 Arrays.stream(resourceResolver.getResources(
                         "classpath:data/recordstreams/eth-0.26.0/record0.0.3/*" + ".rcd")),
-                (recordFile) -> String.format(template, recordFile.getFilename()),
-                (recordFile) -> {
+                recordFile -> String.format(template, recordFile.getFilename()),
+                recordFile -> {
                     // given
                     StreamFileData streamFileData = StreamFileData.from(recordFile.getFile());
 

@@ -373,21 +373,21 @@ public class TopicFeature {
                     TimeUnit.SECONDS);
         }
 
-        SubscriptionResponse subscriptionResponse;
+        SubscriptionResponse topicSubscriptionResponse;
 
         try {
-            subscriptionResponse = mirrorClient.subscribeToTopicAndRetrieveMessages(
+            topicSubscriptionResponse = mirrorClient.subscribeToTopicAndRetrieveMessages(
                     sdkClient, topicMessageQuery, messageSubscribeCount, latency);
             assertEquals(
                     messageSubscribeCount,
-                    subscriptionResponse.getMirrorHCSResponses().size());
+                    topicSubscriptionResponse.getMirrorHCSResponses().size());
         } finally {
             if (scheduler != null) {
                 scheduler.shutdownNow();
             }
         }
 
-        return subscriptionResponse;
+        return topicSubscriptionResponse;
     }
 
     private KeyList getSubmitKeys() {

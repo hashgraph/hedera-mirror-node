@@ -48,7 +48,7 @@ public class ServiceMigratorImpl implements ServiceMigrator {
             @Nullable SoftwareVersion previousVersion,
             @Nonnull SoftwareVersion currentVersion,
             @Nonnull Configuration config,
-            @Nonnull NetworkInfo networkInfo,
+            @Nullable NetworkInfo networkInfo,
             @Nonnull Metrics metrics) {
         requireNonNull(state);
         requireNonNull(servicesRegistry);

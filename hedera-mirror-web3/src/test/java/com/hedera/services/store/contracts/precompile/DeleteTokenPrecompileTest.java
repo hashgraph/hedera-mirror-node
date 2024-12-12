@@ -18,9 +18,9 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -81,7 +81,7 @@ class DeleteTokenPrecompileTest {
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
     private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
-            .setTokenDeletion(TokenDeleteTransactionBody.newBuilder().setToken(fungible));
+            .setTokenDeletion(TokenDeleteTransactionBody.newBuilder().setToken(FUNGIBLE));
 
     @Mock
     private MessageFrame frame;

@@ -94,7 +94,6 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     private static final String CREATE_NON_FUNGIBLE_TOKEN_STRING = "createNonFungibleToken(";
     private static final String CREATE_FUNGIBLE_TOKEN_WITH_FEES_STRING = "createFungibleTokenWithCustomFees(";
     private static final String CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_STRING = "createNonFungibleTokenWithCustomFees(";
-    private static final String TOKEN_CREATE = String.format(FAILURE_MESSAGE, "token create");
     private static final Function TOKEN_CREATE_FUNGIBLE_FUNCTION =
             new Function(CREATE_FUNGIBLE_TOKEN_STRING + HEDERA_TOKEN_STRUCT + ",uint256,uint256)");
     public static final Bytes TOKEN_CREATE_FUNGIBLE_SELECTOR = Bytes.wrap(TOKEN_CREATE_FUNGIBLE_FUNCTION.selector());

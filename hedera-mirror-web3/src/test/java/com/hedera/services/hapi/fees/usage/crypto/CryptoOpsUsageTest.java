@@ -411,8 +411,8 @@ class CryptoOpsUsageTest {
         final var opMeta = new CryptoApproveAllowanceMeta(
                 txn.getCryptoApproveAllowance(),
                 txn.getTransactionID().getTransactionValidStart().getSeconds());
-        final SigUsage sigUsage = new SigUsage(1, sigSize, 1);
-        expected.resetForTransaction(baseMeta, sigUsage);
+        final SigUsage newSigUsage = new SigUsage(1, sigSize, 1);
+        expected.resetForTransaction(baseMeta, newSigUsage);
 
         final Key oldKey = A_KEY_LIST;
         final long oldExpiry = expiry - 1_234L;
@@ -445,7 +445,7 @@ class CryptoOpsUsageTest {
 
         final var actual = new UsageAccumulator();
 
-        subject.cryptoApproveAllowanceUsage(sigUsage, baseMeta, opMeta, ctx, actual);
+        subject.cryptoApproveAllowanceUsage(newSigUsage, baseMeta, opMeta, ctx, actual);
 
         assertEquals(expected, actual);
     }
@@ -459,8 +459,8 @@ class CryptoOpsUsageTest {
         final var opMeta = new CryptoDeleteAllowanceMeta(
                 txn.getCryptoDeleteAllowance(),
                 txn.getTransactionID().getTransactionValidStart().getSeconds());
-        final SigUsage sigUsage = new SigUsage(1, sigSize, 1);
-        expected.resetForTransaction(baseMeta, sigUsage);
+        final SigUsage newSigUsage = new SigUsage(1, sigSize, 1);
+        expected.resetForTransaction(baseMeta, newSigUsage);
 
         final long msgBytesUsed = (deleteAllowanceOp.getNftAllowancesCount() * NFT_DELETE_ALLOWANCE_SIZE)
                 + countNftDeleteSerials(deleteAllowanceOp.getNftAllowancesList()) * LONG_SIZE;
@@ -469,7 +469,7 @@ class CryptoOpsUsageTest {
 
         final var actual = new UsageAccumulator();
 
-        subject.cryptoDeleteAllowanceUsage(sigUsage, baseMeta, opMeta, actual);
+        subject.cryptoDeleteAllowanceUsage(newSigUsage, baseMeta, opMeta, actual);
 
         assertEquals(expected, actual);
     }

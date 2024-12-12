@@ -162,7 +162,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getTokenMappedValues() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         setupToken(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
 
@@ -204,7 +204,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getTokenMappedValuesHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
         Token token = tokenReadableKVState.readFromDataSource(TOKEN_ID);
@@ -230,7 +230,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getCustomFees() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         setupToken(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
 
@@ -241,7 +241,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getCustomFeesHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
         when(customFeeRepository.findByTokenIdAndTimestamp(TOKEN_ENCODED_ID, timestamp.get()))
@@ -253,7 +253,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getPartialTreasuryAccount() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         setupToken(Optional.empty());
 
         Entity treasuryEntity = mock(Entity.class);
@@ -279,7 +279,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getPartialTreasuryAccountHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
 
         Entity treasuryEntity = mock(Entity.class);
@@ -303,7 +303,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getAutoRenewAccount() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         setupToken(Optional.empty());
         databaseToken.setTreasuryAccountId(null);
 
@@ -330,7 +330,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getAutoRenewAccountHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         databaseToken.setTreasuryAccountId(null);
 
@@ -358,7 +358,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getTotalSupplyHistoricalFungible() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         final var treasuryId = EntityId.of(123L);
         final var totalSupply = 10L;
@@ -381,7 +381,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getTotalSupplyHistoricalNonFungible() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         final var treasuryId = EntityId.of(123L);
         final var totalSupply = 10L;
@@ -403,21 +403,21 @@ class TokenReadableKVStateTest {
 
     @Test
     void getNullOnMissingToken() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.empty());
         assertThat(tokenReadableKVState.readFromDataSource(TOKEN_ID)).isNull();
     }
 
     @Test
     void getNullOnMissingTokenDHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.empty());
         assertThat(tokenReadableKVState.get(TOKEN_ID)).isNull();
     }
 
     @Test
     void getTokenKeysValues() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         setupToken(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
 
@@ -433,7 +433,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getTokenKeysValuesHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
 
@@ -449,7 +449,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getTokenEmptyWhenDatabaseTokenNotFound() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         when(tokenRepository.findById(any())).thenReturn(Optional.empty());
 
@@ -458,7 +458,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void getTokenEmptyWhenDatabaseTokenNotFoundHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
         when(tokenRepository.findByTokenIdAndTimestamp(entity.getId(), timestamp.get()))
                 .thenReturn(Optional.empty());
@@ -468,7 +468,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void keyIsNullIfNotParsable() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         setupToken(Optional.empty());
 
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
@@ -522,7 +522,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void royaltyFeeHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
 
@@ -566,7 +566,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void royaltyFeeNoFallback() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         setupToken(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
 
@@ -600,7 +600,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void royaltyFeeNoFallbackHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
 
@@ -635,7 +635,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void fractionFee() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         setupToken(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
 
@@ -682,7 +682,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void fractionFeeHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
 
@@ -730,7 +730,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void fixedFee() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         setupToken(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
 
@@ -762,7 +762,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void fixedFeeHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
 
@@ -795,7 +795,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void mapOnlyFeesWithCollectorAccountId() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         setupToken(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
 
@@ -809,7 +809,7 @@ class TokenReadableKVStateTest {
 
     @Test
     void mapOnlyFeesWithCollectorAccountIdHistorical() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         setupToken(timestamp);
         when(commonEntityAccessor.get(TOKEN_ID, timestamp)).thenReturn(Optional.ofNullable(entity));
 
