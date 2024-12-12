@@ -25,7 +25,6 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
-import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -49,7 +48,7 @@ public class ContractExecutionService extends ContractCallService {
             ThrottleProperties throttleProperties,
             Bucket gasLimitBucket,
             MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            MirrorNodeState mirrorNodeState) {
+            TransactionExecutionService transactionExecutionService) {
         super(
                 mirrorEvmTxProcessor,
                 gasLimitBucket,
@@ -58,7 +57,7 @@ public class ContractExecutionService extends ContractCallService {
                 recordFileService,
                 store,
                 mirrorNodeEvmProperties,
-                mirrorNodeState);
+                transactionExecutionService);
         this.binaryGasEstimator = binaryGasEstimator;
     }
 
