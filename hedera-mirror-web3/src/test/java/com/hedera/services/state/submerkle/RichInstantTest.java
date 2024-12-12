@@ -34,14 +34,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class RichInstantTest {
-    private static final long seconds = 1_234_567L;
-    private static final int nanos = 890;
+    private static final long SECONDS = 1_234_567L;
+    private static final int NANOS = 890;
 
     private RichInstant subject;
 
     @BeforeEach
     void setup() {
-        subject = new RichInstant(seconds, nanos);
+        subject = new RichInstant(SECONDS, NANOS);
     }
 
     @Test
@@ -51,15 +51,15 @@ class RichInstantTest {
 
         subject.serialize(out);
 
-        inOrder.verify(out).writeLong(seconds);
-        inOrder.verify(out).writeInt(nanos);
+        inOrder.verify(out).writeLong(SECONDS);
+        inOrder.verify(out).writeInt(NANOS);
     }
 
     @Test
     void factoryWorks() throws IOException {
         final var in = mock(SerializableDataInputStream.class);
-        given(in.readLong()).willReturn(seconds);
-        given(in.readInt()).willReturn(nanos);
+        given(in.readLong()).willReturn(SECONDS);
+        given(in.readInt()).willReturn(NANOS);
 
         final var readSubject = from(in);
 
@@ -74,7 +74,7 @@ class RichInstantTest {
     @Test
     void viewWorks() {
         final var grpc =
-                Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
+                Timestamp.newBuilder().setSeconds(SECONDS).setNanos(NANOS).build();
 
         assertEquals(grpc, subject.toGrpc());
     }
@@ -87,7 +87,7 @@ class RichInstantTest {
 
     @Test
     void toStringWorks() {
-        assertEquals("RichInstant{seconds=" + seconds + ", nanos=" + nanos + "}", subject.toString());
+        assertEquals("RichInstant{seconds=" + SECONDS + ", nanos=" + NANOS + "}", subject.toString());
     }
 
     @Test
@@ -99,7 +99,7 @@ class RichInstantTest {
     @Test
     void objectContractWorks() {
         final var one = subject;
-        final var two = new RichInstant(seconds - 1, nanos - 1);
+        final var two = new RichInstant(SECONDS - 1, NANOS - 1);
         final var three = new RichInstant(subject.getSeconds(), subject.getNanos());
 
         assertNotEquals(null, one);
@@ -113,9 +113,9 @@ class RichInstantTest {
 
     @Test
     void orderingWorks() {
-        assertTrue(subject.isAfter(new RichInstant(seconds - 1, nanos)));
-        assertTrue(subject.isAfter(new RichInstant(seconds, nanos - 1)));
-        assertFalse(subject.isAfter(new RichInstant(seconds, nanos + 1)));
+        assertTrue(subject.isAfter(new RichInstant(SECONDS - 1, NANOS)));
+        assertTrue(subject.isAfter(new RichInstant(SECONDS, NANOS - 1)));
+        assertFalse(subject.isAfter(new RichInstant(SECONDS, NANOS + 1)));
     }
 
     @Test

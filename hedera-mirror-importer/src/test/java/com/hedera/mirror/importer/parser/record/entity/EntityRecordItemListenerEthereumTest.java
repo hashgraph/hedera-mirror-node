@@ -78,8 +78,8 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
     @ParameterizedTest
     void ethereumTransactionEip1559(boolean create) {
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(create).build();
-        var record = recordItem.getTransactionRecord();
-        var functionResult = create ? record.getContractCreateResult() : record.getContractCallResult();
+        var txnRecord = recordItem.getTransactionRecord();
+        var functionResult = create ? txnRecord.getContractCreateResult() : txnRecord.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
         Entity sender = domainBuilder
                 .entity()
@@ -119,8 +119,8 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         }
 
         var recordItem = builder.build();
-        var record = recordItem.getTransactionRecord();
-        var functionResult = create ? record.getContractCreateResult() : record.getContractCallResult();
+        var txnRecord = recordItem.getTransactionRecord();
+        var functionResult = create ? txnRecord.getContractCreateResult() : txnRecord.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
         Entity sender = domainBuilder
                 .entity()
@@ -140,8 +140,8 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                         recordItemBuilder.contractFunctionResult().clearSignerNonce()))
                 .build();
 
-        var record = recordItem.getTransactionRecord();
-        var functionResult = create ? record.getContractCreateResult() : record.getContractCallResult();
+        var txnRecord = recordItem.getTransactionRecord();
+        var functionResult = create ? txnRecord.getContractCreateResult() : txnRecord.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
         long nonceValue = 500L;
         Entity sender = domainBuilder

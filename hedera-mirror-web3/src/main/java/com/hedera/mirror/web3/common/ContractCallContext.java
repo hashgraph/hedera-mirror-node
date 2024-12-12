@@ -36,7 +36,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Getter
-@SuppressWarnings("preview")
 public class ContractCallContext {
 
     public static final String CONTEXT_NAME = "ContractCallContext";
@@ -95,10 +94,6 @@ public class ContractCallContext {
 
     public static ContractCallContext get() {
         return SCOPED_VALUE.get();
-    }
-
-    public static Optional<Long> getTimestamp() {
-        return SCOPED_VALUE.isBound() ? SCOPED_VALUE.get().timestamp : Optional.empty();
     }
 
     public static <T> T run(Function<ContractCallContext, T> function) {

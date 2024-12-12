@@ -43,7 +43,7 @@ public class ScheduleClient extends AbstractNetworkClient {
     @Override
     public void clean() {
         log.info("Deleting {} schedules", scheduleIds.size());
-        deleteAll(scheduleIds, id -> deleteSchedule(id));
+        deleteAll(scheduleIds, this::deleteSchedule);
     }
 
     public NetworkTransactionResponse createSchedule(

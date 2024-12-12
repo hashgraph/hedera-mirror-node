@@ -70,7 +70,8 @@ class LoggingFilterTest {
         response.setStatus(HttpStatus.OK.value());
 
         new ForwardedHeaderFilter()
-                .doFilter(request, response, (request1, response) -> loggingFilter.doFilter(request1, response, chain));
+                .doFilter(
+                        request, response, (request1, response1) -> loggingFilter.doFilter(request1, response1, chain));
 
         assertLog(output, "INFO", clientIp + " GET / in \\d+ ms: 200");
     }
@@ -83,7 +84,7 @@ class LoggingFilterTest {
 
         response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
 
-        loggingFilter.doFilter(request, response, (request1, response) -> {
+        loggingFilter.doFilter(request, response, (request1, response1) -> {
             throw exception;
         });
 

@@ -644,8 +644,7 @@ class TokenCreatePrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        final var transactionBody =
-                TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder());
+        final var txnBody = TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder());
 
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -660,13 +659,10 @@ class TokenCreatePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a, precompileContext);
-        final long result =
-                subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
+        final long result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, txnBody, sender);
 
         // then
-        assertEquals(
-                subject.getPrecompile(frame).getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender),
-                result);
+        assertEquals(subject.getPrecompile(frame).getMinimumFeeInTinybars(timestamp, txnBody.build(), sender), result);
     }
 
     @Test

@@ -120,7 +120,7 @@ class LoggingFilterTest {
         var exception = new IllegalArgumentException("error");
         StepVerifier.withVirtualTime(() -> loggingFilter
                         .filter(exchange, serverWebExchange -> Mono.error(exception))
-                        .onErrorResume((t) -> exchange.getResponse().setComplete()))
+                        .onErrorResume(t -> exchange.getResponse().setComplete()))
                 .thenAwait(WAIT)
                 .expectComplete()
                 .verify(WAIT);

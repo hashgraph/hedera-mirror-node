@@ -219,12 +219,12 @@ class ExpressionConverterImplTest {
                 break;
         }
 
-        com.hedera.hashgraph.sdk.TransactionRecord record = com.hedera.hashgraph.sdk.TransactionRecord.fromBytes(
+        com.hedera.hashgraph.sdk.TransactionRecord txnRecord = com.hedera.hashgraph.sdk.TransactionRecord.fromBytes(
                 TransactionRecord.newBuilder().setReceipt(receipt).build().toByteArray());
 
         return Mono.just(PublishResponse.builder()
-                .transactionRecord(record)
-                .receipt(record.receipt)
+                .transactionRecord(txnRecord)
+                .receipt(txnRecord.receipt)
                 .build());
     }
 }

@@ -457,7 +457,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<EntityHistory, EntityHistory.EntityHistoryBuilder<?, ?>> entityHistory() {
-        long id = id();
+        long entityId = id();
         long timestamp = timestamp();
 
         var builder = EntityHistory.builder()
@@ -472,14 +472,14 @@ public class DomainBuilder {
                 .ethereumNonce(1L)
                 .evmAddress(evmAddress())
                 .expirationTimestamp(timestamp + 30_000_000L)
-                .id(id)
+                .id(entityId)
                 .key(key())
                 .maxAutomaticTokenAssociations(1)
                 .memo(text(16))
                 .obtainerId(entityId())
                 .permanentRemoval(false)
                 .proxyAccountId(entityId())
-                .num(id)
+                .num(entityId)
                 .realm(0L)
                 .receiverSigRequired(true)
                 .shard(0L)

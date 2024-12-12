@@ -16,18 +16,15 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.state.file.File;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.state.core.ListReadableQueueState;
 import com.hedera.mirror.web3.state.core.ListWritableQueueState;
@@ -41,7 +38,6 @@ import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -60,7 +56,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
-import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.KVChangeListener;
 import com.swirlds.state.spi.QueueChangeListener;
@@ -118,38 +113,28 @@ public class MirrorNodeState implements State {
             return;
         }
 
-        registerServices(servicesRegistry);
-        final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
-        serviceMigrator.doMigrations(
-                this,
-                servicesRegistry,
-                null,
-                new ServicesSoftwareVersion(
-                        bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
-                new ConfigProviderImpl().getConfiguration(),
-                networkInfo,
-                UnavailableMetrics.UNAVAILABLE_METRICS);
+        ContractCallContext.run(ctx -> {
+            registerServices(servicesRegistry);
+            final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
+            serviceMigrator.doMigrations(
+                    this,
+                    servicesRegistry,
+                    null,
+                    new ServicesSoftwareVersion(
+                            bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
+                    new ConfigProviderImpl().getConfiguration(),
+                    networkInfo,
+                    UnavailableMetrics.UNAVAILABLE_METRICS);
 
-        final var fileServiceStates = this.getWritableStates(FileService.NAME);
-        final var files = fileServiceStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
-        genesisContentProviders(bootstrapConfig).forEach((fileNum, provider) -> {
-            final var fileId = createFileID(fileNum, bootstrapConfig);
-            files.put(
-                    fileId,
-                    File.newBuilder()
-                            .fileId(fileId)
-                            .keys(KeyList.DEFAULT)
-                            .contents(provider.apply(bootstrapConfig))
-                            .build());
+            final var accountReadableKVState = (AccountReadableKVState) readableKVStates.stream()
+                    .filter(r -> r.getStateKey().equals("ACCOUNTS"))
+                    .findFirst()
+                    .orElseThrow();
+            accountReadableKVState
+                    .reset(); // Remove cached accounts as they remain with keys and empty objects in the cache at this
+            // point.
+            return ctx;
         });
-        ((CommittableWritableStates) fileServiceStates).commit();
-        final var accountReadableKVState = (AccountReadableKVState) readableKVStates.stream()
-                .filter(r -> r.getStateKey().equals("ACCOUNTS"))
-                .findFirst()
-                .orElseThrow();
-        accountReadableKVState
-                .reset(); // Remove cached accounts as they remain with keys and empty objects in the cache at this
-        // point.
     }
 
     public MirrorNodeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {

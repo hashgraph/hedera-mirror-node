@@ -93,7 +93,7 @@ class NftReadableKVStateTest {
 
     @Test
     void getNftMappedValuesWithTimestamp() {
-        when(ContractCallContext.getTimestamp()).thenReturn(timestamp);
+        when(contractCallContext.getTimestamp()).thenReturn(timestamp);
         Nft nftDomain = setupNft(timestamp);
         assertThat(nftReadableKVState.readFromDataSource(NFT_ID)).satisfies(nft -> assertThat(nft)
                 .returns(NFT_ID, com.hedera.hapi.node.state.token.Nft::nftId)
@@ -113,7 +113,7 @@ class NftReadableKVStateTest {
 
     @Test
     void getNftMappedValuesWithoutTimestamp() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         Nft nftDomain = setupNft(Optional.empty());
         assertThat(nftReadableKVState.readFromDataSource(NFT_ID)).satisfies(nft -> assertThat(nft)
                 .returns(NFT_ID, com.hedera.hapi.node.state.token.Nft::nftId)
@@ -179,7 +179,7 @@ class NftReadableKVStateTest {
 
     @Test
     void getNftMappedValuesMissingEntity() {
-        when(ContractCallContext.getTimestamp()).thenReturn(Optional.empty());
+        when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         assertThat(nftReadableKVState.readFromDataSource(NFT_ID)).isNull();
     }
 

@@ -147,16 +147,17 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends ImporterIntegrationTest 
     void onEndHapiVersionNotMatched() {
         // given
         // Token allowance and token allowance history entries that have the incorrect owner
-        var incorrectTokenAllowancePair = generateTokenAllowance(CONTRACT_RESULT_SENDER_ID, INCORRECT_OWNER_ACCOUNT_ID);
+        var tokenAllowancePairIncorrectOwner =
+                generateTokenAllowance(CONTRACT_RESULT_SENDER_ID, INCORRECT_OWNER_ACCOUNT_ID);
 
         // A token allowance that has no contract result, but has primary key values that will end up matching those of
         // a migrated token allowance.
-        var tokenAllowancePreMigration = getCollidedTokenAllowance(OWNER_ACCOUNT_ID, 1676546171829734003L);
+        var preMigrationTokenAllowance = getCollidedTokenAllowance(OWNER_ACCOUNT_ID, 1676546171829734003L);
 
         // A token allowance that has a contract result, once migrated it will have the same primary key fields as the
         // above token allowance.
 
-        var collidedTokenAllowance =
+        var tokenAllowanceCollided =
                 getCollidedTokenAllowance(OWNER_PRE_MIGRATION, CONTRACT_RESULT_CONSENSUS_TIMESTAMP);
 
         // The contract result for the collided token allowance
@@ -178,14 +179,14 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends ImporterIntegrationTest 
                 .build());
 
         // then
-        var expected = new ArrayList<>(List.of(incorrectTokenAllowancePair.getLeft()));
+        var expected = new ArrayList<>(List.of(tokenAllowancePairIncorrectOwner.getLeft()));
         // The primary key will not be updated since migration is not run
-        expected.add(collidedTokenAllowance);
-        expected.add(tokenAllowancePreMigration);
+        expected.add(tokenAllowanceCollided);
+        expected.add(preMigrationTokenAllowance);
         assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
         // The history of the token allowance should also be updated with the corrected owner
-        var expectedHistory = new ArrayList<>(incorrectTokenAllowancePair.getRight());
+        var expectedHistory = new ArrayList<>(tokenAllowancePairIncorrectOwner.getRight());
         // The owner should be set to the contract result sender id
         assertThat(findHistory(TokenAllowance.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
