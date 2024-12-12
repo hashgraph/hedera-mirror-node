@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
@@ -46,9 +47,14 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
 
     private final MirrorNodeState mirrorNodeState;
     private final ServicesRegistry servicesRegistry;
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Test
     void verifyMirrorNodeStateHasRegisteredServices() {
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            return;
+        }
+
         Set<Class<? extends Service>> expectedServices = new HashSet<>(List.of(
                 EntityIdService.class,
                 TokenServiceImpl.class,
@@ -72,6 +78,10 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
 
     @Test
     void verifyServicesHaveAssignedDataSources() {
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            return;
+        }
+
         final var states = mirrorNodeState.getStates();
 
         // BlockRecordService

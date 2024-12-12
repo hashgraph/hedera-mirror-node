@@ -29,12 +29,18 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
 class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
     private final ContractExecutionService contractCallService;
+
+    @BeforeEach
+    void setup() {
+        domainBuilder.recordFile().persist();
+    }
 
     @Test
     void directCallToNativePrecompileECRecover() {
