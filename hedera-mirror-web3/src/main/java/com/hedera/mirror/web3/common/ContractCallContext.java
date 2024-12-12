@@ -36,7 +36,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Getter
-@SuppressWarnings("preview")
 public class ContractCallContext {
 
     public static final String CONTEXT_NAME = "ContractCallContext";
@@ -92,8 +91,6 @@ public class ContractCallContext {
      */
     @Setter
     private Optional<File> file = Optional.empty();
-
-    ;
 
     private ContractCallContext() {}
 
