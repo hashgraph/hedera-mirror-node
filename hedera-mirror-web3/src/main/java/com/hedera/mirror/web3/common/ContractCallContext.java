@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.web3.common;
 
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.file.FileCreateTransactionBody;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
@@ -23,6 +26,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.state.FileReadableKVState;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.List;
@@ -32,7 +36,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Getter
-@SuppressWarnings("preview")
 public class ContractCallContext {
 
     public static final String CONTEXT_NAME = "ContractCallContext";
@@ -73,6 +76,22 @@ public class ContractCallContext {
     @Setter
     private Optional<Long> timestamp = Optional.empty();
 
+    /**
+     * The TransactionExecutor from the modularized services integration deploys contracts in 2 steps:
+     *
+     * 1. The initcode is uploaded and saved as a file using a {@link FileCreateTransactionBody}.
+     * 2. The returned file id from step 1 is then passed to a {@link ContractCreateTransactionBody}.
+     * Each step performs a separate transaction.
+     * For step 2 even if we pass the correct file id, since the mirror node data is readonly,
+     * the {@link FileReadableKVState} is not able to populate the contract's bytecode from the DB
+     * since it was never explicitly persisted in the DB.
+     *
+     * This is the function of the field "file" to hold temporary the bytecode and the fileId
+     * during contract deploy.
+     */
+    @Setter
+    private Optional<File> file = Optional.empty();
+
     private ContractCallContext() {}
 
     public static ContractCallContext get() {
@@ -86,6 +105,7 @@ public class ContractCallContext {
     public void reset() {
         recordFile = null;
         stack = stackBase;
+        file = Optional.empty();
     }
 
     public int getStackHeight() {
