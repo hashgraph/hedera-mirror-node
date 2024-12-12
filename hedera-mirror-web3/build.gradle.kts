@@ -28,6 +28,8 @@ plugins {
     id("spring-conventions")
 }
 
+val javaxInjectVersion = "1"
+
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
@@ -38,7 +40,7 @@ dependencies {
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("jakarta.inject:jakarta.inject-api")
-    implementation("javax.inject:javax.inject:1")
+    implementation("javax.inject:javax.inject:$javaxInjectVersion")
     implementation("net.java.dev.jna:jna")
     implementation("org.bouncycastle:bcprov-jdk18on")
     implementation("org.springframework:spring-context-support")

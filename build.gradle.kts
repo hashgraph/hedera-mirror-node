@@ -281,8 +281,9 @@ fun replaceVersion(files: String, match: String) {
 
 tasks.nodeSetup { onlyIf { !this.nodeDir.get().asFile.exists() } }
 
-// Replace release version in files
 tasks.register("release") {
+    description = "Replaces release version in files."
+    group = "Versioning"
     doLast {
         replaceVersion("charts/**/Chart.yaml", "(?<=^(appVersion|version): ).+")
         replaceVersion("docker-compose.yml", "(?<=gcr.io/mirrornode/hedera-mirror-.+:).+")

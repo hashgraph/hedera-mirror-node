@@ -502,8 +502,7 @@ abstract class AbstractTransactionHandlerTest {
                 case "autoRenewPeriod":
                     entity.setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD.getSeconds());
                     break;
-                case "expiry":
-                case "expirationTime":
+                case "expiry", "expirationTime":
                     entity.setExpirationTimestamp(DomainUtils.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
                     break;
                 case "keys":
@@ -536,8 +535,7 @@ abstract class AbstractTransactionHandlerTest {
                 case "autoRenewPeriod":
                     builder.setField(field, DEFAULT_AUTO_RENEW_PERIOD);
                     break;
-                case "expiry":
-                case "expirationTime":
+                case "expiry", "expirationTime":
                     builder.setField(field, DEFAULT_EXPIRATION_TIME);
                     break;
                 case "keys":
