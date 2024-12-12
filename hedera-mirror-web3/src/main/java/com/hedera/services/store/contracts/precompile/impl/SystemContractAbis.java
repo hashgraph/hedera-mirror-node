@@ -136,13 +136,19 @@ public enum SystemContractAbis {
      * low 64 bits)).
      */
     public static long toLongSafely(@NonNull final Object bigNumeric) {
-        if (bigNumeric instanceof BigInteger big) {
-            if (big.compareTo(LONG_MIN) < 0 || big.compareTo(LONG_MAX) > 0)
-                throw new IllegalArgumentException("uint64 out of range for Java.long");
-            return big.longValue();
-        } else if (bigNumeric instanceof Long big) {
-            return big;
-        } else return (long) bigNumeric;
+        switch (bigNumeric) {
+            case BigInteger big -> {
+                if (big.compareTo(LONG_MIN) < 0 || big.compareTo(LONG_MAX) > 0)
+                    throw new IllegalArgumentException("uint64 out of range for Java.long");
+                return big.longValue();
+            }
+            case Long big -> {
+                return big;
+            }
+            default -> {
+                return (long) bigNumeric;
+            }
+        }
     }
 
     @NonNull

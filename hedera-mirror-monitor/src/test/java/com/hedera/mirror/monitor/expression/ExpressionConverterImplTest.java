@@ -16,6 +16,10 @@
 
 package com.hedera.mirror.monitor.expression;
 
+import static com.hedera.mirror.monitor.publish.transaction.TransactionType.ACCOUNT_CREATE;
+import static com.hedera.mirror.monitor.publish.transaction.TransactionType.CONSENSUS_CREATE_TOPIC;
+import static com.hedera.mirror.monitor.publish.transaction.TransactionType.SCHEDULE_CREATE;
+import static com.hedera.mirror.monitor.publish.transaction.TransactionType.TOKEN_CREATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.any;
@@ -116,7 +120,7 @@ class ExpressionConverterImplTest {
 
     @Test
     void errorPublishing() throws InvalidProtocolBufferException {
-        TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
+        TransactionType type = CONSENSUS_CREATE_TOPIC;
         when(transactionPublisher.publish(any()))
                 .thenReturn(Mono.error(new TimeoutException("timeout")))
                 .thenReturn(response(type, 100));
@@ -125,7 +129,7 @@ class ExpressionConverterImplTest {
 
     @Test
     void account() throws InvalidProtocolBufferException {
-        TransactionType type = TransactionType.ACCOUNT_CREATE;
+        TransactionType type = ACCOUNT_CREATE;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 100));
         assertThat(expressionConverter.convert("${account.foo}")).isEqualTo("0.0.100");
 
@@ -135,7 +139,7 @@ class ExpressionConverterImplTest {
 
     @Test
     void token() throws InvalidProtocolBufferException {
-        TransactionType type = TransactionType.TOKEN_CREATE;
+        TransactionType type = TOKEN_CREATE;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 101));
         assertThat(expressionConverter.convert("${token.foo}")).isEqualTo("0.0.101");
 
@@ -145,7 +149,7 @@ class ExpressionConverterImplTest {
 
     @Test
     void nft() throws InvalidProtocolBufferException {
-        TransactionType type = TransactionType.TOKEN_CREATE;
+        TransactionType type = TOKEN_CREATE;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 101));
         assertThat(expressionConverter.convert("${nft.foo}")).isEqualTo("0.0.101");
 
@@ -155,7 +159,7 @@ class ExpressionConverterImplTest {
 
     @Test
     void topic() throws InvalidProtocolBufferException {
-        TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
+        TransactionType type = CONSENSUS_CREATE_TOPIC;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 100));
         assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
 
@@ -165,7 +169,7 @@ class ExpressionConverterImplTest {
 
     @Test
     void schedule() throws InvalidProtocolBufferException {
-        TransactionType type = TransactionType.SCHEDULE_CREATE;
+        TransactionType type = SCHEDULE_CREATE;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 100));
 
         assertThat(expressionConverter.convert("${schedule.foo}")).isEqualTo("0.0.100");
@@ -176,7 +180,7 @@ class ExpressionConverterImplTest {
 
     @Test
     void cached() throws InvalidProtocolBufferException {
-        TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
+        TransactionType type = CONSENSUS_CREATE_TOPIC;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 100));
 
         assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
@@ -189,7 +193,7 @@ class ExpressionConverterImplTest {
     @Test
     void map() throws InvalidProtocolBufferException {
         Map<String, String> properties = Map.of("accountId", "0.0.100", "topicId", "${topic.fooBar_123}");
-        TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
+        TransactionType type = CONSENSUS_CREATE_TOPIC;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 101));
 
         assertThat(expressionConverter.convert(properties))
@@ -204,19 +208,14 @@ class ExpressionConverterImplTest {
     private Mono<PublishResponse> response(TransactionType type, long id) throws InvalidProtocolBufferException {
         TransactionReceipt.Builder receipt = TransactionReceipt.newBuilder();
 
-        switch (type) {
-            case ACCOUNT_CREATE:
-                receipt.setAccountID(AccountID.newBuilder().setAccountNum(id).build());
-                break;
-            case CONSENSUS_CREATE_TOPIC:
-                receipt.setTopicID(TopicID.newBuilder().setTopicNum(id).build());
-                break;
-            case TOKEN_CREATE:
-                receipt.setTokenID(TokenID.newBuilder().setTokenNum(id).build());
-                break;
-            case SCHEDULE_CREATE:
-                receipt.setScheduleID(ScheduleID.newBuilder().setScheduleNum(id).build());
-                break;
+        if (type == ACCOUNT_CREATE) {
+            receipt.setAccountID(AccountID.newBuilder().setAccountNum(id).build());
+        } else if (type == CONSENSUS_CREATE_TOPIC) {
+            receipt.setTopicID(TopicID.newBuilder().setTopicNum(id).build());
+        } else if (type == TOKEN_CREATE) {
+            receipt.setTokenID(TokenID.newBuilder().setTokenNum(id).build());
+        } else if (type == SCHEDULE_CREATE) {
+            receipt.setScheduleID(ScheduleID.newBuilder().setScheduleNum(id).build());
         }
 
         com.hedera.hashgraph.sdk.TransactionRecord txnRecord = com.hedera.hashgraph.sdk.TransactionRecord.fromBytes(

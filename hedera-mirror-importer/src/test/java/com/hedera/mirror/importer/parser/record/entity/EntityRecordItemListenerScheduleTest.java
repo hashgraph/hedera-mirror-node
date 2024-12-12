@@ -50,7 +50,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -595,6 +594,6 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                     transactionSignature.setType(SignaturePair.SignatureCase.ED25519.getNumber());
                     return transactionSignature;
                 })
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 }

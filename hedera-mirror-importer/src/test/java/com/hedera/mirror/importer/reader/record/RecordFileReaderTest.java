@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
@@ -92,7 +91,7 @@ abstract class RecordFileReaderTest {
 
                     List<Long> timestamps = actual.getItems().stream()
                             .map(RecordItem::getConsensusTimestamp)
-                            .collect(Collectors.toList());
+                            .toList();
                     assertThat(timestamps).first().isEqualTo(recordFile.getConsensusStart());
                     assertThat(timestamps).last().isEqualTo(recordFile.getConsensusEnd());
                     assertThat(timestamps).doesNotHaveDuplicates().isSorted();

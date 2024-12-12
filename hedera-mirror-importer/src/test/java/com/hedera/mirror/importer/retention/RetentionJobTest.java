@@ -153,7 +153,7 @@ class RetentionJobTest extends ImporterIntegrationTest {
     @Test
     void prunePartial() {
         // given
-        var recordFile1 = recordFile();
+        recordFile();
         var recordFile2 = recordFile();
         var recordFile3 = recordFile();
         var period = recordFile3.getConsensusEnd() - recordFile2.getConsensusEnd() - 1;

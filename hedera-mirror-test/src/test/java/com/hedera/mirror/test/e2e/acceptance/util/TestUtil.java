@@ -52,7 +52,7 @@ public class TestUtil {
     private static final BaseEncoding BASE32_ENCODER = BaseEncoding.base32().omitPadding();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final SecureRandom RANDOM = new SecureRandom();
-    public static String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    public static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     private static final Pattern extractTransactionIdPattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
 
     public static String getAliasFromPublicKey(@NonNull PublicKey key) {

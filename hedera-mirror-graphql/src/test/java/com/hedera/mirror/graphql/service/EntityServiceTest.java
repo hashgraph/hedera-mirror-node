@@ -39,7 +39,7 @@ class EntityServiceTest {
 
     private final DomainBuilder domainBuilder = new DomainBuilder();
     private final Base32 base32 = new Base32();
-    private final int EVM_ADDRESS_BYTE_LENGTH = 20;
+    private static final int EVM_ADDRESS_BYTE_LENGTH = 20;
 
     @Mock
     private EntityRepository entityRepository;

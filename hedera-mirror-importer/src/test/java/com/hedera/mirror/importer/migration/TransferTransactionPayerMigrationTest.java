@@ -40,7 +40,6 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.File;
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.List;
@@ -445,7 +444,7 @@ class TransferTransactionPayerMigrationTest extends ImporterIntegrationTest {
                 .build();
     }
 
-    private void persistAssessedCustomFees(List<AssessedCustomFee> assessedCustomFees) throws IOException {
+    private void persistAssessedCustomFees(List<AssessedCustomFee> assessedCustomFees) {
         for (AssessedCustomFee assessedCustomFee : assessedCustomFees) {
             jdbcOperations.update(
                     "insert into assessed_custom_fee (amount, collector_account_id, consensus_timestamp, token_id,"
@@ -528,25 +527,23 @@ class TransferTransactionPayerMigrationTest extends ImporterIntegrationTest {
             Long amount = rs.getLong("amount");
             EntityId sender = amount < 0 ? EntityId.of(rs.getLong("entity_id")) : null;
             EntityId receiver = amount > 0 ? EntityId.of(rs.getLong("entity_id")) : null;
-            SharedTransfer sharedTransfer = new SharedTransfer(
+            return new SharedTransfer(
                     amount,
                     rs.getLong("consensus_timestamp"),
                     EntityId.of(rs.getLong("payer_account_id")),
                     receiver,
                     sender);
-            return sharedTransfer;
         });
     }
 
     private List<SharedTransfer> findNftTransfers() {
         return jdbcOperations.query("select * from nft_transfer", (rs, rowNum) -> {
-            SharedTransfer sharedTransfer = new SharedTransfer(
+            return new SharedTransfer(
                     rs.getLong("serial_number"),
                     rs.getLong("consensus_timestamp"),
                     EntityId.of(rs.getLong("payer_account_id")),
                     EntityId.of(rs.getLong("receiver_account_id")),
                     EntityId.of(rs.getLong("sender_account_id")));
-            return sharedTransfer;
         });
     }
 
@@ -555,13 +552,12 @@ class TransferTransactionPayerMigrationTest extends ImporterIntegrationTest {
             Long amount = rs.getLong("amount");
             EntityId sender = amount < 0 ? EntityId.of(rs.getLong("entity_id")) : null;
             EntityId receiver = amount > 0 ? EntityId.of(rs.getLong("entity_id")) : null;
-            SharedTransfer sharedTransfer = new SharedTransfer(
+            return new SharedTransfer(
                     amount,
                     rs.getLong("consensus_timestamp"),
                     EntityId.of(rs.getLong("payer_account_id")),
                     receiver,
                     sender);
-            return sharedTransfer;
         });
     }
 
@@ -570,13 +566,12 @@ class TransferTransactionPayerMigrationTest extends ImporterIntegrationTest {
             Long amount = rs.getLong("amount");
             EntityId sender = amount < 0 ? EntityId.of(rs.getLong("account_id")) : null;
             EntityId receiver = amount > 0 ? EntityId.of(rs.getLong("account_id")) : null;
-            SharedTransfer sharedTransfer = new SharedTransfer(
+            return new SharedTransfer(
                     amount,
                     rs.getLong("consensus_timestamp"),
                     EntityId.of(rs.getLong("payer_account_id")),
                     receiver,
                     sender);
-            return sharedTransfer;
         });
     }
 

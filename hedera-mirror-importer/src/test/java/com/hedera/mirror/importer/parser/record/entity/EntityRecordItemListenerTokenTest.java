@@ -4607,7 +4607,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             .setTokenId(tokenId)
                             .setAccountId(convertAccountId(account))
                             .build())
-                    .collect(Collectors.toList()));
+                    .toList());
             if (tokenType == FUNGIBLE_COMMON) {
                 builder.addTokenTransferLists(tokenTransferList(tokenId, accountAmount(PAYER, INITIAL_SUPPLY)));
             }

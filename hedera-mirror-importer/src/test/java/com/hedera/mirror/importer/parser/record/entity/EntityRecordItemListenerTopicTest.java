@@ -704,7 +704,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
+        createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
         // Topic NOT saved in the repository.
 
         TransactionID initialTransactionId =
