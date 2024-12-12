@@ -12,12 +12,10 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
   - `ConsensusCreateTopic`: custom fees, fee exempt key list, and fee schedule key
   - `ConsensusUpdateTopic`: custom fees, fee exempt key list, and fee schedule key
   - `ConsensusSubmitMessage`: update remaining crypto / token fee schedule allowances from assessed custom fees
-  - `ConsensusApproveAllowance`: consensus crypto / token fee schedule allowances
-- Verify assessed custom fees are externalized in transaction record for applicable ConsensusSubmitMessage transactions,
-  persisted to the database, and exposed via JS REST API
+- Verify assessed custom fees are externalized in transaction record for applicable `ConsensusSubmitMessage`
+  transactions and child `CryptoTransfer` transactions persisted to the database, and exposed via JS REST API
 - Expose the following topic custom fee information
   - Expose topic custom fees, fee exempt key list, and fee schedule key via JAVA REST API
-  - Expose consensus crypto fee schedule allowances and consensus token fee schedule allowances via JS REST API
 
 ## Non Goals
 
@@ -58,19 +56,6 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
   The `submit_key` column needs to be dropped from `entity` and `entity_history` table since it's moved to the new
   table.
 
-- Add column `amount_per_message` to `crypto_allowance` and `token_allowance` tables
-
-  ```sql
-  alter table if exists crypto_allowance
-    add column amount_per_message bigint null;
-  alter table if exists crypto_allowance_history
-    add column amount_per_message bigint null;
-  alter table if exists token_allowance
-    add column amount_per_message bigint null;
-  alter table if exists token_allowance_history
-    add column amount_per_message bigint null;
-  ```
-
 - Rename column `token_id` to `entity_id` in `custom_fee` and `custom_fee_history` tables
   ```sql
   alter table if exists custom_fee
@@ -89,11 +74,10 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
   - `id`
   - `feeExemptKeyList`
   - `feeScheduleKey`
+  - `submitKey`
   - `timestampRange`
 
   Add class `Topic` and `TopicHistory` that extends `AbstractTopic` class
-
-- Add field `amountPerMessage` to `CryptoAllowance` and `TokenAllowance` classes
 
 ### Topic Custom Fee Parsing
 
@@ -109,11 +93,8 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
 Make the following changes to `insertAssessedCustomFees()`
 
 - Process assessed custom fees in transaction record if tokens is enabled in `PersistProperties` or if it's a
+  `ConsensusSubmitMessage` transaction or if it's a `CryptoTransfer` transaction whose parent is a
   `ConsensusSubmitMessage` transaction
-- If it's a `ConsensusSubmitMessage` transaction, for each assessed custom fee, call `onCryptoAllowance()` with a
-  `CryptoAllowance` object to deduct the amount of allowance by the paid fee if it's charged in HBAR, or call
-  `onTokenAllowance()` with a `TokenAllowance` object to deduct the amount of allowance by the paid fee if it's charged
-  in a fungible token
 
 #### Transaction Handlers
 
@@ -123,89 +104,8 @@ Make the following changes to `insertAssessedCustomFees()`
   exempt key list or fee schedule key or submit key is updated; when custom fees are updated, also add a new entry to
   the `custom_fee` table. It's worth noting that an empty custom fees list in the transaction body clears the custom fee
   schedule, and the handler should insert an entry with empty custom fees to the `custom_fee` table to reflect so.
-- Add `ConsensusApproveAllowanceTransactionHandler` to process consensus crypto / token fee schedule allowances
 
 ## REST API
-
-- `/api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/crypto`
-
-  - The endpoint lists allowances set by both `ConsensusApproveAllowance` and `CryptoApproveAllowance` transactions
-  - Topic IDs are valid parameters for the `spender.id` field
-  - The response will include the new `amount_per_message` field, for allowances created by `CryptoApproveAllowance` the
-    value will be `null`
-
-  ```json
-  {
-    "allowances": [
-      {
-        "amount": 75,
-        "amount_granted": 100,
-        "amount_per_message": 5,
-        "owner": "0.0.200",
-        "spender": "0.0.300",
-        "timestamp": {
-          "from": "1586567700.453054000",
-          "to": null
-        }
-      },
-      {
-        "amount": 300,
-        "amount_granted": 300,
-        "amount_per_message": null,
-        "owner": "0.0.201",
-        "spender": "0.0.305",
-        "timestamp": {
-          "from": "1586567800.453054000",
-          "to": null
-        }
-      }
-    ],
-    "links": {
-      "next": null
-    }
-  }
-  ```
-
-- `/api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/tokens`
-
-  - The endpoint lists allowances set by both `ConsensusApproveAllowance` and `CryptoApproveAllowance` transactions
-  - Topic IDs are valid parameters for the `spender.id` field
-  - The response will include the new `amount_per_message` field, for allowances created by `CryptoApproveAllowance` the
-    value will be `null`
-
-  ```json
-  {
-    "allowances": [
-      {
-        "amount": 75,
-        "amount_granted": 100,
-        "amount_per_message": 5,
-        "owner": "0.0.200",
-        "spender": "0.0.300",
-        "timestamp": {
-          "from": "1586567700.453054000",
-          "to": null
-        },
-        "token_id": "0.0.500"
-      },
-      {
-        "amount": 300,
-        "amount_granted": 300,
-        "amount_per_message": null,
-        "owner": "0.0.200",
-        "spender": "0.0.305",
-        "timestamp": {
-          "from": "1586567800.453054000",
-          "to": null
-        },
-        "token_id": "0.0.500"
-      }
-    ],
-    "links": {
-      "next": null
-    }
-  }
-  ```
 
 - `/api/v1/topics/{topicId}`
   - Add topic custom fee fields `custom_fees`, `fee_exempt_key_list`, and `fee_schedule_key` to the response body.
