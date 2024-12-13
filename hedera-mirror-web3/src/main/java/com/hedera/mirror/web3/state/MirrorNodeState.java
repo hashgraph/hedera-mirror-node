@@ -39,7 +39,6 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
@@ -50,10 +49,7 @@ import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.metric.UnavailableMetrics;
-import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.VersionConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.spi.EmptyWritableStates;
@@ -372,15 +368,6 @@ public class MirrorNodeState implements State {
                         new CongestionThrottleService(),
                         new RecordCacheService())
                 .forEach(servicesRegistry::register);
-    }
-
-    private Map<Long, Function<Configuration, Bytes>> genesisContentProviders(
-            final com.swirlds.config.api.Configuration config) {
-        final var genesisSchema = new V0490FileSchema();
-        final var filesConfig = config.getConfigData(FilesConfig.class);
-        return Map.of(
-                filesConfig.feeSchedules(), genesisSchema::genesisFeeSchedules,
-                filesConfig.exchangeRates(), genesisSchema::genesisExchangeRates);
     }
 
     private SignatureVerifier signatureVerifier() {

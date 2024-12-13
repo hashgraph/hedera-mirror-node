@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -82,6 +83,7 @@ public abstract class ContractCallService {
             AccountID.newBuilder().accountNum(2).build();
     private static final Duration TRANSACTION_DURATION = new Duration(15);
     private static final Timestamp TRANSACTION_START = new Timestamp(0, 0);
+    private final Map<String, String> transactionProperties;
 
     protected ContractCallService(
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
@@ -105,6 +107,17 @@ public abstract class ContractCallService {
         this.gasLimitBucket = gasLimitBucket;
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.mirrorNodeState = mirrorNodeState;
+
+        final var mirrorNodeProperties = mirrorNodeEvmProperties.getProperties();
+        mirrorNodeProperties.put(
+                "contracts.evm.version",
+                "v"
+                        + mirrorNodeEvmProperties.getSemanticEvmVersion().major() + "."
+                        + mirrorNodeEvmProperties.getSemanticEvmVersion().minor());
+        mirrorNodeProperties.put(
+                "ledger.id",
+                Bytes.wrap(mirrorNodeEvmProperties.getNetwork().getLedgerId()).toHexString());
+        this.transactionProperties = mirrorNodeProperties;
     }
 
     /**
@@ -158,17 +171,10 @@ public abstract class ContractCallService {
         }
     }
 
-    private Map<String, String> buildTransactionExecutorProperties() {
-        final var mirrorNodeProperties = mirrorNodeEvmProperties.getProperties();
-        mirrorNodeProperties.put(
-                "contracts.evm.version",
-                "v"
-                        + mirrorNodeEvmProperties.getSemanticEvmVersion().major() + "."
-                        + mirrorNodeEvmProperties.getSemanticEvmVersion().minor());
-        mirrorNodeProperties.put(
-                "ledger.id",
-                Bytes.wrap(mirrorNodeEvmProperties.getNetwork().getLedgerId()).toHexString());
-        return mirrorNodeProperties;
+    private ContractFunctionResult getTransactionResult(final List<SingleTransactionRecord> receipt, boolean isContractCreate) {
+        return isContractCreate
+                ? receipt.getFirst().transactionRecord().contractCreateResult()
+                : receipt.getFirst().transactionRecord().contractCallResult();
     }
 
     private HederaEvmTransactionProcessingResult buildSuccessResult(
@@ -261,8 +267,8 @@ public abstract class ContractCallService {
         final var isContractCreate = params.getReceiver().isZero();
         final var maxLifetime =
                 DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
-        var executor = TransactionExecutors.TRANSACTION_EXECUTORS.newExecutor(
-                mirrorNodeState, buildTransactionExecutorProperties(), null);
+        var executor =
+                TransactionExecutors.TRANSACTION_EXECUTORS.newExecutor(mirrorNodeState, transactionProperties, null);
 
         TransactionBody transactionBody;
         HederaEvmTransactionProcessingResult result;
