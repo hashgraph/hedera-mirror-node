@@ -23,7 +23,7 @@ import com.hedera.node.internal.network.Network;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class StartupNetworksImplTest {
+class StartupNetworksImplTest {
 
     private StartupNetworksImpl startupNetworks;
 
