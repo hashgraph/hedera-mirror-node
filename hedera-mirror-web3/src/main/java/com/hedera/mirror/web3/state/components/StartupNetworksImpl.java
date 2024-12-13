@@ -35,10 +35,14 @@ public class StartupNetworksImpl implements StartupNetworks {
     }
 
     @Override
-    public void setOverrideRound(long roundNumber) {}
+    public void setOverrideRound(long roundNumber) {
+        // This is a no-op in the current context, and other implementations may provide behavior.
+    }
 
     @Override
-    public void archiveStartupNetworks() {}
+    public void archiveStartupNetworks() {
+        // This is a no-op in the current context, and other implementations may provide behavior.
+    }
 
     @SuppressWarnings("deprecation")
     @Override

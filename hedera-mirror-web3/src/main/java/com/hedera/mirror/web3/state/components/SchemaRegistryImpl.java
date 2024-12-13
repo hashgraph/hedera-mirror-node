@@ -86,6 +86,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
                 startupNetworks);
     }
 
+    @SuppressWarnings("java:S107")
     public void migrate(
             @Nonnull final String serviceName,
             @Nonnull final MirrorNodeState state,
@@ -142,6 +143,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
         }
     }
 
+    @SuppressWarnings("java:S107")
     public MigrationContext newMigrationContext(
             @Nullable final SemanticVersion previousVersion,
             @Nonnull final ReadableStates previousStates,
@@ -240,5 +242,6 @@ public class SchemaRegistryImpl implements SchemaRegistry {
      * @param beforeStates the writable states before applying the schema's state definitions
      * @param afterStates  the writable states after applying the schema's state definitions
      */
-    private record RedefinedWritableStates(WritableStates beforeStates, WritableStates afterStates) {}
+    private record RedefinedWritableStates(WritableStates beforeStates, WritableStates afterStates) {
+    }
 }
