@@ -17,6 +17,8 @@
 package com.hedera.mirror.web3.state;
 
 import static com.hedera.node.app.util.FileUtilities.createFileID;
+import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
+import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -28,6 +30,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.state.core.ListReadableQueueState;
 import com.hedera.mirror.web3.state.core.ListWritableQueueState;
@@ -51,7 +54,9 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.AppContext.Gossip;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.throttle.AppThrottleFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.metric.UnavailableMetrics;
 import com.hedera.node.config.data.FilesConfig;
@@ -60,6 +65,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.lifecycle.StartupNetworks;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.KVChangeListener;
@@ -71,8 +78,6 @@ import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableQueueStateBase;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
@@ -108,6 +113,7 @@ public class MirrorNodeState implements State {
     private final ServicesRegistry servicesRegistry;
     private final ServiceMigrator serviceMigrator;
     private final NetworkInfo networkInfo;
+    private final StartupNetworks startupNetworks;
 
     @PostConstruct
     private void init() {
@@ -121,8 +127,10 @@ public class MirrorNodeState implements State {
                     new ServicesSoftwareVersion(
                             bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
                     new ConfigProviderImpl().getConfiguration(),
+                    new ConfigProviderImpl().getConfiguration(),
                     networkInfo,
-                    UnavailableMetrics.UNAVAILABLE_METRICS);
+                    UnavailableMetrics.UNAVAILABLE_METRICS,
+                    startupNetworks);
 
             final var fileServiceStates = this.getWritableStates(FileService.NAME);
             final var files = fileServiceStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
@@ -141,7 +149,7 @@ public class MirrorNodeState implements State {
         });
     }
 
-    public MirrorNodeState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
+    public MirrorNodeState addService(@Nonnull final String serviceName, @Nonnull final Map<String, ?> dataSources) {
         final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
         dataSources.forEach((k, b) -> {
             if (!serviceStates.containsKey(k)) {
@@ -160,9 +168,9 @@ public class MirrorNodeState implements State {
      * Removes the state with the given key for the service with the given name.
      *
      * @param serviceName the name of the service
-     * @param stateKey the key of the state
+     * @param stateKey    the key of the state
      */
-    public void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
+    public void removeServiceState(@Nonnull final String serviceName, @Nonnull final String stateKey) {
         requireNonNull(serviceName);
         requireNonNull(stateKey);
         this.states.computeIfPresent(serviceName, (k, v) -> {
@@ -240,13 +248,13 @@ public class MirrorNodeState implements State {
     }
 
     @Override
-    public void registerCommitListener(@NonNull final StateChangeListener listener) {
+    public void registerCommitListener(@Nonnull final StateChangeListener listener) {
         requireNonNull(listener);
         listeners.add(listener);
     }
 
     @Override
-    public void unregisterCommitListener(@NonNull final StateChangeListener listener) {
+    public void unregisterCommitListener(@Nonnull final StateChangeListener listener) {
         requireNonNull(listener);
         listeners.remove(listener);
     }
@@ -260,7 +268,7 @@ public class MirrorNodeState implements State {
     }
 
     private <V> WritableSingletonStateBase<V> withAnyRegisteredListeners(
-            @NonNull final String serviceName, @NonNull final String stateKey, @NonNull final AtomicReference<V> ref) {
+            @Nonnull final String serviceName, @Nonnull final String stateKey, @Nonnull final AtomicReference<V> ref) {
         final var state = new WritableSingletonStateBase<>(stateKey, ref::get, ref::set);
         listeners.forEach(listener -> {
             if (listener.stateTypes().contains(SINGLETON)) {
@@ -271,7 +279,7 @@ public class MirrorNodeState implements State {
     }
 
     private <K, V> MapWritableKVState<K, V> withAnyRegisteredListeners(
-            @NonNull final String serviceName, @NonNull final MapWritableKVState<K, V> state) {
+            @Nonnull final String serviceName, @Nonnull final MapWritableKVState<K, V> state) {
         listeners.forEach(listener -> {
             if (listener.stateTypes().contains(MAP)) {
                 registerKVListener(serviceName, state, listener);
@@ -281,7 +289,7 @@ public class MirrorNodeState implements State {
     }
 
     private <T> ListWritableQueueState<T> withAnyRegisteredListeners(
-            @NonNull final String serviceName, @NonNull final ListWritableQueueState<T> state) {
+            @Nonnull final String serviceName, @Nonnull final ListWritableQueueState<T> state) {
         listeners.forEach(listener -> {
             if (listener.stateTypes().contains(QUEUE)) {
                 registerQueueListener(serviceName, state, listener);
@@ -291,21 +299,21 @@ public class MirrorNodeState implements State {
     }
 
     private <V> void registerSingletonListener(
-            @NonNull final String serviceName,
-            @NonNull final WritableSingletonStateBase<V> singletonState,
-            @NonNull final StateChangeListener listener) {
+            @Nonnull final String serviceName,
+            @Nonnull final WritableSingletonStateBase<V> singletonState,
+            @Nonnull final StateChangeListener listener) {
         final var stateId = listener.stateIdFor(serviceName, singletonState.getStateKey());
         singletonState.registerListener(value -> listener.singletonUpdateChange(stateId, value));
     }
 
     private <V> void registerQueueListener(
-            @NonNull final String serviceName,
-            @NonNull final WritableQueueStateBase<V> queueState,
-            @NonNull final StateChangeListener listener) {
+            @Nonnull final String serviceName,
+            @Nonnull final WritableQueueStateBase<V> queueState,
+            @Nonnull final StateChangeListener listener) {
         final var stateId = listener.stateIdFor(serviceName, queueState.getStateKey());
         queueState.registerListener(new QueueChangeListener<>() {
             @Override
-            public void queuePushChange(@NonNull final V value) {
+            public void queuePushChange(@Nonnull final V value) {
                 listener.queuePushChange(stateId, value);
             }
 
@@ -317,16 +325,16 @@ public class MirrorNodeState implements State {
     }
 
     private <K, V> void registerKVListener(
-            @NonNull final String serviceName, WritableKVStateBase<K, V> state, StateChangeListener listener) {
+            @Nonnull final String serviceName, WritableKVStateBase<K, V> state, StateChangeListener listener) {
         final var stateId = listener.stateIdFor(serviceName, state.getStateKey());
         state.registerListener(new KVChangeListener<>() {
             @Override
-            public void mapUpdateChange(@NonNull final K key, @NonNull final V value) {
+            public void mapUpdateChange(@Nonnull final K key, @Nonnull final V value) {
                 listener.mapUpdateChange(stateId, key, value);
             }
 
             @Override
-            public void mapDeleteChange(@NonNull final K key) {
+            public void mapDeleteChange(@Nonnull final K key) {
                 listener.mapDeleteChange(stateId, key);
             }
         });
@@ -364,8 +372,18 @@ public class MirrorNodeState implements State {
 
     private void registerServices(ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
-        final var appContext =
-                new AppContextImpl(InstantSource.system(), signatureVerifier(), Gossip.UNAVAILABLE_GOSSIP);
+        final var appContext = new AppContextImpl(
+                InstantSource.system(),
+                signatureVerifier(),
+                Gossip.UNAVAILABLE_GOSSIP,
+                () -> new ConfigProviderImpl().getConfiguration(),
+                () -> DEFAULT_NODE_INFO,
+                () -> UNAVAILABLE_METRICS,
+                new AppThrottleFactory(
+                        () -> new ConfigProviderImpl().getConfiguration(),
+                        () -> this,
+                        () -> ThrottleDefinitions.DEFAULT,
+                        ThrottleAccumulator::new));
         Set.of(
                         new EntityIdService(),
                         new TokenServiceImpl(),

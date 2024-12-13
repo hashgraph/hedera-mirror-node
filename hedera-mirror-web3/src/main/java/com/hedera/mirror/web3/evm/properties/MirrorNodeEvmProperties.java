@@ -23,7 +23,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_3
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_50;
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.common.domain.entity.EntityType;
