@@ -71,7 +71,7 @@ tasks.named("test") { enabled = false }
 
 tasks.register<Test>("acceptance") {
     description = "Acceptance tests configuration"
-    group = "Testing"
+    group = "verification"
     val maxParallelism = project.property("maxParallelism") as String
     jvmArgs = listOf("-Xmx1024m", "-Xms1024m")
     maxParallelForks =

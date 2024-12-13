@@ -146,8 +146,8 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(allowanceRepository
-                        .findByOwnerAndTimestampAndApprovedForAllIsFalse(
-                                allowanceHistory.getId().getOwner(), allowanceHistory.getTimestampLower() + 1)
+                        .findByOwnerAndTimestamp(
+                                allowanceHistory.getId().getOwner(), allowanceHistory.getTimestampLower() + 1, false)
                         .get(0))
                 .usingRecursiveComparison()
                 .isEqualTo(allowanceHistory);
