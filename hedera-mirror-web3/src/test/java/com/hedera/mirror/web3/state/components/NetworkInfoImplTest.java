@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.info.NodeInfo;
@@ -56,6 +57,11 @@ class NetworkInfoImplTest extends Web3IntegrationTest {
     void testUpdateFrom() {
         final var exception = assertThrows(UnsupportedOperationException.class, () -> networkInfoImpl.updateFrom(null));
         assertThat(exception.getMessage()).isEqualTo("Not implemented");
+    }
+
+    @Test
+    void testRoster() {
+        assertThat(networkInfoImpl.roster()).isEqualTo(Roster.DEFAULT);
     }
 
     @Test

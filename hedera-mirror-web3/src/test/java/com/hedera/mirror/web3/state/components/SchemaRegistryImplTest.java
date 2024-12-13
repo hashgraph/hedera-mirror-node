@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.state.components;
 
 import static java.util.Collections.EMPTY_MAP;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -215,6 +216,9 @@ class SchemaRegistryImplTest {
                 startupNetworks);
 
         assertThat(context).satisfies(c -> {
+            assertDoesNotThrow(() -> c.copyAndReleaseOnDiskState(""));
+            assertThat(c.roundNumber()).isZero();
+            assertThat(c.startupNetworks()).isEqualTo(startupNetworks);
             assertThat(c.previousVersion()).isEqualTo(previousVersion);
             assertThat(c.previousStates()).isEqualTo(readableStates);
             assertThat(c.newStates()).isEqualTo(writableStates);
