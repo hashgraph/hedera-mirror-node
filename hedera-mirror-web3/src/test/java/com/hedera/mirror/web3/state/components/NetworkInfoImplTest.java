@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 

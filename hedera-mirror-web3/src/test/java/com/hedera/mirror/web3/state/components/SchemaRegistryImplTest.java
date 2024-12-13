@@ -32,11 +32,12 @@ import com.hedera.node.app.state.merkle.SchemaApplicationType;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.StartupNetworks;
+import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.StateDefinition;
-import com.swirlds.state.spi.info.NetworkInfo;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Set;
@@ -73,6 +74,9 @@ class SchemaRegistryImplTest {
     private SchemaApplications schemaApplications;
 
     @Mock
+    private StartupNetworks startupNetworks;
+
+    @Mock
     private Codec<String> mockCodec;
 
     private Configuration config;
@@ -93,7 +97,7 @@ class SchemaRegistryImplTest {
 
     @Test
     void testMigrateWithNoSchemas() {
-        schemaRegistry.migrate(serviceName, mirrorNodeState, networkInfo);
+        schemaRegistry.migrate(serviceName, mirrorNodeState, networkInfo, startupNetworks);
         verify(mirrorNodeState, never()).getWritableStates(any());
     }
 
@@ -107,7 +111,14 @@ class SchemaRegistryImplTest {
         schemaRegistry.register(schema);
 
         schemaRegistry.migrate(
-                serviceName, mirrorNodeState, previousVersion, networkInfo, config, new HashMap<>(), new AtomicLong());
+                serviceName,
+                mirrorNodeState,
+                previousVersion,
+                networkInfo,
+                config,
+                new HashMap<>(),
+                new AtomicLong(),
+                startupNetworks);
         verify(mirrorNodeState, times(1)).getWritableStates(serviceName);
         verify(mirrorNodeState, times(1)).getReadableStates(serviceName);
         verify(writableStates, times(1)).commit();
@@ -121,7 +132,14 @@ class SchemaRegistryImplTest {
                 .thenReturn(EnumSet.of(SchemaApplicationType.MIGRATION));
         schemaRegistry.register(schema);
         schemaRegistry.migrate(
-                serviceName, mirrorNodeState, previousVersion, networkInfo, config, new HashMap<>(), new AtomicLong());
+                serviceName,
+                mirrorNodeState,
+                previousVersion,
+                networkInfo,
+                config,
+                new HashMap<>(),
+                new AtomicLong(),
+                startupNetworks);
 
         verify(schema).migrate(any());
         verify(writableStates, times(1)).commit();
@@ -147,7 +165,14 @@ class SchemaRegistryImplTest {
 
         schemaRegistry.register(schema);
         schemaRegistry.migrate(
-                serviceName, mirrorNodeState, previousVersion, networkInfo, config, new HashMap<>(), new AtomicLong());
+                serviceName,
+                mirrorNodeState,
+                previousVersion,
+                networkInfo,
+                config,
+                new HashMap<>(),
+                new AtomicLong(),
+                startupNetworks);
         verify(mirrorNodeState, times(1)).getWritableStates(serviceName);
         verify(mirrorNodeState, times(1)).getReadableStates(serviceName);
         verify(schema).migrate(any());
@@ -164,7 +189,14 @@ class SchemaRegistryImplTest {
 
         schemaRegistry.register(schema);
         schemaRegistry.migrate(
-                serviceName, mirrorNodeState, previousVersion, networkInfo, config, new HashMap<>(), new AtomicLong());
+                serviceName,
+                mirrorNodeState,
+                previousVersion,
+                networkInfo,
+                config,
+                new HashMap<>(),
+                new AtomicLong(),
+                startupNetworks);
 
         verify(schema).restart(any());
         verify(writableStates, times(1)).commit();
@@ -173,7 +205,14 @@ class SchemaRegistryImplTest {
     @Test
     void testNewMigrationContext() {
         MigrationContext context = schemaRegistry.newMigrationContext(
-                previousVersion, readableStates, writableStates, config, networkInfo, new AtomicLong(1), EMPTY_MAP);
+                previousVersion,
+                readableStates,
+                writableStates,
+                config,
+                networkInfo,
+                new AtomicLong(1),
+                EMPTY_MAP,
+                startupNetworks);
 
         assertThat(context).satisfies(c -> {
             assertThat(c.previousVersion()).isEqualTo(previousVersion);

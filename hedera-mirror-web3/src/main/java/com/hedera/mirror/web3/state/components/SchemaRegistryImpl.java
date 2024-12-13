@@ -23,17 +23,18 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFIN
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.state.core.MapWritableStates;
-import com.hedera.node.app.spi.state.FilteredReadableStates;
-import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.lifecycle.MigrationContext;
+import com.swirlds.state.lifecycle.Schema;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.StartupNetworks;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.spi.FilteredReadableStates;
+import com.swirlds.state.spi.FilteredWritableStates;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.Schema;
-import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.spi.info.NetworkInfo;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.HashMap;
@@ -72,7 +73,8 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     public void migrate(
             @Nonnull final String serviceName,
             @Nonnull final MirrorNodeState state,
-            @Nonnull final NetworkInfo networkInfo) {
+            @Nonnull final NetworkInfo networkInfo,
+            @Nonnull final StartupNetworks startupNetworks) {
         migrate(
                 serviceName,
                 state,
@@ -80,7 +82,8 @@ public class SchemaRegistryImpl implements SchemaRegistry {
                 networkInfo,
                 ConfigurationBuilder.create().build(),
                 new HashMap<>(),
-                new AtomicLong());
+                new AtomicLong(),
+                startupNetworks);
     }
 
     public void migrate(
@@ -90,7 +93,8 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nonnull final NetworkInfo networkInfo,
             @Nonnull final Configuration config,
             @Nonnull final Map<String, Object> sharedValues,
-            @Nonnull final AtomicLong nextEntityNum) {
+            @Nonnull final AtomicLong nextEntityNum,
+            @Nonnull final StartupNetworks startupNetworks) {
         if (schemas.isEmpty()) {
             return;
         }
@@ -115,7 +119,14 @@ public class SchemaRegistryImpl implements SchemaRegistry {
                 newStates = writableStates = state.getWritableStates(serviceName);
             }
             final var context = newMigrationContext(
-                    previousVersion, previousStates, newStates, config, networkInfo, nextEntityNum, sharedValues);
+                    previousVersion,
+                    previousStates,
+                    newStates,
+                    config,
+                    networkInfo,
+                    nextEntityNum,
+                    sharedValues,
+                    startupNetworks);
             if (applications.contains(MIGRATION)) {
                 schema.migrate(context);
             }
@@ -138,11 +149,23 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nonnull final Configuration config,
             @Nonnull final NetworkInfo networkInfo,
             @Nonnull final AtomicLong nextEntityNum,
-            @Nonnull final Map<String, Object> sharedValues) {
+            @Nonnull final Map<String, Object> sharedValues,
+            @Nonnull final StartupNetworks startupNetworks) {
         return new MigrationContext() {
             @Override
             public void copyAndReleaseOnDiskState(String stateKey) {
                 // No-op
+            }
+
+            @Override
+            public long roundNumber() {
+                return 0;
+            }
+
+            @Nonnull
+            @Override
+            public StartupNetworks startupNetworks() {
+                return startupNetworks;
             }
 
             @Override
