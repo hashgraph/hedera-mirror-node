@@ -75,6 +75,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     protected RecordFile genesisRecordFile;
 
+    protected final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
+
     protected static final byte[] EXCHANGE_RATES_SET = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
                     .setCentEquiv(12)
@@ -113,10 +115,16 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .entity()
                 .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
                 .persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(3L).num(3L).balance(5000000000000000000L))
+                .persist();
+        domainBuilder.entity().customize(e -> e.id(800L).num(800L)).persist();
+        domainBuilder.entity().customize(e -> e.id(801L).num(801L)).persist();
         domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
         domainBuilder
                 .fileData()
-                .customize(f -> f.entityId(EntityId.of(112)).fileData(EXCHANGE_RATES_SET))
+                .customize(f -> f.entityId(EntityId.of(112L)).fileData(EXCHANGE_RATES_SET))
                 .persist();
         testWeb3jService.reset();
     }

@@ -27,7 +27,9 @@ import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
 import com.swirlds.state.spi.ReadableKVStateBase;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
@@ -45,6 +47,12 @@ public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
     public NftReadableKVState(@Nonnull NftRepository nftRepository) {
         super("NFTS");
         this.nftRepository = nftRepository;
+    }
+
+    @Nullable
+    @Override
+    public Nft get(@NonNull NftID key) {
+        return readFromDataSource(key);
     }
 
     @Override

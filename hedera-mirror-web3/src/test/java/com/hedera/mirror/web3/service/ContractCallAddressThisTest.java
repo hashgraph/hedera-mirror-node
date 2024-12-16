@@ -143,7 +143,7 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
         final var request = new ContractCallRequest();
         request.setBlock(BlockType.LATEST);
         request.setData(contract.getContractBinary());
-        request.setFrom(Address.ZERO.toHexString());
+        request.setFrom(TREASURY_ADDRESS);
         request.setValue(1000);
         // When
         contractCall(request)
@@ -158,11 +158,11 @@ class ContractCallAddressThisTest extends AbstractContractCallServiceTest {
     @Test
     void deployNestedAddressThisContract() {
         final var contract = testWeb3jService.deploy(TestNestedAddressThis::deploy);
-        final var serviceParamaters = testWeb3jService.serviceParametersForTopLevelContractCreate(
+        final var serviceParameters = testWeb3jService.serviceParametersForTopLevelContractCreate(
                 contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.ZERO);
         final long actualGas = 95401L;
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParamaters)), actualGas))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), actualGas))
                 .isTrue();
     }
 
