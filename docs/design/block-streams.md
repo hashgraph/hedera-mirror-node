@@ -434,7 +434,7 @@ Beginning from an `EventTransaction` block item, a record item is composed of on
 | token_airdrop.serial_number        | state_changes[i].state_change.map_update.key.tokenReference.non_fungible_token.nftId.serialNumber |
 | token_airdrop.token_id (fungible)  | state_changes[i].state_change.map_update.key.tokenReference.fungible_token_type                   |
 | token_airdrop.token_id (nft)       | state_changes[i].state_change.map_update.key.tokenReference.non_fungible_token.nftId.tokenId      |
-| Updates accessed_custom_fee        | Similar to crypto_transfer, accessed at transaction_output.token_airdrop                          |
+| accessed_custom_fee                | Similar to crypto_transfer, accessed at transaction_output.token_airdrop                          |
 | token_account.account_id           | transaction_output.token_airdrop.automatic_token_associations[i].accountId                        |
 | token_account.token_id             | transaction_output.token_airdrop.automatic_token_associations[i].tokenId                          |
 | token_transfer.account_id          | transaction_output.token_airdrop.token_transfer_lists[i].transfers[j].accountAmount.accountID     |
@@ -522,4 +522,77 @@ Beginning from an `EventTransaction` block item, a record item is composed of on
 - Add a performance test for the Performance environment that ingests block files instead of record files.
 - Add `BlockFileBuilder` and `BlockItemBuilder` domain classes.
 - Add downloader tests for block files similar to the existing downloader tests for record files in `com.hedera.mirror.importer.downloader.record`.
-- Add parsing tests for block files similar to the record file tests in `com.hedera.mirror.importer.parser.record`.
+
+### BlockFileTransformer tests
+
+- Add tests that verify that a record file generated from the `BlockFileTransformer` is equivalent to a non-transformed record file for each of the transaction types. The test constructs the block and passes it to the block to `BlockFileTransformer` and then compares the resulting record file to the original record file. For each transaction type also verify that the `BlockFileTransformer` calculated transaction hash matches the record file transaction hash.
+  - ConsensusCreateTopic
+  - ConsensusDeleteTopic
+  - ConsensusSubmitMessage
+  - ConsensusUpdateTopic
+  - ContractCall
+  - ContractCreate
+  - ContractDelete
+  - ContractUpdate
+  - CryptoAddLiveHash
+  - CryptoApproveAllowance
+  - CryptoCreate
+  - CryptoDelete
+  - CryptoDeleteAllowance
+  - CryptoDeleteLiveHash
+  - CryptoTransfer
+  - CryptoUpdate
+  - EthereumTransaction
+  - FileAppend
+  - FileCreate
+  - FileDelete
+  - FileUpdate
+  - Freeze
+  - NodeCreate
+  - NodeDelete
+  - NodeUpdate
+  - NodeStakeUpdate
+  - ScheduleCreate
+  - ScheduleDelete
+  - ScheduleSign
+  - SystemDelete
+  - SystemUndelete
+  - TokenAirdrop
+  - TokenAssociate
+  - TokenBurn
+  - TokenCancelAirdrop
+  - TokenClaimAirdrop
+  - TokenCreate
+  - TokenDelete
+  - TokenDisassociate
+  - TokenFeeScheduleUpdate
+  - TokenFreeze
+  - TokenGrantKyc
+  - TokenMint
+  - TokenPause
+  - TokenReject
+  - TokenRevokeKyc
+  - TokenUnFreeze
+  - TokenUpdate
+  - TokenUpdateNfts
+  - TokenUnPause
+  - TokenWipe
+  - UncheckedSubmit
+  - Unknown
+  - UtilPrng
+- Add a test that verifies that a block with a wrapped record file is transformed to a record that is identical to a normal record file. The test constructs a block with a wrapped record file and passes it to the `BlockFileTransformer` and then compares the resulting record file to the original non-wrapped record file.
+- Add a test that verifies that a block with no transactions is transformed to a record with no transactions. The test constructs a block with no transactions and passes it to the `BlockFileTransformer` and then compares the resulting record file to the original record file.
+
+### BlockStreamVerifier tests
+
+- Add a test that verifies the record stream hash chain with a series of blocks with wrapped record files.
+- Add a test that verifies that a `HashMismatchException` is thrown with wrapped record files with a mismatched hash.
+- Add a test with a block file that has a block number that does not match the block number in the file name. This test should verify that the `BlockStreamVerifier` throws an exception.
+- Add a test that verifies the block number in the block file name matches the block number in the block file.
+- Add a test that verifies that the `previousBlockHash` of block N matches the block hash of block N-1, and a test that verifies that a `HashMismatchException` is thrown when they do not match.
+
+## Open Issues
+
+- [ ] Details about TSS Signature block verification are a work in progress.
+- [ ] Q: Shall we gather the Token Transfer Lists from State Changes? TokenAirdropOutput and CryptoTransferOutput have Token Transfer Lists, but Token Transfer Lists may also be represented in State Changes. We may need to gather the transfers from State Changes if the Token Transfer Lists are removed from the transaction outputs and the TransactionResult.
+- [ ] `EventTransaction` is slated to be removed in favor of using `Transaction`. This will require changes to the `BlockFileTransformer`.
