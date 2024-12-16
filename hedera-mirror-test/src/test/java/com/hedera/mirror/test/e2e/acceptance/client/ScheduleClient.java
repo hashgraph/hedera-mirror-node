@@ -48,7 +48,11 @@ public class ScheduleClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createSchedule(
-            ExpandedAccountId payerAccountId, Transaction<?> transaction, KeyList signatureKeyList, Instant expirationTime, Boolean waitForExpiry) {
+            ExpandedAccountId payerAccountId,
+            Transaction<?> transaction,
+            KeyList signatureKeyList,
+            Instant expirationTime,
+            Boolean waitForExpiry) {
         var memo = getMemo("Create schedule");
 
         ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()
@@ -57,8 +61,9 @@ public class ScheduleClient extends AbstractNetworkClient {
                 .setScheduleMemo(memo)
                 .setScheduledTransaction(transaction)
                 .setTransactionMemo(memo);
-        if(expirationTime != null) {
-            scheduleCreateTransaction.setExpirationTime(expirationTime).setWaitForExpiry(waitForExpiry);;
+        if (expirationTime != null) {
+            scheduleCreateTransaction.setExpirationTime(expirationTime).setWaitForExpiry(waitForExpiry);
+            ;
         }
 
         if (signatureKeyList != null) {
