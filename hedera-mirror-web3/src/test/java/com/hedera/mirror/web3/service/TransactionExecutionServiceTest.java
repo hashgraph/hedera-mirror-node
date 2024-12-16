@@ -113,11 +113,11 @@ public class TransactionExecutionServiceTest {
             when(contractFunctionResult.contractCallResult()).thenReturn(Bytes.EMPTY);
 
             // Mock the transactionRecord to return the contract call result
-            when(transactionRecord.contractCallResult()).thenReturn(contractFunctionResult);
+            when(transactionRecord.contractCallResultOrThrow()).thenReturn(contractFunctionResult);
 
             // Mock the executor to return a List with the mocked SingleTransactionRecord
             when(transactionExecutor.execute(
-                            any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
+                    any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
                     .thenReturn(List.of(singleTransactionRecord));
 
             CallServiceParameters callServiceParameters = buildServiceParams(false);
@@ -164,7 +164,7 @@ public class TransactionExecutionServiceTest {
 
             // Mock the executor to return a List with the mocked SingleTransactionRecord
             when(transactionExecutor.execute(
-                            any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
+                    any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
                     .thenReturn(List.of(singleTransactionRecord));
 
             CallServiceParameters callServiceParameters = buildServiceParams(false);
@@ -209,11 +209,11 @@ public class TransactionExecutionServiceTest {
             when(contractFunctionResult.contractCallResult()).thenReturn(Bytes.EMPTY);
 
             // Mock the transactionRecord to return the contract call result
-            when(transactionRecord.contractCreateResult()).thenReturn(contractFunctionResult);
+            when(transactionRecord.contractCreateResultOrThrow()).thenReturn(contractFunctionResult);
 
             // Mock the executor to return a List with the mocked SingleTransactionRecord
             when(transactionExecutor.execute(
-                            any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
+                    any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
                     .thenReturn(List.of(singleTransactionRecord));
 
             CallServiceParameters callServiceParameters = buildServiceParams(true);
