@@ -42,6 +42,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
@@ -129,13 +130,6 @@ public class MirrorNodeState implements State {
                     networkInfo,
                     UnavailableMetrics.UNAVAILABLE_METRICS,
                     startupNetworks);
-
-            final var accountReadableKVState = (AccountReadableKVState) readableKVStates.stream()
-                    .filter(r -> r.getStateKey().equals("ACCOUNTS"))
-                    .findFirst()
-                    .orElseThrow();
-            accountReadableKVState
-                    .reset(); // Remove cached accounts as they remain with keys and empty objects in the cache at this
             // point.
             return ctx;
         });
@@ -384,7 +378,8 @@ public class MirrorNodeState implements State {
                         new BlockRecordService(),
                         new FeeService(),
                         new CongestionThrottleService(),
-                        new RecordCacheService())
+                        new RecordCacheService(),
+                        new ScheduleServiceImpl())
                 .forEach(servicesRegistry::register);
     }
 
