@@ -168,8 +168,7 @@ public class TokenOpsUsageUtilsTest {
     void tokenMintFungibleCommonWorks() {
         final var txn = givenTokenMintWith(FUNGIBLE_COMMON);
 
-        final TokenMintMeta tokenMintMeta =
-                TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, TOKEN_FUNGIBLE_COMMON, 72000L);
+        final TokenMintMeta tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, TOKEN_FUNGIBLE_COMMON);
 
         assertEquals(0, tokenMintMeta.getRbs());
         assertEquals(32, tokenMintMeta.getBpt());
@@ -180,8 +179,7 @@ public class TokenOpsUsageUtilsTest {
     void tokenMintNonFungibleUniqueWorks() {
         final var txn = givenTokenMintWith(NON_FUNGIBLE_UNIQUE);
 
-        final TokenMintMeta tokenMintMeta =
-                TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, TOKEN_NON_FUNGIBLE_UNIQUE, 72000L);
+        final TokenMintMeta tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, TOKEN_NON_FUNGIBLE_UNIQUE);
 
         assertEquals(0, tokenMintMeta.getRbs());
         assertEquals(2, tokenMintMeta.getBpt());
@@ -298,7 +296,7 @@ public class TokenOpsUsageUtilsTest {
                 .build();
     }
 
-    public static Key A_THRESHOLD_KEY = Key.newBuilder()
+    public static final Key A_THRESHOLD_KEY = Key.newBuilder()
             .setThresholdKey(ThresholdKey.newBuilder()
                     .setThreshold(2)
                     .setKeys(KeyList.newBuilder()
@@ -331,7 +329,7 @@ public class TokenOpsUsageUtilsTest {
                             .setEd25519(ByteString.copyFrom("cccccccccccccccccccccccccccccccc".getBytes()))))
             .build();
 
-    public static Key A_COMPLEX_KEY = Key.newBuilder()
+    public static final Key A_COMPLEX_KEY = Key.newBuilder()
             .setThresholdKey(ThresholdKey.newBuilder()
                     .setThreshold(2)
                     .setKeys(KeyList.newBuilder()
@@ -352,7 +350,7 @@ public class TokenOpsUsageUtilsTest {
                             .addKeys(A_COMPLEX_KEY)))
             .build();
 
-    public static Key B_COMPLEX_KEY = Key.newBuilder()
+    public static final Key B_COMPLEX_KEY = Key.newBuilder()
             .setThresholdKey(ThresholdKey.newBuilder()
                     .setThreshold(2)
                     .setKeys(KeyList.newBuilder()
@@ -363,7 +361,7 @@ public class TokenOpsUsageUtilsTest {
                             .addKeys(A_COMPLEX_KEY)))
             .build();
 
-    public static Key C_COMPLEX_KEY = Key.newBuilder()
+    public static final Key C_COMPLEX_KEY = Key.newBuilder()
             .setThresholdKey(ThresholdKey.newBuilder()
                     .setThreshold(2)
                     .setKeys(KeyList.newBuilder()
@@ -375,7 +373,7 @@ public class TokenOpsUsageUtilsTest {
             .build();
     private static final Key wipeKey = C_COMPLEX_KEY;
 
-    public static Key A_KEY_LIST = Key.newBuilder()
+    public static final Key A_KEY_LIST = Key.newBuilder()
             .setKeyList(KeyList.newBuilder()
                     .addKeys(Key.newBuilder()
                             .setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes())))

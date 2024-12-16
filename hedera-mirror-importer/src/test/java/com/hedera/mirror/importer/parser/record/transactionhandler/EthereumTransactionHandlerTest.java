@@ -464,10 +464,12 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Disabled("Since this handler persists data for unsuccessful transactions & has tests for that")
     @Override
     @Test
-    void updateTransactionUnsuccessful() {}
+    void updateTransactionUnsuccessful() {
+        throw new UnsupportedOperationException("Missing method implementation");
+    }
 
-    private ContractFunctionResult getContractFunctionResult(TransactionRecord record, boolean create) {
-        return create ? record.getContractCreateResult() : record.getContractCallResult();
+    private ContractFunctionResult getContractFunctionResult(TransactionRecord txnRecord, boolean create) {
+        return create ? txnRecord.getContractCreateResult() : txnRecord.getContractCallResult();
     }
 
     private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {

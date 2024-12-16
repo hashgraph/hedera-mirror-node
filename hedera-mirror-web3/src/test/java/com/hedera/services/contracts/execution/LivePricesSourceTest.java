@@ -72,14 +72,14 @@ class LivePricesSourceTest {
 
     @Test
     void getsExpectedGasPriceWithReasonableMultiplier() {
-        givenCollabsWithMultiplier(REASONABLE_MULTIPLIER);
+        givenCollabsWithMultiplier();
 
         final var expected = getTinybarsFromTinyCents(ACTIVE_RATE, GAS_PRICE_TINYBARS) * REASONABLE_MULTIPLIER;
 
         assertEquals(expected, subject.currentGasPrice(NOW, ContractCall));
     }
 
-    private void givenCollabsWithMultiplier(final long multiplier) {
+    private void givenCollabsWithMultiplier() {
         given(exchange.rate(TIME_NOW)).willReturn(ACTIVE_RATE);
         given(usagePrices.defaultPricesGiven(ContractCall, TIME_NOW)).willReturn(PROVIDER_PRICES);
     }

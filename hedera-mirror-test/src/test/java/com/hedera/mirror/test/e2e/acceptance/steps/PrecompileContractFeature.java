@@ -224,6 +224,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     @And("verify non fungible token isn't frozen")
+    @And("check if non fungible token is unfrozen")
     public void verifyNonFungibleTokenIsNotFrozen() {
         var data = encodeData(
                 PRECOMPILE, IS_TOKEN_FROZEN_SELECTOR, asAddress(nonFungibleTokenId), asAddress(contractClient));
@@ -265,16 +266,6 @@ public class PrecompileContractFeature extends AbstractFeature {
             retryFor = {AssertionError.class, HttpClientErrorException.class},
             backoff = @Backoff(delayExpression = "#{@restProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restProperties.maxAttempts}")
-    @And("check if non fungible token is unfrozen")
-    public void checkIfTokenIsUnfrozen() {
-        var data = encodeData(
-                PRECOMPILE, IS_TOKEN_FROZEN_SELECTOR, asAddress(nonFungibleTokenId), asAddress(contractClient));
-
-        var response = callContract(data, precompileTestContractSolidityAddress);
-
-        assertFalse(response.getResultAsBoolean());
-    }
-
     @Given("I freeze fungible token for evm address")
     public void freezeTokenForEvmAddress() {
         NetworkTransactionResponse freezeResponse = tokenClient.freeze(fungibleTokenId, ecdsaEaId.getAccountId());

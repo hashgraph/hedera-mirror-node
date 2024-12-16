@@ -47,7 +47,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
                       "valid_start_timestamp":1594401416000000000
                     }""";
     private static final Duration WAIT = Duration.ofSeconds(1L);
-    private static boolean INITIALIZED = false;
+    private static boolean initialized = false;
     private final NotifyingTopicListener topicListener;
     private final JdbcTemplate jdbcTemplate;
 
@@ -58,7 +58,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @BeforeEach
     void warmup() {
-        if (!INITIALIZED) {
+        if (!initialized) {
             try {
                 // Warm up the database connection
                 var filter = TopicMessageFilter.builder().build();
@@ -68,7 +68,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
                         .expectNextCount(1)
                         .thenCancel()
                         .verify(WAIT);
-                INITIALIZED = true;
+                initialized = true;
             } catch (AssertionError e) {
                 log.warn("Unable to warmup connection: {}", e.getMessage());
             }

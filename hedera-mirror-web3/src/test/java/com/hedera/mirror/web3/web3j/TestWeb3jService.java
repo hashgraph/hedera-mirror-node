@@ -113,7 +113,6 @@ public class TestWeb3jService implements Web3jService {
         this.isEstimateGas = false;
         this.contractRuntime = null;
         this.persistContract = true;
-        this.sender = Address.ZERO;
         this.value = 0L;
         this.sender = Address.fromHexString("");
         this.blockType = BlockType.LATEST;

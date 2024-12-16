@@ -290,7 +290,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .timestampRange(historyRange))
                 .persist();
 
-        var tokenTransfer1 = domainBuilder
+        domainBuilder
                 .tokenTransfer()
                 .customize(t -> t.isApproval(true)
                         .amount(amountForTransfer)
@@ -486,7 +486,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        final var contractResult = domainBuilder
+        domainBuilder
                 .contractResult()
                 .customize(c -> c.consensusTimestamp(tokenTransferTimestamp).senderId(EntityId.of(senderId)))
                 .persist();
@@ -546,7 +546,6 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByOwnerAndTimestampWithRegularTokenTransfersAndContractTokenTransfers() {
         long ownerId = 100L;
         long tokenId = 200L;
-        long spenderId = 300L;
         long senderId = 400L;
         long tokenAllowanceTimestamp = System.currentTimeMillis();
         long tokenTransferTimestamp = tokenAllowanceTimestamp + 100;

@@ -22,7 +22,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.swirlds.state.spi.ReadableKVStateBase;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.util.Collections;
 import java.util.Iterator;
@@ -35,6 +37,12 @@ public class AliasesReadableKVState extends ReadableKVStateBase<ProtoBytes, Acco
     protected AliasesReadableKVState(final CommonEntityAccessor commonEntityAccessor) {
         super("ALIASES");
         this.commonEntityAccessor = commonEntityAccessor;
+    }
+
+    @Nullable
+    @Override
+    public AccountID get(@NonNull ProtoBytes key) {
+        return readFromDataSource(key);
     }
 
     @Override

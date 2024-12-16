@@ -18,10 +18,11 @@ package com.hedera.mirror.web3.state.components;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
@@ -65,6 +66,11 @@ public class NetworkInfoImpl implements NetworkInfo {
     @Override
     public void updateFrom(State state) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public Roster roster() {
+        return Roster.DEFAULT;
     }
 
     /**

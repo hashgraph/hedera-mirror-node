@@ -659,7 +659,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     }
 
     @Test
-    void testDownloadRatioSetTooLow() throws Exception {
+    void testDownloadRatioSetTooLow() {
         BigDecimal problematicDownloadRatio = new BigDecimal("0.10");
         commonDownloaderProperties.setDownloadRatio(problematicDownloadRatio);
         assertThrows(IllegalArgumentException.class, () -> commonDownloaderProperties.init());

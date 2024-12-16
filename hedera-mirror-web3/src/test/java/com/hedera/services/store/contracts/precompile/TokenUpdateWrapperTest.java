@@ -35,15 +35,15 @@ class TokenUpdateWrapperTest {
     @Test
     void createsExpectedTokenUpdateCallForNonFungible() {
         // given
-        final var ComplexKey = new KeyValueWrapper(
+        final var complexKey = new KeyValueWrapper(
                 false, null, new byte[] {}, new byte[] {}, contractIdFromEvmAddress(contractAddress.toArrayUnsafe()));
         final var multiKey = new KeyValueWrapper(
                 false, contractIdFromEvmAddress(contractAddress.toArrayUnsafe()), new byte[] {}, new byte[] {}, null);
         final var wrapper = createNonFungibleTokenUpdateWrapperWithKeys(List.of(
                 new TokenKeyWrapper(112, multiKey),
-                new TokenKeyWrapper(2, ComplexKey),
-                new TokenKeyWrapper(4, ComplexKey),
-                new TokenKeyWrapper(8, ComplexKey)));
+                new TokenKeyWrapper(2, complexKey),
+                new TokenKeyWrapper(4, complexKey),
+                new TokenKeyWrapper(8, complexKey)));
 
         // when
         final var result = createTokenUpdate(wrapper);

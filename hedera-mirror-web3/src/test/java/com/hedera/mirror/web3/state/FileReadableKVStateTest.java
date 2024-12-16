@@ -193,6 +193,17 @@ class FileReadableKVStateTest {
     }
 
     @Test
+    void readFromDataSourceWhenThereIsContextButDoesNotMatchTheKey() {
+        when(ContractCallContext.get().getFile()).thenReturn(Optional.of(FILE));
+
+        File result = fileReadableKVState.readFromDataSource(
+                FileID.newBuilder().fileNum(321L).build());
+
+        assertThat(result).isNull();
+        verify(fileDataRepository, times(1)).getFileAtTimestamp(anyLong(), anyLong());
+    }
+
+    @Test
     void sizeIsAlwaysZero() {
         assertThat(fileReadableKVState.size()).isZero();
     }

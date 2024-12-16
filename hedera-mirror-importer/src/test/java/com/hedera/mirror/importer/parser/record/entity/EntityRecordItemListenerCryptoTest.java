@@ -66,7 +66,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -1040,23 +1039,23 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         // now delete
         Transaction transaction = cryptoDeleteTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecord(
+        TransactionRecord txnRecord = transactionRecord(
                 transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE.getNumber(),
                 recordBuilder -> groupCryptoTransfersByAccountId(recordBuilder, List.of()));
 
         parseRecordItemAndCommit(RecordItem.builder()
-                .transactionRecord(record)
+                .transactionRecord(txnRecord)
                 .transaction(transaction)
                 .build());
 
-        Entity dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Entity dbAccountEntity = getTransactionEntity(txnRecord.getConsensusTimestamp());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count()),
                 () -> assertEntities(EntityId.of(accountId1)),
                 () -> assertCryptoTransfers(6), // 3 + 3 fee transfers with only one transfer per account
-                () -> assertCryptoTransaction(transactionBody, record),
+                () -> assertCryptoTransaction(transactionBody, txnRecord),
                 () -> assertThat(dbAccountEntity).isNotNull().returns(false, Entity::getDeleted));
     }
 
@@ -1065,14 +1064,14 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         Transaction transaction = cryptoAddLiveHashTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         CryptoAddLiveHashTransactionBody cryptoAddLiveHashTransactionBody = transactionBody.getCryptoAddLiveHash();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        TransactionRecord txnRecord = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(RecordItem.builder()
-                .transactionRecord(record)
+                .transactionRecord(txnRecord)
                 .transaction(transaction)
                 .build());
 
-        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+        var dbTransaction = getDbTransaction(txnRecord.getConsensusTimestamp());
         LiveHash dbLiveHash = liveHashRepository
                 .findById(dbTransaction.getConsensusTimestamp())
                 .get();
@@ -1082,7 +1081,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEntities(),
                 () -> assertCryptoTransfers(3),
                 () -> assertEquals(1, liveHashRepository.count()),
-                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertTransactionAndRecord(transactionBody, txnRecord),
                 () -> assertArrayEquals(
                         cryptoAddLiveHashTransactionBody.getLiveHash().getHash().toByteArray(),
                         dbLiveHash.getLivehash()));
@@ -1121,7 +1120,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         // now delete the live hash
         Transaction transaction = cryptoDeleteLiveHashTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        CryptoDeleteLiveHashTransactionBody deleteLiveHashTransactionBody = transactionBody.getCryptoDeleteLiveHash();
+        transactionBody.getCryptoDeleteLiveHash();
         TransactionRecord txnRecord = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(RecordItem.builder()
@@ -1131,7 +1130,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count()),
-                () -> assertEntities(),
+                this::assertEntities,
                 () -> assertCryptoTransfers(6),
                 () -> assertEquals(1, liveHashRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, txnRecord));
