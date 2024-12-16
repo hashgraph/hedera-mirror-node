@@ -106,6 +106,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     @Autowired
     private ThrottleProperties throttleProperties;
 
+    @Autowired
+    private TransactionExecutionService transactionExecutionService;
+
     @Resource
     private ContractExecutionService contractExecutionService;
 
@@ -133,6 +136,13 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         return Arrays.stream(CallType.values())
                 .filter(callType -> !callType.equals(ERROR))
                 .flatMap(callType -> gasLimits.stream().map(gasLimit -> Arguments.of(callType, gasLimit)));
+    }
+
+    private static String toHexWith64LeadingZeros(final Long value) {
+        final String result;
+        final var paddedHexString = String.format("%064x", value);
+        result = "0x" + paddedHexString;
+        return result;
     }
 
     @Test
@@ -754,7 +764,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 throttleProperties,
                 gasLimitBucket,
                 mirrorNodeEvmProperties,
-                state);
+                transactionExecutionService);
 
         // When
         try {
@@ -789,7 +799,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 throttleProperties,
                 gasLimitBucket,
                 mirrorNodeEvmProperties,
-                state);
+                transactionExecutionService);
 
         // When
         try {
@@ -825,7 +835,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 throttleProperties,
                 gasLimitBucket,
                 mirrorNodeEvmProperties,
-                state);
+                transactionExecutionService);
 
         // When
         try {
@@ -1019,12 +1029,5 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
             assertThat(result).isEqualTo(HEX_PREFIX);
             assertGasLimit(serviceParameters);
         }
-    }
-
-    private static String toHexWith64LeadingZeros(final Long value) {
-        final String result;
-        final var paddedHexString = String.format("%064x", value);
-        result = "0x" + paddedHexString;
-        return result;
     }
 }

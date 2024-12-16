@@ -78,16 +78,14 @@ public class ContractCallContext {
 
     /**
      * The TransactionExecutor from the modularized services integration deploys contracts in 2 steps:
-     *
-     * 1. The initcode is uploaded and saved as a file using a {@link FileCreateTransactionBody}.
-     * 2. The returned file id from step 1 is then passed to a {@link ContractCreateTransactionBody}.
-     * Each step performs a separate transaction.
-     * For step 2 even if we pass the correct file id, since the mirror node data is readonly,
-     * the {@link FileReadableKVState} is not able to populate the contract's bytecode from the DB
-     * since it was never explicitly persisted in the DB.
-     *
-     * This is the function of the field "file" to hold temporary the bytecode and the fileId
-     * during contract deploy.
+     * <p>
+     * 1. The initcode is uploaded and saved as a file using a {@link FileCreateTransactionBody}. 2. The returned file
+     * id from step 1 is then passed to a {@link ContractCreateTransactionBody}. Each step performs a separate
+     * transaction. For step 2 even if we pass the correct file id, since the mirror node data is readonly, the
+     * {@link FileReadableKVState} is not able to populate the contract's bytecode from the DB since it was never
+     * explicitly persisted in the DB.
+     * <p>
+     * This is the function of the field "file" to hold temporary the bytecode and the fileId during contract deploy.
      */
     @Setter
     private Optional<File> file = Optional.empty();

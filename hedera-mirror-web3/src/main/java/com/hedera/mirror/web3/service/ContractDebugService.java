@@ -30,7 +30,6 @@ import com.hedera.mirror.web3.repository.ContractActionRepository;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.swirlds.state.State;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
@@ -54,7 +53,7 @@ public class ContractDebugService extends ContractCallService {
             ThrottleProperties throttleProperties,
             MeterRegistry meterRegistry,
             MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            State state) {
+            TransactionExecutionService transactionExecutionService) {
         super(
                 mirrorEvmTxProcessor,
                 gasLimitBucket,
@@ -63,7 +62,7 @@ public class ContractDebugService extends ContractCallService {
                 recordFileService,
                 store,
                 mirrorNodeEvmProperties,
-                state);
+                transactionExecutionService);
         this.contractActionRepository = contractActionRepository;
     }
 
