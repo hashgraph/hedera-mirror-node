@@ -1,0 +1,34 @@
+{
+  "author": "Hedera Mirror Node Team",
+  "bin": {
+    "mirror": "index.js"
+  },
+  "bugs": {
+    "url": "https://github.com/hashgraph/hedera-mirror-node/issues"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "node-fetch": "^3.3.2"
+  },
+  "description": "Generates a report showing an account's hbar transfers",
+  "homepage": "https://github.com/hashgraph/hedera-mirror-node/tree/main/tools/mirror-report",
+  "keywords": [
+    "hedera",
+    "mirror",
+    "report",
+    "csv"
+  ],
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "name": "@hashgraph/mirror-report",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hashgraph/hedera-mirror-node.git"
+  },
+  "scripts": {
+    "run": "node ./index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}
