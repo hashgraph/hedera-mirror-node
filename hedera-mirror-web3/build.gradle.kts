@@ -32,7 +32,7 @@ dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
     implementation("com.bucket4j:bucket4j-core")
-    implementation("com.esaulpaugh:headlong:6.1.1")
+    implementation("com.esaulpaugh:headlong")
     implementation("com.hedera.hashgraph:app") { exclude(group = "io.netty") }
     implementation("com.hedera.evm:hedera-evm")
     implementation("io.github.mweirauch:micrometer-jvm-extras")

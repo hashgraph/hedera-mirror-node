@@ -44,6 +44,7 @@ import org.springframework.validation.annotation.Validated;
 public class ContractDebugService extends ContractCallService {
     private final ContractActionRepository contractActionRepository;
 
+    @SuppressWarnings("java:S107")
     public ContractDebugService(
             ContractActionRepository contractActionRepository,
             RecordFileService recordFileService,

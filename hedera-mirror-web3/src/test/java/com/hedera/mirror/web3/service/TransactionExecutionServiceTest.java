@@ -45,7 +45,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +55,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class TransactionExecutionServiceTest {
+class TransactionExecutionServiceTest {
     private static final Long DEFAULT_GAS = 50000L;
 
     @Mock
@@ -128,7 +127,7 @@ public class TransactionExecutionServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result.getGasUsed()).isEqualTo(DEFAULT_GAS);
-            assertThat(result.getRevertReason()).isEqualTo(Optional.empty());
+            assertThat(result.getRevertReason()).isNotPresent();
         }
     }
 
@@ -175,7 +174,7 @@ public class TransactionExecutionServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result.getGasUsed()).isEqualTo(DEFAULT_GAS);
-            assertThat(result.getRevertReason()).isNotEqualTo(Optional.empty());
+            assertThat(result.getRevertReason()).isPresent();
         }
     }
 
@@ -224,7 +223,7 @@ public class TransactionExecutionServiceTest {
             // Then
             assertThat(result).isNotNull();
             assertThat(result.getGasUsed()).isEqualTo(DEFAULT_GAS);
-            assertThat(result.getRevertReason()).isEqualTo(Optional.empty());
+            assertThat(result.getRevertReason()).isNotPresent();
         }
     }
 

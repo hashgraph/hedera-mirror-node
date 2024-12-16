@@ -39,6 +39,7 @@ public class ContractExecutionService extends ContractCallService {
 
     private final BinaryGasEstimator binaryGasEstimator;
 
+    @SuppressWarnings("java:S107")
     public ContractExecutionService(
             MeterRegistry meterRegistry,
             BinaryGasEstimator binaryGasEstimator,

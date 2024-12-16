@@ -55,6 +55,7 @@ public abstract class ContractCallService {
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final TransactionExecutionService transactionExecutionService;
 
+    @SuppressWarnings("java:S107")
     protected ContractCallService(
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
             Bucket gasLimitBucket,

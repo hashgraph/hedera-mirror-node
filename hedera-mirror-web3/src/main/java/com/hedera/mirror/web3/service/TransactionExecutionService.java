@@ -267,6 +267,9 @@ public class TransactionExecutionService {
     }
 
     public static class ExecutorFactory {
+
+        private ExecutorFactory() {}
+
         public static TransactionExecutor newExecutor(
                 State mirrorNodeState,
                 Map<String, String> properties,
