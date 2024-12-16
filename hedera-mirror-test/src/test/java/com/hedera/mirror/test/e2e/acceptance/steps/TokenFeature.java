@@ -166,6 +166,7 @@ public class TokenFeature extends AbstractFeature {
         var accountId = accountClient.getAccount(accountName);
         var associatedTokenId = tokenClient.getToken(tokenName).tokenId();
         associateWithToken(accountId, associatedTokenId);
+        networkTransactionResponse = tokenClient.associate(accountId, tokenId);
     }
 
     @Given("I approve {account} to transfer up to {long} of token {token}")

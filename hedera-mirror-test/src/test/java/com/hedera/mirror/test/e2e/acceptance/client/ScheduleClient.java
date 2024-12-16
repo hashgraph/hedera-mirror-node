@@ -26,6 +26,7 @@ import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -47,14 +48,18 @@ public class ScheduleClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createSchedule(
-            ExpandedAccountId payerAccountId, Transaction<?> transaction, KeyList signatureKeyList) {
+            ExpandedAccountId payerAccountId, Transaction<?> transaction, KeyList signatureKeyList, Instant expirationTime, Boolean waitForExpiry) {
         var memo = getMemo("Create schedule");
+
         ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setPayerAccountId(payerAccountId.getAccountId())
                 .setScheduleMemo(memo)
                 .setScheduledTransaction(transaction)
                 .setTransactionMemo(memo);
+        if(expirationTime != null) {
+            scheduleCreateTransaction.setExpirationTime(expirationTime).setWaitForExpiry(waitForExpiry);;
+        }
 
         if (signatureKeyList != null) {
             scheduleCreateTransaction
