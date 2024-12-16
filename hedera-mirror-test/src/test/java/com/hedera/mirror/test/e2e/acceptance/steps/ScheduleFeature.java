@@ -25,10 +25,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.ContractExecuteTransaction;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.ScheduleId;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.rest.model.ScheduleSignature;
@@ -40,6 +43,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnu
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ScheduleClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
@@ -52,6 +56,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.http.HttpStatus;
@@ -79,6 +84,47 @@ public class ScheduleFeature extends AbstractFeature{
     private static DeployedContract deployedPrecompileContract;
     private String precompileContractAddress;
     private String scheduleTxConsensusTimestamp;
+
+    @Getter
+    private TokenId fungibleTokenId;
+
+
+//    @Given("I successfully create a new Fungible token")
+//    public void createNewToken() {
+//        this.tokenResponse = tokenClient.getToken(TokenNameEnum.FUNGIBLE_SCHEDULE);
+//        this.fungibleTokenId = tokenResponse.tokenId();
+//        this.networkTransactionResponse = tokenResponse.response();
+//    }
+
+//    @Given("I associate {account} with the fungible token")
+//    public void associateWithTheToken(AccountNameEnum accountName) {
+//        var accountId = accountClient.getAccount(accountName);
+//        networkTransactionResponse = tokenClient.associate(accountId, fungibleTokenId);
+//        assertNotNull(networkTransactionResponse.getTransactionId());
+//        assertNotNull(networkTransactionResponse.getReceipt());
+//    }
+
+//    @RetryAsserts
+//    @Given("I check that the token has the correct properties")
+//    public void ensureTokenProperties() {
+//        var tokensResponse = mirrorClient.getTokens(fungibleTokenId.toString()).getTokens();
+//        assertThat(tokensResponse).isNotNull().hasSize(1);
+//        var token = tokensResponse.getFirst();
+//        var tokenDecimals = token.getDecimals();
+//        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE.toString())) {
+//            assertThat(tokenDecimals).isZero();
+//        } else {
+//            assertThat(tokenDecimals).isEqualTo(10L);
+//        }
+//        assertThat(token.getName()).isNotNull();
+//        log.debug("Get tokens response for token {}: {}", fungibleTokenId, tokensResponse);
+//
+//        var balancesResponse = mirrorClient.getTokenBalances(fungibleTokenId.toString()).getBalances();
+//        assertThat(balancesResponse).isNotNull().hasSize(1);
+//        var balanceDecimals = balancesResponse.getFirst().getDecimals();
+//        assertThat(balanceDecimals).isEqualTo(tokenDecimals);
+//        log.debug("Get token balances for token {}: {}", fungibleTokenId, balancesResponse);
+//    }
 
     @Given("I successfully schedule a HBAR transfer from treasury to {account} {string} expiration time and wait for expiry {string} - plus {int} seconds")
     public void createNewHBarTransferSchedule(AccountNameEnum accountName, String hasExpirationTime, String waitForExpiry, int secondsToExpire) {
@@ -109,11 +155,16 @@ public class ScheduleFeature extends AbstractFeature{
     public void waitForScheduleToExpire() throws InterruptedException {
 //            Thread.sleep((plusSecondsToExpire) * 1000 );
         var txConsensusTimestamp = convertStringToInstant(this.scheduleTxConsensusTimestamp);
-        var expectedExecutedTimestamp = txConsensusTimestamp.plusSeconds(plusSecondsToExpire+2);
+        var expectedExecutedTimestamp = txConsensusTimestamp.plusSeconds(plusSecondsToExpire+1);
 
         while (Instant.now().isBefore(expectedExecutedTimestamp)) {
             System.out.println("Waiting for " + Duration.between(Instant.now(), expectedExecutedTimestamp).getSeconds() + " seconds...");
             Thread.sleep(500);
+        }
+        try {
+            var dummyTransaction = accountClient.executeTransaction(new AccountCreateTransaction(), null);
+        }catch (Exception e){
+            System.out.println("Dummy transaction failed successfully");
         }
     }
 
@@ -268,6 +319,7 @@ public class ScheduleFeature extends AbstractFeature{
 
     public void signSignature(ExpandedAccountId signatoryAccount) {
         currentSignersCount++; // add signatoryAccount and payer
+        System.out.println("ScheduleID is = " + scheduleId);
         networkTransactionResponse = scheduleClient.signSchedule(signatoryAccount, scheduleId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
