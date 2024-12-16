@@ -61,7 +61,7 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
                                 select *
                                 from nft_allowance_history
                                 where owner = :owner
-                                    and approved_for_all <= :approvedForAll
+                                    and approved_for_all = true
                                     and lower(timestamp_range) <= :blockTimestamp
                             ) as nft_allowance_history
                         ) as row_numbered_data
@@ -72,9 +72,5 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
                     order by timestamp_range desc
                     """,
             nativeQuery = true)
-    List<NftAllowance> findByOwnerAndTimestamp(long owner, long blockTimestamp, boolean approvedForAll);
-
-    default List<NftAllowance> findByOwnerAndTimestampAndApprovedForAllIsTrue(long owner, long blockTimestamp) {
-        return findByOwnerAndTimestamp(owner, blockTimestamp, true);
-    }
+    List<NftAllowance> findByOwnerAndTimestampAndApprovedForAllIsTrue(long owner, long blockTimestamp);
 }

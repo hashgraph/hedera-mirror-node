@@ -17,8 +17,12 @@
 package com.hedera.mirror.common.converter;
 
 import java.math.BigInteger;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@SuppressWarnings("java:S6548")
 public class WeiBarTinyBarConverter {
 
     public static final WeiBarTinyBarConverter INSTANCE = new WeiBarTinyBarConverter();

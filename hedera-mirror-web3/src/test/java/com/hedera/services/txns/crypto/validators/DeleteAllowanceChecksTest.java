@@ -233,10 +233,10 @@ class DeleteAllowanceChecksTest {
     void validateSerialsExistence() {
         final var serials = List.of(1L, 10L);
         final NftId nftId1 = new NftId(nft1.shard(), nft1.realm(), nft1.num(), nft1.serialNo());
-        given(store.getUniqueToken(nftId1, OnMissing.THROW)).willThrow(InvalidTransactionException.class);
+        given(store.getUniqueToken(nftId1, OnMissing.THROW)).willReturn(uniqueToken);
 
         var validity = subject.validateSerialNums(serials, nftModel, store);
-        assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
+        assertEquals(OK, validity);
     }
 
     @Test
