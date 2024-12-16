@@ -82,6 +82,7 @@ dependencies {
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("io.vertx:vertx-core:$vertxVersion")
         api("jakarta.inject:jakarta.inject-api:2.0.1")
+        api("javax.inject:javax.inject:1")
         api("net.devh:grpc-spring-boot-starter:3.1.0.RELEASE")
         api("net.java.dev.jna:jna:5.15.0")
         api("org.apache.commons:commons-collections4:4.4")
@@ -281,8 +282,9 @@ fun replaceVersion(files: String, match: String) {
 
 tasks.nodeSetup { onlyIf { !this.nodeDir.get().asFile.exists() } }
 
-// Replace release version in files
 tasks.register("release") {
+    description = "Replaces release version in files."
+    group = "release"
     doLast {
         replaceVersion("charts/**/Chart.yaml", "(?<=^(appVersion|version): ).+")
         replaceVersion("docker-compose.yml", "(?<=gcr.io/mirrornode/hedera-mirror-.+:).+")

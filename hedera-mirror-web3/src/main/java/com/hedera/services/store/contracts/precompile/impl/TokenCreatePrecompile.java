@@ -64,6 +64,7 @@ import com.hedera.services.store.contracts.precompile.codec.CreateParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateResult;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txn.token.CreateLogic;
@@ -722,17 +723,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
          * keys values for the same key type (e.g. multiple `TokenKey` instances have the adminKey bit set)
          */
         final var tokenKeys = tokenCreateOp.getTokenKeys();
-        if (!tokenKeys.isEmpty()) {
-            for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
-                final var tokenKey = tokenKeys.get(i);
-                validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
-                final var tokenKeyBitField = tokenKey.keyType();
-                validateTrue(tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
-                for (int j = i + 1; j < tokenKeysSize; j++) {
-                    validateTrue((tokenKeyBitField & tokenKeys.get(j).keyType()) == 0, INVALID_TRANSACTION_BODY);
-                }
-            }
-        }
+        checkKeysValidity(tokenKeys);
 
         /*
          * The denomination of a fixed fee depends on the values of tokenId, useHbarsForPayment
@@ -748,6 +739,24 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
          * When a royalty fee with fallback fee is specified, we need to check that
          * the fallback fixed fee is valid.
          */
+        validateFallbackFixedFee(tokenCreateOp);
+    }
+
+    private void checkKeysValidity(List<TokenKeyWrapper> tokenKeys) {
+        if (!tokenKeys.isEmpty()) {
+            for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
+                final var tokenKey = tokenKeys.get(i);
+                validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
+                final var tokenKeyBitField = tokenKey.keyType();
+                validateTrue(tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
+                for (int j = i + 1; j < tokenKeysSize; j++) {
+                    validateTrue((tokenKeyBitField & tokenKeys.get(j).keyType()) == 0, INVALID_TRANSACTION_BODY);
+                }
+            }
+        }
+    }
+
+    private void validateFallbackFixedFee(TokenCreateWrapper tokenCreateOp) {
         if (!tokenCreateOp.getRoyaltyFees().isEmpty()) {
             for (final var royaltyFee : tokenCreateOp.getRoyaltyFees()) {
                 if (royaltyFee.fallbackFixedFee() != null) {

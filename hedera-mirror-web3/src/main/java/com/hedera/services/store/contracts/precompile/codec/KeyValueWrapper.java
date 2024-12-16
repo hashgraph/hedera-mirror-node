@@ -107,12 +107,7 @@ public final class KeyValueWrapper {
 
     private KeyValueType setKeyValueType() {
         if (isShouldInheritAccountKeySet()) {
-            return (!isEcdsaSecp256k1KeySet()
-                            && !isDelegatableContractIdSet()
-                            && !isContractIDSet()
-                            && !isEd25519KeySet())
-                    ? KeyValueType.INHERIT_ACCOUNT_KEY
-                    : KeyValueType.INVALID_KEY;
+            return (isKeyValueTypeInheritAccountKey() ? KeyValueType.INHERIT_ACCOUNT_KEY : KeyValueType.INVALID_KEY);
         } else if (isContractIDSet()) {
             return !isEcdsaSecp256k1KeySet() && !isDelegatableContractIdSet() && !isEd25519KeySet()
                     ? KeyValueType.CONTRACT_ID
@@ -126,6 +121,10 @@ public final class KeyValueWrapper {
         } else {
             return isDelegatableContractIdSet() ? KeyValueType.DELEGATABLE_CONTRACT_ID : KeyValueType.INVALID_KEY;
         }
+    }
+
+    private boolean isKeyValueTypeInheritAccountKey() {
+        return !isEcdsaSecp256k1KeySet() && !isDelegatableContractIdSet() && !isContractIDSet() && !isEd25519KeySet();
     }
 
     public void setInheritedKey(final Key key) {

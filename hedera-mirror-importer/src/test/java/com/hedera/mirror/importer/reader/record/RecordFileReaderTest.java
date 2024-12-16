@@ -196,7 +196,7 @@ abstract class RecordFileReaderTest {
 
     protected Iterator<RecordFile> getFilteredFiles(boolean negate) {
         return ALL_RECORD_FILES.stream()
-                .filter((recordFile) -> negate ^ filterFile(recordFile.getVersion()))
+                .filter(recordFile -> negate ^ filterFile(recordFile.getVersion()))
                 .map(this::customize)
                 .toList()
                 .iterator();
