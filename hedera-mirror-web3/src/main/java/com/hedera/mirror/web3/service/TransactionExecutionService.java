@@ -184,7 +184,6 @@ public class TransactionExecutionService {
                 Optional.empty());
     }
 
-
     private TransactionBody.Builder defaultTransactionBodyBuilder(final CallServiceParameters params) {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()

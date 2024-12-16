@@ -117,7 +117,7 @@ public class TransactionExecutionServiceTest {
 
             // Mock the executor to return a List with the mocked SingleTransactionRecord
             when(transactionExecutor.execute(
-                    any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
+                            any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
                     .thenReturn(List.of(singleTransactionRecord));
 
             CallServiceParameters callServiceParameters = buildServiceParams(false);
@@ -164,7 +164,7 @@ public class TransactionExecutionServiceTest {
 
             // Mock the executor to return a List with the mocked SingleTransactionRecord
             when(transactionExecutor.execute(
-                    any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
+                            any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
                     .thenReturn(List.of(singleTransactionRecord));
 
             CallServiceParameters callServiceParameters = buildServiceParams(false);
@@ -213,7 +213,7 @@ public class TransactionExecutionServiceTest {
 
             // Mock the executor to return a List with the mocked SingleTransactionRecord
             when(transactionExecutor.execute(
-                    any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
+                            any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
                     .thenReturn(List.of(singleTransactionRecord));
 
             CallServiceParameters callServiceParameters = buildServiceParams(true);
