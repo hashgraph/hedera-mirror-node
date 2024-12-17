@@ -1803,8 +1803,28 @@ describe('convertGasPriceToTinyBars', () => {
       expected: null,
     },
     {
-      name: 'has undefined arg',
-      args: [defaultGasPrice, defaultHbars, undefined],
+      name: 'zero cents',
+      args: [defaultGasPrice, defaultHbars, 0],
+      expected: null,
+    },
+    {
+      name: 'has undefined gasPrice',
+      args: [, defaultHbars, defaultCents],
+      expected: null,
+    },
+    {
+      name: 'has undefined hbars',
+      args: [defaultGasPrice, , defaultCents],
+      expected: null,
+    },
+    {
+      name: 'has undefined cents',
+      args: [defaultGasPrice, defaultHbars],
+      expected: null,
+    },
+    {
+      name: 'has undefined cents',
+      args: [defaultGasPrice, defaultHbars],
       expected: null,
     },
     {

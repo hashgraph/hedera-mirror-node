@@ -1628,11 +1628,16 @@ const conflictingPathParam = (req, paramName, possibleConflicts = []) => {
  * @returns {BigInt|null} `null` if the gasPrice cannot be converted. The minimum value returned is 1n
  */
 const convertGasPriceToTinyBars = (gasPrice, hbars, cents) => {
-  if ([gasPrice, hbars, cents].some((n) => !_.isNumber(n))) {
+  if (!_.isNumber(gasPrice) || !_.isNumber(hbars) || !_.isNumber(cents)) {
     return null;
   }
 
-  const fee = (BigInt(gasPrice) * BigInt(hbars)) / (BigInt(cents) * FeeSchedule.FEE_DIVISOR_FACTOR);
+  cents = BigInt(cents);
+  if (cents === 0n) {
+    return null;
+  }
+
+  const fee = (BigInt(gasPrice) * BigInt(hbars)) / (cents * FeeSchedule.FEE_DIVISOR_FACTOR);
   return bigIntMax(fee, 1n);
 };
 
