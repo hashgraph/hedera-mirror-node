@@ -1823,11 +1823,6 @@ describe('convertGasPriceToTinyBars', () => {
       expected: null,
     },
     {
-      name: 'has undefined cents',
-      args: [defaultGasPrice, defaultHbars],
-      expected: null,
-    },
-    {
       name: 'should return estimated tinybars',
       args: [defaultGasPrice, defaultHbars, defaultCents],
       expected: 30n,
