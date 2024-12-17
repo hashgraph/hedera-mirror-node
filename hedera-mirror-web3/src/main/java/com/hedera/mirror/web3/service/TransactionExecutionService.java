@@ -49,7 +49,6 @@ import com.swirlds.state.State;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -117,13 +116,8 @@ public class TransactionExecutionService {
         } else {
             transactionBody = buildContractCallTransactionBody(params, estimatedGas);
         }
-        List<OperationTracer> operationTracers = new ArrayList<>();
-        if (ContractCallContext.get().getOpcodeTracerOptions() != null) {
-            operationTracers.add(opcodeTracer);
-        }
 
-        var receipt =
-                executor.execute(transactionBody, Instant.EPOCH, operationTracers.toArray(OperationTracer[]::new));
+        var receipt = executor.execute(transactionBody, Instant.EPOCH, getOperationTracers());
         if (receipt.getFirst().transactionRecord().receiptOrThrow().status() == ResponseCodeEnum.SUCCESS) {
             result = buildSuccessResult(isContractCreate, receipt, params);
         } else {
@@ -264,6 +258,12 @@ public class TransactionExecutionService {
                 .getReadableStates(TokenService.NAME)
                 .get("ALIASES")
                 .get(convertAddressToProtoBytes(senderAddress));
+    }
+
+    private OperationTracer[] getOperationTracers() {
+        return ContractCallContext.get().getOpcodeTracerOptions() != null
+                ? new OperationTracer[] {opcodeTracer}
+                : new OperationTracer[0];
     }
 
     public static class ExecutorFactory {
