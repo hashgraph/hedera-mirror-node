@@ -10,7 +10,7 @@ Feature: Ethereum transactions Coverage Feature
   Given I successfully create contract by Legacy ethereum transaction
   Then the mirror node REST API should return status <httpStatusCode> for the eth contract creation transaction
   And the mirror node contract results API should return an accurate gas consumed
-  And the mirror node REST API should verify the deployed contract entity by eth call
+  And the mirror node REST API should verify the ethereum called contract function
 
   When I successfully call function using EIP-1559 ethereum transaction
   Then the mirror node REST API should return status <httpStatusCode> for the ethereum transaction

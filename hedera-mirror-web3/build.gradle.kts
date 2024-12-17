@@ -31,6 +31,7 @@ plugins {
 // We need to use this version in order to be able to decode hex data when using the hedera.app
 // dependency
 val headlongVersion = "6.1.1"
+val javaxInjectVersion = "1"
 
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
@@ -42,7 +43,7 @@ dependencies {
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("jakarta.inject:jakarta.inject-api")
-    implementation("javax.inject:javax.inject:1")
+    implementation("javax.inject:javax.inject")
     implementation("net.java.dev.jna:jna")
     implementation("org.bouncycastle:bcprov-jdk18on")
     implementation("org.springframework:spring-context-support")

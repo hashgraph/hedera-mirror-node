@@ -25,6 +25,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@SuppressWarnings("java:S6548")
 public class EntityIdSerializer extends JsonSerializer<EntityId> {
 
     public static final EntityIdSerializer INSTANCE = new EntityIdSerializer();

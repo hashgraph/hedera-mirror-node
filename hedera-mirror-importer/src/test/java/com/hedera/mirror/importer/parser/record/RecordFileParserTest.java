@@ -277,7 +277,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     @Test
     void noExistingRecordFile() {
         // given
-        int offset = 2;
         var streamFile = getStreamFile();
         streamFile.setIndex(3L);
         streamFile.setVersion(5);

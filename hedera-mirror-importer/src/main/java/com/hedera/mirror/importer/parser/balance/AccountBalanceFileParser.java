@@ -99,7 +99,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
 
         if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
             List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
-            Map<TokenBalance.Id, TokenBalance> tokenBalances = new HashMap<>(batchSize);
+            Map<TokenBalance.Id, TokenBalance> tokenBalances = HashMap.newHashMap(batchSize);
 
             accountBalanceFile.getItems().forEach(accountBalance -> {
                 accountBalances.add(accountBalance);

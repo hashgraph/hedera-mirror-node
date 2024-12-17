@@ -30,7 +30,7 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.68.2")
+    set("grpcVersion", "1.69.0")
     set("mapStructVersion", "1.6.3")
     set("nodeJsVersion", "18.20.5")
     set("protobufVersion", "3.25.5")
@@ -76,12 +76,13 @@ dependencies {
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-63:3.9.0")
-        api("io.projectreactor:reactor-core-micrometer:1.2.0")
+        api("io.projectreactor:reactor-core-micrometer:1.2.1")
         api("io.swagger:swagger-annotations:1.6.14")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("io.vertx:vertx-core:$vertxVersion")
         api("jakarta.inject:jakarta.inject-api:2.0.1")
+        api("javax.inject:javax.inject:1")
         api("net.devh:grpc-spring-boot-starter:3.1.0.RELEASE")
         api("net.java.dev.jna:jna:5.15.0")
         api("org.apache.commons:commons-collections4:4.4")
@@ -281,8 +282,9 @@ fun replaceVersion(files: String, match: String) {
 
 tasks.nodeSetup { onlyIf { !this.nodeDir.get().asFile.exists() } }
 
-// Replace release version in files
 tasks.register("release") {
+    description = "Replaces release version in files."
+    group = "release"
     doLast {
         replaceVersion("charts/**/Chart.yaml", "(?<=^(appVersion|version): ).+")
         replaceVersion("docker-compose.yml", "(?<=gcr.io/mirrornode/hedera-mirror-.+:).+")
