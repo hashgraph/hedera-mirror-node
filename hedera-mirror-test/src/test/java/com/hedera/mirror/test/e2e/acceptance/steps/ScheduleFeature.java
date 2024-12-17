@@ -96,7 +96,6 @@ public class ScheduleFeature extends AbstractFeature {
         while (Instant.now().isBefore(expectedExecutedTimestamp)) {
             log.info("Waiting for "
                     + Duration.between(Instant.now(), expectedExecutedTimestamp).getSeconds() + " seconds...");
-            Thread.sleep(200);
         }
 
         // We need this dummy transaction in order to execute the schedule
@@ -299,7 +298,9 @@ public class ScheduleFeature extends AbstractFeature {
                     assertThat(mirrorSchedule.getWaitForExpiry()).isFalse();
                 }
             }
-            default -> {}
+            default -> {
+                throw new IllegalArgumentException("Invalid schedule status");
+            }
         }
     }
 

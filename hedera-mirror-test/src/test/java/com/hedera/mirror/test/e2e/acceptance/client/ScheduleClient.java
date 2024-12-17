@@ -63,7 +63,6 @@ public class ScheduleClient extends AbstractNetworkClient {
                 .setTransactionMemo(memo);
         if (expirationTime != null) {
             scheduleCreateTransaction.setExpirationTime(expirationTime).setWaitForExpiry(waitForExpiry);
-            ;
         }
 
         if (signatureKeyList != null) {
