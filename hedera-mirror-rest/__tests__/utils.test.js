@@ -1792,10 +1792,10 @@ describe('Utils addHexPrefix tests', () => {
   });
 });
 
-describe('Utils convertGasPriceToTinyBars tests', () => {
-  const defaultGasPrice = 11566419;
+describe('convertGasPriceToTinyBars', () => {
+  const defaultGasPrice = 852000;
   const defaultHbars = 30000;
-  const defaultCents = 285576;
+  const defaultCents = 851000;
   const specs = [
     {
       name: 'no args',
@@ -1810,12 +1810,17 @@ describe('Utils convertGasPriceToTinyBars tests', () => {
     {
       name: 'should return estimated tinybars',
       args: [defaultGasPrice, defaultHbars, defaultCents],
-      expected: 1215,
+      expected: 30n,
+    },
+    {
+      name: 'should return estimated tinybars with rounding down',
+      args: [2 * defaultCents - 1, defaultHbars, defaultCents],
+      expected: 59n,
     },
     {
       name: 'should return the minimum tinybars',
       args: [1, defaultHbars, defaultCents],
-      expected: 1,
+      expected: 1n,
     },
   ];
 

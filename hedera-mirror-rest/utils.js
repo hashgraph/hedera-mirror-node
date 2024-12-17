@@ -1622,22 +1622,18 @@ const conflictingPathParam = (req, paramName, possibleConflicts = []) => {
 /**
  * Converts gas price into tiny bars
  *
- * @param {number} gasPrice
- * @param {number} hbarPerTinyCent
- * @param {number} centsPerHbar
- * @returns {number|null} `null` if the gasPrice cannot be converted. The minimum `number` returned is 1
+ * @param {number} gasPrice - gas price
+ * @param {number} hbars - equivalent hbars from exchange rate
+ * @param {number} cents - equivalent cents from exchange rate
+ * @returns {BigInt|null} `null` if the gasPrice cannot be converted. The minimum value returned is 1n
  */
-const convertGasPriceToTinyBars = (gasPrice, hbarsPerTinyCent, centsPerHbar) => {
-  if ([gasPrice, hbarsPerTinyCent, centsPerHbar].some((n) => !_.isNumber(n))) {
+const convertGasPriceToTinyBars = (gasPrice, hbars, cents) => {
+  if ([gasPrice, hbars, cents].some((n) => !_.isNumber(n))) {
     return null;
   }
-  const tinyCentsBN = math.bignumber(gasPrice / FeeSchedule.FEE_DIVISOR_FACTOR);
-  const hbarMultiplierBN = math.bignumber(hbarsPerTinyCent);
-  const centsDivisorBN = math.bignumber(centsPerHbar);
-  const hbarCentsBN = math.multiply(tinyCentsBN, hbarMultiplierBN);
 
-  const tinyBars = math.divide(hbarCentsBN, centsDivisorBN).toNumber();
-  return Math.round(Math.max(tinyBars, 1));
+  const fee = (BigInt(gasPrice) * BigInt(hbars)) / (BigInt(cents) * FeeSchedule.FEE_DIVISOR_FACTOR);
+  return bigIntMax(fee, 1n);
 };
 
 const boundToOp = {

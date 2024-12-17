@@ -48,11 +48,11 @@
             "transaction_type": "ContractCall"
           },
           {
-            "gas": 66,
+            "gas": 65,
             "transaction_type": "ContractCreate"
           },
           {
-            "gas": 57,
+            "gas": 56,
             "transaction_type": "EthereumTransaction"
           }
         ],

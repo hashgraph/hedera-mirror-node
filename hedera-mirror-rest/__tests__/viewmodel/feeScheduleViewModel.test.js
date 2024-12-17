@@ -48,15 +48,15 @@ describe('FeeScheduleViewModel', () => {
 
   const feesResult = {
     EthereumTransaction: {
-      gas: 57,
+      gas: 56n,
       transaction_type: 'EthereumTransaction',
     },
     ContractCreate: {
-      gas: 66,
+      gas: 65n,
       transaction_type: 'ContractCreate',
     },
     ContractCall: {
-      gas: 49,
+      gas: 49n,
       transaction_type: 'ContractCall',
     },
   };
