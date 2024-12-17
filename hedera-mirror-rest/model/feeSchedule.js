@@ -19,7 +19,7 @@ import {proto} from '@hashgraph/proto';
 import {FileDecodeError} from '../errors';
 
 class FeeSchedule {
-  static FEE_DIVISOR_FACTOR = 1000;
+  static FEE_DIVISOR_FACTOR = 1000n;
 
   /**
    * Parses fee schedule into object
