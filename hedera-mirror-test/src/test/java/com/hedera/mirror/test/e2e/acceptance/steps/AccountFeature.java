@@ -53,7 +53,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public class AccountFeature extends AbstractFeature {
 
-    private static AtomicReference<Runnable> CLEANUP = new AtomicReference<>();
+    private static final AtomicReference<Runnable> CLEANUP = new AtomicReference<>();
 
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;

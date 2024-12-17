@@ -19,7 +19,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource;
@@ -57,17 +56,5 @@ public abstract class EncoderDecoderFacade {
         Function function = Function.fromJson(json);
         ByteBuffer byteBuffer = function.encodeCallWithArgs(args);
         return byteBuffer.array();
-    }
-
-    private Tuple decodeResult(ContractResource resource, SelectorInterface method, final byte[] result) {
-        String json;
-        try (var in = getResourceAsStream(resource.getPath())) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Function function = Function.fromJson(json);
-        return function.decodeReturn(result);
     }
 }

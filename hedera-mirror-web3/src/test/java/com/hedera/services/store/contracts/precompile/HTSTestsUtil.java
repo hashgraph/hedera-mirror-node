@@ -335,12 +335,4 @@ public class HTSTestsUtil {
     public static TokenUpdateWrapper createNonFungibleTokenUpdateWrapperWithKeys(final List<TokenKeyWrapper> keys) {
         return new TokenUpdateWrapper(nonFungible, null, null, null, null, keys, new TokenExpiryWrapper(0, null, 0));
     }
-
-    private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
-        final byte[] expandedArray = new byte[32];
-
-        System.arraycopy(
-                bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
-        return expandedArray;
-    }
 }

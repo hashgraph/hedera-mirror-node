@@ -16,7 +16,6 @@
 
 package com.hedera.services.fees.calculation.utils;
 
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
@@ -29,12 +28,9 @@ import static org.mockito.Mockito.mock;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.IdUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -43,12 +39,9 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -150,45 +143,9 @@ class OpUsageCtxHelperTest {
     void getMetaForTokenMintWorks() {
         final TokenMintTransactionBody mintTxnBody = getUniqueTokenMintOp();
         final TransactionBody txn = getTxnBody(mintTxnBody);
-        final Token extant = new Token(
-                0L,
-                Id.fromGrpcToken(TOKEN_1),
-                new ArrayList<>(),
-                new ArrayList<>(),
-                new HashMap<>(),
-                false,
-                TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.FINITE,
-                () -> 0L,
-                21_000_000,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                false,
-                null,
-                null,
-                false,
-                false,
-                false,
-                now,
-                0l,
-                false,
-                "the mother",
-                "bitcoin",
-                "BTC",
-                10,
-                0L,
-                0L,
-                Collections::emptyList);
 
         given(accessor.getTxn()).willReturn(txn);
         given(accessor.getSubType()).willReturn(TOKEN_NON_FUNGIBLE_UNIQUE);
-
-        given(store.getToken(asTypedEvmAddress(target), OnMissing.THROW)).willReturn(extant);
 
         final var tokenMintMeta = subject.metaForTokenMint(accessor);
 

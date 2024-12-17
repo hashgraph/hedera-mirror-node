@@ -128,7 +128,7 @@ public class EthereumFeature extends AbstractEstimateFeature {
                 .isEqualTo(deployedParentContract.contractId().toString());
     }
 
-    @Then("the mirror node REST API should verify the deployed contract entity by eth call")
+    @Then("the mirror node REST API should verify the ethereum called contract function")
     public void verifyDeployedContractMirror() {
         verifyContractFromMirror(false);
         verifyContractExecutionResultsById();
@@ -142,13 +142,6 @@ public class EthereumFeature extends AbstractEstimateFeature {
         executeEthereumTransaction(deployedParentContract.contractId(), "createChild", parameters, EIP1559);
 
         gasConsumedSelector = encodeDataToByteArray(PARENT_CONTRACT, CREATE_CHILD, BigInteger.valueOf(1000));
-    }
-
-    @Then("the mirror node REST API should verify the ethereum called contract function")
-    public void verifyContractFunctionCallMirror() {
-        verifyContractFromMirror(false);
-        verifyContractExecutionResultsById();
-        verifyContractExecutionResultsByTransactionId();
     }
 
     @Given("I successfully call function using EIP-2930 ethereum transaction")

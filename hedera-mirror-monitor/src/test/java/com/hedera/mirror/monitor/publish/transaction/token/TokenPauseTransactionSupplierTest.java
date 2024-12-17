@@ -39,10 +39,10 @@ class TokenPauseTransactionSupplierTest extends AbstractTransactionSupplierTest 
 
     @Test
     void createWithCustomData() {
-        TokenPauseTransactionSupplier TokenPauseTransactionSupplier = new TokenPauseTransactionSupplier();
-        TokenPauseTransactionSupplier.setMaxTransactionFee(1);
-        TokenPauseTransactionSupplier.setTokenId(TOKEN_ID.toString());
-        TokenPauseTransaction actual = TokenPauseTransactionSupplier.get();
+        TokenPauseTransactionSupplier tokenPauseTransactionSupplier = new TokenPauseTransactionSupplier();
+        tokenPauseTransactionSupplier.setMaxTransactionFee(1);
+        tokenPauseTransactionSupplier.setTokenId(TOKEN_ID.toString());
+        TokenPauseTransaction actual = tokenPauseTransactionSupplier.get();
 
         assertThat(actual)
                 .returns(ONE_TINYBAR, TokenPauseTransaction::getMaxTransactionFee)

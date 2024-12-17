@@ -17,25 +17,27 @@
 package com.hedera.mirror.web3.state.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import java.util.HashMap;
-import java.util.Map;
+import com.swirlds.state.spi.ReadableKVState;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 @ExtendWith(MockitoExtension.class)
 class MapWritableKVStateTest {
 
     private MapWritableKVState<AccountID, Account> mapWritableKVState;
 
     @Mock
-    private Map<AccountID, Account> backingStore;
+    private ReadableKVState<AccountID, Account> readableKVState;
 
     @Mock
     private AccountID accountID;
@@ -45,12 +47,12 @@ class MapWritableKVStateTest {
 
     @BeforeEach
     void setup() {
-        mapWritableKVState = new MapWritableKVState<>("ACCOUNTS", backingStore);
+        mapWritableKVState = new MapWritableKVState<>("ACCOUNTS", readableKVState);
     }
 
     @Test
     void testGetForModifyFromDataSourceReturnsCorrectValue() {
-        when(backingStore.get(accountID)).thenReturn(account);
+        when(readableKVState.get(accountID)).thenReturn(account);
         assertThat(mapWritableKVState.getForModifyFromDataSource(accountID)).isEqualTo(account);
     }
 
@@ -61,45 +63,37 @@ class MapWritableKVStateTest {
 
     @Test
     void testReadFromDataSourceReturnsCorrectValue() {
-        when(backingStore.get(accountID)).thenReturn(account);
+        when(readableKVState.get(accountID)).thenReturn(account);
         assertThat(mapWritableKVState.readFromDataSource(accountID)).isEqualTo(account);
     }
 
     @Test
     void testIterateFromDataSourceReturnsEmptyIterator() {
-        final var map = new HashMap<AccountID, Account>();
-        final var kvState = new MapWritableKVState<>("ACCOUNTS", map);
-        kvState.putIntoDataSource(accountID, account);
-        assertThat(kvState.iterateFromDataSource().next())
-                .isEqualTo(map.keySet().iterator().next());
+        when(readableKVState.keys()).thenReturn(Collections.emptyIterator());
+        assertThat(mapWritableKVState.iterateFromDataSource()).isEqualTo(Collections.emptyIterator());
     }
 
     @Test
     void testPutIntoDataSource() {
-        final var map = new HashMap<AccountID, Account>();
-        final var kvState = new MapWritableKVState<>("ACCOUNTS", map);
-        kvState.putIntoDataSource(accountID, account);
-        assertThat(map).containsEntry(accountID, account);
+        assertThat(mapWritableKVState.contains(accountID)).isFalse();
+        mapWritableKVState.putIntoDataSource(accountID, account);
+        assertThat(mapWritableKVState.contains(accountID)).isTrue();
     }
 
     @Test
     void testRemoveFromDataSource() {
-        final var map = new HashMap<AccountID, Account>();
-        final var kvState = new MapWritableKVState<>("ACCOUNTS", map);
-        map.put(accountID, account);
-        assertThat(kvState.contains(accountID)).isTrue();
-        kvState.removeFromDataSource(accountID);
-        assertThat(map.get(accountID)).isNull();
+        mapWritableKVState.putIntoDataSource(accountID, account);
+        assertThat(mapWritableKVState.contains(accountID)).isTrue();
+        mapWritableKVState.removeFromDataSource(accountID);
+        assertThat(mapWritableKVState.contains(accountID)).isFalse();
     }
 
     @Test
     void testCommit() {
-        final var map = new HashMap<AccountID, Account>();
-        final var kvState = new MapWritableKVState<>("ACCOUNTS", map);
-        kvState.put(accountID, account);
-        assertThat(kvState.modifiedKeys()).isNotEmpty();
-        kvState.commit();
-        assertThat(kvState.modifiedKeys()).isEmpty();
+        mapWritableKVState.putIntoDataSource(accountID, account);
+        assertThat(mapWritableKVState.contains(accountID)).isTrue();
+        mapWritableKVState.commit();
+        assertThat(mapWritableKVState.contains(accountID)).isFalse();
     }
 
     @Test
@@ -119,20 +113,21 @@ class MapWritableKVStateTest {
 
     @Test
     void testEqualsDifferentKeys() {
-        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ALIASES", backingStore);
+        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ALIASES", readableKVState);
         assertThat(mapWritableKVState).isNotEqualTo(other);
     }
 
     @Test
     void testEqualsDifferentValues() {
-        final var accountMapOther = Map.of(AccountID.newBuilder().accountNum(3L).build(), account);
-        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", accountMapOther);
+        final var readableKVStateMock = mock(ReadableKVState.class);
+        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", readableKVStateMock);
+        other.put(accountID, account);
         assertThat(mapWritableKVState).isNotEqualTo(other);
     }
 
     @Test
     void testHashCode() {
-        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", backingStore);
+        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", readableKVState);
         assertThat(mapWritableKVState).hasSameHashCodeAs(other);
     }
 }

@@ -55,7 +55,7 @@ class DurationToStringSerializerTest {
 
     @SuppressWarnings("unused")
     private static String[][] testCases() {
-        String[][] testCases = {
+        return new String[][] {
             {"0", "0s"},
             {"1", "1s"},
             {"60", "1m"},
@@ -68,6 +68,5 @@ class DurationToStringSerializerTest {
             {"90060", "1d1h1m"},
             {"90061", "1d1h1m1s"}
         };
-        return testCases;
     }
 }

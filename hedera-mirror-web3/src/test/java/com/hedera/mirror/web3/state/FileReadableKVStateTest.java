@@ -21,6 +21,8 @@ import static com.hedera.services.utils.EntityIdUtils.toFileId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
@@ -52,6 +54,7 @@ class FileReadableKVStateTest {
     private static final long REALM = 1L;
     private static final long FILE_NUM = 123L;
     private static final FileID FILE_ID = toFileId(SHARD, REALM, FILE_NUM);
+    private static final File FILE = File.newBuilder().fileId(FILE_ID).build();
     private static final long FILE_ID_LONG = toEntityId(FILE_ID).getId();
     private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final Optional<Long> TIMESTAMP = Optional.of(1234L);
@@ -67,6 +70,9 @@ class FileReadableKVStateTest {
 
     @Mock
     private EntityRepository entityRepository;
+
+    @Mock
+    private Bytes initBytecode;
 
     @Spy
     private ContractCallContext contractCallContext;
@@ -171,6 +177,30 @@ class FileReadableKVStateTest {
         File result = fileReadableKVState.readFromDataSource(FILE_ID);
 
         assertThat(result).isNull();
+    }
+
+    @Test
+    void readFromDataSourceWhenThereIsContext() {
+        when(ContractCallContext.get().getFile()).thenReturn(Optional.of(FILE));
+
+        File result = fileReadableKVState.readFromDataSource(FILE_ID);
+
+        assertThat(result)
+                .isEqualTo(
+                        File.newBuilder().fileId(FILE_ID).contents(initBytecode).build());
+        verify(fileDataRepository, times(0)).findById(anyLong());
+        verify(fileDataRepository, times(0)).getFileAtTimestamp(anyLong(), anyLong());
+    }
+
+    @Test
+    void readFromDataSourceWhenThereIsContextButDoesNotMatchTheKey() {
+        when(ContractCallContext.get().getFile()).thenReturn(Optional.of(FILE));
+
+        File result = fileReadableKVState.readFromDataSource(
+                FileID.newBuilder().fileNum(321L).build());
+
+        assertThat(result).isNull();
+        verify(fileDataRepository, times(1)).getFileAtTimestamp(anyLong(), anyLong());
     }
 
     @Test

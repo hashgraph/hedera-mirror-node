@@ -123,12 +123,12 @@ class EntityTimestampMigrationV1_46_0Test extends ImporterIntegrationTest {
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    private MigrationEntity entity(long id, EntityType EntityType) {
-        return entity(id, EntityType, null, false, null);
+    private MigrationEntity entity(long id, EntityType entityType) {
+        return entity(id, entityType, null, false, null);
     }
 
-    private MigrationEntity entity(long id, EntityType EntityType, Long createdTimestamp, Long modifiedTimestamp) {
-        return entity(id, EntityType, createdTimestamp, false, modifiedTimestamp);
+    private MigrationEntity entity(long id, EntityType entityType, Long createdTimestamp, Long modifiedTimestamp) {
+        return entity(id, entityType, createdTimestamp, false, modifiedTimestamp);
     }
 
     private MigrationEntity entity(

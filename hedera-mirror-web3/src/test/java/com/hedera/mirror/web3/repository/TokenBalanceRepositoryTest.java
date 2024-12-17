@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalance.Id;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.web3.Web3IntegrationTest;
@@ -160,11 +159,11 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         // usually the account_balance/token_balance gets persisted ~8 mins after the account creation
 
         var accountId = new AccountBalance.Id(domainBuilder.timestamp(), TREASURY_ENTITY_ID);
-        Entity account = domainBuilder
+        // persist account
+        domainBuilder
                 .entity()
                 .customize(a -> a.id(accountId.getAccountId().getId()))
                 .persist();
-        long accountCreationTimestamp = account.getCreatedTimestamp();
         // not persisted
         var tokenBalance1 = domainBuilder
                 .tokenBalance()

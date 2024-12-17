@@ -304,6 +304,7 @@ public class ContractFeature extends BaseContractFeature {
         executeSelfDestructTransaction();
     }
 
+    @Override
     protected ContractResponse verifyContractFromMirror(boolean isDeleted) {
         var mirrorContract = super.verifyContractFromMirror(isDeleted);
 
@@ -321,6 +322,7 @@ public class ContractFeature extends BaseContractFeature {
         return !StringUtils.hasLength(hexString) || hexString.equals("0x");
     }
 
+    @Override
     protected void verifyContractExecutionResults(ContractResult contractResult) {
         super.verifyContractExecutionResults(contractResult);
 

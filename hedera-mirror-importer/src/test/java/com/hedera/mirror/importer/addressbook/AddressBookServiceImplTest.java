@@ -1001,7 +1001,8 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         long timestamp = domainBuilder.timestamp();
         var nodeId = new AtomicInteger(0);
         for (int i = 0; i < TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT; i++) {
-            var nodeStake = domainBuilder
+            // node stake
+            domainBuilder
                     .nodeStake()
                     .customize(n -> n.consensusTimestamp(timestamp)
                             .nodeId(nodeId.getAndIncrement())
@@ -1033,7 +1034,8 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         var nodeId = new AtomicInteger(0);
         final int nodeCount = 6; // regardless of mode, always have 4 nodes in address book and 6 nodes in nodeStakes.
         for (int i = 0; i < nodeCount; i++) {
-            var nodeStake = domainBuilder
+            // node stake
+            domainBuilder
                     .nodeStake()
                     .customize(n -> n.consensusTimestamp(timestamp)
                             .nodeId(nodeId.getAndIncrement())
