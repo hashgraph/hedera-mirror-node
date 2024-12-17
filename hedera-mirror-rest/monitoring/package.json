@@ -24,13 +24,13 @@
     "extensionless": "^1.9.9",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
-    "mathjs": "^14.0.0",
+    "mathjs": "^14.0.1",
     "parse-duration": "^1.1.1",
     "pretty-ms": "^9.2.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.1.7",
+    "nodemon": "^3.1.9",
     "jest-junit": "^16.0.0",
     "jest-standard-reporter": "^2.0.0"
   },

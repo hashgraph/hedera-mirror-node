@@ -31,7 +31,7 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.swirlds.state.spi.Service;
+import com.swirlds.state.lifecycle.Service;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;

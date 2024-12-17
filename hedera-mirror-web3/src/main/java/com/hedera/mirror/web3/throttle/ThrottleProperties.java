@@ -29,7 +29,7 @@ import org.springframework.validation.annotation.Validated;
 public class ThrottleProperties {
 
     @Getter
-    @Min(100)
+    @Min(1)
     private long requestsPerSecond = 500;
 
     @Getter

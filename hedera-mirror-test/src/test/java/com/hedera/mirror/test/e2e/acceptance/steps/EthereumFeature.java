@@ -128,7 +128,6 @@ public class EthereumFeature extends AbstractEstimateFeature {
                 .isEqualTo(deployedParentContract.contractId().toString());
     }
 
-    @Then("the mirror node REST API should verify the deployed contract entity by eth call")
     @Then("the mirror node REST API should verify the ethereum called contract function")
     public void verifyDeployedContractMirror() {
         verifyContractFromMirror(false);

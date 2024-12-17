@@ -60,8 +60,10 @@ class ContractController {
     @PostMapping(value = "/call")
     ContractCallResponse call(@RequestBody @Valid ContractCallRequest request) {
 
-        if (!rateLimitBucket.tryConsume(1) || !gasLimitBucket.tryConsume(request.getGas())) {
-            throw new RateLimitException("Rate limit exceeded.");
+        if (!rateLimitBucket.tryConsume(1)) {
+            throw new RateLimitException("Requests per second rate limit exceeded.");
+        } else if (!gasLimitBucket.tryConsume(request.getGas())) {
+            throw new RateLimitException("Gas per second rate limit exceeded.");
         }
 
         try {
