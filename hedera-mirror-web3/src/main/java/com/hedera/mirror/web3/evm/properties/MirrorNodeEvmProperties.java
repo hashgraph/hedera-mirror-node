@@ -36,6 +36,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -46,6 +47,7 @@ import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
@@ -175,6 +177,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             chainIdBytes32().toBigInteger().toString(),
             "contracts.maxRefundPercentOfGasLimit",
             String.valueOf(maxGasRefundPercentage()));
+
+    @Getter(lazy = true)
+    private final Map<String, String> transactionProperties = buildTransactionProperties();
 
     @Getter
     @Min(1)
@@ -315,6 +320,18 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     public int feesTokenTransferUsageMultiplier() {
         return feesTokenTransferUsageMultiplier;
+    }
+
+    private Map<String, String> buildTransactionProperties() {
+        final Map<String, String> mirrorNodeProperties = new HashMap<>(properties);
+        mirrorNodeProperties.put(
+                "contracts.evm.version",
+                "v"
+                        + getSemanticEvmVersion().major() + "."
+                        + getSemanticEvmVersion().minor());
+        mirrorNodeProperties.put(
+                "ledger.id", Bytes.wrap(getNetwork().getLedgerId()).toHexString());
+        return mirrorNodeProperties;
     }
 
     @Getter

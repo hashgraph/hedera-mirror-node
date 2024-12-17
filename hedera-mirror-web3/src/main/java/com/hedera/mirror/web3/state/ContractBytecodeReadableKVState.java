@@ -26,33 +26,23 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.ReadableKVStateBase;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.Optional;
 
 @Named
-public class ContractBytecodeReadableKVState extends ReadableKVStateBase<ContractID, Bytecode> {
+public class ContractBytecodeReadableKVState extends AbstractReadableKVState<ContractID, Bytecode> {
 
+    public static final String KEY = "BYTECODE";
     private final ContractRepository contractRepository;
 
     private final CommonEntityAccessor commonEntityAccessor;
 
     protected ContractBytecodeReadableKVState(
             final ContractRepository contractRepository, CommonEntityAccessor commonEntityAccessor) {
-        super("BYTECODE");
+        super(KEY);
         this.contractRepository = contractRepository;
         this.commonEntityAccessor = commonEntityAccessor;
-    }
-
-    @Nullable
-    @Override
-    public Bytecode get(@NonNull ContractID key) {
-        return readFromDataSource(key);
     }
 
     @Override
@@ -64,17 +54,6 @@ public class ContractBytecodeReadableKVState extends ReadableKVStateBase<Contrac
                 .map(Bytes::wrap)
                 .map(Bytecode::new)
                 .orElse(null);
-    }
-
-    @Nonnull
-    @Override
-    protected Iterator<ContractID> iterateFromDataSource() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
-    public long size() {
-        return 0;
     }
 
     private EntityId toEntityId(@Nonnull final com.hedera.hapi.node.base.ContractID contractID) {

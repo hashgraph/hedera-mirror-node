@@ -43,13 +43,8 @@ import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCou
 import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
-import com.swirlds.state.spi.ReadableKVStateBase;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -62,8 +57,9 @@ import java.util.function.Supplier;
  * The object, which is read from DB is converted to the PBJ generated format, so that it can properly be utilized by the hedera app components
  * */
 @Named
-public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Account> {
+public class AccountReadableKVState extends AbstractReadableKVState<AccountID, Account> {
 
+    public static final String KEY = "ACCOUNTS";
     private final AccountBalanceRepository accountBalanceRepository;
     private final CommonEntityAccessor commonEntityAccessor;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
@@ -80,7 +76,7 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
             CryptoAllowanceRepository cryptoAllowanceRepository,
             TokenAccountRepository tokenAccountRepository,
             AccountBalanceRepository accountBalanceRepository) {
-        super("ACCOUNTS");
+        super(KEY);
         this.accountBalanceRepository = accountBalanceRepository;
         this.commonEntityAccessor = commonEntityAccessor;
         this.cryptoAllowanceRepository = cryptoAllowanceRepository;
@@ -88,12 +84,6 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
         this.nftRepository = nftRepository;
         this.tokenAccountRepository = tokenAccountRepository;
         this.tokenAllowanceRepository = tokenAllowanceRepository;
-    }
-
-    @Nullable
-    @Override
-    public Account get(@NonNull AccountID key) {
-        return readFromDataSource(key);
     }
 
     @Override
@@ -104,16 +94,6 @@ public class AccountReadableKVState extends ReadableKVStateBase<AccountID, Accou
                 .filter(entity -> entity.getType() != TOKEN)
                 .map(entity -> accountFromEntity(entity, timestamp))
                 .orElse(null);
-    }
-
-    @Override
-    protected @Nonnull Iterator<AccountID> iterateFromDataSource() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
-    public long size() {
-        return 0;
     }
 
     private Account accountFromEntity(Entity entity, final Optional<Long> timestamp) {

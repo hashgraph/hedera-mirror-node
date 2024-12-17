@@ -29,14 +29,9 @@ import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.spi.ReadableKVStateBase;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -46,21 +41,16 @@ import java.util.function.Supplier;
  * properly be utilized by the hedera app components
  */
 @Named
-public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
+public class FileReadableKVState extends AbstractReadableKVState<FileID, File> {
 
+    public static final String KEY = "FILES";
     private final FileDataRepository fileDataRepository;
     private final EntityRepository entityRepository;
 
     public FileReadableKVState(final FileDataRepository fileDataRepository, final EntityRepository entityRepository) {
-        super("FILES");
+        super(KEY);
         this.fileDataRepository = fileDataRepository;
         this.entityRepository = entityRepository;
-    }
-
-    @Nullable
-    @Override
-    public File get(@NonNull FileID key) {
-        return readFromDataSource(key);
     }
 
     @Override
@@ -80,17 +70,6 @@ public class FileReadableKVState extends ReadableKVStateBase<FileID, File> {
                 .orElseGet(() -> fileDataRepository.getFileAtTimestamp(fileId, getCurrentTimestamp()))
                 .map(fileData -> mapToFile(fileData, key, timestamp))
                 .orElse(null);
-    }
-
-    @Nonnull
-    @Override
-    protected Iterator<FileID> iterateFromDataSource() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
-    public long size() {
-        return 0;
     }
 
     private File mapToFile(final FileData fileData, final FileID key, final Optional<Long> timestamp) {

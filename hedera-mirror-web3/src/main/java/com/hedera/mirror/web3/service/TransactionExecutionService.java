@@ -32,14 +32,15 @@ import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.state.AliasesReadableKVState;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.standalone.TransactionExecutor;
 import com.hedera.node.app.workflows.standalone.TransactionExecutors;
 import com.hedera.node.app.workflows.standalone.TransactionExecutors.TracerBinding;
@@ -61,8 +62,6 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 @CustomLog
 public class TransactionExecutionService {
 
-    private static final AccountID NODE_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(3).build();
     private static final Configuration DEFAULT_CONFIG = new ConfigProviderImpl().getConfiguration();
     private static final AccountID TREASURY_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(2).build();
@@ -85,7 +84,8 @@ public class TransactionExecutionService {
         final var isContractCreate = params.getReceiver().isZero();
         final var maxLifetime =
                 DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
-        var executor = ExecutorFactory.newExecutor(mirrorNodeState, getTransactionProperties(), null);
+        var executor =
+                ExecutorFactory.newExecutor(mirrorNodeState, mirrorNodeEvmProperties.getTransactionProperties(), null);
 
         TransactionBody transactionBody;
         HederaEvmTransactionProcessingResult result;
@@ -118,43 +118,27 @@ public class TransactionExecutionService {
         }
 
         var receipt = executor.execute(transactionBody, Instant.EPOCH, getOperationTracers());
-        if (receipt.getFirst().transactionRecord().receiptOrThrow().status() == ResponseCodeEnum.SUCCESS) {
-            result = buildSuccessResult(isContractCreate, receipt, params);
+        var transactionRecord = receipt.getFirst().transactionRecord();
+        if (transactionRecord.receiptOrThrow().status() == ResponseCodeEnum.SUCCESS) {
+            result = buildSuccessResult(isContractCreate, transactionRecord, params);
         } else {
-            result = buildFailedResult(receipt, isContractCreate);
+            result = buildFailedResult(transactionRecord, isContractCreate);
         }
         return result;
     }
 
-    private Map<String, String> getTransactionProperties() {
-        if (transactionProperties == null) {
-            final var mirrorNodeProperties = mirrorNodeEvmProperties.getProperties();
-            mirrorNodeProperties.put(
-                    "contracts.evm.version",
-                    "v"
-                            + mirrorNodeEvmProperties.getSemanticEvmVersion().major() + "."
-                            + mirrorNodeEvmProperties.getSemanticEvmVersion().minor());
-            mirrorNodeProperties.put(
-                    "ledger.id",
-                    Bytes.wrap(mirrorNodeEvmProperties.getNetwork().getLedgerId())
-                            .toHexString());
-            this.transactionProperties = mirrorNodeProperties;
-        }
-        return transactionProperties;
-    }
-
     private ContractFunctionResult getTransactionResult(
-            final List<SingleTransactionRecord> receipt, boolean isContractCreate) {
+            final TransactionRecord transactionRecord, boolean isContractCreate) {
         return isContractCreate
-                ? receipt.getFirst().transactionRecord().contractCreateResultOrThrow()
-                : receipt.getFirst().transactionRecord().contractCallResultOrThrow();
+                ? transactionRecord.contractCreateResultOrThrow()
+                : transactionRecord.contractCallResultOrThrow();
     }
 
     private HederaEvmTransactionProcessingResult buildSuccessResult(
             final boolean isContractCreate,
-            final List<SingleTransactionRecord> receipt,
+            final TransactionRecord transactionRecord,
             final CallServiceParameters params) {
-        var result = getTransactionResult(receipt, isContractCreate);
+        var result = getTransactionResult(transactionRecord, isContractCreate);
 
         return HederaEvmTransactionProcessingResult.successful(
                 List.of(),
@@ -166,9 +150,9 @@ public class TransactionExecutionService {
     }
 
     private HederaEvmTransactionProcessingResult buildFailedResult(
-            final List<SingleTransactionRecord> receipt, final boolean isContractCreate) {
-        var result = getTransactionResult(receipt, isContractCreate);
-        var status = receipt.getFirst().transactionRecord().receipt().status();
+            final TransactionRecord transactionRecord, final boolean isContractCreate) {
+        var result = getTransactionResult(transactionRecord, isContractCreate);
+        var status = transactionRecord.receipt().status();
 
         return HederaEvmTransactionProcessingResult.failed(
                 result.gasUsed(),
@@ -184,7 +168,7 @@ public class TransactionExecutionService {
                         .transactionValidStart(TRANSACTION_START)
                         .accountID(getSenderAccountID(params))
                         .build())
-                .nodeAccountID(NODE_ACCOUNT_ID)
+                .nodeAccountID(TREASURY_ACCOUNT_ID) // We don't really need another account here.
                 .transactionValidDuration(TRANSACTION_DURATION);
     }
 
@@ -192,7 +176,7 @@ public class TransactionExecutionService {
         return defaultTransactionBodyBuilder(params)
                 .fileCreate(FileCreateTransactionBody.newBuilder()
                         .contents(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
-                                params.getCallData().toArray()))
+                                params.getCallData().toArrayUnsafe()))
                         .expirationTime(new Timestamp(maxLifetime, 0))
                         .build())
                 .build();
@@ -230,7 +214,7 @@ public class TransactionExecutionService {
                                         params.getReceiver().toArrayUnsafe()))
                                 .build())
                         .functionParameters(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
-                                params.getCallData().toArray()))
+                                params.getCallData().toArrayUnsafe()))
                         .gas(estimatedGas)
                         .build())
                 .build();
@@ -256,7 +240,7 @@ public class TransactionExecutionService {
         }
         return (AccountID) mirrorNodeState
                 .getReadableStates(TokenService.NAME)
-                .get("ALIASES")
+                .get(AliasesReadableKVState.KEY)
                 .get(convertAddressToProtoBytes(senderAddress));
     }
 
