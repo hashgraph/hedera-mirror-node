@@ -518,8 +518,8 @@ class OpcodesControllerTest {
         when(rateLimitBucket.tryConsume(1)).thenReturn(false);
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isTooManyRequests())
-                .andExpect(responseBody(
-                        new GenericErrorResponse(TOO_MANY_REQUESTS.getReasonPhrase(), "Rate limit exceeded.")));
+                .andExpect(responseBody(new GenericErrorResponse(
+                        TOO_MANY_REQUESTS.getReasonPhrase(), "Requests per second rate limit exceeded.")));
     }
 
     /*
