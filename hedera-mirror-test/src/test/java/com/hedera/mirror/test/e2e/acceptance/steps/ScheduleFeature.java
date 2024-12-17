@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
@@ -42,6 +41,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -85,7 +85,7 @@ public class ScheduleFeature extends AbstractFeature {
                 recipient.getAccountId(),
                 Hbar.fromTinybars(DEFAULT_TINY_HBAR));
 
-        createNewSchedule(scheduledTransaction, null, expirationTime, Boolean.parseBoolean(waitForExpiry));
+        createNewSchedule(scheduledTransaction, expirationTime, Boolean.parseBoolean(waitForExpiry));
     }
 
     @Given("I wait for the schedule to expire")
@@ -118,18 +118,18 @@ public class ScheduleFeature extends AbstractFeature {
     }
 
     private void createNewSchedule(
-            Transaction<?> transaction, KeyList innerSignatureKeyList, Instant expirationTime, boolean waitForExpiry) {
+            Transaction<?> transaction, Instant expirationTime, boolean waitForExpiry) {
         // create signatures list
         networkTransactionResponse = scheduleClient.createSchedule(
                 scheduleClient.getSdkClient().getExpandedOperatorAccountId(),
                 transaction,
-                innerSignatureKeyList,
+                null,
                 expirationTime,
                 waitForExpiry);
         assertNotNull(networkTransactionResponse.getTransactionId());
-        scheduleTxConsensusTimestamp = mirrorClient
-                .getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
-                .getTransactions()
+        scheduleTxConsensusTimestamp = Objects.requireNonNull(mirrorClient
+                        .getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
+                        .getTransactions())
                 .getFirst()
                 .getConsensusTimestamp();
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -318,7 +318,7 @@ public class ScheduleFeature extends AbstractFeature {
         List<TransactionDetail> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        TransactionDetail mirrorTransaction = transactions.get(0);
+        TransactionDetail mirrorTransaction = transactions.getFirst();
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
@@ -341,7 +341,7 @@ public class ScheduleFeature extends AbstractFeature {
         List<com.hedera.mirror.rest.model.Transaction> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        com.hedera.mirror.rest.model.Transaction mirrorTransaction = transactions.get(0);
+        com.hedera.mirror.rest.model.Transaction mirrorTransaction = transactions.getFirst();
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
