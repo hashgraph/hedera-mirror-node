@@ -71,7 +71,6 @@ public class TransactionExecutionService {
     private final State mirrorNodeState;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final OpcodeTracer opcodeTracer;
-    private Map<String, String> transactionProperties;
 
     protected TransactionExecutionService(
             State mirrorNodeState, MirrorNodeEvmProperties mirrorNodeEvmProperties, OpcodeTracer opcodeTracer) {
