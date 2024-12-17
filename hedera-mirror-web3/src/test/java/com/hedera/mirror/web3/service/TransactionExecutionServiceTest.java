@@ -38,6 +38,7 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.mirror.web3.web3j.generated.NestedCalls;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.standalone.TransactionExecutor;
@@ -45,11 +46,15 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.State;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -74,6 +79,12 @@ class TransactionExecutionServiceTest {
     private ContractCallContext contractCallContext;
 
     private TransactionExecutionService transactionExecutionService;
+
+    private static Stream<Arguments> provideCallData() {
+        return Stream.of(
+                Arguments.of(org.apache.tuweni.bytes.Bytes.EMPTY),
+                Arguments.of(org.apache.tuweni.bytes.Bytes.fromHexString(NestedCalls.BINARY)));
+    }
 
     @BeforeEach
     void setUp() {
@@ -119,7 +130,8 @@ class TransactionExecutionServiceTest {
                             any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
                     .thenReturn(List.of(singleTransactionRecord));
 
-            CallServiceParameters callServiceParameters = buildServiceParams(false);
+            CallServiceParameters callServiceParameters =
+                    buildServiceParams(false, org.apache.tuweni.bytes.Bytes.EMPTY);
 
             // When
             var result = transactionExecutionService.execute(callServiceParameters, DEFAULT_GAS);
@@ -166,7 +178,8 @@ class TransactionExecutionServiceTest {
                             any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
                     .thenReturn(List.of(singleTransactionRecord));
 
-            CallServiceParameters callServiceParameters = buildServiceParams(false);
+            CallServiceParameters callServiceParameters =
+                    buildServiceParams(false, org.apache.tuweni.bytes.Bytes.EMPTY);
 
             // When
             var result = transactionExecutionService.execute(callServiceParameters, DEFAULT_GAS);
@@ -178,8 +191,10 @@ class TransactionExecutionServiceTest {
         }
     }
 
-    @Test
-    void testExecuteContractCreateSuccess() {
+    // NestedCalls.BINARY
+    @ParameterizedTest
+    @MethodSource("provideCallData")
+    void testExecuteContractCreateSuccess(org.apache.tuweni.bytes.Bytes callData) {
         // Given
         try (MockedStatic<ExecutorFactory> executorFactoryMock = mockStatic(ExecutorFactory.class);
                 MockedStatic<ContractCallContext> contractCallContextMock = mockStatic(ContractCallContext.class)) {
@@ -215,7 +230,7 @@ class TransactionExecutionServiceTest {
                             any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
                     .thenReturn(List.of(singleTransactionRecord));
 
-            CallServiceParameters callServiceParameters = buildServiceParams(true);
+            CallServiceParameters callServiceParameters = buildServiceParams(true, callData);
 
             // When
             var result = transactionExecutionService.execute(callServiceParameters, DEFAULT_GAS);
@@ -232,10 +247,10 @@ class TransactionExecutionServiceTest {
         when(mirrorNodeEvmProperties.getNetwork()).thenReturn(HederaNetwork.OTHER);
     }
 
-    private CallServiceParameters buildServiceParams(boolean isContractCreate) {
+    private CallServiceParameters buildServiceParams(boolean isContractCreate, org.apache.tuweni.bytes.Bytes callData) {
         return ContractExecutionParameters.builder()
                 .block(BlockType.LATEST)
-                .callData(org.apache.tuweni.bytes.Bytes.EMPTY)
+                .callData(callData)
                 .callType(CallType.ETH_CALL)
                 .gas(DEFAULT_GAS)
                 .isEstimate(false)
