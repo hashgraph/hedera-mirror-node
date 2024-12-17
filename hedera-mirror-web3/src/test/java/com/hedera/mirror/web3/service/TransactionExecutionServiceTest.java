@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -32,7 +31,6 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties.HederaNetwork;
 import com.hedera.mirror.web3.service.TransactionExecutionService.ExecutorFactory;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -103,7 +101,6 @@ class TransactionExecutionServiceTest {
                     .when(() -> ExecutorFactory.newExecutor(any(), any(), any()))
                     .thenReturn(transactionExecutor);
 
-            mockEvmProperties();
             // Set up mock behaviors for ContractCallContext
             contractCallContextMock.when(ContractCallContext::get).thenReturn(contractCallContext);
             when(contractCallContext.getOpcodeTracerOptions()).thenReturn(new OpcodeTracerOptions());
@@ -154,7 +151,6 @@ class TransactionExecutionServiceTest {
                     .when(() -> ExecutorFactory.newExecutor(any(), any(), any()))
                     .thenReturn(transactionExecutor);
 
-            mockEvmProperties();
             // Set up mock behaviors for ContractCallContext
             contractCallContextMock.when(ContractCallContext::get).thenReturn(contractCallContext);
 
@@ -204,7 +200,6 @@ class TransactionExecutionServiceTest {
                     .when(() -> ExecutorFactory.newExecutor(any(), any(), any()))
                     .thenReturn(transactionExecutor);
 
-            mockEvmProperties();
             // Set up mock behaviors for ContractCallContext
             contractCallContextMock.when(ContractCallContext::get).thenReturn(contractCallContext);
             when(contractCallContext.getOpcodeTracerOptions()).thenReturn(new OpcodeTracerOptions());
@@ -240,11 +235,6 @@ class TransactionExecutionServiceTest {
             assertThat(result.getGasUsed()).isEqualTo(DEFAULT_GAS);
             assertThat(result.getRevertReason()).isNotPresent();
         }
-    }
-
-    private void mockEvmProperties() {
-        when(mirrorNodeEvmProperties.getSemanticEvmVersion()).thenReturn(EVM_VERSION);
-        when(mirrorNodeEvmProperties.getNetwork()).thenReturn(HederaNetwork.OTHER);
     }
 
     private CallServiceParameters buildServiceParams(boolean isContractCreate, org.apache.tuweni.bytes.Bytes callData) {
