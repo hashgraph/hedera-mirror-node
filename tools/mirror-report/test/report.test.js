@@ -14,10 +14,22 @@
  * limitations under the License.
  */
 
-import {report} from '../index';
+import fetchMock, {manageFetchMockGlobally} from '@fetch-mock/jest';
+import {jest} from '@jest/globals';
+import console from 'console';
+import {report} from '../src/report';
+
+manageFetchMockGlobally(jest);
+
+global.console = console;
 
 describe('report', () => {
   test('single account', async () => {
+    fetchMock.get("https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1000", 200, JSON.stringify({}));
 
+    const json = await report({account: "0.0.1000", date: "2024-12-17", network: "testnet"});
+    expect(fetchMock).toHaveFetched("https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1000");
+    expect(Array.isArray(json)).toEqual(true);
+    expect(json.length).toEqual(0);
   });
 });
