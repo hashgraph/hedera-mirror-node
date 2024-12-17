@@ -11,7 +11,6 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
 - Update / add ingestion logic for the following transactions and persist new information to the database
   - `ConsensusCreateTopic`: custom fees, fee exempt key list, and fee schedule key
   - `ConsensusUpdateTopic`: custom fees, fee exempt key list, and fee schedule key
-  - `ConsensusSubmitMessage`: update remaining crypto / token fee schedule allowances from assessed custom fees
 - Verify assessed custom fees are externalized in transaction record for applicable `ConsensusSubmitMessage`
   transactions and child `CryptoTransfer` transactions persisted to the database, and exposed via JS REST API
 - Expose the following topic custom fee information
@@ -79,6 +78,8 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
 
   Add class `Topic` and `TopicHistory` that extends `AbstractTopic` class
 
+- Rename field `tokenId` in `AbstractCustomFee` to `entityId`
+
 ### Topic Custom Fee Parsing
 
 #### EntityListener
@@ -106,6 +107,8 @@ Make the following changes to `insertAssessedCustomFees()`
   schedule, and the handler should insert an entry with empty custom fees to the `custom_fee` table to reflect so.
 
 ## REST API
+
+### Endpoints
 
 - `/api/v1/topics/{topicId}`
   - Add topic custom fee fields `custom_fees`, `fee_exempt_key_list`, and `fee_schedule_key` to the response body.
@@ -156,6 +159,37 @@ Make the following changes to `insertAssessedCustomFees()`
   }
   ```
 
+### OpenAPI Schema
+
+- Add `ConsensusFixedFee`, modeled after `FixedFee`, without `all_collectors_are_exempt` field
+
+  ```yaml
+  ConsensusFixedFee:
+    type: object
+    properties:
+      amount:
+        example: 100
+        format: int64
+        type: integer
+      collector_account_id:
+        $ref: "#/components/schemas/EntityId"
+      denominating_token_id:
+        $ref: "#/components/schemas/EntityId"
+  ```
+
+- Add `ConsensusCustomFees`
+  ```yaml
+  ConsensusCustomFees:
+    type: object
+    properties:
+      created_timestamp:
+        $ref: "#/components/schemas/Timestamp"
+      fixed_fees:
+        type: array
+        items:
+          $ref: "#/components/schemas/ConsensusFixedFee"
+  ```
+
 ## Non-Functional Requirements
 
 ## Acceptance Tests
@@ -169,17 +203,19 @@ Refactor the existing test scenario `Validate Topic message submission` with the
    transaction with no assessed custom fee, Validate mirrornode REST API returns the topic message
 4. Transfer some fungible token to BOB (BOB has unlimited token auto association slots). Validate mirrornode REST API
    returns the crypto transfer transaction
-5. BOB (whose signing key is not fee exempted) approves consensus crypto and token fee schedule allowances. Validate
-   mirrornode REST API returns the correct allowances
-6. BOB submits a message to the topic. Validate mirrornode REST API returns the transaction with correct assessed
-   custom fees and the allowances granted by BOB to the topic have updated `amount`. Validate mirrornode REST API
-   returns the topic message
-7. Update the topic with empty custom fees, fee exempt key list, and fee schedule key. Validate mirrornode REST API returns
-   the updated topic information
-8. BOB submits another message to the topic. Validate mirrornode REST API returns the transaction with no assessed
-   custom fee and the allowances granted by BOB to the topic haven't changed. Validate mirrornode REST API returns the
-   topic message
+5. BOB submits a message to the topic. Validate mirrornode REST API returns the transaction with correct assessed
+   custom fees. Validate mirrornode REST API returns the topic message
+6. Update the topic with empty custom fees, fee exempt key list, and fee schedule key. Validate mirrornode REST API
+   returns the updated topic information
+7. BOB submits another message to the topic. Validate mirrornode REST API returns the transaction with no assessed
+   custom fee. Validate mirrornode REST API returns the topic message
 
 ## K6 Tests
 
 Change the topic id in the `topicsId` rest-java k6 test case to one with topic custom fee related properties set.
+
+## Open Issues
+
+- Should we store the new `ConsensusSubmitMessageTransactionBody` fields `accept_all_custom_fees` and `max_custom_fees`?
+  `accept_all_custom_fees` is cheap to store since it's a boolean however `max_custom_fees` is a repeated field so can
+  be large.
