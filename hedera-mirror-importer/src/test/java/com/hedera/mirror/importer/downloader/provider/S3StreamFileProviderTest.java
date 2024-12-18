@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
+import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SEPARATOR;
 import static org.awaitility.Awaitility.await;
 import static software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR;
 
@@ -46,7 +47,7 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
 
     @Override
     protected String getProviderPathSeparator() {
-        return S3StreamFileProvider.SEPARATOR;
+        return SEPARATOR;
     }
 
     @Override
@@ -55,6 +56,7 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @BeforeEach
+    @Override
     void setup() throws Exception {
         super.setup();
         var s3AsyncClient = S3AsyncClient.builder()

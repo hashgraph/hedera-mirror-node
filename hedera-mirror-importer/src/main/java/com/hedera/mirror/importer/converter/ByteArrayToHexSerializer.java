@@ -29,6 +29,8 @@ public class ByteArrayToHexSerializer extends JsonSerializer<byte[]> {
     public static final ByteArrayToHexSerializer INSTANCE = new ByteArrayToHexSerializer();
     static final String PREFIX = "\\x";
 
+    private ByteArrayToHexSerializer() {}
+
     @Override
     public void serialize(byte[] value, JsonGenerator jsonGenerator, SerializerProvider serializers)
             throws IOException {

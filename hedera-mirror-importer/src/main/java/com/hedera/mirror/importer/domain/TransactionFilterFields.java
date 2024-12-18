@@ -26,6 +26,7 @@ import lombok.Value;
  * Collection of fields that can be used by Transaction Filter to filter on.
  */
 @Value
+@SuppressWarnings("java:S6548") // Class is not a singleton
 public class TransactionFilterFields {
     public static final TransactionFilterFields EMPTY = new TransactionFilterFields(Set.of(), null);
     /**

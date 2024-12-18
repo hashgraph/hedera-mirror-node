@@ -28,8 +28,6 @@ plugins {
     id("spring-conventions")
 }
 
-val javaxInjectVersion = "1"
-
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
