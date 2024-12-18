@@ -22,26 +22,18 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class ContractCallNativePrecompileTest extends Web3IntegrationTest {
+class ContractCallNativePrecompileTest extends AbstractContractCallServiceTest {
 
     private final ContractExecutionService contractCallService;
-
-    @BeforeEach
-    void setup() {
-        // Persist needed entities
-        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
-    }
 
     @Test
     void directCallToNativePrecompileECRecover() {
@@ -237,7 +229,8 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
     private ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData, final Address contractAddress) {
-        final HederaEvmAccount sender = new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress())));
+        final var account = accountEntityPersist();
+        final HederaEvmAccount sender = new HederaEvmAccount(Address.wrap(Bytes.wrap(account.getEvmAddress())));
 
         return ContractExecutionParameters.builder()
                 .sender(sender)
