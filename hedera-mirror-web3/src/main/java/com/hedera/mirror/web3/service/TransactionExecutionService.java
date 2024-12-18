@@ -63,6 +63,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 public class TransactionExecutionService {
 
     private static final Configuration DEFAULT_CONFIG = new ConfigProviderImpl().getConfiguration();
+    private static final OperationTracer[] EMPTY_OPERATION_TRACER_ARRAY = new OperationTracer[0];
     private static final AccountID TREASURY_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(2).build();
     private static final Duration TRANSACTION_DURATION = new Duration(15);
@@ -246,7 +247,7 @@ public class TransactionExecutionService {
     private OperationTracer[] getOperationTracers() {
         return ContractCallContext.get().getOpcodeTracerOptions() != null
                 ? new OperationTracer[] {opcodeTracer}
-                : new OperationTracer[0];
+                : EMPTY_OPERATION_TRACER_ARRAY;
     }
 
     public static class ExecutorFactory {
