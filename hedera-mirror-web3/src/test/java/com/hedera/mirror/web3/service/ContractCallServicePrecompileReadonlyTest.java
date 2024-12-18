@@ -849,7 +849,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                 expectedTokenInfo,
                 BigInteger.valueOf(nft.getSerialNumber()),
                 getAddressFromEntity(owner),
-                BigInteger.valueOf(token.getCreatedTimestamp()).divide(BigInteger.valueOf(1_000L)),
+                BigInteger.valueOf(token.getCreatedTimestamp()).divide(BigInteger.valueOf(1_000_000_000L)),
                 nft.getMetadata(),
                 Address.ZERO.toHexString());
 
