@@ -26,7 +26,6 @@ import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 
 /**
