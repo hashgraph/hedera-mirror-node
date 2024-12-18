@@ -29,9 +29,11 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -42,7 +44,11 @@ import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,7 +62,6 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
-@SuppressWarnings("unchecked")
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     @Resource
@@ -64,6 +69,27 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     @Resource
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    @Resource
+    protected State state;
+
+    protected RecordFile genesisRecordFile;
+
+    protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
+
+    protected static final byte[] EXCHANGE_RATES_SET = ExchangeRateSet.newBuilder()
+            .setCurrentRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(12)
+                    .setHbarEquiv(1)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
+                    .build())
+            .setNextRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(15)
+                    .setHbarEquiv(1)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
+                    .build())
+            .build()
+            .toByteArray();
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -82,8 +108,18 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     @BeforeEach
-    final void setup() {
-        domainBuilder.recordFile().persist();
+    protected void setup() {
+        genesisRecordFile =
+                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
+                .persist();
+        domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
+        domainBuilder
+                .fileData()
+                .customize(f -> f.entityId(EntityId.of(112L)).fileData(EXCHANGE_RATES_SET))
+                .persist();
         testWeb3jService.reset();
     }
 
@@ -190,7 +226,15 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected Entity accountEntityPersist() {
         return domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).balance(1_000_000_000_000L))
+                .customize(e ->
+                        e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(1_000_000_000_000L))
+                .persist();
+    }
+
+    protected Entity accountEntityWithEvmAddressPersist() {
+        return domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
                 .persist();
     }
 
@@ -210,7 +254,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     protected String getAddressFromEntity(Entity entity) {
-        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
+        return EvmTokenUtils.toAddress(entity.toEntityId()).toHexString();
     }
 
     protected String getAliasFromEntity(Entity entity) {

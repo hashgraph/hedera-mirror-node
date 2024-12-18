@@ -26,11 +26,8 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
-import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
-import java.util.Collections;
-import java.util.Iterator;
 
 /**
  * This class serves as a repository layer between hedera app services read only state and the Postgres database in
@@ -38,12 +35,13 @@ import java.util.Iterator;
  * utilized by the hedera app components
  */
 @Named
-public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
+public class NftReadableKVState extends AbstractReadableKVState<NftID, Nft> {
 
+    public static final String KEY = "NFTS";
     private final NftRepository nftRepository;
 
     public NftReadableKVState(@Nonnull NftRepository nftRepository) {
-        super("NFTS");
+        super(KEY);
         this.nftRepository = nftRepository;
     }
 
@@ -60,17 +58,6 @@ public class NftReadableKVState extends ReadableKVStateBase<NftID, Nft> {
                 .orElseGet(() -> nftRepository.findActiveById(nftId, key.serialNumber()))
                 .map(nft -> mapToNft(nft, key.tokenId()))
                 .orElse(null);
-    }
-
-    @Nonnull
-    @Override
-    protected Iterator<NftID> iterateFromDataSource() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
-    public long size() {
-        return 0;
     }
 
     private Nft mapToNft(final com.hedera.mirror.common.domain.token.Nft nft, final TokenID tokenID) {

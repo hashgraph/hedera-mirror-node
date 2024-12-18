@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
@@ -25,13 +24,11 @@ import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.state.core.ListReadableQueueState;
 import com.hedera.mirror.web3.state.core.ListWritableQueueState;
 import com.hedera.mirror.web3.state.core.MapReadableKVState;
@@ -44,9 +41,8 @@ import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
@@ -59,15 +55,11 @@ import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.metric.UnavailableMetrics;
-import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.VersionConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
-import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.KVChangeListener;
 import com.swirlds.state.spi.QueueChangeListener;
@@ -115,8 +107,15 @@ public class MirrorNodeState implements State {
     private final NetworkInfo networkInfo;
     private final StartupNetworks startupNetworks;
 
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     @PostConstruct
     private void init() {
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            // If the flag is not enabled, we don't need to make any further initialization.
+            return;
+        }
+
         ContractCallContext.run(ctx -> {
             registerServices(servicesRegistry);
             final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
@@ -131,20 +130,6 @@ public class MirrorNodeState implements State {
                     networkInfo,
                     UnavailableMetrics.UNAVAILABLE_METRICS,
                     startupNetworks);
-
-            final var fileServiceStates = this.getWritableStates(FileService.NAME);
-            final var files = fileServiceStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
-            genesisContentProviders(bootstrapConfig).forEach((fileNum, provider) -> {
-                final var fileId = createFileID(fileNum, bootstrapConfig);
-                files.put(
-                        fileId,
-                        File.newBuilder()
-                                .fileId(fileId)
-                                .keys(KeyList.DEFAULT)
-                                .contents(provider.apply(bootstrapConfig))
-                                .build());
-            });
-            ((CommittableWritableStates) fileServiceStates).commit();
             return ctx;
         });
     }
@@ -392,17 +377,9 @@ public class MirrorNodeState implements State {
                         new BlockRecordService(),
                         new FeeService(),
                         new CongestionThrottleService(),
-                        new RecordCacheService())
+                        new RecordCacheService(),
+                        new ScheduleServiceImpl())
                 .forEach(servicesRegistry::register);
-    }
-
-    private Map<Long, Function<Configuration, Bytes>> genesisContentProviders(
-            final com.swirlds.config.api.Configuration config) {
-        final var genesisSchema = new V0490FileSchema();
-        final var filesConfig = config.getConfigData(FilesConfig.class);
-        return Map.of(
-                filesConfig.feeSchedules(), genesisSchema::genesisFeeSchedules,
-                filesConfig.exchangeRates(), genesisSchema::genesisExchangeRates);
     }
 
     private SignatureVerifier signatureVerifier() {
