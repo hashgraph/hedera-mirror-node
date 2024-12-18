@@ -72,10 +72,6 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
     @Test
     void directCallToNativePrecompileSHA2() {
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(2L).num(2L).type(EntityType.UNKNOWN))
-                .persist();
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
 
         final var data = "0xFF";
