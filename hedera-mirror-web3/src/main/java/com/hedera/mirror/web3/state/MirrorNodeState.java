@@ -130,7 +130,6 @@ public class MirrorNodeState implements State {
                     networkInfo,
                     UnavailableMetrics.UNAVAILABLE_METRICS,
                     startupNetworks);
-            // point.
             return ctx;
         });
     }
