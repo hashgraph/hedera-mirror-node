@@ -174,14 +174,15 @@ public class ScheduleFeature extends AbstractFeature {
 
     @RetryAsserts
     @Then(
-            "the mirror node REST API should verify the {string} schedule entity {string} expiration time and wait for expiry {string}")
-    public void verifyTheScheduleFromMirror(String scheduleStatus, String hasExpirationTime, String waitForExpiry) {
+            "the mirror node REST API should verify the {string} schedule entity with expiration time {string} and wait for expiry {string}")
+    public void verifyTheScheduleFromMirror(
+            String scheduleStatus, String expirationTimeInSeconds, String waitForExpiry) {
         verifyScheduleFromMirror(
-                ScheduleStatus.valueOf(scheduleStatus), hasExpirationTime, Boolean.parseBoolean(waitForExpiry));
+                ScheduleStatus.valueOf(scheduleStatus), expirationTimeInSeconds, Boolean.parseBoolean(waitForExpiry));
     }
 
     private void verifyScheduleFromMirror(
-            ScheduleStatus scheduleStatus, String hasExpirationTime, boolean waitForExpiry) {
+            ScheduleStatus scheduleStatus, String expirationTimeInSeconds, boolean waitForExpiry) {
         var mirrorSchedule = mirrorClient.getScheduleInfo(scheduleId.toString());
         assertNotNull(mirrorSchedule);
         assertThat(mirrorSchedule.getScheduleId()).isEqualTo(scheduleId.toString());
@@ -202,12 +203,10 @@ public class ScheduleFeature extends AbstractFeature {
                                 .getSdkClient()
                                 .getExpandedOperatorAccountId()
                                 .toString());
-                switch (hasExpirationTime) {
-                    case "without" -> assertThat(mirrorSchedule.getExpirationTime())
-                            .isNull();
-                    case "with" -> assertThat(mirrorSchedule.getExpirationTime())
-                            .isNotNull();
-                    default -> throw new IllegalArgumentException("Invalid expiration time");
+                if (expirationTimeInSeconds.equals("null")) {
+                    assertThat(mirrorSchedule.getExpirationTime()).isNull();
+                } else {
+                    assertThat(mirrorSchedule.getExpirationTime()).isNotNull();
                 }
                 if (waitForExpiry) {
                     assertThat(mirrorSchedule.getWaitForExpiry()).isTrue();
@@ -223,13 +222,12 @@ public class ScheduleFeature extends AbstractFeature {
                                 .getSdkClient()
                                 .getExpandedOperatorAccountId()
                                 .toString());
-                switch (hasExpirationTime) {
-                    case "without" -> assertThat(mirrorSchedule.getExpirationTime())
-                            .isNull();
-                    case "with" -> assertThat(mirrorSchedule.getExpirationTime())
-                            .isNotNull();
-                    default -> throw new IllegalArgumentException("Invalid expiration time");
+                if (expirationTimeInSeconds.equals("null")) {
+                    assertThat(mirrorSchedule.getExpirationTime()).isNull();
+                } else {
+                    assertThat(mirrorSchedule.getExpirationTime()).isNotNull();
                 }
+
                 if (waitForExpiry) {
                     assertThat(mirrorSchedule.getWaitForExpiry()).isTrue();
                 } else {
@@ -250,13 +248,12 @@ public class ScheduleFeature extends AbstractFeature {
                                 .getSdkClient()
                                 .getExpandedOperatorAccountId()
                                 .toString());
-                switch (hasExpirationTime) {
-                    case "without" -> assertThat(mirrorSchedule.getExpirationTime())
-                            .isNull();
-                    case "with" -> assertThat(mirrorSchedule.getExpirationTime())
-                            .isNotNull();
-                    default -> throw new IllegalArgumentException("Invalid expiration time");
+                if (expirationTimeInSeconds.equals("null")) {
+                    assertThat(mirrorSchedule.getExpirationTime()).isNull();
+                } else {
+                    assertThat(mirrorSchedule.getExpirationTime()).isNotNull();
                 }
+
                 if (waitForExpiry) {
                     assertThat(mirrorSchedule.getWaitForExpiry()).isTrue();
                 } else {
@@ -277,13 +274,12 @@ public class ScheduleFeature extends AbstractFeature {
                                 .getSdkClient()
                                 .getExpandedOperatorAccountId()
                                 .toString());
-                switch (hasExpirationTime) {
-                    case "without" -> assertThat(mirrorSchedule.getExpirationTime())
-                            .isNull();
-                    case "with" -> assertThat(mirrorSchedule.getExpirationTime())
-                            .isNotNull();
-                    default -> throw new IllegalArgumentException("Invalid expiration time");
+                if (expirationTimeInSeconds.equals("null")) {
+                    assertThat(mirrorSchedule.getExpirationTime()).isNull();
+                } else {
+                    assertThat(mirrorSchedule.getExpirationTime()).isNotNull();
                 }
+
                 if (waitForExpiry) {
                     assertThat(mirrorSchedule.getWaitForExpiry()).isTrue();
                 } else {
