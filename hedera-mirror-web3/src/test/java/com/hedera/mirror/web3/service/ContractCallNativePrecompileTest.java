@@ -16,12 +16,16 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.EXCHANGE_RATES_SET;
 import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -39,7 +43,12 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
     @BeforeEach
     void setup() {
-        domainBuilder.recordFile().persist();
+        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+        domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
+        domainBuilder
+                .fileData()
+                .customize(f -> f.entityId(EntityId.of(112L)).fileData(EXCHANGE_RATES_SET))
+                .persist();
     }
 
     @Test
@@ -236,7 +245,8 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
     private ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData, final Address contractAddress) {
-        final HederaEvmAccount sender = new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress())));
+        final var account = accountEntityWithEvmAddressPersist();
+        final HederaEvmAccount sender = new HederaEvmAccount(Address.wrap(Bytes.wrap(account.getEvmAddress())));
 
         return ContractExecutionParameters.builder()
                 .sender(sender)
@@ -259,5 +269,12 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
         final var gasConsumed = afterExecution.count() - gasUsedBeforeExecution;
         assertThat(gasConsumed).isPositive();
+    }
+
+    protected Entity accountEntityWithEvmAddressPersist() {
+        return domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
+                .persist();
     }
 }
