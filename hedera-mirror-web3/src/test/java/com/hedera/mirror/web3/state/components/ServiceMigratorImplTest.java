@@ -32,9 +32,10 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.SchemaRegistry;
+import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.StartupNetworks;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,9 @@ class ServiceMigratorImplTest {
 
     @Mock
     private ServicesRegistry mockServicesRegistry;
+
+    @Mock
+    private StartupNetworks startupNetworks;
 
     @Mock
     private State mockState;
@@ -102,8 +106,10 @@ class ServiceMigratorImplTest {
                 new ServicesSoftwareVersion(
                         bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
                 new ConfigProviderImpl().getConfiguration(),
+                new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
-                metrics));
+                metrics,
+                startupNetworks));
     }
 
     @Test
@@ -125,8 +131,10 @@ class ServiceMigratorImplTest {
                 new ServicesSoftwareVersion(
                         bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
                 new ConfigProviderImpl().getConfiguration(),
+                new ConfigProviderImpl().getConfiguration(),
                 networkInfo,
-                metrics));
+                metrics,
+                startupNetworks));
     }
 
     @Test
@@ -154,8 +162,10 @@ class ServiceMigratorImplTest {
                     null,
                     servicesSoftwareVersion,
                     configuration,
+                    configuration,
                     networkInfo,
-                    metrics);
+                    metrics,
+                    startupNetworks);
         });
 
         assertThat(exception.getMessage()).isEqualTo("Can only be used with SchemaRegistryImpl instances");
@@ -169,7 +179,15 @@ class ServiceMigratorImplTest {
 
         var exception = assertThrows(IllegalArgumentException.class, () -> {
             serviceMigrator.doMigrations(
-                    mockState, servicesRegistry, null, servicesSoftwareVersion, configuration, networkInfo, metrics);
+                    mockState,
+                    servicesRegistry,
+                    null,
+                    servicesSoftwareVersion,
+                    configuration,
+                    configuration,
+                    networkInfo,
+                    metrics,
+                    startupNetworks);
         });
 
         assertThat(exception.getMessage()).isEqualTo("Can only be used with MirrorNodeState instances");
@@ -188,8 +206,10 @@ class ServiceMigratorImplTest {
                     null,
                     servicesSoftwareVersion,
                     configuration,
+                    configuration,
                     networkInfo,
-                    metrics);
+                    metrics,
+                    startupNetworks);
         });
 
         assertThat(exception.getMessage()).isEqualTo("Can only be used with ServicesRegistryImpl instances");
@@ -212,8 +232,10 @@ class ServiceMigratorImplTest {
                     null,
                     servicesSoftwareVersion,
                     configuration,
+                    configuration,
                     networkInfo,
-                    metrics);
+                    metrics,
+                    startupNetworks);
         });
 
         assertThat(exception.getMessage()).isEqualTo("Can only be used with SchemaRegistryImpl instances");

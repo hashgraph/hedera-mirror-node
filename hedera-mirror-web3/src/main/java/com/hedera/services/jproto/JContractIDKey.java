@@ -17,6 +17,7 @@
 package com.hedera.services.jproto;
 
 import com.hederahashgraph.api.proto.java.ContractID;
+import java.util.Objects;
 
 /**
  * Maps to proto Key of type contractID.
@@ -86,5 +87,26 @@ public class JContractIDKey extends JKey {
     @Override
     public boolean isValid() {
         return !isEmpty();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+
+        JContractIDKey that = (JContractIDKey) o;
+        return this.shardNum == that.shardNum && this.realmNum == that.realmNum && this.contractNum == that.contractNum;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), shardNum, realmNum, contractNum);
     }
 }

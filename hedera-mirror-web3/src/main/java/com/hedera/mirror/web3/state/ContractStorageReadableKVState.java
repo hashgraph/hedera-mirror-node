@@ -22,27 +22,19 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
-import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
-import java.util.Collections;
-import java.util.Iterator;
 
 @Named
-public class ContractStorageReadableKVState extends ReadableKVStateBase<SlotKey, SlotValue> {
+public class ContractStorageReadableKVState extends AbstractReadableKVState<SlotKey, SlotValue> {
 
+    public static final String KEY = "STORAGE";
     private final ContractStateRepository contractStateRepository;
 
     protected ContractStorageReadableKVState(final ContractStateRepository contractStateRepository) {
-        super("STORAGE");
+        super(KEY);
         this.contractStateRepository = contractStateRepository;
-    }
-
-    @Nullable
-    @Override
-    public SlotValue get(@Nonnull SlotKey key) {
-        return readFromDataSource(key);
     }
 
     @Override
@@ -60,16 +52,5 @@ public class ContractStorageReadableKVState extends ReadableKVStateBase<SlotKey,
                 .orElse(contractStateRepository.findStorage(entityId, keyBytes))
                 .map(byteArr -> new SlotValue(Bytes.wrap(byteArr), Bytes.EMPTY, Bytes.EMPTY))
                 .orElse(null);
-    }
-
-    @Nonnull
-    @Override
-    protected Iterator<SlotKey> iterateFromDataSource() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
-    public long size() {
-        return 0;
     }
 }

@@ -33,18 +33,15 @@ import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.mirror.web3.utils.Suppliers;
-import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Supplier;
 
 @Named
-public class TokenRelationshipReadableKVState extends ReadableKVStateBase<EntityIDPair, TokenRelation> {
+public class TokenRelationshipReadableKVState extends AbstractReadableKVState<EntityIDPair, TokenRelation> {
 
+    public static final String KEY = "TOKEN_RELS";
     private final NftRepository nftRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
@@ -55,17 +52,11 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
             final TokenAccountRepository tokenAccountRepository,
             final TokenBalanceRepository tokenBalanceRepository,
             final TokenRepository tokenRepository) {
-        super("TOKEN_RELS");
+        super(KEY);
         this.nftRepository = nftRepository;
         this.tokenAccountRepository = tokenAccountRepository;
         this.tokenBalanceRepository = tokenBalanceRepository;
         this.tokenRepository = tokenRepository;
-    }
-
-    @Nullable
-    @Override
-    public TokenRelation get(@Nonnull EntityIDPair key) {
-        return readFromDataSource(key);
     }
 
     @Override
@@ -84,17 +75,6 @@ public class TokenRelationshipReadableKVState extends ReadableKVStateBase<Entity
         return findTokenAccount(tokenId, accountId, timestamp)
                 .map(ta -> tokenRelationFromEntity(tokenId, accountId, ta, timestamp))
                 .orElse(null);
-    }
-
-    @Nonnull
-    @Override
-    protected Iterator<EntityIDPair> iterateFromDataSource() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
-    public long size() {
-        return 0;
     }
 
     private Optional<TokenAccount> findTokenAccount(

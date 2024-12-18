@@ -142,15 +142,14 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByTimestampAndOwnerAndApprovedForAllIsFalseHistoricalLessThanBlockTimestamp() {
         final var allowanceHistory = domainBuilder
                 .nftAllowanceHistory()
-                .customize(a -> a.approvedForAll(true))
+                .customize(a -> a.approvedForAll(false))
                 .persist();
 
         assertThat(allowanceRepository
                         .findByOwnerAndTimestampAndApprovedForAllIsTrue(
                                 allowanceHistory.getId().getOwner(), allowanceHistory.getTimestampLower() + 1)
-                        .get(0))
-                .usingRecursiveComparison()
-                .isEqualTo(allowanceHistory);
+                        .isEmpty())
+                .isTrue();
     }
 
     @Test

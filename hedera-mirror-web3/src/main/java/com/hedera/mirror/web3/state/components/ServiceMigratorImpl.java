@@ -28,7 +28,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
-import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.lifecycle.StartupNetworks;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
@@ -47,14 +48,17 @@ public class ServiceMigratorImpl implements ServiceMigrator {
             @Nonnull ServicesRegistry servicesRegistry,
             @Nullable SoftwareVersion previousVersion,
             @Nonnull SoftwareVersion currentVersion,
-            @Nonnull Configuration config,
-            @Nullable NetworkInfo networkInfo,
-            @Nonnull Metrics metrics) {
+            @Nonnull Configuration nodeConfiguration,
+            @Nonnull Configuration platformConfiguration,
+            @Nullable NetworkInfo genesisNetworkInfo,
+            @Nonnull Metrics metrics,
+            @Nonnull StartupNetworks startupNetworks) {
         requireNonNull(state);
         requireNonNull(servicesRegistry);
         requireNonNull(currentVersion);
-        requireNonNull(config);
-        requireNonNull(networkInfo);
+        requireNonNull(nodeConfiguration);
+        requireNonNull(platformConfiguration);
+        requireNonNull(genesisNetworkInfo);
         requireNonNull(metrics);
 
         if (!(state instanceof MirrorNodeState mirrorNodeState)) {
@@ -65,8 +69,8 @@ public class ServiceMigratorImpl implements ServiceMigrator {
             throw new IllegalArgumentException("Can only be used with ServicesRegistryImpl instances");
         }
 
-        final AtomicLong prevEntityNum =
-                new AtomicLong(config.getConfigData(HederaConfig.class).firstUserEntity() - 1);
+        final AtomicLong prevEntityNum = new AtomicLong(
+                nodeConfiguration.getConfigData(HederaConfig.class).firstUserEntity() - 1);
         final Map<String, Object> sharedValues = new HashMap<>();
         final var deserializedPbjVersion = Optional.ofNullable(previousVersion)
                 .map(SoftwareVersion::getPbjSemanticVersion)
@@ -80,10 +84,11 @@ public class ServiceMigratorImpl implements ServiceMigrator {
                     registration.serviceName(),
                     mirrorNodeState,
                     deserializedPbjVersion,
-                    networkInfo,
-                    config,
+                    genesisNetworkInfo,
+                    platformConfiguration,
                     sharedValues,
-                    prevEntityNum);
+                    prevEntityNum,
+                    startupNetworks);
         });
         return List.of();
     }

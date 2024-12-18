@@ -785,7 +785,7 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
                         .returns(a.getConsensusTimestamp(), e -> recordItem.getConsensusTimestamp())
                         .returns(a.getGas(), e -> e.getGas())
                         .returns(a.getGasUsed(), e -> e.getGasUsed())
-                        .returns(a.getCallerType(), e -> getExpectedCallerType(e))
+                        .returns(a.getCallerType(), this::getExpectedCallerType)
                         .returns(a.getPayerAccountId(), e -> recordItem.getPayerAccountId())
                         .returns(a.getResultDataType(), e -> e.getResultDataCase()
                                 .getNumber())

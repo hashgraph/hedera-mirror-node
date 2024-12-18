@@ -22,6 +22,8 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.mirror.web3.state.AccountReadableKVState;
+import com.hedera.mirror.web3.state.AliasesReadableKVState;
 import com.swirlds.state.spi.ReadableKVState;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +49,7 @@ class MapWritableKVStateTest {
 
     @BeforeEach
     void setup() {
-        mapWritableKVState = new MapWritableKVState<>("ACCOUNTS", readableKVState);
+        mapWritableKVState = new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVState);
     }
 
     @Test
@@ -113,21 +115,24 @@ class MapWritableKVStateTest {
 
     @Test
     void testEqualsDifferentKeys() {
-        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ALIASES", readableKVState);
+        MapWritableKVState<AccountID, Account> other =
+                new MapWritableKVState<>(AliasesReadableKVState.KEY, readableKVState);
         assertThat(mapWritableKVState).isNotEqualTo(other);
     }
 
     @Test
     void testEqualsDifferentValues() {
         final var readableKVStateMock = mock(ReadableKVState.class);
-        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", readableKVStateMock);
+        MapWritableKVState<AccountID, Account> other =
+                new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateMock);
         other.put(accountID, account);
         assertThat(mapWritableKVState).isNotEqualTo(other);
     }
 
     @Test
     void testHashCode() {
-        MapWritableKVState<AccountID, Account> other = new MapWritableKVState<>("ACCOUNTS", readableKVState);
+        MapWritableKVState<AccountID, Account> other =
+                new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVState);
         assertThat(mapWritableKVState).hasSameHashCodeAs(other);
     }
 }

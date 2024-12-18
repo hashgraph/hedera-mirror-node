@@ -62,7 +62,6 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
-@SuppressWarnings("unchecked")
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     @Resource
@@ -71,9 +70,12 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     @Resource
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
+    @Resource
     protected State state;
 
     protected RecordFile genesisRecordFile;
+
+    protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
 
     protected static final byte[] EXCHANGE_RATES_SET = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
@@ -116,7 +118,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
         domainBuilder
                 .fileData()
-                .customize(f -> f.entityId(EntityId.of(112)).fileData(EXCHANGE_RATES_SET))
+                .customize(f -> f.entityId(EntityId.of(112L)).fileData(EXCHANGE_RATES_SET))
                 .persist();
         testWeb3jService.reset();
     }

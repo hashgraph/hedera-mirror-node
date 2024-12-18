@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.GeneratedMessage;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -88,7 +88,7 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.lang.reflect.Method;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
@@ -162,37 +162,38 @@ class MiscUtilsTest {
 
     @Test
     void getsExpectedTxnFunctionality() {
-        final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, Builder>> setters = new HashMap<>() {
-            {
-                put(ContractCall, new BodySetter<>(ContractCallTransactionBody.class));
-                put(ContractCreate, new BodySetter<>(ContractCreateTransactionBody.class));
-                put(EthereumTransaction, new BodySetter<>(EthereumTransactionBody.class));
-                put(ContractUpdate, new BodySetter<>(ContractUpdateTransactionBody.class));
-                put(CryptoAddLiveHash, new BodySetter<>(CryptoAddLiveHashTransactionBody.class));
-                put(CryptoCreate, new BodySetter<>(CryptoCreateTransactionBody.class));
-                put(CryptoDelete, new BodySetter<>(CryptoDeleteTransactionBody.class));
-                put(CryptoDeleteLiveHash, new BodySetter<>(CryptoDeleteLiveHashTransactionBody.class));
-                put(CryptoTransfer, new BodySetter<>(CryptoTransferTransactionBody.class));
-                put(CryptoUpdate, new BodySetter<>(CryptoUpdateTransactionBody.class));
-                put(ContractDelete, new BodySetter<>(ContractDeleteTransactionBody.class));
-                put(TokenCreate, new BodySetter<>(TokenCreateTransactionBody.class));
-                put(TokenFreezeAccount, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
-                put(TokenUnfreezeAccount, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
-                put(TokenGrantKycToAccount, new BodySetter<>(TokenGrantKycTransactionBody.class));
-                put(TokenRevokeKycFromAccount, new BodySetter<>(TokenRevokeKycTransactionBody.class));
-                put(TokenDelete, new BodySetter<>(TokenDeleteTransactionBody.class));
-                put(TokenUpdate, new BodySetter<>(TokenUpdateTransactionBody.class));
-                put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
-                put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
-                put(TokenAccountWipe, new BodySetter<>(TokenWipeAccountTransactionBody.class));
-                put(TokenAssociateToAccount, new BodySetter<>(TokenAssociateTransactionBody.class));
-                put(TokenDissociateFromAccount, new BodySetter<>(TokenDissociateTransactionBody.class));
-                put(TokenUnpause, new BodySetter<>(TokenUnpauseTransactionBody.class));
-                put(TokenPause, new BodySetter<>(TokenPauseTransactionBody.class));
-                put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
-                put(CryptoApproveAllowance, new BodySetter<>(CryptoApproveAllowanceTransactionBody.class));
-            }
-        };
+        final Map<HederaFunctionality, BodySetter<? extends GeneratedMessage, Builder>> setters =
+                new EnumMap<>(HederaFunctionality.class) {
+                    {
+                        put(ContractCall, new BodySetter<>(ContractCallTransactionBody.class));
+                        put(ContractCreate, new BodySetter<>(ContractCreateTransactionBody.class));
+                        put(EthereumTransaction, new BodySetter<>(EthereumTransactionBody.class));
+                        put(ContractUpdate, new BodySetter<>(ContractUpdateTransactionBody.class));
+                        put(CryptoAddLiveHash, new BodySetter<>(CryptoAddLiveHashTransactionBody.class));
+                        put(CryptoCreate, new BodySetter<>(CryptoCreateTransactionBody.class));
+                        put(CryptoDelete, new BodySetter<>(CryptoDeleteTransactionBody.class));
+                        put(CryptoDeleteLiveHash, new BodySetter<>(CryptoDeleteLiveHashTransactionBody.class));
+                        put(CryptoTransfer, new BodySetter<>(CryptoTransferTransactionBody.class));
+                        put(CryptoUpdate, new BodySetter<>(CryptoUpdateTransactionBody.class));
+                        put(ContractDelete, new BodySetter<>(ContractDeleteTransactionBody.class));
+                        put(TokenCreate, new BodySetter<>(TokenCreateTransactionBody.class));
+                        put(TokenFreezeAccount, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
+                        put(TokenUnfreezeAccount, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
+                        put(TokenGrantKycToAccount, new BodySetter<>(TokenGrantKycTransactionBody.class));
+                        put(TokenRevokeKycFromAccount, new BodySetter<>(TokenRevokeKycTransactionBody.class));
+                        put(TokenDelete, new BodySetter<>(TokenDeleteTransactionBody.class));
+                        put(TokenUpdate, new BodySetter<>(TokenUpdateTransactionBody.class));
+                        put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
+                        put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
+                        put(TokenAccountWipe, new BodySetter<>(TokenWipeAccountTransactionBody.class));
+                        put(TokenAssociateToAccount, new BodySetter<>(TokenAssociateTransactionBody.class));
+                        put(TokenDissociateFromAccount, new BodySetter<>(TokenDissociateTransactionBody.class));
+                        put(TokenUnpause, new BodySetter<>(TokenUnpauseTransactionBody.class));
+                        put(TokenPause, new BodySetter<>(TokenPauseTransactionBody.class));
+                        put(Freeze, new BodySetter<>(FreezeTransactionBody.class));
+                        put(CryptoApproveAllowance, new BodySetter<>(CryptoApproveAllowanceTransactionBody.class));
+                    }
+                };
 
         setters.forEach((function, setter) -> {
             final var txn = TransactionBody.newBuilder();

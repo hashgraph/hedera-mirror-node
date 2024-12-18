@@ -46,13 +46,11 @@ import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
-import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -60,7 +58,9 @@ import java.util.function.Supplier;
 import org.springframework.util.CollectionUtils;
 
 @Named
-public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
+public class TokenReadableKVState extends AbstractReadableKVState<TokenID, Token> {
+
+    public static final String KEY = "TOKENS";
     private final CommonEntityAccessor commonEntityAccessor;
     private final CustomFeeRepository customFeeRepository;
     private final TokenRepository tokenRepository;
@@ -73,18 +73,12 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
             final TokenRepository tokenRepository,
             final EntityRepository entityRepository,
             final NftRepository nftRepository) {
-        super("TOKENS");
+        super(KEY);
         this.commonEntityAccessor = commonEntityAccessor;
         this.customFeeRepository = customFeeRepository;
         this.tokenRepository = tokenRepository;
         this.entityRepository = entityRepository;
         this.nftRepository = nftRepository;
-    }
-
-    @Nullable
-    @Override
-    public Token get(@Nonnull TokenID key) {
-        return readFromDataSource(key);
     }
 
     @Override
@@ -105,16 +99,6 @@ public class TokenReadableKVState extends ReadableKVStateBase<TokenID, Token> {
         }
 
         return tokenFromEntities(entity, token, timestamp);
-    }
-
-    @Override
-    protected @Nonnull Iterator<TokenID> iterateFromDataSource() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
-    public long size() {
-        return 0;
     }
 
     private Token tokenFromEntities(

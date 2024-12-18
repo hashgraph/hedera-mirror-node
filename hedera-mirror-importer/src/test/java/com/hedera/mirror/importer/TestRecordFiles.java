@@ -48,7 +48,7 @@ public class TestRecordFiles {
     public Map<String, RecordFile> getAll() {
         var digestAlgorithm = DigestAlgorithm.SHA_384;
 
-        var recordFileV1_1 = RecordFile.builder()
+        var recordFileVersionOneOne = RecordFile.builder()
                 .consensusStart(1561990380317763000L)
                 .consensusEnd(1561990399074934000L)
                 .count(15L)
@@ -63,7 +63,7 @@ public class TestRecordFiles {
                 .size(4898)
                 .version(1)
                 .build();
-        var recordFileV1_2 = RecordFile.builder()
+        var recordFileVersionOneTwo = RecordFile.builder()
                 .consensusStart(1561991340302068000L)
                 .consensusEnd(1561991353226225001L)
                 .count(69L)
@@ -73,11 +73,11 @@ public class TestRecordFiles {
                 .hash(
                         "1faf198f8fdbefa59bde191f214d73acdc4f5c0f434677a7edf9591b129e21aea90a5b3119d2802cee522e7be6bc8830")
                 .name("2019-07-01T14_29_00.302068Z.rcd")
-                .previousHash(recordFileV1_1.getFileHash())
+                .previousHash(recordFileVersionOneOne.getFileHash())
                 .size(22347)
                 .version(1)
                 .build();
-        var recordFileV2_1 = RecordFile.builder()
+        var recordFileVersionTwoOne = RecordFile.builder()
                 .consensusStart(1567188600419072000L)
                 .consensusEnd(1567188604906443001L)
                 .count(19L)
@@ -91,7 +91,7 @@ public class TestRecordFiles {
                 .size(8515)
                 .version(2)
                 .build();
-        var recordFileV2_2 = RecordFile.builder()
+        var recordFileVersionTwoTwo = RecordFile.builder()
                 .consensusStart(1567188605249678000L)
                 .consensusEnd(1567188609705382001L)
                 .count(15L)
@@ -101,11 +101,11 @@ public class TestRecordFiles {
                 .hash(
                         "5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36")
                 .name("2019-08-30T18_10_05.249678Z.rcd")
-                .previousHash(recordFileV2_1.getFileHash())
+                .previousHash(recordFileVersionTwoOne.getFileHash())
                 .size(6649)
                 .version(2)
                 .build();
-        var recordFileV5_1 = RecordFile.builder()
+        var recordFileVersionFiveOne = RecordFile.builder()
                 .consensusStart(1610402964063739000L)
                 .consensusEnd(1610402964063739000L)
                 .count(1L)
@@ -124,7 +124,7 @@ public class TestRecordFiles {
                 .size(498)
                 .version(5)
                 .build();
-        var recordFileV5_2 = RecordFile.builder()
+        var recordFileVersionFiveTwo = RecordFile.builder()
                 .consensusStart(1610402974097416003L)
                 .consensusEnd(1610402974097416003L)
                 .count(1L)
@@ -139,11 +139,11 @@ public class TestRecordFiles {
                 .metadataHash(
                         "912869b5204ffbb7e437aaa6e7a09e9d53da98ead27942fdf7017e850827e857fadb1167e8877cfb8175883adcd74f7d")
                 .name("2021-01-11T22_09_34.097416003Z.rcd")
-                .previousHash(recordFileV5_1.getHash())
+                .previousHash(recordFileVersionFiveOne.getHash())
                 .size(498)
                 .version(5)
                 .build();
-        var recordFileV6_1 = RecordFile.builder()
+        var recordFileVersionSixOne = RecordFile.builder()
                 .consensusStart(1657701968041986003L)
                 .consensusEnd(1657701968041986003L)
                 .count(1L)
@@ -187,7 +187,7 @@ public class TestRecordFiles {
         var transactionSidecarRecords = List.of(transactionSidecarRecord1, transactionSidecarRecord2);
         var sidecarFileHash = Hex.decodeHex(
                 "1ed54ea01aab5e726a087e94a0dd52c0f49b149d7a773ae71a3dc099f623bcf1840393db68f8db476ab11e6159f030f2");
-        var recordFileV6_2 = RecordFile.builder()
+        var recordFileVersionSixTwo = RecordFile.builder()
                 .consensusStart(1657701971304284003L)
                 .consensusEnd(1657701971304284004L)
                 .count(2L)
@@ -203,7 +203,7 @@ public class TestRecordFiles {
                 .metadataHash(
                         "b13a2b638c5688dbec43b97dbee8ad637d2d42376fc313c628a990ac65aefdbd39832cf5ece42b925a520ed2d2bf8eac")
                 .name("2022-07-13T08_46_11.304284003Z.rcd.gz")
-                .previousHash(recordFileV6_1.getHash())
+                .previousHash(recordFileVersionSixOne.getHash())
                 .size(805)
                 .sidecarCount(1)
                 .sidecars(List.of(SidecarFile.builder()
@@ -222,14 +222,14 @@ public class TestRecordFiles {
                 .build();
 
         var allFiles = List.of(
-                recordFileV1_1,
-                recordFileV1_2,
-                recordFileV2_1,
-                recordFileV2_2,
-                recordFileV5_1,
-                recordFileV5_2,
-                recordFileV6_1,
-                recordFileV6_2);
+                recordFileVersionOneOne,
+                recordFileVersionOneTwo,
+                recordFileVersionTwoOne,
+                recordFileVersionTwoTwo,
+                recordFileVersionFiveOne,
+                recordFileVersionFiveTwo,
+                recordFileVersionSixOne,
+                recordFileVersionSixTwo);
         return Collections.unmodifiableMap(allFiles.stream().collect(Collectors.toMap(RecordFile::getName, rf -> rf)));
     }
 
