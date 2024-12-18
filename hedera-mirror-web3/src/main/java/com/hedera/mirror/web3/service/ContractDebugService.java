@@ -23,6 +23,7 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.repository.ContractActionRepository;
@@ -43,6 +44,7 @@ import org.springframework.validation.annotation.Validated;
 public class ContractDebugService extends ContractCallService {
     private final ContractActionRepository contractActionRepository;
 
+    @SuppressWarnings("java:S107")
     public ContractDebugService(
             ContractActionRepository contractActionRepository,
             RecordFileService recordFileService,
@@ -50,8 +52,18 @@ public class ContractDebugService extends ContractCallService {
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
             Bucket gasLimitBucket,
             ThrottleProperties throttleProperties,
-            MeterRegistry meterRegistry) {
-        super(mirrorEvmTxProcessor, gasLimitBucket, throttleProperties, meterRegistry, recordFileService, store);
+            MeterRegistry meterRegistry,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            TransactionExecutionService transactionExecutionService) {
+        super(
+                mirrorEvmTxProcessor,
+                gasLimitBucket,
+                throttleProperties,
+                meterRegistry,
+                recordFileService,
+                store,
+                mirrorNodeEvmProperties,
+                transactionExecutionService);
         this.contractActionRepository = contractActionRepository;
     }
 

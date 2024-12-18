@@ -52,6 +52,7 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
+import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.ERCTestContract;
@@ -61,10 +62,14 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import io.github.bucket4j.Bucket;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -101,6 +106,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     @Autowired
     private ThrottleProperties throttleProperties;
 
+    @Autowired
+    private TransactionExecutionService transactionExecutionService;
+
     @Resource
     private ContractExecutionService contractExecutionService;
 
@@ -128,6 +136,13 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         return Arrays.stream(CallType.values())
                 .filter(callType -> !callType.equals(ERROR))
                 .flatMap(callType -> gasLimits.stream().map(gasLimit -> Arguments.of(callType, gasLimit)));
+    }
+
+    private static String toHexWith64LeadingZeros(final Long value) {
+        final String result;
+        final var paddedHexString = String.format("%064x", value);
+        result = "0x" + paddedHexString;
+        return result;
     }
 
     @Test
@@ -161,6 +176,38 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         assertThat(result).isEqualTo(BigInteger.valueOf(4L));
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+    }
+
+    // This test will be removed in the future. Needed only for test coverage right now.
+    @Test
+    void pureCallModularizedServices() throws Exception {
+        // Given
+        final var modularizedServicesFlag = mirrorNodeEvmProperties.isModularizedServices();
+        mirrorNodeEvmProperties.setModularizedServices(true);
+        Method postConstructMethod = Arrays.stream(MirrorNodeState.class.getDeclaredMethods())
+                .filter(method -> method.isAnnotationPresent(PostConstruct.class))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("@PostConstruct method not found"));
+
+        postConstructMethod.setAccessible(true); // Make the method accessible
+        postConstructMethod.invoke(state);
+
+        final var backupProperties = mirrorNodeEvmProperties.getProperties();
+        final Map<String, String> propertiesMap = new HashMap<>();
+        propertiesMap.put("contracts.maxRefundPercentOfGasLimit", "100");
+        propertiesMap.put("contracts.maxGasPerSec", "15000000");
+        mirrorNodeEvmProperties.setProperties(propertiesMap);
+
+        final var contract = testWeb3jService.deploy(EthCall::deploy);
+        meterRegistry.clear(); // Clear it as the contract deploy increases the gas limit metric
+
+        // When
+        contract.call_multiplySimpleNumbers().send();
+
+        // Then
+        // Restore changed property values.
+        mirrorNodeEvmProperties.setModularizedServices(modularizedServicesFlag);
+        mirrorNodeEvmProperties.setProperties(backupProperties);
     }
 
     @ParameterizedTest
@@ -715,7 +762,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 mirrorEvmTxProcessor,
                 recordFileService,
                 throttleProperties,
-                gasLimitBucket);
+                gasLimitBucket,
+                mirrorNodeEvmProperties,
+                transactionExecutionService);
 
         // When
         try {
@@ -748,7 +797,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 mirrorEvmTxProcessor,
                 recordFileService,
                 throttleProperties,
-                gasLimitBucket);
+                gasLimitBucket,
+                mirrorNodeEvmProperties,
+                transactionExecutionService);
 
         // When
         try {
@@ -782,7 +833,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 mirrorEvmTxProcessor,
                 recordFileService,
                 throttleProperties,
-                gasLimitBucket);
+                gasLimitBucket,
+                mirrorNodeEvmProperties,
+                transactionExecutionService);
 
         // When
         try {
@@ -976,12 +1029,5 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
             assertThat(result).isEqualTo(HEX_PREFIX);
             assertGasLimit(serviceParameters);
         }
-    }
-
-    private static String toHexWith64LeadingZeros(final Long value) {
-        final String result;
-        final var paddedHexString = String.format("%064x", value);
-        result = "0x" + paddedHexString;
-        return result;
     }
 }
