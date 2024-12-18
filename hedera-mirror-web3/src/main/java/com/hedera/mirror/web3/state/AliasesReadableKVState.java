@@ -21,19 +21,17 @@ import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.mirror.web3.common.ContractCallContext;
-import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
-import java.util.Collections;
-import java.util.Iterator;
 
 @Named
-public class AliasesReadableKVState extends ReadableKVStateBase<ProtoBytes, AccountID> {
+public class AliasesReadableKVState extends AbstractReadableKVState<ProtoBytes, AccountID> {
 
+    public static final String KEY = "ALIASES";
     private final CommonEntityAccessor commonEntityAccessor;
 
     protected AliasesReadableKVState(final CommonEntityAccessor commonEntityAccessor) {
-        super("ALIASES");
+        super(KEY);
         this.commonEntityAccessor = commonEntityAccessor;
     }
 
@@ -43,16 +41,5 @@ public class AliasesReadableKVState extends ReadableKVStateBase<ProtoBytes, Acco
         final var entity = commonEntityAccessor.get(alias.value(), timestamp);
         return entity.map(e -> toAccountId(e.getShard(), e.getRealm(), e.getNum()))
                 .orElse(null);
-    }
-
-    @Nonnull
-    @Override
-    protected Iterator<ProtoBytes> iterateFromDataSource() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
-    public long size() {
-        return 0;
     }
 }

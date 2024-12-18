@@ -23,19 +23,17 @@ import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.TokenAirdropRepository;
-import com.swirlds.state.spi.ReadableKVStateBase;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
-import java.util.Collections;
-import java.util.Iterator;
 
 @Named
-public class AirdropsReadableKVState extends ReadableKVStateBase<PendingAirdropId, AccountPendingAirdrop> {
+public class AirdropsReadableKVState extends AbstractReadableKVState<PendingAirdropId, AccountPendingAirdrop> {
 
+    public static final String KEY = "PENDING_AIRDROPS";
     private final TokenAirdropRepository tokenAirdropRepository;
 
     protected AirdropsReadableKVState(final TokenAirdropRepository tokenAirdropRepository) {
-        super("PENDING_AIRDROPS");
+        super(KEY);
         this.tokenAirdropRepository = tokenAirdropRepository;
     }
 
@@ -57,17 +55,6 @@ public class AirdropsReadableKVState extends ReadableKVStateBase<PendingAirdropI
                         ? AccountPendingAirdrop.DEFAULT
                         : mapToAccountPendingAirdrop(tokenAirdrop.getAmount()))
                 .orElse(null);
-    }
-
-    @Nonnull
-    @Override
-    protected Iterator<PendingAirdropId> iterateFromDataSource() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
-    public long size() {
-        return 0;
     }
 
     private AccountPendingAirdrop mapToAccountPendingAirdrop(final long amount) {
