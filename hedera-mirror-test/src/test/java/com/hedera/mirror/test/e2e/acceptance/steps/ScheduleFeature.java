@@ -70,7 +70,7 @@ public class ScheduleFeature extends AbstractFeature {
 
     @Given(
             "I successfully schedule a HBAR transfer from treasury to {account} with expiration time {string} and wait for expiry {string}")
-    public void TestcreateNewHBarTransferSchedule(
+    public void createNewHBarTransferSchedule(
             AccountNameEnum accountName, String expirationTimeInSeconds, String waitForExpiry) {
         Instant expirationTime;
         if (expirationTimeInSeconds.equals("null")) {
