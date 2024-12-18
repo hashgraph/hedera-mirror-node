@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
@@ -46,9 +47,14 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
 
     private final MirrorNodeState mirrorNodeState;
     private final ServicesRegistry servicesRegistry;
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Test
     void verifyMirrorNodeStateHasRegisteredServices() {
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            return;
+        }
+
         Set<Class<? extends Service>> expectedServices = new HashSet<>(List.of(
                 EntityIdService.class,
                 TokenServiceImpl.class,
@@ -72,6 +78,10 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
 
     @Test
     void verifyServicesHaveAssignedDataSources() {
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            return;
+        }
+
         final var states = mirrorNodeState.getStates();
 
         // BlockRecordService
@@ -81,7 +91,7 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
         verifyServiceDataSources(states, BlockRecordService.NAME, blockRecordServiceDataSources);
 
         // FileService
-        Map<String, Class<?>> fileServiceDataSources = Map.of("FILES", Map.class);
+        Map<String, Class<?>> fileServiceDataSources = Map.of(FileReadableKVState.KEY, Map.class);
         verifyServiceDataSources(states, FileService.NAME, fileServiceDataSources);
 
         // CongestionThrottleService
@@ -96,8 +106,8 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
 
         // ContractService
         Map<String, Class<?>> contractServiceDataSources = Map.of(
-                "BYTECODE", Map.class,
-                "STORAGE", Map.class);
+                ContractBytecodeReadableKVState.KEY, Map.class,
+                ContractStorageReadableKVState.KEY, Map.class);
         verifyServiceDataSources(states, ContractService.NAME, contractServiceDataSources);
 
         // RecordCacheService
@@ -110,13 +120,20 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
 
         // TokenService
         Map<String, Class<?>> tokenServiceDataSources = Map.of(
-                "ACCOUNTS", Map.class,
-                "PENDING_AIRDROPS", Map.class,
-                "ALIASES", Map.class,
-                "NFTS", Map.class,
-                "TOKENS", Map.class,
-                "TOKEN_RELS", Map.class,
-                "STAKING_NETWORK_REWARDS", AtomicReference.class);
+                AccountReadableKVState.KEY,
+                Map.class,
+                "PENDING_AIRDROPS",
+                Map.class,
+                AliasesReadableKVState.KEY,
+                Map.class,
+                NftReadableKVState.KEY,
+                Map.class,
+                TokenReadableKVState.KEY,
+                Map.class,
+                TokenRelationshipReadableKVState.KEY,
+                Map.class,
+                "STAKING_NETWORK_REWARDS",
+                AtomicReference.class);
         verifyServiceDataSources(states, TokenService.NAME, tokenServiceDataSources);
     }
 
