@@ -70,7 +70,7 @@ class OpcodesController {
             @RequestParam(required = false, defaultValue = "false") boolean memory,
             @RequestParam(required = false, defaultValue = "false") boolean storage) {
         if (!rateLimitBucket.tryConsume(1)) {
-            throw new RateLimitException("Rate limit exceeded.");
+            throw new RateLimitException("Requests per second rate limit exceeded.");
         }
 
         final var options = new OpcodeTracerOptions(stack, memory, storage);
