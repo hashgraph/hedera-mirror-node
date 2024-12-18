@@ -16,7 +16,9 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.convertTimestamp;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
@@ -37,7 +39,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -46,6 +47,7 @@ import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
+import org.springframework.boot.convert.DurationStyle;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
@@ -63,19 +65,19 @@ public class ScheduleFeature extends AbstractFeature {
     private NetworkTransactionResponse networkTransactionResponse;
     private ScheduleId scheduleId;
     private TransactionId scheduledTransactionId;
-    private Long plusSecondsToExpire;
+    private Duration plusSecondsToExpire;
     private String scheduleTxConsensusTimestamp;
 
     @Given(
-            "I successfully schedule a HBAR transfer from treasury to {account} {string} expiration time and wait for expiry {string} - plus {int} seconds")
-    public void createNewHBarTransferSchedule(
-            AccountNameEnum accountName, String hasExpirationTime, String waitForExpiry, int secondsToExpire) {
-        this.plusSecondsToExpire = (long) secondsToExpire;
+            "I successfully schedule a HBAR transfer from treasury to {account} with expiration time {string} and wait for expiry {string}")
+    public void TestcreateNewHBarTransferSchedule(
+            AccountNameEnum accountName, String expirationTimeInSeconds, String waitForExpiry) {
         Instant expirationTime;
-        switch (hasExpirationTime) {
-            case "without" -> expirationTime = null;
-            case "with" -> expirationTime = Instant.now().plusSeconds(plusSecondsToExpire);
-            default -> throw new IllegalArgumentException("Invalid expiration time");
+        if (expirationTimeInSeconds.equals("null")) {
+            expirationTime = null;
+        } else {
+            this.plusSecondsToExpire = DurationStyle.detectAndParse(expirationTimeInSeconds);
+            expirationTime = Instant.now().plus(plusSecondsToExpire);
         }
 
         currentSignersCount = SIGNATORY_COUNT_OFFSET;
@@ -89,14 +91,14 @@ public class ScheduleFeature extends AbstractFeature {
     }
 
     @Given("I wait for the schedule to expire")
-    public void waitForScheduleToExpire() throws InterruptedException {
-        var txConsensusTimestamp = convertStringToInstant(this.scheduleTxConsensusTimestamp);
-        var expectedExecutedTimestamp = txConsensusTimestamp.plusSeconds(plusSecondsToExpire + 1);
+    public void waitForScheduleToExpire() {
+        var txConsensusTimestamp = convertTimestamp(this.scheduleTxConsensusTimestamp);
+        var expectedExecutedTimestamp = txConsensusTimestamp.plus(plusSecondsToExpire);
 
-        while (Instant.now().isBefore(expectedExecutedTimestamp)) {
-            log.info("Waiting for "
-                    + Duration.between(Instant.now(), expectedExecutedTimestamp).getSeconds() + " seconds...");
-        }
+        await().atMost(Duration.ofSeconds(30))
+                .pollDelay(Duration.ofMillis(100))
+                .pollInterval(Duration.ofMillis(100))
+                .untilAsserted(() -> assertThat(Instant.now()).isAfterOrEqualTo(expectedExecutedTimestamp));
 
         // We need this dummy transaction in order to execute the schedule
         try {
@@ -106,18 +108,7 @@ public class ScheduleFeature extends AbstractFeature {
         }
     }
 
-    private Instant convertStringToInstant(String timestamp) {
-        BigDecimal bdTimestamp = new BigDecimal(timestamp);
-        BigDecimal[] parts = bdTimestamp.divideAndRemainder(BigDecimal.ONE);
-        BigDecimal integerPart = parts[0];
-        BigDecimal fractionalPart = parts[1];
-        long epochSeconds = integerPart.longValueExact();
-        long nanos = fractionalPart.movePointRight(9).longValueExact();
-        return Instant.ofEpochSecond(epochSeconds, nanos);
-    }
-
-    private void createNewSchedule(
-            Transaction<?> transaction, Instant expirationTime, boolean waitForExpiry) {
+    private void createNewSchedule(Transaction<?> transaction, Instant expirationTime, boolean waitForExpiry) {
         // create signatures list
         networkTransactionResponse = scheduleClient.createSchedule(
                 scheduleClient.getSdkClient().getExpandedOperatorAccountId(),
@@ -198,6 +189,7 @@ public class ScheduleFeature extends AbstractFeature {
         // get unique set of signatures
         var signatureSet = mirrorSchedule.getSignatures().stream()
                 .map(ScheduleSignature::getPublicKeyPrefix)
+                .filter(Objects::nonNull)
                 .map(Bytes::wrap)
                 .collect(Collectors.toSet());
         assertThat(signatureSet).hasSize(currentSignersCount);
@@ -298,9 +290,7 @@ public class ScheduleFeature extends AbstractFeature {
                     assertThat(mirrorSchedule.getWaitForExpiry()).isFalse();
                 }
             }
-            default -> {
-                throw new IllegalArgumentException("Invalid schedule status");
-            }
+            default -> throw new IllegalArgumentException("Invalid schedule status");
         }
     }
 
