@@ -20,3 +20,4 @@ spring:
   test:
     database:
       replace: NONE
+#    reusableServicesFlag: ${testFlag:false}
