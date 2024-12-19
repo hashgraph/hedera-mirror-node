@@ -194,17 +194,18 @@ class TokenAccountMigrationTest extends ImporterIntegrationTest {
         jdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
+    @SuppressWarnings("java:S1854") // No useless assignments in the method, since they help avoiding code repetition
     private MigrationTokenAccount update(
             MigrationTokenAccount current, Consumer<MigrationTokenAccount.MigrationTokenAccountBuilder> customizer) {
-        var nextBuilder = current.toBuilder();
-        customizer.accept(nextBuilder);
-        var next = nextBuilder.build();
-        next.setModifiedTimestamp(current.getModifiedTimestamp() + 100);
-        if (next.getCreatedTimestamp() == -1) {
+        var accountBuilder = current.toBuilder();
+        customizer.accept(accountBuilder);
+        MigrationTokenAccount account = accountBuilder.build();
+        account.setModifiedTimestamp(current.getModifiedTimestamp() + 100);
+        if (account.getCreatedTimestamp() == -1) {
             // start a new token account relationship
-            next.setCreatedTimestamp(next.getModifiedTimestamp());
+            account.setCreatedTimestamp(account.getModifiedTimestamp());
         }
-        return next;
+        return account;
     }
 
     @Builder(toBuilder = true)

@@ -16,10 +16,11 @@
 
 package com.hedera.mirror.importer.domain;
 
+import static com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader.VERSION;
+
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
 import java.util.Comparator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -87,7 +88,7 @@ public class StreamFileSignature implements Comparable<StreamFileSignature> {
     }
 
     private boolean hasCompressedDataFile() {
-        return version >= ProtoSignatureFileReader.VERSION || filename.isCompressed();
+        return version >= VERSION || filename.isCompressed();
     }
 
     public enum SignatureStatus {

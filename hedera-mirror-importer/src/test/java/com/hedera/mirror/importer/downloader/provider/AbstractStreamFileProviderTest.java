@@ -71,6 +71,7 @@ abstract class AbstractStreamFileProviderTest {
 
     protected abstract String resolveProviderRelativePath(ConsensusNode node, String fileName);
 
+    @SuppressWarnings("unused") // node is used in the child classes implementations
     protected FileCopier getFileCopier(ConsensusNode node) {
         return fileCopier;
     }

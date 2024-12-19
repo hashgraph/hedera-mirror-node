@@ -31,7 +31,6 @@ plugins {
 // We need to use this version in order to be able to decode hex data when using the hedera.app
 // dependency
 val headlongVersion = "6.1.1"
-val javaxInjectVersion = "1"
 
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))

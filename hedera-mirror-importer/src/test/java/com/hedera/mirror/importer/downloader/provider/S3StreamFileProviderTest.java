@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
+import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SEPARATOR;
 import static org.awaitility.Awaitility.await;
 import static software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR;
 
@@ -28,6 +29,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.ForkJoinPool;
+import lombok.SneakyThrows;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.jclouds.ContextBuilder;
@@ -46,7 +48,7 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
 
     @Override
     protected String getProviderPathSeparator() {
-        return S3StreamFileProvider.SEPARATOR;
+        return SEPARATOR;
     }
 
     @Override
@@ -55,6 +57,7 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @BeforeEach
+    @Override
     void setup() throws Exception {
         super.setup();
         var s3AsyncClient = S3AsyncClient.builder()
@@ -75,7 +78,8 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
                 .to(properties.getBucketName(), StreamType.RECORD.getPath());
     }
 
-    private void startS3Proxy() throws Exception {
+    @SneakyThrows
+    private void startS3Proxy() {
         Properties properties = new Properties();
         properties.setProperty(
                 "jclouds.filesystem.basedir", dataPath.toAbsolutePath().toString());
