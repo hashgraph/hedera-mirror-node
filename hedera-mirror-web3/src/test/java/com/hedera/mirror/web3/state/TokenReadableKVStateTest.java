@@ -42,6 +42,7 @@ import com.hedera.mirror.common.domain.token.FallbackFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.FractionalFee;
 import com.hedera.mirror.common.domain.token.RoyaltyFee;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
@@ -188,7 +189,9 @@ class TokenReadableKVStateTest {
                 .returns(databaseToken.getName(), Token::name)
                 .returns(databaseToken.getSymbol(), Token::symbol)
                 .returns(databaseToken.getDecimals(), Token::decimals)
-                .returns(entity.getAutoRenewPeriod(), Token::autoRenewSeconds);
+                .returns(entity.getAutoRenewPeriod(), Token::autoRenewSeconds)
+                .returns(
+                        databaseToken.getKycStatus() == TokenKycStatusEnum.GRANTED, Token::accountsKycGrantedByDefault);
 
         assertThat(token.totalSupplySupplier().get()).isEqualTo(databaseToken.getTotalSupply());
     }

@@ -54,9 +54,7 @@ public class Utils {
      * @return The PBJ Timestamp object.
      */
     public static Timestamp convertToTimestamp(final long timestamp) {
-        final long seconds = timestamp / 1_000_000_000;
-        final int remainingNanos = (int) (timestamp % 1_000_000_000);
-        var instant = Instant.ofEpochSecond(seconds, remainingNanos);
+        var instant = Instant.ofEpochSecond(0, timestamp);
         return new Timestamp(instant.getEpochSecond(), instant.getNano());
     }
 

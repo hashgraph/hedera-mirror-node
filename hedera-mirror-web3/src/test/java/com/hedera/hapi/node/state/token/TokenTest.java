@@ -33,6 +33,8 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
@@ -1022,6 +1024,47 @@ public class TokenTest extends AbstractStateTest {
         item1.ifMetadataKey(keyConsumer);
         itemNullMetadataKey.ifMetadataKey(keyConsumer);
         assertThat(keys).isNotEmpty().hasSize(1).contains(item1.metadataKey());
+    }
+
+    @Test
+    void testCustomFees() {
+        final var item1 = ARGUMENTS.get(0);
+        final var customFee = CustomFee.newBuilder()
+                .fixedFee(FixedFee.newBuilder().amount(1L).build())
+                .build();
+        final var customFees = List.of(customFee);
+        final var itemCustomFees = item1.copyBuilder().customFees(customFees).build();
+
+        assertThat(itemCustomFees.customFees()).isEqualTo(customFees);
+    }
+
+    @Test
+    void testTotalSupply() {
+        final var item1 = ARGUMENTS.get(0);
+        final var totalSupply = 123L;
+        final var itemTotalSupply = item1.copyBuilder().totalSupply(totalSupply).build();
+
+        assertThat(itemTotalSupply.totalSupply()).isEqualTo(totalSupply);
+    }
+
+    @Test
+    void testAutoRenewAccountID() {
+        final var item1 = ARGUMENTS.get(0);
+        final var autoRenewAccountID = AccountID.newBuilder().accountNum(123L).build();
+        final var itemAutoRenewAccountID =
+                item1.copyBuilder().autoRenewAccountId(autoRenewAccountID).build();
+
+        assertThat(itemAutoRenewAccountID.autoRenewAccountId()).isEqualTo(autoRenewAccountID);
+    }
+
+    @Test
+    void testTreasuryAccountID() {
+        final var item1 = ARGUMENTS.get(0);
+        final var treasuryAccountID = AccountID.newBuilder().accountNum(123L).build();
+        final var itemTreasuryAccountID =
+                item1.copyBuilder().treasuryAccountId(treasuryAccountID).build();
+
+        assertThat(itemTreasuryAccountID.treasuryAccountId()).isEqualTo(treasuryAccountID);
     }
 
     @Test
