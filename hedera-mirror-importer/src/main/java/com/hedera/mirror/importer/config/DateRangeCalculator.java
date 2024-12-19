@@ -159,7 +159,7 @@ public class DateRangeCalculator {
     private StreamFileRepository<?, ?> getStreamFileRepository(StreamType streamType) {
         return switch (streamType) {
             case BALANCE -> accountBalanceFileRepository;
-            case RECORD -> recordFileRepository;
+            case RECORD, BLOCK -> recordFileRepository;
         };
     }
 
