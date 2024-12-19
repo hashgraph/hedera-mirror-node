@@ -42,6 +42,7 @@ import com.hedera.mirror.common.domain.token.FallbackFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.FractionalFee;
 import com.hedera.mirror.common.domain.token.RoyaltyFee;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
@@ -188,7 +189,9 @@ class TokenReadableKVStateTest {
                 .returns(databaseToken.getName(), Token::name)
                 .returns(databaseToken.getSymbol(), Token::symbol)
                 .returns(databaseToken.getDecimals(), Token::decimals)
-                .returns(entity.getAutoRenewPeriod(), Token::autoRenewSeconds);
+                .returns(entity.getAutoRenewPeriod(), Token::autoRenewSeconds)
+                .returns(
+                        databaseToken.getKycStatus() == TokenKycStatusEnum.GRANTED, Token::accountsKycGrantedByDefault);
 
         assertThat(token.totalSupplySupplier().get()).isEqualTo(databaseToken.getTotalSupply());
     }
@@ -399,6 +402,18 @@ class TokenReadableKVStateTest {
                         token -> assertThat(token.totalSupplySupplier().get()).isEqualTo(historicalSupply));
 
         verify(nftRepository).findNftTotalSupplyByTokenIdAndTimestamp(databaseToken.getTokenId(), timestamp.get());
+    }
+
+    @Test
+    void getAccountsKycGrantedByDefault() {
+        setupToken(Optional.empty());
+        databaseToken.setKycStatus(TokenKycStatusEnum.GRANTED);
+
+        when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+
+        assertThat(tokenReadableKVState.readFromDataSource(TOKEN_ID))
+                .satisfies(
+                        token -> assertThat(token.accountsKycGrantedByDefault()).isTrue());
     }
 
     @Test

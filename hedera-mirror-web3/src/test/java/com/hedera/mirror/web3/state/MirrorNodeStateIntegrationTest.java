@@ -27,6 +27,7 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.ServicesRegistry;
@@ -63,7 +64,8 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
                 BlockRecordService.class,
                 FeeService.class,
                 CongestionThrottleService.class,
-                RecordCacheService.class));
+                RecordCacheService.class,
+                ScheduleServiceImpl.class));
 
         final var registeredServices = servicesRegistry.registrations();
         assertThat(registeredServices).hasSameSizeAs(expectedServices);

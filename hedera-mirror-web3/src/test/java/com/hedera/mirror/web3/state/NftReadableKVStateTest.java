@@ -16,14 +16,12 @@
 
 package com.hedera.mirror.web3.state;
 
+import static com.hedera.mirror.web3.state.Utils.convertToTimestamp;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -32,10 +30,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.NftRepository;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterAll;
@@ -146,9 +142,7 @@ class NftReadableKVStateTest {
                 .returns(
                         EntityIdUtils.toAccountId(nftDomain.getAccountId()),
                         com.hedera.hapi.node.state.token.Nft::ownerId)
-                .returns(
-                        new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 0L)),
-                        com.hedera.hapi.node.state.token.Nft::spenderId)
+                .returns(null, com.hedera.hapi.node.state.token.Nft::spenderId)
                 .returns(
                         convertToTimestamp(nftDomain.getCreatedTimestamp()),
                         com.hedera.hapi.node.state.token.Nft::mintTime)
@@ -166,9 +160,7 @@ class NftReadableKVStateTest {
                 .returns(
                         EntityIdUtils.toAccountId(nftDomain.getAccountId()),
                         com.hedera.hapi.node.state.token.Nft::ownerId)
-                .returns(
-                        new AccountID(0L, 0L, new OneOf<>(AccountOneOfType.ACCOUNT_NUM, 0L)),
-                        com.hedera.hapi.node.state.token.Nft::spenderId)
+                .returns(null, com.hedera.hapi.node.state.token.Nft::spenderId)
                 .returns(
                         convertToTimestamp(nftDomain.getCreatedTimestamp()),
                         com.hedera.hapi.node.state.token.Nft::mintTime)
@@ -227,10 +219,5 @@ class NftReadableKVStateTest {
                     .thenReturn(Optional.ofNullable(databaseNft));
         }
         return databaseNft;
-    }
-
-    private Timestamp convertToTimestamp(long timestamp) {
-        var instant = Instant.ofEpochMilli(timestamp);
-        return new Timestamp(instant.getEpochSecond(), instant.getNano());
     }
 }

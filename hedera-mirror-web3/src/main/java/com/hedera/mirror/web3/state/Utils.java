@@ -48,13 +48,13 @@ public class Utils {
     }
 
     /**
-     * Converts a timestamp in milliseconds to a PBJ Timestamp object.
+     * Converts a timestamp in nanoseconds to a PBJ Timestamp object.
      *
-     * @param timestamp The timestamp in milliseconds.
+     * @param timestamp The timestamp in nanoseconds.
      * @return The PBJ Timestamp object.
      */
     public static Timestamp convertToTimestamp(final long timestamp) {
-        var instant = Instant.ofEpochMilli(timestamp);
+        var instant = Instant.ofEpochSecond(0, timestamp);
         return new Timestamp(instant.getEpochSecond(), instant.getNano());
     }
 

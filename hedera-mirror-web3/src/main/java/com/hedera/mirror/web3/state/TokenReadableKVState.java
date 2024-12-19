@@ -34,6 +34,7 @@ import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
@@ -131,6 +132,7 @@ public class TokenReadableKVState extends AbstractReadableKVState<TokenID, Token
                 .totalSupply(getTotalSupply(token, timestamp))
                 .treasuryAccountId(getTreasury(token.getTreasuryAccountId(), timestamp))
                 .wipeKey(Utils.parseKey(token.getWipeKey()))
+                .accountsKycGrantedByDefault(token.getKycStatus() == TokenKycStatusEnum.GRANTED)
                 .build();
     }
 

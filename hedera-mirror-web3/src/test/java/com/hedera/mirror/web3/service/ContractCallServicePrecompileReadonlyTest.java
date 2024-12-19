@@ -85,12 +85,16 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var functionCall = contract.call_callMissingPrecompile();
 
         // Then
-        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+        } else {
+            assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+        }
     }
 
     // Temporary test until we start supporting this precompile
     @Test
-    void hrcIsAssociatedFails() {
+    void hrcIsAssociatedFails() throws Exception {
         // Given
         final var token = persistFungibleToken();
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
@@ -99,9 +103,13 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var functionCall = contract.call_hrcIsAssociated(getAddressFromEntity(token));
 
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(PrecompileNotSupportedException.class)
-                .hasMessage("HRC isAssociated() precompile is not supported.");
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            assertThat(functionCall.send()).isFalse();
+        } else {
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(PrecompileNotSupportedException.class)
+                    .hasMessage("HRC isAssociated() precompile is not supported.");
+        }
     }
 
     @Test
@@ -787,7 +795,10 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                 .persist();
         final var nft = domainBuilder
                 .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(owner.toEntityId()))
+                .customize(n -> n.tokenId(tokenEntity.getId())
+                        .serialNumber(1L)
+                        .spender(null)
+                        .accountId(owner.toEntityId()))
                 .persist();
 
         final var customFees =

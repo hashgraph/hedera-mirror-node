@@ -341,6 +341,14 @@ public class TokenRelationTest {
     }
 
     @Test
+    void testBalance() {
+        final var item1 = ARGUMENTS.get(0);
+        final var balance = 123L;
+        final var itemBalance = item1.copyBuilder().balance(balance).build();
+        assertThat(itemBalance.balance()).isEqualTo(balance);
+    }
+
+    @Test
     void testTokenBuilder() {
         final var item1 = ARGUMENTS.get(0);
         final var tokenID = new TokenID(1, 2, 3);
