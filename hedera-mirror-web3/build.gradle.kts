@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import org.gradle.internal.classpath.Instrumented.systemProperty
 import java.net.HttpURLConnection
 import java.net.URI
 import org.web3j.solidity.gradle.plugin.SolidityCompile
@@ -129,7 +130,16 @@ tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
 tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 
-tasks.test { jvmArgs = listOf("--enable-preview") }
+tasks.test { jvmArgs = listOf("--enable-preview")
+
+    // Set default value for testFlag if not provided
+    val testFlagValue = if (project.hasProperty("testFlag")) {
+        project.property("testFlag") as String
+    } else {
+        "false"
+    }
+    systemProperty("testFlag", testFlagValue)
+}
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
