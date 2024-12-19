@@ -405,6 +405,18 @@ class TokenReadableKVStateTest {
     }
 
     @Test
+    void getAccountsKycGrantedByDefault() {
+        setupToken(Optional.empty());
+        databaseToken.setKycStatus(TokenKycStatusEnum.GRANTED);
+
+        when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+
+        assertThat(tokenReadableKVState.readFromDataSource(TOKEN_ID))
+                .satisfies(
+                        token -> assertThat(token.accountsKycGrantedByDefault()).isTrue());
+    }
+
+    @Test
     void getNullOnMissingToken() {
         when(contractCallContext.getTimestamp()).thenReturn(Optional.empty());
         when(commonEntityAccessor.get(TOKEN_ID, Optional.empty())).thenReturn(Optional.empty());
