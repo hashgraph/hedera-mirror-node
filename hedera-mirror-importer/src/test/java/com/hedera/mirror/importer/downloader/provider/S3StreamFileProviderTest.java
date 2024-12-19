@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.ForkJoinPool;
+import lombok.SneakyThrows;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.jclouds.ContextBuilder;
@@ -77,7 +78,8 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
                 .to(properties.getBucketName(), StreamType.RECORD.getPath());
     }
 
-    private void startS3Proxy() throws Exception {
+    @SneakyThrows
+    private void startS3Proxy() {
         Properties properties = new Properties();
         properties.setProperty(
                 "jclouds.filesystem.basedir", dataPath.toAbsolutePath().toString());

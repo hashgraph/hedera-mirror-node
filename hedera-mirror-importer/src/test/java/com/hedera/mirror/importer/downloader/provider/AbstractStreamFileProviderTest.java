@@ -56,7 +56,6 @@ abstract class AbstractStreamFileProviderTest {
     protected StreamFileProvider streamFileProvider;
 
     @BeforeEach
-    @SuppressWarnings("java:S1130") // Exception is thrown in the child classes setup method
     void setup() throws Exception {
         var mirrorProperties = new ImporterProperties();
         mirrorProperties.setDataPath(dataPath);
@@ -72,7 +71,7 @@ abstract class AbstractStreamFileProviderTest {
 
     protected abstract String resolveProviderRelativePath(ConsensusNode node, String fileName);
 
-    @SuppressWarnings("java:S1172") // node is used in the child classes implementations
+    @SuppressWarnings("unused") // node is used in the child classes implementations
     protected FileCopier getFileCopier(ConsensusNode node) {
         return fileCopier;
     }

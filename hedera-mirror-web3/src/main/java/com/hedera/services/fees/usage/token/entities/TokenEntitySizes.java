@@ -25,7 +25,6 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.LONG_SIZE;
 /**
  *  Exact copy from hedera-services
  */
-@SuppressWarnings("squid:S6548") // enum soon to be deleted with the introduction of reusable services
 public enum TokenEntitySizes {
     TOKEN_ENTITY_SIZES;
 

@@ -154,9 +154,7 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
         assertThat(findHistory("token", PostMigrationToken.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
-    @SuppressWarnings(
-            "java:S1854") // timestamp variable is necessary in order to avoid repetition and to make code easier to
-    // read
+    @SuppressWarnings("java:S1854") // timestamp is needed in order to avoid repetition
     private MigrationToken.MigrationTokenBuilder getMigrationToken() {
         long timestamp = domainBuilder.timestamp();
         return MigrationToken.builder()
