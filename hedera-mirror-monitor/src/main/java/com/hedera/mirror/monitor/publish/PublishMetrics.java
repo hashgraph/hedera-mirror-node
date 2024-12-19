@@ -46,7 +46,6 @@ public class PublishMetrics {
     private final Map<Tags, Timer> handleTimers = new ConcurrentHashMap<>();
     private final Map<Tags, Timer> submitTimers = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
-    private final NodeSupplier nodeSupplier;
     private final PublishProperties publishProperties;
 
     public void onSuccess(PublishResponse response) {
