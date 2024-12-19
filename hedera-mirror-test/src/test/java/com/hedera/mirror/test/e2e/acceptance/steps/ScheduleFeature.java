@@ -65,19 +65,17 @@ public class ScheduleFeature extends AbstractFeature {
     private NetworkTransactionResponse networkTransactionResponse;
     private ScheduleId scheduleId;
     private TransactionId scheduledTransactionId;
-    private Duration plusSecondsToExpire;
-    private String scheduleTxConsensusTimestamp;
+    private String scheduleExpirationTime;
 
     @Given(
             "I successfully schedule a HBAR transfer from treasury to {account} with expiration time {string} and wait for expiry {string}")
     public void createNewHBarTransferSchedule(
             AccountNameEnum accountName, String expirationTimeInSeconds, String waitForExpiry) {
-        Instant expirationTime;
-        if (expirationTimeInSeconds.equals("null")) {
-            expirationTime = null;
-        } else {
-            this.plusSecondsToExpire = DurationStyle.detectAndParse(expirationTimeInSeconds);
-            expirationTime = Instant.now().plus(plusSecondsToExpire);
+        Instant expirationTime = null;
+
+        if (expirationTimeInSeconds != null && !expirationTimeInSeconds.equals("null")) {
+            Duration expirationOffset = DurationStyle.detectAndParse(expirationTimeInSeconds);
+            expirationTime = Instant.now().plus(expirationOffset);
         }
 
         currentSignersCount = SIGNATORY_COUNT_OFFSET;
@@ -90,15 +88,14 @@ public class ScheduleFeature extends AbstractFeature {
         createNewSchedule(scheduledTransaction, expirationTime, Boolean.parseBoolean(waitForExpiry));
     }
 
-    @Given("I wait for the schedule to expire")
+    @Given("I wait until the schedule's expiration time")
     public void waitForScheduleToExpire() {
-        var txConsensusTimestamp = convertTimestamp(this.scheduleTxConsensusTimestamp);
-        var expectedExecutedTimestamp = txConsensusTimestamp.plus(plusSecondsToExpire);
+        var scheduleExpirationTimeInstant = convertTimestamp(this.scheduleExpirationTime);
 
         await().atMost(Duration.ofSeconds(30))
                 .pollDelay(Duration.ofMillis(100))
                 .pollInterval(Duration.ofMillis(100))
-                .untilAsserted(() -> assertThat(Instant.now()).isAfterOrEqualTo(expectedExecutedTimestamp));
+                .untilAsserted(() -> assertThat(Instant.now()).isAfterOrEqualTo(scheduleExpirationTimeInstant));
 
         // We need this dummy transaction in order to execute the schedule
         try {
@@ -117,14 +114,12 @@ public class ScheduleFeature extends AbstractFeature {
                 expirationTime,
                 waitForExpiry);
         assertNotNull(networkTransactionResponse.getTransactionId());
-        scheduleTxConsensusTimestamp = Objects.requireNonNull(mirrorClient
-                        .getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
-                        .getTransactions())
-                .getFirst()
-                .getConsensusTimestamp();
         assertNotNull(networkTransactionResponse.getReceipt());
         scheduleId = networkTransactionResponse.getReceipt().scheduleId;
         assertNotNull(scheduleId);
+
+        scheduleExpirationTime =
+                mirrorClient.getScheduleInfo(scheduleId.toString()).getExpirationTime();
 
         // cache schedule create transaction id for confirmation of scheduled transaction later
         scheduledTransactionId = networkTransactionResponse.getReceipt().scheduledTransactionId;
@@ -195,6 +190,17 @@ public class ScheduleFeature extends AbstractFeature {
                 .collect(Collectors.toSet());
         assertThat(signatureSet).hasSize(currentSignersCount);
 
+        if (expirationTimeInSeconds.equals("null")) {
+            assertThat(mirrorSchedule.getExpirationTime()).isNull();
+        } else {
+            assertThat(mirrorSchedule.getExpirationTime()).isNotNull();
+        }
+        if (waitForExpiry) {
+            assertThat(mirrorSchedule.getWaitForExpiry()).isTrue();
+        } else {
+            assertThat(mirrorSchedule.getWaitForExpiry()).isFalse();
+        }
+
         switch (scheduleStatus) {
             case NON_EXECUTED -> {
                 assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
@@ -203,16 +209,6 @@ public class ScheduleFeature extends AbstractFeature {
                                 .getSdkClient()
                                 .getExpandedOperatorAccountId()
                                 .toString());
-                if (expirationTimeInSeconds.equals("null")) {
-                    assertThat(mirrorSchedule.getExpirationTime()).isNull();
-                } else {
-                    assertThat(mirrorSchedule.getExpirationTime()).isNotNull();
-                }
-                if (waitForExpiry) {
-                    assertThat(mirrorSchedule.getWaitForExpiry()).isTrue();
-                } else {
-                    assertThat(mirrorSchedule.getWaitForExpiry()).isFalse();
-                }
             }
             case DELETED -> {
                 assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
@@ -222,17 +218,6 @@ public class ScheduleFeature extends AbstractFeature {
                                 .getSdkClient()
                                 .getExpandedOperatorAccountId()
                                 .toString());
-                if (expirationTimeInSeconds.equals("null")) {
-                    assertThat(mirrorSchedule.getExpirationTime()).isNull();
-                } else {
-                    assertThat(mirrorSchedule.getExpirationTime()).isNotNull();
-                }
-
-                if (waitForExpiry) {
-                    assertThat(mirrorSchedule.getWaitForExpiry()).isTrue();
-                } else {
-                    assertThat(mirrorSchedule.getWaitForExpiry()).isFalse();
-                }
             }
             case EXECUTED -> {
                 TransactionsResponse mirrorTransactionsResponse =
@@ -248,17 +233,6 @@ public class ScheduleFeature extends AbstractFeature {
                                 .getSdkClient()
                                 .getExpandedOperatorAccountId()
                                 .toString());
-                if (expirationTimeInSeconds.equals("null")) {
-                    assertThat(mirrorSchedule.getExpirationTime()).isNull();
-                } else {
-                    assertThat(mirrorSchedule.getExpirationTime()).isNotNull();
-                }
-
-                if (waitForExpiry) {
-                    assertThat(mirrorSchedule.getWaitForExpiry()).isTrue();
-                } else {
-                    assertThat(mirrorSchedule.getWaitForExpiry()).isFalse();
-                }
             }
             case EXPIRED -> {
                 TransactionsResponse mirrorTransactionsResponse =
@@ -274,17 +248,6 @@ public class ScheduleFeature extends AbstractFeature {
                                 .getSdkClient()
                                 .getExpandedOperatorAccountId()
                                 .toString());
-                if (expirationTimeInSeconds.equals("null")) {
-                    assertThat(mirrorSchedule.getExpirationTime()).isNull();
-                } else {
-                    assertThat(mirrorSchedule.getExpirationTime()).isNotNull();
-                }
-
-                if (waitForExpiry) {
-                    assertThat(mirrorSchedule.getWaitForExpiry()).isTrue();
-                } else {
-                    assertThat(mirrorSchedule.getWaitForExpiry()).isFalse();
-                }
             }
             default -> throw new IllegalArgumentException("Invalid schedule status");
         }
