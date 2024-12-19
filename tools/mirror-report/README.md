@@ -8,10 +8,19 @@ the account and its resulting balance.
 First ensure Node and NPM are installed. If not using MacOS or Linux, please see Node's
 install [instructions](https://nodejs.org/en/download/package-manager/current).
 
+## MacOS
+
 ```shell
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 nvm install 22
 npm install -g @hashgraph/mirror-report
+```
+
+### Windows
+
+```shell
+winget install Schniz.fnm
+fnm env --use-on-cd | Out-String | Invoke-Expression
 ```
 
 ## Running
@@ -59,6 +68,7 @@ $ mirror report -a 0.0.1000 -a 0.0.1001 -d 2024-11-29 -n testnet
 2024-12-17T04:52:04.800Z Starting balance of 197103815708295 for account 0.0.1001 at 1732837599.823821194
 2024-12-17T04:52:04.800Z Invoking https://testnet.mirrornode.hedera.com/api/v1/transactions?account.id=0.0.1001&limit=100&order=asc&timestamp=gt:1732837599.823821194&timestamp=lt:1732924800
 2024-12-17T04:52:04.875Z Generated report successfully at report-2024-11-29.csv with 1 entries
+
 $ cat report-2024-11-29.csv
 timestamp,sender,receiver,fees,amount,balance
 1732901875.430169000,0.0.5190744,0.0.1000,0,100000000,1400000002

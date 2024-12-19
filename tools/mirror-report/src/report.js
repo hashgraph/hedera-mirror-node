@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
@@ -17,10 +15,9 @@
  */
 
 import fetch from 'node-fetch';
-import fs from 'fs';
 import JSONBigFactory from 'json-bigint';
+import {ReportFile} from "./reportfile.js";
 
-const datePattern = /^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/;
 const feeAccount = /^\d+\.\d+\.(98|800|801|[3-9]|[1-3][0-9])$/;
 const JSONBig = JSONBigFactory({useNativeBigInt: true});
 const prefix = '/api/v1';
@@ -28,6 +25,18 @@ const prefix = '/api/v1';
 const log = (message) => {
   const timestamp = new Date().toISOString();
   console.log(`${timestamp} ${message}`);
+};
+
+const toIsoString = timestamp => {
+  if (!timestamp) {
+    return '';
+  }
+
+  const parts = timestamp.split('.');
+  const seconds = parts.length >= 1 ? parseInt(parts[0]) : 0;
+  const nanos = parts.length > 1 ? parts[1] : "000000000";
+  const date = new Date(seconds * 1000).toISOString().slice(0, 20);
+  return `${date}${nanos}Z`;
 };
 
 const restApi = async (network, path) => {
@@ -48,18 +57,10 @@ const restApi = async (network, path) => {
 };
 
 export const report = async (options) => {
-  if (!datePattern.test(options.date)) {
-    log(`Invalid date ${options.date}. Expected YYYY-MM-DD`);
-    return;
-  }
-
-  const filename = `report-${options.date}.csv`;
-  const timestampStart = new Date(options.date).getTime() / 1000;
-  const timestampEnd = timestampStart + 86400;
-
-  let csv = "timestamp,sender,receiver,fees,amount,balance\n";
-  let count = 0;
-  log(`Generating ${options.network} report for the given accounts: ${JSONBig.stringify(options.account)}`);
+  log(`Running report with options: ${JSON.stringify(options)}`);
+  const timestampStart = new Date(options.fromDate).getTime() / 1000;
+  const timestampEnd = new Date(options.toDate).getTime() / 1000;
+  let reportFile = new ReportFile();
 
   for (const account of options.account) {
     const accountResponse = await restApi(options.network, `/accounts/${account}?timestamp=${timestampStart}`);
@@ -102,20 +103,21 @@ export const report = async (options) => {
         if (consensusTimestampSeconds >= timestampStart) {
           const sender = amount < 0n ? account : other;
           let receiver = amount < 0n ? other : account;
-          csv += `${transaction.consensus_timestamp},${sender},${receiver},${fees},${amount},${balance}\n`;
-          ++count;
+          const dateTime = toIsoString(transaction.consensus_timestamp);
+          const hashscan = `https://hashscan.io/${options.network}/transaction/${transaction.consensus_timestamp}`;
+          reportFile.append(`${dateTime},${sender},${receiver},${fees},${amount},${balance},${hashscan}\n`);
         }
       }
 
       next = transactionsResponse?.links?.next;
     }
 
+    if (options.separate) {
+      reportFile.write(`report-${options.fromDate}-${account}.csv`);
+    }
   }
 
-  fs.writeFile(filename, csv, (err) => {
-    if (err) {
-      throw err;
-    }
-  });
-  log(`Generated report successfully at ${filename} with ${count} entries`);
+  if (!options.separate) {
+    reportFile.write(`report-${options.fromDate}.csv`);
+  }
 };

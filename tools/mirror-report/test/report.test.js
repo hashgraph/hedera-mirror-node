@@ -17,7 +17,7 @@
 import fetchMock, {manageFetchMockGlobally} from '@fetch-mock/jest';
 import {jest} from '@jest/globals';
 import console from 'console';
-import {report} from '../src/report';
+import {report} from '../src/report.js';
 
 manageFetchMockGlobally(jest);
 
@@ -25,11 +25,22 @@ global.console = console;
 
 describe('report', () => {
   test('single account', async () => {
-    fetchMock.get("https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1000", 200, JSON.stringify({}));
+    const accountUrl = 'https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1000?timestamp=1734393600';
+    const testnetUrl = 'https://testnet.mirrornode.hedera.com/api/v1/transactions?account.id=0.0.1000&limit=100&order=asc&timestamp=gt:1734393025.693371991&timestamp=lt:1734480000';
 
-    const json = await report({account: "0.0.1000", date: "2024-12-17", network: "testnet"});
-    expect(fetchMock).toHaveFetched("https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1000");
-    expect(Array.isArray(json)).toEqual(true);
-    expect(json.length).toEqual(0);
+    fetchMock.get(accountUrl, {
+      status: 200, body:
+        JSON.stringify({balance: {balance: 100, timestamp: 1734393500}})
+    });
+    fetchMock.get(testnetUrl, {
+      status: 200, body:
+        JSON.stringify({
+          transactions: [{consensus_timestamp: 1734393500, transaction_id: "0.0.1000-1734393500-000000000"}],
+          links: {next: null}
+        })
+    });
+
+    await report({account: ["0.0.1000"], date: "2024-12-17", network: "testnet"});
+    expect(fetchMock).toHaveFetched(accountUrl, testnetUrl);
   });
 });

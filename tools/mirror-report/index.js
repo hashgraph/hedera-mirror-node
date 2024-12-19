@@ -1,4 +1,4 @@
-#!/usr/bin/env node --experimental-specifier-resolution=node
+#!/usr/bin/env node
 
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC
@@ -17,18 +17,33 @@
  */
 
 import {Option, program} from 'commander';
-import {report} from './src/report';
+import {report} from './src/report.js';
 
-const today = new Date().toISOString().slice(0, 10);
+const datePattern = /^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/;
+
+const validateDate = (date, _) => {
+  if (!datePattern.test(date)) {
+    program.error(`error: Invalid date ${date}. Expected YYYY-MM-DD`);
+  }
+  return date;
+};
+
+const now = new Date();
+const today = now.toISOString().slice(0, 10);
+now.setDate(now.getDate() + 1);
+const tomorrow = now.toISOString().slice(0, 10);
 
 program.command('report')
 .description('Generate a report for the given accounts.')
 .requiredOption('-a, --account <accountId...>', 'The accounts to include in the report')
-.requiredOption('-d, --date <YYYY-MM-DD>', 'The day the report should cover', today)
+.requiredOption('-f, --from-date <YYYY-MM-DD>', 'The day the report should start (inclusive)', validateDate, tomorrow)
 .addOption(new Option('-n, --network <network>', 'The Hedera network to connect to')
 .choices(['mainnet', 'testnet', 'previewnet'])
 .default('mainnet')
 .makeOptionMandatory())
+.option('-s, --separate', 'Whether separate reports for each account or a combined report should be generated')
+.requiredOption('-t, --to-date <YYYY-MM-DD>', 'The day the report should end (exclusive)', validateDate, today)
+.showHelpAfterError()
 .action(report);
 
 program.parse();
