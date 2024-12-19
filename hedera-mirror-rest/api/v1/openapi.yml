@@ -1078,8 +1078,8 @@ paths:
   /api/v1/topics/{topicId}/messages/{sequenceNumber}:
     get:
       summary: Get topic message by id and sequence number
-      description: Returns a single topic message the given topic id and sequence number.
-      operationId: getTopicMessageById
+      description: Returns a single topic message for the given topic id and sequence number.
+      operationId: getTopicMessageByIdAndSequenceNumber
       parameters:
         - $ref: "#/components/parameters/topicIdPathParam"
         - name: sequenceNumber
@@ -1097,7 +1097,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TopicMessagesResponse"
+                $ref: "#/components/schemas/TopicMessage"
         400:
           $ref: "#/components/responses/InvalidParameterError"
         404:
