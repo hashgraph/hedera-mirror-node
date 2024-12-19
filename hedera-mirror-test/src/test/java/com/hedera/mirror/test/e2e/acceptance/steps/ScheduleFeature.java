@@ -16,20 +16,22 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.convertTimestamp;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.mirror.rest.model.Schedule;
 import com.hedera.mirror.rest.model.ScheduleSignature;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionDetail;
 import com.hedera.mirror.rest.model.TransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ScheduleClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -37,17 +39,20 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
+import org.springframework.boot.convert.DurationStyle;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
 @RequiredArgsConstructor
-public class ScheduleFeature {
+public class ScheduleFeature extends AbstractFeature {
 
     private static final int DEFAULT_TINY_HBAR = 1_000;
     private static final int SIGNATORY_COUNT_OFFSET = 1; // Schedule includes payer account which may not be a required
@@ -60,29 +65,61 @@ public class ScheduleFeature {
     private NetworkTransactionResponse networkTransactionResponse;
     private ScheduleId scheduleId;
     private TransactionId scheduledTransactionId;
+    private String scheduleExpirationTime;
 
-    @Given("I successfully schedule a treasury HBAR disbursement to {string}")
-    public void createNewHBarTransferSchedule(String accountName) {
+    @Given(
+            "I successfully schedule a HBAR transfer from treasury to {account} with expiration time {string} and wait for expiry {string}")
+    public void createNewHBarTransferSchedule(
+            AccountNameEnum accountName, String expirationTimeInSeconds, String waitForExpiry) {
+        Instant expirationTime = null;
+
+        if (expirationTimeInSeconds != null && !expirationTimeInSeconds.equals("null")) {
+            Duration expirationOffset = DurationStyle.detectAndParse(expirationTimeInSeconds);
+            expirationTime = Instant.now().plus(expirationOffset);
+        }
+
         currentSignersCount = SIGNATORY_COUNT_OFFSET;
-        var recipient =
-                accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName)); // receiverSigRequired
+        var recipient = accountClient.getAccount(accountName);
         var scheduledTransaction = accountClient.getCryptoTransferTransaction(
                 accountClient.getTokenTreasuryAccount().getAccountId(),
                 recipient.getAccountId(),
                 Hbar.fromTinybars(DEFAULT_TINY_HBAR));
 
-        createNewSchedule(scheduledTransaction, null);
+        createNewSchedule(scheduledTransaction, expirationTime, Boolean.parseBoolean(waitForExpiry));
     }
 
-    private void createNewSchedule(Transaction<?> transaction, KeyList innerSignatureKeyList) {
+    @Given("I wait until the schedule's expiration time")
+    public void waitForScheduleToExpire() {
+        var scheduleExpirationTimeInstant = convertTimestamp(this.scheduleExpirationTime);
+
+        await().atMost(Duration.ofSeconds(30))
+                .pollDelay(Duration.ofMillis(100))
+                .pollInterval(Duration.ofMillis(100))
+                .untilAsserted(() -> assertThat(Instant.now()).isAfterOrEqualTo(scheduleExpirationTimeInstant));
+
+        // We need this dummy transaction in order to execute the schedule
+        try {
+            accountClient.executeTransaction(new AccountCreateTransaction(), null);
+        } catch (Exception e) {
+            log.info("Dummy transaction fails but triggers the schedule execution");
+        }
+    }
+
+    private void createNewSchedule(Transaction<?> transaction, Instant expirationTime, boolean waitForExpiry) {
         // create signatures list
         networkTransactionResponse = scheduleClient.createSchedule(
-                scheduleClient.getSdkClient().getExpandedOperatorAccountId(), transaction, innerSignatureKeyList);
+                scheduleClient.getSdkClient().getExpandedOperatorAccountId(),
+                transaction,
+                null,
+                expirationTime,
+                waitForExpiry);
         assertNotNull(networkTransactionResponse.getTransactionId());
-
         assertNotNull(networkTransactionResponse.getReceipt());
         scheduleId = networkTransactionResponse.getReceipt().scheduleId;
         assertNotNull(scheduleId);
+
+        scheduleExpirationTime =
+                mirrorClient.getScheduleInfo(scheduleId.toString()).getExpirationTime();
 
         // cache schedule create transaction id for confirmation of scheduled transaction later
         scheduledTransactionId = networkTransactionResponse.getReceipt().scheduledTransactionId;
@@ -99,9 +136,9 @@ public class ScheduleFeature {
         assertNotNull(scheduledTransactionId);
     }
 
-    @Then("the scheduled transaction is signed by {string}")
-    public void accountSignsSignature(String accountName) {
-        signSignature(accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName)));
+    @Then("the scheduled transaction is signed by {account}")
+    public void accountSignsSignature(AccountNameEnum accountName) {
+        signSignature(accountClient.getAccount(accountName));
     }
 
     @Then("the scheduled transaction is signed by treasuryAccount")
@@ -130,43 +167,90 @@ public class ScheduleFeature {
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
     }
 
-    @Then("the mirror node REST API should verify the executed schedule entity")
-    public void verifyExecutedScheduleFromMirror() {
-        Schedule mirrorSchedule = verifyScheduleFromMirror(ScheduleStatus.EXECUTED);
-        verifyScheduledTransaction(mirrorSchedule.getExecutedTimestamp());
+    @RetryAsserts
+    @Then(
+            "the mirror node REST API should verify the {string} schedule entity with expiration time {string} and wait for expiry {string}")
+    public void verifyTheScheduleFromMirror(
+            String scheduleStatus, String expirationTimeInSeconds, String waitForExpiry) {
+        verifyScheduleFromMirror(
+                ScheduleStatus.valueOf(scheduleStatus), expirationTimeInSeconds, Boolean.parseBoolean(waitForExpiry));
     }
 
-    @Then("the mirror node REST API should verify the non executed schedule entity")
-    public void verifyNonExecutedScheduleFromMirror() {
-        verifyScheduleFromMirror(ScheduleStatus.NON_EXECUTED);
-    }
-
-    @Then("the mirror node REST API should verify the deleted schedule entity")
-    public void verifyDeletedScheduleFromMirror() {
-        verifyScheduleFromMirror(ScheduleStatus.DELETED);
-    }
-
-    private Schedule verifyScheduleFromMirror(ScheduleStatus scheduleStatus) {
+    private void verifyScheduleFromMirror(
+            ScheduleStatus scheduleStatus, String expirationTimeInSeconds, boolean waitForExpiry) {
         var mirrorSchedule = mirrorClient.getScheduleInfo(scheduleId.toString());
-
         assertNotNull(mirrorSchedule);
         assertThat(mirrorSchedule.getScheduleId()).isEqualTo(scheduleId.toString());
 
         // get unique set of signatures
         var signatureSet = mirrorSchedule.getSignatures().stream()
                 .map(ScheduleSignature::getPublicKeyPrefix)
+                .filter(Objects::nonNull)
                 .map(Bytes::wrap)
                 .collect(Collectors.toSet());
         assertThat(signatureSet).hasSize(currentSignersCount);
 
-        if (Objects.requireNonNull(scheduleStatus) == ScheduleStatus.DELETED
-                || scheduleStatus == ScheduleStatus.NON_EXECUTED) {
-            assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
-        } else if (scheduleStatus == ScheduleStatus.EXECUTED) {
-            assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
+        if (expirationTimeInSeconds.equals("null")) {
+            assertThat(mirrorSchedule.getExpirationTime()).isNull();
+        } else {
+            assertThat(mirrorSchedule.getExpirationTime()).isNotNull();
+        }
+        if (waitForExpiry) {
+            assertThat(mirrorSchedule.getWaitForExpiry()).isTrue();
+        } else {
+            assertThat(mirrorSchedule.getWaitForExpiry()).isFalse();
         }
 
-        return mirrorSchedule;
+        switch (scheduleStatus) {
+            case NON_EXECUTED -> {
+                assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
+                assertThat(mirrorSchedule.getCreatorAccountId())
+                        .isEqualTo(scheduleClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .toString());
+            }
+            case DELETED -> {
+                assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
+                assertThat(mirrorSchedule.getDeleted()).isTrue();
+                assertThat(mirrorSchedule.getCreatorAccountId())
+                        .isEqualTo(scheduleClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .toString());
+            }
+            case EXECUTED -> {
+                TransactionsResponse mirrorTransactionsResponse =
+                        mirrorClient.getTransactionInfoByTimestamp(mirrorSchedule.getExecutedTimestamp());
+                assertThat(mirrorTransactionsResponse.getTransactions())
+                        .hasSize(1)
+                        .first()
+                        .returns("SUCCESS", com.hedera.mirror.rest.model.Transaction::getResult);
+                verifyScheduledTransaction(mirrorSchedule.getExecutedTimestamp());
+                assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
+                assertThat(mirrorSchedule.getCreatorAccountId())
+                        .isEqualTo(scheduleClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .toString());
+            }
+            case EXPIRED -> {
+                TransactionsResponse mirrorTransactionsResponse =
+                        mirrorClient.getTransactionInfoByTimestamp(mirrorSchedule.getExecutedTimestamp());
+                assertThat(mirrorTransactionsResponse.getTransactions())
+                        .hasSize(1)
+                        .first()
+                        .returns("INVALID_SIGNATURE", com.hedera.mirror.rest.model.Transaction::getResult);
+                assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
+                assertThat(mirrorSchedule.getDeleted()).isFalse();
+                assertThat(mirrorSchedule.getCreatorAccountId())
+                        .isEqualTo(scheduleClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .toString());
+            }
+            default -> throw new IllegalArgumentException("Invalid schedule status");
+        }
     }
 
     private void verifyScheduledTransaction(String timestamp) {
@@ -184,7 +268,7 @@ public class ScheduleFeature {
         List<TransactionDetail> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        TransactionDetail mirrorTransaction = transactions.get(0);
+        TransactionDetail mirrorTransaction = transactions.getFirst();
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
@@ -207,7 +291,7 @@ public class ScheduleFeature {
         List<com.hedera.mirror.rest.model.Transaction> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        com.hedera.mirror.rest.model.Transaction mirrorTransaction = transactions.get(0);
+        com.hedera.mirror.rest.model.Transaction mirrorTransaction = transactions.getFirst();
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
@@ -229,6 +313,7 @@ public class ScheduleFeature {
     public enum ScheduleStatus {
         NON_EXECUTED,
         EXECUTED,
-        DELETED
+        DELETED,
+        EXPIRED
     }
 }
