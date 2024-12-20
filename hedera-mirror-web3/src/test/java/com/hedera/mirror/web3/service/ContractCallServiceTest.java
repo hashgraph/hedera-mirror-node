@@ -639,7 +639,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var serviceParameters = testWeb3jService.serviceParametersForTopLevelContractCreate(
                 contract.getContractBinary(), ETH_ESTIMATE_GAS, senderAddress);
-        final var actualGas = 183552L;
+        final var actualGas = 175242L;
 
         // When
         final var result = contractExecutionService.processCall(serviceParameters);
@@ -657,7 +657,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var serviceParameters = testWeb3jService.serviceParametersForTopLevelContractCreate(
                 contract.getContractBinary(), ETH_ESTIMATE_GAS, Address.ZERO);
-        final var actualGas = 183552L;
+        final var actualGas = 175242L;
 
         // When
         final var result = contractExecutionService.processCall(serviceParameters);
@@ -735,20 +735,6 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
-    @Test
-    void ercPrecompileCallForEstimateGas() {
-        // Given
-        final var token = tokenPersist();
-        final var contract = testWeb3jService.deploy(EthCall::deploy);
-        meterRegistry.clear();
-
-        // When
-        final var result = contract.send_getTokenName(toAddress(token.getId()).toHexString());
-
-        // Then
-        verifyEthCallAndEstimateGas(result, contract);
-    }
-
     @ParameterizedTest
     @MethodSource("provideParametersForErcPrecompileExceptionalHalt")
     void ercPrecompileExceptionalHaltReturnsExpectedGasToBucket(final CallType callType, final int gasUnit) {
@@ -794,8 +780,8 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     void ercPrecompileContractRevertReturnsExpectedGasToBucket(
             final CallType callType, final long gasLimit, final int gasUnit) {
         // Given
-        final var contract = testWeb3jService.deploy(EthCall::deploy);
-        final var functionCall = contract.call_getTokenName(Address.ZERO.toHexString());
+        final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
+        final var functionCall = contract.call_nameNonStatic(Address.ZERO.toHexString());
         given(throttleProperties.getGasUnit()).willReturn(gasUnit);
 
         final var serviceParameters = getContractExecutionParameters(functionCall, contract, callType, gasLimit);

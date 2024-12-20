@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./HederaTokenService.sol";
 import "./IHederaTokenService.sol";
 
@@ -35,16 +34,6 @@ contract EthCall is HederaTokenService {
     // External pure function that returns a storage field as a function result
     function returnStorageData() external pure returns (string memory) {
         return storageData;
-    }
-
-    // External view function that has an argument for a token address and using open zeppelin IERC20 interface as a wrapper, returns the token’s name
-    function getTokenName(address _tokenAddress) external view returns (string memory) {
-        return IERC20Metadata(_tokenAddress).name();
-    }
-
-    // External view function that has an argument for a token address and using open zeppelin IERC20 interface as a wrapper, returns the token’s symbol
-    function getTokenSymbol(address _tokenAddress) external view returns (string memory) {
-        return IERC20Metadata(_tokenAddress).symbol();
     }
 
     // External function that freezes a given token for the message sender
