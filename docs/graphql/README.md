@@ -22,3 +22,15 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.graphql.db.sslMode`          | DISABLE                                          | The ssl level of protection against eavesdropping, man-in-the-middle (MITM) and impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL. |
 | `hedera.mirror.graphql.db.statementTimeout` | 10000                                            | The maximum amount of time in seconds to wait for a query to finish                                                                                                                           |
 | `hedera.mirror.graphql.db.username`         | mirror_graphql                                   | The username used to connect to the database.                                                                                                                                                 |
+
+## Smoke Testing
+
+The GraphiQL browser based GraphQL interface can be accessed at http://localhost:8083/graphiql when running the graphql
+module. This tool can be used to explore the API and make adhoc requests.
+
+If a command line tool is needed, curl can be used to make basic requests:
+
+```bash
+curl -X POST http://localhost:8083/graphql/alpha -H 'Content-Type: application/json' \
+  -d '{"query": "{account(input: {entityId: {shard: 0, realm: 0, num: 2}}) { balance }}"}'
+```
