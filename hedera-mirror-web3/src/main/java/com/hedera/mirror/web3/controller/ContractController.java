@@ -26,6 +26,7 @@ import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
+import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -57,12 +58,14 @@ class ContractController {
 
     private final MirrorNodeEvmProperties evmProperties;
 
+    private final ThrottleProperties throttleProperties;
+
     @PostMapping(value = "/call")
     ContractCallResponse call(@RequestBody @Valid ContractCallRequest request) {
 
         if (!rateLimitBucket.tryConsume(1)) {
             throw new RateLimitException("Requests per second rate limit exceeded.");
-        } else if (!gasLimitBucket.tryConsume(request.getGas())) {
+        } else if (!gasLimitBucket.tryConsume(Math.floorDiv(request.getGas(), throttleProperties.getGasUnit()))) {
             throw new RateLimitException("Gas per second rate limit exceeded.");
         }
 

@@ -132,15 +132,18 @@ public abstract class ContractCallService {
     }
 
     private void restoreGasToBucket(HederaEvmTransactionProcessingResult result, long gasLimit) {
+        final var gasUnit = throttleProperties.getGasUnit();
         // If the transaction fails, gasUsed is equal to gasLimit, so restore the configured refund percent
         // of the gasLimit value back in the bucket.
-        final var gasLimitToRestoreBaseline = (long) (gasLimit * throttleProperties.getGasLimitRefundPercent() / 100f);
+        final var gasLimitToRestoreBaseline =
+                (long) (Math.floorDiv(gasLimit, gasUnit) * throttleProperties.getGasLimitRefundPercent() / 100f);
         if (!result.isSuccessful() && gasLimit == result.getGasUsed()) {
             gasLimitBucket.addTokens(gasLimitToRestoreBaseline);
         } else {
             // The transaction was successful or reverted, so restore the remaining gas back in the bucket or
             // the configured refund percent of the gasLimit value back in the bucket - whichever is lower.
-            gasLimitBucket.addTokens(Math.min(gasLimit - result.getGasUsed(), gasLimitToRestoreBaseline));
+            final var gasRemaining = gasLimit - result.getGasUsed();
+            gasLimitBucket.addTokens(Math.min(Math.floorDiv(gasRemaining, gasUnit), gasLimitToRestoreBaseline));
         }
     }
 
