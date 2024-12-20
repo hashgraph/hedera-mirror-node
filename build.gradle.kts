@@ -133,6 +133,7 @@ allprojects {
             property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
             property("sonar.issue.ignore.multicriteria.e6.resourceKey", "**/*.java")
             property("sonar.issue.ignore.multicriteria.e6.ruleKey", "java:S2970")
+            property("sonar.exclusions", "src/main/java/com/hedera/services/**")
         }
     }
 }
