@@ -40,7 +40,7 @@ jobs:
 #          - "rest:monitoring"
 #          - rosetta
 #          - test
-#          - web3
+          - web3
         schema:
           - v1
 #          - v2
