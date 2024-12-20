@@ -184,6 +184,8 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         // Given
         final var modularizedServicesFlag = mirrorNodeEvmProperties.isModularizedServices();
         mirrorNodeEvmProperties.setModularizedServices(true);
+        System.out.println("TEST FLAG IS SET TO " + modularizedServicesFlag);
+
         Method postConstructMethod = Arrays.stream(MirrorNodeState.class.getDeclaredMethods())
                 .filter(method -> method.isAnnotationPresent(PostConstruct.class))
                 .findFirst()
