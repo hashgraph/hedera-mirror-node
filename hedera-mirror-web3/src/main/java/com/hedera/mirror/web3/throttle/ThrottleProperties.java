@@ -34,7 +34,12 @@ public class ThrottleProperties {
 
     @Getter
     @Min(21_000)
+    @Max(1_000_000_000)
     private long gasPerSecond = 1_000_000_000L;
+
+    @Getter
+    @Min(1)
+    private int gasUnit = 1;
 
     @Getter
     @Min(0)

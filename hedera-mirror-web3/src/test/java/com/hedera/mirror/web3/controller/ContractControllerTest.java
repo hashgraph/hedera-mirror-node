@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -42,6 +43,7 @@ import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.ContractExecutionService;
+import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -108,10 +110,15 @@ class ContractControllerTest {
     @Autowired
     private MirrorNodeEvmProperties evmProperties;
 
+    @MockBean
+    private ThrottleProperties throttleProperties;
+
     @BeforeEach
     void setUp() {
         given(rateLimitBucket.tryConsume(1)).willReturn(true);
-        given(gasLimitBucket.tryConsume(THROTTLE_GAS_LIMIT)).willReturn(true);
+        given(throttleProperties.getGasUnit()).willReturn(2);
+        given(gasLimitBucket.tryConsume(Math.floorDiv(THROTTLE_GAS_LIMIT, throttleProperties.getGasUnit())))
+                .willReturn(true);
     }
 
     @SneakyThrows
@@ -167,6 +174,7 @@ class ContractControllerTest {
                 ? numberErrorString("gas", "greater", 21000L)
                 : numberErrorString("gas", "less", 15_000_000L);
         given(gasLimitBucket.tryConsume(gas)).willReturn(true);
+        given(throttleProperties.getGasUnit()).willReturn(1);
         final var request = request();
         request.setEstimate(true);
         request.setGas(gas);
@@ -188,8 +196,17 @@ class ContractControllerTest {
 
     @Test
     void exceedingGasLimit() throws Exception {
-        given(gasLimitBucket.tryConsume(THROTTLE_GAS_LIMIT)).willReturn(false);
+        given(gasLimitBucket.tryConsume(anyLong())).willReturn(false);
         contractCall(request()).andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void throttleGasScaledOnConsume() throws Exception {
+        var request = request();
+        request.setGas(200_000L);
+        given(gasLimitBucket.tryConsume(anyLong())).willReturn(true);
+        contractCall(request).andExpect(status().isOk());
+        verify(gasLimitBucket).tryConsume(100_000L);
     }
 
     @Test
@@ -197,7 +214,7 @@ class ContractControllerTest {
         var request = request();
         request.setData("With invalid symbol!");
         contractCall(request).andExpect(status().isBadRequest());
-        verify(gasLimitBucket).tryConsume(request.getGas());
+        verify(gasLimitBucket).tryConsume(Math.floorDiv(request.getGas(), throttleProperties.getGasUnit()));
         verify(gasLimitBucket).addTokens(request.getGas());
     }
 
@@ -565,6 +582,11 @@ class ContractControllerTest {
         @Bean
         Web3Properties web3Properties() {
             return new Web3Properties();
+        }
+
+        @Bean
+        ThrottleProperties throttleProperties() {
+            return new ThrottleProperties();
         }
     }
 }
