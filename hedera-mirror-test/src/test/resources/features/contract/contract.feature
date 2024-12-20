@@ -26,7 +26,7 @@ Feature: Contract Base Coverage Feature
         And the mirror node REST API should verify the updated contract entity
         When I successfully call the contract
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
-        And the mirror node REST API should verify the called contract function
+        And the mirror node REST API should verify the contract
         And I call the contract via the mirror node REST API
         Given I call the parent contract to retrieve child contract bytecode
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
