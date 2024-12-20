@@ -29,34 +29,34 @@ jobs:
     strategy:
       matrix:
         project:
-#          - common
-#          - graphql
-#          - grpc
-#          - importer
-#          - monitor
-#          - rest
-#          - rest-java
-#          - "rest:check-state-proof"
-#          - "rest:monitoring"
-#          - rosetta
-#          - test
+          - common
+          - graphql
+          - grpc
+          - importer
+          - monitor
+          - rest
+          - rest-java
+          - "rest:check-state-proof"
+          - "rest:monitoring"
+          - rosetta
+          - test
           - web3
         schema:
           - v1
           - v2
-#        exclude:
-#          - project: common
-#            schema: v2
-#          - project: monitor
-#            schema: v2
-#          - project: rest:check-state-proof
-#            schema: v2
-#          - project: rest:monitoring
-#            schema: v2
-#          - project: rosetta
-#            schema: v2
-#          - project: test
-#            schema: v2
+        exclude:
+          - project: common
+            schema: v2
+          - project: monitor
+            schema: v2
+          - project: rest:check-state-proof
+            schema: v2
+          - project: rest:monitoring
+            schema: v2
+          - project: rosetta
+            schema: v2
+          - project: test
+            schema: v2
     timeout-minutes: 40 # increase it from 20 minutes since some jobs often run longer on self-hosted runners
     steps:
       - name: Harden Runner
