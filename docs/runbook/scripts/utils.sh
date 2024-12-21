@@ -45,6 +45,7 @@ function scaleDeployment() {
 
   if [[ "${replicas}" -gt 0 ]]; then # scale up
     kubectl scale deployment -n "${namespace}" -l "${deploymentLabel}" --replicas="${replicas}"
+    sleep 5
     log "Waiting for pods with label ${deploymentLabel} to be ready"
     kubectl wait --for=condition=Ready pod -n "${namespace}" -l "${deploymentLabel}" --timeout=-1s
   else # scale down
@@ -132,20 +133,38 @@ function pauseCitus() {
 function unpauseCitus() {
   local namespace="${1}"
   local reinitializeCitus="${2:-false}"
-
+  local waitForMaster="${3:-true}"
   local citusPods=$(kubectl get pods -n "${namespace}" -l 'stackgres.io/cluster=true' -o 'jsonpath={.items[*].metadata.name}')
+
   if [[ -z "${citusPods}" ]]; then
     log "Starting citus cluster in namespace ${namespace}"
     if [[ "${reinitializeCitus}" == "true" ]]; then
       kubectl annotate endpoints -n "${namespace}" -l 'stackgres.io/cluster=true' initialize- --overwrite
     fi
     kubectl annotate sgclusters.stackgres.io -n "${namespace}" --all stackgres.io/reconciliation-pause- --overwrite
-    log "Waiting for citus pods to be ready"
-    sleep 5
-    kubectl wait --for=condition=Ready pod -l 'stackgres.io/cluster=true' -n "${namespace}" --timeout=-1s
-    log "Waiting for citus replica pods to be ready"
-    sleep 30 # Wait again as replicas will not spin up until the primary is started
-    kubectl wait --for=condition=Ready pod -l 'stackgres.io/cluster=true' -n "${namespace}" --timeout=-1s
+
+    log "Waiting for all StackGresCluster StatefulSets to be created"
+    while ! kubectl get sgshardedclusters -n "${namespace}" -o jsonpath='{.items[0].spec.shards.clusters}' >/dev/null 2>&1; do
+      sleep 1
+    done
+
+    expectedTotal=$(($(kubectl get sgshardedclusters -n "${namespace}" -o jsonpath='{.items[0].spec.shards.clusters}')+1))
+    while [[ "$(kubectl get sts -n "${namespace}" -l 'app=StackGresCluster' -o name | wc -l)" -ne "${expectedTotal}" ]]; do
+      sleep 1
+    done
+
+    log "Waiting for all StackGresCluster pods to be ready"
+    for sts in $(kubectl get sts -n "${namespace}" -l 'app=StackGresCluster' -o name); do
+      expected=$(kubectl get "${sts}" -n "${namespace}" -o jsonpath='{.spec.replicas}')
+      kubectl wait --for=jsonpath='{.status.readyReplicas}'=${expected} "${sts}" -n "${namespace}" --timeout=-1s
+    done
+
+    if [[ "${waitForMaster}" == "true" ]]; then
+      while [[ "$(kubectl get pods -n "${namespace}" -l "${STACKGRES_MASTER_LABELS}" -o name | wc -l)" -ne "${expectedTotal}" ]]; do
+        log "Waiting for all pods to be marked with master role label"
+        sleep 1
+      done
+    fi
   else
     log "Citus is already running in namespace ${namespace}. Skipping"
   fi
@@ -239,6 +258,76 @@ function resizeCitusNodePools() {
   fi
 }
 
+function updateStackgresCreds() {
+  local cluster="${1}"
+  local namespace="${2}"
+  local sgPasswords=$(kubectl get secret -n "${namespace}" "${cluster}" -o json |
+      ksd |
+      jq -r '.stringData')
+  local superuserUsername=$(echo "${sgPasswords}" | jq -r '.["superuser-username"]')
+  local superuserPassword=$(echo "${sgPasswords}" | jq -r '.["superuser-password"]')
+  local replicationUsername=$(echo "${sgPasswords}" | jq -r '.["replication-username"]')
+  local replicationPassword=$(echo "${sgPasswords}" | jq -r '.["replication-password"]')
+  local authenticatorUsername=$(echo "${sgPasswords}" | jq -r '.["authenticator-username"]')
+  local authenticatorPassword=$(echo "${sgPasswords}" | jq -r '.["authenticator-password"]')
+
+  # Mirror Node Passwords
+  local mirrorNodePasswords=$(kubectl get secret -n "${namespace}" "${HELM_RELEASE_NAME}-passwords" -o json |
+    ksd |
+    jq -r '.stringData')
+  local graphqlUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRAPHQL_DB_USERNAME')
+  local graphqlPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRAPHQL_DB_PASSWORD')
+  local grpcUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRPC_DB_USERNAME')
+  local grpcPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRPC_DB_PASSWORD')
+  local importerUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_USERNAME')
+  local importerPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_PASSWORD')
+  local ownerUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_OWNER')
+  local ownerPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD')
+  local restUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_REST_DB_USERNAME')
+  local restPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_REST_DB_PASSWORD')
+  local restJavaUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_RESTJAVA_DB_USERNAME')
+  local restJavaPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_RESTJAVA_DB_PASSWORD')
+  local rosettaUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_ROSETTA_DB_USERNAME')
+  local rosettaPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_ROSETTA_DB_PASSWORD')
+  local web3Username=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_USERNAME')
+  local web3Password=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_PASSWORD')
+  local dbName=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_NAME')
+  local sql=$(cat <<EOF
+alter user ${superuserUsername} with password '${superuserPassword}';
+alter user ${graphqlUsername} with password '${graphqlPassword}';
+alter user ${grpcUsername} with password '${grpcPassword}';
+alter user ${importerUsername} with password '${importerPassword}';
+alter user ${ownerUsername} with password '${ownerPassword}';
+alter user ${restUsername} with password '${restPassword}';
+alter user ${restJavaUsername} with password '${restJavaPassword}';
+alter user ${rosettaUsername} with password '${rosettaPassword}';
+alter user ${web3Username} with password '${web3Password}';
+alter user ${replicationUsername} with password '${replicationPassword}';
+alter user ${authenticatorUsername} with password '${authenticatorPassword}';
+
+\c ${dbName}
+insert into pg_dist_authinfo(nodeid, rolename, authinfo)
+  values (0, '${superuserUsername}', 'password=${superuserPassword}'),
+         (0, '${graphqlUsername}', 'password=${graphqlPassword}'),
+         (0, '${grpcUsername}', 'password=${grpcPassword}'),
+         (0, '${importerUsername}', 'password=${importerPassword}'),
+         (0, '${ownerUsername}', 'password=${ownerPassword}'),
+         (0, '${restUsername}', 'password=${restPassword}'),
+         (0, '${restJavaUsername}', 'password=${restJavaPassword}'),
+         (0, '${rosettaUsername}', 'password=${rosettaPassword}'),
+         (0, '${web3Username}', 'password=${web3Password}') on conflict (nodeid, rolename)
+  do
+      update set authinfo = excluded.authinfo;
+EOF
+  )
+
+  log "Fixing passwords and pg_dist_authinfo for all pods in the cluster"
+  for pod in $(kubectl get pods -n "${namespace}" -l "${STACKGRES_MASTER_LABELS}" -o name); do
+    log "Updating passwords and pg_dist_authinfo for ${pod}"
+    echo "$sql" | kubectl exec -n "${namespace}" -i "${pod}" -c postgres-util -- psql -U "${superuserUsername}" -f -
+  done
+}
+
 AUTO_UNROUTE="${AUTO_UNROUTE:-true}"
 CITUS_CLUSTERS="$(getCitusClusters)"
 COMMON_NAMESPACE="${COMMON_NAMESPACE:-common}"
@@ -247,5 +336,6 @@ DISK_PREFIX=
 GCP_COORDINATOR_POOL_NAME="${GCP_COORDINATOR_POOL_NAME:-citus-coordinator}"
 GCP_WORKER_POOL_NAME="${GCP_WORKER_POOL_NAME:-citus-worker}"
 HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
+STACKGRES_MASTER_LABELS="${STACKGRES_MASTER_LABELS:-app=StackGresCluster,role=master}"
 
 alias kubectl_common="kubectl -n ${COMMON_NAMESPACE}"
