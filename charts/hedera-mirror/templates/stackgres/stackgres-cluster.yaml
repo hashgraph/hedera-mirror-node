@@ -6,14 +6,17 @@ metadata:
   name: {{ include "hedera-mirror.stackgres" . }}
   namespace: {{ include "hedera-mirror.namespace" . }}
 spec:
-  {{- if .Values.stackgres.backup.enabled }}
   configurations:
+    {{- if .Values.stackgres.backup.enabled }}
     backups:
     {{- range $backupConfig := .Values.stackgres.backup.instances }}
     - sgObjectStorage: {{ include "hedera-mirror.stackgres" $ }}-object-storage
       {{$backupConfig | toYaml | nindent 6}}
     {{- end }}
-  {{- end }}
+    {{- end }}
+    observability:
+      disableMetrics: {{ not .Values.stackgres.observability.enableMetricsExporter }}
+      prometheusAutobind: {{ .Values.stackgres.observability.enableMetricsExporter }}
   coordinator:
     configurations:
       sgPoolingConfig: {{ include "hedera-mirror.stackgres" . }}-coordinator
@@ -23,7 +26,6 @@ spec:
       scripts:
         - sgScript: {{ include "hedera-mirror.stackgres" . }}-coordinator
     pods:
-      disableMetricsExporter: {{ not .Values.stackgres.coordinator.enableMetricsExporter }}
       disablePostgresUtil: {{ not .Values.stackgres.coordinator.enablePostgresUtil }}
       persistentVolume: {{ .Values.stackgres.coordinator.persistentVolume | toYaml | nindent 8 }}
       resources:
@@ -51,9 +53,11 @@ spec:
     ssl:
       enabled: false  # Disable SSL to work around https://github.com/hashgraph/hedera-mirror-node/issues/9143
     version: {{ .Values.stackgres.postgresVersion | quote }}
-  prometheusAutobind: {{ or .Values.stackgres.coordinator.enableMetricsExporter .Values.stackgres.worker.enableMetricsExporter }}
+  prometheusAutobind: {{ .Values.stackgres.observability.enableMetricsExporter }}
   replication:
-    mode: {{ .Values.stackgres.coordinator.replication.mode }}
+    mode: {{ .Values.stackgres.replication.mode }}
+    initialization:
+      mode: {{ .Values.stackgres.replication.initialization.mode }}
   shards:
     clusters: {{ .Values.stackgres.worker.instances }}
     configurations:
@@ -65,7 +69,6 @@ spec:
         - sgScript: {{ include "hedera-mirror.stackgres" . }}-worker
     overrides: {{ .Values.stackgres.worker.overrides | toYaml | nindent 6 }}
     pods:
-      disableMetricsExporter: {{ not .Values.stackgres.worker.enableMetricsExporter }}
       disablePostgresUtil: {{ not .Values.stackgres.worker.enablePostgresUtil }}
       persistentVolume: {{ .Values.stackgres.worker.persistentVolume | toYaml | nindent 8 }}
       resources:

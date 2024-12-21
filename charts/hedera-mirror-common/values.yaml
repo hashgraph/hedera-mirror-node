@@ -417,10 +417,53 @@ promtail:
       operator: Exists
 
 stackgres:
+  collector:
+    config:
+      exporters:
+        prometheus:
+          metric_expiration: 2m
+      service:
+        pipelines:
+          metrics:
+            receivers:
+              - prometheus/prometheus  # This appears to be corrected to just prometheus in 1.15+ and can be updated (possibly removed) when upgrading
+    resources:
+      limits:
+        memory: "4Gi"
+        cpu: "1500m"
+      requests:
+        memory: "3Gi"
+        cpu: "1000m"
+    prometheusOperator:
+      monitors:
+        - name: mirror-prometheus-prometheus  # Should be able to rename this in 1.15+
+          metadata:
+            namespace: common
+            name: mirror-prometheus-prometheus
+          spec:
+            podMetricsEndpoints:
+              - honorLabels: true
+                honorTimestamps: true
+                interval: 1m
+                metricRelabelings:
+                  - action: drop
+                    regex: ^(pg_stat.*_user.*|pg_table.*|pg_total_relation_size_bytes|pg.*)$
+                    sourceLabels:
+                      - __name__
+                path: /metrics
+                port: prom-http
+                scheme: https
+                tlsConfig:
+                  ca:
+                    secret:
+                      key: tls.crt
+                      name: mirror-prometheus-prometheus
+                  serverName: stackgres-collector
+
   enabled: false
   operator:
     image:
-      name: gcr.io/mirrornode/stackgres-operator
+      name: docker.io/xinatswirlds/stackgres-operator
   prometheusRules:
     enabled: true
     DatabaseStorageFull:
