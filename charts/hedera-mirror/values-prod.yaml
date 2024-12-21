@@ -145,10 +145,10 @@ stackgres:
       cronSchedule: "45 22 * * *"
       compression: lz4
       useVolumeSnapshot: true
-      fastVolumeSnapshot: false # Can be true once StackGres issue 2887 is resolved
+      fastVolumeSnapshot: true
       volumeSnapshotClass: zfs
       performance:
-        uploadDiskConcurrency: 1 # Can be 4 once StackGres issue 2887 is resolved
+        uploadDiskConcurrency: 1
     objectStorage:
       endpoint: http://mirror-minio.common:9000
       bucket: stackgres-backup
