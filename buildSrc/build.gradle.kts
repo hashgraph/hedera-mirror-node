@@ -41,7 +41,7 @@ dependencies {
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.7.0")
     implementation("gradle.plugin.org.flywaydb:gradle-plugin-publishing:$flywayVersion")
     implementation("io.freefair.gradle:lombok-plugin:8.11")
-    implementation("io.spring.gradle:dependency-management-plugin:1.1.6")
+    implementation("io.spring.gradle:dependency-management-plugin:1.1.7")
     implementation("org.apache.commons:commons-compress:1.27.1")
     implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
     implementation("org.gradle:test-retry-gradle-plugin:1.6.0")
