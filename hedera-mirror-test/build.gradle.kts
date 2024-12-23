@@ -19,7 +19,7 @@ import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTra
 description = "Hedera Mirror Node Test"
 
 plugins {
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
     id("docker-conventions")
     id("java-conventions")
     id("openapi-conventions")
