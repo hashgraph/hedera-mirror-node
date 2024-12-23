@@ -30,7 +30,7 @@
     "express-http-context": "^1.2.4",
     "express-openapi-validator": "^5.3.9",
     "extend": "^3.0.2",
-    "ioredis": "^5.4.1",
+    "ioredis": "^5.4.2",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
     "json-bigint": "^1.0.0",
