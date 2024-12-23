@@ -33,7 +33,7 @@ extra.apply {
     set("grpcVersion", "1.69.0")
     set("mapStructVersion", "1.6.3")
     set("nodeJsVersion", "18.20.5")
-    set("protobufVersion", "3.25.5")
+    set("protobufVersion", "4.29.2")
     set("reactorGrpcVersion", "1.2.4")
     set("tomcat.version", "10.1.34") // Temporary until next Spring Boot version
     set("vertxVersion", "4.5.11")
