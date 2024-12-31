@@ -40,7 +40,7 @@ public enum StreamType {
             List.of("csv", "pb"),
             Duration.ofMinutes(15L)),
     RECORD(RecordFile::new, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L)),
-    BLOCK(BlockFile::new, "blockstreams", "block", "", List.of("blk"), Duration.ofSeconds(1L));
+    BLOCK(BlockFile::new, "", "", "", List.of("blk"), Duration.ofMillis(500L));
 
     public static final String SIGNATURE_SUFFIX = "_sig";
 

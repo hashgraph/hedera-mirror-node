@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import static com.hedera.mirror.common.domain.transaction.RecordFile.HAPI_VERSION_NOT_SET;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
@@ -35,10 +33,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.springframework.data.util.Version;
 
 @Builder(toBuilder = true)
 @Data
@@ -68,24 +64,7 @@ public class BlockFile implements StreamFile<BlockItem> {
     private DigestAlgorithm digestAlgorithm;
 
     @ToString.Exclude
-    private String fileHash;
-
-    @Builder.Default
-    private long gasUsed = 0L;
-
-    private Integer hapiVersionMajor;
-    private Integer hapiVersionMinor;
-    private Integer hapiVersionPatch;
-
-    @Getter(lazy = true)
-    @JsonIgnore
-    @Transient
-    private final Version hapiVersion = hapiVersion();
-
-    @ToString.Exclude
     private String hash;
-
-    private Long index;
 
     @Builder.Default
     @EqualsAndHashCode.Exclude
@@ -97,14 +76,6 @@ public class BlockFile implements StreamFile<BlockItem> {
     private Long loadEnd;
 
     private Long loadStart;
-
-    @ToString.Exclude
-    private byte[] logsBloom;
-
-    @ToString.Exclude
-    @JsonIgnore
-    @Transient
-    private String metadataHash;
 
     private String name;
 
@@ -122,12 +93,21 @@ public class BlockFile implements StreamFile<BlockItem> {
     @Override
     public void clear() {
         StreamFile.super.clear();
-        setLogsBloom(null);
     }
 
     @Override
     public StreamFile<BlockItem> copy() {
         return this.toBuilder().build();
+    }
+
+    @Override
+    public String getFileHash() {
+        return null;
+    }
+
+    @Override
+    public Long getIndex() {
+        return blockHeader.getNumber();
     }
 
     @Override
@@ -139,13 +119,5 @@ public class BlockFile implements StreamFile<BlockItem> {
     @JsonIgnore
     public StreamType getType() {
         return StreamType.BLOCK;
-    }
-
-    private Version hapiVersion() {
-        if (hapiVersionMajor == null || hapiVersionMinor == null || hapiVersionPatch == null) {
-            return HAPI_VERSION_NOT_SET;
-        }
-
-        return new Version(hapiVersionMajor, hapiVersionMinor, hapiVersionPatch);
     }
 }

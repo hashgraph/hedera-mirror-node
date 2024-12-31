@@ -78,6 +78,15 @@ describe('topicMessageViewModel tests', () => {
 
     expect(actual).toEqual(expected);
   });
+
+  test('topic message with null running hash version', () => {
+    var topicMessage = buildDefaultTopicMessageRow();
+    topicMessage.runningHashVersion = null;
+    const actual = new TopicMessageViewModel(topicMessage, '');
+    const expected = buildDefaultTopicMessageViewModel();
+    expected.running_hash_version = TopicMessageViewModel.DEFAULT_RUNNING_HASH_VERSION;
+    expect(actual).toEqual(expected);
+  });
 });
 
 const buildDefaultTopicMessageRow = () => {
