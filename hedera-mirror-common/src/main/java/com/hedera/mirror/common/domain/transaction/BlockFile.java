@@ -115,8 +115,6 @@ public class BlockFile implements StreamFile<BlockItem> {
     @ToString.Exclude
     private String previousHash;
 
-    private int sidecarCount = 0;
-
     private Integer size;
 
     private int version;
