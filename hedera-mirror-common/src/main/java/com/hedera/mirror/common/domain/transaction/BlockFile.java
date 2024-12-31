@@ -55,8 +55,6 @@ public class BlockFile implements StreamFile<BlockItem> {
     // Contained within the last StateChange of the block, contains hashes needed to generate the block hash
     private BlockStreamInfo blockStreamInfo;
 
-    // TODO, determine fields not needed
-
     @ToString.Exclude
     private byte[] bytes;
 
@@ -117,7 +115,7 @@ public class BlockFile implements StreamFile<BlockItem> {
     @ToString.Exclude
     private String previousHash;
 
-    // private int sidecarCount = 0;
+    private int sidecarCount = 0;
 
     private Integer size;
 
