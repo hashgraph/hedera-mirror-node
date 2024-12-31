@@ -195,6 +195,7 @@ describe('Override query config', () => {
   test('success', async () => {
     const queryConfig = {
       bindTimestampRange: true,
+      maxLongTermScheduledTransactionConsensusTimestampRange: '1440m',
       maxRecordFileCloseInterval: '8s',
       maxRepeatedQueryParameters: 2,
       maxTimestampRange: '1d',
@@ -203,6 +204,8 @@ describe('Override query config', () => {
     };
     const expected = {
       bindTimestampRange: true,
+      maxLongTermScheduledTransactionConsensusTimestampRange: '1440m',
+      maxLongTermScheduledTransactionConsensusTimestampRangeNs: 86400000000000n,
       maxRecordFileCloseInterval: '8s',
       maxRecordFileCloseIntervalNs: 8000000000n,
       maxRepeatedQueryParameters: 2,
@@ -223,11 +226,12 @@ describe('Override query config', () => {
   });
 
   test.each`
-    name                                               | queryConfig
-    ${'invalid maxRecordFileCloseInterval'}            | ${{maxRecordFileCloseInterval: '1g'}}
-    ${'invalid maxTimestampRange'}                     | ${{maxTimestampRange: '1q'}}
-    ${'invalid maxTransactionConsensusTimestampRange'} | ${{maxTransactionConsensusTimestampRange: '1z'}}
-    ${'invalid maxTransactionsTimestampRange'}         | ${{maxTransactionsTimestampRange: '1z'}}
+    name                                                                | queryConfig
+    ${'invalid maxLongTermScheduledTransactionConsensusTimestampRange'} | ${{maxLongTermScheduledTransactionConsensusTimestampRange: '1k'}}
+    ${'invalid maxRecordFileCloseInterval'}                             | ${{maxRecordFileCloseInterval: '1g'}}
+    ${'invalid maxTimestampRange'}                                      | ${{maxTimestampRange: '1q'}}
+    ${'invalid maxTransactionConsensusTimestampRange'}                  | ${{maxTransactionConsensusTimestampRange: '1z'}}
+    ${'invalid maxTransactionsTimestampRange'}                          | ${{maxTransactionsTimestampRange: '1z'}}
   `('$name', async ({queryConfig}) => {
     await expect(loadCustomConfig(customConfig(queryConfig))).rejects.toThrowErrorMatchingSnapshot();
   });

@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
+import config from '../config';
 import * as constants from '../constants';
 import * as testutils from './testutils';
 import subject from '../transactions';
 import * as utils from '../utils';
+
+const {
+  query: {maxLongTermScheduledTransactionConsensusTimestampRangeNs},
+} = config;
 
 const {
   buildWhereClause,
@@ -31,6 +36,7 @@ const {
   getStakingRewardTimestamps,
   getTransactionsByIdOrHashCacheControlHeader,
   isValidTransactionHash,
+  mayMissLongTermScheduledTransaction,
 } = subject;
 
 describe('buildWhereClause', () => {
@@ -398,9 +404,15 @@ describe('formatTransactionRows', () => {
 });
 
 describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
+  const addTimestampIndices = (arr) => {
+    arr.lowerConsensusTimestampIndex = 1;
+    arr.upperConsensusTimestampIndex = 2;
+    return arr;
+  };
+
   describe('success', () => {
     const defaultTransactionIdStr = '0.0.200-123456789-987654321';
-    const defaultParams = [200, '123456789987654321', 123458889987654321n];
+    const defaultParams = addTimestampIndices([200, 123456789987654321n, 123458889987654321n]);
 
     const getTransactionIdQuery = (extraConditions) => `
     select
@@ -458,7 +470,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         expected: {
           query: getTransactionIdQuery(),
           params: defaultParams,
-          scheduledParamExists: false,
+          scheduled: undefined,
           isTransactionHash: false,
         },
       },
@@ -470,8 +482,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         },
         expected: {
           query: getTransactionIdQuery('nonce = $4'),
-          params: [...defaultParams, 1],
-          scheduledParamExists: false,
+          params: addTimestampIndices([...defaultParams, 1]),
+          scheduled: undefined,
           isTransactionHash: false,
         },
       },
@@ -486,8 +498,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         },
         expected: {
           query: getTransactionIdQuery('nonce = $4'),
-          params: [...defaultParams, 2],
-          scheduledParamExists: false,
+          params: addTimestampIndices([...defaultParams, 2]),
+          scheduled: undefined,
           isTransactionHash: false,
         },
       },
@@ -499,8 +511,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         },
         expected: {
           query: getTransactionIdQuery('scheduled = $4'),
-          params: [...defaultParams, true],
-          scheduledParamExists: true,
+          params: addTimestampIndices([...defaultParams, true]),
+          scheduled: true,
           isTransactionHash: false,
         },
       },
@@ -515,8 +527,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         },
         expected: {
           query: getTransactionIdQuery('scheduled = $4'),
-          params: [...defaultParams, false],
-          scheduledParamExists: true,
+          params: addTimestampIndices([...defaultParams, false]),
+          scheduled: false,
           isTransactionHash: false,
         },
       },
@@ -531,8 +543,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         },
         expected: {
           query: getTransactionIdQuery('nonce = $4 and scheduled = $5'),
-          params: [...defaultParams, 1, true],
-          scheduledParamExists: true,
+          params: addTimestampIndices([...defaultParams, 1, true]),
+          scheduled: true,
           isTransactionHash: false,
         },
       },
@@ -551,8 +563,8 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         },
         expected: {
           query: getTransactionIdQuery('nonce = $4 and scheduled = $5'),
-          params: [...defaultParams, 3, false],
-          scheduledParamExists: true,
+          params: addTimestampIndices([...defaultParams, 3, false]),
+          scheduled: false,
           isTransactionHash: false,
         },
       },
@@ -567,7 +579,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
 
         testutils.assertSqlQueryEqual(actual.query, testSpec.expected.query);
         expect(actual.params).toStrictEqual(testSpec.expected.params);
-        expect(actual.scheduledParamExists).toEqual(testSpec.expected.scheduledParamExists);
+        expect(actual.scheduled).toEqual(testSpec.expected.scheduled);
         expect(actual.isTransactionHash).toEqual(testSpec.expected.isTransactionHash);
       });
     }
@@ -946,144 +958,326 @@ describe('getStakingRewardTimestamps', () => {
 });
 
 describe('getTransactionsByIdOrHashCacheControlHeader', () => {
-  test(' longer max-age for SCHEDULECREATE', async () => {
-    const scheduledTransactionsExecuted = [
-      {
-        consensus_timestamp: 1,
-        entity_id: 98,
-        memo: null,
-        charged_tx_fee: 5,
-        max_fee: 33,
-        nonce: 0,
-        parent_consensus_timestamp: null,
-        token_transfers: [],
-        transfers: [],
-        result: 22,
-        scheduled: false,
-        transaction_hash: 'hash',
-        type: 42,
-        valid_start_ns: 1623787159737799966n,
-        transaction_bytes: 'bytes',
-        node_account_id: 2,
-        payer_account_id: 3,
+  const shorterCacheControlHeader = {'cache-control': `public, max-age=5`};
+  const testSpecs = [
+    {
+      name: 'query by transaction hash, no scheduled, schedulecreate transaction',
+      input: {
+        isTransactionHash: true,
+        scheduledParamExists: false,
+        transactions: [
+          {
+            consensus_timestamp: 1n,
+            result: 22,
+            scheduled: false,
+            type: 42,
+          },
+        ],
       },
-      {
-        consensus_timestamp: 2,
-        entity_id: 100,
-        memo: null,
-        charged_tx_fee: 5,
-        max_fee: 33,
-        nonce: 1,
-        parent_consensus_timestamp: 1,
-        token_transfers: [],
-        transfers: [],
-        result: 22,
-        scheduled: true,
-        transaction_hash: 'hash',
-        type: 14,
-        valid_start_ns: 1623787159737799966n,
-        transaction_bytes: 'bytes',
-        node_account_id: 2,
-        payer_account_id: 3,
-        crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
+      expected: {},
+    },
+    {
+      name: 'query by transaction hash, has scheduled, scheduled transaction',
+      input: {
+        isTransactionHash: true,
+        scheduledParamExists: true,
+        transactions: [
+          {
+            consensus_timestamp: 1n,
+            result: 22,
+            scheduled: true,
+            type: 14,
+          },
+        ],
       },
-    ];
+      expected: {},
+    },
+    {
+      name: 'query by transaction id, has scheduled, schedulecreate transaction',
+      input: {
+        isTransactionHash: false,
+        scheduledParamExists: true,
+        transactions: [
+          {
+            consensus_timestamp: 1n,
+            result: 22,
+            scheduled: false,
+            type: 42,
+          },
+        ],
+      },
+      expected: {},
+    },
+    {
+      name: 'query by transaction id, has scheduled, scheduled transaction',
+      input: {
+        isTransactionHash: false,
+        scheduledParamExists: true,
+        transactions: [
+          {
+            consensus_timestamp: 1n,
+            result: 22,
+            scheduled: true,
+            type: 14,
+          },
+        ],
+      },
+      expected: {},
+    },
+    {
+      name: 'query by transaction id, no scheduled, only scheculecreate and scheduled transaction yet to execute',
+      input: {
+        isTransactionHash: false,
+        scheduledParamExists: false,
+        transactions: [
+          {
+            consensus_timestamp: utils.nowInNs() - 500n,
+            result: 22,
+            scheduled: false,
+            type: 42,
+          },
+        ],
+      },
+      expected: shorterCacheControlHeader,
+    },
+    {
+      name: 'query by transaction id, no scheduled, only scheculecreate and schedule has expired',
+      input: {
+        isTransactionHash: false,
+        scheduledParamExists: false,
+        transactions: [
+          {
+            consensus_timestamp: utils.nowInNs() - maxLongTermScheduledTransactionConsensusTimestampRangeNs - 100n,
+            result: 22,
+            scheduled: false,
+            type: 42,
+          },
+        ],
+      },
+      expected: {},
+    },
+    {
+      name: 'query by transaction id, no scheduled, scheculecreate and scheduled transaction',
+      input: {
+        isTransactionHash: false,
+        scheduledParamExists: false,
+        transactions: [
+          {
+            consensus_timestamp: 100n,
+            result: 22,
+            scheduled: false,
+            type: 42,
+          },
+          {
+            consensus_timestamp: 110n,
+            result: 22,
+            scheduled: true,
+            type: 14,
+          },
+        ],
+      },
+      expected: {},
+    },
+    {
+      name: 'query by transaction id, no scheduled, only failed scheculecreate',
+      input: {
+        isTransactionHash: false,
+        scheduledParamExists: false,
+        transactions: [
+          {
+            consensus_timestamp: utils.nowInNs() - 500n,
+            result: 10,
+            scheduled: false,
+            type: 42,
+          },
+        ],
+      },
+      expected: {},
+    },
+  ];
 
-    expect(await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsExecuted, false)).toEqual({});
-    expect(await getTransactionsByIdOrHashCacheControlHeader(true, scheduledTransactionsExecuted, false)).toEqual({});
-    expect(await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsExecuted, true)).toEqual({});
+  testSpecs.forEach(({name, input, expected}) => {
+    const {isTransactionHash, scheduledParamExists, transactions} = input;
+    test(name, () => {
+      expect(
+        getTransactionsByIdOrHashCacheControlHeader(isTransactionHash, scheduledParamExists, transactions)
+      ).toEqual(expected);
+    });
   });
-  test(' shorter max-age for SCHEDULECREATE', async () => {
-    const expected = {'cache-control': `public, max-age=5`};
-    const scheduledTransactionsNotYetExecuted = [
-      {
-        consensus_timestamp: 1823787159637799966n,
-        entity_id: 98,
-        memo: null,
-        charged_tx_fee: 5,
-        max_fee: 33,
-        nonce: 0,
-        parent_consensus_timestamp: null,
-        token_transfers: [],
-        transfers: [],
-        result: 22,
-        scheduled: false,
-        transaction_hash: 'hash',
-        type: 42,
-        valid_start_ns: 1623787159737799966n,
-        transaction_bytes: 'bytes',
-        node_account_id: 2,
-        payer_account_id: 3,
-      },
-      {
-        consensus_timestamp: 2,
-        entity_id: 100,
-        memo: null,
-        charged_tx_fee: 5,
-        max_fee: 33,
-        nonce: 1,
-        parent_consensus_timestamp: 1,
-        token_transfers: [],
-        transfers: [],
-        result: 22,
-        scheduled: false,
-        transaction_hash: 'hash',
-        type: 14,
-        valid_start_ns: 1623787159737799966n,
-        transaction_bytes: 'bytes',
-        node_account_id: 2,
-        payer_account_id: 3,
-        crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
-      },
-    ];
+});
 
-    expect(
-      await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsNotYetExecuted, false)
-    ).toEqual(expected);
-  });
-  test(' longer max-age for failed SCHEDULECREATE', async () => {
-    const scheduledTransactionsExecuted = [
-      {
-        consensus_timestamp: 1,
-        entity_id: 98,
-        memo: null,
-        charged_tx_fee: 5,
-        max_fee: 33,
-        nonce: 0,
-        parent_consensus_timestamp: null,
-        token_transfers: [],
-        transfers: [],
-        result: 15,
-        scheduled: false,
-        transaction_hash: 'hash',
-        type: 42,
-        valid_start_ns: 1623787159737799966n,
-        transaction_bytes: 'bytes',
-        node_account_id: 2,
-        payer_account_id: 3,
+describe('mayMissLongTermScheduledTransaction', () => {
+  const testSpecs = [
+    {
+      name: 'by transaction hash, no scheduled, empty transactions',
+      input: {
+        isTransactionHash: true,
+        scheduled: undefined,
+        transactions: [],
       },
-      {
-        consensus_timestamp: 2,
-        entity_id: 100,
-        memo: null,
-        charged_tx_fee: 5,
-        max_fee: 33,
-        nonce: 1,
-        parent_consensus_timestamp: 1,
-        token_transfers: [],
-        transfers: [],
-        result: 22,
+      expected: false,
+    },
+    {
+      name: 'by transaction hash, scheduled=true, empty transactions',
+      input: {
+        isTransactionHash: true,
         scheduled: true,
-        transaction_hash: 'hash',
-        type: 14,
-        valid_start_ns: 1623787159737799966n,
-        transaction_bytes: 'bytes',
-        node_account_id: 2,
-        payer_account_id: 3,
-        crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
+        transactions: [],
       },
-    ];
+      expected: false,
+    },
+    {
+      name: 'by transaction hash, scheduled=false, empty transactions',
+      input: {
+        isTransactionHash: true,
+        scheduled: false,
+        transactions: [],
+      },
+      expected: false,
+    },
+    {
+      name: 'by transaction id, no scheduled, empty transactions',
+      input: {
+        isTransactionHash: false,
+        scheduled: undefined,
+        transactions: [],
+      },
+      expected: false,
+    },
+    {
+      name: 'by transaction id, no scheduled, successful schedulecreate',
+      input: {
+        isTransactionHash: false,
+        scheduled: undefined,
+        transactions: [
+          {
+            scheduled: false,
+            result: 22,
+            type: 42,
+          },
+        ],
+      },
+      expected: true,
+    },
+    {
+      name: 'by transaction id, no scheduled, successful schedulecreate and scheculed transaction',
+      input: {
+        isTransactionHash: false,
+        scheduled: undefined,
+        transactions: [
+          {
+            scheduled: false,
+            result: 22,
+            type: 42,
+          },
+          {
+            scheduled: true,
+            result: 22,
+            type: 14,
+          },
+        ],
+      },
+      expected: false,
+    },
+    {
+      name: 'by transaction id, no scheduled, failed schedulecreate',
+      input: {
+        isTransactionHash: false,
+        scheduled: undefined,
+        transactions: [
+          {
+            scheduled: false,
+            result: 10,
+            type: 42,
+          },
+        ],
+      },
+      expected: false,
+    },
+    {
+      name: 'by transaction id, scheduled=false, empty transactions',
+      input: {
+        isTransactionHash: false,
+        scheduled: false,
+        transactions: [],
+      },
+      expected: false,
+    },
+    {
+      name: 'by transaction id, scheduled=false, successful schedulecreate',
+      input: {
+        isTransactionHash: false,
+        scheduled: false,
+        transactions: [
+          {
+            scheduled: false,
+            result: 22,
+            type: 42,
+          },
+        ],
+      },
+      expected: false,
+    },
+    {
+      name: 'by transaction id, scheduled=false, failed schedulecreate',
+      input: {
+        isTransactionHash: false,
+        scheduled: false,
+        transactions: [
+          {
+            scheduled: false,
+            result: 10,
+            type: 42,
+          },
+        ],
+      },
+      expected: false,
+    },
+    {
+      name: 'by transaction id, scheduled=true, empty transactions',
+      input: {
+        isTransactionHash: false,
+        scheduled: true,
+        transactions: [],
+      },
+      expected: true,
+    },
+    {
+      name: 'by transaction id, scheduled=true, successful scheduled transactions',
+      input: {
+        isTransactionHash: false,
+        scheduled: true,
+        transactions: [
+          {
+            scheduled: true,
+            result: 22,
+            type: 14,
+          },
+        ],
+      },
+      expected: false,
+    },
+    {
+      name: 'by transaction id, scheduled=true, failed scheduled transactions',
+      input: {
+        isTransactionHash: false,
+        scheduled: true,
+        transactions: [
+          {
+            scheduled: true,
+            result: 10,
+            type: 14,
+          },
+        ],
+      },
+      expected: false,
+    },
+  ];
 
-    expect(await getTransactionsByIdOrHashCacheControlHeader(false, scheduledTransactionsExecuted, false)).toEqual({});
+  testSpecs.forEach(({name, input, expected}) => {
+    test(name, () => {
+      const {isTransactionHash, scheduled, transactions} = input;
+      expect(mayMissLongTermScheduledTransaction(isTransactionHash, scheduled, transactions)).toBe(expected);
+    });
   });
 });

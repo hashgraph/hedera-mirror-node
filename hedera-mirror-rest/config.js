@@ -167,6 +167,7 @@ const parseDurationConfig = (name, value) => {
 };
 
 const durationQueryConfigKeys = [
+  'maxLongTermScheduledTransactionConsensusTimestampRange',
   'maxRecordFileCloseInterval',
   'maxTimestampRange',
   'maxTransactionConsensusTimestampRange',
