@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ const SUCCESS_PROTO_IDS = TransactionResult.getSuccessProtoIds();
 
 const {
   query: {
+    maxScheduledTransactionConsensusTimestampRangeNs,
     maxTransactionConsensusTimestampRangeNs,
     transactions: {precedingTransactionTypes},
   },
@@ -722,8 +723,9 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   const mainConditions = [];
   const commonConditions = [];
   const params = [];
+  let nonce;
+  let scheduled;
   const isTransactionHash = isValidTransactionHash(transactionIdOrHash);
-  let scheduledParamExists = false;
 
   if (isTransactionHash) {
     const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
@@ -755,8 +757,11 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   } else {
     // try to parse it as a transaction id
     const transactionId = TransactionId.fromString(transactionIdOrHash);
-    const maxConsensusTimestamp = BigInt(transactionId.getValidStartNs()) + maxTransactionConsensusTimestampRangeNs;
-    params.push(transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), maxConsensusTimestamp);
+    const validStartTimestamp = BigInt(transactionId.getValidStartNs());
+    const maxConsensusTimestamp = validStartTimestamp + maxTransactionConsensusTimestampRangeNs;
+    params.push(transactionId.getEntityId().getEncodedId(), validStartTimestamp, maxConsensusTimestamp);
+    params.lowerConsensusTimestampIndex = 1;
+    params.upperConsensusTimestampIndex = 2;
     commonConditions.push(
       `${Transaction.PAYER_ACCOUNT_ID} = $1`,
       // timestamp range conditions
@@ -766,9 +771,6 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
     mainConditions.push(`${Transaction.VALID_START_NS} = $2`);
 
     // only parse nonce and scheduled query filters if the path parameter is transaction id
-    let nonce;
-    let scheduled;
-
     for (const filter of filters) {
       // honor the last for both nonce and scheduled
       switch (filter.key) {
@@ -777,7 +779,6 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
           break;
         case constants.filterKeys.SCHEDULED:
           scheduled = filter.value;
-          scheduledParamExists = true;
           break;
       }
     }
@@ -794,39 +795,36 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   }
 
   mainConditions.unshift(...commonConditions);
+
   return {
+    isTransactionHash,
     query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')),
     params,
-    scheduledParamExists: scheduledParamExists,
-    isTransactionHash: isTransactionHash,
+    scheduled,
   };
 };
 
-const getTransactionsByIdOrHashCacheControlHeader = (isTransactionHash, transactionsRows, scheduledParamExists) => {
-  if (scheduledParamExists || isTransactionHash) {
-    // If a schedule filter exists or the query uses a transaction hash, we return the longer max_age
-    return {}; // no override
+const getTransactionsByIdOrHashCacheControlHeader = (isTransactionHash, scheduledParamExists, transactions) => {
+  if (isTransactionHash || scheduledParamExists) {
+    // If the query uses a transaction hash or a scheduled filter exists, don't override
+    return {};
   }
 
-  let successScheduleCreateTimestamp;
-
-  for (const transaction of transactionsRows) {
+  // Default to no override
+  let header = {};
+  for (const transaction of transactions) {
     if (transaction.type === scheduleCreateProtoId && SUCCESS_PROTO_IDS.includes(transaction.result)) {
       // SCHEDULECREATE transaction cannot be scheduled
-      successScheduleCreateTimestamp = transaction.consensus_timestamp;
+      const elapsed = utils.nowInNs() - transaction.consensus_timestamp;
+      if (elapsed < maxScheduledTransactionConsensusTimestampRangeNs) {
+        header = SHORTER_CACHE_CONTROL_HEADER;
+      }
     } else if (transaction.scheduled) {
       return {};
     }
   }
 
-  if (successScheduleCreateTimestamp) {
-    const elapsed = utils.nowInNs() - successScheduleCreateTimestamp;
-    if (elapsed < maxTransactionConsensusTimestampRangeNs) {
-      return SHORTER_CACHE_CONTROL_HEADER;
-    }
-  }
-
-  return {}; // no override
+  return header;
 };
 
 /**
@@ -841,8 +839,16 @@ const getTransactionsByIdOrHash = async (req, res) => {
     filters
   );
 
-  // Execute query
-  const {rows} = await pool.queryQuietly(query, params);
+  const {rows} = await pool.queryQuietly(query, params).then((result) => {
+    if (!mayMissLongTermScheduledTransaction(isTransactionHash, scheduled, result.rows)) {
+      return result;
+    }
+
+    params[params.upperConsensusTimestampIndex] =
+      params[params.lowerConsensusTimestampIndex] + maxScheduledTransactionConsensusTimestampRangeNs;
+    return pool.queryQuietly(query, params);
+  });
+
   if (rows.length === 0) {
     throw new NotFoundError();
   }
@@ -851,14 +857,38 @@ const getTransactionsByIdOrHash = async (req, res) => {
 
   res.locals[constants.responseHeadersLabel] = getTransactionsByIdOrHashCacheControlHeader(
     isTransactionHash,
-    rows,
-    scheduled
+    scheduled !== undefined,
+    rows
   );
 
   logger.debug(`getTransactionsByIdOrHash returning ${transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
     transactions,
   };
+};
+
+const mayMissLongTermScheduledTransaction = (isTransactionHash, scheduled, transactions) => {
+  // Note scheduled may be undefined
+  if (isTransactionHash || scheduled === false) {
+    return false;
+  }
+
+  if (scheduled === undefined) {
+    let scheduleExists = false;
+    for (const transaction of transactions) {
+      if (transaction.type === scheduleCreateProtoId && SUCCESS_PROTO_IDS.includes(transaction.result)) {
+        scheduleExists = true;
+      } else if (transaction.scheduled) {
+        return false;
+      }
+    }
+
+    return scheduleExists;
+  } else if (scheduled && transactions.length === 0) {
+    return true;
+  }
+
+  return false;
 };
 
 const transactions = {
@@ -894,6 +924,7 @@ if (utils.isTestEnv()) {
     getStakingRewardTimestamps,
     getTransactionsByIdOrHashCacheControlHeader,
     isValidTransactionHash,
+    mayMissLongTermScheduledTransaction,
   });
 }
 
