@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ const SUCCESS_PROTO_IDS = TransactionResult.getSuccessProtoIds();
 
 const {
   query: {
-    maxLongTermScheduledTransactionConsensusTimestampRangeNs,
+    maxScheduledTransactionConsensusTimestampRangeNs,
     maxTransactionConsensusTimestampRangeNs,
     transactions: {precedingTransactionTypes},
   },
@@ -816,7 +816,7 @@ const getTransactionsByIdOrHashCacheControlHeader = (isTransactionHash, schedule
     if (transaction.type === scheduleCreateProtoId && SUCCESS_PROTO_IDS.includes(transaction.result)) {
       // SCHEDULECREATE transaction cannot be scheduled
       const elapsed = utils.nowInNs() - transaction.consensus_timestamp;
-      if (elapsed < maxLongTermScheduledTransactionConsensusTimestampRangeNs) {
+      if (elapsed < maxScheduledTransactionConsensusTimestampRangeNs) {
         header = SHORTER_CACHE_CONTROL_HEADER;
       }
     } else if (transaction.scheduled) {
@@ -845,7 +845,7 @@ const getTransactionsByIdOrHash = async (req, res) => {
     }
 
     params[params.upperConsensusTimestampIndex] =
-      params[params.lowerConsensusTimestampIndex] + maxLongTermScheduledTransactionConsensusTimestampRangeNs;
+      params[params.lowerConsensusTimestampIndex] + maxScheduledTransactionConsensusTimestampRangeNs;
     return pool.queryQuietly(query, params);
   });
 

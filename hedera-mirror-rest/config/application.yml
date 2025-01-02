@@ -67,9 +67,9 @@ hedera:
       port: 5551
       query:
         bindTimestampRange: false
-        maxLongTermScheduledTransactionConsensusTimestampRange: 89285m
         maxRecordFileCloseInterval: 10s
         maxRepeatedQueryParameters: 100
+        maxScheduledTransactionConsensusTimestampRange: 89285m
         maxTimestampRange: 7d
         maxTransactionConsensusTimestampRange: 35m
         maxTransactionsTimestampRange: 60d

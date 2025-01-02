@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,20 +195,20 @@ describe('Override query config', () => {
   test('success', async () => {
     const queryConfig = {
       bindTimestampRange: true,
-      maxLongTermScheduledTransactionConsensusTimestampRange: '1440m',
       maxRecordFileCloseInterval: '8s',
       maxRepeatedQueryParameters: 2,
+      maxScheduledTransactionConsensusTimestampRange: '1440m',
       maxTimestampRange: '1d',
       maxTransactionConsensusTimestampRange: '10m',
       maxTransactionsTimestampRange: '20d',
     };
     const expected = {
       bindTimestampRange: true,
-      maxLongTermScheduledTransactionConsensusTimestampRange: '1440m',
-      maxLongTermScheduledTransactionConsensusTimestampRangeNs: 86400000000000n,
       maxRecordFileCloseInterval: '8s',
       maxRecordFileCloseIntervalNs: 8000000000n,
       maxRepeatedQueryParameters: 2,
+      maxScheduledTransactionConsensusTimestampRange: '1440m',
+      maxScheduledTransactionConsensusTimestampRangeNs: 86400000000000n,
       maxTimestampRange: '1d',
       maxTimestampRangeNs: 86400000000000n,
       maxTransactionConsensusTimestampRange: '10m',
@@ -226,12 +226,12 @@ describe('Override query config', () => {
   });
 
   test.each`
-    name                                                                | queryConfig
-    ${'invalid maxLongTermScheduledTransactionConsensusTimestampRange'} | ${{maxLongTermScheduledTransactionConsensusTimestampRange: '1k'}}
-    ${'invalid maxRecordFileCloseInterval'}                             | ${{maxRecordFileCloseInterval: '1g'}}
-    ${'invalid maxTimestampRange'}                                      | ${{maxTimestampRange: '1q'}}
-    ${'invalid maxTransactionConsensusTimestampRange'}                  | ${{maxTransactionConsensusTimestampRange: '1z'}}
-    ${'invalid maxTransactionsTimestampRange'}                          | ${{maxTransactionsTimestampRange: '1z'}}
+    name                                                        | queryConfig
+    ${'invalid maxRecordFileCloseInterval'}                     | ${{maxRecordFileCloseInterval: '1g'}}
+    ${'invalid maxScheduledTransactionConsensusTimestampRange'} | ${{maxScheduledTransactionConsensusTimestampRange: '1k'}}
+    ${'invalid maxTimestampRange'}                              | ${{maxTimestampRange: '1q'}}
+    ${'invalid maxTransactionConsensusTimestampRange'}          | ${{maxTransactionConsensusTimestampRange: '1z'}}
+    ${'invalid maxTransactionsTimestampRange'}                  | ${{maxTransactionsTimestampRange: '1z'}}
   `('$name', async ({queryConfig}) => {
     await expect(loadCustomConfig(customConfig(queryConfig))).rejects.toThrowErrorMatchingSnapshot();
   });
