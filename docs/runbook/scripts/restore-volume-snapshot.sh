@@ -5,7 +5,7 @@ set -euo pipefail
 source ./utils.sh
 
 REPLACE_DISKS="${REPLACE_DISKS:-true}"
-STACK_GRES_MINIO_ROOT="${STACK_GRES_MINIO_ROOT:-sgbackups.stackgres.io}"
+STACKGRES_MINIO_ROOT="${STACKGRES_MINIO_ROOT:-sgbackups.stackgres.io}"
 ZFS_POOL_NAME="${ZFS_POOL_NAME:-zfspv-pool}"
 
 function configureAndValidate() {
@@ -202,9 +202,8 @@ function cleanupBackupStorage() {
   local namespace="${1}"
   local shardedClusterName="${2}"
   local minioPod=$(kubectl_common get pods -l 'app.kubernetes.io/name=minio' -o json | jq -r '.items[0].metadata.name')
-  local minioDataPath=$(kubectl_common exec "${minioPod}" -- sh -c 'echo $MINIO_DATA_DIR')
   if [[ "${minioPod}" == "null" ]]; then
-    echo "Minio pod not found in namespace ${namespace}. Skipping cleanup"
+    echo "Minio pod not found. Skipping cleanup"
   else
     local backups=$(kubectl get sgshardedclusters.stackgres.io -n "${namespace}" "${shardedClusterName}" -o json | jq -r '.spec.configurations.backups')
     if [[ "${backups}" == "null" ]]; then
@@ -213,10 +212,12 @@ function cleanupBackupStorage() {
     fi
 
     kubectl patch sgshardedclusters.stackgres.io "${shardedClusterName}" -n "${namespace}" --type='json' -p '[{"op": "remove", "path": "/spec/configurations/backups"}]';
+
+    local minioDataPath=$(kubectl_common exec "${minioPod}" -- sh -c 'echo $MINIO_DATA_DIR')
     local backupStorages=($(echo "${backups}" | jq -r '.[].sgObjectStorage'))
     for backupStorage in "${backupStorages[@]}"; do
       local minioBucket=$(kubectl get sgObjectStorage.stackgres.io -n "${namespace}" "${backupStorage}" -o json | jq -r '.spec.s3Compatible.bucket')
-      local pathToDelete="${minioDataPath}/${minioBucket}/${STACK_GRES_MINIO_ROOT}/${namespace}"
+      local pathToDelete="${minioDataPath}/${minioBucket}/${STACKGRES_MINIO_ROOT}/${namespace}"
       echo "Cleaning up wal files in minio bucket ${minioBucket}. Will delete all files at path ${pathToDelete}"
       doContinue
       kubectl_common exec "${minioPod}" -- mc rm --recursive --force "${pathToDelete}"
@@ -340,6 +341,7 @@ group ${citusGroup}. Will failover"
     kubectl patch sgclusters.stackgres.io -n "${namespace}" "${clusterName}" --type merge -p "${clusterPatch}"
   done
 
+  waitForPatoniMasters "${namespace}"
   updateStackgresCreds "${shardedClusterName}" "${namespace}"
 }
 

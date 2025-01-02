@@ -224,7 +224,7 @@ function recreateManagedCluster() {
   log "SGShardedCluster ${CLUSTER} is ready"
 }
 
-function  restoreBackup() {
+function restoreBackup() {
   log "Restoring..."
 
   adjustCoordStorage

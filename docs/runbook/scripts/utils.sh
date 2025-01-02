@@ -130,6 +130,30 @@ function pauseCitus() {
   fi
 }
 
+function waitForPatoniMasters() {
+  local namespace="${1}"
+  local masterPods=($(kubectl get pods -n "${namespace}" -l "${STACKGRES_MASTER_LABELS}" -o jsonpath='{.items[*].metadata.name}'))
+  local expectedTotal=$(($(kubectl get sgshardedclusters -n "${namespace}" -o jsonpath='{.items[0].spec.shards.clusters}')+1))
+
+  if [[ "${#masterPods[@]}" -ne "${expectedTotal}" ]]; then
+    log "Expected ${expectedTotal} master pods and found only ${#masterPods[@]} in namespace ${namespace}"
+    exit 1
+  fi
+
+  local patroniPod="${masterPods[0]}"
+
+  while [[ "$(kubectl exec -n "${namespace}" "${patroniPod}" -c patroni -- patronictl list --format=json |
+              jq -r --arg PATRONI_MASTER_ROLE "${PATRONI_MASTER_ROLE}" \
+                    --arg EXPECTED_MASTERS "${expectedTotal}" \
+                    'map(select(.Role == $PATRONI_MASTER_ROLE)) |
+                     length == ($EXPECTED_MASTERS | tonumber) and all(.State == "running")')" != "true" ]]; do
+    log "Waiting for Patroni to be ready"
+    sleep 5
+  done
+
+  log "All Patroni masters are ready"
+}
+
 function unpauseCitus() {
   local namespace="${1}"
   local reinitializeCitus="${2:-false}"
@@ -164,6 +188,7 @@ function unpauseCitus() {
         log "Waiting for all pods to be marked with master role label"
         sleep 1
       done
+      waitForPatoniMasters "${namespace}"
     fi
   else
     log "Citus is already running in namespace ${namespace}. Skipping"
@@ -337,5 +362,6 @@ GCP_COORDINATOR_POOL_NAME="${GCP_COORDINATOR_POOL_NAME:-citus-coordinator}"
 GCP_WORKER_POOL_NAME="${GCP_WORKER_POOL_NAME:-citus-worker}"
 HELM_RELEASE_NAME="${HELM_RELEASE_NAME:-mirror}"
 STACKGRES_MASTER_LABELS="${STACKGRES_MASTER_LABELS:-app=StackGresCluster,role=master}"
+PATRONI_MASTER_ROLE="${PATRONI_MASTER_ROLE:-Leader}"
 
 alias kubectl_common="kubectl -n ${COMMON_NAMESPACE}"
