@@ -1,21 +1,6 @@
 {
-  "description": "Transaction api calls for a specific transaction using transaction id with scheduled transaction but scheduled flag is not provided",
+  "description": "Transaction api calls for a specific transaction using transaction id with scheduled transaction and scheduled flag is not provided",
   "setup": {
-    "accounts": [
-      {
-        "num": 3
-      },
-      {
-        "num": 9
-      },
-      {
-        "num": 10
-      },
-      {
-        "num": 98
-      }
-    ],
-    "balances": [],
     "transactions": [
       {
         "charged_tx_fee": 7,
@@ -25,6 +10,7 @@
         "valid_start_timestamp": "1234567890000000001",
         "name": "SCHEDULECREATE",
         "type": 42,
+        "transaction_hash": "rovr8cn6DzCTVuSAV/YEevfN5jA30FCdFt3Dsg4IUVi/3xTRU0XBsYsZm3L+1Kxv",
         "transfers": [
           {
             "account": "0.0.9",
@@ -72,7 +58,7 @@
         "scheduled": false,
         "staking_reward_transfers": [],
         "token_transfers": [],
-        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
+        "transaction_hash": "rovr8cn6DzCTVuSAV/YEevfN5jA30FCdFt3Dsg4IUVi/3xTRU0XBsYsZm3L+1Kxv",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [
           {
