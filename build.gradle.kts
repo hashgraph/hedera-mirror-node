@@ -134,6 +134,7 @@ allprojects {
             property("sonar.issue.ignore.multicriteria.e6.resourceKey", "**/*.java")
             property("sonar.issue.ignore.multicriteria.e6.ruleKey", "java:S2970")
             property("sonar.exclusions", "src/main/java/com/hedera/services/**")
+            property("sonar.exclusions", "src/test/java/com/hedera/services/**")
         }
     }
 }
