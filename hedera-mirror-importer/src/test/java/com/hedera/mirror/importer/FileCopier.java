@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import lombok.Value;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.apache.commons.lang3.StringUtils;
 
 @CustomLog
 @Value
@@ -128,7 +129,8 @@ public class FileCopier {
 
                 var sourceNodeDirName = sourceNodeDir.getName();
                 var streamTypeOpt = Arrays.stream(StreamType.values())
-                        .filter(st -> sourceNodeDirName.startsWith(st.getNodePrefix()))
+                        .filter(st -> !StringUtils.isEmpty(st.getNodePrefix())
+                                && sourceNodeDirName.startsWith(st.getNodePrefix()))
                         .findFirst();
 
                 if (streamTypeOpt.isPresent()) {
