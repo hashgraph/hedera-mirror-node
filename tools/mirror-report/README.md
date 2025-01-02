@@ -5,10 +5,11 @@ the account and its resulting balance.
 
 ## Install
 
-First ensure Node and NPM are installed. If not using MacOS or Linux, please see Node's
-install [instructions](https://nodejs.org/en/download/package-manager/current).
+First ensure Node and NPM are installed. Following the instructions specific to your operating system.
 
-## MacOS
+### MacOS
+
+Open the Terminal app and run the following commands:
 
 ```shell
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
@@ -18,9 +19,20 @@ npm install -g @hashgraph/mirror-report
 
 ### Windows
 
+Download the Node.js 22 prebuilt [installer](https://nodejs.org/dist/v22.12.0/node-v22.12.0-x64.msi) for Windows x64.
+Follow the prompts to complete the installation with the default options. Open the Command Prompt application and run
+the following:
+
 ```shell
-winget install Schniz.fnm
-fnm env --use-on-cd | Out-String | Invoke-Expression
+npm install -g @hashgraph/mirror-report
+```
+
+## Upgrading
+
+To upgrade the version of the report tool, re-run the NPM install command to grab the latest version:
+
+```shell
+npm install -g @hashgraph/mirror-report
 ```
 
 ## Running
@@ -28,7 +40,6 @@ fnm env --use-on-cd | Out-String | Invoke-Expression
 To generate the report, use the `mirror` command line tool from the installation section.
 
 ```shell
-$ mirror --help
 Usage: mirror [options] [command]
 
 Options:
@@ -39,37 +50,49 @@ Commands:
   help [command]    display help for command
 ```
 
-Run the `mirror report` sub-command to generate the report. Pass at least one account you want to include in the report.
-By default, it generates a report for the current date. Pass the `--date YYYY-MM-DD` argument to customize the report
-date.
+Run the `report` sub-command to generate the report data. Pass at least one account you want to include in the report.
+By default, it generates a report for the current date. Pass the `--from-date YYYY-MM-DD` and `--to-date YYYY-MM-DD`
+arguments to customize the time range the report should cover.
 
 ```shell
-$ mirror report --help
 Usage: mirror report [options]
 
 Generate a report for the given accounts.
 
 Options:
-  -a, --account <accountId...>   The accounts to include in the report
-  -d, --date <YYYY-MM-DD>        The day the report should cover (default: "2024-12-17")
-  -n, --network <network>        The Hedera network to connect to (default: "mainnet")
-  -h, --help                     display help for command
+  -a, --account <accountId...>  The accounts to include in the report
+  -c, --combined                Whether a single combined report should be generated for all accounts. By default it produces separate reports
+  -f, --from-date <YYYY-MM-DD>  The day the report should start (inclusive) (default: today)
+  -n, --network <network>       The Hedera network to connect to (choices: "mainnet", "testnet", "previewnet", default: "mainnet")
+  -t, --to-date <YYYY-MM-DD>    The day the report should end (exclusive) (default: tomorrow)
+  -h, --help                    display help for command
 ```
 
-Example execution :
+Example execution:
 
 ```shell
-$ mirror report -a 0.0.1000 -a 0.0.1001 -d 2024-11-29 -n testnet
-2024-12-17T04:52:04.353Z Generating testnet report for the given accounts: ["0.0.1000","0.0.1001"]
-2024-12-17T04:52:04.353Z Invoking https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1000?timestamp=1732838400
-2024-12-17T04:52:04.643Z Starting balance of 1300000002 for account 0.0.1000 at 1732837599.823821194
-2024-12-17T04:52:04.643Z Invoking https://testnet.mirrornode.hedera.com/api/v1/transactions?account.id=0.0.1000&limit=100&order=asc&timestamp=gt:1732837599.823821194&timestamp=lt:1732924800
-2024-12-17T04:52:04.719Z Invoking https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1001?timestamp=1732838400
-2024-12-17T04:52:04.800Z Starting balance of 197103815708295 for account 0.0.1001 at 1732837599.823821194
-2024-12-17T04:52:04.800Z Invoking https://testnet.mirrornode.hedera.com/api/v1/transactions?account.id=0.0.1001&limit=100&order=asc&timestamp=gt:1732837599.823821194&timestamp=lt:1732924800
-2024-12-17T04:52:04.875Z Generated report successfully at report-2024-11-29.csv with 1 entries
+mirror report --combined -a 0.0.1000-0.0.1001 0.0.1003 -f 2024-11-29 -n testnet
+```
 
-$ cat report-2024-11-29.csv
+```shell
+2025-01-02T19:06:08.399Z Running report with options: {"fromDate":"2024-11-29","network":"testnet","toDate":"2025-01-03","combined":true,"account":["0.0.1000","0.0.1001","0.0.1003"]}
+2025-01-02T19:06:08.399Z Invoking https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1000?timestamp=1732838400
+2025-01-02T19:06:08.515Z Starting balance of 1300000002 for account 0.0.1000 at 1732837599.823821194
+2025-01-02T19:06:08.515Z Invoking https://testnet.mirrornode.hedera.com/api/v1/transactions?account.id=0.0.1000&limit=100&order=asc&timestamp=gt:1732837599.823821194&timestamp=lt:1735862400
+2025-01-02T19:06:08.591Z Invoking https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1001?timestamp=1732838400
+2025-01-02T19:06:08.639Z Starting balance of 197103815708295 for account 0.0.1001 at 1732837599.823821194
+2025-01-02T19:06:08.639Z Invoking https://testnet.mirrornode.hedera.com/api/v1/transactions?account.id=0.0.1001&limit=100&order=asc&timestamp=gt:1732837599.823821194&timestamp=lt:1735862400
+2025-01-02T19:06:08.687Z Invoking https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1003?timestamp=1732838400
+2025-01-02T19:06:08.737Z Starting balance of 1001658807600 for account 0.0.1003 at 1732837599.823821194
+2025-01-02T19:06:08.737Z Invoking https://testnet.mirrornode.hedera.com/api/v1/transactions?account.id=0.0.1003&limit=100&order=asc&timestamp=gt:1732837599.823821194&timestamp=lt:1735862400
+2025-01-02T19:06:08.781Z Generated report successfully at report-2024-11-29.csv with 1 entries
+```
+
+```shell
+cat report-2024-11-29.csv
+```
+
+```shell
 timestamp,sender,receiver,fees,amount,balance
-1732901875.430169000,0.0.5190744,0.0.1000,0,100000000,1400000002
+1732901875.430169000,0.0.5190744,0.0.1000,0.00000000,1.00000000,1.400000002
 ```
