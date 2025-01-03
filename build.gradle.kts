@@ -300,7 +300,7 @@ tasks.register("release") {
         )
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
         replaceVersion(
-            "hedera-mirror-test/traffic-replay/log-downloader/package*.json",
+            "tools/traffic-replay/log-downloader/package*.json",
             "(?<=\"@hashgraph/mirror-log-downloader\",\\s{3,7}\"version\": \")[^\"]+"
         )
     }
