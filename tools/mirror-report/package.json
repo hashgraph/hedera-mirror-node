@@ -1,0 +1,42 @@
+{
+  "author": "Hedera Mirror Node Team",
+  "bin": {
+    "mirror": "index.js"
+  },
+  "bugs": {
+    "url": "https://github.com/hashgraph/hedera-mirror-node/issues"
+  },
+  "dependencies": {
+    "commander": "^13.0.0",
+    "json-bigint": "^1.0.0"
+  },
+  "description": "Generates a report showing an account's hbar transfers",
+  "devDependencies": {
+    "@fetch-mock/jest": "^0.2.7",
+    "jest": "^29.7.0"
+  },
+  "homepage": "https://github.com/hashgraph/hedera-mirror-node/tree/main/tools/mirror-report",
+  "jest": {
+    "transform": {}
+  },
+  "keywords": [
+    "hedera",
+    "mirror",
+    "report",
+    "csv"
+  ],
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "name": "@hashgraph/mirror-report",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hashgraph/hedera-mirror-node.git"
+  },
+  "scripts": {
+    "start": "node ./index.js",
+    "lint": "eslint --ignore-pattern node_modules/ --fix .",
+    "test": "node --experimental-specifier-resolution=node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "type": "module",
+  "version": "0.1.6"
+}
