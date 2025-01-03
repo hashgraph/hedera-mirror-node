@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,17 +58,17 @@ dependencies {
         api("org.bouncycastle:bcprov-jdk18on:1.79")
         api("com.bucket4j:bucket4j-core:8.10.1")
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.8.0")
-        api("com.google.guava:guava:33.3.1-jre")
+        api("com.google.guava:guava:33.4.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.8")
         api("com.graphql-java:graphql-java-extended-scalars:22.0")
         api("com.graphql-java:graphql-java-extended-validation:22.0")
-        api("com.hedera.hashgraph:app:0.57.2")
+        api("com.hedera.hashgraph:app:0.57.3")
         api("com.hedera.evm:hedera-evm:0.54.2")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.57.3")
         api("com.hedera.hashgraph:sdk:2.46.0")
         api("com.ongres.scram:client:2.1")
-        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.9")
+        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.10")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
@@ -85,7 +85,7 @@ dependencies {
         api("jakarta.inject:jakarta.inject-api:2.0.1")
         api("javax.inject:javax.inject:1")
         api("net.devh:grpc-spring-boot-starter:3.1.0.RELEASE")
-        api("net.java.dev.jna:jna:5.15.0")
+        api("net.java.dev.jna:jna:5.16.0")
         api("org.apache.commons:commons-collections4:4.4")
         api("org.apache.commons:commons-compress:1.27.1")
         api("org.apache.commons:commons-math3:3.6.1")
@@ -93,7 +93,7 @@ dependencies {
         api("org.apache.tuweni:tuweni-units:$tuweniVersion")
         api("org.apache.velocity:velocity-engine-core:2.4.1")
         api("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2")
-        api("org.gaul:s3proxy:2.4.1")
+        api("org.gaul:s3proxy:2.5.0")
         api("org.hyperledger.besu:secp256k1:0.8.2")
         api("org.hyperledger.besu:evm:24.3.3")
         api("org.mapstruct:mapstruct:$mapStructVersion")
@@ -103,7 +103,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.4")
         api("org.testcontainers:junit-jupiter:1.20.4")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.29.34")
+        api("software.amazon.awssdk:bom:2.29.43")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.7")
         api("org.web3j:core:4.12.2")
         api("tech.pegasys:jc-kzg-4844:1.0.0")
@@ -133,7 +133,7 @@ allprojects {
             property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
             property("sonar.issue.ignore.multicriteria.e6.resourceKey", "**/*.java")
             property("sonar.issue.ignore.multicriteria.e6.ruleKey", "java:S2970")
-            property("sonar.exclusions", "src/main/java/com/hedera/services/**")
+            property("sonar.exclusions", "src/main/java/com/hedera/services/**,src/test/java/com/hedera/services/**")
         }
     }
 }

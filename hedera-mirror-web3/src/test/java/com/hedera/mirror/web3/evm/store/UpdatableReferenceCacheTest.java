@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -317,7 +317,6 @@ class UpdatableReferenceCacheTest {
     }
 
     /** Like `Map.of` but doesn't barf on `null` values */
-    // TODO: Move to utils class
     @NonNull
     <K, V> Map<K, V> makeMapOf(
             @NonNull final Class<K> klassK, @NonNull final Class<V> klassV, final Object... kvPairs) {
