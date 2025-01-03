@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,8 +133,7 @@ allprojects {
             property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
             property("sonar.issue.ignore.multicriteria.e6.resourceKey", "**/*.java")
             property("sonar.issue.ignore.multicriteria.e6.ruleKey", "java:S2970")
-            property("sonar.exclusions", "src/main/java/com/hedera/services/**")
-            property("sonar.exclusions", "src/test/java/com/hedera/services/**")
+            property("sonar.exclusions", "src/main/java/com/hedera/services/**,src/test/java/com/hedera/services/**")
         }
     }
 }
