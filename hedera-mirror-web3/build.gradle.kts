@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 import java.net.HttpURLConnection
 import java.net.URI
 import org.web3j.solidity.gradle.plugin.SolidityCompile
-import org.web3j.solidity.gradle.plugin.SolidityResolve
 
 description = "Hedera Mirror Node Web3"
 
@@ -139,17 +138,6 @@ tasks.processTestResources {
     dependsOn(tasks.named("moveAndCleanTestHistoricalFiles"))
 }
 
-tasks.register("resolveSolidityHistorical", SolidityResolve::class) {
-    group = "historical"
-    description = "Resolves the historical solidity version $historicalSolidityVersion"
-    sources = fileTree("src/testHistorical/solidity")
-    allowPaths = setOf("src/testHistorical/solidity")
-
-    val packageJsonFile = "./build/node_modules/@openzeppelin/contracts/package.json"
-    packageJson = file(packageJsonFile)
-    dependsOn("extractContracts")
-}
-
 afterEvaluate {
     tasks.named("compileTestHistoricalSolidity", SolidityCompile::class.java).configure {
         group = "historical"
@@ -158,7 +146,6 @@ afterEvaluate {
         version = historicalSolidityVersion
         source = fileTree("src/testHistorical/solidity") { include("*.sol") }
         dependsOn("extractContracts")
-        dependsOn("resolveSolidityHistorical")
     }
 }
 
@@ -166,7 +153,6 @@ afterEvaluate {
     tasks.named("generateTestHistoricalContractWrappers") {
         dependsOn(tasks.named("generateTestContractWrappers"))
         dependsOn(extractOpenZeppelin)
-        dependsOn(tasks.named("resolveSolidityHistorical"))
     }
 }
 
@@ -212,7 +198,7 @@ tasks.register<Copy>("moveAndCleanTestHistoricalFiles") {
     dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
 }
 
-afterEvaluate { tasks.named("resolveSolidity") { dependsOn("extractContracts") } }
+afterEvaluate { tasks.named("extractSolidityImports") { dependsOn("extractContracts") } }
 
 tasks.compileTestJava {
     options.compilerArgs.add("--enable-preview")
