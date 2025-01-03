@@ -130,7 +130,7 @@ function pauseCitus() {
   fi
 }
 
-function waitForPatoniMasters() {
+function waitForPatroniMasters() {
   local namespace="${1}"
   local masterPods=($(kubectl get pods -n "${namespace}" -l "${STACKGRES_MASTER_LABELS}" -o jsonpath='{.items[*].metadata.name}'))
   local expectedTotal=$(($(kubectl get sgshardedclusters -n "${namespace}" -o jsonpath='{.items[0].spec.shards.clusters}')+1))
@@ -188,7 +188,7 @@ function unpauseCitus() {
         log "Waiting for all pods to be marked with master role label"
         sleep 1
       done
-      waitForPatoniMasters "${namespace}"
+      waitForPatroniMasters "${namespace}"
     fi
   else
     log "Citus is already running in namespace ${namespace}. Skipping"

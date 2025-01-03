@@ -341,7 +341,7 @@ group ${citusGroup}. Will failover"
     kubectl patch sgclusters.stackgres.io -n "${namespace}" "${clusterName}" --type merge -p "${clusterPatch}"
   done
 
-  waitForPatoniMasters "${namespace}"
+  waitForPatroniMasters "${namespace}"
   updateStackgresCreds "${shardedClusterName}" "${namespace}"
 }
 
