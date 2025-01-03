@@ -7,7 +7,7 @@
     "url": "https://github.com/hashgraph/hedera-mirror-node/issues"
   },
   "dependencies": {
-    "commander": "^12.1.0",
+    "commander": "^13.0.0",
     "json-bigint": "^1.0.0"
   },
   "description": "Generates a report showing an account's hbar transfers",
