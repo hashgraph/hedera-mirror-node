@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,15 @@ import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 @Named
 public class BlockNumberMigration extends RepeatableMigration {
@@ -36,13 +42,20 @@ public class BlockNumberMigration extends RepeatableMigration {
             TESTNET, Pair.of(1656461617493248000L, 22384256L),
             MAINNET, Pair.of(1656461547557609267L, 34305852L));
 
+    private static final RowMapper<RecordFile> RECORD_FILE_ROW_MAPPER = new DataClassRowMapper<>(RecordFile.class);
+
     private final ImporterProperties importerProperties;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
     private final RecordFileRepository recordFileRepository;
 
     @Lazy
-    public BlockNumberMigration(ImporterProperties importerProperties, RecordFileRepository recordFileRepository) {
+    public BlockNumberMigration(
+            ImporterProperties importerProperties,
+            NamedParameterJdbcTemplate jdbcTemplate,
+            RecordFileRepository recordFileRepository) {
         super(importerProperties.getMigration());
         this.importerProperties = importerProperties;
+        this.jdbcTemplate = jdbcTemplate;
         this.recordFileRepository = recordFileRepository;
     }
 
@@ -69,8 +82,7 @@ public class BlockNumberMigration extends RepeatableMigration {
         long correctConsensusEnd = consensusEndAndBlockNumber.getKey();
         long correctBlockNumber = consensusEndAndBlockNumber.getValue();
 
-        recordFileRepository
-                .findById(correctConsensusEnd)
+        findRecordFileByConsensusEnd(correctConsensusEnd)
                 .map(RecordFile::getIndex)
                 .filter(blockNumber -> blockNumber != correctBlockNumber)
                 .ifPresent(blockNumber -> updateIndex(correctBlockNumber, blockNumber));
@@ -81,5 +93,17 @@ public class BlockNumberMigration extends RepeatableMigration {
         Stopwatch stopwatch = Stopwatch.createStarted();
         int count = recordFileRepository.updateIndex(offset);
         log.info("Updated {} blocks with offset {} in {}", count, offset, stopwatch);
+    }
+
+    private Optional<RecordFile> findRecordFileByConsensusEnd(long consensusEnd) {
+        var params = new MapSqlParameterSource().addValue("consensusEnd", consensusEnd);
+        try {
+            return Optional.of(jdbcTemplate.queryForObject(
+                    "select * from record_file where consensus_end = :consensusEnd limit 1",
+                    params,
+                    RECORD_FILE_ROW_MAPPER));
+        } catch (EmptyResultDataAccessException ex) {
+            return Optional.empty();
+        }
     }
 }

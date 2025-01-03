@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,8 +127,9 @@ class AddBalanceTimestampMigrationTest extends AbstractStakingMigrationTest {
     @Test
     void migrate() {
         // given
-        domainBuilder.recordFile().persist();
-        var latestRecordFile = domainBuilder.recordFile().persist();
+        persistRecordFile(domainBuilder.recordFile().get());
+        var latestRecordFile = domainBuilder.recordFile().get();
+        persistRecordFile(latestRecordFile);
 
         var entity = domainBuilder.entity().get();
         var entity2 = domainBuilder.entity().get();

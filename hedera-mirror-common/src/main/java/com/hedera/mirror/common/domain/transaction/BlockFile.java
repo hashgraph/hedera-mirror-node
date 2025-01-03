@@ -16,17 +16,12 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
 import com.hedera.hapi.block.stream.protoc.BlockProof;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hederahashgraph.api.proto.java.BlockStreamInfo;
-import jakarta.persistence.Column;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Transient;
 import java.util.Collection;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -60,7 +55,6 @@ public class BlockFile implements StreamFile<BlockItem> {
 
     private Long count;
 
-    @Enumerated
     private DigestAlgorithm digestAlgorithm;
 
     @ToString.Exclude
@@ -68,9 +62,7 @@ public class BlockFile implements StreamFile<BlockItem> {
 
     @Builder.Default
     @EqualsAndHashCode.Exclude
-    @JsonIgnore
     @ToString.Exclude
-    @Transient
     private Collection<BlockItem> items = List.of();
 
     private Long loadEnd;
@@ -81,8 +73,6 @@ public class BlockFile implements StreamFile<BlockItem> {
 
     private Long nodeId;
 
-    @Column(name = "prev_hash")
-    @JsonProperty("prev_hash")
     @ToString.Exclude
     private String previousHash;
 
@@ -93,11 +83,6 @@ public class BlockFile implements StreamFile<BlockItem> {
     private Integer size;
 
     private int version;
-
-    @Override
-    public void clear() {
-        StreamFile.super.clear();
-    }
 
     @Override
     public StreamFile<BlockItem> copy() {
@@ -115,12 +100,6 @@ public class BlockFile implements StreamFile<BlockItem> {
     }
 
     @Override
-    public void setItems(Collection<BlockItem> items) {
-        this.items = items;
-    }
-
-    @Override
-    @JsonIgnore
     public StreamType getType() {
         return StreamType.BLOCK;
     }

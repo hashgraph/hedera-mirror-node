@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,7 +202,8 @@ class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
                     long consensusEnd = r.build().getConsensusStart() + 10;
                     r.consensusEnd(consensusEnd).hapiVersionMinor(hapiVersionMinor);
                 })
-                .persist();
+                .get();
+        persistRecordFile(recordFile);
         // advance more than 10ns so the next timestamp would not fall into the same record file
         for (int i = 0; i < 12; i++) {
             domainBuilder.timestamp();

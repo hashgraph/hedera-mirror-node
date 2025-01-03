@@ -112,10 +112,8 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String previousHash;
 
-    @Transient
     private Long roundEnd;
 
-    @Transient
     private Long roundStart;
 
     private int sidecarCount;
@@ -129,13 +127,8 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     private Integer size;
 
-    @Transient
     private Integer softwareVersionMajor;
-
-    @Transient
     private Integer softwareVersionMinor;
-
-    @Transient
     private Integer softwareVersionPatch;
 
     private int version;

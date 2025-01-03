@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.Builder;
 
-@Builder
+@Builder(toBuilder = true)
 public record BlockItem(
         Transaction transaction,
         TransactionResult transactionResult,
