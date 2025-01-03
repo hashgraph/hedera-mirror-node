@@ -202,7 +202,8 @@ class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
                     long consensusEnd = r.build().getConsensusStart() + 10;
                     r.consensusEnd(consensusEnd).hapiVersionMinor(hapiVersionMinor);
                 })
-                .persist();
+                .get();
+        persistRecordFile(recordFile);
         // advance more than 10ns so the next timestamp would not fall into the same record file
         for (int i = 0; i < 12; i++) {
             domainBuilder.timestamp();

@@ -61,7 +61,7 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @ToString.Exclude
     private byte[] runningHash;
 
-    private int runningHashVersion;
+    private Integer runningHashVersion;
 
     private long sequenceNumber;
 

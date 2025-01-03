@@ -35,6 +35,7 @@ class StreamTypeTest {
             ImmutableMap.<StreamType, List<String>>builder()
                     .put(StreamType.BALANCE, List.of("csv", "pb"))
                     .put(StreamType.RECORD, List.of("rcd"))
+                    .put(StreamType.BLOCK, List.of("blk"))
                     .build();
     private static final Map<StreamType, List<String>> SIGNATURE_EXTENSIONS =
             ImmutableMap.<StreamType, List<String>>builder()
@@ -46,6 +47,11 @@ class StreamTypeTest {
         Map<StreamType, List<String>> extensionsMap = isDataExtension ? DATA_EXTENSIONS : SIGNATURE_EXTENSIONS;
         List<Arguments> argumentsList = new ArrayList<>();
         for (StreamType streamType : StreamType.values()) {
+            if (streamType == StreamType.BLOCK && !isDataExtension) {
+                // Block streams have no signature files
+                continue;
+            }
+
             List<String> extensions = extensionsMap.get(streamType);
             if (extensions == null) {
                 throw new IllegalArgumentException("Unknown StreamType " + streamType);

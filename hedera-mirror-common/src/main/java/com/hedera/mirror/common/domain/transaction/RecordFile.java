@@ -112,6 +112,10 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String previousHash;
 
+    private Long roundEnd;
+
+    private Long roundStart;
+
     private int sidecarCount;
 
     @Builder.Default
@@ -122,6 +126,10 @@ public class RecordFile implements StreamFile<RecordItem> {
     private Collection<SidecarFile> sidecars = List.of();
 
     private Integer size;
+
+    private Integer softwareVersionMajor;
+    private Integer softwareVersionMinor;
+    private Integer softwareVersionPatch;
 
     private int version;
 

@@ -30,6 +30,7 @@ import lombok.Value;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.apache.commons.lang3.StringUtils;
 
 @CustomLog
 @Value
@@ -128,7 +129,8 @@ public class FileCopier {
 
                 var sourceNodeDirName = sourceNodeDir.getName();
                 var streamTypeOpt = Arrays.stream(StreamType.values())
-                        .filter(st -> sourceNodeDirName.startsWith(st.getNodePrefix()))
+                        .filter(st -> !StringUtils.isEmpty(st.getNodePrefix())
+                                && sourceNodeDirName.startsWith(st.getNodePrefix()))
                         .findFirst();
 
                 if (streamTypeOpt.isPresent()) {
