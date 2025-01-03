@@ -108,7 +108,8 @@ function createSGShardedClusterConfigWithRestore() {
     "downloadDiskConcurrency": 1
   }
 }
-EOF)
+EOF
+)
   CLUSTER_CONFIG=$(echo "${sourceConfig}" | \
     jq --argjson initialDataConfig "${initialDataConfig}" '.spec.initialData=$initialDataConfig')
   log "Created SGShardedCluster configuration to restore backup ${BACKUP_TO_RESTORE}"
@@ -142,75 +143,6 @@ function findShardedCluster() {
   CLUSTER="${clusters[0]}"
   log "Will restore backup to SGShardedCluster \"${CLUSTER}\""
   doContinue
-}
-
-function fixClusterAuth() {
-  local sgPasswords=$(kubectl get secret "${CLUSTER}" -o json |
-    ksd |
-    jq -r '.stringData')
-  local superuserUsername=$(echo "${sgPasswords}" | jq -r '.["superuser-username"]')
-  local superuserPassword=$(echo "${sgPasswords}" | jq -r '.["superuser-password"]')
-  local replicationUsername=$(echo "${sgPasswords}" | jq -r '.["replication-username"]')
-  local replicationPassword=$(echo "${sgPasswords}" | jq -r '.["replication-password"]')
-  local authenticatorUsername=$(echo "${sgPasswords}" | jq -r '.["authenticator-username"]')
-  local authenticatorPassword=$(echo "${sgPasswords}" | jq -r '.["authenticator-password"]')
-
-  # Mirror Node Passwords
-  local mirrorNodePasswords=$(kubectl get secret "${HELM_RELEASE_NAME}-passwords" -o json |
-    ksd |
-    jq -r '.stringData')
-  local graphqlUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRAPHQL_DB_USERNAME')
-  local graphqlPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRAPHQL_DB_PASSWORD')
-  local grpcUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRPC_DB_USERNAME')
-  local grpcPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRPC_DB_PASSWORD')
-  local importerUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_USERNAME')
-  local importerPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_PASSWORD')
-  local ownerUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_OWNER')
-  local ownerPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD')
-  local restUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_REST_DB_USERNAME')
-  local restPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_REST_DB_PASSWORD')
-  local restJavaUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_RESTJAVA_DB_USERNAME')
-  local restJavaPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_RESTJAVA_DB_PASSWORD')
-  local rosettaUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_ROSETTA_DB_USERNAME')
-  local rosettaPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_ROSETTA_DB_PASSWORD')
-  local web3Username=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_USERNAME')
-  local web3Password=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_PASSWORD')
-  local dbName=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_NAME')
-  local sql=$(cat <<EOF
-alter user ${superuserUsername} with password '${superuserPassword}';
-alter user ${graphqlUsername} with password '${graphqlPassword}';
-alter user ${grpcUsername} with password '${grpcPassword}';
-alter user ${importerUsername} with password '${importerPassword}';
-alter user ${ownerUsername} with password '${ownerPassword}';
-alter user ${restUsername} with password '${restPassword}';
-alter user ${restJavaUsername} with password '${restJavaPassword}';
-alter user ${rosettaUsername} with password '${rosettaPassword}';
-alter user ${web3Username} with password '${web3Password}';
-alter user ${replicationUsername} with password '${replicationPassword}';
-alter user ${authenticatorUsername} with password '${authenticatorPassword}';
-
-\c ${dbName}
-insert into pg_dist_authinfo(nodeid, rolename, authinfo)
-  values (0, '${superuserUsername}', 'password=${superuserPassword}'),
-         (0, '${graphqlUsername}', 'password=${graphqlPassword}'),
-         (0, '${grpcUsername}', 'password=${grpcPassword}'),
-         (0, '${importerUsername}', 'password=${importerPassword}'),
-         (0, '${ownerUsername}', 'password=${ownerPassword}'),
-         (0, '${restUsername}', 'password=${restPassword}'),
-         (0, '${restJavaUsername}', 'password=${restJavaPassword}'),
-         (0, '${rosettaUsername}', 'password=${rosettaPassword}'),
-         (0, '${web3Username}', 'password=${web3Password}') on conflict (nodeid, rolename)
-  do
-      update set authinfo = excluded.authinfo;
-EOF)
-
-  log "Fixing passwords and pg_dist_authinfo for all pods in the cluster"
-  for pod in $(kubectl get pods -l 'app=StackGresCluster,role=master' -o name); do
-    log "Updating passwords and pg_dist_authinfo for ${pod}"
-    echo "$sql" | kubectl exec -i "${pod}" -c postgres-util -- psql -U "${superuserUsername}" -f -
-  done
-
-  checkCitusMetadataSyncStatus "${CURRENT_NAMESPACE}"
 }
 
 function getSnapshotHandle() {
@@ -249,7 +181,7 @@ function pickShardedBackup() {
       echo "WARNING!!! You are about to restore an older backup, all later backups have to be removed before proceeding"
       doContinue
       count=$((backupIndex-1))
-      kubectl delete sgshardedbackups $(echo "${allBackups[@]:0:${count}}" | sed 's/[:TZ0-9\-]\+\///g')
+      kubectl delete sgshardedbackups $(echo "${allBackups[@]:0:${count}}" | sed -E 's/[:TZ0-9\-]+\///g')
       log "Deleted ${count} most recent SGShardedBackups"
     fi
 
@@ -286,8 +218,8 @@ function recreateManagedCluster() {
     flux resume helmrelease -n "${CURRENT_NAMESPACE}" "${HELM_RELEASE_NAME}" --timeout 30m
   fi
 
-  waitForStackGresClusterPods
-  fixClusterAuth
+  unpauseCitus "${CURRENT_NAMESPACE}"
+  updateStackgresCreds "${CLUSTER}" "${CURRENT_NAMESPACE}"
   routeTraffic "${CURRENT_NAMESPACE}"
   log "SGShardedCluster ${CLUSTER} is ready"
 }
@@ -301,8 +233,9 @@ function restoreBackup() {
   log "Creating SGShardedCluster with the restore configuration"
   echo "${CLUSTER_CONFIG}" | kubectl apply -f -
 
-  waitForStackGresClusterPods
-  fixClusterAuth
+  unpauseCitus "${CURRENT_NAMESPACE}"
+  updateStackgresCreds "${CLUSTER}" "${CURRENT_NAMESPACE}"
+  checkCitusMetadataSyncStatus "${CURRENT_NAMESPACE}"
   checkCoordinatorReplica
 
   # Once again remove ownerReferences since in restore they will get updated with new owners
@@ -361,24 +294,6 @@ function swapPv() {
   echo "$firstPvcConfig" | kubectl apply -f -
   echo "$secondPvcConfig" | kubectl apply -f -
   kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc "${pvcs[@]}" --timeout=-1s
-}
-
-function waitForStackGresClusterPods() {
-  log "Waiting for all StackGresCluster StatefulSets to be created"
-  while ! kubectl describe sgshardedclusters "${CLUSTER}" >/dev/null 2>&1; do
-    sleep 1
-  done
-
-  expectedTotal=$(($(kubectl get sgshardedclusters "${CLUSTER}" -o jsonpath='{.spec.shards.clusters}')+1))
-  while [[ "$(kubectl get sts -l 'app=StackGresCluster' -o name | wc -l)" -ne "${expectedTotal}" ]]; do
-    sleep 1
-  done
-
-  log "Waiting for all StackGresCluster pods to be ready"
-  for sts in $(kubectl get sts -l 'app=StackGresCluster' -o name); do
-    expected=$(kubectl get "${sts}" -o jsonpath='{.spec.replicas}')
-    kubectl wait --for=jsonpath='{.status.readyReplicas}'=${expected} "${sts}" --timeout=-1s
-  done
 }
 
 CURRENT_NAMESPACE=$(kubectl config view --minify --output 'jsonpath={..namespace}')
