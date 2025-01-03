@@ -50,7 +50,7 @@ server:
   shutdown: graceful
   tomcat:
     connection-timeout: 3s
-    max-http-form-post-size: 1KB
+    max-http-form-post-size: 1MB
 spring:
   application:
     name: hedera-mirror-web3

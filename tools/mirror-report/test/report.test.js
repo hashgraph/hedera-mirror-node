@@ -35,8 +35,14 @@ beforeEach(() => {
 });
 
 describe('Generate report', () => {
-  test('From date after to date', async () => {
+  test('From date equal to to date', async () => {
     const r = report({account: ['0.0.1000'], combined: true, network: 'testnet', fromDate, toDate: fromDate});
+    expect(r).rejects.toThrow(InvalidArgumentError);
+    expect(fs.existsSync(outputFile)).toBeFalsy();
+  });
+
+  test('From date after to date', async () => {
+    const r = report({account: ['0.0.1000'], combined: true, network: 'testnet', fromDate, toDate: '2024-12-16'});
     expect(r).rejects.toThrow(InvalidArgumentError);
     expect(fs.existsSync(outputFile)).toBeFalsy();
   });

@@ -34,8 +34,7 @@ export class ReportFile {
       const text = ReportFile.HEADER + this.data.sort().join('');
       fs.writeFileSync(filename, text);
       log(`Generated report successfully at ${filename} with ${this.data.length} entries`);
+      this.data = [];
     }
-
-    this.data = [];
   }
 }

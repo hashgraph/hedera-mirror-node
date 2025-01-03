@@ -58,7 +58,7 @@ export const report = async (options) => {
       }
 
       for (const transaction of transactionsResponse.transactions) {
-        const payer = transaction.transaction_id.startsWith(account);
+        const payer = transaction.transaction_id.startsWith(account + '-');
         const fees = payer ? BigInt(transaction.charged_tx_fee) : 0n;
         let amount = 0n;
         let other = 'fee accounts';
