@@ -87,11 +87,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends gcc libc-dev libc6-dev
 
-      - name: Execute Gradle
+#      - name: Execute Gradle
+#        env:
+#          MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
+#          SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
+#        run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
+
+      - name: Execute Gradle using transaction executor
+        if: ${{ matrix.project == 'web3' }}
         env:
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
-        run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
+        run: ./gradlew :${{matrix.project}}:build -Phedera.mirror.web3.evm.modularizedServices=true --scan ${{ secrets.GRADLE_ARGS }}
 
       - name: Upload coverage report
         uses: codecov/codecov-action@1e68e06f1dbfde0e4cefc87efeba9e4643565303 # v5.1.2
