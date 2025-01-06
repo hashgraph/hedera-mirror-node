@@ -133,6 +133,16 @@ tasks.test {
 //    System.getProperty("hedera.mirror.web3.evm.modularized-services")
     jvmArgs = listOf("--enable-preview")
 }
+//works
+//tasks.register<Test>("testFlagTask"){
+//    group = "verification"
+//    description = "Runs the tests with modularizedServices property set to true"
+//    useJUnitPlatform()
+//    jvmArgs = listOf("--enable-preview")
+//    systemProperty("hedera.mirror.web3.evm.modularizedServices", "true")
+//    testClassesDirs = sourceSets["test"].output.classesDirs
+//    classpath = sourceSets["test"].runtimeClasspath
+//}
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
