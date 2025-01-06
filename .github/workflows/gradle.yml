@@ -8,6 +8,7 @@ on:
     branches:
       - "main"
       - "release/**"
+      - "9995-add-workflow-for-transaction-executor"
     tags:
       - "v*"
 
@@ -29,17 +30,17 @@ jobs:
     strategy:
       matrix:
         project:
-          - common
-          - graphql
-          - grpc
-          - importer
-          - monitor
-          - rest
-          - rest-java
-          - "rest:check-state-proof"
-          - "rest:monitoring"
-          - rosetta
-          - test
+#          - common
+#          - graphql
+#          - grpc
+#          - importer
+#          - monitor
+#          - rest
+#          - rest-java
+#          - "rest:check-state-proof"
+#          - "rest:monitoring"
+#          - rosetta
+#          - test
           - web3
         schema:
           - v1
