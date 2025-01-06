@@ -436,10 +436,11 @@ stackgres:
         cpu: "1000m"
     prometheusOperator:
       monitors:
-        - name: mirror-prometheus-prometheus  # Should be able to rename this in 1.15+
+        - name: mirror-prometheus-prometheus
+          namespace: common
           metadata:
             namespace: common
-            name: mirror-prometheus-prometheus
+            name: mirror-stackgres-collector
           spec:
             podMetricsEndpoints:
               - honorLabels: true
@@ -447,7 +448,7 @@ stackgres:
                 interval: 1m
                 metricRelabelings:
                   - action: drop
-                    regex: ^(pg_stat.*_user.*|pg_table.*|pg_total_relation_size_bytes|pg.*)$
+                    regex: ^(pg_stat.*_user.*|pg_table.*|pg_total_relation_size_bytes)$
                     sourceLabels:
                       - __name__
                 path: /metrics
@@ -457,7 +458,7 @@ stackgres:
                   ca:
                     secret:
                       key: tls.crt
-                      name: mirror-prometheus-prometheus
+                      name: mirror-stackgres-collector
                   serverName: stackgres-collector
 
   enabled: false

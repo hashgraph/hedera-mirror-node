@@ -1,5 +1,5 @@
 minio:
-  enabled: false
+  enabled: true
 stackgres:
   enabled: true
 zfs:
