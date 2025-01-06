@@ -8,7 +8,7 @@ on:
     branches:
       - "main"
       - "release/**"
-      - "9995-add-workflow-for-transaction-executor"
+      - "flag-tests"
     tags:
       - "v*"
 
