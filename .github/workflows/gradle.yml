@@ -98,7 +98,7 @@ jobs:
         env:
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
-        run: ./gradlew :${{matrix.project}}:build --hedera.mirror.web3.evm.modularized-services=true --scan ${{ secrets.GRADLE_ARGS }}
+        run: ./gradlew :${{matrix.project}}:bootRun \--args="--hedera.mirror.web3.evm.modularized-services=true" \--scan \${{ secrets.GRADLE_ARGS }}
 
       - name: Upload coverage report
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
