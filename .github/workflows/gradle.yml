@@ -100,7 +100,7 @@ jobs:
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
         run: | 
             ./gradlew :${{ matrix.project }}:build \
-            -Dhedera.mirror.web3.evm.modularized-services=true \
+            -Dhedera.mirror.web3.evm.modularized-services="true" \
             --scan ${{ secrets.GRADLE_ARGS }}
 
       - name: Upload coverage report
