@@ -184,6 +184,8 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         // Given
         final var modularizedServicesFlag = mirrorNodeEvmProperties.isModularizedServices();
         System.out.println("TEST FLAG IS SET TO " + modularizedServicesFlag);
+        System.out.println("hedera.mirror.web3.evm.modularizedServices = " + System.getProperty("hedera.mirror.web3.evm.modularized-services"));
+        System.out.println("mirrorNodeEvmProperties.isModularizedServices() = " + mirrorNodeEvmProperties.isModularizedServices());
         assertThat(true).isFalse();
 //        mirrorNodeEvmProperties.setModularizedServices(true);
 //        Method postConstructMethod = Arrays.stream(MirrorNodeState.class.getDeclaredMethods())

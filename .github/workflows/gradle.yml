@@ -99,7 +99,7 @@ jobs:
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
         run: | 
-            ./gradlew :${{ matrix.project }}:build \
+            ./gradlew :web3:test \
             -Dhedera.mirror.web3.evm.modularized-services="true" \
             --scan ${{ secrets.GRADLE_ARGS }}
 

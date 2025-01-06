@@ -129,7 +129,10 @@ tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
 tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 
-tasks.test { jvmArgs = listOf("--enable-preview") }
+tasks.test {
+//    System.getProperty("hedera.mirror.web3.evm.modularized-services")
+    jvmArgs = listOf("--enable-preview")
+}
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
