@@ -111,6 +111,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import jakarta.persistence.EntityManager;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -1147,12 +1148,21 @@ public class DomainBuilder {
         var key =
                 switch (keyCase) {
                     case ECDSA_SECP256K1 -> Key.newBuilder()
-                            .setECDSASecp256K1(ByteString.copyFrom(bytes(KEY_LENGTH_ECDSA)));
+                            .setECDSASecp256K1(ByteString.copyFrom(generateSecp256k1Key()));
                     case ED25519 -> Key.newBuilder().setEd25519(ByteString.copyFrom(bytes(KEY_LENGTH_ED25519)));
                     default -> throw new UnsupportedOperationException("Key type not supported");
                 };
 
         return key.build().toByteArray();
+    }
+
+    private byte[] generateSecp256k1Key() {
+        byte[] xCoordinate = bytes(32); // The x-coordinate of the elliptic curve point
+        byte prefix = (byte) (Math.random() < 0.5 ? 0x02 : 0x03); // Randomly chosen even or odd y-coordinate
+        ByteBuffer compressedKey = ByteBuffer.allocate(33);
+        compressedKey.put(prefix);
+        compressedKey.put(xCoordinate);
+        return compressedKey.array();
     }
 
     public long number() {
