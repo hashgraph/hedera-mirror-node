@@ -61,7 +61,7 @@ do
   SNAPSHOT_REGION=$(echo "${DISK_NODE_ID}" | cut -d '-' -f 2-3)
   DISK_ZONE=$(echo "${DISK_NODE_ID}" | cut -d '-' -f 2-4)
   log "Creating snapshot ${SNAPSHOT_NAME} for ${diskName} with ${SNAPSHOT_DESCRIPTION} in ${SNAPSHOT_REGION}"
-  gcloud compute snapshots create "${SNAPSHOT_NAME}" \
+  watchInBackground "$$" gcloud compute snapshots create "${SNAPSHOT_NAME}" \
   --project="${GCP_PROJECT}"  \
   --source-disk="${diskName}" \
   --source-disk-zone="${DISK_ZONE}" \
