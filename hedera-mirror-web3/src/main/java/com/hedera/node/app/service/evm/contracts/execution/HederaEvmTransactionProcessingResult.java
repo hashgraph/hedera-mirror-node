@@ -109,6 +109,7 @@ public class HederaEvmTransactionProcessingResult {
                 Optional.empty());
     }
 
+    @SuppressWarnings("java:S107") // Too many parameters
     protected HederaEvmTransactionProcessingResult(
             final Status status,
             final List<Log> logs,
