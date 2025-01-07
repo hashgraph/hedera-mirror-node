@@ -21,6 +21,7 @@ permissions:
 env:
   LC_ALL: C.UTF-8
   CGO_ENABLED: 1
+  ENABLE_TRANSACTION_EXECUTOR_STEP: "true"
 
 jobs:
   build:
@@ -94,7 +95,7 @@ jobs:
         run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
 
       - name: Execute Gradle using transaction executor
-        if: ${{ matrix.project == 'web3' }}
+        if: ${{ matrix.project == 'web3' && env.ENABLE_TRANSACTION_EXECUTOR_STEP == 'true'}}
         env:
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
