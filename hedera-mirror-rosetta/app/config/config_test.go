@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )
@@ -208,13 +208,13 @@ func TestLoadNodeMapFromEnv(t *testing.T) {
 	}{
 		{
 			value:    "192.168.0.1:50211:0.0.3",
-			expected: NodeMap{"192.168.0.1:50211": hedera.AccountID{Account: 3}},
+			expected: NodeMap{"192.168.0.1:50211": hiero.AccountID{Account: 3}},
 		},
 		{
 			value: "192.168.0.1:50211:0.0.3,192.168.15.8:50211:0.0.4",
 			expected: NodeMap{
-				"192.168.0.1:50211":  hedera.AccountID{Account: 3},
-				"192.168.15.8:50211": hedera.AccountID{Account: 4},
+				"192.168.0.1:50211":  hiero.AccountID{Account: 3},
+				"192.168.15.8:50211": hiero.AccountID{Account: 4},
 			},
 		},
 	}
@@ -266,7 +266,7 @@ func TestNodeMapDecodeHookFunc(t *testing.T) {
 			name:     "valid data",
 			from:     reflect.TypeOf(map[string]interface{}{}),
 			data:     map[string]interface{}{serviceEndpoint: "0.0.3"},
-			expected: NodeMap{serviceEndpoint: hedera.AccountID{Account: 3}},
+			expected: NodeMap{serviceEndpoint: hiero.AccountID{Account: 3}},
 		},
 		{
 			name:        "invalid data type",

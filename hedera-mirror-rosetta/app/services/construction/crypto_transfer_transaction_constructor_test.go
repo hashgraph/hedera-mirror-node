@@ -21,9 +21,8 @@ import (
 	"testing"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -41,7 +40,7 @@ var (
 		{accountId: accountIdA, amount: &types.HbarAmount{Value: -15}},
 		{accountId: accountIdB, amount: &types.HbarAmount{Value: 15}},
 	}
-	outOfRangeAccountId = hedera.AccountID{Shard: 2 << 15, Realm: 2 << 16, Account: 2<<32 + 5}
+	outOfRangeAccountId = hiero.AccountID{Shard: 2 << 15, Realm: 2 << 16, Account: 2<<32 + 5}
 )
 
 type transferOperation struct {
@@ -116,11 +115,11 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestConstruct() {
 }
 
 func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func() interfaces.Transaction {
-		return hedera.NewTransferTransaction().
-			AddHbarTransfer(sdkAccountIdA, hedera.HbarFromTinybar(-15)).
-			AddHbarTransfer(sdkAccountIdB, hedera.HbarFromTinybar(15)).
-			SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
+	defaultGetTransaction := func() hiero.TransactionInterface {
+		return hiero.NewTransferTransaction().
+			AddHbarTransfer(sdkAccountIdA, hiero.HbarFromTinybar(-15)).
+			AddHbarTransfer(sdkAccountIdB, hiero.HbarFromTinybar(15)).
+			SetTransactionID(hiero.TransactionIDGenerate(sdkAccountIdA))
 	}
 
 	expectedTransfers := []string{
@@ -130,7 +129,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 
 	var tests = []struct {
 		name           string
-		getTransaction func() interfaces.Transaction
+		getTransaction func() hiero.TransactionInterface
 		expectError    bool
 	}{
 		{
@@ -139,25 +138,25 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func() interfaces.Transaction {
-				return hedera.NewTokenCreateTransaction()
+			getTransaction: func() hiero.TransactionInterface {
+				return hiero.NewTokenCreateTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "OutOfRangeAccountIdHbarTransfer",
-			getTransaction: func() interfaces.Transaction {
-				return hedera.NewTransferTransaction().
-					AddHbarTransfer(outOfRangeAccountId, hedera.HbarFromTinybar(-15)).
-					AddHbarTransfer(sdkAccountIdB, hedera.HbarFromTinybar(15)).
-					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+			getTransaction: func() hiero.TransactionInterface {
+				return hiero.NewTransferTransaction().
+					AddHbarTransfer(outOfRangeAccountId, hiero.HbarFromTinybar(-15)).
+					AddHbarTransfer(sdkAccountIdB, hiero.HbarFromTinybar(15)).
+					SetTransactionID(hiero.TransactionIDGenerate(outOfRangeAccountId))
 			},
 			expectError: true,
 		},
 		{
 			name: "TransactionIDNotSet",
-			getTransaction: func() interfaces.Transaction {
-				return hedera.NewTransferTransaction()
+			getTransaction: func() hiero.TransactionInterface {
+				return hiero.NewTransferTransaction()
 			},
 			expectError: true,
 		},
@@ -273,10 +272,11 @@ func (suite *cryptoTransferTransactionConstructorSuite) makeOperations(transfers
 func assertCryptoTransferTransaction(
 	t *testing.T,
 	operations types.OperationSlice,
-	actual interfaces.Transaction,
+	actual hiero.TransactionInterface,
 ) {
-	assert.IsType(t, &hedera.TransferTransaction{}, actual)
-	assert.False(t, actual.IsFrozen())
+	assert.IsType(t, &hiero.TransferTransaction{}, actual)
+	tx, _ := actual.(*hiero.TransferTransaction)
+	assert.False(t, tx.IsFrozen())
 
 	expectedTransfers := make([]string, 0, len(operations))
 	for _, operation := range operations {
@@ -285,8 +285,6 @@ func assertCryptoTransferTransaction(
 			operationTransferStringify(operation),
 		)
 	}
-
-	tx, _ := actual.(*hedera.TransferTransaction)
 
 	actualHbarTransfers := tx.GetHbarTransfers()
 
@@ -309,7 +307,7 @@ func operationTransferStringify(operation types.Operation) string {
 }
 
 func transferStringify(
-	account hedera.AccountID,
+	account hiero.AccountID,
 	amount int64,
 	symbol string,
 	decimals uint32,

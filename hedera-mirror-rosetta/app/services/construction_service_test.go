@@ -19,6 +19,7 @@ package services
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"math/rand"
 	"reflect"
 	"strconv"
@@ -30,11 +31,10 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -47,35 +47,31 @@ const (
 )
 
 var (
-	adminKeyStr             = "302a300506032b6570032100d619a3a22d6bd2a9e4b08f3d999df757e5a9ef0364c13b4b3356bc065b34fa01"
-	adminKey, _             = hedera.PublicKeyFromString(adminKeyStr)
 	corruptedTransaction    = "0x6767"
 	defaultConfig           = &config.Config{Network: defaultNetwork, Nodes: defaultNodes}
 	defaultCryptoAccountId1 = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(123352))
 	defaultCryptoAccountId2 = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(123518))
 	defaultCryptoAccountId3 = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(123532))
 	defaultNodes            = config.NodeMap{
-		"10.0.0.1:50211": hedera.AccountID{Account: 3},
-		"10.0.0.2:50211": hedera.AccountID{Account: 4},
-		"10.0.0.3:50211": hedera.AccountID{Account: 5},
-		"10.0.0.4:50211": hedera.AccountID{Account: 6},
+		"10.0.0.1:50211": hiero.AccountID{Account: 3},
+		"10.0.0.2:50211": hiero.AccountID{Account: 4},
+		"10.0.0.3:50211": hiero.AccountID{Account: 5},
+		"10.0.0.4:50211": hiero.AccountID{Account: 6},
 	}
 	singleNodeConfig = &config.Config{
 		Network: defaultNetwork,
 		Nodes: config.NodeMap{
-			"10.0.0.1:50211": hedera.AccountID{Account: 3},
-			"10.0.0.1:50212": hedera.AccountID{Account: 3},
+			"10.0.0.1:50211": hiero.AccountID{Account: 3},
+			"10.0.0.1:50212": hiero.AccountID{Account: 3},
 		}}
-	freezeKeyStr                = "302a300506032b65700321006663a95da28adcb0fc129d1b4eda4be7dd90b54a337cd2dd953e1d2dc03ca6d1"
-	freezeKey, _                = hedera.PublicKeyFromString(freezeKeyStr)
 	invalidTransaction          = "InvalidTxHexString"
 	invalidTypeTransaction      = "0x0a332a310a2d0a140a0c08a6e4cb840610f6a3aeef0112041882810c12021805188084af5f22020878c20107320508d0c8e1031200"
-	nodeAccountId               = hedera.AccountID{Account: 7}
+	nodeAccountId               = hiero.AccountID{Account: 7}
 	offlineBaseService          = NewOfflineBaseService()
 	onlineBaseService           = NewOnlineBaseService(&mocks.MockBlockRepository{}, &mocks.MockTransactionRepository{})
-	payerId                     = hedera.AccountID{Account: 100}
+	payerId                     = hiero.AccountID{Account: 100}
 	publicKeyStr                = "eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba77" // without ed25519PubKeyPrefix
-	privateKey, _               = hedera.PrivateKeyFromString("302e020100300506032b6570042204207904b9687878e08e101723f7b724cd61a42bbff93923177bf3fcc2240b0dd3bc")
+	privateKey, _               = hiero.PrivateKeyFromString("302e020100300506032b6570042204207904b9687878e08e101723f7b724cd61a42bbff93923177bf3fcc2240b0dd3bc")
 	aliasStr                    = ed25519AliasPrefix + publicKeyStr
 	aliasAccount, _             = types.NewAccountIdFromString(aliasStr, 0, 0)
 	unsignedTransactionWithMemo = "0x0a332a310a2d0a0f0a0708959aef3a107b120418d8c307120218031880c2d72f220308b40132087472616e7366657272020a001200"
@@ -354,9 +350,9 @@ func TestConstructionCombineThrowsWithInvalidTransactionType(t *testing.T) {
 }
 
 func TestConstructionDerive(t *testing.T) {
-	ed25519PrivateKey, _ := hedera.PrivateKeyGenerateEd25519()
+	ed25519PrivateKey, _ := hiero.PrivateKeyGenerateEd25519()
 	ed25519PublicKey := ed25519PrivateKey.PublicKey()
-	secp256k1PrivateKey, _ := hedera.PrivateKeyGenerateEcdsa()
+	secp256k1PrivateKey, _ := hiero.PrivateKeyGenerateEcdsa()
 	secp256k1PublicKey := secp256k1PrivateKey.PublicKey()
 
 	tests := []struct {
@@ -460,8 +456,8 @@ func TestConstructionMetadataOnline(t *testing.T) {
 	mockTransactionConstructor.
 		On("GetDefaultMaxTransactionFee", types.OperationTypeCryptoTransfer).
 		Return(types.HbarAmount{Value: 100}, mocks.NilError)
-	randomNodeAccountId := hedera.AccountID{Account: uint64(rand.Intn(100) + 1)}
-	nodes := map[string]hedera.AccountID{"10.0.0.1:50211": randomNodeAccountId, "10.0.0.2:50211": randomNodeAccountId}
+	randomNodeAccountId := hiero.AccountID{Account: uint64(rand.Intn(100) + 1)}
+	nodes := map[string]hiero.AccountID{"10.0.0.1:50211": randomNodeAccountId, "10.0.0.2:50211": randomNodeAccountId}
 	rosettaConfig := &config.Config{
 		Network: defaultNetwork,
 		Nodes:   nodes,
@@ -760,7 +756,7 @@ func TestConstructionParse(t *testing.T) {
 			}
 			mockConstructor := &mocks.MockTransactionConstructor{}
 			mockConstructor.
-				On("Parse", defaultContext, mock.IsType(&hedera.TransferTransaction{})).
+				On("Parse", defaultContext, mock.IsType(hiero.TransferTransaction{})).
 				Return(operations, []types.AccountId{defaultCryptoAccountId1}, mocks.NilError)
 			service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultConfig, mockConstructor)
 
@@ -779,7 +775,7 @@ func TestConstructionParseThrowsWhenConstructorParseFails(t *testing.T) {
 	// given
 	mockConstructor := &mocks.MockTransactionConstructor{}
 	mockConstructor.
-		On("Parse", defaultContext, mock.IsType(&hedera.TransferTransaction{})).
+		On("Parse", defaultContext, mock.IsType(hiero.TransferTransaction{})).
 		Return(mocks.NilOperations, mocks.NilSigners, errors.ErrInternalServerError)
 	service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultConfig, mockConstructor)
 
@@ -904,7 +900,7 @@ func TestConstructionPayloads(t *testing.T) {
 			mockConstructor := &mocks.MockTransactionConstructor{}
 			mockConstructor.
 				On("Construct", defaultContext, mock.IsType(types.OperationSlice{})).
-				Return(hedera.NewTransferTransaction(), []types.AccountId{tt.payerAccountId}, mocks.NilError)
+				Return(hiero.NewTransferTransaction(), []types.AccountId{tt.payerAccountId}, mocks.NilError)
 			metadata := addDefaultConstructionPayloadsMetadata(tt.metadata)
 			request := getPayloadsRequest(operations, payloadsRequestMetadata(metadata))
 			service, _ := NewConstructionAPIService(nil, onlineBaseService, singleNodeConfig, mockConstructor)
@@ -941,7 +937,7 @@ func TestConstructionPayloadValidDuration(t *testing.T) {
 	mockConstructor := &mocks.MockTransactionConstructor{}
 	mockConstructor.
 		On("Construct", defaultContext, mock.IsType(types.OperationSlice{})).
-		Return(hedera.NewTransferTransaction(), []types.AccountId{defaultCryptoAccountId1}, mocks.NilError)
+		Return(hiero.NewTransferTransaction(), []types.AccountId{defaultCryptoAccountId1}, mocks.NilError)
 	metadata := addDefaultConstructionPayloadsMetadata(map[string]interface{}{
 		metadataKeyValidDurationSeconds: "60",
 	})
@@ -991,7 +987,7 @@ func TestConstructionPayloadsAliasError(t *testing.T) {
 			mockConstructor := &mocks.MockTransactionConstructor{}
 			mockConstructor.
 				On("Construct", defaultContext, mock.IsType(types.OperationSlice{})).
-				Return(hedera.NewTransferTransaction(), []types.AccountId{aliasAccount}, mocks.NilError)
+				Return(hiero.NewTransferTransaction(), []types.AccountId{aliasAccount}, mocks.NilError)
 			request := getPayloadsRequest(operations, payloadsRequestMetadata(tt.metadata))
 			service, _ := NewConstructionAPIService(nil, onlineBaseService, singleNodeConfig, mockConstructor)
 
@@ -1360,156 +1356,11 @@ func TestConstructionPreprocessThrowsWithConstructorPreprocessFailure(t *testing
 	assert.NotNil(t, e)
 }
 
-func freezeTransaction(transaction interfaces.Transaction) {
-	nodeAccountIds := []hedera.AccountID{nodeAccountId}
-	transactionId := hedera.TransactionIDGenerate(payerId)
-
-	var err error
-	switch tx := transaction.(type) {
-	case *hedera.AccountCreateTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenAssociateTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenBurnTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenCreateTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenDeleteTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenDissociateTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenFreezeTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenGrantKycTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenMintTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenRevokeKycTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenUnfreezeTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenUpdateTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TokenWipeTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TransferTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze()
-	case *hedera.TopicCreateTransaction:
-		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
-			SetTransactionID(transactionId).
-			Freeze() // only to test addSignature for unsupported transaction types
-	default:
-		panic("unsupported transaction type")
-	}
-
-	if err != nil {
-		panic("failed to freeze transaction")
-	}
-}
-
-func TestAddSignature(t *testing.T) {
-	signature := []byte{0x1, 0x2, 0x3, 0x4, 0x5}
-	signatureMap := map[*hedera.PublicKey][]byte{
-		&adminKey: signature,
-	}
-
-	tests := []struct {
-		transaction interfaces.Transaction
-		expectError bool
-	}{
-		{transaction: hedera.NewAccountCreateTransaction()},
-		{transaction: hedera.NewTokenAssociateTransaction()},
-		{transaction: hedera.NewTokenBurnTransaction()},
-		{transaction: hedera.NewTokenCreateTransaction()},
-		{transaction: hedera.NewTokenDeleteTransaction()},
-		{transaction: hedera.NewTokenDissociateTransaction()},
-		{transaction: hedera.NewTokenFreezeTransaction()},
-		{transaction: hedera.NewTokenGrantKycTransaction()},
-		{transaction: hedera.NewTokenMintTransaction()},
-		{transaction: hedera.NewTokenRevokeKycTransaction()},
-		{transaction: hedera.NewTokenUnfreezeTransaction()},
-		{transaction: hedera.NewTokenUpdateTransaction()},
-		{transaction: hedera.NewTokenWipeTransaction()},
-		{transaction: hedera.NewTransferTransaction()},
-		{transaction: hedera.NewTopicCreateTransaction(), expectError: true},
-	}
-
-	for _, tt := range tests {
-		name := reflect.TypeOf(tt.transaction).Elem().String()
-		t.Run(name, func(t *testing.T) {
-			// given
-			freezeTransaction(tt.transaction)
-
-			// when
-			err := addSignature(tt.transaction, adminKey, signature)
-
-			// then
-			if tt.expectError {
-				assert.NotNil(t, err)
-			} else {
-				assert.Nil(t, err)
-				assertSignatureMap(t, tt.transaction, nodeAccountId, signatureMap)
-			}
-		})
-	}
-}
-
-func TestAddSignatureMultipleSignature(t *testing.T) {
-	// given
-	signature1 := []byte{0x1, 0x2, 0x3}
-	signature2 := []byte{0x4, 0x5, 0x6}
-	signatureMap := map[*hedera.PublicKey][]byte{
-		&adminKey:  signature1,
-		&freezeKey: signature2,
-	}
-	tx, _ := hedera.NewTransferTransaction().
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetTransactionID(hedera.TransactionIDGenerate(payerId)).
-		Freeze()
-
-	// when
-	err1 := addSignature(tx, adminKey, signature1)
-	err2 := addSignature(tx, freezeKey, signature2)
-
-	// then
-	assert.Nil(t, err1)
-	assert.Nil(t, err2)
-	assertSignatureMap(t, tx, nodeAccountId, signatureMap)
-}
-
 func TestGetFrozenTransactionBodyBytes(t *testing.T) {
 	// given
-	transactionId, _ := hedera.TransactionIdFromString(fmt.Sprintf("%s@1623101500.123456", defaultCryptoAccountId1))
-	transaction, _ := hedera.NewTransferTransaction().
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+	transactionId, _ := hiero.TransactionIdFromString(fmt.Sprintf("%s@1623101500.123456", defaultCryptoAccountId1))
+	transaction, _ := hiero.NewTransferTransaction().
+		SetNodeAccountIDs([]hiero.AccountID{nodeAccountId}).
 		SetTransactionID(transactionId).
 		Freeze()
 	expected := []byte{0xa, 0x12, 0xa, 0xa, 0x8, 0xbc, 0xa0, 0xfa, 0x85, 0x6, 0x10, 0xc0, 0xc4, 0x7, 0x12, 0x4,
@@ -1532,21 +1383,9 @@ func TestNewConstructionAPIServiceThrowsWithUnrecognizedNetwork(t *testing.T) {
 
 func TestUnmarshallTransactionFromHexString(t *testing.T) {
 	for _, signed := range []bool{false, true} {
-		transactions := []interfaces.Transaction{
-			hedera.NewAccountCreateTransaction(),
-			hedera.NewTokenAssociateTransaction(),
-			hedera.NewTokenBurnTransaction(),
-			hedera.NewTokenCreateTransaction(),
-			hedera.NewTokenDeleteTransaction(),
-			hedera.NewTokenDissociateTransaction(),
-			hedera.NewTokenFreezeTransaction(),
-			hedera.NewTokenGrantKycTransaction(),
-			hedera.NewTokenMintTransaction(),
-			hedera.NewTokenRevokeKycTransaction(),
-			hedera.NewTokenUnfreezeTransaction(),
-			hedera.NewTokenUpdateTransaction(),
-			hedera.NewTokenWipeTransaction(),
-			hedera.NewTransferTransaction(),
+		transactions := []hiero.TransactionInterface{
+			*hiero.NewAccountCreateTransaction(),
+			*hiero.NewTransferTransaction(),
 		}
 
 		for _, transaction := range transactions {
@@ -1554,7 +1393,7 @@ func TestUnmarshallTransactionFromHexString(t *testing.T) {
 			if signed {
 				suffix = "Signed"
 			}
-			name := fmt.Sprintf("%s%s", reflect.TypeOf(transaction).Elem().String(), suffix)
+			name := fmt.Sprintf("%s%s", reflect.TypeOf(&transaction).Elem().String(), suffix)
 
 			t.Run(name, func(t *testing.T) {
 				// given
@@ -1591,9 +1430,9 @@ func TestUnmarshallTransactionFromHexStringThrowsWithInvalidTransactionBytes(t *
 
 func TestUnmarshallTransactionFromHexStringThrowsWithUnsupportedTransactionType(t *testing.T) {
 	// given
-	tx, _ := hedera.NewTopicCreateTransaction().
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetTransactionID(hedera.TransactionIDGenerate(payerId)).
+	tx, _ := hiero.NewTopicCreateTransaction().
+		SetNodeAccountIDs([]hiero.AccountID{nodeAccountId}).
+		SetTransactionID(hiero.TransactionIDGenerate(payerId)).
 		Freeze()
 	bytes, _ := tx.ToBytes()
 	txStr := tools.SafeAddHexPrefix(hex.EncodeToString(bytes))
@@ -1632,7 +1471,7 @@ func TestTransactionSetMemo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
-			transaction := hedera.NewTransferTransaction()
+			transaction := hiero.NewTransferTransaction()
 			update := transactionSetMemo(tt.memo)
 
 			// when
@@ -1647,7 +1486,7 @@ func TestTransactionSetMemo(t *testing.T) {
 
 func TestTransactionSetMemoFailure(t *testing.T) {
 	// given
-	transaction := hedera.NewTransferTransaction()
+	transaction := hiero.NewTransferTransaction()
 	update := transactionSetMemo(100)
 
 	// when
@@ -1659,9 +1498,9 @@ func TestTransactionSetMemoFailure(t *testing.T) {
 
 func TestTransactionSetTransactionId(t *testing.T) {
 	// given
-	payer := hedera.AccountID{Account: 100}
+	payer := hiero.AccountID{Account: 100}
 	validStartNs := int64(123456789111222333)
-	transaction := hedera.NewTransferTransaction()
+	transaction := hiero.NewTransferTransaction()
 
 	// when
 	update := transactionSetTransactionId(payer, validStartNs)
@@ -1676,8 +1515,8 @@ func TestTransactionSetTransactionId(t *testing.T) {
 
 func TestTransactionSetTransactionIdRandomValidStartNs(t *testing.T) {
 	// given
-	payer := hedera.AccountID{Account: 100}
-	transaction := hedera.NewTransferTransaction()
+	payer := hiero.AccountID{Account: 100}
+	transaction := hiero.NewTransferTransaction()
 
 	// when
 	update := transactionSetTransactionId(payer, 0)
@@ -1692,24 +1531,12 @@ func TestTransactionSetTransactionIdRandomValidStartNs(t *testing.T) {
 
 func TestTransactionFreeze(t *testing.T) {
 	// setup
-	transactions := []interfaces.Transaction{
-		hedera.NewAccountCreateTransaction(),
-		hedera.NewTokenAssociateTransaction(),
-		hedera.NewTokenBurnTransaction(),
-		hedera.NewTokenCreateTransaction(),
-		hedera.NewTokenDeleteTransaction(),
-		hedera.NewTokenDissociateTransaction(),
-		hedera.NewTokenFreezeTransaction(),
-		hedera.NewTokenGrantKycTransaction(),
-		hedera.NewTokenMintTransaction(),
-		hedera.NewTokenRevokeKycTransaction(),
-		hedera.NewTokenUnfreezeTransaction(),
-		hedera.NewTokenUpdateTransaction(),
-		hedera.NewTokenWipeTransaction(),
-		hedera.NewTransferTransaction(),
+	transactions := []hiero.TransactionInterface{
+		hiero.NewAccountCreateTransaction(),
+		hiero.NewTransferTransaction(),
 	}
-	setNodeAccountId := transactionSetNodeAccountId(hedera.AccountID{Account: 3})
-	setTransactionId := transactionSetTransactionId(hedera.AccountID{Account: 100}, 0)
+	setNodeAccountId := transactionSetNodeAccountId(hiero.AccountID{Account: 3})
+	setTransactionId := transactionSetTransactionId(hiero.AccountID{Account: 100}, 0)
 	for _, transaction := range transactions {
 		setNodeAccountId(transaction)
 		setTransactionId(transaction)
@@ -1722,131 +1549,34 @@ func TestTransactionFreeze(t *testing.T) {
 			err := transactionFreeze(transaction)
 
 			// then
+			tx, _ := transaction.(interfaces.Transaction)
 			assert.Nil(t, err)
-			assert.True(t, transaction.IsFrozen())
+			assert.True(t, tx.IsFrozen())
 		})
 	}
 }
 
 func TestTransactionFreezeFailed(t *testing.T) {
-	transaction := hedera.NewTransferTransaction()
+	transaction := hiero.NewTransferTransaction()
 	err := transactionFreeze(transaction)
 	assert.NotNil(t, err)
 }
 
 func TestTransactionFreezeUnsupportedTransaction(t *testing.T) {
-	transaction := hedera.NewTopicCreateTransaction()
+	transaction := hiero.NewTopicCreateTransaction()
 	err := transactionFreeze(transaction)
 	assert.NotNil(t, err)
 }
 
-func assertSignatureMap(
-	t *testing.T,
-	tx interfaces.Transaction,
-	nodeAccountId hedera.AccountID,
-	expected map[*hedera.PublicKey][]byte,
-) {
-	signatures, err := tx.GetSignatures()
-	assert.NoError(t, err)
-
-	assert.Len(t, signatures, 1)
-	assert.Contains(t, signatures, nodeAccountId)
-
-	actual := signatures[nodeAccountId]
-	convertedActual := convertSignatureMap(actual)
-	convertedExpected := convertSignatureMap(expected)
-
-	assert.Equal(t, convertedExpected, convertedActual)
-}
-
-func convertSignatureMap(signatureMap map[*hedera.PublicKey][]byte) map[string][]byte {
-	converted := make(map[string][]byte)
-	for pubKey, signature := range signatureMap {
-		// hedera.PublicKey is not comparable so have to use its string representation
-		converted[pubKey.String()] = signature
+func createTransactionHexString(transaction hiero.TransactionInterface, signed bool) string {
+	nodeAccountIds := []hiero.AccountID{nodeAccountId}
+	transactionId := hiero.TransactionIDGenerate(payerId)
+	_, _ = hiero.TransactionSetNodeAccountIDs(transaction, nodeAccountIds)
+	_, _ = hiero.TransactionSetTransactionID(transaction, transactionId)
+	_, _ = hiero.TransactionFreezeWith(transaction, nil)
+	if signed {
+		_, _ = hiero.TransactionSign(transaction, privateKey)
 	}
-
-	return converted
-}
-
-func createTransactionHexString(transaction interfaces.Transaction, signed bool) string {
-	nodeAccountIds := []hedera.AccountID{nodeAccountId}
-	transactionId := hedera.TransactionIDGenerate(payerId)
-	switch tx := transaction.(type) {
-	case *hedera.AccountCreateTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenAssociateTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenBurnTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenCreateTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenDeleteTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenDissociateTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenFreezeTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenGrantKycTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenMintTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenRevokeKycTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenUnfreezeTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenUpdateTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TokenWipeTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	case *hedera.TransferTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
-		if signed {
-			tx.Sign(privateKey)
-		}
-	default:
-		panic("unsupported transaction type")
-	}
-
-	bytes, _ := transaction.ToBytes()
+	bytes, _ := hiero.TransactionToBytes(transaction)
 	return tools.SafeAddHexPrefix(hex.EncodeToString(bytes))
 }

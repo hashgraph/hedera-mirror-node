@@ -20,7 +20,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/cucumber/godog"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/bdd-client/client"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 )
 
 const (
@@ -38,7 +38,7 @@ var (
 		Metadata: map[string]interface{}{"issuer": "Hedera"},
 	}
 	testClient      client.Client
-	treasuryAccount = getRosettaAccountIdentifier(hedera.AccountID{Account: 98})
+	treasuryAccount = getRosettaAccountIdentifier(hiero.AccountID{Account: 98})
 )
 
 func SetupTestClient(serverCfg client.Server, operators []client.Operator) {
@@ -49,6 +49,6 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	initializeCryptoScenario(ctx)
 }
 
-func getRosettaAccountIdentifier(accountId hedera.AccountID) *types.AccountIdentifier {
+func getRosettaAccountIdentifier(accountId hiero.AccountID) *types.AccountIdentifier {
 	return &types.AccountIdentifier{Address: accountId.String()}
 }

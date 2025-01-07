@@ -22,7 +22,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"github.com/hashgraph/hedera-sdk-go/v2/proto/services"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"golang.org/x/exp/maps"
 	"math/big"
 	"strings"
@@ -36,7 +36,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/construction"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/encoding/prototext"
 )
@@ -58,7 +58,7 @@ const (
 type constructionAPIService struct {
 	BaseService
 	accountRepo        interfaces.AccountRepository
-	hederaClient       *hedera.Client
+	hederaClient       *hiero.Client
 	systemShard        int64
 	systemRealm        int64
 	transactionHandler construction.TransactionConstructor
@@ -88,7 +88,7 @@ func (c *constructionAPIService) ConstructionCombine(
 			return nil, errors.ErrInvalidSignatureType
 		}
 
-		pubKey, err := hedera.PublicKeyFromBytes(signature.PublicKey.Bytes)
+		pubKey, err := hiero.PublicKeyFromBytes(signature.PublicKey.Bytes)
 		if err != nil {
 			return nil, errors.ErrInvalidPublicKey
 		}
@@ -97,12 +97,10 @@ func (c *constructionAPIService) ConstructionCombine(
 			return nil, errors.ErrInvalidSignatureVerification
 		}
 
-		if rErr = addSignature(transaction, pubKey, signature.Bytes); rErr != nil {
-			return nil, rErr
-		}
+		_, _ = hiero.TransactionAddSignature(transaction, pubKey, signature.Bytes)
 	}
 
-	transactionBytes, err := transaction.ToBytes()
+	transactionBytes, err := hiero.TransactionToBytes(transaction)
 	if err != nil {
 		return nil, errors.ErrTransactionMarshallingFailed
 	}
@@ -139,7 +137,7 @@ func (c *constructionAPIService) ConstructionHash(
 		return nil, rErr
 	}
 
-	hash, err := signedTransaction.GetTransactionHash()
+	hash, err := hiero.TransactionGetTransactionHash(signedTransaction)
 	if err != nil {
 		return nil, errors.ErrTransactionHashFailed
 	}
@@ -206,7 +204,7 @@ func (c *constructionAPIService) ConstructionParse(
 	}
 
 	metadata := make(map[string]interface{})
-	memo := transaction.GetTransactionMemo()
+	memo, _ := hiero.TransactionGetTransactionMemo(transaction)
 	if memo != "" {
 		metadata[types.MetadataKeyMemo] = memo
 	}
@@ -272,7 +270,7 @@ func (c *constructionAPIService) ConstructionPayloads(
 		return nil, rErr
 	}
 
-	bytes, err := transaction.ToBytes()
+	bytes, err := hiero.TransactionToBytes(transaction)
 	if err != nil {
 		return nil, errors.ErrTransactionMarshallingFailed
 	}
@@ -350,18 +348,19 @@ func (c *constructionAPIService) ConstructionSubmit(
 		return nil, rErr
 	}
 
-	hashBytes, err := transaction.GetTransactionHash()
+	hashBytes, err := hiero.TransactionGetTransactionHash(transaction)
 	if err != nil {
 		return nil, errors.ErrTransactionHashFailed
 	}
 
 	hash := tools.SafeAddHexPrefix(hex.EncodeToString(hashBytes))
-	log.Infof("Submitting transaction %s (hash %s) to node %s", transaction.GetTransactionID(),
+	transactionId, _ := hiero.TransactionGetTransactionID(transaction)
+	log.Infof("Submitting transaction %s (hash %s) to node %s", transactionId,
 		hash, transaction.GetNodeAccountIDs()[0])
 
-	_, err = transaction.Execute(c.hederaClient)
+	_, err = hiero.TransactionExecute(transaction, c.hederaClient)
 	if err != nil {
-		log.Errorf("Failed to execute transaction %s (hash %s): %s", transaction.GetTransactionID(), hash, err)
+		log.Errorf("Failed to execute transaction %s (hash %s): %s", transactionId, hash, err)
 		return nil, errors.AddErrorDetails(
 			errors.ErrTransactionSubmissionFailed,
 			"reason",
@@ -375,7 +374,7 @@ func (c *constructionAPIService) ConstructionSubmit(
 }
 
 func (c *constructionAPIService) getTransactionNodeAccountId(metadata map[string]interface{}) (
-	emptyAccountId hedera.AccountID, nilErr *rTypes.Error,
+	emptyAccountId hiero.AccountID, nilErr *rTypes.Error,
 ) {
 	value, ok := metadata[metadataKeyNodeAccountId]
 	if !ok {
@@ -387,7 +386,7 @@ func (c *constructionAPIService) getTransactionNodeAccountId(metadata map[string
 		return emptyAccountId, errors.ErrInvalidArgument
 	}
 
-	nodeAccountId, err := hedera.AccountIDFromString(str)
+	nodeAccountId, err := hiero.AccountIDFromString(str)
 	if err != nil {
 		log.Errorf("Invalid node account id provided in metadata: %s", str)
 		return emptyAccountId, errors.ErrInvalidAccount
@@ -472,7 +471,7 @@ func (c *constructionAPIService) getOperationSlice(operations []*rTypes.Operatio
 }
 
 func (c *constructionAPIService) getSdkPayerAccountId(payerAccountId types.AccountId, accountMapMetadata interface{}) (
-	zero hedera.AccountID,
+	zero hiero.AccountID,
 	_ *rTypes.Error,
 ) {
 	if !payerAccountId.HasAlias() {
@@ -493,7 +492,7 @@ func (c *constructionAPIService) getSdkPayerAccountId(payerAccountId types.Accou
 		return zero, errors.ErrAccountNotFound
 	}
 
-	var payer hedera.AccountID
+	var payer hiero.AccountID
 	payerAlias := payerAccountId.String()
 	for _, aliasMap := range strings.Split(accountMap, ",") {
 		if !strings.HasPrefix(aliasMap, payerAlias) {
@@ -502,7 +501,7 @@ func (c *constructionAPIService) getSdkPayerAccountId(payerAccountId types.Accou
 
 		var err error
 		mapping := strings.Split(aliasMap, ":")
-		if payer, err = hedera.AccountIDFromString(mapping[1]); err != nil {
+		if payer, err = hiero.AccountIDFromString(mapping[1]); err != nil {
 			return zero, errors.ErrInvalidAccount
 		}
 		break
@@ -515,9 +514,9 @@ func (c *constructionAPIService) getSdkPayerAccountId(payerAccountId types.Accou
 	return payer, nil
 }
 
-func (c *constructionAPIService) getRandomNodeAccountId() (hedera.AccountID, *rTypes.Error) {
-	nodeAccountIds := make([]hedera.AccountID, 0)
-	seen := map[hedera.AccountID]struct{}{}
+func (c *constructionAPIService) getRandomNodeAccountId() (hiero.AccountID, *rTypes.Error) {
+	nodeAccountIds := make([]hiero.AccountID, 0)
+	seen := map[hiero.AccountID]struct{}{}
 	// network returned from hederaClient is a map[string]AccountID, the key is the address of a node and the value is
 	// its node account id. Since a node can have multiple addresses, we need the seen map to get a unique node account
 	// id array
@@ -531,7 +530,7 @@ func (c *constructionAPIService) getRandomNodeAccountId() (hedera.AccountID, *rT
 	}
 
 	if len(nodeAccountIds) == 0 {
-		return hedera.AccountID{}, errors.ErrNodeAccountIdsEmpty
+		return hiero.AccountID{}, errors.ErrNodeAccountIdsEmpty
 	}
 
 	max := big.NewInt(int64(len(nodeAccountIds)))
@@ -608,7 +607,7 @@ func NewConstructionAPIService(
 	transactionConstructor construction.TransactionConstructor,
 ) (server.ConstructionAPIServicer, error) {
 	var err error
-	var hederaClient *hedera.Client
+	var hederaClient *hiero.Client
 
 	// there is no live demo network, it's only used to run rosetta test, so replace it with testnet
 	network := strings.ToLower(config.Network)
@@ -618,15 +617,15 @@ func NewConstructionAPIService(
 	}
 
 	if len(config.Nodes) > 0 {
-		hederaClient = hedera.ClientForNetwork(config.Nodes)
+		hederaClient = hiero.ClientForNetwork(config.Nodes)
 	} else {
 		if baseService.IsOnline() {
-			hederaClient, err = hedera.ClientForName(network)
+			hederaClient, err = hiero.ClientForName(network)
 		} else {
 			// Workaround for offline mode, create client without mirror network to skip the blocking initial network
 			// address book update
 			clientConfig := []byte(fmt.Sprintf("{\"network\": \"%s\"}", network))
-			hederaClient, err = hedera.ClientFromConfig(clientConfig)
+			hederaClient, err = hiero.ClientFromConfig(clientConfig)
 		}
 
 		if err != nil {
@@ -652,37 +651,38 @@ func NewConstructionAPIService(
 	}, nil
 }
 
-func addSignature(transaction interfaces.Transaction, pubKey hedera.PublicKey, signature []byte) *rTypes.Error {
-	switch tx := transaction.(type) {
-	// these transaction types are what the construction service supports
-	case *hedera.AccountCreateTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenAssociateTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenBurnTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenCreateTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenDeleteTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenDissociateTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenFreezeTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenGrantKycTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenMintTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenRevokeKycTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenUnfreezeTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenUpdateTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TokenWipeTransaction:
-		tx.AddSignature(pubKey, signature)
-	case *hedera.TransferTransaction:
-		tx.AddSignature(pubKey, signature)
+func getFrozenTransactionBodyBytes(transaction hiero.TransactionInterface) ([]byte, *rTypes.Error) {
+	signedTransaction := services.SignedTransaction{}
+	data, _ := hiero.TransactionString(transaction)
+	if err := prototext.Unmarshal([]byte(data), &signedTransaction); err != nil {
+		return nil, errors.ErrTransactionUnmarshallingFailed
+	}
+
+	return signedTransaction.BodyBytes, nil
+}
+
+func unmarshallTransactionFromHexString(transactionString string) (hiero.TransactionInterface, *rTypes.Error) {
+	transactionBytes, err := hex.DecodeString(tools.SafeRemoveHexPrefix(transactionString))
+	if err != nil {
+		return nil, errors.ErrTransactionDecodeFailed
+	}
+
+	transaction, err := hiero.TransactionFromBytes(transactionBytes)
+	if err != nil {
+		return nil, errors.ErrTransactionUnmarshallingFailed
+	}
+
+	if rErr := isSupportedTransactionType(transaction); rErr != nil {
+		return nil, rErr
+	}
+
+	return transaction, nil
+}
+
+func isSupportedTransactionType(transaction hiero.TransactionInterface) *rTypes.Error {
+	switch transaction.(type) {
+	case hiero.AccountCreateTransaction:
+	case hiero.TransferTransaction:
 	default:
 		return errors.ErrTransactionInvalidType
 	}
@@ -690,64 +690,9 @@ func addSignature(transaction interfaces.Transaction, pubKey hedera.PublicKey, s
 	return nil
 }
 
-func getFrozenTransactionBodyBytes(transaction interfaces.Transaction) ([]byte, *rTypes.Error) {
-	signedTransaction := services.SignedTransaction{}
-	if err := prototext.Unmarshal([]byte(transaction.String()), &signedTransaction); err != nil {
-		return nil, errors.ErrTransactionUnmarshallingFailed
-	}
+type updater func(transaction hiero.TransactionInterface) *rTypes.Error
 
-	return signedTransaction.BodyBytes, nil
-}
-
-func unmarshallTransactionFromHexString(transactionString string) (interfaces.Transaction, *rTypes.Error) {
-	transactionBytes, err := hex.DecodeString(tools.SafeRemoveHexPrefix(transactionString))
-	if err != nil {
-		return nil, errors.ErrTransactionDecodeFailed
-	}
-
-	transaction, err := hedera.TransactionFromBytes(transactionBytes)
-	if err != nil {
-		return nil, errors.ErrTransactionUnmarshallingFailed
-	}
-
-	switch tx := transaction.(type) {
-	// these transaction types are what the construction service supports
-	case hedera.AccountCreateTransaction:
-		return &tx, nil
-	case hedera.TokenAssociateTransaction:
-		return &tx, nil
-	case hedera.TokenBurnTransaction:
-		return &tx, nil
-	case hedera.TokenCreateTransaction:
-		return &tx, nil
-	case hedera.TokenDeleteTransaction:
-		return &tx, nil
-	case hedera.TokenDissociateTransaction:
-		return &tx, nil
-	case hedera.TokenFreezeTransaction:
-		return &tx, nil
-	case hedera.TokenGrantKycTransaction:
-		return &tx, nil
-	case hedera.TokenMintTransaction:
-		return &tx, nil
-	case hedera.TokenRevokeKycTransaction:
-		return &tx, nil
-	case hedera.TokenUnfreezeTransaction:
-		return &tx, nil
-	case hedera.TokenUpdateTransaction:
-		return &tx, nil
-	case hedera.TokenWipeTransaction:
-		return &tx, nil
-	case hedera.TransferTransaction:
-		return &tx, nil
-	default:
-		return nil, errors.ErrTransactionInvalidType
-	}
-}
-
-type updater func(transaction interfaces.Transaction) *rTypes.Error
-
-func updateTransaction(transaction interfaces.Transaction, updaters ...updater) *rTypes.Error {
+func updateTransaction(transaction hiero.TransactionInterface, updaters ...updater) *rTypes.Error {
 	for _, updater := range updaters {
 		if err := updater(transaction); err != nil {
 			return err
@@ -757,7 +702,7 @@ func updateTransaction(transaction interfaces.Transaction, updaters ...updater) 
 }
 
 func transactionSetMemo(memo interface{}) updater {
-	return func(transaction interfaces.Transaction) *rTypes.Error {
+	return func(transaction hiero.TransactionInterface) *rTypes.Error {
 		if memo == nil {
 			return nil
 		}
@@ -767,7 +712,7 @@ func transactionSetMemo(memo interface{}) updater {
 			return errors.ErrInvalidTransactionMemo
 		}
 
-		if _, err := hedera.TransactionSetTransactionMemo(transaction, value); err != nil {
+		if _, err := hiero.TransactionSetTransactionMemo(transaction, value); err != nil {
 			return errors.ErrInvalidTransactionMemo
 		}
 
@@ -775,9 +720,9 @@ func transactionSetMemo(memo interface{}) updater {
 	}
 }
 
-func transactionSetNodeAccountId(nodeAccountId hedera.AccountID) updater {
-	return func(transaction interfaces.Transaction) *rTypes.Error {
-		if _, err := hedera.TransactionSetNodeAccountIDs(transaction, []hedera.AccountID{nodeAccountId}); err != nil {
+func transactionSetNodeAccountId(nodeAccountId hiero.AccountID) updater {
+	return func(transaction hiero.TransactionInterface) *rTypes.Error {
+		if _, err := hiero.TransactionSetNodeAccountIDs(transaction, []hiero.AccountID{nodeAccountId}); err != nil {
 			log.Errorf("Failed to set node account id for transaction: %s", err)
 			return errors.ErrInternalServerError
 		}
@@ -785,15 +730,15 @@ func transactionSetNodeAccountId(nodeAccountId hedera.AccountID) updater {
 	}
 }
 
-func transactionSetTransactionId(payer hedera.AccountID, validStartNanos int64) updater {
-	return func(transaction interfaces.Transaction) *rTypes.Error {
-		var transactionId hedera.TransactionID
+func transactionSetTransactionId(payer hiero.AccountID, validStartNanos int64) updater {
+	return func(transaction hiero.TransactionInterface) *rTypes.Error {
+		var transactionId hiero.TransactionID
 		if validStartNanos == 0 {
-			transactionId = hedera.TransactionIDGenerate(payer)
+			transactionId = hiero.TransactionIDGenerate(payer)
 		} else {
-			transactionId = hedera.NewTransactionIDWithValidStart(payer, time.Unix(0, validStartNanos))
+			transactionId = hiero.NewTransactionIDWithValidStart(payer, time.Unix(0, validStartNanos))
 		}
-		if _, err := hedera.TransactionSetTransactionID(transaction, transactionId); err != nil {
+		if _, err := hiero.TransactionSetTransactionID(transaction, transactionId); err != nil {
 			log.Errorf("Failed to set transaction id: %s", err)
 			return errors.ErrInternalServerError
 		}
@@ -802,13 +747,13 @@ func transactionSetTransactionId(payer hedera.AccountID, validStartNanos int64) 
 }
 
 func transactionSetValidDuration(validDurationSeconds int64) updater {
-	return func(transaction interfaces.Transaction) *rTypes.Error {
+	return func(transaction hiero.TransactionInterface) *rTypes.Error {
 		if validDurationSeconds == 0 {
 			// Default to 180 seconds
 			validDurationSeconds = defaultValidDurationSeconds
 		}
 
-		_, err := hedera.TransactionSetTransactionValidDuration(transaction, time.Second*time.Duration(validDurationSeconds))
+		_, err := hiero.TransactionSetTransactionValidDuration(transaction, time.Second*time.Duration(validDurationSeconds))
 		if err != nil {
 			log.Errorf("Failed to set transaction valid duration: %s", err)
 			return errors.ErrInternalServerError
@@ -817,46 +762,11 @@ func transactionSetValidDuration(validDurationSeconds int64) updater {
 	}
 }
 
-func transactionFreeze(transaction interfaces.Transaction) *rTypes.Error {
-	var err error
-	switch tx := transaction.(type) {
-	// these transaction types are what the construction service supports
-	case *hedera.AccountCreateTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenAssociateTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenBurnTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenCreateTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenDeleteTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenDissociateTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenFreezeTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenGrantKycTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenMintTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenRevokeKycTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenUnfreezeTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenUpdateTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TokenWipeTransaction:
-		_, err = tx.Freeze()
-	case *hedera.TransferTransaction:
-		_, err = tx.Freeze()
-	default:
-		log.Error("Invalid transaction type")
-		return errors.ErrTransactionInvalidType
-	}
-
-	if err != nil {
+func transactionFreeze(transaction hiero.TransactionInterface) *rTypes.Error {
+	if _, err := hiero.TransactionFreezeWith(transaction, nil); err != nil {
 		log.Errorf("Failed to freeze transaction: %s", err)
 		return errors.ErrTransactionFreezeFailed
 	}
+
 	return nil
 }
