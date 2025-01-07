@@ -208,6 +208,63 @@ class TransactionExecutionServiceTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000",
+                "INVALID_TOKEN_ID"
+            })
+    void testExecuteContractCallFailureWithErrorMessage(final String errorMessage) {
+        // Given
+        try (MockedStatic<ExecutorFactory> executorFactoryMock = mockStatic(ExecutorFactory.class);
+                MockedStatic<ContractCallContext> contractCallContextMock = mockStatic(ContractCallContext.class)) {
+
+            // Set up mock behaviors for ExecutorFactory
+            executorFactoryMock
+                    .when(() -> ExecutorFactory.newExecutor(any(), any(), any()))
+                    .thenReturn(transactionExecutor);
+
+            // Set up mock behaviors for ContractCallContext
+            contractCallContextMock.when(ContractCallContext::get).thenReturn(contractCallContext);
+
+            // Mock the SingleTransactionRecord and TransactionRecord
+            SingleTransactionRecord singleTransactionRecord = mock(SingleTransactionRecord.class);
+            TransactionRecord transactionRecord = mock(TransactionRecord.class);
+            TransactionReceipt transactionReceipt = mock(TransactionReceipt.class);
+
+            // Simulate CONTRACT_REVERT_EXECUTED status in the receipt
+            when(transactionReceipt.status()).thenReturn(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED);
+            when(transactionRecord.receiptOrThrow()).thenReturn(transactionReceipt);
+            when(singleTransactionRecord.transactionRecord()).thenReturn(transactionRecord);
+
+            ContractFunctionResult contractFunctionResult = mock(ContractFunctionResult.class);
+            when(transactionRecord.contractCallResultOrThrow()).thenReturn(contractFunctionResult);
+            when(contractFunctionResult.gasUsed()).thenReturn(DEFAULT_GAS);
+            when(contractFunctionResult.errorMessage()).thenReturn(errorMessage);
+
+            // Mock the executor to return a List with the mocked SingleTransactionRecord
+            when(transactionExecutor.execute(
+                            any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
+                    .thenReturn(List.of(singleTransactionRecord));
+
+            CallServiceParameters callServiceParameters =
+                    buildServiceParams(false, org.apache.tuweni.bytes.Bytes.EMPTY, Address.ZERO);
+
+            // When
+            var result = transactionExecutionService.execute(callServiceParameters, DEFAULT_GAS);
+
+            // Then
+            assertThat(result).isNotNull();
+            assertThat(result.getGasUsed()).isEqualTo(DEFAULT_GAS);
+            if (errorMessage.startsWith(HEX_PREFIX)) {
+                assertThat(result.getRevertReason()).isPresent();
+            } else {
+                // If the message does not start with 0x, it is already decoded and readable, e.g. "INVALID_TOKEN_ID"
+                assertThat(result.getDecodedRevertReason()).isPresent();
+            }
+        }
+    }
+
     // NestedCalls.BINARY
     @ParameterizedTest
     @MethodSource("provideCallData")
