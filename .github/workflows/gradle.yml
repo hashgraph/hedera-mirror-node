@@ -100,7 +100,7 @@ jobs:
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
         run: | 
             ./gradlew :${{ matrix.project }}:test \
-            -Phedera.mirror.web3.evm.modularizedServices='true' \
+            -Dhedera.mirror.web3.evm.modularizedServices=true \
             --info \
             --scan ${{ secrets.GRADLE_ARGS }}
 
