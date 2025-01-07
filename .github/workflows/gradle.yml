@@ -21,7 +21,7 @@ permissions:
 env:
   LC_ALL: C.UTF-8
   CGO_ENABLED: 1
-  ENABLE_TRANSACTION_EXECUTOR_STEP: "true"
+  ENABLE_TRANSACTION_EXECUTOR_STEP: "false" #Enable when the full implementation of reusable services is completed
 
 jobs:
   build:
