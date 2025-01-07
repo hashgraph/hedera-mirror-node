@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,15 +76,6 @@ describe('topicMessageViewModel tests', () => {
       total: 10,
     };
 
-    expect(actual).toEqual(expected);
-  });
-
-  test('topic message with null running hash version', () => {
-    var topicMessage = buildDefaultTopicMessageRow();
-    topicMessage.runningHashVersion = null;
-    const actual = new TopicMessageViewModel(topicMessage, '');
-    const expected = buildDefaultTopicMessageViewModel();
-    expected.running_hash_version = TopicMessageViewModel.DEFAULT_RUNNING_HASH_VERSION;
     expect(actual).toEqual(expected);
   });
 });

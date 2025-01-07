@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,6 @@ import reactor.core.publisher.Mono;
 @CustomLog
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
-    // Blockstreams no longer contain runningHashVersion, default to the latest version
-    static final int DEFAULT_RUNNING_HASH_VERSION = 3;
 
     private final TopicMessageService topicMessageService;
 
@@ -88,13 +86,11 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
 
     // Consider caching this conversion for multiple subscribers to the same topic if the need arises.
     private ConsensusTopicResponse toResponse(TopicMessage t) {
-        var runningHashVersion =
-                t.getRunningHashVersion() == null ? DEFAULT_RUNNING_HASH_VERSION : t.getRunningHashVersion();
         var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
                 .setConsensusTimestamp(ProtoUtil.toTimestamp(t.getConsensusTimestamp()))
                 .setMessage(ProtoUtil.toByteString(t.getMessage()))
                 .setRunningHash(ProtoUtil.toByteString(t.getRunningHash()))
-                .setRunningHashVersion(runningHashVersion)
+                .setRunningHashVersion(t.getRunningHashVersion())
                 .setSequenceNumber(t.getSequenceNumber());
 
         if (t.getChunkNum() != null) {

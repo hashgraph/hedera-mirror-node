@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,6 @@ import {encodeBase64, encodeBinary, nsToSecNs} from '../utils';
  * Topic message view model
  */
 class TopicMessageViewModel {
-  // Blockstreams no longer contain runningHashVersion, default to the latest version
-  static DEFAULT_RUNNING_HASH_VERSION = 3;
-
   /**
    * Constructs topicMessage view model
    *
@@ -36,16 +33,12 @@ class TopicMessageViewModel {
    * @param {String} messageEncoding the encoding to display the message in
    */
   constructor(topicMessage, messageEncoding) {
-    const runningHashVersion = _.isNil(topicMessage.runningHashVersion)
-      ? TopicMessageViewModel.DEFAULT_RUNNING_HASH_VERSION
-      : topicMessage.runningHashVersion;
-
     this.chunk_info = _.isNil(topicMessage.chunkNum) ? null : new ChunkInfoViewModel(topicMessage);
     this.consensus_timestamp = nsToSecNs(topicMessage.consensusTimestamp);
     this.message = encodeBinary(topicMessage.message, messageEncoding);
     this.payer_account_id = EntityId.parse(topicMessage.payerAccountId).toString();
     this.running_hash = encodeBase64(topicMessage.runningHash);
-    this.running_hash_version = runningHashVersion;
+    this.running_hash_version = topicMessage.runningHashVersion;
     this.sequence_number = topicMessage.sequenceNumber;
     this.topic_id = EntityId.parse(topicMessage.topicId).toString();
   }
