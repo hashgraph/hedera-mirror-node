@@ -105,6 +105,10 @@ abstract class RecordFileReaderTest {
                                     .boxed()
                                     .toList());
                     assertThat(transactionIndexes).doesNotHaveDuplicates().isSorted();
+
+                    assertThat(actual.getSoftwareVersionMajor()).isEqualTo(actual.getHapiVersionMajor());
+                    assertThat(actual.getSoftwareVersionMinor()).isEqualTo(actual.getHapiVersionMinor());
+                    assertThat(actual.getSoftwareVersionPatch()).isEqualTo(actual.getHapiVersionPatch());
                 });
     }
 

@@ -763,6 +763,8 @@ public class DomainBuilder {
         long timestamp = timestamp();
         long consensusEnd = timestamp + 1;
         var instantString = now.toString().replace(':', '_');
+        var blockNumber = number();
+        var round = blockNumber + 1;
         var builder = RecordFile.builder()
                 .bytes(bytes(128))
                 .consensusStart(timestamp)
@@ -775,18 +777,23 @@ public class DomainBuilder {
                 .hapiVersionMinor(28)
                 .hapiVersionPatch(0)
                 .hash(hash(96))
-                .index(number())
+                .index(blockNumber)
                 .logsBloom(bloomFilter())
                 .loadEnd(now.toEpochMilli() + 1000L)
                 .loadStart(now.toEpochMilli())
                 .name(instantString + ".rcd.gz")
                 .nodeId(number())
                 .previousHash(hash(96))
+                .roundEnd(round)
+                .roundStart(round)
                 .sidecarCount(1)
                 .sidecars(List.of(sidecarFile()
                         .customize(s -> s.consensusEnd(consensusEnd).name(instantString + "_01.rcd.gz"))
                         .get()))
                 .size(256 * 1024)
+                .softwareVersionMajor(0)
+                .softwareVersionMinor(28)
+                .softwareVersionPatch(0)
                 .version(6);
         return new DomainWrapperImpl<>(builder, builder::build);
     }

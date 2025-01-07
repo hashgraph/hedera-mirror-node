@@ -77,6 +77,9 @@ public class ProtoRecordFileReader implements RecordFileReader {
             long consensusEnd = items.get(count - 1).getConsensusTimestamp();
             var digestAlgorithm = getDigestAlgorithm(filename, startHashAlgorithm, endHashAlgorithm);
             var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
+            var majorVersion = hapiProtoVersion.getMajor();
+            var minorVersion = hapiProtoVersion.getMinor();
+            var patchVersion = hapiProtoVersion.getPatch();
             var sidecars = getSidecars(consensusEnd, recordStreamFile, streamFileData.getStreamFilename());
 
             return RecordFile.builder()
@@ -86,9 +89,9 @@ public class ProtoRecordFileReader implements RecordFileReader {
                     .count((long) count)
                     .digestAlgorithm(digestAlgorithm)
                     .fileHash(getFileHash(digestAlgorithm, streamFileData.getDecompressedBytes()))
-                    .hapiVersionMajor(hapiProtoVersion.getMajor())
-                    .hapiVersionMinor(hapiProtoVersion.getMinor())
-                    .hapiVersionPatch(hapiProtoVersion.getPatch())
+                    .hapiVersionMajor(majorVersion)
+                    .hapiVersionMinor(minorVersion)
+                    .hapiVersionPatch(patchVersion)
                     .hash(DomainUtils.bytesToHex(DomainUtils.getHashBytes(endObjectRunningHash)))
                     .index(recordStreamFile.getBlockNumber())
                     .items(items)
@@ -99,6 +102,9 @@ public class ProtoRecordFileReader implements RecordFileReader {
                     .sidecarCount(sidecars.size())
                     .sidecars(sidecars)
                     .size(bytes.length)
+                    .softwareVersionMajor(majorVersion)
+                    .softwareVersionMinor(minorVersion)
+                    .softwareVersionPatch(patchVersion)
                     .version(VERSION)
                     .build();
         } catch (IOException e) {

@@ -122,6 +122,9 @@ public class TestRecordFiles {
                 .name("2021-01-11T22_09_24.063739000Z.rcd")
                 .previousHash(digestAlgorithm.getEmptyHash())
                 .size(498)
+                .softwareVersionMajor(0)
+                .softwareVersionMinor(9)
+                .softwareVersionPatch(0)
                 .version(5)
                 .build();
         var recordFileVersionFiveTwo = RecordFile.builder()
@@ -141,6 +144,9 @@ public class TestRecordFiles {
                 .name("2021-01-11T22_09_34.097416003Z.rcd")
                 .previousHash(recordFileVersionFiveOne.getHash())
                 .size(498)
+                .softwareVersionMajor(0)
+                .softwareVersionMinor(9)
+                .softwareVersionPatch(0)
                 .version(5)
                 .build();
         var recordFileVersionSixOne = RecordFile.builder()
@@ -163,6 +169,9 @@ public class TestRecordFiles {
                         "13d2594b9e9dbb73dad0cad67a96ad7a0e249af8693aa894003876c9ddd5534b3143e4d785e04fc0c461945a03e85178")
                 .sidecarCount(0)
                 .size(509)
+                .softwareVersionMajor(0)
+                .softwareVersionMinor(28)
+                .softwareVersionPatch(0)
                 .version(6)
                 .build();
         var transactionSidecarRecord1 = TransactionSidecarRecord.newBuilder()
@@ -218,6 +227,9 @@ public class TestRecordFiles {
                         .size(279)
                         .types(List.of(1, 3))
                         .build()))
+                .softwareVersionMajor(0)
+                .softwareVersionMinor(28)
+                .softwareVersionPatch(0)
                 .version(6)
                 .build();
 
@@ -268,6 +280,9 @@ public class TestRecordFiles {
                 .nodeId(0L)
                 .previousHash(recordFileV2.getHash())
                 .size(495)
+                .softwareVersionMajor(0)
+                .softwareVersionMinor(11)
+                .softwareVersionPatch(0)
                 .version(5)
                 .build();
         return List.of(recordFileV2, recordFileV5);

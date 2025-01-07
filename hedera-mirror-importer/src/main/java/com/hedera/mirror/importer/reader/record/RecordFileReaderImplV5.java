@@ -86,6 +86,9 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         recordFile.setHapiVersionMajor(vdis.readInt());
         recordFile.setHapiVersionMinor(vdis.readInt());
         recordFile.setHapiVersionPatch(vdis.readInt());
+        recordFile.setSoftwareVersionMajor(recordFile.getHapiVersionMajor());
+        recordFile.setSoftwareVersionMinor(recordFile.getHapiVersionMinor());
+        recordFile.setSoftwareVersionPatch(recordFile.getHapiVersionPatch());
         recordFile.setVersion(VERSION);
     }
 

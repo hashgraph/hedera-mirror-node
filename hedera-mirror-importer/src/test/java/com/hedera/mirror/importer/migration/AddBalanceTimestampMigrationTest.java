@@ -127,8 +127,9 @@ class AddBalanceTimestampMigrationTest extends AbstractStakingMigrationTest {
     @Test
     void migrate() {
         // given
-        domainBuilder.recordFile().persist();
-        var latestRecordFile = domainBuilder.recordFile().persist();
+        persistRecordFile(domainBuilder.recordFile().get());
+        var latestRecordFile = domainBuilder.recordFile().get();
+        persistRecordFile(latestRecordFile);
 
         var entity = domainBuilder.entity().get();
         var entity2 = domainBuilder.entity().get();
