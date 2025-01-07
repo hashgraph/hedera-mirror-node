@@ -23,7 +23,7 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.repository.RecordFileMigrationTest;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.nio.charset.StandardCharsets;
@@ -53,7 +53,7 @@ import org.springframework.util.StreamUtils;
 @RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.97.1")
-class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
+class ClearTokenMetadataMigrationTest extends RecordFileMigrationTest {
 
     private static final long CREATE = -1;
     private static final Predicate<Token> IS_CURRENT = t -> t.getTimestampUpper() == null;

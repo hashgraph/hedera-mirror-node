@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,9 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         recordFile.setHapiVersionMajor(vdis.readInt());
         recordFile.setHapiVersionMinor(vdis.readInt());
         recordFile.setHapiVersionPatch(vdis.readInt());
+        recordFile.setSoftwareVersionMajor(recordFile.getHapiVersionMajor());
+        recordFile.setSoftwareVersionMinor(recordFile.getHapiVersionMinor());
+        recordFile.setSoftwareVersionPatch(recordFile.getHapiVersionPatch());
         recordFile.setVersion(VERSION);
     }
 

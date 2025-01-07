@@ -29,7 +29,7 @@ import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -82,8 +82,7 @@ public class BlockNumberMigration extends RepeatableMigration {
         long correctConsensusEnd = consensusEndAndBlockNumber.getKey();
         long correctBlockNumber = consensusEndAndBlockNumber.getValue();
 
-        findRecordFileByConsensusEnd(correctConsensusEnd)
-                .map(RecordFile::getIndex)
+        findBlockNumberByConsensusEnd(correctConsensusEnd)
                 .filter(blockNumber -> blockNumber != correctBlockNumber)
                 .ifPresent(blockNumber -> updateIndex(correctBlockNumber, blockNumber));
     }
@@ -95,14 +94,12 @@ public class BlockNumberMigration extends RepeatableMigration {
         log.info("Updated {} blocks with offset {} in {}", count, offset, stopwatch);
     }
 
-    private Optional<RecordFile> findRecordFileByConsensusEnd(long consensusEnd) {
+    private Optional<Long> findBlockNumberByConsensusEnd(long consensusEnd) {
         var params = new MapSqlParameterSource().addValue("consensusEnd", consensusEnd);
         try {
-            return Optional.of(jdbcTemplate.queryForObject(
-                    "select * from record_file where consensus_end = :consensusEnd limit 1",
-                    params,
-                    RECORD_FILE_ROW_MAPPER));
-        } catch (EmptyResultDataAccessException ex) {
+            return Optional.ofNullable(jdbcTemplate.queryForObject(
+                    "select index from record_file where consensus_end = :consensusEnd limit 1", params, Long.class));
+        } catch (IncorrectResultSizeDataAccessException ex) {
             return Optional.empty();
         }
     }

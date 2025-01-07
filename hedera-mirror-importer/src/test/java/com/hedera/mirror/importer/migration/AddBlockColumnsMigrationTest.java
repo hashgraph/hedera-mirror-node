@@ -19,9 +19,8 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
-import com.hedera.mirror.importer.EnabledIfV2;
-import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
+import com.hedera.mirror.importer.repository.RecordFileMigrationTest;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -31,17 +30,22 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.StreamUtils;
 
-@EnabledIfV2
+@ContextConfiguration(initializers = AddBlockColumnsMigrationTest.Initializer.class)
 @DisableRepeatableSqlMigration
 @RequiredArgsConstructor
+@Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=2.7.0")
-public class AddBlockColumnsMigrationTest extends ImporterIntegrationTest {
+public class AddBlockColumnsMigrationTest extends RecordFileMigrationTest {
 
     private static final String REVERT_DDL =
             """
@@ -56,7 +60,7 @@ public class AddBlockColumnsMigrationTest extends ImporterIntegrationTest {
     private final @Owner JdbcTemplate jdbcTemplate;
     private final RecordFileRepository recordFileRepository;
 
-    @Value("classpath:db/migration/v2/V2.7.0__add_block_columns.sql")
+    @Value("${migrationSql}")
     private final Resource migrationSql;
 
     @AfterEach
@@ -111,6 +115,26 @@ public class AddBlockColumnsMigrationTest extends ImporterIntegrationTest {
         try (var is = migrationSql.getInputStream()) {
             var script = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
             jdbcTemplate.execute(script);
+        }
+    }
+
+    static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+
+        @Override
+        public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
+            var environment = configurableApplicationContext.getEnvironment();
+            String version;
+            String migrationSql;
+            if (environment.acceptsProfiles(Profiles.of("v2"))) {
+                version = "2.7.0";
+                migrationSql = "classpath:db/migration/v2/V2.7.0__add_block_columns.sql";
+            } else {
+                version = "1.102.0";
+                migrationSql = "classpath:db/migration/v1/V1.102.0__add_block_columns.sql";
+            }
+
+            TestPropertyValues.of("spring.flyway.target=" + version).applyTo(environment);
+            TestPropertyValues.of("migrationSql=" + migrationSql).applyTo(environment);
         }
     }
 }
