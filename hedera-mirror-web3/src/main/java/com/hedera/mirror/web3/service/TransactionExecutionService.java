@@ -17,12 +17,12 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.state.Utils.isMirror;
+import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
@@ -45,6 +45,7 @@ import com.hedera.node.app.workflows.standalone.TransactionExecutor;
 import com.hedera.node.app.workflows.standalone.TransactionExecutors;
 import com.hedera.node.app.workflows.standalone.TransactionExecutors.TracerBinding;
 import com.hedera.node.config.data.EntitiesConfig;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import jakarta.annotation.Nullable;
@@ -119,7 +120,7 @@ public class TransactionExecutionService {
 
         var receipt = executor.execute(transactionBody, Instant.EPOCH, getOperationTracers());
         var transactionRecord = receipt.getFirst().transactionRecord();
-        if (transactionRecord.receiptOrThrow().status() == ResponseCodeEnum.SUCCESS) {
+        if (transactionRecord.receiptOrThrow().status() == com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS) {
             result = buildSuccessResult(isContractCreate, transactionRecord, params);
         } else {
             result = buildFailedResult(transactionRecord, isContractCreate);
@@ -152,14 +153,27 @@ public class TransactionExecutionService {
     private HederaEvmTransactionProcessingResult buildFailedResult(
             final TransactionRecord transactionRecord, final boolean isContractCreate) {
         var result = getTransactionResult(transactionRecord, isContractCreate);
-        var status = transactionRecord.receipt().status();
+        var errorMessage = getErrorMessage(result);
+        var decodedRevertReason = getDecodedErrorMessage(result);
 
         return HederaEvmTransactionProcessingResult.failed(
-                result.gasUsed(),
-                0L,
-                0L,
-                Optional.of(Bytes.wrap(status.protoName().getBytes())),
-                Optional.empty());
+                result.gasUsed(), 0L, 0L, errorMessage, decodedRevertReason, Optional.empty());
+    }
+
+    private Optional<Bytes> getErrorMessage(final ContractFunctionResult result) {
+        return result.errorMessage().startsWith(HEX_PREFIX)
+                ? Optional.of(Bytes.fromHexString(result.errorMessage()))
+                : Optional.empty();
+    }
+
+    private Optional<ResponseCodeEnum> getDecodedErrorMessage(final ContractFunctionResult result) {
+        try {
+            return Optional.of(ResponseCodeEnum.valueOf(result.errorMessage()));
+        } catch (IllegalArgumentException iae) {
+            // This is expected in some cases. No additional action required.
+            log.debug("Error message could not be decoded.", iae);
+        }
+        return Optional.empty();
     }
 
     private TransactionBody.Builder defaultTransactionBodyBuilder(final CallServiceParameters params) {
@@ -216,6 +230,7 @@ public class TransactionExecutionService {
                         .functionParameters(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
                                 params.getCallData().toArrayUnsafe()))
                         .gas(estimatedGas)
+                        .amount(params.getValue())
                         .build())
                 .build();
     }

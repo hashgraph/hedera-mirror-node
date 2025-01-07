@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.state.Utils.isMirror;
+import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -182,12 +183,12 @@ class TransactionExecutionServiceTest {
             // Simulate CONTRACT_REVERT_EXECUTED status in the receipt
             when(transactionReceipt.status()).thenReturn(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED);
             when(transactionRecord.receiptOrThrow()).thenReturn(transactionReceipt);
-            when(transactionRecord.receipt()).thenReturn(transactionReceipt);
             when(singleTransactionRecord.transactionRecord()).thenReturn(transactionRecord);
 
             ContractFunctionResult contractFunctionResult = mock(ContractFunctionResult.class);
             when(transactionRecord.contractCallResultOrThrow()).thenReturn(contractFunctionResult);
             when(contractFunctionResult.gasUsed()).thenReturn(DEFAULT_GAS);
+            when(contractFunctionResult.errorMessage()).thenReturn(HEX_PREFIX);
 
             // Mock the executor to return a List with the mocked SingleTransactionRecord
             when(transactionExecutor.execute(

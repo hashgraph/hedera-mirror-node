@@ -151,8 +151,10 @@ public abstract class ContractCallService {
         if (!txnResult.isSuccessful()) {
             updateGasUsedMetric(ERROR, txnResult.getGasUsed(), 1);
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
+            var decodedRevertReason = txnResult.getDecodedRevertReason();
+            var responseCode = decodedRevertReason.orElseGet(() -> getStatusOrDefault(txnResult));
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-            throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            throw new MirrorEvmTransactionException(responseCode, detail, revertReason.toHexString());
         } else {
             updateGasUsedMetric(type, txnResult.getGasUsed(), 1);
         }
