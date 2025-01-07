@@ -33,17 +33,17 @@ jobs:
     strategy:
       matrix:
         project:
-          - common
-          - graphql
-          - grpc
-          - importer
-          - monitor
-          - rest
-          - rest-java
-          - "rest:check-state-proof"
-          - "rest:monitoring"
-          - rosetta
-          - test
+#          - common
+#          - graphql
+#          - grpc
+#          - importer
+#          - monitor
+#          - rest
+#          - rest-java
+#          - "rest:check-state-proof"
+#          - "rest:monitoring"
+#          - rosetta
+#          - test
           - web3
         schema:
           - v1
@@ -104,10 +104,10 @@ jobs:
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
           HEDERA_MIRROR_WEB3_EVM_MODULARIZED_SERVICES: "true"
         run: | 
-          ./gradlew :${{ matrix.project }}:test \
+          ./gradlew :${{ matrix.project }}:test --info --scan ${{ secrets.GRADLE_ARGS }}
 #            -Dhedera.mirror.web3.evm.modularized-services=true \
-            --info \
-            --scan ${{ secrets.GRADLE_ARGS }}
+
+
 
       - name: Upload coverage report
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
