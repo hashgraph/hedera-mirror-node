@@ -4,11 +4,14 @@ on:
     branches:
       - "main"
       - "release/**"
+      - "flag-tests"
+      - "9995-add-workflow-for-transaction-executor"
   push:
     branches:
       - "main"
       - "release/**"
       - "flag-tests"
+      - "9995-add-workflow-for-transaction-executor"
     tags:
       - "v*"
 
