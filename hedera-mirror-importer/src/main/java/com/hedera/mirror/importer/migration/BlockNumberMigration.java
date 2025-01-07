@@ -20,7 +20,6 @@ import static com.hedera.mirror.importer.ImporterProperties.HederaNetwork.MAINNE
 import static com.hedera.mirror.importer.ImporterProperties.HederaNetwork.TESTNET;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
@@ -30,8 +29,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
-import org.springframework.jdbc.core.DataClassRowMapper;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
@@ -41,8 +38,6 @@ public class BlockNumberMigration extends RepeatableMigration {
     static final Map<String, Pair<Long, Long>> BLOCK_NUMBER_MAPPING = Map.of(
             TESTNET, Pair.of(1656461617493248000L, 22384256L),
             MAINNET, Pair.of(1656461547557609267L, 34305852L));
-
-    private static final RowMapper<RecordFile> RECORD_FILE_ROW_MAPPER = new DataClassRowMapper<>(RecordFile.class);
 
     private final ImporterProperties importerProperties;
     private final NamedParameterJdbcTemplate jdbcTemplate;
