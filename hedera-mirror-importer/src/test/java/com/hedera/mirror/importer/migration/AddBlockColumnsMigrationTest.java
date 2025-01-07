@@ -126,10 +126,10 @@ public class AddBlockColumnsMigrationTest extends RecordFileMigrationTest {
             String version;
             String migrationSql;
             if (environment.acceptsProfiles(Profiles.of("v2"))) {
-                version = "2.7.0";
+                version = "2.6.0";
                 migrationSql = "classpath:db/migration/v2/V2.7.0__add_block_columns.sql";
             } else {
-                version = "1.102.0";
+                version = "1.101.0";
                 migrationSql = "classpath:db/migration/v1/V1.102.0__add_block_columns.sql";
             }
 
