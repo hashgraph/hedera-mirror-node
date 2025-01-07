@@ -8,7 +8,6 @@ on:
     branches:
       - "main"
       - "release/**"
-      - "flag-tests"
     tags:
       - "v*"
 
@@ -94,15 +93,15 @@ jobs:
 #          SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
 #        run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
 
-      - name: Execute Gradle using transaction executors
+      - name: Execute Gradle using transaction executor
         if: ${{ matrix.project == 'web3' }}
         env:
-          HEDERA_MIRROR_WEB3_EVM_MODULARIZED_SERVICES: "true"
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
+          HEDERA_MIRROR_WEB3_EVM_MODULARIZED_SERVICES: "true"
         run: | 
           ./gradlew :${{ matrix.project }}:test \
-#            -Dhedera.mirror.web3.evm.modularized-services=true \
+            -Dhedera.mirror.web3.evm.modularized-services=true \
             --info \
             --scan ${{ secrets.GRADLE_ARGS }}
 
