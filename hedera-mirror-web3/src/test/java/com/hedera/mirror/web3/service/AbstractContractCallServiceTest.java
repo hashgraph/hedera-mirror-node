@@ -47,7 +47,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.state.State;
 import jakarta.annotation.Resource;
@@ -235,9 +234,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected Entity accountEntityWithEvmAddressPersist() {
         return domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT)
-                        .key(domainBuilder.key(KeyCase.ED25519)) // Do not commit
-                        .balance(1_000_000_000_000L))
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
                 .persist();
     }
 
@@ -252,7 +249,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                         .accountId(accountId)
                         .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                         .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .balance(0)
                         .associated(true))
                 .persist();
     }
