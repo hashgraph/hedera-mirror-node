@@ -234,13 +234,21 @@ const getContractByIdOrAddressContractEntityQuery = ({timestampConditions, times
  */
 const getContractsQuery = (whereQuery, limitQuery, order) => {
   return [
-    `select ${contractSelectFields}`,
-    `from ${Entity.tableName} ${Entity.tableAlias}`,
-    `left join ${Contract.tableName} ${Contract.tableAlias}`,
-    `on ${Entity.getFullName(Entity.ID)} = ${Contract.getFullName(Contract.ID)}`,
-    whereQuery,
-    `order by ${Entity.getFullName(Entity.ID)} ${order}`,
-    limitQuery,
+    `WITH matching_contracts AS (`,
+    `  SELECT ${Entity.getFullName(Entity.ID)}`,
+    `  FROM ${Entity.tableName} ${Entity.tableAlias}`,
+    `  ${whereQuery}`,
+    `  ORDER BY ${Entity.getFullName(Entity.ID)} ${order}`,
+    `  ${limitQuery}`,
+    `),`,
+    `contract_details AS (`,
+    `  SELECT ${contractSelectFields}`,
+    `  FROM matching_contracts mc`,
+    `  JOIN ${Entity.tableName} ${Entity.tableAlias} ON ${Entity.getFullName(Entity.ID)} = mc.${Entity.ID}`,
+    `  LEFT JOIN ${Contract.tableName} ${Contract.tableAlias}`,
+    `    ON ${Entity.getFullName(Entity.ID)} = ${Contract.getFullName(Contract.ID)}`,
+    `)`,
+    `SELECT * FROM contract_details`,
   ]
     .filter((q) => q !== '')
     .join('\n');
