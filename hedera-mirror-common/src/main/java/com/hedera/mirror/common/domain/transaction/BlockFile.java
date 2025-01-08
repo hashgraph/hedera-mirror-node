@@ -18,10 +18,11 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
 import com.hedera.hapi.block.stream.protoc.BlockProof;
+import com.hedera.hapi.block.stream.protoc.RecordFileItem;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hederahashgraph.api.proto.java.BlockStreamInfo;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -42,9 +43,6 @@ public class BlockFile implements StreamFile<BlockItem> {
 
     // Used to generate block hash
     private BlockProof blockProof;
-
-    // Contained within the last StateChange of the block, contains hashes needed to generate the block hash
-    private BlockStreamInfo blockStreamInfo;
 
     @ToString.Exclude
     private byte[] bytes;
@@ -76,6 +74,8 @@ public class BlockFile implements StreamFile<BlockItem> {
     @ToString.Exclude
     private String previousHash;
 
+    private RecordFileItem recordFileItem;
+
     private Long roundEnd;
 
     private Long roundStart;
@@ -102,5 +102,24 @@ public class BlockFile implements StreamFile<BlockItem> {
     @Override
     public StreamType getType() {
         return StreamType.BLOCK;
+    }
+
+    public static class BlockFileBuilder {
+
+        public void addItem(BlockItem blockItem) {
+            if (items$value == null) {
+                items$value = new ArrayList<>();
+            }
+
+            items$value.add(blockItem);
+        }
+
+        public void startNewRound(long roundNumber) {
+            roundEnd = roundNumber;
+
+            if (roundStart == null) {
+                roundStart = roundNumber;
+            }
+        }
     }
 }

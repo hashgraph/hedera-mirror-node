@@ -108,7 +108,9 @@ public class StreamFilename implements Comparable<StreamFilename> {
 
         // A compressed and uncompressed file can exist simultaneously, so we need uniqueness to not include .gz
         this.filenameWithoutCompressor = isCompressed() ? removeExtension(this.filename) : this.filename;
-        this.instant = extractInstant(filename, this.fullExtension, this.sidecarId, this.streamType.getSuffix());
+        this.instant = null;
+        //        this.instant = extractInstant(filename, this.fullExtension, this.sidecarId,
+        // this.streamType.getSuffix());
 
         var builder = new StringBuilder();
         if (!StringUtils.isEmpty(this.path)) {
