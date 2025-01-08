@@ -616,7 +616,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
             verifyEstimateGasRevertExecution(
                     functionCall, CONTRACT_REVERT_EXECUTED.name(), MirrorEvmTransactionException.class);
         } else {
-            final var result = contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(1))
+            final var result = contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1))
                     .send();
             assertThat(result).isEqualTo(Address.ZERO.toHexString());
             verifyEthCallAndEstimateGas(functionCall, contract);
