@@ -188,7 +188,7 @@ function replaceDisks() {
     local snapshotFullName="projects/${GCP_SNAPSHOT_PROJECT}/global/snapshots/${snapshotName}"
     log "Recreating disk ${diskName} in ${GCP_PROJECT} with snapshot ${snapshotName}"
     gcloud compute disks delete "${diskName}" --project "${GCP_PROJECT}" --zone "${diskZone}" --quiet
-    gcloud compute disks create "${diskName}" --project "${GCP_PROJECT}" --zone "${diskZone}" --source-snapshot "${snapshotFullName}" --type=pd-balanced --quiet &
+    watchInBackground "$$" gcloud compute disks create "${diskName}" --project "${GCP_PROJECT}" --zone "${diskZone}" --source-snapshot "${snapshotFullName}" --type=pd-balanced --quiet &
   done
 
   log "Waiting for disks to be created"
