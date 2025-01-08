@@ -116,10 +116,8 @@ public abstract class ContractCallService {
         try {
             HederaEvmTransactionProcessingResult result;
             if (!mirrorNodeEvmProperties.isModularizedServices()) {
-                log.info("WE ARE HERE - FLAG IS FALSE");
                 result = mirrorEvmTxProcessor.execute(params, estimatedGas);
             } else {
-                log.info("WE ARE HERE - FLAG IS TRUE");
                 result = transactionExecutionService.execute(params, estimatedGas);
             }
             if (!restoreGasToThrottleBucket) {
