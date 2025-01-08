@@ -21,7 +21,7 @@ permissions:
 env:
   LC_ALL: C.UTF-8
   CGO_ENABLED: 1
-  ENABLE_TRANSACTION_EXECUTOR_STEP: "false" #Enable when the full implementation of reusable services is completed
+  ENABLE_TRANSACTION_EXECUTOR_STEP: "true" #Enable when the full implementation of reusable services is completed
 
 jobs:
   build:
@@ -88,19 +88,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends gcc libc-dev libc6-dev
 
-      - name: Execute Gradle
-        env:
-          MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
-          SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
-        run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
+#      - name: Execute Gradle
+#        env:
+#          MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
+#          SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
+#        run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
 
       - name: Execute Gradle using transaction executor
         if: ${{ matrix.project == 'web3' && env.ENABLE_TRANSACTION_EXECUTOR_STEP == 'true'}}
         env:
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
-          HEDERA_MIRROR_WEB3_EVM_MODULARIZED_SERVICES: "true"
-        run: ./gradlew :${{ matrix.project }}:build --scan ${{ secrets.GRADLE_ARGS }}
+          HEDERA_MIRROR_WEB3_EVM_MODULARIZEDSERVICES: "true"
+        run: ./gradlew :${{ matrix.project }}:build --info --scan ${{ secrets.GRADLE_ARGS }}
 
       - name: Upload coverage report
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
