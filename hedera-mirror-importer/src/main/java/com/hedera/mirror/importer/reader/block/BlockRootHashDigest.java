@@ -20,12 +20,14 @@ import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 
 import com.hedera.hapi.block.stream.protoc.BlockItem;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 
@@ -38,6 +40,8 @@ import lombok.experimental.NonFinal;
 class BlockRootHashDigest {
 
     private static final byte[] EMPTY_HASH = createMessageDigest().digest(new byte[0]);
+    private static final String PREVIOUSHASH = "previousHash";
+    private static final String STARTOFBLOCKSTATEHASH = "startOfBlockStateHash";
 
     @NonFinal
     private boolean finalized;
@@ -65,8 +69,8 @@ class BlockRootHashDigest {
             throw new IllegalStateException("Block root hash is already calculated");
         }
 
-        Objects.requireNonNull(previousHash, "Null previousHash");
-        Objects.requireNonNull(startOfBlockStateHash, "Null startOfBlockStateHash");
+        validateHash(previousHash, PREVIOUSHASH);
+        validateHash(startOfBlockStateHash, STARTOFBLOCKSTATEHASH);
 
         List<byte[]> leaves = new ArrayList<>();
         leaves.add(previousHash);
@@ -81,27 +85,21 @@ class BlockRootHashDigest {
     }
 
     public void setPreviousHash(byte[] previousHash) {
-        if (Objects.requireNonNull(previousHash, "Null previousHash").length != SHA_384.getSize()) {
-            throw new IllegalArgumentException(String.format("previousHash is not %d bytes", SHA_384.getSize()));
-        }
-
+        validateHash(previousHash, PREVIOUSHASH);
         this.previousHash = previousHash;
     }
 
     public void setStartOfBlockStateHash(byte[] startOfBlockStateHash) {
-        if (Objects.requireNonNull(startOfBlockStateHash, "Null previousHash").length != SHA_384.getSize()) {
-            throw new IllegalArgumentException(
-                    String.format("startOfBlockStateHash is not %d bytes", SHA_384.getSize()));
-        }
-
+        validateHash(startOfBlockStateHash, STARTOFBLOCKSTATEHASH);
         this.startOfBlockStateHash = startOfBlockStateHash;
     }
 
+    @SneakyThrows
     private static MessageDigest createMessageDigest() {
         try {
             return MessageDigest.getInstance(SHA_384.getName());
         } catch (NoSuchAlgorithmException ex) {
-            throw new RuntimeException(ex);
+            throw new StreamFileReaderException(ex);
         }
     }
 
@@ -134,5 +132,11 @@ class BlockRootHashDigest {
         }
 
         return leaves.getFirst();
+    }
+
+    private static void validateHash(byte[] hash, String name) {
+        if (Objects.requireNonNull(hash, "Null " + name).length != SHA_384.getSize()) {
+            throw new IllegalArgumentException(String.format("%s is not %d bytes", name, SHA_384.getSize()));
+        }
     }
 }

@@ -42,7 +42,6 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-import lombok.CustomLog;
 import lombok.SneakyThrows;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
@@ -51,7 +50,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.core.io.ClassPathResource;
 
-@CustomLog
 class ProtoBlockFileReaderTest {
 
     private final ProtoBlockFileReader reader = new ProtoBlockFileReader();
@@ -69,7 +67,6 @@ class ProtoBlockFileReaderTest {
                 .returns(expectedIndex, BlockFile::getIndex)
                 .satisfies(a -> assertThat(a.getBlockHeader()).isNotNull())
                 .satisfies(a -> assertThat(a.getBlockProof()).isNotNull());
-        ;
     }
 
     @Test

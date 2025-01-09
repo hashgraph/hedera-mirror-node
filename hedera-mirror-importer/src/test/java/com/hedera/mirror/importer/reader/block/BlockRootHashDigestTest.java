@@ -22,11 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
 import com.hedera.hapi.block.stream.output.protoc.StateChanges;
 import com.hedera.hapi.block.stream.protoc.BlockItem;
-import lombok.CustomLog;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
-@CustomLog
 class BlockRootHashDigestTest {
 
     private static final byte[] EMPTY_HASH = Hex.decode(
