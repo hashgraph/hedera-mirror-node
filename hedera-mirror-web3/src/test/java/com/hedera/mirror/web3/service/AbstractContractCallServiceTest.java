@@ -242,9 +242,24 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         tokenAccountPersist(token, account.toEntityId().getId());
     }
 
+    protected void tokenAccountPersist(final Entity token, final Entity account, final Long balance) {
+        tokenAccountPersist(token, account.toEntityId().getId(), balance);
+    }
+
     protected void tokenAccountPersist(final Entity token, final Long accountId) {
         domainBuilder
                 .tokenAccount()
+                .customize(ta -> ta.tokenId(token.getId())
+                        .accountId(accountId)
+                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true))
+                .persist();
+    }
+
+    protected void tokenAccountPersist(final Entity token, final Long accountId, final Long balance) {
+        domainBuilder
+                .tokenAccount(balance)
                 .customize(ta -> ta.tokenId(token.getId())
                         .accountId(accountId)
                         .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)

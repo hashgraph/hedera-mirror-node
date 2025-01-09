@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EMPTY_UNTRIMMED_ADDRESS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
@@ -278,7 +279,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        tokenAccountPersist(tokenEntity, associatedAccount);
+        tokenAccountPersist(tokenEntity, associatedAccount, 0L);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -1318,15 +1319,15 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @Test
     void updateTokenExpiry() throws Exception {
         // Given
-        final var treasuryAccount = accountEntityWithEvmAddressPersist();
+        final var treasuryAccount = accountEntityPersist();
         final var tokenWithAutoRenewPair =
                 persistTokenWithAutoRenewAndTreasuryAccounts(TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var tokenExpiry = new Expiry(
-                BigInteger.valueOf(Time.getCurrent().currentTimeMillis() + 1_000_000_000),
-                getAliasFromEntity(tokenWithAutoRenewPair.getRight()),
+                BigInteger.valueOf(tokenWithAutoRenewPair.getKey().getExpirationTimestamp() + 1_000_000L),
+                toAddress(tokenWithAutoRenewPair.getRight().toEntityId()).toHexString(),
                 BigInteger.valueOf(8_000_000));
 
         // When
@@ -1426,7 +1427,9 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var autoRenewAccount = accountEntityWithEvmAddressPersist();
         final var tokenToUpdateEntity = domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .customize(e -> e.type(EntityType.TOKEN)
+                        .autoRenewAccountId(autoRenewAccount.getId())
+                        .expirationTimestamp(5_000_000L))
                 .persist();
         domainBuilder
                 .token()

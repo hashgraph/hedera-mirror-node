@@ -923,7 +923,7 @@ public record Account(
         return numberPositiveBalancesSupplier.get();
     }
 
-    public Long numberOwnedNfts() {
+    public long numberOwnedNfts() {
         return numberOwnedNftsSupplier.get();
     }
 
