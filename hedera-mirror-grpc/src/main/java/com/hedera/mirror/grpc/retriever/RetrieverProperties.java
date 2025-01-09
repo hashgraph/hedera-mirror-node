@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.grpc.retriever;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
@@ -44,6 +45,7 @@ public class RetrieverProperties {
     private Duration timeout = Duration.ofSeconds(60L);
 
     @NotNull
+    @Valid
     private UnthrottledProperties unthrottled = new UnthrottledProperties();
 
     @Data

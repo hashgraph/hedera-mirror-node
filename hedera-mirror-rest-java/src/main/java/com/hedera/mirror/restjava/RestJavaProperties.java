@@ -17,6 +17,7 @@
 package com.hedera.mirror.restjava;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import org.springframework.validation.annotation.Validated;
 public class RestJavaProperties {
 
     @NotNull
+    @Valid
     private ResponseConfig response = new ResponseConfig();
 
     @Min(0)
@@ -63,6 +65,7 @@ public class RestJavaProperties {
     @Validated
     public static class ResponseConfig {
         @NotNull
+        @Valid
         private ResponseHeadersConfig headers = new ResponseHeadersConfig();
     }
 

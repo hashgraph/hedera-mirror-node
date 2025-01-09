@@ -16,18 +16,17 @@
 
 package com.hedera.mirror.importer.migration;
 
-import com.hedera.mirror.importer.db.PartitionMaintenance;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.springframework.test.context.TestPropertySource;
 
 /**
- * Configuration for migration tests whose target is before the migration that creates account_balance and token_balance
- * partitions. Purpose is to disable partition maintenance job by a mock bean so the test application context won't fail
- * to start.
+ * Disable migration tests whose target is before the migration that creates account_balance and token_balance
+ * partitions.
  */
-@TestConfiguration
-public class DisablePartitionMaintenanceConfiguration {
-
-    @MockBean
-    private PartitionMaintenance partitionMaintenance;
-}
+@Target({ElementType.TYPE})
+@TestPropertySource(properties = "hedera.mirror.importer.db.partition.enabled=false")
+@Retention(RetentionPolicy.RUNTIME)
+public @interface DisablePartitionMaintenance {}

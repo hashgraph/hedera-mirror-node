@@ -22,6 +22,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_ALIAS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -593,11 +594,16 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var tokenEntity = nftPersist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
-        final var result = contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(1))
-                .send();
         final var functionCall = contract.send_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(1));
-        assertThat(result).isEqualTo(Address.ZERO.toHexString());
-        verifyEthCallAndEstimateGas(functionCall, contract);
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            verifyEstimateGasRevertExecution(
+                    functionCall, CONTRACT_REVERT_EXECUTED.name(), MirrorEvmTransactionException.class);
+        } else {
+            final var result = contract.call_getOwnerOf(tokenAddress.toHexString(), BigInteger.valueOf(1))
+                    .send();
+            assertThat(result).isEqualTo(Address.ZERO.toHexString());
+            verifyEthCallAndEstimateGas(functionCall, contract);
+        }
     }
 
     @Test
@@ -605,11 +611,16 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var tokenEntity = nftPersist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
-        final var result = contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1))
-                .send();
         final var functionCall = contract.send_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1));
-        assertThat(result).isEqualTo(Address.ZERO.toHexString());
-        verifyEthCallAndEstimateGas(functionCall, contract);
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            verifyEstimateGasRevertExecution(
+                    functionCall, CONTRACT_REVERT_EXECUTED.name(), MirrorEvmTransactionException.class);
+        } else {
+            final var result = contract.call_getOwnerOfNonStatic(tokenAddress.toHexString(), BigInteger.valueOf(1))
+                    .send();
+            assertThat(result).isEqualTo(Address.ZERO.toHexString());
+            verifyEthCallAndEstimateGas(functionCall, contract);
+        }
     }
 
     @Test
@@ -907,7 +918,12 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
         final var functionCall = contract.send_getOwnerOfRedirect(tokenAddress.toHexString(), BigInteger.valueOf(1));
-        verifyEthCallAndEstimateGas(functionCall, contract);
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            verifyEstimateGasRevertExecution(
+                    functionCall, CONTRACT_REVERT_EXECUTED.name(), MirrorEvmTransactionException.class);
+        } else {
+            verifyEthCallAndEstimateGas(functionCall, contract);
+        }
     }
 
     @Test
@@ -982,9 +998,15 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         // When
         final var functionCall = contract.send_decimalsRedirect(tokenAddress.toHexString());
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(INVALID_TOKEN_ID.name());
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        } else {
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(INVALID_TOKEN_ID.name());
+        }
     }
 
     @Test
@@ -996,9 +1018,15 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         // When
         final var functionCall = contract.send_getOwnerOfRedirect(tokenAddress.toHexString(), BigInteger.ONE);
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(INVALID_TOKEN_ID.name());
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        } else {
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(INVALID_TOKEN_ID.name());
+        }
     }
 
     @Test
@@ -1010,9 +1038,15 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         // When
         final var functionCall = contract.send_tokenURIRedirect(tokenAddress.toHexString(), BigInteger.ONE);
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(INVALID_TOKEN_ID.name());
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        } else {
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(INVALID_TOKEN_ID.name());
+        }
     }
 
     private EntityId spenderEntityPersistWithAlias() {
@@ -1034,7 +1068,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     private EntityId accountPersist() {
         return domainBuilder
                 .entity()
-                .customize(e -> e.evmAddress(null).balance(12L))
+                .customize(e -> e.evmAddress(null).alias(null).balance(12L))
                 .persist()
                 .toEntityId();
     }

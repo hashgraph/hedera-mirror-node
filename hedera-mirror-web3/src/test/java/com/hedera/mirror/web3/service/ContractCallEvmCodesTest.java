@@ -51,7 +51,7 @@ import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.AbiTypes;
@@ -65,7 +65,7 @@ class ContractCallEvmCodesTest extends AbstractContractCallServiceTest {
 
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    @SpyBean
+    @MockitoSpyBean
     private ContractExecutionService contractExecutionService;
 
     @Test

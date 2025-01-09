@@ -22,9 +22,11 @@ import java.util.Collections;
 import java.util.Set;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 @Data
 @ConfigurationProperties("hedera.mirror.importer.parser.record.sidecar")
+@Validated
 public class SidecarProperties {
 
     private boolean enabled = false;

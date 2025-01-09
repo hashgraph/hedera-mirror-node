@@ -35,7 +35,6 @@ extra.apply {
     set("nodeJsVersion", "18.20.5")
     set("protobufVersion", "3.25.5")
     set("reactorGrpcVersion", "1.2.4")
-    set("tomcat.version", "10.1.34") // Temporary until next Spring Boot version
     set("vertxVersion", "4.5.11")
     set("tuweniVersion", "2.3.1")
 }
@@ -69,7 +68,6 @@ dependencies {
         api("com.hedera.hashgraph:sdk:2.46.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.10")
-        api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.18.0")
@@ -100,7 +98,7 @@ dependencies {
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.8")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.8.0")
-        api("org.springframework.cloud:spring-cloud-dependencies:2023.0.4")
+        api("org.springframework.cloud:spring-cloud-dependencies:2024.0.0")
         api("org.testcontainers:junit-jupiter:1.20.4")
         api("org.mockito:mockito-inline:5.2.0")
         api("software.amazon.awssdk:bom:2.29.45")
