@@ -104,21 +104,49 @@ public class BlockFile implements StreamFile<BlockItem> {
         return StreamType.BLOCK;
     }
 
+    public static BlockFileBuilder builder() {
+        return new BlockFileBuilder() {
+            @Override
+            public BlockFile build() {
+                prebuild();
+                return super.build();
+            }
+        };
+    }
+
     public static class BlockFileBuilder {
 
-        public void addItem(BlockItem blockItem) {
-            if (items$value == null) {
+        public BlockFileBuilder addItem(BlockItem blockItem) {
+            if (this.items$value == null) {
+                items$set = true;
                 items$value = new ArrayList<>();
             }
 
             items$value.add(blockItem);
+            return this;
         }
 
-        public void startNewRound(long roundNumber) {
-            roundEnd = roundNumber;
-
+        public BlockFileBuilder onNewRound(long roundNumber) {
             if (roundStart == null) {
                 roundStart = roundNumber;
+            }
+
+            roundEnd = roundNumber;
+            return this;
+        }
+
+        public BlockFileBuilder onNewTransaction(long consensusTimestamp) {
+            if (consensusStart == null) {
+                consensusStart = consensusTimestamp;
+            }
+
+            consensusEnd = consensusTimestamp;
+            return this;
+        }
+
+        void prebuild() {
+            if (count == null) {
+                count = items$value != null ? (long) items$value.size() : 0;
             }
         }
     }

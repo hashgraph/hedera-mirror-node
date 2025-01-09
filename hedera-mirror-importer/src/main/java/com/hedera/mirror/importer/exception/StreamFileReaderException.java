@@ -16,17 +16,10 @@
 
 package com.hedera.mirror.importer.exception;
 
-import java.io.Serial;
-
 @SuppressWarnings("java:S110")
 public class StreamFileReaderException extends ImporterException {
 
-    @Serial
     private static final long serialVersionUID = 2533328395713171797L;
-
-    public StreamFileReaderException(String message) {
-        super(message);
-    }
 
     public StreamFileReaderException(Throwable throwable) {
         super(throwable);

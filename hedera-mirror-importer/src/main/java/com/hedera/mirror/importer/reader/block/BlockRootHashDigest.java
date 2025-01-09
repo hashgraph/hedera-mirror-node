@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.reader.block;
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 
 import com.hedera.hapi.block.stream.protoc.BlockItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -27,7 +28,6 @@ import java.util.Objects;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.apache.commons.codec.binary.Hex;
 
 /**
  * Calculates a block's root hash per the algorithm defined in HIP-1056. Note both the input merkle tree and the output
@@ -77,7 +77,7 @@ class BlockRootHashDigest {
         byte[] rootHash = getRootHash(leaves);
         finalized = true;
 
-        return Hex.encodeHexString(rootHash);
+        return DomainUtils.bytesToHex(rootHash);
     }
 
     public void setPreviousHash(byte[] previousHash) {
@@ -122,11 +122,12 @@ class BlockRootHashDigest {
         // Iteratively calculate the parent node hash as h(left | right) to get the root hash in bottom-up fashion
         while (size > 1) {
             for (int i = 0; i < size; i += 2) {
+                var digest = createMessageDigest();
                 byte[] left = leaves.get(i);
                 byte[] right = leaves.get(i + 1);
-                var digest = createMessageDigest();
                 digest.update(left);
-                leaves.set(i >> 1, digest.digest(right));
+                digest.update(right);
+                leaves.set(i >> 1, digest.digest());
             }
 
             size >>= 1;
