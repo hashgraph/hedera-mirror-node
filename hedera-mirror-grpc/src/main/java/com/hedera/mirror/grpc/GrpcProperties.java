@@ -17,6 +17,7 @@
 package com.hedera.mirror.grpc;
 
 import com.hedera.mirror.grpc.config.NettyProperties;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
@@ -38,5 +39,6 @@ public class GrpcProperties {
     private int entityCacheSize = 50_000;
 
     @NotNull
+    @Valid
     private NettyProperties netty = new NettyProperties();
 }

@@ -36,7 +36,6 @@ import org.springframework.test.context.jdbc.Sql;
 @SpringBootTest
 public abstract class CommonIntegrationTest {
 
-    public static final String REDIS_IMAGE = "redis:6-alpine";
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
     @Resource

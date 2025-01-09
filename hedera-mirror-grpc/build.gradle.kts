@@ -51,7 +51,6 @@ dependencies {
     )
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
-    testImplementation("com.redis.testcontainers:testcontainers-redis-junit-jupiter")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.flywaydb:flyway-database-postgresql")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")

@@ -33,7 +33,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Profiles;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -41,9 +40,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.StreamUtils;
 
 @ContextConfiguration(initializers = AddBlockColumnsMigrationTest.Initializer.class)
+@DisablePartitionMaintenance
 @DisableRepeatableSqlMigration
 @RequiredArgsConstructor
-@Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
 public class AddBlockColumnsMigrationTest extends RecordFileMigrationTest {
 

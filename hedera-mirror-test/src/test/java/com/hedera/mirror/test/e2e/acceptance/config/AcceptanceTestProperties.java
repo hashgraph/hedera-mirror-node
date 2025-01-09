@@ -20,6 +20,7 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 import jakarta.inject.Named;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -76,6 +77,7 @@ public class AcceptanceTestProperties {
     private HederaNetwork network = HederaNetwork.TESTNET;
 
     @NotNull
+    @Valid
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
     @NotNull

@@ -101,9 +101,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
@@ -126,31 +126,31 @@ class OpcodesControllerTest {
     @Resource
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private ContractDebugService contractDebugService;
 
-    @MockBean(name = "rateLimitBucket")
+    @MockitoBean(name = "rateLimitBucket")
     private Bucket rateLimitBucket;
 
-    @MockBean
+    @MockitoBean
     private TransactionRepository transactionRepository;
 
-    @MockBean
+    @MockitoBean
     private EthereumTransactionRepository ethereumTransactionRepository;
 
-    @MockBean
+    @MockitoBean
     private ContractTransactionHashRepository contractTransactionHashRepository;
 
-    @MockBean
+    @MockitoBean
     private ContractResultRepository contractResultRepository;
 
-    @MockBean
+    @MockitoBean
     private RecordFileRepository recordFileRepository;
 
-    @MockBean
+    @MockitoBean
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
-    @MockBean
+    @MockitoBean
     private Web3Properties web3Properties;
 
     @Captor
