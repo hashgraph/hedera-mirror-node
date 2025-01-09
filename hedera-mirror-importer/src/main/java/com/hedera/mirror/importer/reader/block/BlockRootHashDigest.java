@@ -40,8 +40,6 @@ import lombok.experimental.NonFinal;
 class BlockRootHashDigest {
 
     private static final byte[] EMPTY_HASH = createMessageDigest().digest(new byte[0]);
-    private static final String PREVIOUSHASH = "previousHash";
-    private static final String STARTOFBLOCKSTATEHASH = "startOfBlockStateHash";
 
     @NonFinal
     private boolean finalized;
@@ -69,8 +67,8 @@ class BlockRootHashDigest {
             throw new IllegalStateException("Block root hash is already calculated");
         }
 
-        validateHash(previousHash, PREVIOUSHASH);
-        validateHash(startOfBlockStateHash, STARTOFBLOCKSTATEHASH);
+        validateHash(previousHash, "previousHash");
+        validateHash(startOfBlockStateHash, "startOfBlockStateHash");
 
         List<byte[]> leaves = new ArrayList<>();
         leaves.add(previousHash);
@@ -85,12 +83,12 @@ class BlockRootHashDigest {
     }
 
     public void setPreviousHash(byte[] previousHash) {
-        validateHash(previousHash, PREVIOUSHASH);
+        validateHash(previousHash, "previousHash");
         this.previousHash = previousHash;
     }
 
     public void setStartOfBlockStateHash(byte[] startOfBlockStateHash) {
-        validateHash(startOfBlockStateHash, STARTOFBLOCKSTATEHASH);
+        validateHash(startOfBlockStateHash, "startOfBlockStateHash");
         this.startOfBlockStateHash = startOfBlockStateHash;
     }
 

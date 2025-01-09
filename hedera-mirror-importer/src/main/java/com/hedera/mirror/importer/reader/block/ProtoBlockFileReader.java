@@ -242,7 +242,9 @@ public class ProtoBlockFileReader implements BlockFileReader {
                 case EVENT_HEADER, EVENT_TRANSACTION -> blockRootHashDigest.addInputBlockItem(blockItem);
                 case STATE_CHANGES, TRANSACTION_OUTPUT, TRANSACTION_RESULT -> blockRootHashDigest.addOutputBlockItem(
                         blockItem);
-                default -> {}
+                default -> {
+                    // other block items aren't considered input / output
+                }
             }
 
             return blockItem;
