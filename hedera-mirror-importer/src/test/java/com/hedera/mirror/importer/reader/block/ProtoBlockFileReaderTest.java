@@ -199,48 +199,23 @@ class ProtoBlockFileReaderTest {
     private static Stream<Arguments> readTestArgumentsProvider() {
         List<Arguments> argumentsList = new ArrayList<>();
 
-        String filename = "000000000000000000000000000006695974.blk.gz";
-        long index = 6695974;
+        String filename = "000000000000000000000000000007858853.blk.gz";
+        long index = 7858853;
         long round = index + 1;
         var file = new ClassPathResource("data/blockstreams/" + filename).getFile();
         var streamFileData = StreamFileData.from(file);
         var expected = BlockFile.builder()
                 .bytes(streamFileData.getBytes())
-                .consensusStart(1735801234600692000L)
-                .consensusEnd(1735801234818679000L)
-                .count(8L)
+                .consensusStart(1736197012160646000L)
+                .consensusEnd(1736197012160646001L)
+                .count(2L)
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .hash(
-                        "3e8a2124a28047f981d5bc1e090b6700468687914c455af171944ecf0fe1dd585709a3c81ea9d100840fd8d99bd92e82")
+                        "581caa8ab1fad535a0fac97957c5c0cf44c528ee55724353b4bab9093083fda32429f73248bc3128e329bbdfa1967d20")
                 .loadStart(streamFileData.getStreamFilename().getTimestamp())
                 .name(filename)
                 .previousHash(
-                        "298df43244f186aedec52d1b657d1f894f876a39b86681c307ad3a13b8f43efd777317cb0aed276f23a9d2f24943792c")
-                .roundStart(round)
-                .roundEnd(round)
-                .size(streamFileData.getBytes().length)
-                .version(7)
-                .build();
-        argumentsList.add(Arguments.of(filename, streamFileData, expected, index));
-
-        filename = "000000000000000000000000000006695975.blk.gz";
-        index = 6695975;
-        round = index + 1;
-        file = new ClassPathResource("data/blockstreams/" + filename).getFile();
-        streamFileData = StreamFileData.from(file);
-        // Verifies the calculated hash of the previous block matches the previous hash in this (the next) block file
-        String previousHash = expected.getHash();
-        expected = BlockFile.builder()
-                .bytes(streamFileData.getBytes())
-                .consensusStart(1735801234934964000L)
-                .consensusEnd(1735801235039911000L)
-                .count(3L)
-                .digestAlgorithm(DigestAlgorithm.SHA_384)
-                .hash(
-                        "6235d450d1c081dada9a3deb6fed46641eb0936e79b437356262f35e2cc4a886256263b782091381ed7a4199a60d16ac")
-                .loadStart(streamFileData.getStreamFilename().getTimestamp())
-                .name(filename)
-                .previousHash(previousHash)
+                        "ba1a0222099d542425f6915053b7f15e3b75fd680b0d84ca6d41fbffcd38f8fb5ac6ab6a235e69f7ae23118d1996c7f1")
                 .roundStart(round)
                 .roundEnd(round)
                 .size(streamFileData.getBytes().length)
@@ -250,11 +225,13 @@ class ProtoBlockFileReaderTest {
 
         // A block without event transactions, note consensusStart and consensusEnd are both null due to the bug that
         // BlockHeader.first_transaction_consensus_time is null
-        filename = "000000000000000000000000000007647866.blk.gz";
-        index = 7647866;
+        filename = "000000000000000000000000000007858854.blk.gz";
+        index = 7858854;
         round = index + 1;
         file = new ClassPathResource("data/blockstreams/" + filename).getFile();
         streamFileData = StreamFileData.from(file);
+        // Verifies the calculated hash of the previous block matches the previous hash in this (the next) block file
+        String previousHash = expected.getHash();
         expected = BlockFile.builder()
                 .bytes(streamFileData.getBytes())
                 .consensusStart(null)
@@ -262,11 +239,10 @@ class ProtoBlockFileReaderTest {
                 .count(0L)
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .hash(
-                        "f104c4ce55bb87351814a19fbb2bea70cf2597eb6e3918bbc1eed50de3c51e0d83ebefdbb9ddde200811df067882d346")
+                        "ef32f163bee6553087002310467b970b1de2c8cbec2eab46f0d0c58ff34043d080f43c9e3c759956fda19fc9f5a5966b")
                 .loadStart(streamFileData.getStreamFilename().getTimestamp())
                 .name(filename)
-                .previousHash(
-                        "996275ed095bfaae19d28320d275bcb13efa846bdd17a8546f3355e4ab6f387fcb81a00e8d02c890d789cbaa440034d6")
+                .previousHash(previousHash)
                 .roundStart(round)
                 .roundEnd(round)
                 .size(streamFileData.getBytes().length)

@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 
@@ -92,7 +91,6 @@ class BlockRootHashDigest {
         this.startOfBlockStateHash = startOfBlockStateHash;
     }
 
-    @SneakyThrows
     private static MessageDigest createMessageDigest() {
         try {
             return MessageDigest.getInstance(SHA_384.getName());
