@@ -40,7 +40,7 @@ class FileDataBuilder extends AbstractEntityBuilder<FileData, FileData.FileDataB
     }
 
     @Override
-    protected FileData.FileDataBuilder getEntityBuilder() {
+    protected FileData.FileDataBuilder getEntityBuilder(SpecBuilderContext builderContext) {
         return FileData.builder().transactionType(17);
     }
 

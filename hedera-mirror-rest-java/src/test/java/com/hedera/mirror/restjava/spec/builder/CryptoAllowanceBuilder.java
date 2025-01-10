@@ -35,7 +35,7 @@ class CryptoAllowanceBuilder
     }
 
     @Override
-    protected CryptoAllowance.CryptoAllowanceBuilder<?, ?> getEntityBuilder() {
+    protected CryptoAllowance.CryptoAllowanceBuilder<?, ?> getEntityBuilder(SpecBuilderContext builderContext) {
         return CryptoAllowance.builder()
                 .amount(0L)
                 .amountGranted(0L)

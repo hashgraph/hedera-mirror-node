@@ -28,20 +28,27 @@ import com.hedera.mirror.restjava.spec.config.SpecTestConfig;
 import com.hedera.mirror.restjava.spec.model.RestSpec;
 import com.hedera.mirror.restjava.spec.model.RestSpecNormalized;
 import com.hedera.mirror.restjava.spec.model.SpecTestNormalized;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.sql.DataSource;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.runner.RunWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletRegistrationBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatusCode;
@@ -56,47 +63,38 @@ import org.testcontainers.containers.GenericContainer;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class RestSpecTest extends RestJavaIntegrationTest {
-
+    private static final Pattern INCLUDED_SPEC_DIRS = Pattern.compile(
+            "^(accounts|accounts/\\{id}/allowances.*|\\{id}/rewards.*|blocks.*|contracts|network|topics/\\{id}/messages)$");
+    private static final Pattern RESPONSE_HEADER_FILE = Pattern.compile("^responseHeaders\\.json$");
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
     private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");
-    private static final List<Path> SELECTED_SPECS = List.of(
-            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/alias-not-found.json"),
-            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/no-params.json"),
-            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/all-params.json"),
-            REST_BASE_PATH.resolve("accounts/{id}/allowances/crypto/all-params.json"),
-            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/empty.json"),
-            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/no-params.json"),
-            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/specific-spender-id.json"),
-            REST_BASE_PATH.resolve("accounts/{id}/allowances/tokens/spender-id-range-token-id-upper.json"),
-            REST_BASE_PATH.resolve("accounts/{id}/rewards/no-params.json"),
-            REST_BASE_PATH.resolve("accounts/{id}/rewards/no-rewards.json"),
-            REST_BASE_PATH.resolve("accounts/{id}/rewards/specific-timestamp.json"),
-            REST_BASE_PATH.resolve("accounts/specific-id.json"),
-            REST_BASE_PATH.resolve("blocks/no-records.json"),
-            REST_BASE_PATH.resolve("blocks/timestamp-param.json"),
-            REST_BASE_PATH.resolve("blocks/all-params-together.json"),
-            REST_BASE_PATH.resolve("blocks/limit-param.json"),
-            REST_BASE_PATH.resolve("blocks/no-records.json"),
-            REST_BASE_PATH.resolve("blocks/{id}/hash-64.json"),
-            REST_BASE_PATH.resolve("blocks/{id}/hash-96.json"),
-            REST_BASE_PATH.resolve("network/exchangerate/no-params.json"),
-            REST_BASE_PATH.resolve("network/exchangerate/timestamp-upper-bound.json"),
-            // Disable the following test cases since it fails in PR #9973 due to the fact that the PR fixes bug in
-            // network fees endpoint however the test class runs the hedera-mirror-rest:latest image without the fix
-            // REST_BASE_PATH.resolve("network/fees/no-params.json"),
-            // REST_BASE_PATH.resolve("network/fees/order.json"),
-            REST_BASE_PATH.resolve("network/fees/timestamp-not-found.json"),
-            REST_BASE_PATH.resolve("network/stake/no-params.json"),
-            REST_BASE_PATH.resolve("topics/{id}/messages/all-params.json"),
-            REST_BASE_PATH.resolve("topics/{id}/messages/encoding.json"),
-            REST_BASE_PATH.resolve("topics/{id}/messages/no-params.json"),
-            REST_BASE_PATH.resolve("topics/{id}/messages/order.json"));
 
+    private static final IOFileFilter SPEC_FILE_FILTER = new IOFileFilter() {
+        @Override
+        public boolean accept(File file) {
+            var directory = file.isDirectory() ? file : file.getParentFile();
+            var dirName = directory.getPath().replace(REST_BASE_PATH + "/", "");
+            return INCLUDED_SPEC_DIRS.matcher(dirName).matches()
+                    && !RESPONSE_HEADER_FILE.matcher(file.getName()).matches();
+        }
+
+        @Override
+        public boolean accept(File dir, String name) {
+            return accept(dir);
+        }
+    };
+    private static final List<Path> SELECTED_SPECS =
+            FileUtils.listFiles(REST_BASE_PATH.toFile(), SPEC_FILE_FILTER, TrueFileFilter.INSTANCE).stream()
+                    .map(File::toPath)
+                    .toList();
     private final ResourceDatabasePopulator databaseCleaner;
     private final DataSource dataSource;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
     private final SpecDomainBuilder specDomainBuilder;
+
+    @Autowired
+    private DispatcherServletRegistrationBean dispatcherServletRegistration;
 
     RestSpecTest(
             @Value("classpath:cleanup.sql") Resource cleanupSqlResource,
@@ -125,6 +123,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
         for (var specFilePath : specsToTest()) {
             RestSpecNormalized normalizedSpec;
             try {
+                log.info("Parsing spec file: {}", specFilePath);
                 normalizedSpec = RestSpecNormalized.from(objectMapper.readValue(specFilePath.toFile(), RestSpec.class));
             } catch (IOException e) {
                 dynamicContainers.add(dynamicContainer(
@@ -132,6 +131,12 @@ public class RestSpecTest extends RestJavaIntegrationTest {
                         Stream.of(dynamicTest("Unable to parse spec file", () -> {
                             throw e;
                         }))));
+                continue;
+            }
+
+            // Skip tests that require rest application config
+            if (normalizedSpec.setup().config() != null) {
+                log.info("Skipping spec file: {} (setup not yet supported)", specFilePath);
                 continue;
             }
 
@@ -174,6 +179,9 @@ public class RestSpecTest extends RestJavaIntegrationTest {
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, (req, res) -> {
                     // Override default handling of 4xx errors, and proceed to evaluate the response.
+                })
+                .onStatus(HttpStatusCode::is5xxServerError, (req, res) -> {
+                    // Override default handling of 5xx errors, and proceed to evaluate the response.
                 })
                 .toEntity(String.class);
 

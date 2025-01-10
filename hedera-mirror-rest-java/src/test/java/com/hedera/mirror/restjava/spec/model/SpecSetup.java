@@ -21,12 +21,14 @@ import java.util.List;
 import java.util.Map;
 
 public record SpecSetup(
-        Map<String, String> features,
+        Map<String, Object> config,
         List<Map<String, Object>> accounts,
         List<Map<String, Object>> contracts,
         List<Map<String, Object>> cryptoAllowances,
         @JsonProperty("cryptotransfers") List<Map<String, Object>> cryptoTransfers,
         List<Map<String, Object>> entities,
+        List<Map<String, Object>> entityStakes,
+        Map<String, String> features,
         @JsonProperty("filedata") List<Map<String, Object>> fileData,
         @JsonProperty("networkstakes") List<Map<String, Object>> networkStakes,
         List<Map<String, Object>> nfts,

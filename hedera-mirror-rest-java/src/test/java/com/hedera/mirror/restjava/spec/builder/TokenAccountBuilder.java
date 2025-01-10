@@ -42,7 +42,7 @@ class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount, TokenAccou
     }
 
     @Override
-    protected TokenAccount.TokenAccountBuilder<?, ?> getEntityBuilder() {
+    protected TokenAccount.TokenAccountBuilder<?, ?> getEntityBuilder(SpecBuilderContext builderContext) {
         return TokenAccount.builder()
                 .accountId(0L)
                 .associated(Boolean.TRUE)

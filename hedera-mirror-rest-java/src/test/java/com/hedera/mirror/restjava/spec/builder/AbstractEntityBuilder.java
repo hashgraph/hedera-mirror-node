@@ -17,6 +17,7 @@
 package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.annotation.Resource;
@@ -25,15 +26,20 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.transaction.support.TransactionOperations;
@@ -42,20 +48,63 @@ import org.springframework.util.CollectionUtils;
 @CustomLog
 abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
 
+    protected static final Function<Object, Object> ENTITY_ID_TO_LONG_CONVERTER = value -> value == null
+            ? 0L
+            : value instanceof String valueStr ? EntityId.of(valueStr).getId() : (long) value;
+
+    protected static final Function<Object, Object> LONG_TO_ENTITY_ID_CONVERTER =
+            value -> value == null ? null : EntityId.of(Long.parseLong(value.toString()));
+
+    private static final Pattern RANGE_PATTERN = Pattern.compile("^[(|\\[](\\d*),\\s*(\\d*)[)|\\]]$");
+    protected static final Function<Object, Object> STRING_TO_RANGE_CONVERTER = value -> {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String valueString) {
+            Matcher m = RANGE_PATTERN.matcher(valueString);
+            if (m.matches()) {
+                var length = valueString.length();
+
+                var lowerBound = StringUtils.isEmpty(m.group(1)) ? null : Long.parseLong(m.group(1));
+                var upperBound = StringUtils.isEmpty(m.group(2)) ? null : Long.parseLong(m.group(2));
+
+                if (lowerBound == null && upperBound == null) {
+                    throw new IllegalArgumentException("Range " + valueString + " is not valid.");
+                }
+
+                if (upperBound == null) {
+                    return Range.atLeast(lowerBound);
+                }
+
+                if (lowerBound == null) {
+                    return Range.atMost(upperBound);
+                }
+
+                if (valueString.charAt(0) == '(') {
+                    if (valueString.charAt(length - 1) == ')') {
+                        return Range.open(lowerBound, upperBound);
+                    }
+                    return Range.openClosed(lowerBound, upperBound);
+                } else {
+                    if (valueString.charAt(length - 1) == ')') {
+                        return Range.closedOpen(lowerBound, upperBound);
+                    }
+                    return Range.closed(lowerBound, upperBound);
+                }
+            }
+        }
+
+        return value;
+    };
+
     private static final Base32 BASE32 = new Base32();
-    private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
-    private static final Map<Class<?>, Map<String, Method>> methodCache = new ConcurrentHashMap<>();
 
     /*
      * Common handy spec attribute value converter functions to be used by subclasses.
      */
     protected static final Function<Object, Object> BASE32_CONVERTER =
             value -> value == null ? null : BASE32.decode(value.toString());
-
-    protected static final Function<Object, Object> ENTITY_ID_TO_LONG_CONVERTER = value -> value == null
-            ? 0L
-            : value instanceof String valueStr ? EntityId.of(valueStr).getId() : (long) value;
-
+    private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
     protected static final Function<Object, Object> HEX_OR_BASE64_CONVERTER = value -> {
         if (value instanceof String valueStr) {
             return HEX_STRING_PATTERN.matcher(valueStr).matches()
@@ -63,22 +112,29 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
                             .toArray()
                     : Base64.getDecoder().decode(valueStr);
         }
+
+        if (value instanceof Collection<?> valueCollection) {
+            return ArrayUtils.toPrimitive(valueCollection.stream()
+                    .map(item -> ((Integer) item).byteValue())
+                    .toArray(Byte[]::new));
+        }
+
         return value;
     };
+    private static final Map<Class<?>, Map<String, Method>> methodCache = new ConcurrentHashMap<>();
+    // Map a synthetic spec attribute name to another attribute name convertable to a builder method name
+    protected final Map<String, String> attributeNameMap;
+    // Map a builder method by name to a specific attribute value converter function
+    protected final Map<String, Function<Object, Object>> methodParameterConverters;
+
+    @Resource
+    protected ConversionService conversionService;
 
     @Resource
     private EntityManager entityManager;
 
     @Resource
     private TransactionOperations transactionOperations;
-
-    @Resource
-    protected ConversionService conversionService;
-
-    // Map a synthetic spec attribute name to another attribute name convertable to a builder method name
-    protected final Map<String, String> attributeNameMap;
-    // Map a builder method by name to a specific attribute value converter function
-    protected final Map<String, Function<Object, Object>> methodParameterConverters;
 
     protected AbstractEntityBuilder() {
         this(Map.of());
@@ -98,9 +154,10 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
      * Return the required entity builder instance configured with all initial default values which may be
      * overridden based on further customization using the spec JSON setup.
      *
+     * @param builderContext carries state information about the entity being built
      * @return entity builder
      */
-    protected abstract B getEntityBuilder();
+    protected abstract B getEntityBuilder(SpecBuilderContext builderContext);
 
     /**
      * Perform any post customization processing required and produce a final DB entity to be persisted.
@@ -119,14 +176,21 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
      */
     protected abstract Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup);
 
+    protected boolean isHistory(Map<String, Object> entityAttributes) {
+        return Optional.ofNullable(entityAttributes.get("timestamp_range"))
+                .map(range -> !range.toString().endsWith(",)"))
+                .orElse(false);
+    }
+
     @Override
     public void customizeAndPersistEntities(SpecSetup specSetup) {
         var specEntities = getSpecEntitiesSupplier(specSetup).get();
         if (!CollectionUtils.isEmpty(specEntities)) {
             specEntities.forEach(specEntity -> transactionOperations.executeWithoutResult(t -> {
-                var entityBuilder = getEntityBuilder();
+                var entityBuilder = getEntityBuilder(new SpecBuilderContext(isHistory(specEntity)));
                 customizeWithSpec(entityBuilder, specEntity);
-                entityManager.persist(getFinalEntity(entityBuilder, specEntity));
+                var entity = getFinalEntity(entityBuilder, specEntity);
+                entityManager.persist(entity);
             }));
         }
     }

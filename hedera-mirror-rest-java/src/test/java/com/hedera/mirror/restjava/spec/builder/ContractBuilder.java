@@ -16,39 +16,39 @@
 
 package com.hedera.mirror.restjava.spec.builder;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
-class StakingRewardTransferBuilder
-        extends AbstractEntityBuilder<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder> {
-
+public class ContractBuilder extends AbstractEntityBuilder<Contract, Contract.ContractBuilder<?, ?>> {
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS =
-            Map.of("accountId", ENTITY_ID_TO_LONG_CONVERTER);
+            Map.of("fileId", LONG_TO_ENTITY_ID_CONVERTER);
+    private static final Map<String, String> ATTRIBUTE_NAME_MAP = Map.of("num", "id");
 
-    StakingRewardTransferBuilder() {
-        super(METHOD_PARAMETER_CONVERTERS);
+    public ContractBuilder() {
+        super(METHOD_PARAMETER_CONVERTERS, ATTRIBUTE_NAME_MAP);
+    }
+
+    @Override
+    protected Contract.ContractBuilder<?, ?> getEntityBuilder(SpecBuilderContext builderContext) {
+        return Contract.builder();
     }
 
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
-        return specSetup::stakingRewardTransfers;
+        return () -> Optional.ofNullable(specSetup.contracts()).orElse(List.of()).stream()
+                .filter(contract -> !isHistory(contract))
+                .toList();
     }
 
     @Override
-    protected StakingRewardTransfer.StakingRewardTransferBuilder getEntityBuilder(SpecBuilderContext builderContext) {
-        return StakingRewardTransfer.builder().accountId(1001L).amount(100L).payerAccountId(EntityId.of(950L));
-    }
-
-    @Override
-    protected StakingRewardTransfer getFinalEntity(
-            StakingRewardTransfer.StakingRewardTransferBuilder builder, Map<String, Object> account) {
+    protected Contract getFinalEntity(Contract.ContractBuilder<?, ?> builder, Map<String, Object> entityAttributes) {
         return builder.build();
     }
 }
