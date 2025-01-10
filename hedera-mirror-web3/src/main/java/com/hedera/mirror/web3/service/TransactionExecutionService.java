@@ -245,7 +245,6 @@ public class TransactionExecutionService {
                         .functionParameters(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
                                 params.getCallData().toArrayUnsafe()))
                         .gas(estimatedGas)
-                        .amount(params.getValue())
                         .build())
                 .build();
     }
