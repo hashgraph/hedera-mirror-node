@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.state.Utils.isMirror;
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 
@@ -36,7 +37,9 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.state.AliasesReadableKVState;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -45,9 +48,10 @@ import com.hedera.node.app.workflows.standalone.TransactionExecutor;
 import com.hedera.node.app.workflows.standalone.TransactionExecutors;
 import com.hedera.node.app.workflows.standalone.TransactionExecutors.TracerBinding;
 import com.hedera.node.config.data.EntitiesConfig;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter.MeterProvider;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.time.Instant;
@@ -55,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
@@ -81,7 +86,8 @@ public class TransactionExecutionService {
         this.opcodeTracer = opcodeTracer;
     }
 
-    public HederaEvmTransactionProcessingResult execute(final CallServiceParameters params, final long estimatedGas) {
+    public HederaEvmTransactionProcessingResult execute(
+            final CallServiceParameters params, final long estimatedGas, final MeterProvider<Counter> gasUsedCounter) {
         final var isContractCreate = params.getReceiver().isZero();
         final var maxLifetime =
                 DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
@@ -89,7 +95,7 @@ public class TransactionExecutionService {
                 ExecutorFactory.newExecutor(mirrorNodeState, mirrorNodeEvmProperties.getTransactionProperties(), null);
 
         TransactionBody transactionBody;
-        HederaEvmTransactionProcessingResult result;
+        HederaEvmTransactionProcessingResult result = null;
         if (isContractCreate) {
             if (params.getCallData().size() < INITCODE_SIZE_KB) {
                 transactionBody = buildContractCreateTransactionBodyWithInitBytecode(params, estimatedGas, maxLifetime);
@@ -123,9 +129,18 @@ public class TransactionExecutionService {
         if (transactionRecord.receiptOrThrow().status() == com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS) {
             result = buildSuccessResult(isContractCreate, transactionRecord, params);
         } else {
-            result = buildFailedResult(transactionRecord, isContractCreate);
+            handleFailedResult(transactionRecord, isContractCreate, gasUsedCounter);
         }
         return result;
+    }
+
+    // Duplicated code as in ContractCallService class - it will be removed from there when switch to the modularized
+    // implementation entirely.
+    private void updateErrorGasUsedMetric(
+            final MeterProvider<Counter> gasUsedCounter, final long gasUsed, final int iterations) {
+        gasUsedCounter
+                .withTags("type", CallType.ERROR.toString(), "iteration", String.valueOf(iterations))
+                .increment(gasUsed);
     }
 
     private ContractFunctionResult getTransactionResult(
@@ -150,30 +165,30 @@ public class TransactionExecutionService {
                 params.getReceiver());
     }
 
-    private HederaEvmTransactionProcessingResult buildFailedResult(
-            final TransactionRecord transactionRecord, final boolean isContractCreate) {
-        var result = getTransactionResult(transactionRecord, isContractCreate);
-        var errorMessage = getErrorMessage(result);
-        var decodedRevertReason = getDecodedErrorMessage(result);
-
-        return HederaEvmTransactionProcessingResult.failed(
-                result.gasUsed(), 0L, 0L, errorMessage, decodedRevertReason, Optional.empty());
+    private void handleFailedResult(
+            final TransactionRecord transactionRecord,
+            final boolean isContractCreate,
+            final MeterProvider<Counter> gasUsedCounter)
+            throws MirrorEvmTransactionException {
+        var result =
+                isContractCreate ? transactionRecord.contractCreateResult() : transactionRecord.contractCallResult();
+        var status = transactionRecord.receiptOrThrow().status();
+        if (result == null) {
+            // No result - the call did not reach the EVM and probably failed at pre-checks. No metric to update in this
+            // case.
+            throw new MirrorEvmTransactionException(status.protoName(), StringUtils.EMPTY, StringUtils.EMPTY);
+        } else {
+            var errorMessage = getErrorMessage(result).orElse(Bytes.EMPTY);
+            var detail = maybeDecodeSolidityErrorStringToReadableMessage(errorMessage);
+            updateErrorGasUsedMetric(gasUsedCounter, result.gasUsed(), 1);
+            throw new MirrorEvmTransactionException(status.protoName(), detail, errorMessage.toHexString());
+        }
     }
 
     private Optional<Bytes> getErrorMessage(final ContractFunctionResult result) {
         return result.errorMessage().startsWith(HEX_PREFIX)
                 ? Optional.of(Bytes.fromHexString(result.errorMessage()))
-                : Optional.empty();
-    }
-
-    private Optional<ResponseCodeEnum> getDecodedErrorMessage(final ContractFunctionResult result) {
-        try {
-            return Optional.of(ResponseCodeEnum.valueOf(result.errorMessage()));
-        } catch (IllegalArgumentException iae) {
-            // This is expected in some cases. No additional action required.
-            log.debug("Error message could not be decoded.", iae);
-        }
-        return Optional.empty();
+                : Optional.empty(); // If it doesn't start with 0x, the message is already decoded and readable.
     }
 
     private TransactionBody.Builder defaultTransactionBodyBuilder(final CallServiceParameters params) {
