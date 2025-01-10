@@ -104,10 +104,6 @@ public class ProtoBlockFileReader implements BlockFileReader {
 
         var blockFileBuilder = context.getBlockFile();
         var blockHeader = blockItem.getBlockHeader();
-        var previousHash = DomainUtils.toBytes(blockHeader.getPreviousBlockHash());
-        blockFileBuilder.blockHeader(blockHeader);
-        blockFileBuilder.previousHash(DomainUtils.bytesToHex(previousHash));
-        context.getBlockRootHashDigest().setPreviousHash(previousHash);
 
         if (blockHeader.getHashAlgorithm().equals(BlockHashAlgorithm.SHA2_384)) {
             blockFileBuilder.digestAlgorithm(DigestAlgorithm.SHA_384);
@@ -116,6 +112,12 @@ public class ProtoBlockFileReader implements BlockFileReader {
                     "Unsupported hash algorithm %s in block header of block file %s",
                     blockHeader.getHashAlgorithm(), context.getFilename()));
         }
+
+        var previousHash = DomainUtils.toBytes(blockHeader.getPreviousBlockHash());
+        blockFileBuilder.blockHeader(blockHeader);
+        blockFileBuilder.index(blockHeader.getNumber());
+        blockFileBuilder.previousHash(DomainUtils.bytesToHex(previousHash));
+        context.getBlockRootHashDigest().setPreviousHash(previousHash);
     }
 
     private void readBlockProof(ReaderContext context) {

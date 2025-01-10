@@ -58,6 +58,8 @@ public class BlockFile implements StreamFile<BlockItem> {
     @ToString.Exclude
     private String hash;
 
+    private Long index;
+
     @Builder.Default
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
@@ -92,11 +94,6 @@ public class BlockFile implements StreamFile<BlockItem> {
     @Override
     public String getFileHash() {
         return null;
-    }
-
-    @Override
-    public Long getIndex() {
-        return blockHeader.getNumber();
     }
 
     @Override

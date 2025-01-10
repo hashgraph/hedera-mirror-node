@@ -56,7 +56,7 @@ class ProtoBlockFileReaderTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("readTestArgumentsProvider")
-    void read(String filename, StreamFileData streamFileData, BlockFile expected, long expectedIndex) {
+    void read(String filename, StreamFileData streamFileData, BlockFile expected) {
         var actual = reader.read(streamFileData);
         assertThat(actual)
                 .usingRecursiveComparison()
@@ -64,7 +64,6 @@ class ProtoBlockFileReaderTest {
                 .isEqualTo(expected);
         assertThat(actual)
                 .returns(expected.getCount(), a -> (long) a.getItems().size())
-                .returns(expectedIndex, BlockFile::getIndex)
                 .satisfies(a -> assertThat(a.getBlockHeader()).isNotNull())
                 .satisfies(a -> assertThat(a.getBlockProof()).isNotNull());
     }
@@ -212,6 +211,7 @@ class ProtoBlockFileReaderTest {
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .hash(
                         "581caa8ab1fad535a0fac97957c5c0cf44c528ee55724353b4bab9093083fda32429f73248bc3128e329bbdfa1967d20")
+                .index(index)
                 .loadStart(streamFileData.getStreamFilename().getTimestamp())
                 .name(filename)
                 .previousHash(
@@ -221,7 +221,7 @@ class ProtoBlockFileReaderTest {
                 .size(streamFileData.getBytes().length)
                 .version(7)
                 .build();
-        argumentsList.add(Arguments.of(filename, streamFileData, expected, index));
+        argumentsList.add(Arguments.of(filename, streamFileData, expected));
 
         // A block without event transactions, note consensusStart and consensusEnd are both null due to the bug that
         // BlockHeader.first_transaction_consensus_time is null
@@ -240,6 +240,7 @@ class ProtoBlockFileReaderTest {
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .hash(
                         "ef32f163bee6553087002310467b970b1de2c8cbec2eab46f0d0c58ff34043d080f43c9e3c759956fda19fc9f5a5966b")
+                .index(index)
                 .loadStart(streamFileData.getStreamFilename().getTimestamp())
                 .name(filename)
                 .previousHash(previousHash)
@@ -248,7 +249,7 @@ class ProtoBlockFileReaderTest {
                 .size(streamFileData.getBytes().length)
                 .version(7)
                 .build();
-        argumentsList.add(Arguments.of(filename, streamFileData, expected, index));
+        argumentsList.add(Arguments.of(filename, streamFileData, expected));
 
         return argumentsList.stream();
     }
