@@ -121,8 +121,8 @@ public class ProtoBlockFileReader implements BlockFileReader {
     }
 
     private void readBlockProof(ReaderContext context) {
-        BlockItem blockItem;
-        if (!context.hasNextBlockItem() || (blockItem = context.readBlockItemFor(BLOCK_PROOF)) == null) {
+        var blockItem = context.readBlockItemFor(BLOCK_PROOF);
+        if (blockItem == null) {
             throw new InvalidStreamFileException("Missing block proof in file " + context.getFilename());
         }
 
@@ -133,14 +133,14 @@ public class ProtoBlockFileReader implements BlockFileReader {
     }
 
     private void readEvents(ReaderContext context) {
-        while (context.hasNextBlockItem() && context.readBlockItemFor(EVENT_HEADER) != null) {
+        while (context.readBlockItemFor(EVENT_HEADER) != null) {
             readEventTransactions(context);
         }
     }
 
     private void readEventTransactions(ReaderContext context) {
         BlockItem protoBlockItem;
-        while (context.hasNextBlockItem() && (protoBlockItem = context.readBlockItemFor(EVENT_TRANSACTION)) != null) {
+        while ((protoBlockItem = context.readBlockItemFor(EVENT_TRANSACTION)) != null) {
             try {
                 var eventTransaction = protoBlockItem.getEventTransaction();
                 var transaction = eventTransaction.hasApplicationTransaction()
@@ -185,7 +185,7 @@ public class ProtoBlockFileReader implements BlockFileReader {
 
     private void readRounds(ReaderContext context) {
         BlockItem blockItem;
-        while (context.hasNextBlockItem() && (blockItem = context.readBlockItemFor(ROUND_HEADER)) != null) {
+        while ((blockItem = context.readBlockItemFor(ROUND_HEADER)) != null) {
             context.getBlockFile().onNewRound(blockItem.getRoundHeader().getRoundNumber());
             readEvents(context);
         }
@@ -199,10 +199,8 @@ public class ProtoBlockFileReader implements BlockFileReader {
      * @param context - The reader context
      */
     private void readTrailingStateChanges(ReaderContext context) {
-        while (context.hasNextBlockItem()) {
-            if (context.readBlockItemFor(STATE_CHANGES) == null) {
-                break;
-            }
+        while (context.readBlockItemFor(STATE_CHANGES) != null) {
+            // read all trailing statechanges
         }
     }
 
@@ -223,10 +221,6 @@ public class ProtoBlockFileReader implements BlockFileReader {
             this.filename = filename;
         }
 
-        public boolean hasNextBlockItem() {
-            return index < blockItems.size();
-        }
-
         /**
          * Returns the current block item if it matches the itemCase, and advances the index. If no match, index is not
          * changed
@@ -234,6 +228,10 @@ public class ProtoBlockFileReader implements BlockFileReader {
          * @return The matching block item, or null
          */
         public BlockItem readBlockItemFor(ItemCase itemCase) {
+            if (index >= blockItems.size()) {
+                return null;
+            }
+
             var blockItem = blockItems.get(index);
             if (blockItem.getItemCase() != itemCase) {
                 return null;
