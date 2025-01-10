@@ -194,7 +194,7 @@ public class BlockStreamVerifier {
     /**
      * Transforms the block file into a record file, verifies the hash chain and then parses it
      */
-    public void notify(@Nonnull StreamFile<?> streamFile);
+    public void notify(@Nonnull BlockFile blockFile);
 
     /**
      * For Block N the hash must be verified to match the previousBlockHash protobuf value provided by Block N+1
