@@ -26,6 +26,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.io.FilenameUtils;
 
 @Named
 @RequiredArgsConstructor
@@ -58,7 +59,6 @@ public class BlockStreamVerifier {
                     .map(r -> BlockFile.builder()
                             .hash(r.getHash())
                             .index(r.getIndex())
-                            .name(r.getName())
                             .build())
                     .or(() -> Optional.of(EMPTY));
             lastBlockFile.compareAndSet(Optional.empty(), last);
@@ -87,8 +87,8 @@ public class BlockStreamVerifier {
 
         try {
             String filename = blockFile.getName();
-            int endIndex = filename.indexOf(".");
-            long actual = Long.parseLong(filename.substring(0, endIndex != -1 ? endIndex : filename.length()));
+            int endIndex = filename.indexOf(FilenameUtils.EXTENSION_SEPARATOR);
+            long actual = Long.parseLong(endIndex != -1 ? filename.substring(0, endIndex) : filename);
             if (actual != blockNumber) {
                 throw new InvalidStreamFileException(String.format(
                         "Block number mismatch, from filename = %d, from content = %d", actual, blockNumber));
