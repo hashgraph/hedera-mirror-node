@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -85,7 +86,7 @@ public class TestWeb3jService implements Web3jService {
     private Address sender = Address.fromHexString("");
     private boolean isEstimateGas = false;
     private String transactionResult;
-    private String estimatedGas;
+    private Supplier<String> estimatedGas;
     private long value = 0L;
     private boolean persistContract = true;
     private byte[] contractRuntime;
@@ -101,6 +102,10 @@ public class TestWeb3jService implements Web3jService {
         this.web3j = Web3j.build(this);
     }
 
+    public String getEstimatedGas() {
+        return estimatedGas != null ? estimatedGas.get() : null;
+    }
+
     public void setSender(String sender) {
         this.sender = Address.fromHexString(sender);
     }
@@ -110,6 +115,7 @@ public class TestWeb3jService implements Web3jService {
     }
 
     public void reset() {
+        this.estimatedGas = null;
         this.isEstimateGas = false;
         this.contractRuntime = null;
         this.persistContract = true;
@@ -210,7 +216,8 @@ public class TestWeb3jService implements Web3jService {
         res.setId(request.getId());
         res.setJsonrpc(request.getJsonrpc());
 
-        transactionResult = estimatedGas = mirrorNodeResult;
+        transactionResult = mirrorNodeResult;
+        estimatedGas = () -> mirrorNodeResult;
         return res;
     }
 
@@ -227,7 +234,7 @@ public class TestWeb3jService implements Web3jService {
             // Then get the estimated gas
             final var serviceParametersForEstimate =
                     serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, blockType);
-            estimatedGas = contractExecutionService.processCall(serviceParametersForEstimate);
+            estimatedGas = () -> contractExecutionService.processCall(serviceParametersForEstimate);
         }
 
         final var ethCall = new EthCall();
