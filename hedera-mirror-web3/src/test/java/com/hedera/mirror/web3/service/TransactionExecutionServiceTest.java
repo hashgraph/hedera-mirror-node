@@ -57,6 +57,7 @@ import java.util.stream.Stream;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -216,6 +217,45 @@ class TransactionExecutionServiceTest {
                     .isInstanceOf(MirrorEvmTransactionException.class)
                     .hasMessageContaining(responseCode.name())
                     .hasFieldOrPropertyWithValue("detail", detail);
+        }
+    }
+
+    @Test
+    void testExecuteContractCallFailureOnPreChecks() {
+        // Given
+        try (MockedStatic<ExecutorFactory> executorFactoryMock = mockStatic(ExecutorFactory.class);
+                MockedStatic<ContractCallContext> contractCallContextMock = mockStatic(ContractCallContext.class)) {
+
+            // Set up mock behaviors for ExecutorFactory
+            executorFactoryMock
+                    .when(() -> ExecutorFactory.newExecutor(any(), any(), any()))
+                    .thenReturn(transactionExecutor);
+
+            // Set up mock behaviors for ContractCallContext
+            contractCallContextMock.when(ContractCallContext::get).thenReturn(contractCallContext);
+
+            // Mock the SingleTransactionRecord and TransactionRecord
+            SingleTransactionRecord singleTransactionRecord = mock(SingleTransactionRecord.class);
+            TransactionRecord transactionRecord = mock(TransactionRecord.class);
+            TransactionReceipt transactionReceipt = mock(TransactionReceipt.class);
+
+            when(transactionReceipt.status()).thenReturn(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+            when(transactionRecord.receiptOrThrow()).thenReturn(transactionReceipt);
+            when(singleTransactionRecord.transactionRecord()).thenReturn(transactionRecord);
+
+            // Mock the executor to return a List with the mocked SingleTransactionRecord
+            when(transactionExecutor.execute(
+                            any(TransactionBody.class), any(Instant.class), any(OperationTracer[].class)))
+                    .thenReturn(List.of(singleTransactionRecord));
+
+            CallServiceParameters callServiceParameters =
+                    buildServiceParams(false, org.apache.tuweni.bytes.Bytes.EMPTY, Address.ZERO);
+
+            // Then
+            assertThatThrownBy(() ->
+                            transactionExecutionService.execute(callServiceParameters, DEFAULT_GAS, gasUsedCounter))
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessageContaining(ResponseCodeEnum.INVALID_ACCOUNT_ID.name());
         }
     }
 
