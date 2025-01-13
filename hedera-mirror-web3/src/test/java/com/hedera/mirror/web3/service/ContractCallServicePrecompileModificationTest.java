@@ -471,7 +471,9 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .treasuryAccountId(owner.toEntityId()))
                 .persist();
 
         tokenAccountPersist(tokenEntity, owner);
