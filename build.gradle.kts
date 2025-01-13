@@ -96,7 +96,7 @@ dependencies {
         api("org.hyperledger.besu:evm:24.3.3")
         api("org.mapstruct:mapstruct:$mapStructVersion")
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
-        api("org.msgpack:jackson-dataformat-msgpack:0.9.8")
+        api("org.msgpack:jackson-dataformat-msgpack:0.9.9")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.8.0")
         api("org.springframework.cloud:spring-cloud-dependencies:2024.0.0")
         api("org.testcontainers:junit-jupiter:1.20.4")
