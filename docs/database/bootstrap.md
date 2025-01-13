@@ -7,6 +7,7 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
+  - [1. Optional High-Performance Decompressors](#1-optional-high-performance-decompressors)
 - [Database Initialization and Data Import](#database-initialization-and-data-import)
   - [1. Download the Required Scripts and Configuration File](#1-download-the-required-scripts-and-configuration-file)
   - [2. Edit the `bootstrap.env` Configuration File](#2-edit-the-bootstrapenv-configuration-file)
@@ -15,9 +16,15 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
     - [3.2. List Available Versions](#32-list-available-versions)
     - [3.3. Select a Version](#33-select-a-version)
     - [3.4. Download the Data](#34-download-the-data)
+      - [Download Full DB Data Files](#download-full-db-data-files)
+      - [Download Minimal DB Data Files](#download-minimal-db-data-files)
   - [4. Check Version Compatibility](#4-check-version-compatibility)
   - [5. Run the Bootstrap Script](#5-run-the-bootstrap-script)
   - [6. Monitoring and Managing the Import Process](#6-monitoring-and-managing-the-import-process)
+    - [6.1. Monitoring the Import Process](#61-monitoring-the-import-process)
+    - [6.2. Stopping the Script](#62-stopping-the-script)
+    - [6.3. Resuming the Import Process](#63-resuming-the-import-process)
+    - [6.4. Start the Mirrornode Importer](#64-start-the-mirrornode-importer)
 - [Handling Failed Imports](#handling-failed-imports)
 - [Additional Notes](#additional-notes)
 - [Troubleshooting](#troubleshooting)
@@ -37,6 +44,16 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
    - `realpath`
    - `flock`
    - `curl`
+   - `b3sum`
+
+   ### 1. Optional High-Performance Decompressors
+
+      The script automatically detects and uses faster alternatives to `gunzip` if they are available in the system's or user's PATH:
+
+      - [rapidgzip](https://github.com/mxmlnkn/rapidgzip) - A high-performance parallel gzip decompressor (fastest option, even for single-threaded decompression)
+      - [igzip](https://github.com/intel/isa-l) - Intel's optimized gzip implementation from ISA-L (second fastest option)
+
+      These tools can significantly improve decompression performance during the import process. If neither is available, the script will fall back to using standard `gunzip`.
 
 4. Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install), then authenticate:
 
@@ -144,7 +161,7 @@ gcloud config set project YOUR_GCP_PROJECT_ID
 To see the available versions of the database export, list the contents of the bucket:
 
 ```bash
-gsutil -m ls gs://mirrornode-db-export/
+gcloud storage ls gs://mirrornode-db-export/
 ```
 
 This will display the available version directories.
@@ -162,13 +179,31 @@ This will display the available version directories.
 
 #### 3.4. Download the Data
 
-Create a directory to store the data and download all files and subdirectories for the selected version:
+Choose one of the following download options based on your needs:
+
+##### Download Full DB Data Files
+
+Create a directory and download all files and subdirectories for the selected version:
 
 ```bash
 mkdir -p /path/to/db_export
-gsutil -m cp -r gs://mirrornode-db-export/<VERSION_NUMBER>/* /path/to/db_export/
+export CLOUDSDK_STORAGE_SLICED_OBJECT_DOWNLOAD_MAX_COMPONENTS=1 && \
+VERSION_NUMBER=<VERSION_NUMBER> && \
+gcloud storage rsync -r "gs://mirrornode-db-export/$VERSION_NUMBER/" /path/to/db_export/
 ```
 
+##### Download Minimal DB Data Files
+
+Create a directory and download only the minimal database files:
+
+```bash
+mkdir -p /path/to/db_export
+export CLOUDSDK_STORAGE_SLICED_OBJECT_DOWNLOAD_MAX_COMPONENTS=1 && \
+VERSION_NUMBER=<VERSION_NUMBER> && \
+gcloud storage rsync -r -x '.*_part_\d+_\d+_\d+_atma\.csv\.gz$' "gs://mirrornode-db-export/$VERSION_NUMBER/" /path/to/db_export/
+```
+
+For both options:
 - Replace `/path/to/db_export` with your desired directory path.
 - Replace `<VERSION_NUMBER>` with the version you selected (e.g., `0.111.0`).
 - Ensure all files and subdirectories are downloaded into this single parent directory.
@@ -207,18 +242,27 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
    # Should list bootstrap.sh and bootstrap.env
    ```
 
-2. **Run the Bootstrap Script Using `nohup` and Redirect Output to `bootstrap.log`:**
+2. **Run the Bootstrap Script Using `setsid` and Redirect Output to `bootstrap.log`:**
 
-   To ensure the script continues running even if your SSH session is terminated, run it using `nohup`, redirect stdout and stderr to `bootstrap.log`, and save its process ID (PID) to a file.
+   To ensure the script continues running even if your SSH session is terminated, run it in a new session using `setsid`. The script handles its own logging, but we redirect stderr to capture any startup errors:
 
+   For a full database import:
    ```bash
-   nohup setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log &
+   setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log &
    ```
 
-   - The script handles logging internally to `bootstrap.log`, and the execution command will also append stdout/stderr of the script itself to the log file.
+   For a minimal database import:
+   ```bash
+   setsid ./bootstrap.sh 8 --minimal /path/to/db_export > /dev/null 2>> bootstrap.log &
+   ```
+
+   - The script handles logging internally to `bootstrap.log`, and the execution command will also append stderr to the log file
    - `8` refers to the number of CPU cores to use for parallel processing. Adjust this number based on your system's resources.
    - `/path/to/db_export` is the directory where you downloaded the database export data.
-   - `bootstrap.pid` stores the PID of the running script for later use.
+   - The script creates several tracking files:
+     - `bootstrap.pid` stores the process ID used for cleanup of all child processes if interrupted
+     - `bootstrap_tracking.txt` tracks the progress of each file's import and hash verification
+     - `bootstrap_discrepancies.log` records any data verification issues
 
    - **Important**: The SKIP_DB_INIT flag file is automatically created by the script after a successful database initialization. Do not manually create or delete this file. If you need to force the script to reinitialize the database in future runs, remove the flag file using:
 
@@ -240,13 +284,13 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
 
 ### 6. Monitoring and Managing the Import Process
 
-#### **Monitoring the Import Process:**
+#### **6.1. Monitoring the Import Process:**
 
 - **Check the Log File:**
 
-  ```bash
-  tail -f bootstrap.log
-  ```
+   ```bash
+   tail -f bootstrap.log
+   ```
 
   - The script logs all activity to `bootstrap.log`.
   - Note that the script processes files in parallel and asynchronously. Activities are logged as they occur, so log entries may appear in an arbitrary order.
@@ -258,8 +302,20 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
   ```
 
   - This file tracks the status of each file being imported.
+  - Each line contains the file name, followed by two status indicators:
 
-#### **Stopping the Script**
+    Import Status:
+    - `NOT_STARTED`: File has not begun importing
+    - `IN_PROGRESS`: File is currently being imported
+    - `IMPORTED`: File was successfully imported
+    - `FAILED_TO_IMPORT`: File import failed
+
+    Hash Verification Status:
+    - `HASH_UNVERIFIED`: BLAKE3 hash has not been verified yet
+    - `HASH_VERIFIED`: BLAKE3 hash verification passed
+    - `HASH_FAILED`: BLAKE3 hash verification failed
+
+#### **6.2. Stopping the Script**
 
 If you need to stop the script before it completes:
 
@@ -283,17 +339,18 @@ If you need to stop the script before it completes:
 
 **Note:** Ensure that `bootstrap.sh` is designed to handle termination signals and clean up its child processes appropriately.
 
-#### **Resuming the Import Process**
+#### **6.3. Resuming the Import Process**
 
 - **Re-run the Bootstrap Script:**
 
   ```bash
-  nohup setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log &
+  setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log &
   ```
 
   - The script will resume where it left off, skipping files that have already been imported successfully.
+  - Add the `--minimal` flag if you were using minimal mode.
 
-#### **Start the Mirrornode Importer**
+#### **6.4. Start the Mirrornode Importer**
 
 - Once the bootstrap process completes without errors, you may start the Mirrornode Importer.
 
@@ -301,15 +358,15 @@ If you need to stop the script before it completes:
 
 ## Handling Failed Imports
 
-During the import process, the script generates a file named `bootstrap_tracking.txt`, which logs the status of each file import. Each line in this file contains the path and name of a file, followed by its import status: `NOT_STARTED`, `IN_PROGRESS`, `IMPORTED`, or `FAILED_TO_IMPORT`.
+During the import process, the script generates a file named `bootstrap_tracking.txt`, which logs the status of each file import. Each line in this file contains the path and name of a file, followed by its import and hash verification status (see [Monitoring and Managing the Import Process](#6-monitoring-and-managing-the-import-process) for status descriptions).
 
 **Example of `bootstrap_tracking.txt`:**
 
 ```
-/path/to/db_export/record_file.csv.gz IMPORTED
-/path/to/db_export/transaction/transaction_part_1.csv.gz IMPORTED
-/path/to/db_export/transaction/transaction_part_2.csv.gz FAILED_TO_IMPORT
-/path/to/db_export/account.csv.gz NOT_STARTED
+/path/to/db_export/record_file.csv.gz IMPORTED HASH_VERIFIED
+/path/to/db_export/transaction/transaction_part_1.csv.gz IMPORTED HASH_VERIFIED
+/path/to/db_export/transaction/transaction_part_2.csv.gz FAILED_TO_IMPORT HASH_FAILED
+/path/to/db_export/account.csv.gz NOT_STARTED HASH_UNVERIFIED
 ```
 
 **Notes on Data Consistency:**
@@ -351,6 +408,7 @@ During the import process, the script generates a file named `bootstrap_tracking
 
   - Review `bootstrap.log` for detailed error messages.
   - Check `bootstrap_tracking.txt` to identify which files failed to import.
+  - Check `bootstrap_discrepancies.log` for any data verification issues (this file is only created if discrepancies are found in file size, row count, or BLAKE3 hash verification).
   - Re-run the `bootstrap.sh` script to retry importing failed files.
 
 - **Permission Denied Errors:**
@@ -365,7 +423,7 @@ During the import process, the script generates a file named `bootstrap_tracking
 
 - **Script Does Not Continue After SSH Disconnect:**
 
-  - Ensure you used `nohup` when running the script.
+  - Ensure you used `setsid` when running the script.
   - Confirm that the script is running by checking the process list:
 
     ```bash
