@@ -920,22 +920,6 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>> tokenAccount(Long balance) {
-        long timestamp = timestamp();
-        var builder = TokenAccount.builder()
-                .accountId(id())
-                .automaticAssociation(false)
-                .associated(true)
-                .balance(balance)
-                .balanceTimestamp(timestamp)
-                .createdTimestamp(timestamp)
-                .freezeStatus(null)
-                .kycStatus(null)
-                .timestampRange(Range.atLeast(timestamp))
-                .tokenId(id());
-        return new DomainWrapperImpl<>(builder, builder::build);
-    }
-
     public DomainWrapper<TokenAccountHistory, TokenAccountHistory.TokenAccountHistoryBuilder<?, ?>>
             tokenAccountHistory() {
         long timestamp = timestamp();
