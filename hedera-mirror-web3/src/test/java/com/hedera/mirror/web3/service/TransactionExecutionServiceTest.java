@@ -172,6 +172,7 @@ class TransactionExecutionServiceTest {
     @ParameterizedTest
     @CsvSource({
         "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000,CONTRACT_REVERT_EXECUTED,Some revert message",
+        "INVALID_TOKEN_ID,CONTRACT_REVERT_EXECUTED,''",
         "0x,INVALID_TOKEN_ID,''"
     })
     void testExecuteContractCallFailureWithErrorMessage(
@@ -239,8 +240,8 @@ class TransactionExecutionServiceTest {
             TransactionRecord transactionRecord = mock(TransactionRecord.class);
             TransactionReceipt transactionReceipt = mock(TransactionReceipt.class);
 
-            when(transactionReceipt.status()).thenReturn(ResponseCodeEnum.INVALID_ACCOUNT_ID);
             when(transactionRecord.receiptOrThrow()).thenReturn(transactionReceipt);
+            when(transactionReceipt.status()).thenReturn(ResponseCodeEnum.INVALID_ACCOUNT_ID);
             when(singleTransactionRecord.transactionRecord()).thenReturn(transactionRecord);
 
             // Mock the executor to return a List with the mocked SingleTransactionRecord
