@@ -544,10 +544,13 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @Test
     void deleteToken() throws Exception {
         // Given
+        final var treasury = accountEntityPersist();
         final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasury.toEntityId()))
                 .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
