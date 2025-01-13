@@ -118,7 +118,7 @@ public abstract class ContractCallService {
             if (!mirrorNodeEvmProperties.isModularizedServices()) {
                 result = mirrorEvmTxProcessor.execute(params, estimatedGas);
             } else {
-                result = transactionExecutionService.execute(params, estimatedGas);
+                result = transactionExecutionService.execute(params, estimatedGas, gasUsedCounter);
             }
             if (!restoreGasToThrottleBucket) {
                 return result;

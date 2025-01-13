@@ -37,6 +37,8 @@ import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter.MeterProvider;
 import jakarta.annotation.Resource;
 import java.util.List;
 import java.util.Optional;
@@ -68,6 +70,9 @@ abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContr
     private HederaEvmTransactionProcessingResult resultCaptor;
     private ContractCallContext contextCaptor;
 
+    @Captor
+    private ArgumentCaptor<MeterProvider<Counter>> gasUsedCounter;
+
     @Resource
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
@@ -92,7 +97,7 @@ abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContr
                         return transactionProcessingResult;
                     })
                     .when(transactionExecutionService)
-                    .execute(paramsCaptor.capture(), gasCaptor.capture());
+                    .execute(paramsCaptor.capture(), gasCaptor.capture(), gasUsedCounter.capture());
         }
     }
 
