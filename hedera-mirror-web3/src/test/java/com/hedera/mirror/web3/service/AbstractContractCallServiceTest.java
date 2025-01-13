@@ -64,19 +64,7 @@ import org.web3j.tx.Contract;
 @Import(Web3jTestConfiguration.class)
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
-    @Resource
-    protected TestWeb3jService testWeb3jService;
-
-    @Resource
-    protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
-
-    @Resource
-    protected State state;
-
-    protected RecordFile genesisRecordFile;
-
     protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
-
     protected static final byte[] EXCHANGE_RATES_SET = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
                     .setCentEquiv(12)
@@ -90,6 +78,13 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                     .build())
             .build()
             .toByteArray();
+    @Resource
+    protected TestWeb3jService testWeb3jService;
+    @Resource
+    protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    @Resource
+    protected State state;
+    protected RecordFile genesisRecordFile;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());

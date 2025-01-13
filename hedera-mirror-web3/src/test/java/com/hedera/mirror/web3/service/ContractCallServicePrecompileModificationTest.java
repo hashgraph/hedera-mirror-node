@@ -63,6 +63,7 @@ import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import com.swirlds.base.time.Time;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
@@ -237,7 +238,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // When
         final var functionCall = single
                 ? contract.call_associateTokenExternal(
-                        getAddressFromEntity(notAssociatedAccount), getAddressFromEntity(tokenEntity))
+                getAddressFromEntity(notAssociatedAccount), getAddressFromEntity(tokenEntity))
                 : contract.call_associateTokensExternal(
                         getAddressFromEntity(notAssociatedAccount), List.of(getAddressFromEntity(tokenEntity)));
 
@@ -286,7 +287,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // When
         final var functionCall = single
                 ? contract.call_dissociateTokenExternal(
-                        getAliasFromEntity(associatedAccount), getAddressFromEntity(tokenEntity))
+                getAliasFromEntity(associatedAccount), getAddressFromEntity(tokenEntity))
                 : contract.call_dissociateTokensExternal(
                         getAliasFromEntity(associatedAccount), List.of(getAddressFromEntity(tokenEntity)));
 
@@ -1062,10 +1063,10 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var functionCall = "single".equals(type)
                 ? contract.call_transferTokenExternal(
-                        getAddressFromEntity(tokenEntity),
-                        getAliasFromEntity(sender),
-                        getAliasFromEntity(receiver),
-                        BigInteger.valueOf(1L))
+                getAddressFromEntity(tokenEntity),
+                getAliasFromEntity(sender),
+                getAliasFromEntity(receiver),
+                BigInteger.valueOf(1L))
                 : contract.call_transferTokensExternal(
                         getAddressFromEntity(tokenEntity),
                         List.of(getAliasFromEntity(sender), getAliasFromEntity(receiver)),
@@ -1107,10 +1108,10 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var functionCall = "single".equals(type)
                 ? contract.call_transferNFTExternal(
-                        getAddressFromEntity(tokenEntity),
-                        getAliasFromEntity(sender),
-                        getAliasFromEntity(receiver),
-                        BigInteger.ONE)
+                getAddressFromEntity(tokenEntity),
+                getAliasFromEntity(sender),
+                getAliasFromEntity(receiver),
+                BigInteger.ONE)
                 : contract.call_transferNFTsExternal(
                         getAddressFromEntity(tokenEntity),
                         List.of(getAliasFromEntity(sender)),
@@ -1326,7 +1327,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var tokenExpiry = new Expiry(
-                BigInteger.valueOf(tokenWithAutoRenewPair.getKey().getExpirationTimestamp() + 1_000_000L),
+                BigInteger.valueOf(Instant.now().getEpochSecond() + 8_000_000L),
                 toAddress(tokenWithAutoRenewPair.getRight().toEntityId()).toHexString(),
                 BigInteger.valueOf(8_000_000));
 
@@ -1428,8 +1429,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var tokenToUpdateEntity = domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.TOKEN)
-                        .autoRenewAccountId(autoRenewAccount.getId())
-                        .expirationTimestamp(5_000_000L))
+                        .autoRenewAccountId(autoRenewAccount.getId()))
                 .persist();
         domainBuilder
                 .token()
@@ -1495,7 +1495,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 token.getSymbol(),
                 treasuryAccountId != null
                         ? EntityIdUtils.asHexedEvmAddress(new Id(
-                                treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum()))
+                        treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum()))
                         : Address.ZERO.toHexString(),
                 new String(token.getMetadata(), StandardCharsets.UTF_8),
                 token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),

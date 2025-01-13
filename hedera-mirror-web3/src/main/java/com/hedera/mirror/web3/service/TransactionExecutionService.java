@@ -67,7 +67,6 @@ public class TransactionExecutionService {
     private static final AccountID TREASURY_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(2).build();
     private static final Duration TRANSACTION_DURATION = new Duration(15);
-    private static final Timestamp TRANSACTION_START = new Timestamp(0, 0);
     private static final int INITCODE_SIZE_KB = 6 * 1024;
     private final State mirrorNodeState;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -117,7 +116,7 @@ public class TransactionExecutionService {
             transactionBody = buildContractCallTransactionBody(params, estimatedGas);
         }
 
-        var receipt = executor.execute(transactionBody, Instant.EPOCH, getOperationTracers());
+        var receipt = executor.execute(transactionBody, Instant.now(), getOperationTracers());
         var transactionRecord = receipt.getFirst().transactionRecord();
         if (transactionRecord.receiptOrThrow().status() == ResponseCodeEnum.SUCCESS) {
             result = buildSuccessResult(isContractCreate, transactionRecord, params);
@@ -165,7 +164,7 @@ public class TransactionExecutionService {
     private TransactionBody.Builder defaultTransactionBodyBuilder(final CallServiceParameters params) {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .transactionValidStart(TRANSACTION_START)
+                        .transactionValidStart(new Timestamp(Instant.now().getEpochSecond(), 0))
                         .accountID(getSenderAccountID(params))
                         .build())
                 .nodeAccountID(TREASURY_ACCOUNT_ID) // We don't really need another account here.
@@ -246,7 +245,7 @@ public class TransactionExecutionService {
 
     private OperationTracer[] getOperationTracers() {
         return ContractCallContext.get().getOpcodeTracerOptions() != null
-                ? new OperationTracer[] {opcodeTracer}
+                ? new OperationTracer[]{opcodeTracer}
                 : EMPTY_OPERATION_TRACER_ARRAY;
     }
 
