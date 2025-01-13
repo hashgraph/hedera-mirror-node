@@ -446,13 +446,14 @@ validate_file() {
 
   actual_size=$(stat -c%s "$file")
   expected_size="${manifest_sizes["$filename"]}"
-  actual_b3sum=$(b3sum --num-threads "$B3SUM_NUM_THREADS" --no-names "$file")
-  expected_blake3_hash="${manifest_hashes["$filename"]}"
 
   if [[ "$actual_size" != "$expected_size" ]]; then
     echo "size mismatch (expected: $expected_size bytes, actual: $actual_size bytes)"
     return 1
   fi
+
+  actual_b3sum=$(b3sum --num-threads "$B3SUM_NUM_THREADS" --no-names "$file")
+  expected_blake3_hash="${manifest_hashes["$filename"]}"
 
   if [[ "$actual_b3sum" != "$expected_blake3_hash" ]]; then
     echo "BLAKE3 hash mismatch (expected: $expected_blake3_hash, actual: $actual_b3sum)"
