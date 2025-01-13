@@ -275,12 +275,20 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        tokenAccountPersist(tokenEntity, associatedAccount, 0L);
+        domainBuilder
+                .tokenAccount(0L)
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(associatedAccount.getId())
+                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true))
+                .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
