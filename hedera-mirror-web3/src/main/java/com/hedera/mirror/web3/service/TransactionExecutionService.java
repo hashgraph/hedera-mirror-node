@@ -245,7 +245,7 @@ public class TransactionExecutionService {
 
     private OperationTracer[] getOperationTracers() {
         return ContractCallContext.get().getOpcodeTracerOptions() != null
-                ? new OperationTracer[]{opcodeTracer}
+                ? new OperationTracer[] {opcodeTracer}
                 : EMPTY_OPERATION_TRACER_ARRAY;
     }
 

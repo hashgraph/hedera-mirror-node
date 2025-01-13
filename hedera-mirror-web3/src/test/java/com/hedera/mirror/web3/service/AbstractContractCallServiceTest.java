@@ -78,12 +78,16 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                     .build())
             .build()
             .toByteArray();
+
     @Resource
     protected TestWeb3jService testWeb3jService;
+
     @Resource
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     @Resource
     protected State state;
+
     protected RecordFile genesisRecordFile;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
