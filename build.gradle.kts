@@ -33,7 +33,7 @@ extra.apply {
     set("grpcVersion", "1.69.0")
     set("mapStructVersion", "1.6.3")
     set("nodeJsVersion", "18.20.5")
-    set("protobufVersion", "3.25.5")
+    set("protobufVersion", "4.29.3")
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.11")
     set("tuweniVersion", "2.3.1")
