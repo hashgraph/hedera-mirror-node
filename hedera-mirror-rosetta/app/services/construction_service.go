@@ -533,8 +533,8 @@ func (c *constructionAPIService) getRandomNodeAccountId() (hiero.AccountID, *rTy
 		return hiero.AccountID{}, errors.ErrNodeAccountIdsEmpty
 	}
 
-	max := big.NewInt(int64(len(nodeAccountIds)))
-	index, err := rand.Int(rand.Reader, max)
+	maxValue := big.NewInt(int64(len(nodeAccountIds)))
+	index, err := rand.Int(rand.Reader, maxValue)
 	if err != nil {
 		log.Errorf("Failed to get a random number, use 0 instead: %s", err)
 		return nodeAccountIds[0], nil
@@ -712,20 +712,14 @@ func transactionSetMemo(memo interface{}) updater {
 			return errors.ErrInvalidTransactionMemo
 		}
 
-		if _, err := hiero.TransactionSetTransactionMemo(transaction, value); err != nil {
-			return errors.ErrInvalidTransactionMemo
-		}
-
+		hiero.TransactionSetTransactionMemo(transaction, value)
 		return nil
 	}
 }
 
 func transactionSetNodeAccountId(nodeAccountId hiero.AccountID) updater {
 	return func(transaction hiero.TransactionInterface) *rTypes.Error {
-		if _, err := hiero.TransactionSetNodeAccountIDs(transaction, []hiero.AccountID{nodeAccountId}); err != nil {
-			log.Errorf("Failed to set node account id for transaction: %s", err)
-			return errors.ErrInternalServerError
-		}
+		hiero.TransactionSetNodeAccountIDs(transaction, []hiero.AccountID{nodeAccountId})
 		return nil
 	}
 }
@@ -738,10 +732,8 @@ func transactionSetTransactionId(payer hiero.AccountID, validStartNanos int64) u
 		} else {
 			transactionId = hiero.NewTransactionIDWithValidStart(payer, time.Unix(0, validStartNanos))
 		}
-		if _, err := hiero.TransactionSetTransactionID(transaction, transactionId); err != nil {
-			log.Errorf("Failed to set transaction id: %s", err)
-			return errors.ErrInternalServerError
-		}
+
+		hiero.TransactionSetTransactionID(transaction, transactionId)
 		return nil
 	}
 }
@@ -753,11 +745,7 @@ func transactionSetValidDuration(validDurationSeconds int64) updater {
 			validDurationSeconds = defaultValidDurationSeconds
 		}
 
-		_, err := hiero.TransactionSetTransactionValidDuration(transaction, time.Second*time.Duration(validDurationSeconds))
-		if err != nil {
-			log.Errorf("Failed to set transaction valid duration: %s", err)
-			return errors.ErrInternalServerError
-		}
+		hiero.TransactionSetTransactionValidDuration(transaction, time.Second*time.Duration(validDurationSeconds))
 		return nil
 	}
 }

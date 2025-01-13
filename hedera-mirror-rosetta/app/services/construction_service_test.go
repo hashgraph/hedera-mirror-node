@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/construction"
 	"math/rand"
 	"reflect"
 	"strconv"
@@ -1133,20 +1134,22 @@ func TestConstructionPayloadsInvalidRequest(t *testing.T) {
 				Currency: &rTypes.Currency{Symbol: "-100"},
 			}),
 		},
+		{
+			name:      "InvalidMemoType",
+			customize: payloadsRequestMetadata(addMetadataNodeAccountId(metadata{types.MetadataKeyMemo: 100})),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
-			mockConstructor := &mocks.MockTransactionConstructor{}
 			request := getPayloadsRequest(operations, tt.customize)
-			service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultConfig, mockConstructor)
+			service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultConfig, construction.NewTransactionConstructor())
 
 			// when
 			response, err := service.ConstructionPayloads(defaultContext, request)
 
 			// then
-			mockConstructor.AssertExpectations(t)
 			assert.NotNil(t, err)
 			assert.Nil(t, response)
 		})
