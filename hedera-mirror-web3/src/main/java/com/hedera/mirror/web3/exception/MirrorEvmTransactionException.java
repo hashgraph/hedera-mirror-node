@@ -16,10 +16,14 @@
 
 package com.hedera.mirror.web3.exception;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+
 import com.hedera.mirror.web3.evm.exception.EvmException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.Serial;
 import java.nio.charset.StandardCharsets;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
 @SuppressWarnings("java:S110")
@@ -55,5 +59,24 @@ public class MirrorEvmTransactionException extends EvmException {
 
     public String getData() {
         return data;
+    }
+
+    @Override
+    public String toString() {
+        return "%s(message=%s, detail=%s, data=%s, dataDecoded=%s)"
+                .formatted(getClass().getSimpleName(), getMessage(), detail, data, decodeHex(data));
+    }
+
+    private String decodeHex(final String hex) {
+        try {
+            if (StringUtils.isBlank(hex)) {
+                return EMPTY;
+            }
+
+            var decoded = Hex.decodeHex(hex.replace("0x", EMPTY));
+            return new String(decoded, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return EMPTY;
+        }
     }
 }

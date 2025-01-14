@@ -25,8 +25,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+@Component("retentionProperties")
 @Data
-@Component
 @ConfigurationProperties("hedera.mirror.importer.retention")
 @Validated
 public class RetentionProperties {

@@ -1187,11 +1187,11 @@ public class DomainBuilder {
     }
 
     public String text(int characters) {
-        return RandomStringUtils.randomAlphanumeric(characters);
+        return RandomStringUtils.secure().nextAlphanumeric(characters);
     }
 
     public String hash(int characters) {
-        return RandomStringUtils.random(characters, "0123456789abcdef");
+        return RandomStringUtils.secure().next(characters, "0123456789abcdef");
     }
 
     /**

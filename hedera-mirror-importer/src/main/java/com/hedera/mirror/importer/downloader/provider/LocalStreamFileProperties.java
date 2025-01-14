@@ -17,12 +17,10 @@
 package com.hedera.mirror.importer.downloader.provider;
 
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Data
-@RequiredArgsConstructor
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.downloader.local")
 public class LocalStreamFileProperties {

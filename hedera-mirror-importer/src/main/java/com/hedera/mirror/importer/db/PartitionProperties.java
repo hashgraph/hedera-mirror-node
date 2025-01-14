@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.parser.record.entity.notify;
+package com.hedera.mirror.importer.db;
 
-import com.hedera.mirror.importer.parser.record.entity.BatchPublisherProperties;
-import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+@ConfigurationProperties("hedera.mirror.importer.db.partition")
 @Data
-@ConditionOnEntityRecordParser
-@ConfigurationProperties("hedera.mirror.importer.parser.record.entity.notify")
 @Validated
-public class NotifyProperties implements BatchPublisherProperties {
+public class PartitionProperties {
+    @NotBlank
+    private String cron = "0 0 0 * * ?";
 
-    private boolean enabled = false;
-
-    private int maxJsonPayloadSize = 8000;
+    private boolean enabled = true;
 }

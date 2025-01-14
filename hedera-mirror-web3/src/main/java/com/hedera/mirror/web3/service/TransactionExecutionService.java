@@ -16,13 +16,14 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.state.Utils.isMirror;
+import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
@@ -36,7 +37,9 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.state.AliasesReadableKVState;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -47,6 +50,8 @@ import com.hedera.node.app.workflows.standalone.TransactionExecutors.TracerBindi
 import com.hedera.node.config.data.EntitiesConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter.MeterProvider;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.time.Instant;
@@ -54,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
@@ -67,7 +73,6 @@ public class TransactionExecutionService {
     private static final AccountID TREASURY_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(2).build();
     private static final Duration TRANSACTION_DURATION = new Duration(15);
-    private static final Timestamp TRANSACTION_START = new Timestamp(0, 0);
     private static final int INITCODE_SIZE_KB = 6 * 1024;
     private final State mirrorNodeState;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -80,7 +85,8 @@ public class TransactionExecutionService {
         this.opcodeTracer = opcodeTracer;
     }
 
-    public HederaEvmTransactionProcessingResult execute(final CallServiceParameters params, final long estimatedGas) {
+    public HederaEvmTransactionProcessingResult execute(
+            final CallServiceParameters params, final long estimatedGas, final MeterProvider<Counter> gasUsedCounter) {
         final var isContractCreate = params.getReceiver().isZero();
         final var maxLifetime =
                 DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
@@ -88,14 +94,14 @@ public class TransactionExecutionService {
                 ExecutorFactory.newExecutor(mirrorNodeState, mirrorNodeEvmProperties.getTransactionProperties(), null);
 
         TransactionBody transactionBody;
-        HederaEvmTransactionProcessingResult result;
+        HederaEvmTransactionProcessingResult result = null;
         if (isContractCreate) {
             if (params.getCallData().size() < INITCODE_SIZE_KB) {
                 transactionBody = buildContractCreateTransactionBodyWithInitBytecode(params, estimatedGas, maxLifetime);
             } else {
                 // Upload the init bytecode
                 transactionBody = buildFileCreateTransactionBody(params, maxLifetime);
-                var uploadReceipt = executor.execute(transactionBody, Instant.EPOCH);
+                var uploadReceipt = executor.execute(transactionBody, Instant.now());
                 final var fileID = uploadReceipt
                         .getFirst()
                         .transactionRecord()
@@ -117,14 +123,23 @@ public class TransactionExecutionService {
             transactionBody = buildContractCallTransactionBody(params, estimatedGas);
         }
 
-        var receipt = executor.execute(transactionBody, Instant.EPOCH, getOperationTracers());
+        var receipt = executor.execute(transactionBody, Instant.now(), getOperationTracers());
         var transactionRecord = receipt.getFirst().transactionRecord();
-        if (transactionRecord.receiptOrThrow().status() == ResponseCodeEnum.SUCCESS) {
+        if (transactionRecord.receiptOrThrow().status() == com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS) {
             result = buildSuccessResult(isContractCreate, transactionRecord, params);
         } else {
-            result = buildFailedResult(transactionRecord, isContractCreate);
+            handleFailedResult(transactionRecord, isContractCreate, gasUsedCounter);
         }
         return result;
+    }
+
+    // Duplicated code as in ContractCallService class - it will be removed from there when switch to the modularized
+    // implementation entirely.
+    private void updateErrorGasUsedMetric(
+            final MeterProvider<Counter> gasUsedCounter, final long gasUsed, final int iterations) {
+        gasUsedCounter
+                .withTags("type", CallType.ERROR.toString(), "iteration", String.valueOf(iterations))
+                .increment(gasUsed);
     }
 
     private ContractFunctionResult getTransactionResult(
@@ -149,23 +164,36 @@ public class TransactionExecutionService {
                 params.getReceiver());
     }
 
-    private HederaEvmTransactionProcessingResult buildFailedResult(
-            final TransactionRecord transactionRecord, final boolean isContractCreate) {
-        var result = getTransactionResult(transactionRecord, isContractCreate);
-        var status = transactionRecord.receipt().status();
+    private void handleFailedResult(
+            final TransactionRecord transactionRecord,
+            final boolean isContractCreate,
+            final MeterProvider<Counter> gasUsedCounter)
+            throws MirrorEvmTransactionException {
+        var result =
+                isContractCreate ? transactionRecord.contractCreateResult() : transactionRecord.contractCallResult();
+        var status = transactionRecord.receiptOrThrow().status();
+        if (result == null) {
+            // No result - the call did not reach the EVM and probably failed at pre-checks. No metric to update in this
+            // case.
+            throw new MirrorEvmTransactionException(status.protoName(), StringUtils.EMPTY, StringUtils.EMPTY);
+        } else {
+            var errorMessage = getErrorMessage(result).orElse(Bytes.EMPTY);
+            var detail = maybeDecodeSolidityErrorStringToReadableMessage(errorMessage);
+            updateErrorGasUsedMetric(gasUsedCounter, result.gasUsed(), 1);
+            throw new MirrorEvmTransactionException(status.protoName(), detail, errorMessage.toHexString());
+        }
+    }
 
-        return HederaEvmTransactionProcessingResult.failed(
-                result.gasUsed(),
-                0L,
-                0L,
-                Optional.of(Bytes.wrap(status.protoName().getBytes())),
-                Optional.empty());
+    private Optional<Bytes> getErrorMessage(final ContractFunctionResult result) {
+        return result.errorMessage().startsWith(HEX_PREFIX)
+                ? Optional.of(Bytes.fromHexString(result.errorMessage()))
+                : Optional.empty(); // If it doesn't start with 0x, the message is already decoded and readable.
     }
 
     private TransactionBody.Builder defaultTransactionBodyBuilder(final CallServiceParameters params) {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .transactionValidStart(TRANSACTION_START)
+                        .transactionValidStart(new Timestamp(Instant.now().getEpochSecond(), 0))
                         .accountID(getSenderAccountID(params))
                         .build())
                 .nodeAccountID(TREASURY_ACCOUNT_ID) // We don't really need another account here.

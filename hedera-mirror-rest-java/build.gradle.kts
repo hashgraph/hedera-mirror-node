@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-description = "Hedera Mirror Node Rest Java"
+description = "Hedera Mirror Node REST Java"
 
 plugins {
     id("openapi-conventions")

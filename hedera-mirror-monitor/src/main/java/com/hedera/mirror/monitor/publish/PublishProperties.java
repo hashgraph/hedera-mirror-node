@@ -17,6 +17,7 @@
 package com.hedera.mirror.monitor.publish;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
@@ -47,6 +48,7 @@ public class PublishProperties {
     private Duration nodeMaxBackoff = Duration.ofMinutes(1L);
 
     @NotNull
+    @Valid
     private Map<String, PublishScenarioProperties> scenarios = new LinkedHashMap<>();
 
     @DurationMin(seconds = 1L)

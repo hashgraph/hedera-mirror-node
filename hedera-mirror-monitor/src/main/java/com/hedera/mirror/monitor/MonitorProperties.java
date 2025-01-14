@@ -17,6 +17,7 @@
 package com.hedera.mirror.monitor;
 
 import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.LinkedHashSet;
 import java.util.Objects;
@@ -31,17 +32,22 @@ import org.springframework.validation.annotation.Validated;
 public class MonitorProperties {
 
     @Nullable
+    @Valid
     private MirrorNodeProperties mirrorNode;
 
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
     @NotNull
+    @Valid
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
     @NotNull
+    @Valid
     private OperatorProperties operator = new OperatorProperties();
 
+    @NotNull
+    @Valid
     private NodeValidationProperties nodeValidation = new NodeValidationProperties();
 
     public MirrorNodeProperties getMirrorNode() {
