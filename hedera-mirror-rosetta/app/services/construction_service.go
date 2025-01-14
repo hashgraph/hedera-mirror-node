@@ -712,14 +712,20 @@ func transactionSetMemo(memo interface{}) updater {
 			return errors.ErrInvalidTransactionMemo
 		}
 
-		hiero.TransactionSetTransactionMemo(transaction, value)
+		if _, err := hiero.TransactionSetTransactionMemo(transaction, value); err != nil {
+			return errors.ErrInvalidTransactionMemo
+		}
+
 		return nil
 	}
 }
 
 func transactionSetNodeAccountId(nodeAccountId hiero.AccountID) updater {
 	return func(transaction hiero.TransactionInterface) *rTypes.Error {
-		hiero.TransactionSetNodeAccountIDs(transaction, []hiero.AccountID{nodeAccountId})
+		if _, err := hiero.TransactionSetNodeAccountIDs(transaction, []hiero.AccountID{nodeAccountId}); err != nil {
+			log.Errorf("Failed to set node account id for transaction: %s", err)
+			return errors.ErrInternalServerError
+		}
 		return nil
 	}
 }
@@ -732,8 +738,10 @@ func transactionSetTransactionId(payer hiero.AccountID, validStartNanos int64) u
 		} else {
 			transactionId = hiero.NewTransactionIDWithValidStart(payer, time.Unix(0, validStartNanos))
 		}
-
-		hiero.TransactionSetTransactionID(transaction, transactionId)
+		if _, err := hiero.TransactionSetTransactionID(transaction, transactionId); err != nil {
+			log.Errorf("Failed to set transaction id: %s", err)
+			return errors.ErrInternalServerError
+		}
 		return nil
 	}
 }
@@ -745,7 +753,10 @@ func transactionSetValidDuration(validDurationSeconds int64) updater {
 			validDurationSeconds = defaultValidDurationSeconds
 		}
 
-		hiero.TransactionSetTransactionValidDuration(transaction, time.Second*time.Duration(validDurationSeconds))
+		if _, err := hiero.TransactionSetTransactionValidDuration(transaction, time.Second*time.Duration(validDurationSeconds)); err != nil {
+			log.Errorf("Failed to set transaction valid duration: %s", err)
+			return errors.ErrInternalServerError
+		}
 		return nil
 	}
 }
