@@ -61,6 +61,8 @@ spec:
         MonitorSubscribeLatency:
           enabled: false
     rest:
+      env:
+        HEDERA_MIRROR_REST_RESPONSE_INCLUDEADMINKEY: "true"
       monitor:
         config:
           contract:
