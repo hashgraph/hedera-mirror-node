@@ -5,5 +5,3 @@ hedera:
         enabled: false
       redis:
         enabled: false
-      response:
-        includeAdminKey: true
