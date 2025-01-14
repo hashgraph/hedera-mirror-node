@@ -36,7 +36,8 @@ class StartupNetworksImplTest {
 
     @Test
     void testGenesisNetworkOrThrow() {
-        assertThat(startupNetworks.genesisNetworkOrThrow(mock(Configuration.class))).isEqualTo(Network.DEFAULT);
+        assertThat(startupNetworks.genesisNetworkOrThrow(mock(Configuration.class)))
+                .isEqualTo(Network.DEFAULT);
     }
 
     @Test

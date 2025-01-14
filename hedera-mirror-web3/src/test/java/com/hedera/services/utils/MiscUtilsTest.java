@@ -110,16 +110,16 @@ class MiscUtilsTest {
     @Test
     void asFcKeyReturnsEmptyOnEmptyKey() {
         assertTrue(asUsableFcKey(Key.newBuilder()
-                .setKeyList(KeyList.getDefaultInstance())
-                .build())
+                        .setKeyList(KeyList.getDefaultInstance())
+                        .build())
                 .isEmpty());
     }
 
     @Test
     void asFcKeyReturnsEmptyOnInvalidKey() {
         assertTrue(asUsableFcKey(Key.newBuilder()
-                .setEd25519(ByteString.copyFrom("1".getBytes()))
-                .build())
+                        .setEd25519(ByteString.copyFrom("1".getBytes()))
+                        .build())
                 .isEmpty());
     }
 

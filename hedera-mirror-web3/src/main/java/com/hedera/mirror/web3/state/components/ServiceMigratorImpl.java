@@ -69,8 +69,8 @@ public class ServiceMigratorImpl implements ServiceMigrator {
             throw new IllegalArgumentException("Can only be used with ServicesRegistryImpl instances");
         }
 
-        final AtomicLong prevEntityNum = new AtomicLong(
-                appConfig.getConfigData(HederaConfig.class).firstUserEntity() - 1);
+        final AtomicLong prevEntityNum =
+                new AtomicLong(appConfig.getConfigData(HederaConfig.class).firstUserEntity() - 1);
         final Map<String, Object> sharedValues = new HashMap<>();
         final var deserializedPbjVersion = Optional.ofNullable(previousVersion)
                 .map(SoftwareVersion::getPbjSemanticVersion)
