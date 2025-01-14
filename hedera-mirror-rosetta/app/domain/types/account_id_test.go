@@ -19,12 +19,12 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/hashgraph/hedera-sdk-go/v2/proto/services"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/thanhpk/randstr"
 	"google.golang.org/protobuf/proto"
@@ -34,7 +34,7 @@ var (
 	ecdsaSecp256k1PublicKeyProtoPrefix = []byte{0x3a, 0x21}
 	ed25519PublicKeyProtoPrefix        = []byte{0x12, 0x20}
 
-	ecdsaSecp256k1PrivateKey, _  = hedera.PrivateKeyGenerateEcdsa()
+	ecdsaSecp256k1PrivateKey, _  = hiero.PrivateKeyGenerateEcdsa()
 	ecdsaSecp256k1PublicKey      = ecdsaSecp256k1PrivateKey.PublicKey()
 	ecdsaSecp256k1Alias          = append(ecdsaSecp256k1PublicKeyProtoPrefix, ecdsaSecp256k1PublicKey.BytesRaw()...)
 	ecdsaSecp256k1AliasString    = "0x" + hex.EncodeToString(ecdsaSecp256k1Alias)
@@ -44,7 +44,7 @@ var (
 		curveType: types.Secp256k1,
 	}
 
-	ed25519PrivateKey, _  = hedera.PrivateKeyGenerateEd25519()
+	ed25519PrivateKey, _  = hiero.PrivateKeyGenerateEd25519()
 	ed25519PublicKey      = ed25519PrivateKey.PublicKey()
 	ed25519Alias          = append(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw()...)
 	ed25519AliasString    = "0x" + hex.EncodeToString(ed25519Alias)
@@ -276,22 +276,22 @@ func TestAccountIdToSdkAccountId(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    AccountId
-		expected hedera.AccountID
+		expected hiero.AccountID
 	}{
 		{
 			name:     "AliasCopy",
 			input:    ed25519AliasAccountId,
-			expected: hedera.AccountID{AliasKey: &pubKey},
+			expected: hiero.AccountID{AliasKey: &pubKey},
 		},
 		{
 			name:     "AliasPointer",
 			input:    ed25519AliasAccountId,
-			expected: hedera.AccountID{AliasKey: &ed25519PublicKey},
+			expected: hiero.AccountID{AliasKey: &ed25519PublicKey},
 		},
 		{
 			name:     "Non-alias",
 			input:    nonAliasAccountId,
-			expected: hedera.AccountID{Account: 125},
+			expected: hiero.AccountID{Account: 125},
 		},
 	}
 
@@ -315,7 +315,7 @@ func TestAccountIdToSdkAccountIdOutOfRange(t *testing.T) {
 		t.Run(input.String(), func(t *testing.T) {
 			actual, err := input.ToSdkAccountId()
 			assert.Error(t, err)
-			assert.Equal(t, hedera.AccountID{}, actual)
+			assert.Equal(t, hiero.AccountID{}, actual)
 		})
 	}
 }
@@ -624,34 +624,34 @@ func TestNewAccountIdFromPublicKeyBytesFail(t *testing.T) {
 
 func TestNewAccountIdFromSdkAccountId(t *testing.T) {
 	tests := []struct {
-		input     hedera.AccountID
+		input     hiero.AccountID
 		expectErr bool
 		alias     []byte
 		curveType types.CurveType
 		hasAlias  bool
 	}{
-		{input: hedera.AccountID{Account: 150}},
-		{input: hedera.AccountID{Shard: 1, Realm: 2, Account: 150}},
-		{input: hedera.AccountID{Shard: 1, Realm: 2, Account: 150}},
+		{input: hiero.AccountID{Account: 150}},
+		{input: hiero.AccountID{Shard: 1, Realm: 2, Account: 150}},
+		{input: hiero.AccountID{Shard: 1, Realm: 2, Account: 150}},
 		{
-			input:     hedera.AccountID{Realm: 2, AliasKey: &ed25519PublicKey},
+			input:     hiero.AccountID{Realm: 2, AliasKey: &ed25519PublicKey},
 			alias:     ed25519Alias,
 			curveType: types.Edwards25519,
 			hasAlias:  true,
 		},
 		{
-			input:     hedera.AccountID{Realm: 2, AliasKey: &ecdsaSecp256k1PublicKey},
+			input:     hiero.AccountID{Realm: 2, AliasKey: &ecdsaSecp256k1PublicKey},
 			alias:     ecdsaSecp256k1Alias,
 			curveType: types.Secp256k1,
 			hasAlias:  true,
 		},
-		{input: hedera.AccountID{Shard: 1 << 15}, expectErr: true},
-		{input: hedera.AccountID{Realm: 1 << 16}, expectErr: true},
-		{input: hedera.AccountID{Account: 1 << 32}, expectErr: true},
-		{input: hedera.AccountID{Shard: 9223372036854775808}, expectErr: true},
-		{input: hedera.AccountID{Realm: 9223372036854775808}, expectErr: true},
-		{input: hedera.AccountID{Account: 9223372036854775808}, expectErr: true},
-		{input: hedera.AccountID{AliasKey: &hedera.PublicKey{}}, expectErr: true},
+		{input: hiero.AccountID{Shard: 1 << 15}, expectErr: true},
+		{input: hiero.AccountID{Realm: 1 << 16}, expectErr: true},
+		{input: hiero.AccountID{Account: 1 << 32}, expectErr: true},
+		{input: hiero.AccountID{Shard: 9223372036854775808}, expectErr: true},
+		{input: hiero.AccountID{Realm: 9223372036854775808}, expectErr: true},
+		{input: hiero.AccountID{Account: 9223372036854775808}, expectErr: true},
+		{input: hiero.AccountID{AliasKey: &hiero.PublicKey{}}, expectErr: true},
 	}
 
 	for _, tt := range tests {

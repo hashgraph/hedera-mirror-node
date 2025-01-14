@@ -18,11 +18,11 @@ package types
 
 import (
 	"fmt"
-	"github.com/hashgraph/hedera-sdk-go/v2/proto/services"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 )
@@ -32,9 +32,9 @@ const (
 	ed25519PublicKeySize        = 32
 )
 
-// PublicKey embed hedera.PublicKey and implement the Unmarshaler interface
+// PublicKey embed hiero.PublicKey and implement the Unmarshaler interface
 type PublicKey struct {
-	hedera.PublicKey
+	hiero.PublicKey
 }
 
 func (pk PublicKey) IsEmpty() bool {
@@ -67,7 +67,7 @@ func (pk PublicKey) ToAlias() (_ []byte, zeroCurveType types.CurveType, _ error)
 
 func (pk *PublicKey) UnmarshalJSON(data []byte) error {
 	var err error
-	pk.PublicKey, err = hedera.PublicKeyFromString(tools.SafeUnquote(string(data)))
+	pk.PublicKey, err = hiero.PublicKeyFromString(tools.SafeUnquote(string(data)))
 	return err
 }
 
@@ -94,7 +94,7 @@ func NewPublicKeyFromAlias(alias []byte) (zeroCurveType types.CurveType, zeroPub
 		return zeroCurveType, zeroPublicKey, errors.Errorf("Unsupported key type")
 	}
 
-	publicKey, err := hedera.PublicKeyFromBytes(rawKey)
+	publicKey, err := hiero.PublicKeyFromBytes(rawKey)
 	if err != nil {
 		return zeroCurveType, zeroPublicKey, err
 	}

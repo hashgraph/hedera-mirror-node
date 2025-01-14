@@ -23,18 +23,17 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
 type cryptoCreate struct {
-	AutoRenewPeriod               int64             `json:"auto_renew_period"`
-	InitialBalance                int64             `json:"-"`
-	Key                           *types.PublicKey  `json:"key" validate:"required"`
-	MaxAutomaticTokenAssociations int32             `json:"max_automatic_token_associations"`
-	Memo                          string            `json:"memo"`
-	ProxyAccountId                *hedera.AccountID `json:"proxy_account_id"`
+	AutoRenewPeriod               int64            `json:"auto_renew_period"`
+	InitialBalance                int64            `json:"-"`
+	Key                           *types.PublicKey `json:"key" validate:"required"`
+	MaxAutomaticTokenAssociations int32            `json:"max_automatic_token_associations"`
+	Memo                          string           `json:"memo"`
+	ProxyAccountId                *hiero.AccountID `json:"proxy_account_id"`
 	// Add support for ReceiverSigRequired if needed and when the format to present an unknown account as a rosetta
 	// AccountIdentifier id decided
 }
@@ -46,14 +45,14 @@ type cryptoCreateTransactionConstructor struct {
 func (c *cryptoCreateTransactionConstructor) Construct(
 	_ context.Context,
 	operations types.OperationSlice,
-) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
+) (hiero.TransactionInterface, []types.AccountId, *rTypes.Error) {
 	cryptoCreate, payer, rErr := c.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
-	transaction := hedera.NewAccountCreateTransaction().
-		SetInitialBalance(hedera.HbarFromTinybar(cryptoCreate.InitialBalance)).
+	transaction := hiero.NewAccountCreateTransaction().
+		SetInitialBalance(hiero.HbarFromTinybar(cryptoCreate.InitialBalance)).
 		SetKey(cryptoCreate.Key.PublicKey)
 
 	if cryptoCreate.AutoRenewPeriod > 0 {
@@ -75,12 +74,12 @@ func (c *cryptoCreateTransactionConstructor) Construct(
 	return transaction, []types.AccountId{*payer}, nil
 }
 
-func (c *cryptoCreateTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
+func (c *cryptoCreateTransactionConstructor) Parse(_ context.Context, transaction hiero.TransactionInterface) (
 	types.OperationSlice,
 	[]types.AccountId,
 	*rTypes.Error,
 ) {
-	cryptoCreateTransaction, ok := transaction.(*hedera.AccountCreateTransaction)
+	cryptoCreateTransaction, ok := transaction.(*hiero.AccountCreateTransaction)
 	if !ok {
 		return nil, nil, errors.ErrTransactionInvalidType
 	}
@@ -175,7 +174,7 @@ func (c *cryptoCreateTransactionConstructor) preprocess(operations types.Operati
 func newCryptoCreateTransactionConstructor() transactionConstructorWithType {
 	return &cryptoCreateTransactionConstructor{
 		commonTransactionConstructor: newCommonTransactionConstructor(
-			hedera.NewAccountCreateTransaction(),
+			hiero.NewAccountCreateTransaction(),
 			types.OperationTypeCryptoCreateAccount,
 		),
 	}
