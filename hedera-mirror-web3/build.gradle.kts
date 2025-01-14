@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+import org.web3j.solidity.gradle.plugin.SolidityCompile
 import java.net.HttpURLConnection
 import java.net.URI
-import org.web3j.solidity.gradle.plugin.SolidityCompile
 
 description = "Hedera Mirror Node Web3"
 
@@ -30,6 +30,12 @@ plugins {
 // We need to use this version in order to be able to decode hex data when using the hedera.app
 // dependency
 val headlongVersion = "6.1.1"
+
+repositories {
+    maven {
+        url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+    }
+}
 
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
