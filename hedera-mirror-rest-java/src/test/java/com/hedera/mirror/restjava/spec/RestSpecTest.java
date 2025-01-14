@@ -63,8 +63,9 @@ import org.testcontainers.containers.GenericContainer;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class RestSpecTest extends RestJavaIntegrationTest {
+    // network/fees can be added once the next :latest tag is available
     private static final Pattern INCLUDED_SPEC_DIRS = Pattern.compile(
-            "^(accounts|accounts/\\{id}/allowances.*|\\{id}/rewards.*|blocks.*|contracts|network|topics/\\{id}/messages)$");
+            "^(accounts|accounts/\\{id}/allowances.*|accounts/\\{id}/rewards.*|blocks.*|contracts|network/exchangerate.*|network/stake.*|topics/\\{id}/messages)$");
     private static final Pattern RESPONSE_HEADER_FILE = Pattern.compile("^responseHeaders\\.json$");
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
     private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");

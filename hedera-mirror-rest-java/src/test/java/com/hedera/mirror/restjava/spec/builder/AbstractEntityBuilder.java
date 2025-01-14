@@ -27,6 +27,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,7 +41,6 @@ import lombok.CustomLog;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.CollectionUtils;
@@ -107,10 +107,16 @@ abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
     private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
     protected static final Function<Object, Object> HEX_OR_BASE64_CONVERTER = value -> {
         if (value instanceof String valueStr) {
-            return HEX_STRING_PATTERN.matcher(valueStr).matches()
-                    ? Bytes.fromHexString(valueStr.startsWith("0x") ? valueStr : "0x" + valueStr)
-                            .toArray()
-                    : Base64.getDecoder().decode(valueStr);
+            if (HEX_STRING_PATTERN.matcher(valueStr).matches()) {
+                var cleanValueStr = valueStr.replace("0x", "");
+
+                if (cleanValueStr.length() % 2 != 0) {
+                    return HexFormat.of().parseHex(cleanValueStr.substring(0, cleanValueStr.length() - 1));
+                }
+
+                return HexFormat.of().parseHex(cleanValueStr);
+            }
+            return Base64.getDecoder().decode(valueStr);
         }
 
         if (value instanceof Collection<?> valueCollection) {
