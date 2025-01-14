@@ -18,7 +18,7 @@ package types
 
 import (
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-sdk-go/v2/proto/services"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"strings"
 )
 

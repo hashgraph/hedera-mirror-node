@@ -23,14 +23,14 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 var (
-	cryptoTransferTransaction = hedera.NewTransferTransaction()
-	tokenCreateTransaction    = hedera.NewTokenCreateTransaction()
+	cryptoTransferTransaction = hiero.NewTransferTransaction()
+	tokenCreateTransaction    = hiero.NewTokenCreateTransaction()
 	cryptoTransferOperations  = types.OperationSlice{{Type: types.OperationTypeCryptoTransfer}}
 	mixedOperations           = types.OperationSlice{
 		{Type: types.OperationTypeCryptoTransfer},
