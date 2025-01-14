@@ -45,7 +45,7 @@ MISSING_TOOLS=()                   # List of missing required tools
 export DB_SKIP_FLAG_FILE="SKIP_DB_INIT"    # Flag file to skip database initialization
 
 # Manifest selection (manifest.csv or manifest.minimal.csv)
-USE_MINIMAL_DB=""           # Use minimal manifest flag
+USE_FULL_DB=""              # Use full manifest flag
 MANIFEST_FILE=""            # Path to the manifest file
 
 # Parallel processing configuration
@@ -93,24 +93,24 @@ log() {
 # Display usage instructions and command-line options directly to the terminal
 show_help() {
   cat > /dev/tty << EOF
-Usage: $0 DB_CPU_CORES [--minimal] IMPORT_DIR
+Usage: $0 DB_CPU_CORES [--full] IMPORT_DIR
 
 Imports data into a PostgreSQL database from compressed CSV files.
 
 Options:
   -h, --help, -H     Show this help message and exit.
-  --minimal          Use minimal manifest (manifest.minimal.csv) instead of the default manifest.csv
+  --full             Use full database manifest (manifest.csv), otherwise default to minimal (manifest.minimal.csv)
 
 Arguments:
   DB_CPU_CORES       Number of CPU cores on the DB instance to thread the import jobs.
   IMPORT_DIR         Directory containing the compressed CSV files and manifests.
 
 Example:
-  # Import full database (using manifest.csv)
+  # Import minimal database (using manifest.minimal.csv)
   $0 8 /path/to/data
 
-  # Import minimal database (using manifest.minimal.csv)
-  $0 8 --minimal /path/to/data
+  # Import full database (using manifest.csv)
+  $0 8 --full /path/to/data
 EOF
 }
 
@@ -209,6 +209,11 @@ cleanup() {
     exec 2>/dev/null
     touch "$CLEANUP_IN_PROGRESS_FILE"
 
+    # If a tracking file update was in progress, complete it
+    if [[ -f "${TRACKING_FILE}.tmp" ]]; then
+      mv "${TRACKING_FILE}.tmp" "$TRACKING_FILE"
+    fi
+
     # First kill all psql processes to stop any active queries
     pkill -9 psql
 
@@ -231,9 +236,6 @@ cleanup() {
 
     # Remove files only after ensuring all processes are dead
     rm -f "$PID_FILE" "$LOCK_FILE" "$CLEANUP_IN_PROGRESS_FILE"
-
-    # Exit immediately to prevent any further execution
-    kill -9 $$ >/dev/null 2>&1
 
     # Exit with a non-zero status to indicate interruption
     exit 1
@@ -795,8 +797,8 @@ shift
 # Process additional options
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --minimal)
-      USE_MINIMAL_DB=1
+    --full)
+      USE_FULL_DB=1
       shift
       ;;
     *)
@@ -838,10 +840,10 @@ if ! check_required_tools; then
 fi
 
 # Set file paths
-if [[ -n "$USE_MINIMAL_DB" ]]; then
-    MANIFEST_FILE="${IMPORT_DIR}/manifest.minimal.csv"
-else
+if [[ -n "$USE_FULL_DB" ]]; then
     MANIFEST_FILE="${IMPORT_DIR}/manifest.csv"
+else
+    MANIFEST_FILE="${IMPORT_DIR}/manifest.minimal.csv"
 fi
 MIRRORNODE_VERSION_FILE="$IMPORT_DIR/MIRRORNODE_VERSION"
 log "Using manifest file: $MANIFEST_FILE"

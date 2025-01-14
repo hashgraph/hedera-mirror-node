@@ -16,8 +16,8 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
     - [3.2. List Available Versions](#32-list-available-versions)
     - [3.3. Select a Version](#33-select-a-version)
     - [3.4. Download the Data](#34-download-the-data)
-      - [Download Full DB Data Files](#download-full-db-data-files)
       - [Download Minimal DB Data Files](#download-minimal-db-data-files)
+      - [Download Full DB Data Files](#download-full-db-data-files)
   - [4. Check Version Compatibility](#4-check-version-compatibility)
   - [5. Run the Bootstrap Script](#5-run-the-bootstrap-script)
   - [6. Monitoring and Managing the Import Process](#6-monitoring-and-managing-the-import-process)
@@ -181,17 +181,6 @@ This will display the available version directories.
 
 Choose one of the following download options based on your needs:
 
-##### Download Full DB Data Files
-
-Create a directory and download all files and subdirectories for the selected version:
-
-```bash
-mkdir -p /path/to/db_export
-export CLOUDSDK_STORAGE_SLICED_OBJECT_DOWNLOAD_MAX_COMPONENTS=1 && \
-VERSION_NUMBER=<VERSION_NUMBER> && \
-gcloud storage rsync -r "gs://mirrornode-db-export/$VERSION_NUMBER/" /path/to/db_export/
-```
-
 ##### Download Minimal DB Data Files
 
 Create a directory and download only the minimal database files:
@@ -201,6 +190,17 @@ mkdir -p /path/to/db_export
 export CLOUDSDK_STORAGE_SLICED_OBJECT_DOWNLOAD_MAX_COMPONENTS=1 && \
 VERSION_NUMBER=<VERSION_NUMBER> && \
 gcloud storage rsync -r -x '.*_part_\d+_\d+_\d+_atma\.csv\.gz$' "gs://mirrornode-db-export/$VERSION_NUMBER/" /path/to/db_export/
+```
+
+##### Download Full DB Data Files
+
+Create a directory and download all files and subdirectories for the selected version:
+
+```bash
+mkdir -p /path/to/db_export
+export CLOUDSDK_STORAGE_SLICED_OBJECT_DOWNLOAD_MAX_COMPONENTS=1 && \
+VERSION_NUMBER=<VERSION_NUMBER> && \
+gcloud storage rsync -r "gs://mirrornode-db-export/$VERSION_NUMBER/" /path/to/db_export/
 ```
 
 For both options:
@@ -246,14 +246,14 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
 
    To ensure the script continues running even if your SSH session is terminated, run it in a new session using `setsid`. The script handles its own logging, but we redirect stderr to capture any startup errors:
 
-   For a full database import:
+   For a minimal database import (default):
    ```bash
    setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log &
    ```
 
-   For a minimal database import:
+   For a full database import:
    ```bash
-   setsid ./bootstrap.sh 8 --minimal /path/to/db_export > /dev/null 2>> bootstrap.log &
+   setsid ./bootstrap.sh 8 --full /path/to/db_export > /dev/null 2>> bootstrap.log &
    ```
 
    - The script handles logging internally to `bootstrap.log`, and the execution command will also append stderr to the log file
@@ -348,7 +348,7 @@ If you need to stop the script before it completes:
   ```
 
   - The script will resume where it left off, skipping files that have already been imported successfully.
-  - Add the `--minimal` flag if you were using minimal mode.
+  - Add the `--full` flag if you were using full database mode.
 
 #### **6.4. Start the Mirrornode Importer**
 
