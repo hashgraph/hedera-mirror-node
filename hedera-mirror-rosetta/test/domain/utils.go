@@ -16,10 +16,10 @@
 
 package domain
 
-import "github.com/hashgraph/hedera-sdk-go/v2"
+import "github.com/hiero-ledger/hiero-sdk-go/v2"
 
-func GenEd25519KeyPair() (hedera.PrivateKey, hedera.PublicKey) {
-	sk, err := hedera.PrivateKeyGenerateEd25519()
+func GenEd25519KeyPair() (hiero.PrivateKey, hiero.PublicKey) {
+	sk, err := hiero.PrivateKeyGenerateEd25519()
 	if err != nil {
 		panic(err)
 	}

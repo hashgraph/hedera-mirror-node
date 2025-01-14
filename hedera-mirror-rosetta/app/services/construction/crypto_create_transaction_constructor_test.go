@@ -21,9 +21,8 @@ import (
 	"time"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/domain"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -35,7 +34,7 @@ const (
 
 var (
 	_, newAccountPublicKey = domain.GenEd25519KeyPair()
-	proxyAccountId         = hedera.AccountID{Account: 6000}
+	proxyAccountId         = hiero.AccountID{Account: 6000}
 )
 
 type updateOperationsFunc func(types.OperationSlice) types.OperationSlice
@@ -164,20 +163,20 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestConstruct() {
 }
 
 func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func() interfaces.Transaction {
-		return hedera.NewAccountCreateTransaction().
+	defaultGetTransaction := func() hiero.TransactionInterface {
+		return hiero.NewAccountCreateTransaction().
 			SetAccountMemo(memo).
 			SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
-			SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
+			SetInitialBalance(hiero.HbarFromTinybar(initialBalance)).
 			SetKey(newAccountPublicKey).
 			SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
 			SetProxyAccountID(proxyAccountId).
-			SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
+			SetTransactionID(hiero.TransactionIDGenerate(sdkAccountIdA))
 	}
 
 	var tests = []struct {
 		name           string
-		getTransaction func() interfaces.Transaction
+		getTransaction func() hiero.TransactionInterface
 		expectError    bool
 	}{
 		{
@@ -186,16 +185,16 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func() interfaces.Transaction {
-				return hedera.NewTransferTransaction()
+			getTransaction: func() hiero.TransactionInterface {
+				return hiero.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "KeyNotSet",
-			getTransaction: func() interfaces.Transaction {
+			getTransaction: func() hiero.TransactionInterface {
 				tx := defaultGetTransaction()
-				accountCreateTx, _ := tx.(*hedera.AccountCreateTransaction)
+				accountCreateTx, _ := tx.(*hiero.AccountCreateTransaction)
 				accountCreateTx.SetKey(nil)
 				return tx
 			},
@@ -203,25 +202,25 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "OutOfRangePayerAccountId",
-			getTransaction: func() interfaces.Transaction {
-				return hedera.NewAccountCreateTransaction().
+			getTransaction: func() hiero.TransactionInterface {
+				return hiero.NewAccountCreateTransaction().
 					SetAccountMemo(memo).
 					SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
-					SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
+					SetInitialBalance(hiero.HbarFromTinybar(initialBalance)).
 					SetKey(newAccountPublicKey).
 					SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
 					SetProxyAccountID(proxyAccountId).
-					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+					SetTransactionID(hiero.TransactionIDGenerate(outOfRangeAccountId))
 			},
 			expectError: true,
 		},
 		{
 			name: "TransactionIDNotSet",
-			getTransaction: func() interfaces.Transaction {
-				return hedera.NewAccountCreateTransaction().
+			getTransaction: func() hiero.TransactionInterface {
+				return hiero.NewAccountCreateTransaction().
 					SetAccountMemo(memo).
 					SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
-					SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
+					SetInitialBalance(hiero.HbarFromTinybar(initialBalance)).
 					SetKey(newAccountPublicKey).
 					SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
 					SetProxyAccountID(proxyAccountId)
@@ -337,12 +336,12 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestPreprocess() {
 func assertCryptoCreateTransaction(
 	t *testing.T,
 	operation types.Operation,
-	actual interfaces.Transaction,
+	actual hiero.TransactionInterface,
 ) {
-	assert.IsType(t, &hedera.AccountCreateTransaction{}, actual)
-	assert.False(t, actual.IsFrozen())
+	assert.IsType(t, &hiero.AccountCreateTransaction{}, actual)
 
-	tx, _ := actual.(*hedera.AccountCreateTransaction)
+	tx, _ := actual.(*hiero.AccountCreateTransaction)
+	assert.False(t, tx.IsFrozen())
 	key, err := tx.GetKey()
 	assert.NoError(t, err)
 	assert.Equal(t, operation.Metadata["key"], key.String())

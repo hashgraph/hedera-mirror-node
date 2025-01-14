@@ -23,7 +23,7 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	adminKey, _ = hedera.PublicKeyFromString(adminKeyStr)
+	adminKey, _ = hiero.PublicKeyFromString(adminKeyStr)
 )
 
 var defaultContext = context.Background()
@@ -125,7 +125,7 @@ func TestCompareCurrency(t *testing.T) {
 func TestIsNonEmptyPublicKey(t *testing.T) {
 	var tests = []struct {
 		name     string
-		key      hedera.Key
+		key      hiero.Key
 		expected bool
 	}{
 		{
@@ -135,12 +135,12 @@ func TestIsNonEmptyPublicKey(t *testing.T) {
 		},
 		{
 			name:     "EmptyPublicKey",
-			key:      hedera.PublicKey{},
+			key:      hiero.PublicKey{},
 			expected: false,
 		},
 		{
 			name:     "NotPublicKey",
-			key:      hedera.PrivateKey{},
+			key:      hiero.PrivateKey{},
 			expected: false,
 		},
 	}
@@ -155,17 +155,17 @@ func TestIsNonEmptyPublicKey(t *testing.T) {
 func TestIsZeroAccountId(t *testing.T) {
 	var tests = []struct {
 		name      string
-		accountId hedera.AccountID
+		accountId hiero.AccountID
 		expected  bool
 	}{
 		{
 			name:      "ZeroAccountId",
-			accountId: hedera.AccountID{},
+			accountId: hiero.AccountID{},
 			expected:  true,
 		},
 		{
 			name:      "NonZeroAccountId",
-			accountId: hedera.AccountID{Account: 101},
+			accountId: hiero.AccountID{Account: 101},
 			expected:  false,
 		},
 	}
