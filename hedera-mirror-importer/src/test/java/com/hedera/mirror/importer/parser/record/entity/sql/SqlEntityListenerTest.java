@@ -1749,9 +1749,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         var node1 = domainBuilder.node().get();
         var node2 = domainBuilder
                 .node()
-                .customize(node -> node.adminKey(null))
-                .customize(node -> node.createdTimestamp(null))
-                .customize(node -> node.nodeId(node1.getNodeId()))
+                .customize(node -> node.adminKey(null).nodeId(node1.getNodeId()))
                 .get();
 
         // when
@@ -1774,10 +1772,8 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         var node1 = domainBuilder.node().get();
         var node2 = domainBuilder
                 .node()
-                .customize(node -> node.adminKey(null))
-                .customize(node -> node.createdTimestamp(null))
-                .customize(node -> node.deleted(true))
-                .customize(node -> node.nodeId(node1.getNodeId()))
+                .customize(node ->
+                        node.adminKey(null).createdTimestamp(null).deleted(true).nodeId(node1.getNodeId()))
                 .get();
 
         // when

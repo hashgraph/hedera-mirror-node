@@ -51,9 +51,10 @@ class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
     private void parseNode(RecordItem recordItem) {
         if (recordItem.isSuccessful()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
+            var body = recordItem.getTransactionBody().getNodeDelete();
             entityListener.onNode(Node.builder()
                     .deleted(true)
-                    .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
+                    .nodeId(body.getNodeId())
                     .timestampRange(Range.atLeast(consensusTimestamp))
                     .build());
         }

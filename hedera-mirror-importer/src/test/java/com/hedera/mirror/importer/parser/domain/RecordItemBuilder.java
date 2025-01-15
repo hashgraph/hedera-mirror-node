@@ -689,7 +689,6 @@ public class RecordItemBuilder {
     }
 
     public Builder<NodeUpdateTransactionBody.Builder> nodeUpdate() {
-        var nodeId = id();
         var builder = NodeUpdateTransactionBody.newBuilder()
                 .setAccountId(accountId())
                 .setAdminKey(key())
@@ -697,15 +696,14 @@ public class RecordItemBuilder {
                 .setGossipCaCertificate(BytesValue.of(bytes(4)))
                 .addGossipEndpoint(gossipEndpoint())
                 .setGrpcCertificateHash(BytesValue.of(bytes(48)))
-                .setNodeId(nodeId)
+                .setNodeId(id())
                 .addServiceEndpoint(serviceEndpoint());
-        return new Builder<>(TransactionType.NODEUPDATE, builder).receipt(r -> r.setNodeId(nodeId));
+        return new Builder<>(TransactionType.NODEUPDATE, builder);
     }
 
     public Builder<NodeDeleteTransactionBody.Builder> nodeDelete() {
-        var nodeId = id();
-        var builder = NodeDeleteTransactionBody.newBuilder().setNodeId(nodeId);
-        return new Builder<>(TransactionType.NODEDELETE, builder).receipt(r -> r.setNodeId(nodeId));
+        var builder = NodeDeleteTransactionBody.newBuilder().setNodeId(id());
+        return new Builder<>(TransactionType.NODEDELETE, builder);
     }
 
     @SuppressWarnings("deprecation")

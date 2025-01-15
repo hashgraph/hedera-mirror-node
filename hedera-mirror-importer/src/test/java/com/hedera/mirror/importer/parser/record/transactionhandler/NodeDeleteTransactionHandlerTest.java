@@ -98,7 +98,7 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(transaction.getTransactionRecordBytes()).containsExactly(transactionRecordBytes);
         verify(entityListener, times(1)).onNode(assertArg(t -> assertThat(t)
                 .isNotNull()
-                .returns(recordItem.getTransactionRecord().getReceipt().getNodeId(), Node::getNodeId)
+                .returns(recordItem.getTransactionBody().getNodeDelete().getNodeId(), Node::getNodeId)
                 .returns(true, Node::isDeleted)));
     }
 }
