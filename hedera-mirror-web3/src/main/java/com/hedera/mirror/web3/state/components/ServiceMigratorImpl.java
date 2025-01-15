@@ -48,16 +48,16 @@ public class ServiceMigratorImpl implements ServiceMigrator {
             @Nonnull ServicesRegistry servicesRegistry,
             @Nullable SoftwareVersion previousVersion,
             @Nonnull SoftwareVersion currentVersion,
-            @Nonnull Configuration nodeConfiguration,
-            @Nonnull Configuration platformConfiguration,
+            @Nonnull Configuration appConfig,
+            @Nonnull Configuration platformConfig,
             @Nullable NetworkInfo genesisNetworkInfo,
             @Nonnull Metrics metrics,
             @Nonnull StartupNetworks startupNetworks) {
         requireNonNull(state);
         requireNonNull(servicesRegistry);
         requireNonNull(currentVersion);
-        requireNonNull(nodeConfiguration);
-        requireNonNull(platformConfiguration);
+        requireNonNull(appConfig);
+        requireNonNull(platformConfig);
         requireNonNull(genesisNetworkInfo);
         requireNonNull(metrics);
 
@@ -69,8 +69,8 @@ public class ServiceMigratorImpl implements ServiceMigrator {
             throw new IllegalArgumentException("Can only be used with ServicesRegistryImpl instances");
         }
 
-        final AtomicLong prevEntityNum = new AtomicLong(
-                nodeConfiguration.getConfigData(HederaConfig.class).firstUserEntity() - 1);
+        final AtomicLong prevEntityNum =
+                new AtomicLong(appConfig.getConfigData(HederaConfig.class).firstUserEntity() - 1);
         final Map<String, Object> sharedValues = new HashMap<>();
         final var deserializedPbjVersion = Optional.ofNullable(previousVersion)
                 .map(SoftwareVersion::getPbjSemanticVersion)
@@ -85,7 +85,8 @@ public class ServiceMigratorImpl implements ServiceMigrator {
                     mirrorNodeState,
                     deserializedPbjVersion,
                     genesisNetworkInfo,
-                    platformConfiguration,
+                    appConfig,
+                    platformConfig,
                     sharedValues,
                     prevEntityNum,
                     startupNetworks);

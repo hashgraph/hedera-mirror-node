@@ -23,12 +23,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
@@ -70,10 +68,6 @@ import java.util.function.Function;
 
 public final class MiscUtils {
 
-    private MiscUtils() {
-        throw new UnsupportedOperationException("Utility Class");
-    }
-
     public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR = trans -> {
         try {
             return functionOf(trans);
@@ -82,9 +76,13 @@ public final class MiscUtils {
         }
     };
 
+    private MiscUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     /**
-     * check TransactionBody and return the HederaFunctionality. This method was moved from MiscUtils.
-     * NODE_STAKE_UPDATE is not checked in this method, since it is not a user transaction.
+     * check TransactionBody and return the HederaFunctionality. This method was moved from MiscUtils. NODE_STAKE_UPDATE
+     * is not checked in this method, since it is not a user transaction.
      *
      * @param txn the {@code TransactionBody}
      * @return one of HederaFunctionality
@@ -101,12 +99,10 @@ public final class MiscUtils {
             case CONTRACTUPDATEINSTANCE -> ContractUpdate;
             case CONTRACTDELETEINSTANCE -> ContractDelete;
             case ETHEREUMTRANSACTION -> EthereumTransaction;
-            case CRYPTOADDLIVEHASH -> CryptoAddLiveHash;
             case CRYPTOAPPROVEALLOWANCE -> CryptoApproveAllowance;
             case CRYPTODELETEALLOWANCE -> CryptoDeleteAllowance;
             case CRYPTOCREATEACCOUNT -> CryptoCreate;
             case CRYPTODELETE -> CryptoDelete;
-            case CRYPTODELETELIVEHASH -> CryptoDeleteLiveHash;
             case CRYPTOTRANSFER -> CryptoTransfer;
             case CRYPTOUPDATEACCOUNT -> CryptoUpdate;
             case FREEZE -> Freeze;

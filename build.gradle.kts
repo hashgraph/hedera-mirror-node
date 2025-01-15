@@ -62,7 +62,7 @@ dependencies {
         api("com.graphql-java-generator:graphql-java-client-runtime:2.8")
         api("com.graphql-java:graphql-java-extended-scalars:22.0")
         api("com.graphql-java:graphql-java-extended-validation:22.0")
-        api("com.hedera.hashgraph:app:0.57.3")
+        api("com.hedera.hashgraph:app:0.58.3")
         api("com.hedera.evm:hedera-evm:0.54.2")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.57.3")
         api("com.hedera.hashgraph:sdk:2.46.0")
@@ -105,6 +105,7 @@ dependencies {
         api("uk.org.webcompere:system-stubs-jupiter:2.1.7")
         api("org.web3j:core:4.12.2")
         api("tech.pegasys:jc-kzg-4844:1.0.0")
+        api("com.hedera.cryptography:hedera-cryptography-bls:0.1.1-SNAPSHOT")
     }
 }
 

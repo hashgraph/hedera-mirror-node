@@ -38,6 +38,7 @@ import jakarta.inject.Named;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+@SuppressWarnings("deprecation")
 @Named
 public class TokenRelationshipReadableKVState extends AbstractReadableKVState<EntityIDPair, TokenRelation> {
 
@@ -103,9 +104,9 @@ public class TokenRelationshipReadableKVState extends AbstractReadableKVState<En
     }
 
     /**
-     * For the latest block we have the balance directly as a field in the TokenAccount object.
-     * For the historical block we need to execute a query to calculate the historical balance, but
-     * we first need to find the account created timestamp and the token type in order to use the correct repository.
+     * For the latest block we have the balance directly as a field in the TokenAccount object. For the historical block
+     * we need to execute a query to calculate the historical balance, but we first need to find the account created
+     * timestamp and the token type in order to use the correct repository.
      */
     private Supplier<Long> getBalance(final TokenAccount tokenAccount, final Optional<Long> timestamp) {
         return Suppliers.memoize(() -> timestamp
