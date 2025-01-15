@@ -24,6 +24,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -64,19 +65,7 @@ import org.web3j.tx.Contract;
 @Import(Web3jTestConfiguration.class)
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
-    @Resource
-    protected TestWeb3jService testWeb3jService;
-
-    @Resource
-    protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
-
-    @Resource
-    protected State state;
-
-    protected RecordFile genesisRecordFile;
-
     protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
-
     protected static final byte[] EXCHANGE_RATES_SET = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
                     .setCentEquiv(12)
@@ -90,6 +79,19 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                     .build())
             .build()
             .toByteArray();
+
+    @Resource
+    protected TestWeb3jService testWeb3jService;
+
+    @Resource
+    protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    @Resource
+    protected State state;
+
+    protected RecordFile genesisRecordFile;
+
+    protected Entity treasuryEntity;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -111,7 +113,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected void setup() {
         genesisRecordFile =
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
-        domainBuilder
+        treasuryEntity = domainBuilder
                 .entity()
                 .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
                 .persist();
@@ -119,6 +121,12 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         domainBuilder
                 .fileData()
                 .customize(f -> f.entityId(EntityId.of(112L)).fileData(EXCHANGE_RATES_SET))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(
+                                treasuryEntity.getCreatedTimestamp(), treasuryEntity.toEntityId()))
+                        .balance(treasuryEntity.getBalance()))
                 .persist();
         testWeb3jService.reset();
     }

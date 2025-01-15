@@ -22,8 +22,7 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -32,7 +31,7 @@ type cryptoTransferTransactionConstructor struct {
 }
 
 type transfer struct {
-	account hedera.AccountID
+	account hiero.AccountID
 	amount  types.Amount
 }
 
@@ -49,30 +48,30 @@ func (m senderMap) toSenders() []types.AccountId {
 func (c *cryptoTransferTransactionConstructor) Construct(
 	_ context.Context,
 	operations types.OperationSlice,
-) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
+) (hiero.TransactionInterface, []types.AccountId, *rTypes.Error) {
 	transfers, senders, rErr := c.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
-	transaction := hedera.NewTransferTransaction()
+	transaction := hiero.NewTransferTransaction()
 
 	for _, transfer := range transfers {
 		switch amount := transfer.amount.(type) {
 		case *types.HbarAmount:
-			transaction.AddHbarTransfer(transfer.account, hedera.HbarFromTinybar(amount.Value))
+			transaction.AddHbarTransfer(transfer.account, hiero.HbarFromTinybar(amount.Value))
 		}
 	}
 
 	return transaction, senders, nil
 }
 
-func (c *cryptoTransferTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
+func (c *cryptoTransferTransactionConstructor) Parse(_ context.Context, transaction hiero.TransactionInterface) (
 	types.OperationSlice,
 	[]types.AccountId,
 	*rTypes.Error,
 ) {
-	transferTransaction, ok := transaction.(*hedera.TransferTransaction)
+	transferTransaction, ok := transaction.(*hiero.TransferTransaction)
 	if !ok {
 		return nil, nil, errors.ErrTransactionInvalidType
 	}
@@ -116,7 +115,7 @@ func (c *cryptoTransferTransactionConstructor) Preprocess(_ context.Context, ope
 }
 
 func (c *cryptoTransferTransactionConstructor) addOperation(
-	sdkAccountId hedera.AccountID,
+	sdkAccountId hiero.AccountID,
 	amount types.Amount,
 	operations types.OperationSlice,
 ) (types.OperationSlice, *rTypes.Error) {
@@ -179,7 +178,7 @@ func (c *cryptoTransferTransactionConstructor) preprocess(operations types.Opera
 func newCryptoTransferTransactionConstructor() transactionConstructorWithType {
 	return &cryptoTransferTransactionConstructor{
 		commonTransactionConstructor: newCommonTransactionConstructor(
-			hedera.NewTransferTransaction(),
+			hiero.NewTransferTransaction(),
 			types.OperationTypeCryptoTransfer,
 		),
 	}
