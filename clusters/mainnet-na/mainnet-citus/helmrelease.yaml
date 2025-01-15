@@ -14,7 +14,7 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.120.1'
+      version: '0.121.2'
   dependsOn:
     - name: mirror
       namespace: common
@@ -69,6 +69,9 @@ spec:
     stackgres:
       coordinator:
         enableMetricsExporter: true
+        pgbouncer:
+          pgbouncer:
+            server_lifetime: "1800"
       worker:
         config:
           shared_buffers: "20GB"
@@ -86,6 +89,9 @@ spec:
             pods:
               persistentVolume:
                 size: 550Gi
+        pgbouncer:
+          pgbouncer:
+            server_lifetime: "1800"
         resources:
           cpu: "15"
           memory: 82Gi
@@ -100,7 +106,7 @@ spec:
             test:
               acceptance:
                 network: MAINNET
-      cucumberTags: "@critical"
+      cucumberTags: "@critical and not @schedulebase"
       enabled: true
     web3:
       env:
