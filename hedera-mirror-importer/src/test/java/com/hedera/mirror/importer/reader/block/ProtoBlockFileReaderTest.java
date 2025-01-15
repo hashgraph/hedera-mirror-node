@@ -79,11 +79,9 @@ class ProtoBlockFileReaderTest {
         byte[] bytes = gzip(block);
         var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", bytes);
         var expected = BlockFile.builder()
-                .bytes(bytes)
                 .loadStart(streamFileData.getStreamFilename().getTimestamp())
                 .name(streamFileData.getFilename())
                 .recordFileItem(RecordFileItem.getDefaultInstance())
-                .size(bytes.length)
                 .version(7)
                 .build();
 

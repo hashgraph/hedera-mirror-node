@@ -18,36 +18,9 @@ package com.hedera.mirror.common.domain.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class BlockFileTest {
-
-    @Test
-    void addItem() {
-        var blockItem = BlockItem.builder().build();
-        var blockFile = BlockFile.builder().addItem(blockItem).build();
-        assertThat(blockFile.getItems()).containsExactly(blockItem);
-    }
-
-    @Test
-    void count() {
-        var blockFile = BlockFile.builder().build();
-        assertThat(blockFile.getCount()).isZero();
-
-        blockFile = BlockFile.builder().count(10L).build();
-        assertThat(blockFile.getCount()).isEqualTo(10L);
-
-        var blockItem = BlockItem.builder().build();
-        blockFile = BlockFile.builder().items(List.of(blockItem)).build();
-        assertThat(blockFile.getCount()).isEqualTo(1L);
-
-        blockFile = BlockFile.builder().addItem(blockItem).build();
-        assertThat(blockFile.getCount()).isEqualTo(1L);
-
-        blockFile = BlockFile.builder().addItem(blockItem).count(5L).build();
-        assertThat(blockFile.getCount()).isEqualTo(5L);
-    }
 
     @Test
     void onNewRound() {

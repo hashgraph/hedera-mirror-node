@@ -22,14 +22,13 @@ import com.hedera.hapi.block.stream.protoc.RecordFileItem;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Singular;
 import lombok.ToString;
 
 @Builder(toBuilder = true)
@@ -60,10 +59,10 @@ public class BlockFile implements StreamFile<BlockItem> {
 
     private Long index;
 
-    @Builder.Default
     @EqualsAndHashCode.Exclude
+    @Singular
     @ToString.Exclude
-    private Collection<BlockItem> items = List.of();
+    private Collection<BlockItem> items;
 
     private Long loadEnd;
 
@@ -101,27 +100,7 @@ public class BlockFile implements StreamFile<BlockItem> {
         return StreamType.BLOCK;
     }
 
-    public static BlockFileBuilder builder() {
-        return new BlockFileBuilder() {
-            @Override
-            public BlockFile build() {
-                prebuild();
-                return super.build();
-            }
-        };
-    }
-
     public static class BlockFileBuilder {
-
-        public BlockFileBuilder addItem(BlockItem blockItem) {
-            if (this.items$value == null) {
-                items$set = true;
-                items$value = new ArrayList<>();
-            }
-
-            items$value.add(blockItem);
-            return this;
-        }
 
         public BlockFileBuilder onNewRound(long roundNumber) {
             if (roundStart == null) {
@@ -139,12 +118,6 @@ public class BlockFile implements StreamFile<BlockItem> {
 
             consensusEnd = consensusTimestamp;
             return this;
-        }
-
-        void prebuild() {
-            if (count == null) {
-                count = items$value != null ? (long) items$value.size() : 0;
-            }
         }
     }
 }

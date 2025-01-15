@@ -26,39 +26,31 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import lombok.NoArgsConstructor;
-import lombok.Value;
-import lombok.experimental.NonFinal;
+import lombok.Data;
 
 /**
  * Calculates a block's root hash per the algorithm defined in HIP-1056. Note both the input merkle tree and the output
- * merkle tree are padded with SHA2-384 hash of an empty bytearray to be perfect binary trees.
+ * merkle tree are padded with SHA2-384 hash of an empty bytearray to be perfect binary trees. Note none of the methods
+ * are reentrant.
  */
-@NoArgsConstructor
-@Value
+@Data
 class BlockRootHashDigest {
 
     private static final byte[] EMPTY_HASH = createMessageDigest().digest(new byte[0]);
 
-    @NonFinal
+    private final MessageDigest digest = createMessageDigest();
     private boolean finalized;
-
-    private List<byte[]> inputHashes = new ArrayList<>();
-
-    private List<byte[]> outputHashes = new ArrayList<>();
-
-    @NonFinal
+    private final List<byte[]> inputHashes = new ArrayList<>();
+    private final List<byte[]> outputHashes = new ArrayList<>();
     private byte[] previousHash;
-
-    @NonFinal
     private byte[] startOfBlockStateHash;
 
     public void addInputBlockItem(BlockItem blockItem) {
-        inputHashes.add(createMessageDigest().digest(blockItem.toByteArray()));
+        inputHashes.add(digest.digest(blockItem.toByteArray()));
     }
 
     public void addOutputBlockItem(BlockItem blockItem) {
-        outputHashes.add(createMessageDigest().digest(blockItem.toByteArray()));
+        outputHashes.add(digest.digest(blockItem.toByteArray()));
     }
 
     public String digest() {
@@ -91,15 +83,7 @@ class BlockRootHashDigest {
         this.startOfBlockStateHash = startOfBlockStateHash;
     }
 
-    private static MessageDigest createMessageDigest() {
-        try {
-            return MessageDigest.getInstance(SHA_384.getName());
-        } catch (NoSuchAlgorithmException ex) {
-            throw new StreamFileReaderException(ex);
-        }
-    }
-
-    private static byte[] getRootHash(List<byte[]> leaves) {
+    private byte[] getRootHash(List<byte[]> leaves) {
         if (leaves.isEmpty()) {
             return EMPTY_HASH;
         }
@@ -116,7 +100,6 @@ class BlockRootHashDigest {
         // Iteratively calculate the parent node hash as h(left | right) to get the root hash in bottom-up fashion
         while (size > 1) {
             for (int i = 0; i < size; i += 2) {
-                var digest = createMessageDigest();
                 byte[] left = leaves.get(i);
                 byte[] right = leaves.get(i + 1);
                 digest.update(left);
@@ -128,6 +111,14 @@ class BlockRootHashDigest {
         }
 
         return leaves.getFirst();
+    }
+
+    private static MessageDigest createMessageDigest() {
+        try {
+            return MessageDigest.getInstance(SHA_384.getName());
+        } catch (NoSuchAlgorithmException ex) {
+            throw new StreamFileReaderException(ex);
+        }
     }
 
     private static void validateHash(byte[] hash, String name) {

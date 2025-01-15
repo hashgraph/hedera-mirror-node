@@ -59,13 +59,10 @@ public class ProtoBlockFileReader implements BlockFileReader {
 
         try (var inputStream = streamFileData.getInputStream()) {
             var block = Block.parseFrom(inputStream);
-            byte[] bytes = streamFileData.getBytes();
             var context = new ReaderContext(block.getItemsList(), filename);
             var blockFileBuilder = context.getBlockFile()
-                    .bytes(bytes)
                     .loadStart(streamFileData.getStreamFilename().getTimestamp())
                     .name(filename)
-                    .size(bytes.length)
                     .version(VERSION);
 
             var blockItem = context.readBlockItemFor(RECORD_FILE);
@@ -80,14 +77,17 @@ public class ProtoBlockFileReader implements BlockFileReader {
             readTrailingStateChanges(context);
             readBlockProof(context);
 
-            return blockFileBuilder
-                    .hash(context.getBlockRootHashDigest().digest())
-                    .build();
-        } catch (Exception e) {
-            if (e instanceof InvalidStreamFileException invalidStreamFileException) {
-                throw invalidStreamFileException;
-            }
+            var blockFile = blockFileBuilder.build();
+            var bytes = streamFileData.getBytes();
+            blockFile.setBytes(bytes);
+            blockFile.setCount((long) blockFile.getItems().size());
+            blockFile.setHash(context.getBlockRootHashDigest().digest());
+            blockFile.setSize(bytes.length);
 
+            return blockFile;
+        } catch (InvalidStreamFileException e) {
+            throw e;
+        } catch (Exception e) {
             throw new InvalidStreamFileException("Failed to read " + filename, e);
         }
     }
@@ -173,7 +173,7 @@ public class ProtoBlockFileReader implements BlockFileReader {
                             .stateChanges(Collections.unmodifiableList(stateChangesList))
                             .build();
                     context.getBlockFile()
-                            .addItem(blockItem)
+                            .item(blockItem)
                             .onNewTransaction(getTransactionConsensusTimestamp(transactionResult));
                 }
             } catch (InvalidProtocolBufferException e) {
