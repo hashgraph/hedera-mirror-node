@@ -22,7 +22,6 @@ import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
 import com.hedera.mirror.common.domain.StreamItem;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.List;
-import java.util.Optional;
 import lombok.Builder;
 
 @Builder(toBuilder = true)
@@ -30,5 +29,5 @@ public record BlockItem(
         Transaction transaction,
         TransactionResult transactionResult,
         List<TransactionOutput> transactionOutput,
-        Optional<StateChanges> stateChanges)
+        List<StateChanges> stateChanges)
         implements StreamItem {}
