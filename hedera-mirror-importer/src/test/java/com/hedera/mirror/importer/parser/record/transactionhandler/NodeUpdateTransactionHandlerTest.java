@@ -26,6 +26,7 @@ import com.hedera.mirror.common.domain.entity.Node;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -101,8 +102,36 @@ class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 recordItem.getTransactionBody().getNodeUpdate().getAdminKey().toByteArray();
         verify(entityListener, times(1)).onNode(assertArg(t -> assertThat(t)
                 .isNotNull()
-                .returns(recordItem.getTransactionRecord().getReceipt().getNodeId(), Node::getNodeId)
+                .returns(recordItem.getTransactionBody().getNodeUpdate().getNodeId(), Node::getNodeId)
                 .returns(adminKey, Node::getAdminKey)
+                .returns(null, Node::getCreatedTimestamp)
+                .returns(recordItem.getConsensusTimestamp(), Node::getTimestampLower)
+                .returns(false, Node::isDeleted)));
+    }
+
+    @Test
+    void nodeUpdateMigration() {
+        entityProperties.getPersist().setNodes(true);
+
+        // given
+        var transactionId = TransactionID.newBuilder().setNonce(1);
+        var recordItem = recordItemBuilder
+                .nodeUpdate()
+                .record(b -> b.setTransactionID(transactionId))
+                .build();
+        var transaction = domainBuilder.transaction().get();
+
+        // when
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
+        var adminKey =
+                recordItem.getTransactionBody().getNodeUpdate().getAdminKey().toByteArray();
+        verify(entityListener, times(1)).onNode(assertArg(t -> assertThat(t)
+                .isNotNull()
+                .returns(recordItem.getTransactionBody().getNodeUpdate().getNodeId(), Node::getNodeId)
+                .returns(adminKey, Node::getAdminKey)
+                .returns(recordItem.getConsensusTimestamp(), Node::getCreatedTimestamp)
                 .returns(recordItem.getConsensusTimestamp(), Node::getTimestampLower)
                 .returns(false, Node::isDeleted)));
     }
@@ -133,7 +162,7 @@ class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         verify(entityListener, times(1)).onNode(assertArg(t -> assertThat(t)
                 .isNotNull()
-                .returns(recordItem.getTransactionRecord().getReceipt().getNodeId(), Node::getNodeId)
+                .returns(recordItem.getTransactionBody().getNodeUpdate().getNodeId(), Node::getNodeId)
                 .returns(null, Node::getAdminKey)
                 .returns(recordItem.getConsensusTimestamp(), Node::getTimestampLower)
                 .returns(false, Node::isDeleted)));
