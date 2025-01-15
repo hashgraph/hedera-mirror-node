@@ -60,7 +60,7 @@ jobs:
     timeout-minutes: 40 # increase it from 20 minutes since some jobs often run longer on self-hosted runners
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        uses: step-security/harden-runner@c95a14d0e5bab51a9f56296a4eb0e416910cd350 # v2.10.3
         with:
           egress-policy: audit
 
@@ -92,6 +92,15 @@ jobs:
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
           SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
         run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
+
+      - name: Execute Gradle using transaction executor
+        if: ${{ matrix.project == 'web3' && matrix.schema == 'v1'}}
+        continue-on-error: true
+        env:
+          MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
+          SPRING_PROFILES_ACTIVE: ${{ matrix.schema}}
+          HEDERA_MIRROR_WEB3_EVM_MODULARIZEDSERVICES: "true"
+        run: ./gradlew :${{ matrix.project }}:build --scan ${{ secrets.GRADLE_ARGS }}
 
       - name: Upload coverage report
         uses: codecov/codecov-action@1e68e06f1dbfde0e4cefc87efeba9e4643565303 # v5.1.2

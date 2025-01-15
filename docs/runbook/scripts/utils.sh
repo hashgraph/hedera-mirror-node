@@ -2,6 +2,21 @@
 set -euo pipefail
 shopt -s expand_aliases
 
+function backgroundErrorHandler() {
+  log "Background command failure signalled. Exiting..."
+  trap - INT
+  wait
+  exit 1
+}
+
+trap backgroundErrorHandler INT
+
+function watchInBackground() {
+  local -ir pid="$1"
+  shift
+  "$@" || kill -INT -- -"$pid"
+}
+
 function checkCitusMetadataSyncStatus() {
   TIMEOUT_SECONDS=600
   local namespace="${1}"

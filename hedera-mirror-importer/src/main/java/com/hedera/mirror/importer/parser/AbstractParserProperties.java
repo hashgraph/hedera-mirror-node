@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
@@ -30,6 +31,7 @@ import org.springframework.validation.annotation.Validated;
 public abstract class AbstractParserProperties implements ParserProperties {
 
     @NotNull
+    @Valid
     protected BatchProperties batch = new BatchProperties();
 
     protected boolean enabled = true;
@@ -43,6 +45,7 @@ public abstract class AbstractParserProperties implements ParserProperties {
     protected Duration processingTimeout = Duration.ofSeconds(10L);
 
     @NotNull
+    @Valid
     protected RetryProperties retry = new RetryProperties();
 
     @DurationMin(seconds = 1)

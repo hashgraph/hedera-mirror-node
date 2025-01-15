@@ -22,20 +22,25 @@ import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDU
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.EnumSet;
 import java.util.Set;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 @Data
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity")
+@Validated
 public class EntityProperties {
 
     @NotNull
+    @Valid
     private PersistProperties persist = new PersistProperties();
 
     @Data
+    @Validated
     public static class PersistProperties {
 
         private boolean claims = false;

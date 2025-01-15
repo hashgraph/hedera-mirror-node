@@ -31,6 +31,11 @@ plugins {
 // dependency
 val headlongVersion = "6.1.1"
 
+repositories {
+    // Temporary repository added for com.hedera.cryptography snapshot dependencies
+    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+}
+
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
@@ -126,7 +131,7 @@ val extractOpenZeppelin =
 
 tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
-tasks.compileJava { options.compilerArgs.add("--enable-preview") }
+tasks.withType<JavaCompile> { options.compilerArgs.add("--enable-preview") }
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
@@ -201,7 +206,7 @@ tasks.register<Copy>("moveAndCleanTestHistoricalFiles") {
 afterEvaluate { tasks.named("extractSolidityImports") { dependsOn("extractContracts") } }
 
 tasks.compileTestJava {
-    options.compilerArgs.add("--enable-preview")
+    options.compilerArgs.add("-Xlint:-unchecked") // Web3j generates code with unchecked
     options.compilerArgs.removeIf { it == "-Werror" }
     dependsOn("moveAndCleanTestHistoricalFiles")
 }

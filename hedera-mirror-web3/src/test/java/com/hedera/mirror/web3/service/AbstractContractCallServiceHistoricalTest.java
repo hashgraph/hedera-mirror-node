@@ -152,8 +152,9 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         // result
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(timestampRange.lowerEndpoint(), EntityId.of(2)))
-                        .balance(balance))
+                .customize(
+                        ab -> ab.id(new AccountBalance.Id(timestampRange.lowerEndpoint(), treasuryEntity.toEntityId()))
+                                .balance(balance))
                 .persist();
         domainBuilder
                 .accountBalance()
@@ -168,8 +169,9 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         // result
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(timestampRange.lowerEndpoint(), EntityId.of(2)))
-                        .balance(balance))
+                .customize(
+                        ab -> ab.id(new AccountBalance.Id(timestampRange.lowerEndpoint(), treasuryEntity.toEntityId()))
+                                .balance(balance))
                 .persist();
         domainBuilder
                 .tokenBalance()

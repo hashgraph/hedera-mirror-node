@@ -75,12 +75,14 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nonnull final MirrorNodeState state,
             @Nonnull final NetworkInfo networkInfo,
             @Nonnull final StartupNetworks startupNetworks) {
+        final var config = ConfigurationBuilder.create().build();
         migrate(
                 serviceName,
                 state,
                 CURRENT_VERSION,
                 networkInfo,
-                ConfigurationBuilder.create().build(),
+                config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -92,7 +94,8 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nonnull final MirrorNodeState state,
             @Nullable final SemanticVersion previousVersion,
             @Nonnull final NetworkInfo networkInfo,
-            @Nonnull final Configuration config,
+            @Nonnull final Configuration appConfig,
+            @Nonnull final Configuration platformConfig,
             @Nonnull final Map<String, Object> sharedValues,
             @Nonnull final AtomicLong nextEntityNum,
             @Nonnull final StartupNetworks startupNetworks) {
@@ -107,13 +110,13 @@ public class SchemaRegistryImpl implements SchemaRegistry {
 
         for (final var schema : schemas) {
             final var applications =
-                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, config);
+                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, appConfig);
             final var readableStates = state.getReadableStates(serviceName);
             final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
             final WritableStates writableStates;
             final WritableStates newStates;
             if (applications.contains(STATE_DEFINITIONS)) {
-                final var redefinedWritableStates = applyStateDefinitions(serviceName, schema, config, state);
+                final var redefinedWritableStates = applyStateDefinitions(serviceName, schema, appConfig, state);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
@@ -123,7 +126,8 @@ public class SchemaRegistryImpl implements SchemaRegistry {
                     previousVersion,
                     previousStates,
                     newStates,
-                    config,
+                    appConfig,
+                    platformConfig,
                     networkInfo,
                     nextEntityNum,
                     sharedValues,
@@ -148,7 +152,8 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nullable final SemanticVersion previousVersion,
             @Nonnull final ReadableStates previousStates,
             @Nonnull final WritableStates writableStates,
-            @Nonnull final Configuration config,
+            @Nonnull final Configuration appConfig,
+            @Nonnull final Configuration platformConfig,
             @Nonnull final NetworkInfo networkInfo,
             @Nonnull final AtomicLong nextEntityNum,
             @Nonnull final Map<String, Object> sharedValues,
@@ -189,8 +194,14 @@ public class SchemaRegistryImpl implements SchemaRegistry {
 
             @Nonnull
             @Override
-            public Configuration configuration() {
-                return config;
+            public Configuration appConfig() {
+                return appConfig;
+            }
+
+            @Nonnull
+            @Override
+            public Configuration platformConfig() {
+                return platformConfig;
             }
 
             @Override

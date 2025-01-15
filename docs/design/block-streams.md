@@ -37,7 +37,8 @@ package com.hedera.mirror.common.domain.transaction;
 public record BlockItem(Transaction transaction,
                         TransactionResult transactionResult,
                         List<TransactionOutput> transactionOutput, // Note: List may be empty
-                        Optional<StateChanges> stateChanges) implements StreamItem {}
+                        List<StateChanges> stateChanges // Note: List may be empty
+) implements StreamItem {}
 ```
 
 #### BlockFile

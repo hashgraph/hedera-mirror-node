@@ -47,7 +47,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -55,9 +54,9 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StreamUtils;
 
+@DisablePartitionMaintenance
 @RequiredArgsConstructor
 @EnabledIfV1
-@Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = {"spring.flyway.target=1.85.1"})
 class CustomFeesMigrationTest extends ImporterIntegrationTest {

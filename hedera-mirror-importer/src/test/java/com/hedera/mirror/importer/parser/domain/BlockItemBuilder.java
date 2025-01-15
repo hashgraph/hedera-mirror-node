@@ -90,12 +90,14 @@ public class BlockItemBuilder {
         private final List<TransactionOutput> transactionOutputs;
         private final TransactionResult transactionResult;
         private final List<StateChanges> stateChanges;
+        private final BlockItem.BlockItemBuilder blockItemBuilder;
 
         private Builder(
                 Transaction transaction,
                 TransactionResult transactionResult,
                 List<TransactionOutput> transactionOutputs,
                 List<StateChanges> stateChanges) {
+            this.blockItemBuilder = BlockItem.builder();
             this.stateChanges = stateChanges;
             this.transaction = transaction;
             this.transactionOutputs = transactionOutputs;
