@@ -46,13 +46,14 @@ public abstract class ContractCallService {
     static final String GAS_LIMIT_METRIC = "hedera.mirror.web3.call.gas.limit";
     static final String GAS_USED_METRIC = "hedera.mirror.web3.call.gas.used";
     protected final Store store;
+    protected final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final MeterProvider<Counter> gasLimitCounter;
     private final MeterProvider<Counter> gasUsedCounter;
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final RecordFileService recordFileService;
     private final ThrottleProperties throttleProperties;
     private final Bucket gasLimitBucket;
-    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     private final TransactionExecutionService transactionExecutionService;
 
     @SuppressWarnings("java:S107")
@@ -99,14 +100,17 @@ public abstract class ContractCallService {
      */
     protected HederaEvmTransactionProcessingResult callContract(CallServiceParameters params, ContractCallContext ctx)
             throws MirrorEvmTransactionException {
-        // if we have historical call, then set the corresponding record file in the context
-        if (params.getBlock() != BlockType.LATEST) {
+
+        ctx.setCallServiceParameters(params);
+        if (mirrorNodeEvmProperties.isModularizedServices() || params.getBlock() != BlockType.LATEST) {
             ctx.setRecordFile(recordFileService
                     .findByBlockType(params.getBlock())
                     .orElseThrow(BlockNumberNotFoundException::new));
         }
         // initializes the stack frame with the current state or historical state (if the call is historical)
-        ctx.initializeStackFrames(store.getStackedStateFrames());
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            ctx.initializeStackFrames(store.getStackedStateFrames());
+        }
         return doProcessCall(params, params.getGas(), true);
     }
 

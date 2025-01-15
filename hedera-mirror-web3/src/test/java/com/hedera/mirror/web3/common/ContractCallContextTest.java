@@ -46,17 +46,6 @@ class ContractCallContextTest {
     }
 
     @Test
-    void testRecordFileIsClearedOnReset() {
-        var context = ContractCallContext.get();
-        final var recordFile = domainBuilder.recordFile().get();
-        context.setRecordFile(recordFile);
-        assertThat(context.getRecordFile()).isEqualTo(recordFile);
-
-        context.reset();
-        assertThat(context.getRecordFile()).isNull();
-    }
-
-    @Test
     void testReset() {
         var context = ContractCallContext.get();
         context.setRecordFile(RecordFile.builder().consensusEnd(123L).build());
@@ -65,7 +54,6 @@ class ContractCallContextTest {
         context.setStack(stackedStateFrames.top());
 
         context.reset();
-        assertThat(context.getRecordFile()).isNull();
         assertThat(context.getStack()).isEqualTo(context.getStackBase());
     }
 }

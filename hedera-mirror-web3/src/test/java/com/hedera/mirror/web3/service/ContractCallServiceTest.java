@@ -147,6 +147,10 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         return result;
     }
 
+    private static Stream<Arguments> provideParametersForErcPrecompileExceptionalHalt() {
+        return Stream.of(Arguments.of(CallType.ETH_CALL, 1), Arguments.of(CallType.ETH_ESTIMATE_GAS, 2));
+    }
+
     @Override
     @BeforeEach
     protected void setup() {
@@ -193,31 +197,35 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     void pureCallModularizedServices() throws Exception {
         // Given
         final var modularizedServicesFlag = mirrorNodeEvmProperties.isModularizedServices();
-        mirrorNodeEvmProperties.setModularizedServices(true);
-        Method postConstructMethod = Arrays.stream(MirrorNodeState.class.getDeclaredMethods())
-                .filter(method -> method.isAnnotationPresent(PostConstruct.class))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("@PostConstruct method not found"));
-
-        postConstructMethod.setAccessible(true); // Make the method accessible
-        postConstructMethod.invoke(state);
-
         final var backupProperties = mirrorNodeEvmProperties.getProperties();
-        final Map<String, String> propertiesMap = new HashMap<>();
-        propertiesMap.put("contracts.maxRefundPercentOfGasLimit", "100");
-        propertiesMap.put("contracts.maxGasPerSec", "15000000");
-        mirrorNodeEvmProperties.setProperties(propertiesMap);
 
-        final var contract = testWeb3jService.deploy(EthCall::deploy);
-        meterRegistry.clear(); // Clear it as the contract deploy increases the gas limit metric
+        try {
+            mirrorNodeEvmProperties.setModularizedServices(true);
+            Method postConstructMethod = Arrays.stream(MirrorNodeState.class.getDeclaredMethods())
+                    .filter(method -> method.isAnnotationPresent(PostConstruct.class))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("@PostConstruct method not found"));
 
-        // When
-        contract.call_multiplySimpleNumbers().send();
+            postConstructMethod.setAccessible(true); // Make the method accessible
+            postConstructMethod.invoke(state);
 
-        // Then
-        // Restore changed property values.
-        mirrorNodeEvmProperties.setModularizedServices(modularizedServicesFlag);
-        mirrorNodeEvmProperties.setProperties(backupProperties);
+            final Map<String, String> propertiesMap = new HashMap<>();
+            propertiesMap.put("contracts.maxRefundPercentOfGasLimit", "100");
+            propertiesMap.put("contracts.maxGasPerSec", "15000000");
+            mirrorNodeEvmProperties.setProperties(propertiesMap);
+
+            final var contract = testWeb3jService.deploy(EthCall::deploy);
+            meterRegistry.clear(); // Clear it as the contract deploy increases the gas limit metric
+
+            // When
+            contract.call_multiplySimpleNumbers().send();
+
+            // Then
+            // Restore changed property values.
+        } finally {
+            mirrorNodeEvmProperties.setModularizedServices(modularizedServicesFlag);
+            mirrorNodeEvmProperties.setProperties(backupProperties);
+        }
     }
 
     @ParameterizedTest
@@ -970,10 +978,6 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 .sender(new HederaEvmAccount(senderAddress))
                 .value(value)
                 .build();
-    }
-
-    private static Stream<Arguments> provideParametersForErcPrecompileExceptionalHalt() {
-        return Stream.of(Arguments.of(CallType.ETH_CALL, 1), Arguments.of(CallType.ETH_ESTIMATE_GAS, 2));
     }
 
     private Entity accountPersist() {

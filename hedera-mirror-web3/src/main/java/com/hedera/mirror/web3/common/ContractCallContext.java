@@ -26,7 +26,9 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.state.FileReadableKVState;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.List;
@@ -57,6 +59,10 @@ public class ContractCallContext {
 
     @Setter
     private List<Opcode> opcodes = new ArrayList<>();
+
+    @Setter
+    private CallServiceParameters callServiceParameters;
+
     /**
      * Record file which stores the block timestamp and other historical block details used for filtering of historical
      * data.
@@ -101,7 +107,6 @@ public class ContractCallContext {
     }
 
     public void reset() {
-        recordFile = null;
         stack = stackBase;
         file = Optional.empty();
     }
@@ -147,7 +152,8 @@ public class ContractCallContext {
     }
 
     public boolean useHistorical() {
-        return recordFile != null;
+        return (callServiceParameters != null && callServiceParameters.getBlock() != BlockType.LATEST)
+                || recordFile != null; // TODO: Remove recordFile comparison after mono code deletion
     }
 
     public void incrementContractActionsCounter() {

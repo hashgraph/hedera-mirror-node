@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.DEFAULT_FEE_SCHEDULE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
@@ -127,6 +128,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .customize(ab -> ab.id(new AccountBalance.Id(
                                 treasuryEntity.getCreatedTimestamp(), treasuryEntity.toEntityId()))
                         .balance(treasuryEntity.getBalance()))
+                .persist();
+        domainBuilder
+                .fileData()
+                .customize(f -> f.entityId(EntityId.of(111L)).fileData(DEFAULT_FEE_SCHEDULE.toByteArray()))
                 .persist();
         testWeb3jService.reset();
     }

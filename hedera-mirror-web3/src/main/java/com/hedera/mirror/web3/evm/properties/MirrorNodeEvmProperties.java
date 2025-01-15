@@ -28,7 +28,9 @@ import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.config.VersionedConfiguration;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -63,6 +65,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
+
+    public static final TreeMap<Long, SemanticVersion> DEFAULT_EVM_VERSION_MAP = new TreeMap<>(Map.of(0L, EVM_VERSION));
 
     @Getter
     private boolean allowTreasuryToOwnNfts = true;
@@ -176,10 +180,16 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             "contracts.chainId",
             chainIdBytes32().toBigInteger().toString(),
             "contracts.maxRefundPercentOfGasLimit",
-            String.valueOf(maxGasRefundPercentage()));
+            String.valueOf(maxGasRefundPercentage()),
+            "contracts.sidecars",
+            "");
 
     @Getter(lazy = true)
     private final Map<String, String> transactionProperties = buildTransactionProperties();
+
+    @Getter(lazy = true)
+    private final VersionedConfiguration versionedConfiguration =
+            new ConfigProviderImpl(false, null, getTransactionProperties()).getConfiguration();
 
     @Getter
     @Min(1)
@@ -295,7 +305,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             return network.evmVersions;
         }
 
-        return new TreeMap<>(Map.of(0L, EVM_VERSION));
+        return DEFAULT_EVM_VERSION_MAP;
     }
 
     /**
@@ -324,14 +334,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     private Map<String, String> buildTransactionProperties() {
         final Map<String, String> mirrorNodeProperties = new HashMap<>(properties);
-        mirrorNodeProperties.put(
-                "contracts.evm.version",
-                "v"
-                        + getSemanticEvmVersion().major() + "."
-                        + getSemanticEvmVersion().minor());
+        mirrorNodeProperties.put("contracts.evm.version", "v" + evmVersion.major() + "." + evmVersion.minor());
         mirrorNodeProperties.put(
                 "ledger.id", Bytes.wrap(getNetwork().getLedgerId()).toHexString());
-        return mirrorNodeProperties;
+        return Collections.unmodifiableMap(mirrorNodeProperties);
     }
 
     @Getter
