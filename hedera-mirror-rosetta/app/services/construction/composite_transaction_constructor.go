@@ -18,12 +18,12 @@ package construction
 
 import (
 	"context"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -42,7 +42,7 @@ type compositeTransactionConstructor struct {
 func (c *compositeTransactionConstructor) Construct(
 	ctx context.Context,
 	operations types.OperationSlice,
-) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
+) (hiero.TransactionInterface, []types.AccountId, *rTypes.Error) {
 	h, err := c.validate(operations)
 	if err != nil {
 		return nil, nil, err
@@ -62,7 +62,7 @@ func (c *compositeTransactionConstructor) GetDefaultMaxTransactionFee(operationT
 	return h.GetDefaultMaxTransactionFee(), nil
 }
 
-func (c *compositeTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
+func (c *compositeTransactionConstructor) Parse(ctx context.Context, transaction hiero.TransactionInterface) (
 	types.OperationSlice,
 	[]types.AccountId,
 	*rTypes.Error,

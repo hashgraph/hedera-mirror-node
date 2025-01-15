@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -44,7 +44,7 @@ func (b *baseFeature) submit(
 	ctx context.Context,
 	memo string,
 	operations []*types.Operation,
-	signers map[string]hedera.PrivateKey,
+	signers map[string]hiero.PrivateKey,
 ) (err error) {
 	operationType := operations[0].Type
 	b.transactionHash, err = testClient.Submit(ctx, memo, operations, signers)

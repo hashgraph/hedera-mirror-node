@@ -8,7 +8,7 @@ The BDD test client aims to provide better end-to-end test coverage of the roset
 `rosetta-cli` [Constructor DSL](https://github.com/coinbase/rosetta-sdk-go/tree/master/constructor/dsl) based
 [crypto transfer transaction Construction API tests](/hedera-mirror-rosetta/scripts/validation/testnet/testnet.ros).
 
-The client currently supports basic crypto create, crypto transfer, and HTS scenarios.
+The client currently supports basic crypto create, alias account creation, and crypto transfer scenarios.
 
 ## Requirements
 
@@ -76,10 +76,10 @@ Please refer to the [appendix](#test-configuration-properties) for the complete 
    $ go test -v
    ```
 
-   Note you can run tests with the `--godog.tags` flag to filter features, for example, to run `crypto` scenarions:
+   Note you can run tests with the `--godog.tags` flag to filter features, for example, to run `crypto` scenarios:
 
    ```shell
-   $ go test -v --godog.tags=crypto
+   $ go test -v --godog.tags=@crypto
    ```
 
    `--godog.tags` also supports complex expressions, please refer to

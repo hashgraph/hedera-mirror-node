@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EMPTY_UNTRIMMED_ADDRESS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
@@ -62,6 +63,7 @@ import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import com.swirlds.base.time.Time;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
@@ -273,12 +275,21 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        tokenAccountPersist(tokenEntity, associatedAccount);
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(associatedAccount.getId())
+                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .balance(0L)
+                        .associated(true))
+                .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -538,10 +549,13 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @Test
     void deleteToken() throws Exception {
         // Given
+        final var treasury = accountEntityPersist();
         final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasury.toEntityId()))
                 .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
@@ -603,10 +617,13 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @Test
     void pauseToken() throws Exception {
         // Given
+        final var treasury = accountEntityPersist();
         final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasury.toEntityId()))
                 .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
@@ -1318,15 +1335,15 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @Test
     void updateTokenExpiry() throws Exception {
         // Given
-        final var treasuryAccount = accountEntityWithEvmAddressPersist();
+        final var treasuryAccount = accountEntityPersist();
         final var tokenWithAutoRenewPair =
                 persistTokenWithAutoRenewAndTreasuryAccounts(TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var tokenExpiry = new Expiry(
-                BigInteger.valueOf(Time.getCurrent().currentTimeMillis() + 1_000_000_000),
-                getAliasFromEntity(tokenWithAutoRenewPair.getRight()),
+                BigInteger.valueOf(Instant.now().getEpochSecond() + 8_000_000L),
+                toAddress(tokenWithAutoRenewPair.getRight().toEntityId()).toHexString(),
                 BigInteger.valueOf(8_000_000));
 
         // When
