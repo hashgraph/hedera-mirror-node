@@ -124,7 +124,6 @@ public class RestSpecTest extends RestJavaIntegrationTest {
         for (var specFilePath : specsToTest()) {
             RestSpecNormalized normalizedSpec;
             try {
-                log.info("Parsing spec file: {}", specFilePath);
                 normalizedSpec = RestSpecNormalized.from(objectMapper.readValue(specFilePath.toFile(), RestSpec.class));
             } catch (IOException e) {
                 dynamicContainers.add(dynamicContainer(
