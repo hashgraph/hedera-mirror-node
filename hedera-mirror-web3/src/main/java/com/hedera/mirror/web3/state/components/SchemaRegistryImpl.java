@@ -75,13 +75,14 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nonnull final MirrorNodeState state,
             @Nonnull final NetworkInfo networkInfo,
             @Nonnull final StartupNetworks startupNetworks) {
+        final var config = ConfigurationBuilder.create().build();
         migrate(
                 serviceName,
                 state,
                 CURRENT_VERSION,
                 networkInfo,
-                ConfigurationBuilder.create().build(),
-                ConfigurationBuilder.create().build(),
+                config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
