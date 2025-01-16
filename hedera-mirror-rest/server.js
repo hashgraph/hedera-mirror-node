@@ -84,10 +84,25 @@ if (config.db.tls.enabled) {
 
 const Pool = getPoolClass();
 const pool = new Pool(poolConfig);
+
 pool.on('error', (error) => {
   logger.error(`error event emitted on pg pool. ${error.stack}`);
 });
+
 global.pool = pool;
+
+if (config.db.primaryHost) {
+  const primaryPoolConfig = {...poolConfig};
+  primaryPoolConfig.host = config.db.primaryHost;
+
+  const primaryPool = new Pool(primaryPoolConfig);
+  primaryPool.on('error', (error) => {
+    logger.error(`error event emitted on pg primary pool. ${error.stack}`);
+  });
+  global.primaryPool = primaryPool;
+} else {
+  global.primaryPool = pool;
+}
 
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
 const app = addAsync(express());
