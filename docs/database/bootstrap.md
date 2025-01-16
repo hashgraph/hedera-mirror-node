@@ -48,12 +48,12 @@ This guide provides step-by-step instructions for setting up a fresh PostgreSQL 
 
    ### 1. Optional High-Performance Decompressors
 
-      The script automatically detects and uses faster alternatives to `gunzip` if they are available in the system's or user's PATH:
+   The script automatically detects and uses faster alternatives to `gunzip` if they are available in the system's or user's PATH:
 
-      - [rapidgzip](https://github.com/mxmlnkn/rapidgzip) - A high-performance parallel gzip decompressor (fastest option, even for single-threaded decompression)
-      - [igzip](https://github.com/intel/isa-l) - Intel's optimized gzip implementation from ISA-L (second fastest option)
+   - [rapidgzip](https://github.com/mxmlnkn/rapidgzip) - A high-performance parallel gzip decompressor (fastest option, even for single-threaded decompression)
+   - [igzip](https://github.com/intel/isa-l) - Intel's optimized gzip implementation from ISA-L (second fastest option)
 
-      These tools can significantly improve decompression performance during the import process. If neither is available, the script will fall back to using standard `gunzip`.
+   These tools can significantly improve decompression performance during the import process. If neither is available, the script will fall back to using standard `gunzip`.
 
 4. Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install), then authenticate:
 
@@ -204,6 +204,7 @@ gcloud storage rsync -r "gs://mirrornode-db-export/$VERSION_NUMBER/" /path/to/db
 ```
 
 For both options:
+
 - Replace `/path/to/db_export` with your desired directory path.
 - Replace `<VERSION_NUMBER>` with the version you selected (e.g., `0.111.0`).
 - Ensure all files and subdirectories are downloaded into this single parent directory.
@@ -247,11 +248,13 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
    To ensure the script continues running even if your SSH session is terminated, run it in a new session using `setsid`. The script handles its own logging, but we redirect stderr to capture any startup errors:
 
    For a minimal database import (default):
+
    ```bash
    setsid ./bootstrap.sh 8 /path/to/db_export > /dev/null 2>> bootstrap.log &
    ```
 
    For a full database import:
+
    ```bash
    setsid ./bootstrap.sh 8 --full /path/to/db_export > /dev/null 2>> bootstrap.log &
    ```
@@ -260,6 +263,7 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
    - `8` refers to the number of CPU cores to use for parallel processing. Adjust this number based on your system's resources.
    - `/path/to/db_export` is the directory where you downloaded the database export data.
    - The script creates several tracking files:
+
      - `bootstrap.pid` stores the process ID used for cleanup of all child processes if interrupted
      - `bootstrap_tracking.txt` tracks the progress of each file's import and hash verification
      - `bootstrap_discrepancies.log` records any data verification issues
@@ -288,9 +292,9 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
 
 - **Check the Log File:**
 
-   ```bash
-   tail -f bootstrap.log
-   ```
+  ```bash
+  tail -f bootstrap.log
+  ```
 
   - The script logs all activity to `bootstrap.log`.
   - Note that the script processes files in parallel and asynchronously. Activities are logged as they occur, so log entries may appear in an arbitrary order.
@@ -305,12 +309,14 @@ The `bootstrap.sh` script initializes the database and imports the data. It is d
   - Each line contains the file name, followed by two status indicators:
 
     Import Status:
+
     - `NOT_STARTED`: File has not begun importing
     - `IN_PROGRESS`: File is currently being imported
     - `IMPORTED`: File was successfully imported
     - `FAILED_TO_IMPORT`: File import failed
 
     Hash Verification Status:
+
     - `HASH_UNVERIFIED`: BLAKE3 hash has not been verified yet
     - `HASH_VERIFIED`: BLAKE3 hash verification passed
     - `HASH_FAILED`: BLAKE3 hash verification failed
