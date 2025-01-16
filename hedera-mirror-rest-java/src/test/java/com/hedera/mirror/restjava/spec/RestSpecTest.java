@@ -63,10 +63,9 @@ import org.testcontainers.containers.GenericContainer;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class RestSpecTest extends RestJavaIntegrationTest {
-    // network/fees can be added once the next :latest tag is available
     private static final Pattern INCLUDED_SPEC_DIRS = Pattern.compile(
-            "^(accounts|accounts/\\{id}/allowances.*|accounts/\\{id}/rewards.*|blocks.*|contracts|network/exchangerate.*|network/stake.*|topics/\\{id}/messages)$");
-    private static final Pattern RESPONSE_HEADER_FILE = Pattern.compile("^responseHeaders\\.json$");
+            "^(accounts|accounts/\\{id}/allowances.*|accounts/\\{id}/rewards.*|blocks.*|contracts|network/exchangerate.*|network/fees.*|network/stake.*|topics/\\{id}/messages)$");
+    private static final String RESPONSE_HEADER_FILE = "responseHeaders.json";
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
     private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");
 
@@ -76,7 +75,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
             var directory = file.isDirectory() ? file : file.getParentFile();
             var dirName = directory.getPath().replace(REST_BASE_PATH + "/", "");
             return INCLUDED_SPEC_DIRS.matcher(dirName).matches()
-                    && !RESPONSE_HEADER_FILE.matcher(file.getName()).matches();
+                    && !RESPONSE_HEADER_FILE.equals(file.getName());
         }
 
         @Override

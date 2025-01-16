@@ -28,14 +28,6 @@ import java.util.function.Supplier;
 @Named
 class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>> {
 
-    private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
-            "accountId", ENTITY_ID_TO_LONG_CONVERTER,
-            "tokenId", ENTITY_ID_TO_LONG_CONVERTER);
-
-    TokenAccountBuilder() {
-        super(METHOD_PARAMETER_CONVERTERS);
-    }
-
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
         return specSetup::tokenAccounts;

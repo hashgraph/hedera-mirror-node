@@ -29,13 +29,6 @@ import java.util.function.Supplier;
 class StakingRewardTransferBuilder
         extends AbstractEntityBuilder<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder> {
 
-    private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS =
-            Map.of("accountId", ENTITY_ID_TO_LONG_CONVERTER);
-
-    StakingRewardTransferBuilder() {
-        super(METHOD_PARAMETER_CONVERTERS);
-    }
-
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
         return specSetup::stakingRewardTransfers;

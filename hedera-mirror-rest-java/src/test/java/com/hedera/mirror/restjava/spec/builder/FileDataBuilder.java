@@ -27,8 +27,6 @@ import java.util.function.Supplier;
 
 @Named
 class FileDataBuilder extends AbstractEntityBuilder<FileData, FileData.FileDataBuilder> {
-    private static final List<Integer> ALWAYS_HEX_FILES = List.of(111, 112);
-
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS =
             Map.of("fileData", HEX_OR_BASE64_CONVERTER);
 
@@ -38,30 +36,7 @@ class FileDataBuilder extends AbstractEntityBuilder<FileData, FileData.FileDataB
 
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
-        return () -> {
-            var entities = specSetup.fileData();
-
-            if (entities == null) {
-                return entities;
-            }
-
-            return entities.stream()
-                    .peek(entity -> {
-                        var entityId = (Integer) entity.get("entity_id");
-                        if (ALWAYS_HEX_FILES.contains(entityId)) {
-                            var cleanedFileData = Optional.ofNullable((entity.get("file_data")))
-                                    .map(fileDataOptional -> {
-                                        if (fileDataOptional instanceof String fileDataString) {
-                                            return fileDataString.replaceAll("[^0-9a-fA-F]", "");
-                                        }
-                                        return fileDataOptional;
-                                    })
-                                    .orElse(null);
-                            entity.put("file_data", cleanedFileData);
-                        }
-                    })
-                    .toList();
-        };
+        return specSetup::fileData;
     }
 
     @Override

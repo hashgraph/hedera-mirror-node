@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,10 @@ import java.util.function.Supplier;
 
 @Named
 public class ContractBuilder extends AbstractEntityBuilder<Contract, Contract.ContractBuilder<?, ?>> {
-    private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS =
-            Map.of("fileId", LONG_TO_ENTITY_ID_CONVERTER);
     private static final Map<String, String> ATTRIBUTE_NAME_MAP = Map.of("num", "id");
 
     public ContractBuilder() {
-        super(METHOD_PARAMETER_CONVERTERS, ATTRIBUTE_NAME_MAP);
+        super(Map.of(), ATTRIBUTE_NAME_MAP);
     }
 
     @Override

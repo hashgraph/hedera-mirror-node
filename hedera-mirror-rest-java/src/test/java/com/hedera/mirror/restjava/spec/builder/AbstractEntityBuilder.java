@@ -47,56 +47,6 @@ import org.springframework.util.CollectionUtils;
 
 @CustomLog
 abstract class AbstractEntityBuilder<T, B> implements SpecDomainBuilder {
-
-    protected static final Function<Object, Object> ENTITY_ID_TO_LONG_CONVERTER = value -> value == null
-            ? 0L
-            : value instanceof String valueStr ? EntityId.of(valueStr).getId() : (long) value;
-
-    protected static final Function<Object, Object> LONG_TO_ENTITY_ID_CONVERTER =
-            value -> value == null ? null : EntityId.of(Long.parseLong(value.toString()));
-
-    private static final Pattern RANGE_PATTERN = Pattern.compile("^[(|\\[](\\d*),\\s*(\\d*)[)|\\]]$");
-    protected static final Function<Object, Object> STRING_TO_RANGE_CONVERTER = value -> {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof String valueString) {
-            Matcher m = RANGE_PATTERN.matcher(valueString);
-            if (m.matches()) {
-                var length = valueString.length();
-
-                var lowerBound = StringUtils.isEmpty(m.group(1)) ? null : Long.parseLong(m.group(1));
-                var upperBound = StringUtils.isEmpty(m.group(2)) ? null : Long.parseLong(m.group(2));
-
-                if (lowerBound == null && upperBound == null) {
-                    throw new IllegalArgumentException("Range " + valueString + " is not valid.");
-                }
-
-                if (upperBound == null) {
-                    return Range.atLeast(lowerBound);
-                }
-
-                if (lowerBound == null) {
-                    return Range.atMost(upperBound);
-                }
-
-                if (valueString.charAt(0) == '(') {
-                    if (valueString.charAt(length - 1) == ')') {
-                        return Range.open(lowerBound, upperBound);
-                    }
-                    return Range.openClosed(lowerBound, upperBound);
-                } else {
-                    if (valueString.charAt(length - 1) == ')') {
-                        return Range.closedOpen(lowerBound, upperBound);
-                    }
-                    return Range.closed(lowerBound, upperBound);
-                }
-            }
-        }
-
-        return value;
-    };
-
     private static final Base32 BASE32 = new Base32();
 
     /*

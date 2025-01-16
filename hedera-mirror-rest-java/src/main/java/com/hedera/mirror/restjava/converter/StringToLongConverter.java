@@ -14,6 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.spec.builder;
+package com.hedera.mirror.restjava.converter;
 
-public record SpecBuilderContext(boolean isHistory) {}
+import com.hedera.mirror.common.domain.entity.EntityId;
+import jakarta.inject.Named;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
+import org.springframework.core.convert.converter.Converter;
+
+@Named
+@ConfigurationPropertiesBinding
+public class StringToLongConverter implements Converter<String, Long> {
+    @Override
+    public Long convert(String s) {
+        var parts = s.split("\\.");
+        if (parts.length == 3) {
+            return EntityId.of(s).getId();
+        }
+        return Long.parseLong(s);
+    }
+}
