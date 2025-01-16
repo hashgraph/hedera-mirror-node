@@ -14,15 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.downloader.block;
+package com.hedera.mirror.importer.downloader.block.transformer;
 
-import com.hedera.mirror.common.domain.transaction.BlockItem;
+import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransactionRecord.Builder;
+import jakarta.inject.Named;
+import java.util.List;
 
-public interface BlockItemTransformer {
-    TransactionRecord getTransactionRecord(BlockItem blockItem, TransactionBody transactionBody);
+@Named
+public class UnknownTransformer extends AbstractBlockItemTransformer {
 
-    TransactionType getType();
+    @Override
+    public TransactionType getType() {
+        return TransactionType.UNKNOWN;
+    }
+
+    @Override
+    protected void updateTransactionRecord(
+            List<TransactionOutput> transactionOutputs, Builder transactionRecordBuilder) {}
 }

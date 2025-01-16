@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.downloader.block;
 
-import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.BlockFile;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
@@ -28,24 +27,24 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties.PersistP
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.data.util.Version;
 
+@Named
+@RequiredArgsConstructor
 public class BlockFileTransformer implements StreamFileTransformer<RecordFile, BlockFile> {
-
-    private static final int BLOCK_RECORD_FILE_VERSION = 7;
 
     private final PersistProperties persistProperties = new PersistProperties();
     private final Predicate<EntityId> entityTransactionPredicate = persistProperties::shouldPersistEntityTransaction;
     private final Predicate<EntityId> contractTransactionPredicate = e -> persistProperties.isContractTransaction();
 
-    private final Map<TransactionType, BlockItemTransformer> transformerMap =
-            Map.of(TransactionType.CRYPTOTRANSFER, new CryptoTransferTransformer());
+    private final TransformerFactory transformerFactory;
 
     @Override
     public RecordFile transform(BlockFile blockFile) {
@@ -67,9 +66,7 @@ public class BlockFileTransformer implements StreamFileTransformer<RecordFile, B
                 .consensusEnd(blockFile.getConsensusEnd())
                 .consensusStart(blockFile.getConsensusStart())
                 .count((long) blockItems.size())
-                .digestAlgorithm(DigestAlgorithm.SHA_384)
-                // Determine if FileHash should be nullable or if we need filehash from the block file
-                .fileHash("fileHash")
+                .digestAlgorithm(blockFile.getDigestAlgorithm())
                 .hapiVersionMajor(major)
                 .hapiVersionMinor(minor)
                 .hapiVersionPatch(patch)
@@ -86,7 +83,7 @@ public class BlockFileTransformer implements StreamFileTransformer<RecordFile, B
                 .softwareVersionMajor(major)
                 .softwareVersionMinor(minor)
                 .softwareVersionPatch(patch)
-                .version(BLOCK_RECORD_FILE_VERSION)
+                .version(blockFile.getVersion())
                 .build();
     }
 
@@ -98,9 +95,8 @@ public class BlockFileTransformer implements StreamFileTransformer<RecordFile, B
             var transactionBody = getTransactionBody(transaction);
             int transactionTypeValue = transactionBody.getDataCase().getNumber();
             var transactionType = TransactionType.of(transactionTypeValue);
-            var transactionRecord =
-                    transformerMap.get(transactionType).getTransactionRecord(blockItem, transactionBody);
-
+            var blockItemTransformer = transformerFactory.get(transactionType);
+            var transactionRecord = blockItemTransformer.getTransactionRecord(blockItem, transactionBody);
             var recordItem = RecordItem.builder()
                     .contractTransactionPredicate(contractTransactionPredicate)
                     .entityTransactionPredicate(entityTransactionPredicate)

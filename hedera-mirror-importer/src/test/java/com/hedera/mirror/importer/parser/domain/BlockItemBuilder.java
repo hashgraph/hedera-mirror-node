@@ -25,7 +25,9 @@ import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Collections;
@@ -51,13 +53,7 @@ public class BlockItemBuilder {
         var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
         var timestamp = Utility.instantToTimestamp(instant);
         var transactionRecord = recordItem.getTransactionRecord();
-        var transactionResult = TransactionResult.newBuilder()
-                .addAllTokenTransferLists(transactionRecord.getTokenTransferListsList())
-                .setTransferList(transactionRecord.getTransferList())
-                .setConsensusTimestamp(timestamp)
-                .setTransactionFeeCharged(transactionRecord.getTransactionFee())
-                .setStatus(transactionRecord.getReceipt().getStatus())
-                .build();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
 
         var contractCallTransactionOutput = TransactionOutput.newBuilder()
                 .setContractCall(CallContractOutput.newBuilder()
@@ -77,12 +73,37 @@ public class BlockItemBuilder {
                 Collections.emptyList());
     }
 
+    public BlockItemBuilder.Builder unknown() {
+        var recordItem = recordItemBuilder.unknown().build();
+        return unknown(recordItem);
+    }
+
+    public BlockItemBuilder.Builder unknown(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+    }
+
     private AssessedCustomFee.Builder assessedCustomFees() {
         return AssessedCustomFee.newBuilder()
                 .setAmount(1L)
                 .addEffectivePayerAccountId(recordItemBuilder.accountId())
                 .setFeeCollectorAccountId(recordItemBuilder.accountId())
                 .setTokenId(recordItemBuilder.tokenId());
+    }
+
+    private TransactionResult.Builder transactionResult(
+            TransactionRecord transactionRecord, Timestamp consensusTimestamp) {
+        return TransactionResult.newBuilder()
+                .addAllTokenTransferLists(transactionRecord.getTokenTransferListsList())
+                .setTransferList(transactionRecord.getTransferList())
+                .setConsensusTimestamp(consensusTimestamp)
+                .setTransactionFeeCharged(transactionRecord.getTransactionFee())
+                .setStatus(transactionRecord.getReceipt().getStatus());
     }
 
     public class Builder {

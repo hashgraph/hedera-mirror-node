@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.downloader.block;
+package com.hedera.mirror.importer.downloader.block.transformer;
 
 import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import jakarta.inject.Named;
 import java.util.List;
 
-public class CryptoTransferTransformer extends BlockItemTransformer {
+@Named
+public class CryptoTransferTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(
@@ -34,5 +37,10 @@ public class CryptoTransferTransformer extends BlockItemTransformer {
                 }
             }
         }
+    }
+
+    @Override
+    public TransactionType getType() {
+        return TransactionType.CRYPTOTRANSFER;
     }
 }

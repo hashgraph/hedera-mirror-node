@@ -22,6 +22,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
 import com.hedera.mirror.common.domain.transaction.BlockFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.parser.domain.BlockItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
@@ -30,13 +31,16 @@ import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import java.time.Instant;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+@RequiredArgsConstructor
 public class BlockFileTransformerTest extends ImporterIntegrationTest {
 
     private final BlockItemBuilder blockItemBuilder = new BlockItemBuilder();
-    private final BlockFileTransformer blockFileTransformer = new BlockFileTransformer();
+    private final BlockFileTransformer blockFileTransformer;
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
     @ParameterizedTest
@@ -49,23 +53,120 @@ public class BlockFileTransformerTest extends ImporterIntegrationTest {
                 // Update the hapi version to match that of the record file
                 .recordItem(r -> r.hapiVersion(expectedRecordFileBuilder.get().getHapiVersion()))
                 .build();
+        var expectedRecordItem2 = recordItemBuilder
+                .cryptoTransfer(transferType)
+                // Update the hapi version to match that of the record file
+                .recordItem(r -> r.hapiVersion(expectedRecordFileBuilder.get().getHapiVersion())
+                        .transactionIndex(1))
+                .build();
+        var expectedRecordFile = expectedRecordFileBuilder
+                .customize(r -> r.items(List.of(expectedRecordItem, expectedRecordItem2)))
+                .get();
+        var blockItem = blockItemBuilder.cryptoTransfer(expectedRecordItem).build();
+        var blockItem2 = blockItemBuilder.cryptoTransfer(expectedRecordItem2).build();
+        var blockFile = blockFileBuilder(expectedRecordFile)
+                .items(List.of(blockItem, blockItem2))
+                .build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+        var iterator = recordFile.getItems().iterator();
+        var recordItem = iterator.next();
+        var recordItem2 = iterator.next();
+
+        // then
+        assertRecordItem(recordItem, expectedRecordItem);
+        assertRecordItem(recordItem2, expectedRecordItem2);
+        assertThat(recordItem.getPrevious()).isNull();
+        assertThat(recordItem2.getPrevious()).isEqualTo(recordItem);
+        assertThat(recordFile.getItems()).hasSize(2);
+        assertThat(recordFile.getCount()).isEqualTo(2);
+        assertRecordFile(recordFile, expectedRecordFile, blockFile.getName());
+    }
+
+    @Test
+    void emptyBlockFile() {
+        // given
+        var expectedRecordFileBuilder = domainBuilder.recordFile();
+        var expectedRecordItem = recordItemBuilder
+                .cryptoTransfer()
+                // Update the hapi version to match that of the record file
+                .recordItem(r -> r.hapiVersion(expectedRecordFileBuilder.get().getHapiVersion()))
+                .build();
         var expectedRecordFile = expectedRecordFileBuilder
                 .customize(r -> r.items(List.of(expectedRecordItem)))
                 .get();
-        var blockItem = blockItemBuilder.cryptoTransfer(expectedRecordItem).build();
-        var blockFile =
-                blockFileBuilder(expectedRecordFile).items(List.of(blockItem)).build();
+        var blockFile = blockFileBuilder(expectedRecordFile).build();
 
         // when
         var recordFile = blockFileTransformer.transform(blockFile);
 
         // then
+        assertThat(recordFile.getItems()).isEmpty();
+        assertRecordFile(recordFile, expectedRecordFile, blockFile.getName());
+    }
+
+    @Test
+    void unknownTransform() {
+        // given
+        var expectedRecordFileBuilder = domainBuilder.recordFile();
+        var expectedRecordItem = recordItemBuilder
+                .unknown()
+                // Update the hapi version to match that of the record file
+                .recordItem(r -> r.hapiVersion(expectedRecordFileBuilder.get().getHapiVersion()))
+                .build();
+        var expectedRecordFile = expectedRecordFileBuilder
+                .customize(r -> r.items(List.of(expectedRecordItem)))
+                .get();
+        var blockItem = blockItemBuilder.unknown(expectedRecordItem).build();
+        var blockFile =
+                blockFileBuilder(expectedRecordFile).items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
         var recordItem = recordFile.getItems().iterator().next();
+
+        // then
+        assertRecordItem(recordItem, expectedRecordItem);
+        assertThat(recordFile.getItems()).hasSize(1);
+        assertThat(recordFile.getCount()).isOne();
+        assertRecordFile(recordFile, expectedRecordFile, blockFile.getName());
+    }
+
+    private void assertRecordFile(RecordFile recordFile, RecordFile expectedRecordFile, String blockFileName) {
+        assertThat(recordFile.getLogsBloom()).isNull();
+        assertThat(recordFile.getName()).isEqualTo(blockFileName);
+        assertThat(recordFile.getSidecars()).isEmpty();
+        assertThat(recordFile.getSidecarCount()).isZero();
+        assertThat(recordFile.getVersion()).isEqualTo(7);
+        assertThat(recordFile)
+                .usingRecursiveComparison()
+                .ignoringFields(
+                        "count",
+                        "fileHash",
+                        "gasUsed",
+                        "items",
+                        "logsBloom",
+                        "name",
+                        "sidecarCount",
+                        "sidecars",
+                        "version")
+                .isEqualTo(expectedRecordFile);
+    }
+
+    private void assertRecordItem(RecordItem recordItem, RecordItem expectedRecordItem) {
+        assertThat(recordItem.getTransactionRecord().getMemo())
+                .isEqualTo(expectedRecordItem.getTransactionRecord().getMemo());
         assertThat(recordItem)
                 .usingRecursiveComparison()
                 .ignoringFields(
                         "contractTransactionPredicate",
                         "entityTransactionPredicate",
+                        "previous",
+                        // Memo omitted here as this compares a ByteString to a String.
+                        // The end result of the parsed memo value in persistence is equivalent whether the record file
+                        // contains memoBytes or a memo String value.
+                        "transactionRecord.memo_",
                         "transactionRecord.receipt_.memoizedIsInitialized",
                         "transactionRecord.transactionHash_",
                         "transactionRecord.assessedCustomFees_",
@@ -77,18 +178,6 @@ public class BlockFileTransformerTest extends ImporterIntegrationTest {
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedIsInitialized",
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedSize")
                 .isEqualTo(expectedRecordItem);
-
-        assertThat(recordFile.getItems()).hasSize(1);
-        assertThat(recordFile.getLogsBloom()).isNull();
-        assertThat(recordFile.getName()).isEqualTo(blockFile.getName());
-        assertThat(recordFile.getSidecars()).isEmpty();
-        assertThat(recordFile.getSidecarCount()).isZero();
-        assertThat(recordFile.getVersion()).isEqualTo(7);
-        assertThat(recordFile)
-                .usingRecursiveComparison()
-                .ignoringFields(
-                        "fileHash", "gasUsed", "items", "logsBloom", "name", "sidecarCount", "sidecars", "version")
-                .isEqualTo(expectedRecordFile);
     }
 
     private BlockFile.BlockFileBuilder blockFileBuilder(RecordFile recordFile) {
