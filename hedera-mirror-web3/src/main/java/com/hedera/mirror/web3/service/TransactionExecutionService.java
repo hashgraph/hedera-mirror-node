@@ -243,6 +243,7 @@ public class TransactionExecutionService {
                                 .build())
                         .functionParameters(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
                                 params.getCallData().toArrayUnsafe()))
+                        .amount(params.getValue()) // tinybars sent to contract
                         .gas(estimatedGas)
                         .build())
                 .build();
