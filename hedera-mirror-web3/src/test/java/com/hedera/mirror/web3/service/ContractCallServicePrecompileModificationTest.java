@@ -29,6 +29,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -1190,6 +1192,12 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var receiver = accountEntityWithEvmAddressPersist();
         final var payer = accountEntityWithEvmAddressPersist();
 
+        long timestampForBalances = payer.getCreatedTimestamp();
+        persistAccountBalance(payer, payer.getBalance());
+        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
+        treasuryEntity = domainBuilder.entity().customize(e -> e.id(2L).num(2L)).get();
+        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var transferList = new TransferList(List.of(
@@ -1214,10 +1222,20 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var receiver = accountEntityWithEvmAddressPersist();
         final var payer = accountEntityWithEvmAddressPersist();
 
-        tokenAccountPersist(tokenEntity, payer);
+        long timestampForBalances = payer.getCreatedTimestamp();
+        persistAccountBalance(payer, payer.getBalance());
+        persistTokenBalance(payer, tokenEntity, timestampForBalances);
+
+        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
+        persistTokenBalance(sender, tokenEntity, timestampForBalances);
+
+        persistTokenBalance(receiver, tokenEntity, timestampForBalances);
+        treasuryEntity = domainBuilder.entity().customize(e -> e.id(2L).num(2L)).get();
+        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+
         tokenAccountPersist(tokenEntity, sender);
         tokenAccountPersist(tokenEntity, receiver);
-
+        tokenAccountPersist(tokenEntity, payer);
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var tokenTransferList = new TokenTransferList(
@@ -1246,9 +1264,21 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var receiver = accountEntityWithEvmAddressPersist();
         final var payer = accountEntityWithEvmAddressPersist();
 
-        tokenAccountPersist(tokenEntity, payer);
+        long timestampForBalances = payer.getCreatedTimestamp();
+        persistAccountBalance(payer, payer.getBalance());
+        persistTokenBalance(payer, tokenEntity, timestampForBalances);
+
+        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
+        persistTokenBalance(sender, tokenEntity, timestampForBalances);
+
+        persistTokenBalance(receiver, tokenEntity, timestampForBalances);
+
+        treasuryEntity = domainBuilder.entity().customize(e -> e.id(2L).num(2L)).get();
+        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+
         tokenAccountPersist(tokenEntity, sender);
         tokenAccountPersist(tokenEntity, receiver);
+        tokenAccountPersist(tokenEntity, payer);
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
@@ -1541,5 +1571,29 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                         BigInteger.valueOf(entity.getEffectiveExpiration()),
                         EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId)),
                         BigInteger.valueOf(entity.getEffectiveExpiration())));
+    }
+
+    private void persistAccountBalance(Entity account, long balance, long timestamp) {
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(timestamp, account.toEntityId()))
+                        .balance(balance))
+                .persist();
+    }
+
+    private void persistAccountBalance(Entity account, long balance) {
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(account.getCreatedTimestamp(), account.toEntityId()))
+                        .balance(balance))
+                .persist();
+    }
+
+    private void persistTokenBalance(Entity account, Entity token, long timestamp) {
+        domainBuilder
+                .tokenBalance()
+                .customize(ab -> ab.id(new TokenBalance.Id(timestamp, account.toEntityId(), token.toEntityId()))
+                        .balance(100))
+                .persist();
     }
 }
