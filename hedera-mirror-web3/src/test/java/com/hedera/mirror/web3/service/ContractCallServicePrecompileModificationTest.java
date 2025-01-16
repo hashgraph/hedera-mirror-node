@@ -29,7 +29,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -668,16 +667,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var value = 10000L * 100_000_000_000L;
         final var sender = accountEntityPersist();
 
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), sender.toEntityId()))
-                        .balance(sender.getBalance()))
-                .persist();
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), treasuryEntity.toEntityId()))
-                        .balance(treasuryEntity.getBalance()))
-                .persist();
+        accountBalanceRecordsPersist(sender);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -719,16 +709,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var sender = accountEntityPersist();
 
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), sender.toEntityId()))
-                        .balance(sender.getBalance()))
-                .persist();
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), treasuryEntity.toEntityId()))
-                        .balance(treasuryEntity.getBalance()))
-                .persist();
+        accountBalanceRecordsPersist(sender);
 
         final var treasuryAccount = accountEntityPersist();
 
@@ -783,16 +764,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         var value = 10000L * 100_000_000L;
         final var sender = accountEntityPersist();
 
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), sender.toEntityId()))
-                        .balance(sender.getBalance()))
-                .persist();
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), treasuryEntity.toEntityId()))
-                        .balance(treasuryEntity.getBalance()))
-                .persist();
+        accountBalanceRecordsPersist(sender);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -829,16 +801,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         var value = 10000L * 100_000_000L;
         final var sender = accountEntityPersist();
 
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), sender.toEntityId()))
-                        .balance(sender.getBalance()))
-                .persist();
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), treasuryEntity.toEntityId()))
-                        .balance(treasuryEntity.getBalance()))
-                .persist();
+        accountBalanceRecordsPersist(sender);
 
         final var tokenForDenomination = persistFungibleToken();
         final var feeCollector = accountEntityWithEvmAddressPersist();
@@ -1456,7 +1419,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     private void verifyEthCallAndEstimateGas(
             final RemoteFunctionCall<?> functionCall, final Contract contract, final Long value) throws Exception {
         // Given
-        testWeb3jService.setEstimateGas(false);
+        testWeb3jService.setEstimateGas(true);
         functionCall.send();
 
         final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getEstimatedGas());
