@@ -32,5 +32,7 @@ public class UnknownTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(
-            List<TransactionOutput> transactionOutputs, Builder transactionRecordBuilder) {}
+            List<TransactionOutput> transactionOutputs, Builder transactionRecordBuilder) {
+        // Unknown transaction type, no known actions
+    }
 }
