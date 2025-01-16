@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -30,14 +29,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(ContextExtension.class)
 class ContractCallContextTest {
 
-    private final StackedStateFrames stackedStateFrames;
-
-    private final DomainBuilder domainBuilder = new DomainBuilder();
-
-    public ContractCallContextTest() {
-        stackedStateFrames = new StackedStateFrames(List.of(
-                new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {}));
-    }
+    private final StackedStateFrames stackedStateFrames = new StackedStateFrames(
+            List.of(new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {}));
 
     @Test
     void testGet() {

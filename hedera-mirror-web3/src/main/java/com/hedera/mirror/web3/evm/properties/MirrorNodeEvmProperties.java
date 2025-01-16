@@ -25,6 +25,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_5
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
+import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
@@ -66,7 +67,8 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
 
-    public static final TreeMap<Long, SemanticVersion> DEFAULT_EVM_VERSION_MAP = new TreeMap<>(Map.of(0L, EVM_VERSION));
+    private static final NavigableMap<Long, SemanticVersion> DEFAULT_EVM_VERSION_MAP =
+            ImmutableSortedMap.of(0L, EVM_VERSION);
 
     @Getter
     private boolean allowTreasuryToOwnNfts = true;
@@ -196,7 +198,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int feesTokenTransferUsageMultiplier = 380;
 
     @Getter
-    private boolean modularizedServices;
+    private boolean modularizedServices = true;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
@@ -333,7 +335,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     }
 
     private Map<String, String> buildTransactionProperties() {
-        final Map<String, String> mirrorNodeProperties = new HashMap<>(properties);
+        var mirrorNodeProperties = new HashMap<>(properties);
         mirrorNodeProperties.put("contracts.evm.version", "v" + evmVersion.major() + "." + evmVersion.minor());
         mirrorNodeProperties.put(
                 "ledger.id", Bytes.wrap(getNetwork().getLedgerId()).toHexString());

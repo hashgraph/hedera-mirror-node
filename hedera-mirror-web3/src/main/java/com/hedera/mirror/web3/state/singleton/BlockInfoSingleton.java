@@ -76,7 +76,7 @@ public class BlockInfoSingleton implements SingletonState<BlockInfo> {
 
         var config = properties.getVersionedConfiguration().getConfigData(BlockRecordStreamConfig.class);
         int blockHashCount = config.numOfBlockHashesInState();
-        long endIndex = recordFile.getIndex() - 1; // Optimization: Don't reload the record file in context
+        long endIndex = recordFile.getIndex() - 1; // Optimization: Don't reload the record file from the context
         long startIndex = Math.max(0L, endIndex - blockHashCount + 1);
 
         var blocks = recordFileRepository.findByIndexRange(startIndex, endIndex);
