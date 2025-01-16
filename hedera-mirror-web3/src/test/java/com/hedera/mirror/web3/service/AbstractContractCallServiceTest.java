@@ -23,6 +23,9 @@ import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -50,6 +53,8 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.state.State;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,6 +62,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mock;
 import org.springframework.context.annotation.Import;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -88,6 +94,12 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     @Resource
     protected State state;
+
+    @Resource
+    protected TransactionExecutionService transactionExecutionService;
+
+    @Mock
+    private Meter.MeterProvider<Counter> gasUsedCounter;
 
     protected RecordFile genesisRecordFile;
 
@@ -139,12 +151,21 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     @SuppressWarnings("try")
     protected long gasUsedAfterExecution(final ContractExecutionParameters serviceParameters) {
         return ContractCallContext.run(ctx -> {
-            ctx.initializeStackFrames(store.getStackedStateFrames());
-            long result = processor
-                    .execute(serviceParameters, serviceParameters.getGas())
-                    .getGasUsed();
+            long result;
+            if (!mirrorNodeEvmProperties.isModularizedServices()) {
+                ctx.initializeStackFrames(store.getStackedStateFrames());
+                result = processor
+                        .execute(serviceParameters, serviceParameters.getGas())
+                        .getGasUsed();
 
-            assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
+                assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
+            } else {
+                when(gasUsedCounter.withTags(anyString(), anyString(), anyString(), anyString()))
+                        .thenReturn(mock(Counter.class));
+                result = transactionExecutionService
+                        .execute(serviceParameters, serviceParameters.getGas(), gasUsedCounter)
+                        .getGasUsed();
+            }
             return result;
         });
     }
