@@ -35,30 +35,25 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.state.AliasesReadableKVState;
-import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.workflows.standalone.TransactionExecutor;
-import com.hedera.node.app.workflows.standalone.TransactionExecutors;
-import com.hedera.node.app.workflows.standalone.TransactionExecutors.TracerBinding;
 import com.hedera.node.config.data.EntitiesConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
-import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -66,32 +61,27 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 @Named
 @CustomLog
+@RequiredArgsConstructor
 public class TransactionExecutionService {
 
-    private static final Configuration DEFAULT_CONFIG = new ConfigProviderImpl().getConfiguration();
-    private static final OperationTracer[] EMPTY_OPERATION_TRACER_ARRAY = new OperationTracer[0];
     private static final AccountID TREASURY_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(2).build();
     private static final Duration TRANSACTION_DURATION = new Duration(15);
     private static final int INITCODE_SIZE_KB = 6 * 1024;
+
     private final State mirrorNodeState;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final OpcodeTracer opcodeTracer;
-
-    protected TransactionExecutionService(
-            State mirrorNodeState, MirrorNodeEvmProperties mirrorNodeEvmProperties, OpcodeTracer opcodeTracer) {
-        this.mirrorNodeState = mirrorNodeState;
-        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
-        this.opcodeTracer = opcodeTracer;
-    }
+    private final MirrorOperationTracer mirrorOperationTracer;
+    private final TransactionExecutorFactory transactionExecutorFactory;
 
     public HederaEvmTransactionProcessingResult execute(
             final CallServiceParameters params, final long estimatedGas, final MeterProvider<Counter> gasUsedCounter) {
         final var isContractCreate = params.getReceiver().isZero();
+        final var configuration = mirrorNodeEvmProperties.getVersionedConfiguration();
         final var maxLifetime =
-                DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
-        var executor =
-                ExecutorFactory.newExecutor(mirrorNodeState, mirrorNodeEvmProperties.getTransactionProperties(), null);
+                configuration.getConfigData(EntitiesConfig.class).maxLifetime();
+        var executor = transactionExecutorFactory.get();
 
         TransactionBody transactionBody;
         HederaEvmTransactionProcessingResult result = null;
@@ -275,19 +265,6 @@ public class TransactionExecutionService {
     private OperationTracer[] getOperationTracers() {
         return ContractCallContext.get().getOpcodeTracerOptions() != null
                 ? new OperationTracer[] {opcodeTracer}
-                : EMPTY_OPERATION_TRACER_ARRAY;
-    }
-
-    public static class ExecutorFactory {
-
-        private ExecutorFactory() {}
-
-        public static TransactionExecutor newExecutor(
-                State mirrorNodeState,
-                Map<String, String> properties,
-                @Nullable final TracerBinding customTracerBinding) {
-            return TransactionExecutors.TRANSACTION_EXECUTORS.newExecutor(
-                    mirrorNodeState, properties, customTracerBinding);
-        }
+                : new OperationTracer[] {mirrorOperationTracer};
     }
 }
