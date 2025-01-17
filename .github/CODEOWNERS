@@ -9,7 +9,7 @@
 
 # Protection Rules for Github Configuration Files and Actions Workflows
 /.github/                                       @hashgraph/platform-ci @hashgraph/mirror-node @hashgraph/release-engineering-managers
-/.github/workflows/                             @hashgraph/platform-ci @hashgraph/mirror-node
+/.github/workflows/                             @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/mirror-node @hashgraph/release-engineering-managers
 
 # Codacy Tool Configurations
 /config/                                        @hashgraph/platform-ci @hashgraph/release-engineering-managers @hashgraph/mirror-node

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.DEFAULT_FEE_SCHEDULE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
@@ -32,9 +33,9 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -89,8 +90,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     @Resource
     protected State state;
 
-    protected RecordFile genesisRecordFile;
+    @Resource
+    protected ContractExecutionService contractExecutionService;
 
+    protected RecordFile genesisRecordFile;
     protected Entity treasuryEntity;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
@@ -111,8 +114,11 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     @BeforeEach
     protected void setup() {
-        genesisRecordFile =
-                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+        // Change this to not be epoch once services fixes config updates for non-genesis flow
+        genesisRecordFile = domainBuilder
+                .recordFile()
+                .customize(f -> f.consensusEnd(0L).consensusStart(0L).index(0L))
+                .persist();
         treasuryEntity = domainBuilder
                 .entity()
                 .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
@@ -128,6 +134,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                                 treasuryEntity.getCreatedTimestamp(), treasuryEntity.toEntityId()))
                         .balance(treasuryEntity.getBalance()))
                 .persist();
+        domainBuilder
+                .fileData()
+                .customize(f -> f.entityId(EntityId.of(111L)).fileData(DEFAULT_FEE_SCHEDULE.toByteArray()))
+                .persist();
         testWeb3jService.reset();
     }
 
@@ -136,17 +146,19 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         testWeb3jService.reset();
     }
 
-    @SuppressWarnings("try")
     protected long gasUsedAfterExecution(final ContractExecutionParameters serviceParameters) {
-        return ContractCallContext.run(ctx -> {
-            ctx.initializeStackFrames(store.getStackedStateFrames());
-            long result = processor
-                    .execute(serviceParameters, serviceParameters.getGas())
-                    .getGasUsed();
+        try {
+            return contractExecutionService.callContract(serviceParameters).getGasUsed();
+        } catch (MirrorEvmTransactionException e) {
+            var result = e.getResult();
 
-            assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
-            return result;
-        });
+            // Some tests expect to fail but still want to capture the gas used
+            if (result != null) {
+                return result.getGasUsed();
+            }
+
+            throw e;
+        }
     }
 
     protected void verifyEthCallAndEstimateGas(

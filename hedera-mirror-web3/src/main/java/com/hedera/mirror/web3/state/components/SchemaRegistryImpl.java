@@ -23,6 +23,8 @@ import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFIN
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.state.core.MapWritableStates;
+import com.hedera.mirror.web3.state.singleton.DefaultSingleton;
+import com.hedera.mirror.web3.state.singleton.SingletonState;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -37,6 +39,7 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -45,7 +48,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -54,6 +58,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
 
     public static final SemanticVersion CURRENT_VERSION = new SemanticVersion(0, 47, 0, "SNAPSHOT", "");
 
+    private final Collection<SingletonState<?>> singletons;
     private final SchemaApplications schemaApplications;
 
     /**
@@ -75,12 +80,14 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nonnull final MirrorNodeState state,
             @Nonnull final NetworkInfo networkInfo,
             @Nonnull final StartupNetworks startupNetworks) {
+        final var config = ConfigurationBuilder.create().build();
         migrate(
                 serviceName,
                 state,
                 CURRENT_VERSION,
                 networkInfo,
-                ConfigurationBuilder.create().build(),
+                config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -92,7 +99,8 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nonnull final MirrorNodeState state,
             @Nullable final SemanticVersion previousVersion,
             @Nonnull final NetworkInfo networkInfo,
-            @Nonnull final Configuration config,
+            @Nonnull final Configuration appConfig,
+            @Nonnull final Configuration platformConfig,
             @Nonnull final Map<String, Object> sharedValues,
             @Nonnull final AtomicLong nextEntityNum,
             @Nonnull final StartupNetworks startupNetworks) {
@@ -107,13 +115,13 @@ public class SchemaRegistryImpl implements SchemaRegistry {
 
         for (final var schema : schemas) {
             final var applications =
-                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, config);
+                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, appConfig);
             final var readableStates = state.getReadableStates(serviceName);
             final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
             final WritableStates writableStates;
             final WritableStates newStates;
             if (applications.contains(STATE_DEFINITIONS)) {
-                final var redefinedWritableStates = applyStateDefinitions(serviceName, schema, config, state);
+                final var redefinedWritableStates = applyStateDefinitions(serviceName, schema, appConfig, state);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
@@ -123,7 +131,8 @@ public class SchemaRegistryImpl implements SchemaRegistry {
                     previousVersion,
                     previousStates,
                     newStates,
-                    config,
+                    appConfig,
+                    platformConfig,
                     networkInfo,
                     nextEntityNum,
                     sharedValues,
@@ -148,7 +157,8 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nullable final SemanticVersion previousVersion,
             @Nonnull final ReadableStates previousStates,
             @Nonnull final WritableStates writableStates,
-            @Nonnull final Configuration config,
+            @Nonnull final Configuration appConfig,
+            @Nonnull final Configuration platformConfig,
             @Nonnull final NetworkInfo networkInfo,
             @Nonnull final AtomicLong nextEntityNum,
             @Nonnull final Map<String, Object> sharedValues,
@@ -189,8 +199,14 @@ public class SchemaRegistryImpl implements SchemaRegistry {
 
             @Nonnull
             @Override
-            public Configuration configuration() {
-                return config;
+            public Configuration appConfig() {
+                return appConfig;
+            }
+
+            @Nonnull
+            @Override
+            public Configuration platformConfig() {
+                return platformConfig;
             }
 
             @Override
@@ -216,9 +232,11 @@ public class SchemaRegistryImpl implements SchemaRegistry {
             @Nonnull final Configuration configuration,
             @Nonnull final MirrorNodeState state) {
         final Map<String, Object> stateDataSources = new HashMap<>();
+        var singletonMap = singletons.stream().collect(Collectors.toMap(SingletonState::getKey, Function.identity()));
         schema.statesToCreate(configuration).forEach(def -> {
             if (def.singleton()) {
-                stateDataSources.put(def.stateKey(), new AtomicReference<>());
+                var singleton = singletonMap.computeIfAbsent(def.stateKey(), DefaultSingleton::new);
+                stateDataSources.put(singleton.getKey(), singleton);
             } else if (def.queue()) {
                 stateDataSources.put(def.stateKey(), new ConcurrentLinkedDeque<>());
             } else {

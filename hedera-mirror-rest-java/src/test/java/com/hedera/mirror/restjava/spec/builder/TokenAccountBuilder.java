@@ -22,19 +22,10 @@ import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
 class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>> {
-
-    private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
-            "accountId", ENTITY_ID_TO_LONG_CONVERTER,
-            "tokenId", ENTITY_ID_TO_LONG_CONVERTER);
-
-    TokenAccountBuilder() {
-        super(METHOD_PARAMETER_CONVERTERS);
-    }
 
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
@@ -42,7 +33,7 @@ class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount, TokenAccou
     }
 
     @Override
-    protected TokenAccount.TokenAccountBuilder<?, ?> getEntityBuilder() {
+    protected TokenAccount.TokenAccountBuilder<?, ?> getEntityBuilder(SpecBuilderContext builderContext) {
         return TokenAccount.builder()
                 .accountId(0L)
                 .associated(Boolean.TRUE)

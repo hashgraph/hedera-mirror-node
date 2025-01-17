@@ -31,6 +31,11 @@ plugins {
 // dependency
 val headlongVersion = "6.1.1"
 
+repositories {
+    // Temporary repository added for com.hedera.cryptography snapshot dependencies
+    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+}
+
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))

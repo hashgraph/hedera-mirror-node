@@ -41,6 +41,7 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.ReadableStates;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicLong;
@@ -85,7 +86,7 @@ class SchemaRegistryImplTest {
 
     @BeforeEach
     void initialize() {
-        schemaRegistry = new SchemaRegistryImpl(schemaApplications);
+        schemaRegistry = new SchemaRegistryImpl(List.of(), schemaApplications);
         config = new ConfigProviderImpl().getConfiguration();
     }
 
@@ -117,6 +118,7 @@ class SchemaRegistryImplTest {
                 previousVersion,
                 networkInfo,
                 config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -137,6 +139,7 @@ class SchemaRegistryImplTest {
                 mirrorNodeState,
                 previousVersion,
                 networkInfo,
+                config,
                 config,
                 new HashMap<>(),
                 new AtomicLong(),
@@ -171,6 +174,7 @@ class SchemaRegistryImplTest {
                 previousVersion,
                 networkInfo,
                 config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -195,6 +199,7 @@ class SchemaRegistryImplTest {
                 previousVersion,
                 networkInfo,
                 config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -210,6 +215,7 @@ class SchemaRegistryImplTest {
                 readableStates,
                 writableStates,
                 config,
+                config,
                 networkInfo,
                 new AtomicLong(1),
                 EMPTY_MAP,
@@ -222,7 +228,8 @@ class SchemaRegistryImplTest {
             assertThat(c.previousVersion()).isEqualTo(previousVersion);
             assertThat(c.previousStates()).isEqualTo(readableStates);
             assertThat(c.newStates()).isEqualTo(writableStates);
-            assertThat(c.configuration()).isEqualTo(config);
+            assertThat(c.appConfig()).isEqualTo(config);
+            assertThat(c.platformConfig()).isEqualTo(config);
             assertThat(c.genesisNetworkInfo()).isEqualTo(networkInfo);
             assertThat(c.newEntityNum()).isEqualTo(1);
             assertThat(c.sharedValues()).isEqualTo(EMPTY_MAP);

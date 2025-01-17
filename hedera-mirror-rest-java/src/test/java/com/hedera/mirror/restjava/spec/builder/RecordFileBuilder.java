@@ -24,17 +24,20 @@ import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
 class RecordFileBuilder extends AbstractEntityBuilder<RecordFile, RecordFile.RecordFileBuilder> {
-
     private static final Map<String, String> ATTRIBUTE_NAME_MAP = Map.of("prev_hash", "previous_hash");
 
     private static final byte[] DEFAULT_BYTES = new byte[] {1, 1, 2, 2, 3, 3};
 
+    private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS =
+            Map.of("logsBloom", HEX_OR_BASE64_CONVERTER);
+
     RecordFileBuilder() {
-        super(Map.of(), ATTRIBUTE_NAME_MAP);
+        super(METHOD_PARAMETER_CONVERTERS, ATTRIBUTE_NAME_MAP);
     }
 
     @Override
@@ -43,7 +46,7 @@ class RecordFileBuilder extends AbstractEntityBuilder<RecordFile, RecordFile.Rec
     }
 
     @Override
-    protected RecordFile.RecordFileBuilder getEntityBuilder() {
+    protected RecordFile.RecordFileBuilder getEntityBuilder(SpecBuilderContext builderContext) {
         return RecordFile.builder()
                 .bytes(DEFAULT_BYTES)
                 .consensusEnd(1628751573995691000L)
@@ -73,7 +76,7 @@ class RecordFileBuilder extends AbstractEntityBuilder<RecordFile, RecordFile.Rec
     @Override
     protected RecordFile getFinalEntity(RecordFile.RecordFileBuilder builder, Map<String, Object> account) {
         var entity = builder.build();
-        builder.size(entity.getBytes() != null ? entity.getBytes().length : entity.getSize());
+        builder.size(entity.getBytes() != null ? Integer.valueOf(entity.getBytes().length) : entity.getSize());
         return builder.build();
     }
 }

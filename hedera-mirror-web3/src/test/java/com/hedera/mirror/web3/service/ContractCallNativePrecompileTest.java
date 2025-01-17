@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.DEFAULT_FEE_SCHEDULE;
 import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.EXCHANGE_RATES_SET;
 import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -48,6 +49,10 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
         domainBuilder
                 .fileData()
                 .customize(f -> f.entityId(EntityId.of(112L)).fileData(EXCHANGE_RATES_SET))
+                .persist();
+        domainBuilder
+                .fileData()
+                .customize(f -> f.entityId(EntityId.of(111L)).fileData(DEFAULT_FEE_SCHEDULE.toByteArray()))
                 .persist();
     }
 

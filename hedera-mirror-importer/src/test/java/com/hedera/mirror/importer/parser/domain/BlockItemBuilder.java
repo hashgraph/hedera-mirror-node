@@ -30,8 +30,8 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import jakarta.inject.Named;
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
@@ -68,7 +68,7 @@ public class BlockItemBuilder {
                 transactionBody,
                 transactionResult,
                 List.of(contractCallTransactionOutput, cryptoTransferTransactionOutput),
-                Optional.empty());
+                Collections.emptyList());
     }
 
     private AssessedCustomFee.Builder assessedCustomFees() {
@@ -85,7 +85,7 @@ public class BlockItemBuilder {
         private final TransactionBody.Builder transactionBodyWrapper;
         private final List<TransactionOutput> transactionOutputs;
         private final TransactionResult transactionResult;
-        private final Optional<StateChanges> stateChanges;
+        private final List<StateChanges> stateChanges;
         private final BlockItem.BlockItemBuilder blockItemBuilder;
 
         private Builder(
@@ -93,7 +93,7 @@ public class BlockItemBuilder {
                 T transactionBody,
                 TransactionResult transactionResult,
                 List<TransactionOutput> transactionOutputs,
-                Optional<StateChanges> stateChanges) {
+                List<StateChanges> stateChanges) {
             this.blockItemBuilder = BlockItem.builder();
             this.stateChanges = stateChanges;
             this.type = type;
