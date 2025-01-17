@@ -75,10 +75,8 @@ public class InternalCallsTest extends AbstractContractCallServiceTest {
         if (!mirrorNodeEvmProperties.isModularizedServices()) {
             assertThat(result).isEqualTo(Boolean.TRUE);
         } else {
-            assertThat(result)
-                    .isEqualTo(
-                            Boolean.FALSE); // In the mod code, there is a check if the address is an alias and in this
-            // case it is not.
+            // In the mod code, there is a check if the address is an alias and in this case it is not.
+            assertThat(result).isEqualTo(Boolean.FALSE);
         }
         assertGasLimit(TRANSACTION_GAS_LIMIT);
     }
