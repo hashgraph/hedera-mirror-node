@@ -37,7 +37,7 @@ public class MirrorEvmTransactionException extends EvmException {
 
     private final String detail;
     private final String data;
-    private final HederaEvmTransactionProcessingResult result;
+    private final transient HederaEvmTransactionProcessingResult result;
 
     public MirrorEvmTransactionException(
             final ResponseCodeEnum responseCode, final String detail, final String hexData) {
