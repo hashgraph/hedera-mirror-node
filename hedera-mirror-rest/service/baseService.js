@@ -65,12 +65,12 @@ class BaseService {
     };
   }
 
-  async getRows(query, params, dbPool = pool) {
-    return (await dbPool.queryQuietly(query, params)).rows;
+  async getRows(query, params) {
+    return (await this.pool().queryQuietly(query, params)).rows;
   }
 
-  async getSingleRow(query, params, dbPool = pool) {
-    const rows = await this.getRows(query, params, dbPool);
+  async getSingleRow(query, params) {
+    const rows = await this.getRows(query, params);
     if (_.isEmpty(rows) || rows.length > 1) {
       return null;
     }
@@ -104,6 +104,10 @@ class BaseService {
       orderClause,
       limitClause,
     ].join('\n');
+  }
+
+  pool() {
+    return pool;
   }
 }
 

@@ -36,6 +36,7 @@ const buildWhereSqlStatement = (whereQuery) => {
  * RecordFile retrieval business logic
  */
 class RecordFileService extends BaseService {
+
   static recordFileBlockDetailsFromTimestampArrayQuery = `select
       ${RecordFile.CONSENSUS_END},
       ${RecordFile.CONSENSUS_START},
@@ -94,8 +95,7 @@ class RecordFileService extends BaseService {
   async getRecordFileBlockDetailsFromTimestamp(timestamp) {
     const row = await super.getSingleRow(
       RecordFileService.recordFileBlockDetailsFromTimestampQuery,
-      [timestamp],
-      primaryPool
+      [timestamp]
     );
 
     return _.isNull(row) ? null : new RecordFile(row);
@@ -120,7 +120,7 @@ class RecordFileService extends BaseService {
       order by consensus_end ${order}`;
     const params = [timestamps, minTimestamp, BigInt(maxTimestamp) + config.query.maxRecordFileCloseIntervalNs];
 
-    const rows = await super.getRows(query, params, primaryPool);
+    const rows = await super.getRows(query, params);
 
     let index = 0;
     for (const row of rows) {
@@ -149,7 +149,7 @@ class RecordFileService extends BaseService {
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromIndex(index) {
-    const row = await super.getSingleRow(RecordFileService.recordFileBlockDetailsFromIndexQuery, [index], primaryPool);
+    const row = await super.getSingleRow(RecordFileService.recordFileBlockDetailsFromIndexQuery, [index]);
 
     return _.isNull(row) ? null : new RecordFile(row);
   }
@@ -163,8 +163,7 @@ class RecordFileService extends BaseService {
   async getRecordFileBlockDetailsFromHash(hash) {
     const row = await super.getSingleRow(
       RecordFileService.recordFileBlockDetailsFromHashQuery,
-      [`${hash}%`],
-      primaryPool
+      [`${hash}%`]
     );
 
     return _.isNull(row) ? null : new RecordFile(row);
@@ -181,7 +180,7 @@ class RecordFileService extends BaseService {
       limit ${filters.limit}
     `;
 
-    const rows = await super.getRows(query, params, primaryPool);
+    const rows = await super.getRows(query, params);
     return rows.map((recordFile) => new RecordFile(recordFile));
   }
 
@@ -198,7 +197,7 @@ class RecordFileService extends BaseService {
     }
 
     const query = `${RecordFileService.blocksQuery} where ${whereStatement}`;
-    const row = await super.getSingleRow(query, params, primaryPool);
+    const row = await super.getSingleRow(query, params);
     return row ? new RecordFile(row) : null;
   }
 
@@ -222,6 +221,11 @@ class RecordFileService extends BaseService {
           minTimestamp: first,
           order: orderFilterValues.ASC,
         };
+  }
+
+
+  pool() {
+    return primaryPool;
   }
 }
 
