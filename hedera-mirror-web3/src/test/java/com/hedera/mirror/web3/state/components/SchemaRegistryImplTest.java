@@ -41,6 +41,7 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.ReadableStates;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicLong;
@@ -80,15 +81,13 @@ class SchemaRegistryImplTest {
     @Mock
     private Codec<String> mockCodec;
 
-    private Configuration appConfig;
-    private Configuration platformConfig;
+    private Configuration config;
     private SchemaRegistryImpl schemaRegistry;
 
     @BeforeEach
     void initialize() {
-        schemaRegistry = new SchemaRegistryImpl(schemaApplications);
-        appConfig = new ConfigProviderImpl().getConfiguration();
-        platformConfig = new ConfigProviderImpl().getConfiguration();
+        schemaRegistry = new SchemaRegistryImpl(List.of(), schemaApplications);
+        config = new ConfigProviderImpl().getConfiguration();
     }
 
     @Test
@@ -118,8 +117,8 @@ class SchemaRegistryImplTest {
                 mirrorNodeState,
                 previousVersion,
                 networkInfo,
-                appConfig,
-                platformConfig,
+                config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -140,8 +139,8 @@ class SchemaRegistryImplTest {
                 mirrorNodeState,
                 previousVersion,
                 networkInfo,
-                appConfig,
-                platformConfig,
+                config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -165,7 +164,7 @@ class SchemaRegistryImplTest {
 
         StateDefinition stateDefinition = new StateDefinition("STATE", mockCodec, mockCodec, 123, true, false, false);
 
-        when(schema.statesToCreate(appConfig))
+        when(schema.statesToCreate(config))
                 .thenReturn(Set.of(stateDefinitionSingleton, stateDefinitionQueue, stateDefinition));
 
         schemaRegistry.register(schema);
@@ -174,8 +173,8 @@ class SchemaRegistryImplTest {
                 mirrorNodeState,
                 previousVersion,
                 networkInfo,
-                appConfig,
-                platformConfig,
+                config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -199,8 +198,8 @@ class SchemaRegistryImplTest {
                 mirrorNodeState,
                 previousVersion,
                 networkInfo,
-                appConfig,
-                platformConfig,
+                config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -215,8 +214,8 @@ class SchemaRegistryImplTest {
                 previousVersion,
                 readableStates,
                 writableStates,
-                appConfig,
-                platformConfig,
+                config,
+                config,
                 networkInfo,
                 new AtomicLong(1),
                 EMPTY_MAP,
@@ -229,8 +228,8 @@ class SchemaRegistryImplTest {
             assertThat(c.previousVersion()).isEqualTo(previousVersion);
             assertThat(c.previousStates()).isEqualTo(readableStates);
             assertThat(c.newStates()).isEqualTo(writableStates);
-            assertThat(c.appConfig()).isEqualTo(appConfig);
-            assertThat(c.platformConfig()).isEqualTo(platformConfig);
+            assertThat(c.appConfig()).isEqualTo(config);
+            assertThat(c.platformConfig()).isEqualTo(config);
             assertThat(c.genesisNetworkInfo()).isEqualTo(networkInfo);
             assertThat(c.newEntityNum()).isEqualTo(1);
             assertThat(c.sharedValues()).isEqualTo(EMPTY_MAP);
