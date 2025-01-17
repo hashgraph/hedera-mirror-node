@@ -72,7 +72,7 @@ class BlockStreamVerifierTest {
         var blockFile = getBlockFile(null);
 
         // when
-        verifier.notify(blockFile);
+        verifier.verify(blockFile);
 
         // then
         verify(blockFileTransformer).transform(blockFile);
@@ -83,7 +83,7 @@ class BlockStreamVerifierTest {
         blockFile = getBlockFile(blockFile);
 
         // when
-        verifier.notify(blockFile);
+        verifier.verify(blockFile);
 
         // then
         verify(blockFileTransformer).transform(blockFile);
@@ -99,7 +99,7 @@ class BlockStreamVerifierTest {
         var blockFile = getBlockFile(previous);
 
         // when
-        verifier.notify(blockFile);
+        verifier.verify(blockFile);
 
         // then
         verify(blockFileTransformer).transform(blockFile);
@@ -110,7 +110,7 @@ class BlockStreamVerifierTest {
         blockFile = getBlockFile(blockFile);
 
         // when
-        verifier.notify(blockFile);
+        verifier.verify(blockFile);
 
         // then
         verify(blockFileTransformer).transform(blockFile);
@@ -119,14 +119,14 @@ class BlockStreamVerifierTest {
     }
 
     @Test
-    void blockNumberMisMatch() {
+    void blockNumberMismatch() {
         // given
         when(recordFileRepository.findLatest()).thenReturn(Optional.empty());
         var blockFile = getBlockFile(null);
         blockFile.setIndex(blockFile.getIndex() + 1);
 
         // when, then
-        assertThatThrownBy(() -> verifier.notify(blockFile))
+        assertThatThrownBy(() -> verifier.verify(blockFile))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Block number mismatch");
         verifyNoInteractions(blockFileTransformer);
@@ -143,7 +143,7 @@ class BlockStreamVerifierTest {
         blockFile.setPreviousHash(sha384Hash());
 
         // when, then
-        assertThatThrownBy(() -> verifier.notify(blockFile))
+        assertThatThrownBy(() -> verifier.verify(blockFile))
                 .isInstanceOf(HashMismatchException.class)
                 .hasMessageContaining("Previous hash mismatch");
         verifyNoInteractions(blockFileTransformer);
@@ -170,7 +170,7 @@ class BlockStreamVerifierTest {
         blockFile.setName(DomainUtils.bytesToHex(TestUtils.generateRandomByteArray(4)));
 
         // when, then
-        assertThatThrownBy(() -> verifier.notify(blockFile))
+        assertThatThrownBy(() -> verifier.verify(blockFile))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Failed to parse block number from filename");
         verifyNoInteractions(blockFileTransformer);
@@ -186,7 +186,7 @@ class BlockStreamVerifierTest {
         var blockFile = getBlockFile(null);
 
         // when, then
-        assertThatThrownBy(() -> verifier.notify(blockFile))
+        assertThatThrownBy(() -> verifier.verify(blockFile))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Non-consecutive block number");
         verifyNoInteractions(blockFileTransformer);

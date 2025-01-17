@@ -167,7 +167,7 @@ public class BlockStreamVerifier {
     /**
      * Verifies the block file, transforms it into a record file, and then notifies the parser
      */
-    public void notify(@Nonnull BlockFile blockFile);
+    public void verify(@NotNull BlockFile blockFile);
 
     /**
      * Verifies the block number of the block file

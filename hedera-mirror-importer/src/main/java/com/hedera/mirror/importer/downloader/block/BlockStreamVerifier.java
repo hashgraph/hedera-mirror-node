@@ -40,7 +40,7 @@ public class BlockStreamVerifier {
 
     private final AtomicReference<Optional<BlockFile>> lastBlockFile = new AtomicReference<>(Optional.empty());
 
-    public void notify(@NotNull BlockFile blockFile) {
+    public void verify(@NotNull BlockFile blockFile) {
         verifyBlockNumber(blockFile);
         verifyHashChain(blockFile);
         var recordFile = blockFileTransformer.transform(blockFile);
