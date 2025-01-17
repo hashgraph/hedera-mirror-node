@@ -21,8 +21,11 @@ import static com.hedera.mirror.web3.service.ContractCallService.GAS_LIMIT_METRI
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.web3j.generated.InternalCaller;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
@@ -69,7 +72,12 @@ public class InternalCallsTest extends AbstractContractCallServiceTest {
         meterRegistry.clear();
         final var result = contract.call_sendTo(NON_EXISTING_ADDRESS).send();
 
-        assertThat(result).isEqualTo(Boolean.TRUE);
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            assertThat(result).isEqualTo(Boolean.TRUE);
+        } else {
+            // In the mod code, there is a check if the address is an alias and in this case it is not.
+            assertThat(result).isEqualTo(Boolean.FALSE);
+        }
         assertGasLimit(TRANSACTION_GAS_LIMIT);
     }
 
@@ -77,9 +85,16 @@ public class InternalCallsTest extends AbstractContractCallServiceTest {
     void transferToNonExistingAccount() throws Exception {
         final var contract = testWeb3jService.deploy(InternalCaller::deploy);
         meterRegistry.clear();
-        contract.send_transferTo(NON_EXISTING_ADDRESS).send();
-
-        assertThat(testWeb3jService.getTransactionResult()).isEqualTo(HEX_PREFIX);
+        final var functionCall = contract.send_transferTo(NON_EXISTING_ADDRESS);
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            functionCall.send();
+            assertThat(testWeb3jService.getTransactionResult()).isEqualTo(HEX_PREFIX);
+        } else {
+            // In the mod code, there is a check if the address is an alias and in this case it is not.
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+        }
         assertGasLimit(TRANSACTION_GAS_LIMIT);
     }
 
