@@ -34,7 +34,7 @@ class TokenAllowanceBuilder extends AbstractEntityBuilder<TokenAllowance, TokenA
     }
 
     @Override
-    protected TokenAllowance.TokenAllowanceBuilder<?, ?> getEntityBuilder() {
+    protected TokenAllowance.TokenAllowanceBuilder<?, ?> getEntityBuilder(SpecBuilderContext builderContext) {
         return TokenAllowance.builder()
                 .amount(0L)
                 .amountGranted(0L)

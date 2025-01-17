@@ -17,17 +17,21 @@
 package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
-class EntityBuilder extends AbstractEntityBuilder<Entity, Entity.EntityBuilder<?, ?>> {
+class EntityBuilder extends AbstractEntityBuilder<AbstractEntity, AbstractEntity.AbstractEntityBuilder<?, ?>> {
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
             "alias", BASE32_CONVERTER,
@@ -40,13 +44,39 @@ class EntityBuilder extends AbstractEntityBuilder<Entity, Entity.EntityBuilder<?
 
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
-        return specSetup::entities;
+
+        return () -> {
+            var entities = specSetup.entities();
+
+            if (entities == null) {
+                entities = new ArrayList<>();
+            }
+
+            var contracts = specSetup.contracts();
+
+            if (contracts != null) {
+                for (var contract : contracts) {
+                    var num = contract.getOrDefault("num", 0L);
+                    var contractEntity = new HashMap<String, Object>();
+                    contractEntity.put("max_automatic_token_associations", 0);
+                    contractEntity.put("memo", "contract memo");
+                    contractEntity.put("num", num);
+                    contractEntity.put("type", EntityType.CONTRACT);
+                    contractEntity.put("receiver_sig_required", null);
+
+                    contractEntity.putAll(contract);
+                    entities.add(contractEntity);
+                }
+            }
+
+            return entities;
+        };
     }
 
     @Override
-    protected Entity.EntityBuilder<?, ?> getEntityBuilder() {
-        return Entity.builder()
-                .declineReward(Boolean.FALSE)
+    protected AbstractEntity.AbstractEntityBuilder<?, ?> getEntityBuilder(SpecBuilderContext builderContext) {
+        var builder = builderContext.isHistory() ? EntityHistory.builder() : Entity.builder();
+        return builder.declineReward(Boolean.FALSE)
                 .deleted(Boolean.FALSE)
                 .num(0L)
                 .memo("entity memo")
@@ -61,11 +91,17 @@ class EntityBuilder extends AbstractEntityBuilder<Entity, Entity.EntityBuilder<?
     }
 
     @Override
-    protected Entity getFinalEntity(Entity.EntityBuilder<?, ?> builder, Map<String, Object> account) {
+    protected AbstractEntity getFinalEntity(
+            AbstractEntity.AbstractEntityBuilder<?, ?> builder, Map<String, Object> account) {
         var entity = builder.build();
         if (entity.getId() == null) {
-            builder.id(entity.toEntityId().getId());
-            entity = builder.build();
+            entity.setId(entity.toEntityId().getId());
+
+            // Work around entity builder resetting the public key when setting key
+            var publicKeyOverride = account.get("public_key");
+            if (entity.getPublicKey() == null && publicKeyOverride != null) {
+                entity.setPublicKey(publicKeyOverride.toString());
+            }
         }
         return entity;
     }

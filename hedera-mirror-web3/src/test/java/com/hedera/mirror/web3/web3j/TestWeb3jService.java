@@ -87,7 +87,7 @@ public class TestWeb3jService implements Web3jService {
     private boolean isEstimateGas = false;
     private String transactionResult;
     private Supplier<String> estimatedGas;
-    private long value = 0L;
+    private long value = 0L; // the amount sent to the smart contract, if the contract function is payable.
     private boolean persistContract = true;
     private byte[] contractRuntime;
     private BlockType blockType = BlockType.LATEST;

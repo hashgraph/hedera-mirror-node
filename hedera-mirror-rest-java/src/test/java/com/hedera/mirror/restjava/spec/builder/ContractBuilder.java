@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,27 +16,36 @@
 
 package com.hedera.mirror.restjava.spec.builder;
 
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
-import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 @Named
-class AccountBuilder extends EntityBuilder {
+public class ContractBuilder extends AbstractEntityBuilder<Contract, Contract.ContractBuilder<?, ?>> {
+    private static final Map<String, String> ATTRIBUTE_NAME_MAP = Map.of("num", "id");
 
-    @Override
-    protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
-        return specSetup::accounts;
+    public ContractBuilder() {
+        super(Map.of(), ATTRIBUTE_NAME_MAP);
     }
 
     @Override
-    protected AbstractEntity.AbstractEntityBuilder<?, ?> getEntityBuilder(SpecBuilderContext builderContext) {
-        return super.getEntityBuilder(builderContext)
-                .maxAutomaticTokenAssociations(0)
-                .publicKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f")
-                .type(EntityType.ACCOUNT);
+    protected Contract.ContractBuilder<?, ?> getEntityBuilder(SpecBuilderContext builderContext) {
+        return Contract.builder();
+    }
+
+    @Override
+    protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
+        return () -> Optional.ofNullable(specSetup.contracts()).orElse(List.of()).stream()
+                .filter(contract -> !isHistory(contract))
+                .toList();
+    }
+
+    @Override
+    protected Contract getFinalEntity(Contract.ContractBuilder<?, ?> builder, Map<String, Object> entityAttributes) {
+        return builder.build();
     }
 }

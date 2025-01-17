@@ -25,6 +25,7 @@ import static com.hedera.mirror.web3.utils.OpcodeTracerUtil.toHumanReadableMessa
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.doAnswer;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.OpcodesResponse;
@@ -236,5 +237,19 @@ abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContr
             return Address.wrap(Bytes.wrap(entity.getAlias()));
         }
         return toAddress(entity.toEntityId());
+    }
+
+    protected void accountBalanceRecordsPersist(Entity sender) {
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), sender.toEntityId()))
+                        .balance(sender.getBalance()))
+                .persist();
+
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), treasuryEntity.toEntityId()))
+                        .balance(treasuryEntity.getBalance()))
+                .persist();
     }
 }
