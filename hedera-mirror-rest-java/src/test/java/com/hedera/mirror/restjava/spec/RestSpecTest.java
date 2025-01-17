@@ -74,8 +74,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
         public boolean accept(File file) {
             var directory = file.isDirectory() ? file : file.getParentFile();
             var dirName = directory.getPath().replace(REST_BASE_PATH + "/", "");
-            return INCLUDED_SPEC_DIRS.matcher(dirName).matches()
-                    && !RESPONSE_HEADER_FILE.equals(file.getName());
+            return INCLUDED_SPEC_DIRS.matcher(dirName).matches() && !RESPONSE_HEADER_FILE.equals(file.getName());
         }
 
         @Override

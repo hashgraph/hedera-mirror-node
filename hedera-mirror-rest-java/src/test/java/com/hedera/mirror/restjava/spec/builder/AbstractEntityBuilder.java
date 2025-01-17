@@ -17,8 +17,6 @@
 package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.base.CaseFormat;
-import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityManager;
@@ -34,13 +32,11 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.CollectionUtils;

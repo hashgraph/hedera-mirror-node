@@ -22,7 +22,6 @@ import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named

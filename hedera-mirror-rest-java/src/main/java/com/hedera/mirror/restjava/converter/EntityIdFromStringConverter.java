@@ -27,6 +27,10 @@ import org.springframework.util.StringUtils;
 public class EntityIdFromStringConverter implements Converter<String, EntityId> {
     @Override
     public EntityId convert(String source) {
+        if (!StringUtils.hasText(source)) {
+            return null;
+        }
+
         var parts = source.split("\\.");
         if (parts.length == 3) {
             return EntityId.of(source);
