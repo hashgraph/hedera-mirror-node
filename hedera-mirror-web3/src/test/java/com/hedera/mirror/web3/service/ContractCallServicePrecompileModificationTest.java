@@ -1193,7 +1193,6 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         long timestampForBalances = payer.getCreatedTimestamp();
         persistAccountBalance(payer, payer.getBalance());
         persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
-        treasuryEntity = domainBuilder.entity().customize(e -> e.id(2L).num(2L)).get();
         persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
 
         // When
@@ -1228,7 +1227,6 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         persistTokenBalance(sender, tokenEntity, timestampForBalances);
 
         persistTokenBalance(receiver, tokenEntity, timestampForBalances);
-        treasuryEntity = domainBuilder.entity().customize(e -> e.id(2L).num(2L)).get();
         persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
 
         tokenAccountPersist(tokenEntity, sender);
@@ -1271,7 +1269,6 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         persistTokenBalance(receiver, tokenEntity, timestampForBalances);
 
-        treasuryEntity = domainBuilder.entity().customize(e -> e.id(2L).num(2L)).get();
         persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
 
         tokenAccountPersist(tokenEntity, sender);
