@@ -31,7 +31,6 @@ public class StringToLongConverter implements Converter<String, Long> {
             return null;
         }
 
-
         var parts = source.split("\\.");
         if (parts.length == 3) {
             return EntityId.of(source).getId();

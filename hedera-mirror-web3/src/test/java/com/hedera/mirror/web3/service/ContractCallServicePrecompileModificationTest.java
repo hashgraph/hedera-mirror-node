@@ -60,7 +60,6 @@ import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyV
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
-import com.swirlds.base.time.Time;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -665,26 +664,32 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @Test
     void createFungibleToken() throws Exception {
         // Given
-        var initialSupply = BigInteger.valueOf(10L);
-        var decimals = BigInteger.valueOf(10L);
-        var value = 10000L * 100_000_000L;
+        final var value = 10000L * 100_000_000_000L;
+        final var sender = accountEntityPersist();
+
+        accountBalanceRecordsPersist(sender);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var treasuryAccount = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).evmAddress(null))
-                .persist();
+        testWeb3jService.setValue(value);
+
+        testWeb3jService.setSender(toAddress(sender.toEntityId()).toHexString());
+
+        final var treasuryAccount = accountEntityPersist();
+
         final var token = populateHederaToken(
                 contract.getContractAddress(), TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount.toEntityId());
+        final var initialTokenSupply = BigInteger.valueOf(10L);
+        final var decimalPlacesSupportedByToken = BigInteger.valueOf(10L); // e.g. 1.0123456789
 
         // When
-        testWeb3jService.setValue(value);
-        final var functionCall = contract.call_createFungibleTokenExternal(token, initialSupply, decimals);
+        final var functionCall =
+                contract.call_createFungibleTokenExternal(token, initialTokenSupply, decimalPlacesSupportedByToken);
         final var result = functionCall.send();
 
         final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
                 .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .sender(toAddress(sender.toEntityId()))
                 .value(value)
                 .build();
 
@@ -702,15 +707,22 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         var decimals = BigInteger.valueOf(10L);
         var value = 10000L * 100_000_000L;
 
+        final var sender = accountEntityPersist();
+
+        accountBalanceRecordsPersist(sender);
+
+        final var treasuryAccount = accountEntityPersist();
+
         final var tokenForDenomination = persistFungibleToken();
         final var feeCollector = accountEntityWithEvmAddressPersist();
 
+        tokenAccountPersist(tokenForDenomination, feeCollector);
+
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
-        final var treasuryAccount = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).evmAddress(null))
-                .persist();
+        testWeb3jService.setSender(toAddress(sender.toEntityId()).toHexString());
+        testWeb3jService.setValue(value);
+
         final var token = populateHederaToken(
                 contract.getContractAddress(), TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount.toEntityId());
 
@@ -729,13 +741,13 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 getAliasFromEntity(feeCollector));
 
         // When
-        testWeb3jService.setValue(value);
         final var functionCall = contract.call_createFungibleTokenWithCustomFeesExternal(
                 token, initialSupply, decimals, List.of(fixedFee), List.of(fractionalFee));
         final var result = functionCall.send();
 
         final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
                 .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .sender(toAddress(sender.toEntityId()))
                 .value(value)
                 .build();
 
@@ -750,8 +762,13 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void createNonFungibleToken() throws Exception {
         // Given
         var value = 10000L * 100_000_000L;
+        final var sender = accountEntityPersist();
+
+        accountBalanceRecordsPersist(sender);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+
+        testWeb3jService.setSender(toAddress(sender.toEntityId()).toHexString());
 
         final var treasuryAccount = domainBuilder
                 .entity()
@@ -767,6 +784,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
                 .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .sender(toAddress(sender.toEntityId()))
                 .value(value)
                 .build();
 
@@ -781,11 +799,19 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void createNonFungibleTokenWithCustomFees() throws Exception {
         // Given
         var value = 10000L * 100_000_000L;
+        final var sender = accountEntityPersist();
+
+        accountBalanceRecordsPersist(sender);
 
         final var tokenForDenomination = persistFungibleToken();
         final var feeCollector = accountEntityWithEvmAddressPersist();
 
+        tokenAccountPersist(tokenForDenomination, feeCollector);
+
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+
+        testWeb3jService.setSender(toAddress(sender.toEntityId()).toHexString());
+        testWeb3jService.setValue(value);
 
         final var treasuryAccount = domainBuilder
                 .entity()
@@ -816,6 +842,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
                 .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                .sender(toAddress(sender.toEntityId()))
                 .value(value)
                 .build();
         // Then
@@ -1409,7 +1436,9 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
     private HederaToken populateHederaToken(
             final String contractAddress, final TokenTypeEnum tokenType, final EntityId treasuryAccountId) {
-        final var autoRenewAccount = accountEntityWithEvmAddressPersist();
+        final var autoRenewAccount =
+                accountEntityWithEvmAddressPersist(); // the account that is going to be charged for token renewal upon
+        // expiration
         final var tokenEntity = domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
@@ -1419,21 +1448,26 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(tokenType).treasuryAccountId(treasuryAccountId))
                 .persist();
 
-        final var supplyKey =
-                new KeyValue(Boolean.FALSE, contractAddress, new byte[0], new byte[0], Address.ZERO.toHexString());
+        final var supplyKey = new KeyValue(
+                Boolean.FALSE,
+                contractAddress,
+                new byte[0],
+                new byte[0],
+                Address.ZERO.toHexString()); // the key needed for token minting or burning
         final var keys = new ArrayList<TokenKey>();
         keys.add(new TokenKey(AbstractContractCallServiceTest.KeyType.SUPPLY_KEY.getKeyTypeNumeric(), supplyKey));
+
         return new HederaToken(
                 token.getName(),
                 token.getSymbol(),
-                getAddressFromEntityId(treasuryAccountId),
-                tokenEntity.getMemo(),
+                getAddressFromEntityId(treasuryAccountId), // id of the account holding the initial token supply
+                tokenEntity.getMemo(), // token description encoded in UTF-8 format
                 true,
                 BigInteger.valueOf(10_000L),
                 false,
                 keys,
                 new Expiry(
-                        BigInteger.valueOf(Time.getCurrent().currentTimeMillis() + 1_000_000_000),
+                        BigInteger.valueOf(Instant.now().getEpochSecond() + 8_000_000L),
                         getAliasFromEntity(autoRenewAccount),
                         BigInteger.valueOf(8_000_000)));
     }

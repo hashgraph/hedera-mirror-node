@@ -247,7 +247,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         return domainBuilder
                 .entity()
                 .customize(e ->
-                        e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(1_000_000_000_000L))
+                        e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(100_000_000_000_000_000L))
                 .persist();
     }
 
