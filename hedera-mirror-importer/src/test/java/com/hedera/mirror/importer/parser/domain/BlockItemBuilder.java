@@ -99,9 +99,12 @@ public class BlockItemBuilder {
     private TransactionResult.Builder transactionResult(
             TransactionRecord transactionRecord, Timestamp consensusTimestamp) {
         return TransactionResult.newBuilder()
+                .addAllPaidStakingRewards(transactionRecord.getPaidStakingRewardsList())
                 .addAllTokenTransferLists(transactionRecord.getTokenTransferListsList())
-                .setTransferList(transactionRecord.getTransferList())
                 .setConsensusTimestamp(consensusTimestamp)
+                .setParentConsensusTimestamp(transactionRecord.getParentConsensusTimestamp())
+                .setScheduleRef(transactionRecord.getScheduleRef())
+                .setTransferList(transactionRecord.getTransferList())
                 .setTransactionFeeCharged(transactionRecord.getTransactionFee())
                 .setStatus(transactionRecord.getReceipt().getStatus());
     }

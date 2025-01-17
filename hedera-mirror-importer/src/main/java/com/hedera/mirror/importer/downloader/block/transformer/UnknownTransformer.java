@@ -16,11 +16,10 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
+import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionRecord.Builder;
 import jakarta.inject.Named;
-import java.util.List;
 
 @Named
 public class UnknownTransformer extends AbstractBlockItemTransformer {
@@ -31,8 +30,7 @@ public class UnknownTransformer extends AbstractBlockItemTransformer {
     }
 
     @Override
-    protected void updateTransactionRecord(
-            List<TransactionOutput> transactionOutputs, Builder transactionRecordBuilder) {
+    protected void updateTransactionRecord(BlockItem blockItem, Builder transactionRecordBuilder) {
         // Unknown transaction type, no known actions
     }
 }

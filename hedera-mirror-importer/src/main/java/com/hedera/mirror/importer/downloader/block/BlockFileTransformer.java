@@ -16,34 +16,33 @@
 
 package com.hedera.mirror.importer.downloader.block;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.BlockFile;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.importer.downloader.StreamFileTransformer;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties.PersistProperties;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import jakarta.inject.Named;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.data.util.Version;
 
 @Named
 @RequiredArgsConstructor
 public class BlockFileTransformer implements StreamFileTransformer<RecordFile, BlockFile> {
 
-    private final PersistProperties persistProperties = new PersistProperties();
-    private final Predicate<EntityId> entityTransactionPredicate = persistProperties::shouldPersistEntityTransaction;
-    private final Predicate<EntityId> contractTransactionPredicate = e -> persistProperties.isContractTransaction();
-
+    private final MessageDigest digest = createDigest();
     private final TransformerFactory transformerFactory;
 
     @Override
@@ -61,11 +60,12 @@ public class BlockFileTransformer implements StreamFileTransformer<RecordFile, B
             recordFileBuilder.items(getRecordItems(blockItems, hapiVersion));
         }
 
+        var softwareVersion = blockHeader.getSoftwareVersion();
         return recordFileBuilder
                 .bytes(blockFile.getBytes())
                 .consensusEnd(blockFile.getConsensusEnd())
                 .consensusStart(blockFile.getConsensusStart())
-                .count((long) blockItems.size())
+                .count(blockFile.getCount())
                 .digestAlgorithm(blockFile.getDigestAlgorithm())
                 .hapiVersionMajor(major)
                 .hapiVersionMinor(minor)
@@ -76,13 +76,13 @@ public class BlockFileTransformer implements StreamFileTransformer<RecordFile, B
                 .index(blockHeader.getNumber())
                 .name(blockFile.getName())
                 .nodeId(blockFile.getNodeId())
-                .previousHash(blockHeader.getPreviousBlockHash().toStringUtf8())
+                .previousHash(blockFile.getPreviousHash())
                 .roundEnd(blockFile.getRoundEnd())
                 .roundStart(blockFile.getRoundStart())
                 .size(blockFile.getSize())
-                .softwareVersionMajor(major)
-                .softwareVersionMinor(minor)
-                .softwareVersionPatch(patch)
+                .softwareVersionMajor(softwareVersion.getMajor())
+                .softwareVersionMinor(softwareVersion.getMinor())
+                .softwareVersionPatch(softwareVersion.getPatch())
                 .version(blockFile.getVersion())
                 .build();
     }
@@ -92,14 +92,17 @@ public class BlockFileTransformer implements StreamFileTransformer<RecordFile, B
         var recordItems = new ArrayList<RecordItem>(blockItems.size());
         for (var blockItem : blockItems) {
             var transaction = blockItem.transaction();
-            var transactionBody = getTransactionBody(transaction);
+            var signedBytes = transaction.getSignedTransactionBytes();
+            var transactionHash = calculateTransactionHash(signedBytes.toByteArray());
+            var signedTransaction = parseSignedTransaction(signedBytes);
+            var transactionBody = parseTransactionBody(signedTransaction.getBodyBytes());
             int transactionTypeValue = transactionBody.getDataCase().getNumber();
             var transactionType = TransactionType.of(transactionTypeValue);
             var blockItemTransformer = transformerFactory.get(transactionType);
-            var transactionRecord = blockItemTransformer.getTransactionRecord(blockItem, transactionBody);
+            var transactionRecord =
+                    blockItemTransformer.getTransactionRecord(blockItem, transactionHash, transactionBody);
+
             var recordItem = RecordItem.builder()
-                    .contractTransactionPredicate(contractTransactionPredicate)
-                    .entityTransactionPredicate(entityTransactionPredicate)
                     .hapiVersion(hapiVersion)
                     .previous(previousItem)
                     .transaction(transaction)
@@ -113,9 +116,31 @@ public class BlockFileTransformer implements StreamFileTransformer<RecordFile, B
         return recordItems;
     }
 
-    @SneakyThrows
-    private TransactionBody getTransactionBody(Transaction transaction) {
-        var signedTransaction = SignedTransaction.parseFrom(transaction.getSignedTransactionBytes());
-        return TransactionBody.parseFrom(signedTransaction.getBodyBytes());
+    private static MessageDigest createDigest() {
+        try {
+            return MessageDigest.getInstance(DigestAlgorithm.SHA_384.getName());
+        } catch (NoSuchAlgorithmException e) {
+            throw new InvalidStreamFileException("SHA-384 algorithm not found", e);
+        }
+    }
+
+    private ByteString calculateTransactionHash(byte[] signedBytes) {
+        return ByteString.copyFrom(digest.digest(signedBytes));
+    }
+
+    private SignedTransaction parseSignedTransaction(ByteString signedBytes) {
+        try {
+            return SignedTransaction.parseFrom(signedBytes);
+        } catch (InvalidProtocolBufferException e) {
+            throw new ProtobufException("Error parsing signed transaction from transaction", e);
+        }
+    }
+
+    private TransactionBody parseTransactionBody(ByteString signedTransactionBody) {
+        try {
+            return TransactionBody.parseFrom(signedTransactionBody);
+        } catch (InvalidProtocolBufferException e) {
+            throw new ProtobufException("Error parsing transaction body from signed transaction", e);
+        }
     }
 }

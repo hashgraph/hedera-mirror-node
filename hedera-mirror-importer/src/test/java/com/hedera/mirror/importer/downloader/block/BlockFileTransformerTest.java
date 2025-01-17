@@ -29,9 +29,11 @@ import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -53,17 +55,24 @@ public class BlockFileTransformerTest extends ImporterIntegrationTest {
                 // Update the hapi version to match that of the record file
                 .recordItem(r -> r.hapiVersion(expectedRecordFileBuilder.get().getHapiVersion()))
                 .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+
         var expectedRecordItem2 = recordItemBuilder
                 .cryptoTransfer(transferType)
-                // Update the hapi version to match that of the record file
                 .recordItem(r -> r.hapiVersion(expectedRecordFileBuilder.get().getHapiVersion())
                         .transactionIndex(1))
                 .build();
+        var expectedTransactionHash2 = getExpectedTransactionHash(expectedRecordItem2);
+
         var expectedRecordFile = expectedRecordFileBuilder
-                .customize(r -> r.items(List.of(expectedRecordItem, expectedRecordItem2)))
+                .customize(r -> r.count(2L).items(List.of(expectedRecordItem, expectedRecordItem2)))
                 .get();
         var blockItem = blockItemBuilder.cryptoTransfer(expectedRecordItem).build();
+        var expectedFees =
+                blockItem.transactionOutput().get(1).getCryptoTransfer().getAssessedCustomFeesList();
         var blockItem2 = blockItemBuilder.cryptoTransfer(expectedRecordItem2).build();
+        var expectedFees2 =
+                blockItem2.transactionOutput().get(1).getCryptoTransfer().getAssessedCustomFeesList();
         var blockFile = blockFileBuilder(expectedRecordFile)
                 .items(List.of(blockItem, blockItem2))
                 .build();
@@ -77,8 +86,14 @@ public class BlockFileTransformerTest extends ImporterIntegrationTest {
         // then
         assertRecordItem(recordItem, expectedRecordItem);
         assertRecordItem(recordItem2, expectedRecordItem2);
+        assertThat(recordItem.getTransactionRecord().getAssessedCustomFeesList())
+                .isEqualTo(expectedFees);
         assertThat(recordItem.getPrevious()).isNull();
+        assertThat(recordItem.getTransactionRecord().getTransactionHash()).isEqualTo(expectedTransactionHash);
+        assertThat(recordItem2.getTransactionRecord().getAssessedCustomFeesList())
+                .isEqualTo(expectedFees2);
         assertThat(recordItem2.getPrevious()).isEqualTo(recordItem);
+        assertThat(recordItem2.getTransactionRecord().getTransactionHash()).isEqualTo(expectedTransactionHash2);
         assertThat(recordFile.getItems()).hasSize(2);
         assertThat(recordFile.getCount()).isEqualTo(2);
         assertRecordFile(recordFile, expectedRecordFile, blockFile.getName());
@@ -168,8 +183,12 @@ public class BlockFileTransformerTest extends ImporterIntegrationTest {
                         // contains memoBytes or a memo String value.
                         "transactionRecord.memo_",
                         "transactionRecord.receipt_.memoizedIsInitialized",
-                        "transactionRecord.transactionHash_",
                         "transactionRecord.assessedCustomFees_",
+                        "transactionRecord.scheduleRef_",
+                        "transactionRecord.parentConsensusTimestamp_",
+                        // Record file builder transaction hash is not generated based on transaction bytes, so these
+                        // will not match
+                        "transactionRecord.transactionHash_",
                         "transactionRecord.transactionID_.accountID_.memoizedHashCode",
                         "transactionRecord.transactionID_.accountID_.memoizedIsInitialized",
                         "transactionRecord.transactionID_.accountID_.memoizedSize",
@@ -178,6 +197,13 @@ public class BlockFileTransformerTest extends ImporterIntegrationTest {
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedIsInitialized",
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedSize")
                 .isEqualTo(expectedRecordItem);
+    }
+
+    @SneakyThrows
+    private ByteString getExpectedTransactionHash(RecordItem recordItem) {
+        var digest = MessageDigest.getInstance("SHA-384");
+        return ByteString.copyFrom(digest.digest(
+                recordItem.getTransaction().getSignedTransactionBytes().toByteArray()));
     }
 
     private BlockFile.BlockFileBuilder blockFileBuilder(RecordFile recordFile) {
@@ -190,12 +216,13 @@ public class BlockFileTransformerTest extends ImporterIntegrationTest {
         var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
         var timestamp = Utility.instantToTimestamp(instant);
 
+        var previousHash = recordFile.getPreviousHash();
         return BlockFile.builder()
                 .blockHeader(BlockHeader.newBuilder()
                         .setFirstTransactionConsensusTime(timestamp)
                         .setHapiProtoVersion(hapiVersion)
                         .setNumber(recordFile.getIndex())
-                        .setPreviousBlockHash(ByteString.copyFromUtf8(recordFile.getPreviousHash()))
+                        .setPreviousBlockHash(ByteString.copyFromUtf8(previousHash))
                         .setSoftwareVersion(hapiVersion)
                         .build())
                 .bytes(recordFile.getBytes())
@@ -208,6 +235,7 @@ public class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .loadEnd(recordFile.getLoadEnd())
                 .loadStart(recordFile.getLoadStart())
                 .name("000000000000000000000000000000000001.blk.gz")
+                .previousHash(previousHash)
                 .roundEnd(recordFile.getRoundEnd())
                 .roundStart(recordFile.getRoundStart())
                 .size(recordFile.getSize())

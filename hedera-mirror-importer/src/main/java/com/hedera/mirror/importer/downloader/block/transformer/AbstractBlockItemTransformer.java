@@ -16,36 +16,37 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.importer.downloader.block.BlockItemTransformer;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.List;
 
 public abstract class AbstractBlockItemTransformer implements BlockItemTransformer {
 
-    public TransactionRecord getTransactionRecord(BlockItem blockItem, TransactionBody transactionBody) {
+    public TransactionRecord getTransactionRecord(
+            BlockItem blockItem, ByteString transactionHash, TransactionBody transactionBody) {
         var transactionResult = blockItem.transactionResult();
         var receiptBuilder = TransactionReceipt.newBuilder().setStatus(transactionResult.getStatus());
         var transactionRecordBuilder = TransactionRecord.newBuilder()
                 .addAllAutomaticTokenAssociations(transactionResult.getAutomaticTokenAssociationsList())
+                .addAllPaidStakingRewards(transactionResult.getPaidStakingRewardsList())
                 .addAllTokenTransferLists(transactionResult.getTokenTransferListsList())
                 .setConsensusTimestamp(transactionResult.getConsensusTimestamp())
+                .setParentConsensusTimestamp(transactionResult.getParentConsensusTimestamp())
                 .setMemo(transactionBody.getMemo())
+                .setScheduleRef(transactionResult.getScheduleRef())
                 .setTransactionFee(transactionResult.getTransactionFeeCharged())
                 .setTransactionID(transactionBody.getTransactionID())
+                .setTransactionHash(transactionHash)
                 .setTransferList(transactionResult.getTransferList())
-                // Note on TransactionHash:
-                // There is an Open Issue in HIP 1056 whether the transaction hash will be included in the block stream
-                // or if it will need to be calculated by block stream consumers.
                 .setReceipt(receiptBuilder);
 
-        updateTransactionRecord(blockItem.transactionOutput(), transactionRecordBuilder);
+        updateTransactionRecord(blockItem, transactionRecordBuilder);
         return transactionRecordBuilder.build();
     }
 
     protected abstract void updateTransactionRecord(
-            List<TransactionOutput> transactionOutputs, TransactionRecord.Builder transactionRecordBuilder);
+            BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder);
 }

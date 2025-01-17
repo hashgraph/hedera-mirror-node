@@ -16,13 +16,15 @@
 
 package com.hedera.mirror.importer.downloader.block;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 public interface BlockItemTransformer {
-    TransactionRecord getTransactionRecord(BlockItem blockItem, TransactionBody transactionBody);
+    TransactionRecord getTransactionRecord(
+            BlockItem blockItem, ByteString transactionHash, TransactionBody transactionBody);
 
     TransactionType getType();
 }
