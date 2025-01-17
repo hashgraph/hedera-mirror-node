@@ -13,7 +13,6 @@ hedera:
           maxSize: 100000
       db:
         host: 127.0.0.1
-        primaryHost: ""
         name: mirror_node
         password: mirror_api_pass
         pool:
@@ -21,6 +20,7 @@ hedera:
           maxConnections: 10
           statementTimeout: 20000
         port: 5432
+        primaryHost: ""
         sslMode: DISABLE
         tls:
           ca: ""
