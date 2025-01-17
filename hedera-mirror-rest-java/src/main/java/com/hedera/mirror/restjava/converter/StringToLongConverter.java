@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,18 +24,18 @@ import org.springframework.util.StringUtils;
 
 @Named
 @ConfigurationPropertiesBinding
-public class EntityIdFromStringConverter implements Converter<String, EntityId> {
+public class StringToLongConverter implements Converter<String, Long> {
     @Override
-    public EntityId convert(String source) {
+    public Long convert(String source) {
         if (!StringUtils.hasText(source)) {
             return null;
         }
 
+
         var parts = source.split("\\.");
         if (parts.length == 3) {
-            return EntityId.of(source);
+            return EntityId.of(source).getId();
         }
-
-        return EntityId.of(Long.parseLong(source));
+        return Long.parseLong(source);
     }
 }

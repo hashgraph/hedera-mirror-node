@@ -32,7 +32,7 @@ class NetworkStakeBuilder extends AbstractEntityBuilder<NetworkStake, NetworkSta
     }
 
     @Override
-    protected NetworkStake.NetworkStakeBuilder getEntityBuilder() {
+    protected NetworkStake.NetworkStakeBuilder getEntityBuilder(SpecBuilderContext builderContext) {
         return NetworkStake.builder()
                 .consensusTimestamp(0L)
                 .epochDay(0L)
