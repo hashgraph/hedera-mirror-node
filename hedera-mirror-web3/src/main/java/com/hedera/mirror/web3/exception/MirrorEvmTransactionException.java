@@ -19,13 +19,16 @@ package com.hedera.mirror.web3.exception;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.hedera.mirror.web3.evm.exception.EvmException;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.Serial;
 import java.nio.charset.StandardCharsets;
+import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
+@Getter
 @SuppressWarnings("java:S110")
 public class MirrorEvmTransactionException extends EvmException {
 
@@ -34,31 +37,31 @@ public class MirrorEvmTransactionException extends EvmException {
 
     private final String detail;
     private final String data;
+    private final HederaEvmTransactionProcessingResult result;
 
     public MirrorEvmTransactionException(
             final ResponseCodeEnum responseCode, final String detail, final String hexData) {
-        super(responseCode.name());
-        this.detail = detail;
-        this.data = hexData;
+        this(responseCode.name(), detail, hexData, null);
     }
 
     public MirrorEvmTransactionException(final String message, final String detail, final String hexData) {
+        this(message, detail, hexData, null);
+    }
+
+    public MirrorEvmTransactionException(
+            final String message,
+            final String detail,
+            final String hexData,
+            HederaEvmTransactionProcessingResult result) {
         super(message);
         this.detail = detail;
         this.data = hexData;
+        this.result = result;
     }
 
     public Bytes messageBytes() {
         final var message = getMessage();
         return Bytes.of(message.getBytes(StandardCharsets.UTF_8));
-    }
-
-    public String getDetail() {
-        return detail;
-    }
-
-    public String getData() {
-        return data;
     }
 
     @Override

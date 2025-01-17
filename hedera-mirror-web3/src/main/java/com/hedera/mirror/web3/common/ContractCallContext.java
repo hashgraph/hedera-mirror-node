@@ -152,8 +152,10 @@ public class ContractCallContext {
     }
 
     public boolean useHistorical() {
-        return (callServiceParameters != null && callServiceParameters.getBlock() != BlockType.LATEST)
-                || recordFile != null; // Remove recordFile comparison after mono code deletion
+        if (callServiceParameters != null) {
+            return callServiceParameters.getBlock() != BlockType.LATEST;
+        }
+        return recordFile != null; // Remove recordFile comparison after mono code deletion
     }
 
     public void incrementContractActionsCounter() {

@@ -63,7 +63,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import io.github.bucket4j.Bucket;
 import jakarta.annotation.PostConstruct;
-import jakarta.annotation.Resource;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -108,9 +107,6 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
     @Autowired
     private TransactionExecutionService transactionExecutionService;
-
-    @Resource
-    private ContractExecutionService contractExecutionService;
 
     private static Stream<BlockType> provideBlockTypes() {
         return Stream.of(

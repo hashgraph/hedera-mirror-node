@@ -75,9 +75,6 @@ public class ContractExecutionService extends ContractCallService {
                     result = estimateGas(params, ctx);
                 } else {
                     final var ethCallTxnResult = callContract(params, ctx);
-
-                    validateResult(ethCallTxnResult, params.getCallType());
-
                     result = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
                 }
 

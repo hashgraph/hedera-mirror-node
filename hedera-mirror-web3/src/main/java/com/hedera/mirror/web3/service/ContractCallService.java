@@ -22,6 +22,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -81,6 +82,12 @@ public abstract class ContractCallService {
         this.transactionExecutionService = transactionExecutionService;
     }
 
+    @VisibleForTesting
+    public HederaEvmTransactionProcessingResult callContract(CallServiceParameters params)
+            throws MirrorEvmTransactionException {
+        return ContractCallContext.run(context -> callContract(params, context));
+    }
+
     /**
      * This method is responsible for calling a smart contract function. The method is divided into two main parts:
      * <p>
@@ -113,7 +120,9 @@ public abstract class ContractCallService {
             ctx.initializeStackFrames(store.getStackedStateFrames());
         }
 
-        return doProcessCall(params, params.getGas(), true);
+        var result = doProcessCall(params, params.getGas(), true);
+        validateResult(result, params.getCallType());
+        return result;
     }
 
     protected HederaEvmTransactionProcessingResult doProcessCall(
@@ -158,7 +167,8 @@ public abstract class ContractCallService {
             updateGasUsedMetric(ERROR, txnResult.getGasUsed(), 1);
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-            throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            throw new MirrorEvmTransactionException(
+                    getStatusOrDefault(txnResult).name(), detail, revertReason.toHexString(), txnResult);
         } else {
             updateGasUsedMetric(type, txnResult.getGasUsed(), 1);
         }
