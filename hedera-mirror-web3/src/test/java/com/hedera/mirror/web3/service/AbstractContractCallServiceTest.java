@@ -26,6 +26,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -270,6 +271,30 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                         .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .associated(true))
+                .persist();
+    }
+
+    protected void persistAccountBalance(Entity account, long balance, long timestamp) {
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(timestamp, account.toEntityId()))
+                        .balance(balance))
+                .persist();
+    }
+
+    protected void persistAccountBalance(Entity account, long balance) {
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(account.getCreatedTimestamp(), account.toEntityId()))
+                        .balance(balance))
+                .persist();
+    }
+
+    protected void persistTokenBalance(Entity account, Entity token, long timestamp) {
+        domainBuilder
+                .tokenBalance()
+                .customize(ab -> ab.id(new TokenBalance.Id(timestamp, account.toEntityId(), token.toEntityId()))
+                        .balance(100))
                 .persist();
     }
 
