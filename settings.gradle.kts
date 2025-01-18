@@ -56,6 +56,7 @@ fun shortenProjectName(project: ProjectDescriptor) {
 
 develocity {
     buildScan {
+        publishing.onlyIf { false }
         termsOfUseUrl = "https://gradle.com/terms-of-service"
         termsOfUseAgree = "yes"
         tag("CI")
