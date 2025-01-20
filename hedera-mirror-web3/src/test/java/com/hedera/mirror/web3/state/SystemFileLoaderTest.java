@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -73,10 +74,9 @@ class SystemFileLoaderTest {
         var file = systemFileLoader.load(fileId);
         assertFile(file, fileId);
         var feeSchedule = CurrentAndNextFeeSchedule.PROTOBUF.parse(file.contents());
-        assertThat(feeSchedule).isNotNull();
+        assertThat(feeSchedule).isNotNull().isNotEqualTo(CurrentAndNextFeeSchedule.DEFAULT);
         assertThat(feeSchedule.currentFeeSchedule())
                 .isNotNull()
-                .isNotEqualTo(CurrentAndNextFeeSchedule.DEFAULT)
                 .extracting(FeeSchedule::transactionFeeSchedule, InstanceOfAssertFactories.LIST)
                 .hasSizeGreaterThanOrEqualTo(72);
     }
@@ -87,8 +87,8 @@ class SystemFileLoaderTest {
         var file = systemFileLoader.load(fileId);
         assertFile(file, fileId);
         var exchangeRateSet = ExchangeRateSet.PROTOBUF.parse(file.contents());
-        assertThat(exchangeRateSet).isNotNull();
-        assertThat(exchangeRateSet.currentRate()).isNotNull().isNotEqualTo(ExchangeRateSet.DEFAULT);
+        assertThat(exchangeRateSet).isNotNull().isNotEqualTo(ExchangeRateSet.DEFAULT);
+        assertThat(exchangeRateSet.currentRate()).isNotNull().isNotEqualTo(ExchangeRate.DEFAULT);
     }
 
     @Test
@@ -115,7 +115,7 @@ class SystemFileLoaderTest {
         var file = systemFileLoader.load(fileId);
         assertFile(file, fileId);
         var throttleDefinitions = ThrottleDefinitions.PROTOBUF.parse(file.contents());
-        assertThat(throttleDefinitions).isNotNull().isNotEqualTo(ServicesConfigurationList.DEFAULT);
+        assertThat(throttleDefinitions).isNotNull().isNotEqualTo(ThrottleDefinitions.DEFAULT);
         assertThat(throttleDefinitions.throttleBuckets()).hasSizeGreaterThanOrEqualTo(5);
     }
 
