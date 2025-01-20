@@ -20,8 +20,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.mirror.web3.state.AccountReadableKVState;
-import com.hedera.mirror.web3.state.AliasesReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.AccountReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -22,8 +22,8 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.mirror.web3.state.AccountReadableKVState;
-import com.hedera.mirror.web3.state.AliasesReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.AccountReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
 import com.swirlds.state.spi.ReadableKVState;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
