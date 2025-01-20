@@ -24,7 +24,7 @@ repositories {
 dependencies {
     val dockerJavaVersion = "3.4.1"
     val flywayVersion = "11.1.1"
-    val jooqVersion = "3.19.17"
+    val jooqVersion = "3.19.18"
 
     // Add docker-java dependencies before gradle-docker-plugin to avoid the docker-java jars
     // embedded in the plugin being used by testcontainers-postgresql
