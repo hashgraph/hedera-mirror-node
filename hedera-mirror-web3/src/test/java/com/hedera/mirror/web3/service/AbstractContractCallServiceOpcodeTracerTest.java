@@ -81,22 +81,22 @@ abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContr
     void setUpArgumentCaptors() {
         if (!mirrorNodeEvmProperties.isModularizedServices()) {
             doAnswer(invocation -> {
-                        final var transactionProcessingResult =
-                                (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
-                        resultCaptor = transactionProcessingResult;
-                        contextCaptor = ContractCallContext.get();
-                        return transactionProcessingResult;
-                    })
+                final var transactionProcessingResult =
+                        (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                resultCaptor = transactionProcessingResult;
+                contextCaptor = ContractCallContext.get();
+                return transactionProcessingResult;
+            })
                     .when(processor)
                     .execute(paramsCaptor.capture(), gasCaptor.capture());
         } else {
             doAnswer(invocation -> {
-                        final var transactionProcessingResult =
-                                (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
-                        resultCaptor = transactionProcessingResult;
-                        contextCaptor = ContractCallContext.get();
-                        return transactionProcessingResult;
-                    })
+                final var transactionProcessingResult =
+                        (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                resultCaptor = transactionProcessingResult;
+                contextCaptor = ContractCallContext.get();
+                return transactionProcessingResult;
+            })
                     .when(transactionExecutionService)
                     .execute(paramsCaptor.capture(), gasCaptor.capture(), gasUsedCounter.capture());
         }
