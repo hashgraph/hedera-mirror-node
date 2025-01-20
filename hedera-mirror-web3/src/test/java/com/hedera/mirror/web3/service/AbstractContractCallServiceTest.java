@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.DEFAULT_FEE_SCHEDULE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
@@ -47,10 +46,7 @@ import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
@@ -68,19 +64,6 @@ import org.web3j.tx.Contract;
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
-    protected static final byte[] EXCHANGE_RATES_SET = ExchangeRateSet.newBuilder()
-            .setCurrentRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(12)
-                    .setHbarEquiv(1)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
-                    .build())
-            .setNextRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(15)
-                    .setHbarEquiv(1)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
-                    .build())
-            .build()
-            .toByteArray();
 
     @Resource
     protected TestWeb3jService testWeb3jService;
@@ -126,18 +109,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
         domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
         domainBuilder
-                .fileData()
-                .customize(f -> f.entityId(EntityId.of(112L)).fileData(EXCHANGE_RATES_SET))
-                .persist();
-        domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(
                                 treasuryEntity.getCreatedTimestamp(), treasuryEntity.toEntityId()))
                         .balance(treasuryEntity.getBalance()))
-                .persist();
-        domainBuilder
-                .fileData()
-                .customize(f -> f.entityId(EntityId.of(111L)).fileData(DEFAULT_FEE_SCHEDULE.toByteArray()))
                 .persist();
         testWeb3jService.reset();
     }
