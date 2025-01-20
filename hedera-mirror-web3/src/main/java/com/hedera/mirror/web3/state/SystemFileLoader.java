@@ -27,8 +27,11 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Named
@@ -38,40 +41,37 @@ public class SystemFileLoader {
     private final NetworkInfo networkInfo;
     private final MirrorNodeEvmProperties properties;
     private final V0490FileSchema fileSchema = new V0490FileSchema();
-    private final Map<FileID, File> systemFiles = new ConcurrentHashMap<>();
+
+    @Getter(lazy = true)
+    private final Map<FileID, File> systemFiles = loadAll();
 
     public @Nullable File load(@Nonnull FileID key) {
-        return systemFiles.computeIfAbsent(key, this::create);
+        return getSystemFiles().get(key);
     }
 
-    private File create(FileID fileId) {
-        final var contents = getContents((int) fileId.fileNum());
-
-        if (contents != null) {
-            return File.newBuilder()
-                    .contents(contents)
-                    .deleted(false)
-                    .expirationSecond(maxExpiry())
-                    .fileId(fileId)
-                    .build();
-        }
-
-        return null;
-    }
-
-    private Bytes getContents(int fileNum) {
+    private Map<FileID, File> loadAll() {
         var configuration = properties.getVersionedConfiguration();
 
-        return switch (fileNum) {
-            case 101 -> fileSchema.genesisAddressBook(networkInfo);
-            case 102 -> fileSchema.genesisNodeDetails(networkInfo);
-            case 111 -> fileSchema.genesisFeeSchedules(configuration);
-            case 112 -> fileSchema.genesisExchangeRates(configuration);
-            case 121 -> fileSchema.genesisNetworkProperties(configuration);
-            case 122 -> Bytes.EMPTY; // genesisHapiPermissions() attempts to load non-existent files from classpath
-            case 123 -> fileSchema.genesisThrottleDefinitions(configuration);
-            default -> null;
-        };
+        var files = List.of(
+                load(101, fileSchema.genesisAddressBook(networkInfo)),
+                load(102, fileSchema.genesisNodeDetails(networkInfo)),
+                load(111, fileSchema.genesisFeeSchedules(configuration)),
+                load(112, fileSchema.genesisExchangeRates(configuration)),
+                load(121, fileSchema.genesisNetworkProperties(configuration)),
+                load(122, Bytes.EMPTY), // genesisHapiPermissions() fails to load files from the classpath
+                load(123, fileSchema.genesisThrottleDefinitions(configuration)));
+
+        return files.stream().collect(Collectors.toMap(File::fileId, Function.identity()));
+    }
+
+    private File load(int fileNum, Bytes contents) {
+        var fileId = FileID.newBuilder().fileNum(fileNum).build();
+        return File.newBuilder()
+                .contents(contents)
+                .deleted(false)
+                .expirationSecond(maxExpiry())
+                .fileId(fileId)
+                .build();
     }
 
     private long maxExpiry() {
