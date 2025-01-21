@@ -58,7 +58,7 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
 
     @BeforeEach
     @Override
-    void setup() throws Exception {
+    void setup() {
         super.setup();
         var s3AsyncClient = S3AsyncClient.builder()
                 .asyncConfiguration(b -> b.advancedOption(FUTURE_COMPLETION_EXECUTOR, ForkJoinPool.commonPool()))
@@ -72,10 +72,10 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @Override
-    protected FileCopier createFileCopier(Path dataPath) {
+    protected FileCopier createFileCopier() {
         var fromPath = Path.of("data", "recordstreams", "v6");
         return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
-                .to(properties.getBucketName(), StreamType.RECORD.getPath());
+                .to(properties.getBucketName(), properties.getPathPrefix(), StreamType.RECORD.getPath());
     }
 
     @SneakyThrows
