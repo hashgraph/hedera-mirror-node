@@ -38,7 +38,7 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
-import com.hedera.mirror.web3.state.AliasesReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;

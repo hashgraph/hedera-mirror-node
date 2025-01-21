@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.state;
+package com.hedera.mirror.web3.state.keyvalue;
 
 import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.state.CommonEntityAccessor;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 

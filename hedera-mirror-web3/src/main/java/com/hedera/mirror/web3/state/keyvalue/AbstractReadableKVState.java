@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.state;
+package com.hedera.mirror.web3.state.keyvalue;
 
 import com.swirlds.state.spi.ReadableKVStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;

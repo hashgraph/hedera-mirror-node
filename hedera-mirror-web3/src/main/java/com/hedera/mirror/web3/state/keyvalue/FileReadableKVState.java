@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.state;
+package com.hedera.mirror.web3.state.keyvalue;
 
 import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 
@@ -27,6 +27,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.FileDataRepository;
+import com.hedera.mirror.web3.state.SystemFileLoader;
 import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import jakarta.annotation.Nonnull;
@@ -46,11 +47,16 @@ public class FileReadableKVState extends AbstractReadableKVState<FileID, File> {
     public static final String KEY = "FILES";
     private final FileDataRepository fileDataRepository;
     private final EntityRepository entityRepository;
+    private final SystemFileLoader systemFileLoader;
 
-    public FileReadableKVState(final FileDataRepository fileDataRepository, final EntityRepository entityRepository) {
+    public FileReadableKVState(
+            final FileDataRepository fileDataRepository,
+            final EntityRepository entityRepository,
+            SystemFileLoader systemFileLoader) {
         super(KEY);
         this.fileDataRepository = fileDataRepository;
         this.entityRepository = entityRepository;
+        this.systemFileLoader = systemFileLoader;
     }
 
     @Override
@@ -58,8 +64,8 @@ public class FileReadableKVState extends AbstractReadableKVState<FileID, File> {
         final var timestamp = ContractCallContext.get().getTimestamp();
         final var fileEntityId = toEntityId(key);
         final var fileId = fileEntityId.getId();
-
         final var contextFile = ContractCallContext.get().getFile();
+
         // If we are in a contract create case, the fileID and the init bytecode are in the ContractCallContext.
         if (contextFile.isPresent() && contextFile.get().fileId().equals(key)) {
             return contextFile.get();
@@ -69,7 +75,7 @@ public class FileReadableKVState extends AbstractReadableKVState<FileID, File> {
                 .map(t -> fileDataRepository.getFileAtTimestamp(fileId, t))
                 .orElseGet(() -> fileDataRepository.getFileAtTimestamp(fileId, getCurrentTimestamp()))
                 .map(fileData -> mapToFile(fileData, key, timestamp))
-                .orElse(null);
+                .orElseGet(() -> systemFileLoader.load(key));
     }
 
     private File mapToFile(final FileData fileData, final FileID key, final Optional<Long> timestamp) {
