@@ -20,6 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.state.keyvalue.AccountReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.ContractBytecodeReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.ContractStorageReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.FileReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.NftReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.TokenReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.TokenRelationshipReadableKVState;
 import com.hedera.mirror.web3.state.singleton.BlockInfoSingleton;
 import com.hedera.mirror.web3.state.singleton.DefaultSingleton;
 import com.hedera.mirror.web3.state.singleton.RunningHashesSingleton;

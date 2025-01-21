@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.state;
+package com.hedera.mirror.web3.state.keyvalue;
 
 import static com.hedera.services.utils.EntityIdUtils.toEntityId;
 import static com.hedera.services.utils.EntityIdUtils.toFileId;
@@ -33,6 +33,7 @@ import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.FileDataRepository;
+import com.hedera.mirror.web3.state.SystemFileLoader;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
 import java.util.Optional;
@@ -52,7 +53,7 @@ class FileReadableKVStateTest {
 
     private static final long SHARD = 0L;
     private static final long REALM = 1L;
-    private static final long FILE_NUM = 123L;
+    private static final long FILE_NUM = 1000L;
     private static final FileID FILE_ID = toFileId(SHARD, REALM, FILE_NUM);
     private static final File FILE = File.newBuilder().fileId(FILE_ID).build();
     private static final long FILE_ID_LONG = toEntityId(FILE_ID).getId();
@@ -76,6 +77,9 @@ class FileReadableKVStateTest {
 
     @Spy
     private ContractCallContext contractCallContext;
+
+    @Mock
+    private SystemFileLoader systemFileLoader;
 
     @BeforeAll
     static void initStaticMocks() {
@@ -130,6 +134,7 @@ class FileReadableKVStateTest {
     void fileFieldsReturnNullWhenFileDataNotFound() {
         when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
         long fileIdLong = toEntityId(FILE_ID).getId();
+        when(systemFileLoader.load(FILE_ID)).thenReturn(null);
         when(fileDataRepository.getFileAtTimestamp(fileIdLong, TIMESTAMP.get())).thenReturn(Optional.empty());
 
         File file = fileReadableKVState.get(FILE_ID);
@@ -173,10 +178,23 @@ class FileReadableKVStateTest {
         when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
         when(fileDataRepository.getFileAtTimestamp(FILE_ID_LONG, TIMESTAMP.get()))
                 .thenReturn(Optional.empty());
+        when(systemFileLoader.load(FILE_ID)).thenReturn(null);
 
         File result = fileReadableKVState.readFromDataSource(FILE_ID);
 
         assertThat(result).isNull();
+    }
+
+    @Test
+    void readFromDataSourceSystemFile() {
+        when(contractCallContext.getTimestamp()).thenReturn(TIMESTAMP);
+        when(fileDataRepository.getFileAtTimestamp(FILE_ID_LONG, TIMESTAMP.get()))
+                .thenReturn(Optional.empty());
+        when(systemFileLoader.load(FILE_ID)).thenReturn(FILE);
+
+        File result = fileReadableKVState.readFromDataSource(FILE_ID);
+
+        assertThat(result).isEqualTo(FILE);
     }
 
     @Test

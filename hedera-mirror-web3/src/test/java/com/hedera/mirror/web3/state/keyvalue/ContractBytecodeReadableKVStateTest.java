@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.state;
+package com.hedera.mirror.web3.state.keyvalue;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -26,6 +26,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.ContractRepository;
+import com.hedera.mirror.web3.state.CommonEntityAccessor;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;

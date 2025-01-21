@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.state;
+package com.hedera.mirror.web3.state.keyvalue;
 
 import static com.hedera.services.utils.EntityIdUtils.toAccountId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -49,6 +49,8 @@ import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
+import com.hedera.mirror.web3.state.CommonEntityAccessor;
+import com.hedera.mirror.web3.state.Utils;
 import com.hedera.pbj.runtime.OneOf;
 import java.util.Collections;
 import java.util.List;

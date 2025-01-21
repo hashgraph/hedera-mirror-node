@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.state;
+package com.hedera.mirror.web3.state.keyvalue;
 
 import static com.hedera.mirror.web3.state.Utils.DEFAULT_AUTO_RENEW_PERIOD;
 import static com.hedera.services.utils.EntityIdUtils.toAccountId;
@@ -42,6 +42,8 @@ import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
+import com.hedera.mirror.web3.state.CommonEntityAccessor;
+import com.hedera.mirror.web3.state.Utils;
 import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

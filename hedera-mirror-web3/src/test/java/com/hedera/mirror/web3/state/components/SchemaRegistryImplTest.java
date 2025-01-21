@@ -156,13 +156,9 @@ class SchemaRegistryImplTest {
         when(schemaApplications.computeApplications(any(), any(), any(), any()))
                 .thenReturn(EnumSet.of(SchemaApplicationType.STATE_DEFINITIONS, SchemaApplicationType.MIGRATION));
 
-        StateDefinition stateDefinitionSingleton =
-                new StateDefinition("KEY", mockCodec, mockCodec, 123, false, true, false);
-
-        StateDefinition stateDefinitionQueue =
-                new StateDefinition("KEY_QUEUE", mockCodec, mockCodec, 123, false, false, true);
-
-        StateDefinition stateDefinition = new StateDefinition("STATE", mockCodec, mockCodec, 123, true, false, false);
+        var stateDefinitionSingleton = new StateDefinition<>("KEY", mockCodec, mockCodec, 123, false, true, false);
+        var stateDefinitionQueue = new StateDefinition<>("KEY_QUEUE", mockCodec, mockCodec, 123, false, false, true);
+        var stateDefinition = new StateDefinition<>("STATE", mockCodec, mockCodec, 123, true, false, false);
 
         when(schema.statesToCreate(config))
                 .thenReturn(Set.of(stateDefinitionSingleton, stateDefinitionQueue, stateDefinition));
