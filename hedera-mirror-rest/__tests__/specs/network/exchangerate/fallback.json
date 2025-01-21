@@ -23,7 +23,7 @@
       {
         "consensus_timestamp": 1234567890900800700,
         "entity_id": 112,
-        "file_data": "0a1008corrupt",
+        "file_data": "0a1008c",
         "transaction_type": 16
       }
     ]

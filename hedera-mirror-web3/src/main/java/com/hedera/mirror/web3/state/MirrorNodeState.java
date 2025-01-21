@@ -35,8 +35,8 @@ import com.hedera.mirror.web3.state.core.MapReadableKVState;
 import com.hedera.mirror.web3.state.core.MapReadableStates;
 import com.hedera.mirror.web3.state.core.MapWritableKVState;
 import com.hedera.mirror.web3.state.core.MapWritableStates;
+import com.hedera.mirror.web3.state.singleton.SingletonState;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
-import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
@@ -84,7 +84,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 
@@ -125,8 +124,8 @@ public class MirrorNodeState implements State {
                     null,
                     new ServicesSoftwareVersion(
                             bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
-                    new ConfigProviderImpl().getConfiguration(),
-                    new ConfigProviderImpl().getConfiguration(),
+                    mirrorNodeEvmProperties.getVersionedConfiguration(),
+                    mirrorNodeEvmProperties.getVersionedConfiguration(),
                     networkInfo,
                     UnavailableMetrics.UNAVAILABLE_METRICS,
                     startupNetworks);
@@ -192,8 +191,8 @@ public class MirrorNodeState implements State {
                     } else {
                         data.put(stateName, new MapReadableKVState(stateName, map));
                     }
-                } else if (state instanceof AtomicReference ref) {
-                    data.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
+                } else if (state instanceof SingletonState<?> singleton) {
+                    data.put(stateName, new ReadableSingletonStateBase<>(stateName, singleton));
                 }
             }
             return new MapReadableStates(data);
@@ -224,7 +223,7 @@ public class MirrorNodeState implements State {
                                     new MapWritableKVState<>(
                                             stateName,
                                             getReadableStates(serviceName).get(stateName))));
-                } else if (state instanceof AtomicReference<?> ref) {
+                } else if (state instanceof SingletonState<?> ref) {
                     data.put(stateName, withAnyRegisteredListeners(serviceName, stateName, ref));
                 }
             }
@@ -253,8 +252,10 @@ public class MirrorNodeState implements State {
     }
 
     private <V> WritableSingletonStateBase<V> withAnyRegisteredListeners(
-            @Nonnull final String serviceName, @Nonnull final String stateKey, @Nonnull final AtomicReference<V> ref) {
-        final var state = new WritableSingletonStateBase<>(stateKey, ref::get, ref::set);
+            @Nonnull final String serviceName,
+            @Nonnull final String stateKey,
+            @Nonnull final SingletonState<V> singleton) {
+        final var state = new WritableSingletonStateBase<>(stateKey, singleton, singleton::set);
         listeners.forEach(listener -> {
             if (listener.stateTypes().contains(SINGLETON)) {
                 registerSingletonListener(serviceName, state, listener);
@@ -361,11 +362,11 @@ public class MirrorNodeState implements State {
                 InstantSource.system(),
                 signatureVerifier(),
                 Gossip.UNAVAILABLE_GOSSIP,
-                () -> new ConfigProviderImpl().getConfiguration(),
+                () -> mirrorNodeEvmProperties.getVersionedConfiguration(),
                 () -> DEFAULT_NODE_INFO,
                 () -> UNAVAILABLE_METRICS,
                 new AppThrottleFactory(
-                        () -> new ConfigProviderImpl().getConfiguration(),
+                        () -> mirrorNodeEvmProperties.getVersionedConfiguration(),
                         () -> this,
                         () -> ThrottleDefinitions.DEFAULT,
                         ThrottleAccumulator::new));

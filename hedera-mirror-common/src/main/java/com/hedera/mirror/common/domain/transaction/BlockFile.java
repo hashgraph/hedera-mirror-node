@@ -18,17 +18,17 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
 import com.hedera.hapi.block.stream.protoc.BlockProof;
+import com.hedera.hapi.block.stream.protoc.RecordFileItem;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hederahashgraph.api.proto.java.BlockStreamInfo;
 import java.util.Collection;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Singular;
 import lombok.ToString;
 
 @Builder(toBuilder = true)
@@ -42,9 +42,6 @@ public class BlockFile implements StreamFile<BlockItem> {
 
     // Used to generate block hash
     private BlockProof blockProof;
-
-    // Contained within the last StateChange of the block, contains hashes needed to generate the block hash
-    private BlockStreamInfo blockStreamInfo;
 
     @ToString.Exclude
     private byte[] bytes;
@@ -60,10 +57,12 @@ public class BlockFile implements StreamFile<BlockItem> {
     @ToString.Exclude
     private String hash;
 
-    @Builder.Default
+    private Long index;
+
     @EqualsAndHashCode.Exclude
+    @Singular
     @ToString.Exclude
-    private Collection<BlockItem> items = List.of();
+    private Collection<BlockItem> items;
 
     private Long loadEnd;
 
@@ -75,6 +74,8 @@ public class BlockFile implements StreamFile<BlockItem> {
 
     @ToString.Exclude
     private String previousHash;
+
+    private RecordFileItem recordFileItem;
 
     private Long roundEnd;
 
@@ -95,12 +96,28 @@ public class BlockFile implements StreamFile<BlockItem> {
     }
 
     @Override
-    public Long getIndex() {
-        return blockHeader.getNumber();
-    }
-
-    @Override
     public StreamType getType() {
         return StreamType.BLOCK;
+    }
+
+    public static class BlockFileBuilder {
+
+        public BlockFileBuilder onNewRound(long roundNumber) {
+            if (roundStart == null) {
+                roundStart = roundNumber;
+            }
+
+            roundEnd = roundNumber;
+            return this;
+        }
+
+        public BlockFileBuilder onNewTransaction(long consensusTimestamp) {
+            if (consensusStart == null) {
+                consensusStart = consensusTimestamp;
+            }
+
+            consensusEnd = consensusTimestamp;
+            return this;
+        }
     }
 }

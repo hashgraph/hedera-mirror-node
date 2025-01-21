@@ -25,6 +25,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -32,9 +33,9 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -45,10 +46,7 @@ import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
@@ -66,19 +64,6 @@ import org.web3j.tx.Contract;
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
-    protected static final byte[] EXCHANGE_RATES_SET = ExchangeRateSet.newBuilder()
-            .setCurrentRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(12)
-                    .setHbarEquiv(1)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
-                    .build())
-            .setNextRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(15)
-                    .setHbarEquiv(1)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
-                    .build())
-            .build()
-            .toByteArray();
 
     @Resource
     protected TestWeb3jService testWeb3jService;
@@ -89,8 +74,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     @Resource
     protected State state;
 
-    protected RecordFile genesisRecordFile;
+    @Resource
+    protected ContractExecutionService contractExecutionService;
 
+    protected RecordFile genesisRecordFile;
     protected Entity treasuryEntity;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
@@ -111,17 +98,16 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     @BeforeEach
     protected void setup() {
-        genesisRecordFile =
-                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+        // Change this to not be epoch once services fixes config updates for non-genesis flow
+        genesisRecordFile = domainBuilder
+                .recordFile()
+                .customize(f -> f.consensusEnd(0L).consensusStart(0L).index(0L))
+                .persist();
         treasuryEntity = domainBuilder
                 .entity()
                 .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
                 .persist();
         domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
-        domainBuilder
-                .fileData()
-                .customize(f -> f.entityId(EntityId.of(112L)).fileData(EXCHANGE_RATES_SET))
-                .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(
@@ -136,17 +122,19 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         testWeb3jService.reset();
     }
 
-    @SuppressWarnings("try")
     protected long gasUsedAfterExecution(final ContractExecutionParameters serviceParameters) {
-        return ContractCallContext.run(ctx -> {
-            ctx.initializeStackFrames(store.getStackedStateFrames());
-            long result = processor
-                    .execute(serviceParameters, serviceParameters.getGas())
-                    .getGasUsed();
+        try {
+            return contractExecutionService.callContract(serviceParameters).getGasUsed();
+        } catch (MirrorEvmTransactionException e) {
+            var result = e.getResult();
 
-            assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
-            return result;
-        });
+            // Some tests expect to fail but still want to capture the gas used
+            if (result != null) {
+                return result.getGasUsed();
+            }
+
+            throw e;
+        }
     }
 
     protected void verifyEthCallAndEstimateGas(
@@ -235,7 +223,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         return domainBuilder
                 .entity()
                 .customize(e ->
-                        e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(1_000_000_000_000L))
+                        e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(100_000_000_000_000_000L))
                 .persist();
     }
 
@@ -258,6 +246,30 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                         .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .associated(true))
+                .persist();
+    }
+
+    protected void persistAccountBalance(Entity account, long balance, long timestamp) {
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(timestamp, account.toEntityId()))
+                        .balance(balance))
+                .persist();
+    }
+
+    protected void persistAccountBalance(Entity account, long balance) {
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(account.getCreatedTimestamp(), account.toEntityId()))
+                        .balance(balance))
+                .persist();
+    }
+
+    protected void persistTokenBalance(Entity account, Entity token, long timestamp) {
+        domainBuilder
+                .tokenBalance()
+                .customize(ab -> ab.id(new TokenBalance.Id(timestamp, account.toEntityId(), token.toEntityId()))
+                        .balance(100))
                 .persist();
     }
 

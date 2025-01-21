@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.service.AbstractContractCallServiceTest.EXCHANGE_RATES_SET;
 import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
@@ -24,7 +23,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -43,12 +41,12 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
     @BeforeEach
     void setup() {
-        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
-        domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
+        // Change this to not be epoch once services fixes config updates for non-genesis flow
         domainBuilder
-                .fileData()
-                .customize(f -> f.entityId(EntityId.of(112L)).fileData(EXCHANGE_RATES_SET))
+                .recordFile()
+                .customize(f -> f.consensusEnd(0L).consensusStart(0L).index(0L))
                 .persist();
+        domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
     }
 
     @Test

@@ -62,13 +62,6 @@ public class RatesAndFeesLoader {
 
     public static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
     public static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
-
-    static final ExchangeRateSet DEFAULT_EXCHANGE_RATE_SET = ExchangeRateSet.newBuilder()
-            .setCurrentRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(12)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
-                    .setHbarEquiv(1))
-            .build();
     static final CurrentAndNextFeeSchedule DEFAULT_FEE_SCHEDULE = CurrentAndNextFeeSchedule.newBuilder()
             .setCurrentFeeSchedule(FeeSchedule.newBuilder()
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
@@ -263,6 +256,12 @@ public class RatesAndFeesLoader {
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
                                             .build()))))
+            .build();
+    static final ExchangeRateSet DEFAULT_EXCHANGE_RATE_SET = ExchangeRateSet.newBuilder()
+            .setCurrentRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(12)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4102444800L))
+                    .setHbarEquiv(1))
             .build();
     private static final CurrentAndNextFeeSchedule EMPTY_FEE_SCHEDULE = CurrentAndNextFeeSchedule.getDefaultInstance();
     private static final ExchangeRateSet EMPTY_EXCHANGE_RATE_SET = ExchangeRateSet.getDefaultInstance();

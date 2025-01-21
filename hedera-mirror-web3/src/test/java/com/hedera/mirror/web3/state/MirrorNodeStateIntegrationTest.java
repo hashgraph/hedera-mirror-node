@@ -20,6 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.state.keyvalue.AccountReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.ContractBytecodeReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.ContractStorageReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.FileReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.NftReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.TokenReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.TokenRelationshipReadableKVState;
+import com.hedera.mirror.web3.state.singleton.BlockInfoSingleton;
+import com.hedera.mirror.web3.state.singleton.DefaultSingleton;
+import com.hedera.mirror.web3.state.singleton.RunningHashesSingleton;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
@@ -88,8 +99,8 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
 
         // BlockRecordService
         Map<String, Class<?>> blockRecordServiceDataSources = Map.of(
-                "BLOCKS", AtomicReference.class,
-                "RUNNING_HASHES", AtomicReference.class);
+                "BLOCKS", BlockInfoSingleton.class,
+                "RUNNING_HASHES", RunningHashesSingleton.class);
         verifyServiceDataSources(states, BlockRecordService.NAME, blockRecordServiceDataSources);
 
         // FileService
@@ -98,12 +109,12 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
 
         // CongestionThrottleService
         Map<String, Class<?>> congestionThrottleServiceDataSources = Map.of(
-                "THROTTLE_USAGE_SNAPSHOTS", AtomicReference.class,
-                "CONGESTION_LEVEL_STARTS", AtomicReference.class);
+                "THROTTLE_USAGE_SNAPSHOTS", DefaultSingleton.class,
+                "CONGESTION_LEVEL_STARTS", DefaultSingleton.class);
         verifyServiceDataSources(states, CongestionThrottleService.NAME, congestionThrottleServiceDataSources);
 
         // FeeService
-        Map<String, Class<?>> feeServiceDataSources = Map.of("MIDNIGHT_RATES", AtomicReference.class);
+        Map<String, Class<?>> feeServiceDataSources = Map.of("MIDNIGHT_RATES", DefaultSingleton.class);
         verifyServiceDataSources(states, FeeService.NAME, feeServiceDataSources);
 
         // ContractService
@@ -117,7 +128,7 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
         verifyServiceDataSources(states, RecordCacheService.NAME, recordCacheServiceDataSources);
 
         // EntityIdService
-        Map<String, Class<?>> entityIdServiceDataSources = Map.of("ENTITY_ID", AtomicReference.class);
+        Map<String, Class<?>> entityIdServiceDataSources = Map.of("ENTITY_ID", DefaultSingleton.class);
         verifyServiceDataSources(states, EntityIdService.NAME, entityIdServiceDataSources);
 
         // TokenService

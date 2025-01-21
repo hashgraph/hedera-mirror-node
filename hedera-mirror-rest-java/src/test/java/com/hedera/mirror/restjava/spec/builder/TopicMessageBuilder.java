@@ -34,7 +34,7 @@ class TopicMessageBuilder extends AbstractEntityBuilder<TopicMessage, TopicMessa
     }
 
     @Override
-    protected TopicMessage.TopicMessageBuilder getEntityBuilder() {
+    protected TopicMessage.TopicMessageBuilder getEntityBuilder(SpecBuilderContext builderContext) {
         return TopicMessage.builder()
                 .message("message".getBytes(StandardCharsets.UTF_8))
                 .payerAccountId(EntityId.of(3L))

@@ -185,7 +185,7 @@ public record Token(
             String name,
             String symbol,
             int decimals,
-            Long totalSupply,
+            long totalSupply,
             AccountID treasuryAccountId,
             Key adminKey,
             Key kycKey,
