@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.state;
+package com.hedera.mirror.web3.state.keyvalue;
 
 import static com.hedera.mirror.web3.state.Utils.convertToTimestamp;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;

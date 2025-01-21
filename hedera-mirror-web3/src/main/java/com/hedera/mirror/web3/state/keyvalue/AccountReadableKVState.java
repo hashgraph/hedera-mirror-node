@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.state;
+package com.hedera.mirror.web3.state.keyvalue;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
@@ -40,6 +40,7 @@ import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
+import com.hedera.mirror.web3.state.CommonEntityAccessor;
 import com.hedera.mirror.web3.utils.Suppliers;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.utils.EntityIdUtils;

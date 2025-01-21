@@ -27,7 +27,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerO
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.state.FileReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.FileReadableKVState;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
