@@ -1546,16 +1546,6 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         };
     }
 
-    private Entity persistFungibleToken() {
-        final var tokenEntity = tokenEntityPersist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
-
-        return tokenEntity;
-    }
-
     private HederaToken convertTokenEntityToHederaToken(final Token token) {
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.id(token.getTokenId())).get();

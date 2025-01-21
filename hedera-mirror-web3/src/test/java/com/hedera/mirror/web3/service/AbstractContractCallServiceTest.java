@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.DEFAULT_FEE_SCHEDULE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
@@ -30,8 +31,10 @@ import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -255,7 +258,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected Entity accountEntityWithEvmAddressPersist() {
         return domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(100_000_000_000_000_000L))
                 .persist();
     }
 
@@ -296,6 +299,70 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .customize(ab -> ab.id(new TokenBalance.Id(timestamp, account.toEntityId(), token.toEntityId()))
                         .balance(100))
                 .persist();
+    }
+
+    protected Entity persistFungibleToken() {
+        final var tokenEntity = tokenEntityPersist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+
+        return tokenEntity;
+    }
+
+    protected Token nftPersist() {
+        final var tokenEntity = tokenEntityPersist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+        return token;
+    }
+
+    protected Token nftPersist(final EntityId treasuryEntityId) {
+        return nftPersist(treasuryEntityId, treasuryEntityId);
+    }
+
+    protected Token nftPersist(final EntityId treasuryEntityId, final EntityId ownerEntityId) {
+        return nftPersist(treasuryEntityId, ownerEntityId, ownerEntityId);
+    }
+
+    protected Token nftPersist(
+            final EntityId treasuryEntityId, final EntityId ownerEntityId, final EntityId spenderEntityId) {
+        return nftPersist(treasuryEntityId, ownerEntityId, spenderEntityId, domainBuilder.key());
+    }
+
+    protected Token nftPersist(
+            final EntityId treasuryEntityId,
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId,
+            final byte[] kycKey) {
+        final var nftEntity =
+                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
+
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(nftEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .treasuryAccountId(treasuryEntityId)
+                        .kycKey(kycKey))
+                .persist();
+
+        domainBuilder
+                .nft()
+                .customize(n -> n.accountId(treasuryEntityId)
+                        .spender(spenderEntityId)
+                        .accountId(ownerEntityId)
+                        .tokenId(nftEntity.getId())
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .serialNumber(1))
+                .persist();
+        return token;
     }
 
     protected String getAddressFromEntity(Entity entity) {

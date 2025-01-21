@@ -784,46 +784,6 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                 .persist();
     }
 
-    private Token nftPersist(final EntityId treasuryEntityId) {
-        return nftPersist(treasuryEntityId, treasuryEntityId);
-    }
-
-    private Token nftPersist(final EntityId treasuryEntityId, final EntityId ownerEntityId) {
-        return nftPersist(treasuryEntityId, ownerEntityId, ownerEntityId);
-    }
-
-    private Token nftPersist(
-            final EntityId treasuryEntityId, final EntityId ownerEntityId, final EntityId spenderEntityId) {
-        return nftPersist(treasuryEntityId, ownerEntityId, spenderEntityId, domainBuilder.key());
-    }
-
-    private Token nftPersist(
-            final EntityId treasuryEntityId,
-            final EntityId ownerEntityId,
-            final EntityId spenderEntityId,
-            final byte[] kycKey) {
-        final var nftEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(nftEntity.getId())
-                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        .treasuryAccountId(treasuryEntityId)
-                        .kycKey(kycKey))
-                .persist();
-
-        domainBuilder
-                .nft()
-                .customize(n -> n.accountId(treasuryEntityId)
-                        .spender(spenderEntityId)
-                        .accountId(ownerEntityId)
-                        .tokenId(nftEntity.getId())
-                        .serialNumber(1))
-                .persist();
-        return token;
-    }
-
     private EntityId accountPersist() {
         return domainBuilder
                 .entity()

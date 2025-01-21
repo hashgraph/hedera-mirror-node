@@ -1059,16 +1059,6 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         };
     }
 
-    private Entity persistFungibleToken() {
-        final var tokenEntity = tokenEntityPersist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
-
-        return tokenEntity;
-    }
-
     private Entity persistNft() {
         final var tokenEntity = tokenEntityPersist();
         domainBuilder

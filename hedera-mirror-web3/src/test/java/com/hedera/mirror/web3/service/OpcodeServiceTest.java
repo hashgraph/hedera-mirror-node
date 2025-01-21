@@ -884,26 +884,6 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 .persist();
     }
 
-    private Token nftPersist(final EntityId treasuryEntityId) {
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(TOKEN).autoRenewAccountId(treasuryEntityId.getId()))
-                .persist();
-
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        .treasuryAccountId(treasuryEntityId))
-                .persist();
-
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
-        return token;
-    }
-
     private Entity accountPersist() {
         return domainBuilder.entity().customize(a -> a.evmAddress(null)).persist();
     }
