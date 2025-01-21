@@ -36,7 +36,6 @@ const buildWhereSqlStatement = (whereQuery) => {
  * RecordFile retrieval business logic
  */
 class RecordFileService extends BaseService {
-
   static recordFileBlockDetailsFromTimestampArrayQuery = `select
       ${RecordFile.CONSENSUS_END},
       ${RecordFile.CONSENSUS_START},
@@ -93,10 +92,7 @@ class RecordFileService extends BaseService {
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromTimestamp(timestamp) {
-    const row = await super.getSingleRow(
-      RecordFileService.recordFileBlockDetailsFromTimestampQuery,
-      [timestamp]
-    );
+    const row = await super.getSingleRow(RecordFileService.recordFileBlockDetailsFromTimestampQuery, [timestamp]);
 
     return _.isNull(row) ? null : new RecordFile(row);
   }
@@ -161,10 +157,7 @@ class RecordFileService extends BaseService {
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromHash(hash) {
-    const row = await super.getSingleRow(
-      RecordFileService.recordFileBlockDetailsFromHashQuery,
-      [`${hash}%`]
-    );
+    const row = await super.getSingleRow(RecordFileService.recordFileBlockDetailsFromHashQuery, [`${hash}%`]);
 
     return _.isNull(row) ? null : new RecordFile(row);
   }
@@ -222,7 +215,6 @@ class RecordFileService extends BaseService {
           order: orderFilterValues.ASC,
         };
   }
-
 
   pool() {
     return primaryPool;
