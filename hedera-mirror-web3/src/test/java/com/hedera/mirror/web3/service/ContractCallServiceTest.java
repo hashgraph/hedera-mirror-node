@@ -33,7 +33,9 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpected
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -547,13 +549,21 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         // Given
         final var receiverEntity = accountPersist();
         final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
-        final var serviceParameters = getContractExecutionParametersWithValue(Bytes.EMPTY, receiverAddress, -5L);
-
+        final var payer = accountEntityWithEvmAddressPersist();
+        persistAccountBalance(payer, payer.getBalance());
+        final var serviceParameters = getContractExecutionParametersWithValue(
+                Bytes.EMPTY, toAddress(payer.toEntityId()), receiverAddress, -5L);
         // Then
-        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage("Argument must be positive");
-        assertGasLimit(serviceParameters);
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(CONTRACT_NEGATIVE_VALUE.name());
+            assertGasLimit(serviceParameters);
+        } else {
+            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage("Argument must be positive");
+        }
     }
 
     @Test
@@ -566,14 +576,19 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var value = senderEntity.getBalance() + 5L;
         final var serviceParameters =
                 getContractExecutionParametersWithValue(Bytes.EMPTY, senderAddress, receiverAddress, value);
-
         // Then
-        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(
-                        "Cannot remove %s wei from account, balance is only %s",
-                        toHexWith64LeadingZeros(value), toHexWith64LeadingZeros(senderEntity.getBalance()));
-        assertGasLimit(serviceParameters);
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(INSUFFICIENT_PAYER_BALANCE.name());
+            assertGasLimit(serviceParameters);
+        } else {
+            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(
+                            "Cannot remove %s wei from account, balance is only %s",
+                            toHexWith64LeadingZeros(value), toHexWith64LeadingZeros(senderEntity.getBalance()));
+        }
     }
 
     @Test
@@ -582,12 +597,13 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var receiverEntity = accountPersist();
         final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
         final var contract = testWeb3jService.deploy(EthCall::deploy);
+        final var payer = accountEntityWithEvmAddressPersist();
+        persistAccountBalance(payer, payer.getBalance());
         meterRegistry.clear();
-
+        testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
         // When
         contract.send_transferHbarsToAddress(receiverAddress.toHexString(), BigInteger.TEN)
                 .send();
-
         // Then
         assertThat(testWeb3jService.getTransactionResult()).isEqualTo(HEX_PREFIX);
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
