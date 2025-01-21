@@ -237,7 +237,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // When
         final var functionCall = single
                 ? contract.call_associateTokenExternal(
-                getAddressFromEntity(notAssociatedAccount), getAddressFromEntity(tokenEntity))
+                        getAddressFromEntity(notAssociatedAccount), getAddressFromEntity(tokenEntity))
                 : contract.call_associateTokensExternal(
                         getAddressFromEntity(notAssociatedAccount), List.of(getAddressFromEntity(tokenEntity)));
 
@@ -295,7 +295,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // When
         final var functionCall = single
                 ? contract.call_dissociateTokenExternal(
-                getAliasFromEntity(associatedAccount), getAddressFromEntity(tokenEntity))
+                        getAliasFromEntity(associatedAccount), getAddressFromEntity(tokenEntity))
                 : contract.call_dissociateTokensExternal(
                         getAliasFromEntity(associatedAccount), List.of(getAddressFromEntity(tokenEntity)));
 
@@ -477,7 +477,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .treasuryAccountId(tokenTreasury.toEntityId()))
                 .persist();
 
@@ -1108,10 +1109,10 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var functionCall = "single".equals(type)
                 ? contract.call_transferTokenExternal(
-                getAddressFromEntity(tokenEntity),
-                getAliasFromEntity(sender),
-                getAliasFromEntity(receiver),
-                BigInteger.valueOf(1L))
+                        getAddressFromEntity(tokenEntity),
+                        getAliasFromEntity(sender),
+                        getAliasFromEntity(receiver),
+                        BigInteger.valueOf(1L))
                 : contract.call_transferTokensExternal(
                         getAddressFromEntity(tokenEntity),
                         List.of(getAliasFromEntity(sender), getAliasFromEntity(receiver)),
@@ -1153,10 +1154,10 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var functionCall = "single".equals(type)
                 ? contract.call_transferNFTExternal(
-                getAddressFromEntity(tokenEntity),
-                getAliasFromEntity(sender),
-                getAliasFromEntity(receiver),
-                BigInteger.ONE)
+                        getAddressFromEntity(tokenEntity),
+                        getAliasFromEntity(sender),
+                        getAliasFromEntity(receiver),
+                        BigInteger.ONE)
                 : contract.call_transferNFTsExternal(
                         getAddressFromEntity(tokenEntity),
                         List.of(getAliasFromEntity(sender)),
@@ -1339,7 +1340,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         accountBalanceRecordsPersist(payer);
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .treasuryAccountId(tokenTreasury.toEntityId()))
                 .persist();
         domainBuilder
@@ -1387,7 +1389,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
-        //verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
     @Test
@@ -1575,7 +1577,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 token.getSymbol(),
                 treasuryAccountId != null
                         ? EntityIdUtils.asHexedEvmAddress(new Id(
-                        treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum()))
+                                treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum()))
                         : Address.ZERO.toHexString(),
                 new String(token.getMetadata(), StandardCharsets.UTF_8),
                 token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
