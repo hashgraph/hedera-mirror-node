@@ -558,12 +558,12 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
             assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class)
                     .hasMessage(CONTRACT_NEGATIVE_VALUE.name());
-            assertGasLimit(serviceParameters);
         } else {
             assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class)
                     .hasMessage("Argument must be positive");
         }
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -581,7 +581,6 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
             assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class)
                     .hasMessage(INSUFFICIENT_PAYER_BALANCE.name());
-            assertGasLimit(serviceParameters);
         } else {
             assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class)
@@ -589,6 +588,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                             "Cannot remove %s wei from account, balance is only %s",
                             toHexWith64LeadingZeros(value), toHexWith64LeadingZeros(senderEntity.getBalance()));
         }
+        assertGasLimit(serviceParameters);
     }
 
     @Test
