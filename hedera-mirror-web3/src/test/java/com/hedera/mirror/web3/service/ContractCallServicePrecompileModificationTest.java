@@ -38,6 +38,7 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -97,7 +98,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
         tokenAccountPersist(tokenEntity, contractEntityId.getId());
 
-        tokenAllowancePersist(10L, tokenEntity, owner, contractEntityId);
+        tokenAllowancePersist(10L, tokenEntity, spender, contractEntityId);
 
         // When
         final var functionCall = contract.call_transferFrom(
@@ -1098,25 +1099,38 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void transferNft(final String type) throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        final var contractId =
+                EvmTokenUtils.entityIdFromEvmAddress(Address.fromHexString(contract.getContractAddress()));
         final var sender = accountEntityWithEvmAddressPersist();
+
         final var tokenEntity = tokenEntityPersist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
+        final var treasuryAccount = accountEntityPersist();
+
+        accountBalanceRecordsPersist(sender);
+
+        Token token = nonFungibleTokenPersist(tokenEntity, treasuryAccount);
+
         domainBuilder
                 .nft()
                 .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(sender.toEntityId()))
                 .persist();
         final var receiver = accountEntityWithEvmAddressPersist();
-        final var payer = accountEntityWithEvmAddressPersist();
 
-        tokenAccountPersist(tokenEntity, payer);
+        domainBuilder
+                .nftAllowance()
+                .customize(a -> a.tokenId(token.getTokenId())
+                        .owner(sender.getNum())
+                        .spender(contractId.getId())
+                        .payerAccountId(sender.toEntityId())
+                        .approvedForAll(true))
+                .persist();
+
         tokenAccountPersist(tokenEntity, sender);
         tokenAccountPersist(tokenEntity, receiver);
 
         // When
-        testWeb3jService.setSender(getAliasFromEntity(payer));
+        testWeb3jService.setSender(getAliasFromEntity(sender));
+
         final var functionCall = "single".equals(type)
                 ? contract.call_transferNFTExternal(
                         getAddressFromEntity(tokenEntity),
@@ -1131,7 +1145,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
                 .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
+                .sender(Address.fromHexString(getAliasFromEntity(sender)))
                 .build();
 
         // Then
@@ -1143,25 +1157,38 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void transferFromNft() throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        final var contractId =
+                EvmTokenUtils.entityIdFromEvmAddress(Address.fromHexString(contract.getContractAddress()));
+
         final var sender = accountEntityWithEvmAddressPersist();
         final var tokenEntity = tokenEntityPersist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
+        final var treasuryAccount = accountEntityPersist();
+
+        accountBalanceRecordsPersist(sender);
+
+        final var token = nonFungibleTokenPersist(tokenEntity, treasuryAccount);
+
         domainBuilder
                 .nft()
                 .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(sender.toEntityId()))
                 .persist();
         final var receiver = accountEntityWithEvmAddressPersist();
-        final var payer = accountEntityWithEvmAddressPersist();
 
-        tokenAccountPersist(tokenEntity, payer);
+        domainBuilder
+                .nftAllowance()
+                .customize(a -> a.tokenId(token.getTokenId())
+                        .owner(sender.getNum())
+                        .spender(contractId.getId())
+                        .payerAccountId(sender.toEntityId())
+                        .approvedForAll(true))
+                .persist();
+
         tokenAccountPersist(tokenEntity, sender);
         tokenAccountPersist(tokenEntity, receiver);
 
         // When
-        testWeb3jService.setSender(getAliasFromEntity(payer));
+        testWeb3jService.setSender(getAliasFromEntity(sender));
+
         final var functionCall = contract.call_transferFromNFTExternal(
                 getAddressFromEntity(tokenEntity),
                 getAliasFromEntity(sender),
@@ -1173,7 +1200,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var callData = functionCall.encodeFunctionCall();
         final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
                 .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
+                .sender(Address.fromHexString(getAliasFromEntity(sender)))
                 .build();
         verifyOpcodeTracerCall(callData, contractFunctionProvider);
     }
