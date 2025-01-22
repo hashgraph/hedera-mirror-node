@@ -30,6 +30,7 @@ import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
@@ -305,6 +306,26 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /**
+     * This method creates nft allowance for all instances of a specific token type (approvedForAll).
+     * The allowance allows the spender to transfer NFTs on the owner's behalf.
+     * @param token the NFT token for which the allowance is created
+     * @param owner the account owning the NFT
+     * @param spender the account allowed to transfer the NFT on owner's behalf
+     * @param payer the account paying for the allowance creation
+     * @return NftAllowance object that is persisted to the database
+     */
+    protected NftAllowance nftAllowancePersist(Token token, Entity owner, Entity spender, Entity payer) {
+        return domainBuilder
+                .nftAllowance()
+                .customize(a -> a.tokenId(token.getTokenId())
+                        .owner(owner.getId())
+                        .spender(spender.toEntityId().getId())
+                        .payerAccountId(payer.toEntityId())
+                        .approvedForAll(true))
+                .persist();
+    }
+
     protected Entity accountEntityPersist() {
         return domainBuilder
                 .entity()
@@ -316,7 +337,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected Entity accountEntityWithEvmAddressPersist() {
         return domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000_000_000L))
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
                 .persist();
     }
 

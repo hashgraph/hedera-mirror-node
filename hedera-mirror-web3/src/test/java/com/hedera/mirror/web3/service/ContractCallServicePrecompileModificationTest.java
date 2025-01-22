@@ -1101,6 +1101,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         final var contractId =
                 EvmTokenUtils.entityIdFromEvmAddress(Address.fromHexString(contract.getContractAddress()));
+
         final var sender = accountEntityWithEvmAddressPersist();
 
         final var tokenEntity = tokenEntityPersist();
@@ -1116,14 +1117,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .persist();
         final var receiver = accountEntityWithEvmAddressPersist();
 
-        domainBuilder
-                .nftAllowance()
-                .customize(a -> a.tokenId(token.getTokenId())
-                        .owner(sender.getNum())
-                        .spender(contractId.getId())
-                        .payerAccountId(sender.toEntityId())
-                        .approvedForAll(true))
-                .persist();
+        nftAllowancePersist(token, sender, getEntity(contractId), sender);
 
         tokenAccountPersist(tokenEntity, sender);
         tokenAccountPersist(tokenEntity, receiver);
@@ -1174,14 +1168,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .persist();
         final var receiver = accountEntityWithEvmAddressPersist();
 
-        domainBuilder
-                .nftAllowance()
-                .customize(a -> a.tokenId(token.getTokenId())
-                        .owner(sender.getNum())
-                        .spender(contractId.getId())
-                        .payerAccountId(sender.toEntityId())
-                        .approvedForAll(true))
-                .persist();
+        nftAllowancePersist(token, sender, getEntity(contractId), sender);
 
         tokenAccountPersist(tokenEntity, sender);
         tokenAccountPersist(tokenEntity, receiver);
