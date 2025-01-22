@@ -121,7 +121,7 @@ public class TokenRelationshipReadableKVState extends AbstractReadableKVState<En
     private Long getNftBalance(final TokenAccount tokenAccount, final long timestamp) {
         return nftRepository
                 .nftBalanceByAccountIdTokenIdAndTimestamp(
-                        tokenAccount.getTokenId(), tokenAccount.getAccountId(), timestamp)
+                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp)
                 .orElse(0L);
     }
 

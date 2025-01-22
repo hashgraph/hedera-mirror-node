@@ -473,11 +473,13 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void wipeNFT() throws Exception {
         // Given
         final var owner = accountEntityWithEvmAddressPersist();
-
+        final var tokenTreasury = accountEntityPersist();
         final var tokenEntity = tokenEntityPersist();
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .treasuryAccountId(tokenTreasury.toEntityId()))
                 .persist();
 
         tokenAccountPersist(tokenEntity, owner);
@@ -855,11 +857,13 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @Test
     void create2ContractAndTransferFromIt() throws Exception {
         // Given
-        final var sponsor = accountEntityWithEvmAddressPersist();
         final var receiver = accountEntityWithEvmAddressPersist();
         final var token = persistFungibleToken();
-        tokenAccountPersist(token, sponsor);
+        final var sponsor = accountEntityWithEvmAddressPersist();
+        persistTokenBalance(sponsor, token, sponsor.getCreatedTimestamp());
+        accountBalanceRecordsPersist(sponsor);
 
+        tokenAccountPersist(token, sponsor);
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
@@ -1329,17 +1333,21 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         final var sender = accountEntityWithEvmAddressPersist();
+        final var tokenTreasury = accountEntityPersist();
+        final var receiver = accountEntityWithEvmAddressPersist();
+        final var payer = accountEntityWithEvmAddressPersist();
         final var tokenEntity = tokenEntityPersist();
+        accountBalanceRecordsPersist(payer);
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .treasuryAccountId(tokenTreasury.toEntityId()))
                 .persist();
         domainBuilder
                 .nft()
                 .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(sender.toEntityId()))
                 .persist();
-        final var receiver = accountEntityWithEvmAddressPersist();
-        final var payer = accountEntityWithEvmAddressPersist();
 
         tokenAccountPersist(tokenEntity, payer);
         tokenAccountPersist(tokenEntity, sender);
@@ -1499,7 +1507,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
     private Pair<Entity, Entity> persistTokenWithAutoRenewAndTreasuryAccounts(
             final TokenTypeEnum tokenType, final Entity treasuryAccount) {
-        final var autoRenewAccount = accountEntityWithEvmAddressPersist();
+        final var autoRenewAccount = accountEntityPersist();
         final var tokenToUpdateEntity = domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
@@ -1510,6 +1518,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                         .type(tokenType)
                         .treasuryAccountId(treasuryAccount.toEntityId()))
                 .persist();
+        tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
 
         return Pair.of(tokenToUpdateEntity, autoRenewAccount);
     }

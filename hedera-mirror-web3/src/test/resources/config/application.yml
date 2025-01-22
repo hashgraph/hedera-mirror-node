@@ -3,9 +3,7 @@ hedera:
     web3:
       evm:
         properties:
-          contracts.allowCreate2: "false"
           contracts.chainId: "297"
-          contracts.maxGasPerSec: "15000000"
           contracts.maxRefundPercentOfGasLimit: "100"
         evm_versions:
           0: 0.30.0
