@@ -24,6 +24,7 @@ import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.db.DBProperties;
 import jakarta.annotation.Nonnull;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,12 +54,22 @@ class AsyncJavaMigrationTest extends ImporterIntegrationTest {
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final TransactionOperations transactionOperations;
     private final String script = TestAsyncJavaMigration.class.getName();
+    private final Collection<AsyncJavaMigration<?>> asyncMigrations;
 
     @AfterEach
     @BeforeEach
     void cleanup() {
         namedParameterJdbcTemplate.update(
                 "delete from flyway_schema_history where script = :script", Map.of("script", script));
+    }
+
+    @Test
+    void disabledInConfig() {
+        asyncMigrations.forEach(migration -> {
+            assertThat(migration.migrationProperties.isEnabled())
+                    .as("%s is not disabled", migration.getClass().getSimpleName())
+                    .isFalse();
+        });
     }
 
     @ParameterizedTest
@@ -126,10 +137,10 @@ class AsyncJavaMigrationTest extends ImporterIntegrationTest {
                 .addValue("checksum", migrationHistory.getChecksum());
         var sql =
                 """
-                insert into flyway_schema_history (installed_rank, description, type, script, checksum,
-                installed_by, execution_time, success) values (:installedRank, :description, 'JDBC', :script,
-                :checksum, 20, 100, true)
-                """;
+                        insert into flyway_schema_history (installed_rank, description, type, script, checksum,
+                        installed_by, execution_time, success) values (:installedRank, :description, 'JDBC', :script,
+                        :checksum, 20, 100, true)
+                        """;
         namedParameterJdbcTemplate.update(sql, paramSource);
     }
 
