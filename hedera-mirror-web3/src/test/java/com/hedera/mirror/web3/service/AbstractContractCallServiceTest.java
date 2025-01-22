@@ -29,8 +29,13 @@ import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -215,8 +220,85 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 value);
     }
 
+    /**
+     *  Persists entity of type token in the entity db table. Entity table contains properties common for all entities on the network (tokens, accounts, smart contracts, topics)
+     */
     protected Entity tokenEntityPersist() {
         return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+    }
+
+    /**
+     * Persists fungible token in the token db table.
+     * @param tokenEntity The entity from the entity db table related to the token
+     * @param treasuryAccount The account holding the initial token supply
+     */
+    protected Token fungibleTokenPersist(Entity tokenEntity, Entity treasuryAccount) {
+        return domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
+                .persist();
+    }
+
+    /**
+     * Persists non-fungible token in the token db table.
+     * @param tokenEntity The entity from the entity db table related to the token
+     */
+    protected Token nonFungibleTokenPersist(Entity tokenEntity) {
+        return domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+    }
+
+    protected Token nonFungibleTokenPersist(Entity tokenEntity, Entity treasuryAccount) {
+        return domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
+                .persist();
+    }
+
+    /**
+     * The method creates token allowance, which defines the amount of tokens that the owner allows another account (spender) to use on its behalf.
+     * @param amountGranted - initial amount of tokens that the spender is allowed to use on owner's behalf
+     * @param tokenEntity - the token entity the allowance is created for
+     * @param owner - the owner of the token amount that the allowance is created for
+     * @param spenderId - the spender id (another user's id or contract id) that is allowed to spend amountGranted of tokenEntity on owner's behalf
+     * @return TokenAllowance object that is persisted to the database
+     */
+    protected TokenAllowance tokenAllowancePersist(
+            Long amountGranted, Entity tokenEntity, Entity owner, EntityId spenderId) {
+        return domainBuilder
+                .tokenAllowance()
+                .customize(e -> e.owner(owner.getId())
+                        .amount(amountGranted)
+                        .amountGranted(amountGranted)
+                        .spender(spenderId.getId())
+                        .tokenId(tokenEntity.getId()))
+                .persist();
+    }
+
+    /**
+     * This method creates nft allowance for all instances of a specific token type (approvedForAll).
+     * The allowance allows the spender to transfer NFTs on the owner's behalf.
+     * @param token the NFT token for which the allowance is created
+     * @param owner the account owning the NFT
+     * @param spender the account allowed to transfer the NFT on owner's behalf
+     * @param payer the account paying for the allowance creation
+     * @return NftAllowance object that is persisted to the database
+     */
+    protected NftAllowance nftAllowancePersist(Token token, Entity owner, Entity spender, Entity payer) {
+        return domainBuilder
+                .nftAllowance()
+                .customize(a -> a.tokenId(token.getTokenId())
+                        .owner(owner.getId())
+                        .spender(spender.toEntityId().getId())
+                        .payerAccountId(payer.toEntityId())
+                        .approvedForAll(true))
+                .persist();
     }
 
     protected Entity accountEntityPersist() {
@@ -246,6 +328,25 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                         .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .associated(true))
+                .persist();
+    }
+
+    /**
+     * Creates a non-fungible token instance with a specific serial number(a record in the nft table is persisted).
+     * The instance is tied to a specific token in the token db table.
+     * @param token the token entity that the nft instance is linked to by tokenId
+     * @param nftSerialNumber the unique serial number of the nft instance
+     * @param ownerId the id of the account currently holding the nft
+     * @param spenderId id of the approved spender of the nft
+     */
+    protected Nft nonFungibleTokenInstancePersist(
+            final Token token, Long nftSerialNumber, final EntityId ownerId, final EntityId spenderId) {
+        return domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(token.getTokenId())
+                        .serialNumber(nftSerialNumber)
+                        .accountId(ownerId)
+                        .spender(spenderId))
                 .persist();
     }
 
