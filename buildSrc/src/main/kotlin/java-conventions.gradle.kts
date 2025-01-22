@@ -51,7 +51,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
-tasks.withType<JavaCompile> {
+tasks.withType<JavaCompile>().configureEach {
     // Disable serial and this-escape warnings due to errors in generated code
     options.compilerArgs.addAll(
         listOf("-parameters", "-Werror", "-Xlint:all", "-Xlint:-this-escape,-preview")
@@ -65,7 +65,7 @@ tasks.compileJava { options.compilerArgs.add("-Xlint:-serial") }
 
 tasks.javadoc { options.encoding = "UTF-8" }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
     finalizedBy(tasks.jacocoTestReport)
     jvmArgs = listOf("-XX:+EnableDynamicAgentLoading") // Allow byte buddy for Mockito
     maxHeapSize = "4096m"

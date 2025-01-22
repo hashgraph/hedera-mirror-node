@@ -131,7 +131,7 @@ val extractOpenZeppelin =
 
 tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
-tasks.withType<JavaCompile> { options.compilerArgs.add("--enable-preview") }
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("--enable-preview") }
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
 

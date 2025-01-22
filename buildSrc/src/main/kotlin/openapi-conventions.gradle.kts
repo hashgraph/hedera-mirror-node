@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import org.gradle.api.tasks.compile.JavaCompile
-import org.gradle.kotlin.dsl.withType
-
 plugins {
     id("java-conventions")
     id("org.openapi.generator")
@@ -58,6 +55,6 @@ openApiGenerate {
     typeMappings = mapOf("Timestamp" to "String", "string+binary" to "String")
 }
 
-tasks.withType<JavaCompile> { dependsOn("openApiGenerate") }
+tasks.withType<JavaCompile>().configureEach { dependsOn("openApiGenerate") }
 
 java.sourceSets["main"].java { srcDir(openApiGenerate.outputDir) }
