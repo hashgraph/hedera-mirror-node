@@ -21,7 +21,6 @@ import {createTerminus} from '@godaddy/terminus';
 import {addAsync} from '@awaitjs/express';
 import cors from 'cors';
 import httpContext from 'express-http-context';
-import fs from 'fs';
 import compression from 'compression';
 
 // local files
@@ -53,6 +52,7 @@ import {
 // routes
 import {AccountRoutes, BlockRoutes, ContractRoutes, NetworkRoutes} from './routes';
 import {handleRejection, handleUncaughtException} from './middleware/httpErrorHandler';
+import {initializePool} from './dbpool.js';
 
 // use a dummy port for jest unit tests
 const port = isTestEnv() ? 3000 : config.port;
@@ -62,32 +62,7 @@ if (port === undefined || Number.isNaN(Number(port))) {
 }
 
 // Postgres pool
-const poolConfig = {
-  user: config.db.username,
-  host: config.db.host,
-  database: config.db.name,
-  password: config.db.password,
-  port: config.db.port,
-  connectionTimeoutMillis: config.db.pool.connectionTimeout,
-  max: config.db.pool.maxConnections,
-  statement_timeout: config.db.pool.statementTimeout,
-};
-
-if (config.db.tls.enabled) {
-  poolConfig.ssl = {
-    ca: fs.readFileSync(config.db.tls.ca).toString(),
-    cert: fs.readFileSync(config.db.tls.cert).toString(),
-    key: fs.readFileSync(config.db.tls.key).toString(),
-    rejectUnauthorized: false,
-  };
-}
-
-const Pool = getPoolClass();
-const pool = new Pool(poolConfig);
-pool.on('error', (error) => {
-  logger.error(`error event emitted on pg pool. ${error.stack}`);
-});
-global.pool = pool;
+initializePool();
 
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
 const app = addAsync(express());

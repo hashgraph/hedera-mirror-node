@@ -126,6 +126,7 @@ const createPool = async () => {
     password: readOnlyPassword,
     user: readOnlyUser,
   });
+  global.primaryPool = global.pool;
 };
 
 /**

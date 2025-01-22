@@ -320,6 +320,7 @@ stackgres:
         max_client_conn: "1600"
         max_prepared_statements: "512"
         pool_mode: transaction
+        server_lifetime: "1200"
       users:
         mirror_node:
           pool_mode: session
@@ -373,6 +374,7 @@ stackgres:
         max_client_conn: "2000"
         max_prepared_statements: "512"
         pool_mode: transaction
+        server_lifetime: "1200"
       users:
         mirror_node:
           pool_mode: session

@@ -1217,6 +1217,11 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var receiver = accountEntityWithEvmAddressPersist();
         final var payer = accountEntityWithEvmAddressPersist();
 
+        long timestampForBalances = payer.getCreatedTimestamp();
+        persistAccountBalance(payer, payer.getBalance());
+        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
+        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var transferList = new TransferList(List.of(
@@ -1241,10 +1246,19 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var receiver = accountEntityWithEvmAddressPersist();
         final var payer = accountEntityWithEvmAddressPersist();
 
-        tokenAccountPersist(tokenEntity, payer);
+        long timestampForBalances = payer.getCreatedTimestamp();
+        persistAccountBalance(payer, payer.getBalance());
+        persistTokenBalance(payer, tokenEntity, timestampForBalances);
+
+        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
+        persistTokenBalance(sender, tokenEntity, timestampForBalances);
+
+        persistTokenBalance(receiver, tokenEntity, timestampForBalances);
+        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+
         tokenAccountPersist(tokenEntity, sender);
         tokenAccountPersist(tokenEntity, receiver);
-
+        tokenAccountPersist(tokenEntity, payer);
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var tokenTransferList = new TokenTransferList(
@@ -1273,9 +1287,20 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var receiver = accountEntityWithEvmAddressPersist();
         final var payer = accountEntityWithEvmAddressPersist();
 
-        tokenAccountPersist(tokenEntity, payer);
+        long timestampForBalances = payer.getCreatedTimestamp();
+        persistAccountBalance(payer, payer.getBalance());
+        persistTokenBalance(payer, tokenEntity, timestampForBalances);
+
+        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
+        persistTokenBalance(sender, tokenEntity, timestampForBalances);
+
+        persistTokenBalance(receiver, tokenEntity, timestampForBalances);
+
+        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+
         tokenAccountPersist(tokenEntity, sender);
         tokenAccountPersist(tokenEntity, receiver);
+        tokenAccountPersist(tokenEntity, payer);
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));

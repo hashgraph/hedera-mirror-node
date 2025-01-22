@@ -30,7 +30,7 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.69.0")
+    set("grpcVersion", "1.69.1")
     set("mapStructVersion", "1.6.3")
     set("nodeJsVersion", "18.20.5")
     set("protobufVersion", "3.25.5")
@@ -54,7 +54,7 @@ dependencies {
         api("com.esaulpaugh:headlong:10.0.2")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.5")
-        api("org.bouncycastle:bcprov-jdk18on:1.79")
+        api("org.bouncycastle:bcprov-jdk18on:1.80")
         api("com.bucket4j:bucket4j-core:8.10.1")
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.8.0")
         api("com.google.guava:guava:33.4.0-jre")
@@ -75,8 +75,8 @@ dependencies {
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-63:3.9.0")
-        api("io.projectreactor:reactor-core-micrometer:1.2.1")
-        api("io.swagger:swagger-annotations:1.6.14")
+        api("io.projectreactor:reactor-core-micrometer:1.2.2")
+        api("io.swagger:swagger-annotations:1.6.15")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("io.vertx:vertx-core:$vertxVersion")
@@ -101,7 +101,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2024.0.0")
         api("org.testcontainers:junit-jupiter:1.20.4")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.29.50")
+        api("software.amazon.awssdk:bom:2.30.2")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.7")
         api("org.web3j:core:4.12.2")
         api("tech.pegasys:jc-kzg-4844:1.0.0")
