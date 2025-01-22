@@ -16,20 +16,20 @@
 
 package com.hedera.mirror.importer.parser.domain;
 
-import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.hapi.block.stream.output.protoc.CallContractOutput;
 import com.hedera.hapi.block.stream.output.protoc.CryptoTransferOutput;
 import com.hedera.hapi.block.stream.output.protoc.StateChanges;
 import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
 import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -44,13 +44,16 @@ public class BlockItemBuilder {
 
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
-    public BlockItemBuilder.Builder<CryptoTransferTransactionBody.Builder> cryptoTransfer() {
+    public BlockItemBuilder.Builder cryptoTransfer() {
         var recordItem = recordItemBuilder.cryptoTransfer().build();
-        var transaction = recordItem.getTransactionBody();
-        var transactionBody = transaction.toBuilder().getCryptoTransferBuilder();
-        var transactionResult = TransactionResult.newBuilder()
-                .setTransferList(transaction.getCryptoTransfer().getTransfers())
-                .build();
+        return cryptoTransfer(recordItem);
+    }
+
+    public BlockItemBuilder.Builder cryptoTransfer(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
 
         var contractCallTransactionOutput = TransactionOutput.newBuilder()
                 .setContractCall(CallContractOutput.newBuilder()
@@ -63,12 +66,26 @@ public class BlockItemBuilder {
                         .build())
                 .build();
 
-        return new BlockItemBuilder.Builder<>(
-                TransactionType.CRYPTOTRANSFER,
-                transactionBody,
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(),
                 transactionResult,
                 List.of(contractCallTransactionOutput, cryptoTransferTransactionOutput),
                 Collections.emptyList());
+    }
+
+    public BlockItemBuilder.Builder unknown() {
+        var recordItem = recordItemBuilder.unknown().build();
+        return unknown(recordItem);
+    }
+
+    public BlockItemBuilder.Builder unknown(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
     }
 
     private AssessedCustomFee.Builder assessedCustomFees() {
@@ -79,53 +96,38 @@ public class BlockItemBuilder {
                 .setTokenId(recordItemBuilder.tokenId());
     }
 
-    public class Builder<T extends GeneratedMessageV3.Builder<T>> {
-        private final TransactionType type;
-        private final T transactionBody;
-        private final TransactionBody.Builder transactionBodyWrapper;
+    private TransactionResult.Builder transactionResult(
+            TransactionRecord transactionRecord, Timestamp consensusTimestamp) {
+        return TransactionResult.newBuilder()
+                .addAllPaidStakingRewards(transactionRecord.getPaidStakingRewardsList())
+                .addAllTokenTransferLists(transactionRecord.getTokenTransferListsList())
+                .setConsensusTimestamp(consensusTimestamp)
+                .setParentConsensusTimestamp(transactionRecord.getParentConsensusTimestamp())
+                .setScheduleRef(transactionRecord.getScheduleRef())
+                .setTransferList(transactionRecord.getTransferList())
+                .setTransactionFeeCharged(transactionRecord.getTransactionFee())
+                .setStatus(transactionRecord.getReceipt().getStatus());
+    }
+
+    public class Builder {
+        private final Transaction transaction;
         private final List<TransactionOutput> transactionOutputs;
         private final TransactionResult transactionResult;
         private final List<StateChanges> stateChanges;
-        private final BlockItem.BlockItemBuilder blockItemBuilder;
 
         private Builder(
-                TransactionType type,
-                T transactionBody,
+                Transaction transaction,
                 TransactionResult transactionResult,
                 List<TransactionOutput> transactionOutputs,
                 List<StateChanges> stateChanges) {
-            this.blockItemBuilder = BlockItem.builder();
             this.stateChanges = stateChanges;
-            this.type = type;
-            this.transactionBody = transactionBody;
-            this.transactionBodyWrapper = defaultTransactionBody();
+            this.transaction = transaction;
             this.transactionOutputs = transactionOutputs;
             this.transactionResult = transactionResult;
         }
 
-        private TransactionBody.Builder defaultTransactionBody() {
-            return TransactionBody.newBuilder().setMemo(type.name());
-        }
-
-        private Transaction.Builder transaction() {
-            return Transaction.newBuilder()
-                    .setSignedTransactionBytes(SignedTransaction.newBuilder()
-                            .setBodyBytes(transactionBodyWrapper.build().toByteString())
-                            .build()
-                            .toByteString());
-        }
-
         public BlockItem build() {
-            var field = transactionBodyWrapper.getDescriptorForType().findFieldByNumber(type.getProtoId());
-            if (field != null) { // Not UNKNOWN transaction type
-                transactionBodyWrapper.setField(field, transactionBody.build());
-            }
-
-            var transaction = transaction().build();
-            // Clear these so that the builder can be reused and get new incremented values.
-            transactionBodyWrapper.clearTransactionID();
-
-            return blockItemBuilder
+            return BlockItem.builder()
                     .transaction(transaction)
                     .transactionResult(transactionResult)
                     .transactionOutput(transactionOutputs)
