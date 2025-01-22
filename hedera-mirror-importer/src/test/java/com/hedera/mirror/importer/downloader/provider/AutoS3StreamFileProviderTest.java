@@ -25,7 +25,9 @@ import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
@@ -39,30 +41,16 @@ import reactor.test.StepVerifier;
  */
 class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
 
-    private Map<ConsensusNode, NodeInfo> nodeInfoMap;
+    private final Map<ConsensusNode, NodeInfo> nodeInfoMap = new HashMap<>();
+
+    @AfterEach
+    void teardown() {
+        nodeInfoMap.clear();
+    }
 
     @Override
-    protected FileCopier createFileCopier(Path dataPath) {
-        var accountIdFromPath = Path.of("data", "hip679", "provider-auto", "recordstreams");
-        var accountIdFileCopier = FileCopier.create(
-                        TestUtils.getResource(accountIdFromPath.toString()).toPath(), dataPath)
-                .to(properties.getBucketName(), StreamType.RECORD.getPath());
-
-        var nodeIdFromPath = Path.of("data", "hip679", "provider-auto", "demo");
-        var network = properties.getImporterProperties().getNetwork();
-        var nodeIdFileCopier = FileCopier.create(
-                        TestUtils.getResource(nodeIdFromPath.toString()).toPath(), dataPath)
-                .to(properties.getBucketName(), network);
-
-        var accountIdNodeInfo = new NodeInfo(accountIdFileCopier, PathType.ACCOUNT_ID);
-        var nodeIdNodeInfo = new NodeInfo(nodeIdFileCopier, PathType.NODE_ID);
-        // Specify how individual node stream files are to be handled within the file system (source directories
-        // files are copied from as well as copied to).
-        nodeInfoMap = Map.of(
-                TestUtils.nodeFromAccountId("0.0.3"), accountIdNodeInfo,
-                TestUtils.nodeFromAccountId("0.0.4"), nodeIdNodeInfo);
-
-        return accountIdFileCopier;
+    protected FileCopier createFileCopier() {
+        return getFileCopier(node("0.0.3"));
     }
 
     @Override
@@ -74,8 +62,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
 
     @Override
     protected FileCopier getFileCopier(ConsensusNode node) {
-        var nodeInfo = getNodeInfo(node);
-        return nodeInfo.fileCopier;
+        return getNodeInfo(node).fileCopier;
     }
 
     @Override
@@ -97,7 +84,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
     }
 
     @Test
-    void nodeAccountIdToNodeIdListTransition() throws Exception {
+    void nodeAccountIdToNodeIdListTransition() {
         var node = node("0.0.3");
 
         var accountIdFromPath = Path.of("data", "hip679", "provider-auto-transition", "recordstreams");
@@ -112,7 +99,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
                 .to(properties.getBucketName(), network);
 
         accountIdFileCopier.copy();
-        nodeInfoMap = Map.of(node, new NodeInfo(accountIdFileCopier, PathType.ACCOUNT_ID));
+        nodeInfoMap.put(node, new NodeInfo(accountIdFileCopier, PathType.ACCOUNT_ID));
 
         // Find files in legacy node account ID bucket structure the first time
         var accountIdData1 = streamFileData(node, accountIdFileCopier, "2022-07-13T08_46_08.041986003Z.rcd_sig");
@@ -126,7 +113,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
 
         // Consensus node now writes to node ID bucket structure
         nodeIdFileCopier.copy();
-        nodeInfoMap = Map.of(node, new NodeInfo(nodeIdFileCopier, PathType.NODE_ID));
+        nodeInfoMap.put(node, new NodeInfo(nodeIdFileCopier, PathType.NODE_ID));
 
         // Now find new files in node ID bucket structure for the first time
         var nodeIdData1 = streamFileData(node, nodeIdFileCopier, "2022-12-25T09_14_26.072307770Z.rcd_sig");
@@ -197,7 +184,27 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         listError(fileCopier, node);
     }
 
+    private void createFileCopiers() {
+        nodeInfoMap.computeIfAbsent(node("0.0.3"), k -> {
+            var accountIdFromPath = Path.of("data", "hip679", "provider-auto-transition", "recordstreams");
+            var fileCopier = FileCopier.create(
+                            TestUtils.getResource(accountIdFromPath.toString()).toPath(), dataPath)
+                    .to(properties.getBucketName(), properties.getPathPrefix(), StreamType.RECORD.getPath());
+            return new NodeInfo(fileCopier, PathType.ACCOUNT_ID);
+        });
+
+        nodeInfoMap.computeIfAbsent(node("0.0.4"), k -> {
+            var nodeIdFromPath = Path.of("data", "hip679", "provider-auto", "demo");
+            var network = properties.getImporterProperties().getNetwork();
+            var fileCopier = FileCopier.create(
+                            TestUtils.getResource(nodeIdFromPath.toString()).toPath(), dataPath)
+                    .to(properties.getBucketName(), properties.getPathPrefix(), network);
+            return new NodeInfo(fileCopier, PathType.NODE_ID);
+        });
+    }
+
     private NodeInfo getNodeInfo(ConsensusNode node) {
+        createFileCopiers();
         var nodeInfo = nodeInfoMap.get(node);
         if (nodeInfo == null) {
             throw new IllegalStateException("Node '%s' is not pre-defined in node to info map".formatted(node));

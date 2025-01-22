@@ -33,6 +33,7 @@ import java.time.Duration;
 import java.time.Instant;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -56,14 +57,15 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
                 .toString();
     }
 
+    @Override
     @BeforeEach
-    void setup() throws Exception {
+    void setup() {
         super.setup();
         streamFileProvider = new LocalStreamFileProvider(properties, localProperties);
     }
 
     @Override
-    protected FileCopier createFileCopier(Path dataPath) {
+    protected FileCopier createFileCopier() {
         var fromPath = Path.of("data", "recordstreams", "v6");
         return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
                 .to(STREAMS, StreamType.RECORD.getPath());
@@ -173,6 +175,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     void listAllPathTypes(PathType pathType) {
         properties.setPathType(pathType);
 
+        var fileCopier = createFileCopier();
         if (pathType == PathType.ACCOUNT_ID) {
             fileCopier.copy();
         } else {
@@ -190,6 +193,22 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
                 .expectNext(data2)
                 .expectComplete()
                 .verify(Duration.ofSeconds(10L));
+    }
+
+    @SuppressWarnings("java:S2699")
+    @Disabled("PathPrefix not supported")
+    @Override
+    @Test
+    void listWithPathPrefix() {
+        // empty
+    }
+
+    @SuppressWarnings("java:S2699")
+    @Disabled("PathPrefix not supported")
+    @Override
+    @Test
+    void listThenGetWithPathPrefix() {
+        // empty
     }
 
     @SneakyThrows

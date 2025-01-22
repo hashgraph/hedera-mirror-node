@@ -29,15 +29,15 @@ import java.time.Duration;
  * Copy HIP-679 bucket structured files and configure the stream file provider to access S3 using
  * the new consensus node ID based hierarchy rather than the legacy node account ID mechanism.
  */
-public class NodeIdS3StreamProviderTest extends S3StreamFileProviderTest {
+class NodeIdS3StreamProviderTest extends S3StreamFileProviderTest {
 
     @Override
-    protected FileCopier createFileCopier(Path dataPath) {
+    protected FileCopier createFileCopier() {
         String network = properties.getImporterProperties().getNetwork();
         var fromPath = Path.of("data", "hip679", "provider-node-id");
 
         return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
-                .to(properties.getBucketName(), network);
+                .to(properties.getBucketName(), properties.getPathPrefix(), network);
     }
 
     @Override
