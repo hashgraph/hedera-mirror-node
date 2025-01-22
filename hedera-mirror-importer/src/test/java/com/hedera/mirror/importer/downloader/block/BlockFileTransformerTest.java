@@ -16,30 +16,44 @@
 
 package com.hedera.mirror.importer.downloader.block;
 
+import static com.hedera.mirror.common.util.DomainUtils.createSha384Digest;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
+import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.BlockFile;
+import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.exception.ProtobufException;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.parser.domain.BlockItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
-import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
-import java.security.MessageDigest;
-import java.time.Instant;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.data.util.Version;
 
 @RequiredArgsConstructor
-public class BlockFileTransformerTest extends ImporterIntegrationTest {
+class BlockFileTransformerTest extends ImporterIntegrationTest {
+
+    private static final int HAPI_VERSION_MINOR = 57;
+    private static final Version HAPI_VERSION = new Version(0, HAPI_VERSION_MINOR);
 
     private final BlockItemBuilder blockItemBuilder = new BlockItemBuilder();
     private final BlockFileTransformer blockFileTransformer;
@@ -49,124 +63,151 @@ public class BlockFileTransformerTest extends ImporterIntegrationTest {
     @EnumSource(value = TransferType.class)
     void cryptoTransfer(TransferType transferType) {
         // given
-        var expectedRecordFileBuilder = domainBuilder.recordFile();
         var expectedRecordItem = recordItemBuilder
                 .cryptoTransfer(transferType)
-                // Update the hapi version to match that of the record file
-                .recordItem(r -> r.hapiVersion(expectedRecordFileBuilder.get().getHapiVersion()))
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
         var expectedRecordItem2 = recordItemBuilder
                 .cryptoTransfer(transferType)
-                .recordItem(r -> r.hapiVersion(expectedRecordFileBuilder.get().getHapiVersion())
-                        .transactionIndex(1))
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION).transactionIndex(1))
                 .build();
         var expectedTransactionHash2 = getExpectedTransactionHash(expectedRecordItem2);
 
-        var expectedRecordFile = expectedRecordFileBuilder
-                .customize(r -> r.count(2L).items(List.of(expectedRecordItem, expectedRecordItem2)))
-                .get();
-        var blockItem = blockItemBuilder.cryptoTransfer(expectedRecordItem).build();
+        var blockItem1 = blockItemBuilder.cryptoTransfer(expectedRecordItem).build();
         var expectedFees =
-                blockItem.transactionOutput().get(1).getCryptoTransfer().getAssessedCustomFeesList();
+                blockItem1.transactionOutput().get(1).getCryptoTransfer().getAssessedCustomFeesList();
         var blockItem2 = blockItemBuilder.cryptoTransfer(expectedRecordItem2).build();
         var expectedFees2 =
                 blockItem2.transactionOutput().get(1).getCryptoTransfer().getAssessedCustomFeesList();
-        var blockFile = blockFileBuilder(expectedRecordFile)
-                .items(List.of(blockItem, blockItem2))
-                .build();
+        var blockFile = blockFile(List.of(blockItem1, blockItem2));
 
         // when
         var recordFile = blockFileTransformer.transform(blockFile);
-        var iterator = recordFile.getItems().iterator();
-        var recordItem = iterator.next();
-        var recordItem2 = iterator.next();
 
         // then
-        assertRecordItem(recordItem, expectedRecordItem);
-        assertRecordItem(recordItem2, expectedRecordItem2);
-        assertThat(recordItem.getTransactionRecord().getAssessedCustomFeesList())
-                .isEqualTo(expectedFees);
-        assertThat(recordItem.getPrevious()).isNull();
-        assertThat(recordItem.getTransactionRecord().getTransactionHash()).isEqualTo(expectedTransactionHash);
-        assertThat(recordItem2.getTransactionRecord().getAssessedCustomFeesList())
-                .isEqualTo(expectedFees2);
-        assertThat(recordItem2.getPrevious()).isEqualTo(recordItem);
-        assertThat(recordItem2.getTransactionRecord().getTransactionHash()).isEqualTo(expectedTransactionHash2);
-        assertThat(recordFile.getItems()).hasSize(2);
-        assertThat(recordFile.getCount()).isEqualTo(2);
-        assertRecordFile(recordFile, expectedRecordFile, blockFile.getName());
+        assertRecordFile(recordFile, blockFile, items -> {
+            assertThat(items).hasSize(2);
+            assertThat(items)
+                    .element(0)
+                    .satisfies(recordItem -> assertRecordItem(recordItem, expectedRecordItem))
+                    .returns(null, RecordItem::getPrevious)
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                    .returns(expectedFees, TransactionRecord::getAssessedCustomFeesList);
+            assertThat(items)
+                    .element(1)
+                    .satisfies(recordItem -> assertRecordItem(recordItem, expectedRecordItem2))
+                    .returns(items.iterator().next(), RecordItem::getPrevious)
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash2, TransactionRecord::getTransactionHash)
+                    .returns(expectedFees2, TransactionRecord::getAssessedCustomFeesList);
+        });
+    }
+
+    @Test
+    void corruptedTransactionBodyBytes() {
+        // given
+        var blockItem = new BlockItem(
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                                .setBodyBytes(DomainUtils.fromBytes(domainBuilder.bytes(512)))
+                                .build()
+                                .toByteString())
+                        .build(),
+                TransactionResult.newBuilder().build(),
+                Collections.emptyList(),
+                Collections.emptyList());
+        var blockFile = blockFile(List.of(blockItem));
+
+        // when, then
+        assertThatThrownBy(() -> blockFileTransformer.transform(blockFile)).isInstanceOf(ProtobufException.class);
+    }
+
+    @Test
+    void corruptedSignedTransactionBytes() {
+        // given
+        var blockItem = new BlockItem(
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(DomainUtils.fromBytes(domainBuilder.bytes(256)))
+                        .build(),
+                TransactionResult.newBuilder().build(),
+                Collections.emptyList(),
+                Collections.emptyList());
+        var blockFile = blockFile(List.of(blockItem));
+
+        // when, then
+        assertThatThrownBy(() -> blockFileTransformer.transform(blockFile)).isInstanceOf(ProtobufException.class);
     }
 
     @Test
     void emptyBlockFile() {
         // given
-        var expectedRecordFileBuilder = domainBuilder.recordFile();
-        var expectedRecordItem = recordItemBuilder
-                .cryptoTransfer()
-                // Update the hapi version to match that of the record file
-                .recordItem(r -> r.hapiVersion(expectedRecordFileBuilder.get().getHapiVersion()))
-                .build();
-        var expectedRecordFile = expectedRecordFileBuilder
-                .customize(r -> r.items(List.of(expectedRecordItem)))
-                .get();
-        var blockFile = blockFileBuilder(expectedRecordFile).build();
+        var blockFile = blockFile(Collections.emptyList());
 
         // when
         var recordFile = blockFileTransformer.transform(blockFile);
 
         // then
         assertThat(recordFile.getItems()).isEmpty();
-        assertRecordFile(recordFile, expectedRecordFile, blockFile.getName());
+        assertRecordFile(recordFile, blockFile, items -> {});
     }
 
     @Test
     void unknownTransform() {
         // given
-        var expectedRecordFileBuilder = domainBuilder.recordFile();
         var expectedRecordItem = recordItemBuilder
                 .unknown()
-                // Update the hapi version to match that of the record file
-                .recordItem(r -> r.hapiVersion(expectedRecordFileBuilder.get().getHapiVersion()))
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
-        var expectedRecordFile = expectedRecordFileBuilder
-                .customize(r -> r.items(List.of(expectedRecordItem)))
-                .get();
         var blockItem = blockItemBuilder.unknown(expectedRecordItem).build();
-        var blockFile =
-                blockFileBuilder(expectedRecordFile).items(List.of(blockItem)).build();
+        var blockFile = blockFile(List.of(blockItem));
 
         // when
         var recordFile = blockFileTransformer.transform(blockFile);
-        var recordItem = recordFile.getItems().iterator().next();
 
         // then
-        assertRecordItem(recordItem, expectedRecordItem);
-        assertThat(recordFile.getItems()).hasSize(1);
-        assertThat(recordFile.getCount()).isOne();
-        assertRecordFile(recordFile, expectedRecordFile, blockFile.getName());
+        assertRecordFile(recordFile, blockFile, items -> {
+            assertThat(items).hasSize(1).first().satisfies(item -> assertRecordItem(item, expectedRecordItem));
+        });
     }
 
-    private void assertRecordFile(RecordFile recordFile, RecordFile expectedRecordFile, String blockFileName) {
-        assertThat(recordFile.getLogsBloom()).isNull();
-        assertThat(recordFile.getName()).isEqualTo(blockFileName);
-        assertThat(recordFile.getSidecars()).isEmpty();
-        assertThat(recordFile.getSidecarCount()).isZero();
-        assertThat(recordFile.getVersion()).isEqualTo(7);
-        assertThat(recordFile)
-                .usingRecursiveComparison()
-                .ignoringFields(
-                        "count",
-                        "fileHash",
-                        "gasUsed",
-                        "items",
-                        "logsBloom",
-                        "name",
-                        "sidecarCount",
-                        "sidecars",
-                        "version")
-                .isEqualTo(expectedRecordFile);
+    private void assertRecordFile(
+            RecordFile actual, BlockFile blockFile, Consumer<Collection<RecordItem>> itemsAssert) {
+        var hapiProtoVersion = blockFile.getBlockHeader().getHapiProtoVersion();
+        var softwareVersion = blockFile.getBlockHeader().getSoftwareVersion();
+        assertThat(actual)
+                .returns(blockFile.getBytes(), RecordFile::getBytes)
+                .returns(blockFile.getConsensusEnd(), RecordFile::getConsensusEnd)
+                .returns(blockFile.getConsensusStart(), RecordFile::getConsensusStart)
+                .returns(blockFile.getCount(), RecordFile::getCount)
+                .returns(blockFile.getDigestAlgorithm(), RecordFile::getDigestAlgorithm)
+                .returns(StringUtils.EMPTY, RecordFile::getFileHash)
+                .returns(0L, RecordFile::getGasUsed)
+                .returns(hapiProtoVersion.getMajor(), RecordFile::getHapiVersionMajor)
+                .returns(hapiProtoVersion.getMinor(), RecordFile::getHapiVersionMinor)
+                .returns(hapiProtoVersion.getPatch(), RecordFile::getHapiVersionPatch)
+                .returns(blockFile.getHash(), RecordFile::getHash)
+                .returns(blockFile.getIndex(), RecordFile::getIndex)
+                .returns(null, RecordFile::getLoadEnd)
+                .returns(blockFile.getLoadStart(), RecordFile::getLoadStart)
+                .returns(null, RecordFile::getLogsBloom)
+                .returns(null, RecordFile::getMetadataHash)
+                .returns(blockFile.getName(), RecordFile::getName)
+                .returns(blockFile.getNodeId(), RecordFile::getNodeId)
+                .returns(blockFile.getPreviousHash(), RecordFile::getPreviousHash)
+                .returns(blockFile.getRoundEnd(), RecordFile::getRoundEnd)
+                .returns(blockFile.getRoundStart(), RecordFile::getRoundStart)
+                .returns(0, RecordFile::getSidecarCount)
+                .satisfies(r -> assertThat(r.getSidecars()).isEmpty())
+                .returns(blockFile.getSize(), RecordFile::getSize)
+                .returns(softwareVersion.getMajor(), RecordFile::getSoftwareVersionMajor)
+                .returns(softwareVersion.getMinor(), RecordFile::getSoftwareVersionMinor)
+                .returns(softwareVersion.getPatch(), RecordFile::getSoftwareVersionPatch)
+                .returns(blockFile.getVersion(), RecordFile::getVersion)
+                .extracting(RecordFile::getItems)
+                .satisfies(itemsAssert);
     }
 
     private void assertRecordItem(RecordItem recordItem, RecordItem expectedRecordItem) {
@@ -199,46 +240,52 @@ public class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .isEqualTo(expectedRecordItem);
     }
 
-    @SneakyThrows
     private ByteString getExpectedTransactionHash(RecordItem recordItem) {
-        var digest = MessageDigest.getInstance("SHA-384");
-        return ByteString.copyFrom(digest.digest(
-                recordItem.getTransaction().getSignedTransactionBytes().toByteArray()));
+        var digest = createSha384Digest();
+        return ByteString.copyFrom(
+                digest.digest(DomainUtils.toBytes(recordItem.getTransaction().getSignedTransactionBytes())));
     }
 
-    private BlockFile.BlockFileBuilder blockFileBuilder(RecordFile recordFile) {
-        var hapiVersion = SemanticVersion.newBuilder()
-                .setMajor(recordFile.getHapiVersionMajor())
-                .setMinor(recordFile.getHapiVersionMinor())
-                .setPatch(recordFile.getHapiVersionPatch())
-                .build();
-        var recordItem = recordFile.getItems().iterator().next();
-        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
-        var timestamp = Utility.instantToTimestamp(instant);
+    private BlockFile blockFile(List<BlockItem> blockItems) {
+        long blockNumber = domainBuilder.number();
+        byte[] bytes = domainBuilder.bytes(256);
+        String filename = StringUtils.leftPad(Long.toString(blockNumber), 36, "0") + ".blk.gz";
+        var firstConsensusTimestamp = blockItems.isEmpty()
+                ? domainBuilder.protoTimestamp()
+                : blockItems.getFirst().transactionResult().getConsensusTimestamp();
+        byte[] previousHash = domainBuilder.bytes(48);
+        long consensusStart = DomainUtils.timestampInNanosMax(firstConsensusTimestamp);
+        long consensusEnd = blockItems.isEmpty()
+                ? consensusStart
+                : DomainUtils.timestampInNanosMax(
+                        blockItems.getLast().transactionResult().getConsensusTimestamp());
 
-        var previousHash = recordFile.getPreviousHash();
         return BlockFile.builder()
                 .blockHeader(BlockHeader.newBuilder()
-                        .setFirstTransactionConsensusTime(timestamp)
-                        .setHapiProtoVersion(hapiVersion)
-                        .setNumber(recordFile.getIndex())
-                        .setPreviousBlockHash(ByteString.copyFromUtf8(previousHash))
-                        .setSoftwareVersion(hapiVersion)
+                        .setFirstTransactionConsensusTime(firstConsensusTimestamp)
+                        .setNumber(blockNumber)
+                        .setPreviousBlockHash(DomainUtils.fromBytes(previousHash))
+                        .setHapiProtoVersion(SemanticVersion.newBuilder().setMinor(HAPI_VERSION_MINOR))
+                        .setSoftwareVersion(SemanticVersion.newBuilder()
+                                .setMinor(HAPI_VERSION_MINOR)
+                                .setPatch(1))
                         .build())
-                .bytes(recordFile.getBytes())
-                .count(recordFile.getCount())
-                .consensusEnd(recordFile.getConsensusEnd())
-                .consensusStart(recordFile.getConsensusStart())
-                .digestAlgorithm(recordFile.getDigestAlgorithm())
-                .hash(recordFile.getHash())
-                .nodeId(recordFile.getNodeId())
-                .loadEnd(recordFile.getLoadEnd())
-                .loadStart(recordFile.getLoadStart())
-                .name("000000000000000000000000000000000001.blk.gz")
-                .previousHash(previousHash)
-                .roundEnd(recordFile.getRoundEnd())
-                .roundStart(recordFile.getRoundStart())
-                .size(recordFile.getSize())
-                .version(7);
+                .bytes(bytes)
+                .consensusEnd(consensusEnd)
+                .consensusStart(consensusStart)
+                .count((long) blockItems.size())
+                .digestAlgorithm(DigestAlgorithm.SHA_384)
+                .hash(DomainUtils.bytesToHex(domainBuilder.bytes(48)))
+                .index(blockNumber)
+                .items(blockItems)
+                .loadStart(System.currentTimeMillis())
+                .name(filename)
+                .nodeId(domainBuilder.number())
+                .previousHash(DomainUtils.bytesToHex(previousHash))
+                .roundEnd(blockNumber + 1)
+                .roundStart(blockNumber + 1)
+                .size(bytes.length)
+                .version(7)
+                .build();
     }
 }

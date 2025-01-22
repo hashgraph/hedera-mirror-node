@@ -44,7 +44,7 @@ import org.springframework.util.StreamUtils;
 @DisableRepeatableSqlMigration
 @RequiredArgsConstructor
 @Tag("migration")
-public class AddBlockColumnsMigrationTest extends RecordFileMigrationTest {
+class AddBlockColumnsMigrationTest extends RecordFileMigrationTest {
 
     private static final String REVERT_DDL =
             """

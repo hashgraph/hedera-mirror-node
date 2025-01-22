@@ -22,7 +22,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
-public class CryptoTransferTransformer extends AbstractBlockItemTransformer {
+class CryptoTransferTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
@@ -30,9 +30,8 @@ public class CryptoTransferTransformer extends AbstractBlockItemTransformer {
             if (transactionOutput.hasCryptoTransfer()) {
                 var cryptoTransferOutput = transactionOutput.getCryptoTransfer();
                 var assessedCustomFees = cryptoTransferOutput.getAssessedCustomFeesList();
-                if (!assessedCustomFees.isEmpty()) {
-                    transactionRecordBuilder.addAllAssessedCustomFees(assessedCustomFees);
-                }
+                transactionRecordBuilder.addAllAssessedCustomFees(assessedCustomFees);
+                break;
             }
         }
     }

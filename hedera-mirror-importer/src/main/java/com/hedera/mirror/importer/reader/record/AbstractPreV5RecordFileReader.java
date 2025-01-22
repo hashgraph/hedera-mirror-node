@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.reader.record;
 
+import static com.hedera.mirror.common.util.DomainUtils.createSha384Digest;
+
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -29,7 +31,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -157,19 +158,15 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         private final MessageDigest messageDigestBody;
 
         public RecordFileDigest(InputStream is, boolean simple) {
-            try {
-                messageDigestFile = MessageDigest.getInstance(DIGEST_ALGORITHM.getName());
-                digestInputStream = new DigestInputStream(is, messageDigestFile);
+            messageDigestFile = createSha384Digest();
+            digestInputStream = new DigestInputStream(is, messageDigestFile);
 
-                if (simple) {
-                    messageDigestBody = null;
-                } else {
-                    // calculate the hash of the body separately, and the file hash is calculated as
-                    // h(header | h(body))
-                    messageDigestBody = MessageDigest.getInstance(DIGEST_ALGORITHM.getName());
-                }
-            } catch (NoSuchAlgorithmException e) {
-                throw new StreamFileReaderException("Unable to instantiate RecordFileDigest", e);
+            if (simple) {
+                messageDigestBody = null;
+            } else {
+                // calculate the hash of the body separately, and the file hash is calculated as
+                // h(header | h(body))
+                messageDigestBody = createSha384Digest();
             }
         }
 

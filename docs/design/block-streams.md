@@ -103,18 +103,11 @@ package com.hedera.mirror.importer.downloader.block;
 public class BlockFileTransformer implements StreamFileTransformer<RecordFile, BlockFile> {
 
     /**
-     *   Transforms the block file into a record file and calculates the block hash
-     *   The transformation uses a mapping of block fields to record file fields
-     *   Block items are only iterated once in the transform method
-     *   State changes are accumulated and used for calculating the block hash
-     *
-     *   If the Block File contains a Wrapped Record File, then convert the Wrapped Record File to a Record File
+     *   Transforms the block file into a record file. The transformation uses a mapping of block fields to record file
+     *   fields. Block items are only iterated once in the transform method.
      */
     @Override
     public RecordFile transform(BlockFile block);
-
-    // The transaction hash will not be included in the block stream output so we will need to calculate it
-    private byte[] calculateTransactionHash(EventTransaction transaction);
 }
 ```
 
