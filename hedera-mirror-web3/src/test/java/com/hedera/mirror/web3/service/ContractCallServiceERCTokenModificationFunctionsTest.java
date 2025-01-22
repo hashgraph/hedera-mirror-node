@@ -100,7 +100,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var tokenAddress = toAddress(token.getTokenId());
         tokenAssociateAccountPersist(contractEntityId, entityIdFromEvmAddress(tokenAddress));
         // When
-        final var functionCall = contract.send_approve(
+        final var functionCall = contract.send_approveNFT(
                 tokenAddress.toHexString(), toAddress(spender).toHexString(), BigInteger.ONE);
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
@@ -118,7 +118,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         tokenAssociateAccountPersist(contractEntityId, entityIdFromEvmAddress(tokenAddress));
         // When
         final var functionCall =
-                contract.send_approve(tokenAddress.toHexString(), Address.ZERO.toHexString(), BigInteger.ONE);
+                contract.send_approveNFT(tokenAddress.toHexString(), Address.ZERO.toHexString(), BigInteger.ONE);
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
@@ -192,7 +192,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var tokenAddress = toAddress(token.getTokenId());
         tokenAssociateAccountPersist(contractEntityId, entityIdFromEvmAddress(tokenAddress));
         // When
-        final var functionCall = contract.send_approve(
+        final var functionCall = contract.send_approveNFT(
                 tokenAddress.toHexString(), SPENDER_ALIAS.toHexString(), BigInteger.valueOf(serialNo));
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
