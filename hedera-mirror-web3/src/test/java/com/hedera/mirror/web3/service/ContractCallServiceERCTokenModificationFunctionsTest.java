@@ -29,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
@@ -100,7 +101,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var tokenAddress = toAddress(token.getTokenId());
         tokenAssociateAccountPersist(contractEntityId, entityIdFromEvmAddress(tokenAddress));
         // When
-        final var functionCall = contract.send_approve(
+        final var functionCall = contract.send_approveNFT(
                 tokenAddress.toHexString(), toAddress(spender).toHexString(), BigInteger.ONE);
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
@@ -118,7 +119,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         tokenAssociateAccountPersist(contractEntityId, entityIdFromEvmAddress(tokenAddress));
         // When
         final var functionCall =
-                contract.send_approve(tokenAddress.toHexString(), Address.ZERO.toHexString(), BigInteger.ONE);
+                contract.send_approveNFT(tokenAddress.toHexString(), Address.ZERO.toHexString(), BigInteger.ONE);
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
@@ -192,7 +193,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var tokenAddress = toAddress(token.getTokenId());
         tokenAssociateAccountPersist(contractEntityId, entityIdFromEvmAddress(tokenAddress));
         // When
-        final var functionCall = contract.send_approve(
+        final var functionCall = contract.send_approveNFT(
                 tokenAddress.toHexString(), SPENDER_ALIAS.toHexString(), BigInteger.valueOf(serialNo));
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
@@ -253,7 +254,6 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
     @Test
     void transferFromToHollowAccount() {
         // Given
-        final var treasury = accountEntityPersist().toEntityId();
         final var owner = accountEntityPersist().toEntityId();
         final var token = domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
 
@@ -261,21 +261,16 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
                 .token()
                 .customize(t -> t.tokenId(token.getId())
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(treasury)
                         .kycKey(new byte[0]))
                 .persist();
 
-        tokenAssociateAccountPersist(owner, token.toEntityId());
-
-        final var hollowAccount = domainBuilder
-                .entity()
-                .customize(e -> e.key(null).maxAutomaticTokenAssociations(10).receiverSigRequired(false))
-                .persist();
-
+        final var hollowAccount = hollowAccountPersist();
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
         tokenAssociateAccountPersist(contractEntityId, token.toEntityId());
+        tokenAssociateAccountPersist(hollowAccount.toEntityId(), token.toEntityId());
+        tokenAssociateAccountPersist(owner, token.toEntityId());
 
         final var amount = 10L;
         fungibleTokenAllowancePersist(contractEntityId, owner, token.toEntityId(), amount);
@@ -561,11 +556,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
 
         tokenAssociateAccountPersist(owner, entityIdFromEvmAddress(toAddress(tokenEntity.getId())));
 
-        final var hollowAccount = domainBuilder
-                .entity()
-                .customize(e -> e.key(null).maxAutomaticTokenAssociations(10).receiverSigRequired(false))
-                .persist();
-
+        final var hollowAccount = hollowAccountPersist();
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
@@ -718,6 +709,13 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
                 .customize(e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()))
                 .persist()
                 .toEntityId();
+    }
+
+    private Entity hollowAccountPersist() {
+        return domainBuilder
+                .entity()
+                .customize(e -> e.key(null).maxAutomaticTokenAssociations(10).receiverSigRequired(false))
+                .persist();
     }
 
     private Token fungibleTokenPersist(final EntityId treasuryEntityId) {
