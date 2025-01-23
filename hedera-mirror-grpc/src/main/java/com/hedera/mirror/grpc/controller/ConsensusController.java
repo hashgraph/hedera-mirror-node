@@ -46,6 +46,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
 
+    // Blockstreams no longer contain runningHashVersion, default to the latest version
+    static final int DEFAULT_RUNNING_HASH_VERSION = 3;
+
     private final TopicMessageService topicMessageService;
 
     @Override
@@ -86,11 +89,14 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
 
     // Consider caching this conversion for multiple subscribers to the same topic if the need arises.
     private ConsensusTopicResponse toResponse(TopicMessage t) {
+        int runningHashVersion =
+                t.getRunningHashVersion() == null ? DEFAULT_RUNNING_HASH_VERSION : t.getRunningHashVersion();
+
         var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
                 .setConsensusTimestamp(ProtoUtil.toTimestamp(t.getConsensusTimestamp()))
                 .setMessage(ProtoUtil.toByteString(t.getMessage()))
                 .setRunningHash(ProtoUtil.toByteString(t.getRunningHash()))
-                .setRunningHashVersion(t.getRunningHashVersion())
+                .setRunningHashVersion(runningHashVersion)
                 .setSequenceNumber(t.getSequenceNumber());
 
         if (t.getChunkNum() != null) {

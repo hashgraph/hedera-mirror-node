@@ -80,6 +80,16 @@ describe('topicMessageViewModel tests', () => {
   });
 });
 
+test('Default running hash version', () => {
+  const row = buildDefaultTopicMessageRow();
+  row.runningHashVersion = null;
+  const actual = new TopicMessageViewModel(row, '');
+
+  const expected = buildDefaultTopicMessageViewModel();
+  expected.running_hash_version = TopicMessageViewModel.DEFAULT_RUNNING_HASH_VERSION;
+  expect(actual).toEqual(expected);
+});
+
 const buildDefaultTopicMessageRow = () => {
   return {
     consensusTimestamp: '1234567890000000001',
