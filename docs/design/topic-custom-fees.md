@@ -11,10 +11,12 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
 - Update / add ingestion logic for the following transactions and persist new information to the database
   - `ConsensusCreateTopic`: custom fees, fee exempt key list, and fee schedule key
   - `ConsensusUpdateTopic`: custom fees, fee exempt key list, and fee schedule key
+  - `max_custom_fees` in `TransactionBody`
 - Verify assessed custom fees are externalized in transaction record for applicable `ConsensusSubmitMessage`
-  transactions and child `CryptoTransfer` transactions persisted to the database, and exposed via JS REST API
+  transactions persisted to the database, and exposed via JS REST API
 - Expose the following topic custom fee information
   - Expose topic custom fees, fee exempt key list, and fee schedule key via JAVA REST API
+- Expose max custom fees in transaction body via JS REST API
 
 ## Non Goals
 
@@ -56,12 +58,22 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
   table.
 
 - Rename column `token_id` to `entity_id` in `custom_fee` and `custom_fee_history` tables
+
   ```sql
   alter table if exists custom_fee
     rename column token_id to entity_id;
   alter table if exists custom_fee_history
     rename column token_id to entity_id;
   ```
+
+- Add column `max_custom_fees` to table `transaction`
+  ```sql
+  alter table if exists transaction
+    add column if not exists max_custom_fees bytea[];
+  ```
+  _Note: The field is an array of bytea because it's from the repeated protobuf field `max_custom_fees` in
+  `TransactionBody`. To serialize a repeated field as a whole, a wrapper message is needed. On the other hand,
+  storing it as json will consume much more storage._
 
 ## Importer
 
@@ -80,6 +92,8 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
 
 - Rename field `tokenId` in `AbstractCustomFee` to `entityId`
 
+- Add `maxCustomFees` to `Transaction`
+
 ### Topic Custom Fee Parsing
 
 #### EntityListener
@@ -91,11 +105,14 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
 
 #### EntityRecordItemListener
 
-Make the following changes to `insertAssessedCustomFees()`
+- Make the following changes to `insertAssessedCustomFees()`
 
-- Process assessed custom fees in transaction record if tokens is enabled in `PersistProperties` or if it's a
-  `ConsensusSubmitMessage` transaction or if it's a `CryptoTransfer` transaction whose parent is a
-  `ConsensusSubmitMessage` transaction
+  - Process assessed custom fees in transaction record if tokens is enabled in `PersistProperties` or if it's a
+    `ConsensusSubmitMessage` transaction or if it's a `CryptoTransfer` transaction whose parent is a
+    `ConsensusSubmitMessage` transaction
+
+- Serialize individual `TransactionBody.max_custom_fees` elements and save as a collection of byte arrays
+  in `buildTransaction`
 
 #### Transaction Handlers
 
@@ -159,12 +176,237 @@ Make the following changes to `insertAssessedCustomFees()`
   }
   ```
 
+* `/api/v1/transactions`
+
+  - Changes to the body of the response. The response should include the new `max_custom_fees` field to expose any data defined in its corresponding protobuffer definition. A sample response payload follows.
+
+  ```json
+  {
+    "transactions": [
+      {
+        "bytes": null,
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1234567890.000000007",
+        "entity_id": "0.0.2281979",
+        "max_custom_fees": [
+          {
+            "account_id": "0.0.8",
+            "amount": 1000,
+            "denominating_token_id": null
+          },
+          {
+            "account_id": "0.0.9",
+            "amount": 500,
+            "denominating_token_id": "0.0.2000"
+          }
+        ],
+        "max_fee": 33,
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "nft_transfers": [
+          {
+            "is_approval": true,
+            "receiver_account_id": "0.0.121",
+            "sender_account_id": "0.0.122",
+            "serial_number": 1,
+            "token_id": "0.0.123"
+          },
+          {
+            "is_approval": true,
+            "receiver_account_id": "0.0.321",
+            "sender_account_id": "0.0.422",
+            "serial_number": 2,
+            "token_id": "0.0.123"
+          }
+        ],
+        "node": "0.0.3",
+        "nonce": 0,
+        "parent_consensus_timestamp": "1234567890.000000007",
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [
+          {
+            "account": 3,
+            "amount": 150
+          },
+          {
+            "account": 9,
+            "amount": 200
+          }
+        ],
+        "transaction_hash": "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW",
+        "transaction_id": "0.0.8-1234567890-000000006",
+        "token_transfers": [
+          {
+            "token_id": "0.0.90000",
+            "account": "0.0.9",
+            "amount": 1200,
+            "is_approval": false
+          },
+          {
+            "token_id": "0.0.90000",
+            "account": "0.0.8",
+            "amount": -1200,
+            "is_approval": false
+          }
+        ],
+        "transfers": [
+          {
+            "account": "0.0.3",
+            "amount": 2,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.8",
+            "amount": -3,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.800",
+            "amount": 150,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.800",
+            "amount": 200,
+            "is_approval": false
+          }
+        ],
+        "valid_duration_seconds": 11,
+        "valid_start_timestamp": "1234567890.000000006"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+  ```
+
+* `/api/v1/transactions/{id}`
+  - Changes to the body of the response. The response should include the new `max_custom_fees` field to expose any data defined in its corresponding protobuffer definition. A sample response payload follows.
+  ```json
+  {
+    "transactions": [
+      {
+        "assessed_custom_fees": [
+          {
+            "amount": 100,
+            "collector_account_id": "0.0.10",
+            "effective_payer_account_ids": ["0.0.8", "0.0.72"],
+            "token_id": "0.0.90001"
+          }
+        ],
+        "bytes": null,
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1234567890.000000007",
+        "entity_id": "0.0.2281979",
+        "max_custom_fees": [
+          {
+            "account_id": "0.0.8",
+            "amount": 1000,
+            "denominating_token_id": null
+          },
+          {
+            "account_id": "0.0.9",
+            "amount": 500,
+            "denominating_token_id": "0.0.2000"
+          }
+        ],
+        "max_fee": 33,
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "nft_transfers": [
+          {
+            "is_approval": true,
+            "receiver_account_id": "0.0.121",
+            "sender_account_id": "0.0.122",
+            "serial_number": 1,
+            "token_id": "0.0.123"
+          },
+          {
+            "is_approval": true,
+            "receiver_account_id": "0.0.321",
+            "sender_account_id": "0.0.422",
+            "serial_number": 2,
+            "token_id": "0.0.123"
+          }
+        ],
+        "node": "0.0.3",
+        "nonce": 0,
+        "parent_consensus_timestamp": "1234567890.000000007",
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [
+          {
+            "account": 3,
+            "amount": 200
+          },
+          {
+            "account": 9,
+            "amount": 300
+          }
+        ],
+        "transaction_hash": "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW",
+        "transaction_id": "0.0.8-1234567890-000000006",
+        "token_transfers": [
+          {
+            "token_id": "0.0.90000",
+            "account": "0.0.9",
+            "amount": 1200,
+            "is_approval": true
+          },
+          {
+            "token_id": "0.0.90000",
+            "account": "0.0.8",
+            "amount": -1200,
+            "is_approval": true
+          }
+        ],
+        "transfers": [
+          {
+            "account": "0.0.3",
+            "amount": 2,
+            "is_approval": true
+          },
+          {
+            "account": "0.0.8",
+            "amount": -3,
+            "is_approval": true
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1,
+            "is_approval": true
+          },
+          {
+            "account": "0.0.800",
+            "amount": 200,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.800",
+            "amount": 300,
+            "is_approval": false
+          }
+        ],
+        "valid_duration_seconds": 11,
+        "valid_start_timestamp": "1234567890.000000006"
+      }
+    ]
+  }
+  ```
+
 ### OpenAPI Schema
 
-- Add `ConsensusFixedFee`, modeled after `FixedFee`, without `all_collectors_are_exempt` field
+- Add `FixedCustomFee`, modeled after `FixedFee`, without `all_collectors_are_exempt` field
 
   ```yaml
-  ConsensusFixedFee:
+  FixedCustomFee:
     type: object
     properties:
       amount:
@@ -178,6 +420,7 @@ Make the following changes to `insertAssessedCustomFees()`
   ```
 
 - Add `ConsensusCustomFees`
+
   ```yaml
   ConsensusCustomFees:
     type: object
@@ -187,7 +430,22 @@ Make the following changes to `insertAssessedCustomFees()`
       fixed_fees:
         type: array
         items:
-          $ref: "#/components/schemas/ConsensusFixedFee"
+          $ref: "#/components/schemas/FixedCustomFee"
+  ```
+
+- Add `CustomFeeLimit`
+  ```yaml
+  CustomFeeLimit:
+    type: object
+    properties:
+      account_id:
+        $ref: "#/components/schemas/EntityId"
+      amount:
+        example: 100
+        format: int64
+        type: integer
+      denominating_token_id:
+        $ref: "#/components/schemas/EntityId"
   ```
 
 ## Non-Functional Requirements
@@ -203,8 +461,9 @@ Refactor the existing test scenario `Validate Topic message submission` with the
    transaction with no assessed custom fee, Validate mirrornode REST API returns the topic message
 4. Transfer some fungible token to BOB (BOB has unlimited token auto association slots). Validate mirrornode REST API
    returns the crypto transfer transaction
-5. BOB submits a message to the topic. Validate mirrornode REST API returns the transaction with correct assessed
-   custom fees. Validate mirrornode REST API returns the topic message
+5. BOB submits a message to the topic with max custom fees meeting the custom fee schedule. Validate mirrornode REST
+   API returns the transaction with correct assessed custom fees and max custom fees. Validate mirrornode REST API
+   returns the topic message
 6. Update the topic with empty custom fees, fee exempt key list, and fee schedule key. Validate mirrornode REST API
    returns the updated topic information
 7. BOB submits another message to the topic. Validate mirrornode REST API returns the transaction with no assessed
@@ -213,9 +472,3 @@ Refactor the existing test scenario `Validate Topic message submission` with the
 ## K6 Tests
 
 Change the topic id in the `topicsId` rest-java k6 test case to one with topic custom fee related properties set.
-
-## Open Issues
-
-- Should we store the new `ConsensusSubmitMessageTransactionBody` fields `accept_all_custom_fees` and `max_custom_fees`?
-  `accept_all_custom_fees` is cheap to store since it's a boolean however `max_custom_fees` is a repeated field so can
-  be large.
