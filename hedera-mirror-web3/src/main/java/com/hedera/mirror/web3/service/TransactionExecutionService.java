@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
@@ -44,6 +45,7 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.swirlds.state.State;
 import io.micrometer.core.instrument.Counter;
@@ -51,6 +53,7 @@ import io.micrometer.core.instrument.Meter.MeterProvider;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -114,11 +117,15 @@ public class TransactionExecutionService {
         }
 
         var receipt = executor.execute(transactionBody, Instant.now(), getOperationTracers());
-        var transactionRecord = receipt.getFirst().transactionRecord();
-        if (transactionRecord.receiptOrThrow().status() == com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS) {
-            result = buildSuccessResult(isContractCreate, transactionRecord, params);
+        var transactionRecords =
+                receipt.stream().map(SingleTransactionRecord::transactionRecord).toList();
+        var transactionRecordsStatuses = transactionRecords.stream()
+                .map(r -> r.receiptOrThrow().status())
+                .toList();
+        if (transactionRecordsStatuses.stream().allMatch(com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS::equals)) {
+            result = buildSuccessResult(isContractCreate, transactionRecords.getFirst(), params);
         } else {
-            handleFailedResult(transactionRecord, isContractCreate, gasUsedCounter);
+            handleFailedResult(transactionRecords, isContractCreate, gasUsedCounter);
         }
         return result;
     }
@@ -155,22 +162,39 @@ public class TransactionExecutionService {
     }
 
     private void handleFailedResult(
-            final TransactionRecord transactionRecord,
+            final List<TransactionRecord> transactionRecords,
             final boolean isContractCreate,
             final MeterProvider<Counter> gasUsedCounter)
             throws MirrorEvmTransactionException {
-        var result =
-                isContractCreate ? transactionRecord.contractCreateResult() : transactionRecord.contractCallResult();
-        var status = transactionRecord.receiptOrThrow().status();
-        if (result == null) {
+        var results = isContractCreate
+                ? transactionRecords.stream()
+                        .map(TransactionRecord::contractCreateResult)
+                        .toList()
+                : transactionRecords.stream()
+                        .map(TransactionRecord::contractCallResult)
+                        .toList();
+        var statuses = transactionRecords.stream()
+                .map(t -> t.receiptOrThrow().status())
+                .toList();
+        if (results.stream().allMatch(Objects::isNull)) {
             // No result - the call did not reach the EVM and probably failed at pre-checks. No metric to update in this
             // case.
-            throw new MirrorEvmTransactionException(status.protoName(), StringUtils.EMPTY, StringUtils.EMPTY);
+            throw new MirrorEvmTransactionException(
+                    String.join(
+                            " -> ",
+                            statuses.stream().map(ResponseCodeEnum::protoName).toList()),
+                    StringUtils.EMPTY,
+                    StringUtils.EMPTY);
         } else {
-            var errorMessage = getErrorMessage(result).orElse(Bytes.EMPTY);
+            var errorMessage = getErrorMessage(results.getFirst()).orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(errorMessage);
-            updateErrorGasUsedMetric(gasUsedCounter, result.gasUsed(), 1);
-            throw new MirrorEvmTransactionException(status.protoName(), detail, errorMessage.toHexString());
+            updateErrorGasUsedMetric(gasUsedCounter, results.getFirst().gasUsed(), 1);
+            throw new MirrorEvmTransactionException(
+                    String.join(
+                            " -> ",
+                            statuses.stream().map(ResponseCodeEnum::protoName).toList()),
+                    detail,
+                    errorMessage.toHexString());
         }
     }
 
