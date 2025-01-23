@@ -72,8 +72,8 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
     add column if not exists max_custom_fees bytea[];
   ```
   _Note: The field is an array of bytea because it's from the repeated protobuf field `max_custom_fees` in
-  `TransactionBody`. To serialize a repeated field as a whole, a wrapper message is needed. On the other hand,
-  storing it as json will consume much more storage._
+  `TransactionBody` and without a wrapper message, protobuf only supports serializing the elements one at a time. On the
+  other hand, storing it as json will consume much more storage._
 
 ## Importer
 
