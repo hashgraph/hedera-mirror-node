@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -499,7 +499,7 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) {
         PublicKey publicKey = expandedAccountId.getPublicKey();
-        String newSymbol = RandomStringUtils.randomAlphabetic(4).toUpperCase();
+        String newSymbol = RandomStringUtils.secure().nextAlphabetic(4).toUpperCase();
         String memo = getMemo("Update token");
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAdminKey(publicKey)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,7 +140,7 @@ class LoggingFilterTest {
     @SneakyThrows
     void postLargeContent(CapturedOutput output) {
         int maxSize = web3Properties.getMaxPayloadLogSize();
-        var content = RandomStringUtils.random(maxSize + 1, "abcdef0123456789");
+        var content = RandomStringUtils.secure().next(maxSize + 1, "abcdef0123456789");
         var request = new MockHttpServletRequest("POST", "/");
         request.setContent(content.getBytes(StandardCharsets.UTF_8));
         response.setStatus(HttpStatus.OK.value());

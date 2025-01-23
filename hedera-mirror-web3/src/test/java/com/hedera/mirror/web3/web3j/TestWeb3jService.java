@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -85,8 +86,8 @@ public class TestWeb3jService implements Web3jService {
     private Address sender = Address.fromHexString("");
     private boolean isEstimateGas = false;
     private String transactionResult;
-    private String estimatedGas;
-    private long value = 0L;
+    private Supplier<String> estimatedGas;
+    private long value = 0L; // the amount sent to the smart contract, if the contract function is payable.
     private boolean persistContract = true;
     private byte[] contractRuntime;
     private BlockType blockType = BlockType.LATEST;
@@ -101,6 +102,10 @@ public class TestWeb3jService implements Web3jService {
         this.web3j = Web3j.build(this);
     }
 
+    public String getEstimatedGas() {
+        return estimatedGas != null ? estimatedGas.get() : null;
+    }
+
     public void setSender(String sender) {
         this.sender = Address.fromHexString(sender);
     }
@@ -110,10 +115,10 @@ public class TestWeb3jService implements Web3jService {
     }
 
     public void reset() {
+        this.estimatedGas = null;
         this.isEstimateGas = false;
         this.contractRuntime = null;
         this.persistContract = true;
-        this.sender = Address.ZERO;
         this.value = 0L;
         this.sender = Address.fromHexString("");
         this.blockType = BlockType.LATEST;
@@ -211,7 +216,8 @@ public class TestWeb3jService implements Web3jService {
         res.setId(request.getId());
         res.setJsonrpc(request.getJsonrpc());
 
-        transactionResult = estimatedGas = mirrorNodeResult;
+        transactionResult = mirrorNodeResult;
+        estimatedGas = () -> mirrorNodeResult;
         return res;
     }
 
@@ -228,7 +234,7 @@ public class TestWeb3jService implements Web3jService {
             // Then get the estimated gas
             final var serviceParametersForEstimate =
                     serviceParametersForExecutionSingle(transaction, ETH_ESTIMATE_GAS, blockType);
-            estimatedGas = contractExecutionService.processCall(serviceParametersForEstimate);
+            estimatedGas = () -> contractExecutionService.processCall(serviceParametersForEstimate);
         }
 
         final var ethCall = new EthCall();

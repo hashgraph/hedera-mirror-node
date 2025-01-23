@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.ReadableStates;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicLong;
@@ -85,7 +86,7 @@ class SchemaRegistryImplTest {
 
     @BeforeEach
     void initialize() {
-        schemaRegistry = new SchemaRegistryImpl(schemaApplications);
+        schemaRegistry = new SchemaRegistryImpl(List.of(), schemaApplications);
         config = new ConfigProviderImpl().getConfiguration();
     }
 
@@ -117,6 +118,7 @@ class SchemaRegistryImplTest {
                 previousVersion,
                 networkInfo,
                 config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -138,6 +140,7 @@ class SchemaRegistryImplTest {
                 previousVersion,
                 networkInfo,
                 config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -153,13 +156,9 @@ class SchemaRegistryImplTest {
         when(schemaApplications.computeApplications(any(), any(), any(), any()))
                 .thenReturn(EnumSet.of(SchemaApplicationType.STATE_DEFINITIONS, SchemaApplicationType.MIGRATION));
 
-        StateDefinition stateDefinitionSingleton =
-                new StateDefinition("KEY", mockCodec, mockCodec, 123, false, true, false);
-
-        StateDefinition stateDefinitionQueue =
-                new StateDefinition("KEY_QUEUE", mockCodec, mockCodec, 123, false, false, true);
-
-        StateDefinition stateDefinition = new StateDefinition("STATE", mockCodec, mockCodec, 123, true, false, false);
+        var stateDefinitionSingleton = new StateDefinition<>("KEY", mockCodec, mockCodec, 123, false, true, false);
+        var stateDefinitionQueue = new StateDefinition<>("KEY_QUEUE", mockCodec, mockCodec, 123, false, false, true);
+        var stateDefinition = new StateDefinition<>("STATE", mockCodec, mockCodec, 123, true, false, false);
 
         when(schema.statesToCreate(config))
                 .thenReturn(Set.of(stateDefinitionSingleton, stateDefinitionQueue, stateDefinition));
@@ -170,6 +169,7 @@ class SchemaRegistryImplTest {
                 mirrorNodeState,
                 previousVersion,
                 networkInfo,
+                config,
                 config,
                 new HashMap<>(),
                 new AtomicLong(),
@@ -195,6 +195,7 @@ class SchemaRegistryImplTest {
                 previousVersion,
                 networkInfo,
                 config,
+                config,
                 new HashMap<>(),
                 new AtomicLong(),
                 startupNetworks);
@@ -210,6 +211,7 @@ class SchemaRegistryImplTest {
                 readableStates,
                 writableStates,
                 config,
+                config,
                 networkInfo,
                 new AtomicLong(1),
                 EMPTY_MAP,
@@ -222,7 +224,8 @@ class SchemaRegistryImplTest {
             assertThat(c.previousVersion()).isEqualTo(previousVersion);
             assertThat(c.previousStates()).isEqualTo(readableStates);
             assertThat(c.newStates()).isEqualTo(writableStates);
-            assertThat(c.configuration()).isEqualTo(config);
+            assertThat(c.appConfig()).isEqualTo(config);
+            assertThat(c.platformConfig()).isEqualTo(config);
             assertThat(c.genesisNetworkInfo()).isEqualTo(networkInfo);
             assertThat(c.newEntityNum()).isEqualTo(1);
             assertThat(c.sharedValues()).isEqualTo(EMPTY_MAP);

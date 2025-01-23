@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,13 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_5
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
+import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.config.VersionedConfiguration;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -36,6 +39,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -46,6 +50,7 @@ import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
@@ -61,6 +66,9 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
+
+    private static final NavigableMap<Long, SemanticVersion> DEFAULT_EVM_VERSION_MAP =
+            ImmutableSortedMap.of(0L, EVM_VERSION);
 
     @Getter
     private boolean allowTreasuryToOwnNfts = true;
@@ -174,11 +182,23 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             "contracts.chainId",
             chainIdBytes32().toBigInteger().toString(),
             "contracts.maxRefundPercentOfGasLimit",
-            String.valueOf(maxGasRefundPercentage()));
+            String.valueOf(maxGasRefundPercentage()),
+            "contracts.sidecars",
+            "");
+
+    @Getter(lazy = true)
+    private final Map<String, String> transactionProperties = buildTransactionProperties();
+
+    @Getter(lazy = true)
+    private final VersionedConfiguration versionedConfiguration =
+            new ConfigProviderImpl(false, null, getTransactionProperties()).getConfiguration();
 
     @Getter
     @Min(1)
     private int feesTokenTransferUsageMultiplier = 380;
+
+    @Getter
+    private boolean modularizedServices;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
@@ -287,7 +307,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             return network.evmVersions;
         }
 
-        return new TreeMap<>(Map.of(0L, EVM_VERSION));
+        return DEFAULT_EVM_VERSION_MAP;
     }
 
     /**
@@ -312,6 +332,14 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     public int feesTokenTransferUsageMultiplier() {
         return feesTokenTransferUsageMultiplier;
+    }
+
+    private Map<String, String> buildTransactionProperties() {
+        var mirrorNodeProperties = new HashMap<>(properties);
+        mirrorNodeProperties.put("contracts.evm.version", "v" + evmVersion.major() + "." + evmVersion.minor());
+        mirrorNodeProperties.put(
+                "ledger.id", Bytes.wrap(getNetwork().getLedgerId()).toHexString());
+        return Collections.unmodifiableMap(mirrorNodeProperties);
     }
 
     @Getter

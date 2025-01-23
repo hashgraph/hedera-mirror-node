@@ -20,6 +20,7 @@ hedera:
           maxConnections: 10
           statementTimeout: 20000
         port: 5432
+        primaryHost: ""
         sslMode: DISABLE
         tls:
           ca: ""
@@ -69,6 +70,7 @@ hedera:
         bindTimestampRange: false
         maxRecordFileCloseInterval: 10s
         maxRepeatedQueryParameters: 100
+        maxScheduledTransactionConsensusTimestampRange: 89285m
         maxTimestampRange: 7d
         maxTransactionConsensusTimestampRange: 35m
         maxTransactionsTimestampRange: 60d
@@ -137,7 +139,6 @@ hedera:
               { "cache-control": "public, max-age=600" }
             /api/v1/transactions/:transactionId/stateproof:
               { "cache-control": "public, max-age=600" }
-        includeAdminKey: false
         includeHostInLink: false
         limit:
           default: 25

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
@@ -38,6 +39,7 @@ public class ContractExecutionService extends ContractCallService {
 
     private final BinaryGasEstimator binaryGasEstimator;
 
+    @SuppressWarnings("java:S107")
     public ContractExecutionService(
             MeterRegistry meterRegistry,
             BinaryGasEstimator binaryGasEstimator,
@@ -45,8 +47,18 @@ public class ContractExecutionService extends ContractCallService {
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
             RecordFileService recordFileService,
             ThrottleProperties throttleProperties,
-            Bucket gasLimitBucket) {
-        super(mirrorEvmTxProcessor, gasLimitBucket, throttleProperties, meterRegistry, recordFileService, store);
+            Bucket gasLimitBucket,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            TransactionExecutionService transactionExecutionService) {
+        super(
+                mirrorEvmTxProcessor,
+                gasLimitBucket,
+                throttleProperties,
+                meterRegistry,
+                recordFileService,
+                store,
+                mirrorNodeEvmProperties,
+                transactionExecutionService);
         this.binaryGasEstimator = binaryGasEstimator;
     }
 
@@ -60,14 +72,9 @@ public class ContractExecutionService extends ContractCallService {
 
                 Bytes result;
                 if (params.isEstimate()) {
-                    // eth_estimateGas initialization - historical timestamp is Optional.empty()
-                    ctx.initializeStackFrames(store.getStackedStateFrames());
-                    result = estimateGas(params);
+                    result = estimateGas(params, ctx);
                 } else {
                     final var ethCallTxnResult = callContract(params, ctx);
-
-                    validateResult(ethCallTxnResult, params.getCallType());
-
                     result = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
                 }
 
@@ -91,8 +98,8 @@ public class ContractExecutionService extends ContractCallService {
      * 2. Finally, if the first step is successful, a binary search is initiated. The lower bound of the search is the
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
-    private Bytes estimateGas(final ContractExecutionParameters params) {
-        final var processingResult = doProcessCall(params, params.getGas(), true);
+    private Bytes estimateGas(final ContractExecutionParameters params, final ContractCallContext context) {
+        final var processingResult = callContract(params, context);
         validateResult(processingResult, CallType.ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,38 +26,38 @@ import (
 	rosettaAsserter "github.com/coinbase/rosetta-sdk-go/asserter"
 	rosettaClient "github.com/coinbase/rosetta-sdk-go/client"
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 const agent = "hedera-mirror-rosetta-test-bdd-client"
 
-var defaultInitialBalance = hedera.NewHbar(10)
+var defaultInitialBalance = hiero.NewHbar(10)
 
 type Client struct {
-	hederaClient  *hedera.Client
+	hederaClient  *hiero.Client
 	network       *types.NetworkIdentifier
 	offlineClient *rosettaClient.APIClient
 	onlineClient  *rosettaClient.APIClient
 	operators     []Operator
-	privateKeys   map[hedera.AccountID]hedera.PrivateKey
+	privateKeys   map[hiero.AccountID]hiero.PrivateKey
 	dataRetry     retry
 	submitRetry   retry
 }
 
-func (c Client) CreateAccount(initialBalance hedera.Hbar) (*hedera.AccountID, *hedera.PrivateKey, error) {
+func (c Client) CreateAccount(initialBalance hiero.Hbar) (*hiero.AccountID, *hiero.PrivateKey, error) {
 	if initialBalance.AsTinybar() == 0 {
 		initialBalance = defaultInitialBalance
 	}
 
-	sk, err := hedera.PrivateKeyGenerateEd25519()
+	sk, err := hiero.PrivateKeyGenerateEd25519()
 	if err != nil {
 		log.Errorf("Failed to generate private key for new account: %s", err)
 		return nil, nil, err
 	}
 
-	resp, err := hedera.NewAccountCreateTransaction().
+	resp, err := hiero.NewAccountCreateTransaction().
 		SetInitialBalance(initialBalance).
 		SetKey(sk.PublicKey()).
 		Execute(c.hederaClient)
@@ -76,11 +76,11 @@ func (c Client) CreateAccount(initialBalance hedera.Hbar) (*hedera.AccountID, *h
 	return receipt.AccountID, &sk, nil
 }
 
-func (c Client) DeleteAccount(accountId hedera.AccountID, privateKey *hedera.PrivateKey) error {
-	_, err := hedera.NewAccountDeleteTransaction().
+func (c Client) DeleteAccount(accountId hiero.AccountID, privateKey *hiero.PrivateKey) error {
+	_, err := hiero.NewAccountDeleteTransaction().
 		SetAccountID(accountId).
 		SetTransferAccountID(c.operators[0].Id).
-		SetTransactionID(hedera.TransactionIDGenerate(accountId)).
+		SetTransactionID(hiero.TransactionIDGenerate(accountId)).
 		Sign(*privateKey).
 		Execute(c.hederaClient)
 	if err != nil {
@@ -178,7 +178,7 @@ func (c Client) Submit(
 	ctx context.Context,
 	memo string,
 	operations []*types.Operation,
-	signers map[string]hedera.PrivateKey,
+	signers map[string]hiero.PrivateKey,
 ) (string, error) {
 	var txHash string
 
@@ -187,14 +187,14 @@ func (c Client) Submit(
 
 	if signers == nil {
 		operator := c.operators[0]
-		signers = map[string]hedera.PrivateKey{operator.Id.String(): operator.PrivateKey}
+		signers = map[string]hiero.PrivateKey{operator.Id.String(): operator.PrivateKey}
 	} else {
 		for signerId := range signers {
 			if strings.HasPrefix(signerId, "0x") {
 				continue
 			}
 
-			accountId, _ := hedera.AccountIDFromString(signerId)
+			accountId, _ := hiero.AccountIDFromString(signerId)
 			operatorKey, ok := c.privateKeys[accountId]
 			if ok {
 				signers[signerId] = operatorKey
@@ -354,20 +354,20 @@ func NewClient(serverCfg Server, operators []Operator) Client {
 
 	log.Info("Successfully set up rosetta clients for online and offline servers")
 
-	privateKeys := make(map[hedera.AccountID]hedera.PrivateKey)
+	privateKeys := make(map[hiero.AccountID]hiero.PrivateKey)
 	for _, operator := range operators {
 		privateKeys[operator.Id] = operator.PrivateKey
 	}
 
 	// create hedera client
-	var hederaClient *hedera.Client
+	var hederaClient *hiero.Client
 	if len(serverCfg.Network) == 0 {
-		if hederaClient, err = hedera.ClientForName(network.Network); err != nil {
+		if hederaClient, err = hiero.ClientForName(network.Network); err != nil {
 			log.Fatalf("Failed to create client for hedera '%s'", network.Network)
 		}
 		log.Infof("Successfully created client for hedera '%s'", network.Network)
 	} else {
-		hederaClient = hedera.ClientForNetwork(serverCfg.Network)
+		hederaClient = hiero.ClientForNetwork(serverCfg.Network)
 		log.Infof("Successfully created client for custom network '%v'", serverCfg.Network)
 	}
 	hederaClient.SetOperator(operators[0].Id, operators[0].PrivateKey)

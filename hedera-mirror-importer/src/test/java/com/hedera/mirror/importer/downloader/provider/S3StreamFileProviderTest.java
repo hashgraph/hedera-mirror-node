@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
+import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SEPARATOR;
 import static org.awaitility.Awaitility.await;
 import static software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR;
 
@@ -28,6 +29,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.ForkJoinPool;
+import lombok.SneakyThrows;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.jclouds.ContextBuilder;
@@ -46,7 +48,7 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
 
     @Override
     protected String getProviderPathSeparator() {
-        return S3StreamFileProvider.SEPARATOR;
+        return SEPARATOR;
     }
 
     @Override
@@ -55,7 +57,8 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @BeforeEach
-    void setup() throws Exception {
+    @Override
+    void setup() {
         super.setup();
         var s3AsyncClient = S3AsyncClient.builder()
                 .asyncConfiguration(b -> b.advancedOption(FUTURE_COMPLETION_EXECUTOR, ForkJoinPool.commonPool()))
@@ -69,13 +72,14 @@ class S3StreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @Override
-    protected FileCopier createFileCopier(Path dataPath) {
+    protected FileCopier createFileCopier() {
         var fromPath = Path.of("data", "recordstreams", "v6");
         return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
-                .to(properties.getBucketName(), StreamType.RECORD.getPath());
+                .to(properties.getBucketName(), properties.getPathPrefix(), StreamType.RECORD.getPath());
     }
 
-    private void startS3Proxy() throws Exception {
+    @SneakyThrows
+    private void startS3Proxy() {
         Properties properties = new Properties();
         properties.setProperty(
                 "jclouds.filesystem.basedir", dataPath.toAbsolutePath().toString());

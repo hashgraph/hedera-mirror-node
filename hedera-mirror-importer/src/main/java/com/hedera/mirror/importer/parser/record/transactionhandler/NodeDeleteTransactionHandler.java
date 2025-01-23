@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,9 +51,10 @@ class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
     private void parseNode(RecordItem recordItem) {
         if (recordItem.isSuccessful()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
+            var body = recordItem.getTransactionBody().getNodeDelete();
             entityListener.onNode(Node.builder()
                     .deleted(true)
-                    .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
+                    .nodeId(body.getNodeId())
                     .timestampRange(Range.atLeast(consensusTimestamp))
                     .build());
         }

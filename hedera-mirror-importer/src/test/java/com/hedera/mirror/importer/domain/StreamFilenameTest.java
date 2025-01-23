@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.domain;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.common.domain.StreamType;
@@ -46,6 +47,8 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.1Z_Balances.pb.gz, gz, pb, DATA, pb.gz, 2020-06-03T16:45:00.1Z, BALANCE",
         "2020-06-03T16_45_00.1Z.rcd_sig,,  rcd_sig, SIGNATURE, rcd_sig, 2020-06-03T16:45:00.1Z, RECORD",
         "2020-06-03T16_45_00.1Z.rcd,, rcd, DATA, rcd, 2020-06-03T16:45:00.1Z, RECORD",
+        "000000000000000000000000000007647866.blk,, blk, DATA, blk,, BLOCK",
+        "000000000000000000000000000007647866.blk.gz, gz, blk, DATA, blk.gz,, BLOCK"
         // @formatter:on
     })
     void newStreamFile(
@@ -130,6 +133,12 @@ class StreamFilenameTest {
     void getFilenameAfter(String filename, String expected) {
         StreamFilename streamFilename = StreamFilename.from(filename);
         assertThat(streamFilename.getFilenameAfter()).isEqualTo(expected);
+    }
+
+    @Test
+    void getInstantThrows() {
+        var streamFilename = StreamFilename.from("000000000000000000000000000007647866.blk.gz");
+        assertThatThrownBy(streamFilename::getInstant).isInstanceOf(IllegalStateException.class);
     }
 
     @ParameterizedTest

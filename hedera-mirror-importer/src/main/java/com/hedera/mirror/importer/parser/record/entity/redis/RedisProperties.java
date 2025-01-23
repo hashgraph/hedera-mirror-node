@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,12 @@ import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordPa
 import jakarta.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 @Data
 @ConditionOnEntityRecordParser
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.redis")
+@Validated
 public class RedisProperties implements BatchPublisherProperties {
 
     private boolean enabled = true;

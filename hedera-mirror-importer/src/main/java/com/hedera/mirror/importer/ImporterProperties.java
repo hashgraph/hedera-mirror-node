@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.mirror.importer;
 
 import com.hedera.mirror.importer.migration.MigrationProperties;
 import com.hedera.mirror.importer.util.Utility;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -60,6 +61,7 @@ public class ImporterProperties {
     private Path initialAddressBook;
 
     @NotNull
+    @Valid
     private Map<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
 
     @NotBlank

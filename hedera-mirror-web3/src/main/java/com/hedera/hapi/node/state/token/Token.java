@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -185,7 +185,7 @@ public record Token(
             String name,
             String symbol,
             int decimals,
-            Long totalSupply,
+            long totalSupply,
             AccountID treasuryAccountId,
             Key adminKey,
             Key kycKey,
@@ -970,6 +970,35 @@ public record Token(
         if (hasMetadataKey()) {
             ifPresent.accept(metadataKey);
         }
+    }
+
+    /**
+     * @return The custom fees of this token
+     */
+    public List<CustomFee> customFees() {
+        return customFeesSupplier.get();
+    }
+
+    /**
+     * @return The total supply of this token
+     */
+    public long totalSupply() {
+        return totalSupplySupplier.get();
+    }
+
+    /**
+     * @return The id of the account (if any) that the network will attempt to charge for the
+     *                           token's auto-renewal upon expiration
+     */
+    public AccountID autoRenewAccountId() {
+        return autoRenewAccountIdSupplier.get();
+    }
+
+    /**
+     * @return The treasury account id of this token
+     */
+    public AccountID treasuryAccountId() {
+        return treasuryAccountIdSupplier.get();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.hedera.mirror.importer.reader.record;
+
+import static com.hedera.mirror.common.util.DomainUtils.createSha384Digest;
 
 import com.google.common.primitives.Longs;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
@@ -34,7 +36,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
@@ -49,8 +50,8 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
     @Override
     public RecordFile read(StreamFileData streamFileData) {
-        MessageDigest messageDigestFile = createMessageDigest(DIGEST_ALGORITHM);
-        MessageDigest messageDigestMetadata = createMessageDigest(DIGEST_ALGORITHM);
+        MessageDigest messageDigestFile = createSha384Digest();
+        MessageDigest messageDigestMetadata = createSha384Digest();
         String filename = streamFileData.getFilename();
 
         // the first DigestInputStream is for file hash and the second is for metadata hash. Any BufferedInputStream
@@ -86,6 +87,9 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         recordFile.setHapiVersionMajor(vdis.readInt());
         recordFile.setHapiVersionMinor(vdis.readInt());
         recordFile.setHapiVersionPatch(vdis.readInt());
+        recordFile.setSoftwareVersionMajor(recordFile.getHapiVersionMajor());
+        recordFile.setSoftwareVersionMinor(recordFile.getHapiVersionMinor());
+        recordFile.setSoftwareVersionPatch(recordFile.getHapiVersionPatch());
         recordFile.setVersion(VERSION);
     }
 
@@ -146,14 +150,6 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         recordFile.setHash(Hex.encodeHexString(endHashObject.getHash()));
         recordFile.setItems(items);
         recordFile.setPreviousHash(Hex.encodeHexString(startHashObject.getHash()));
-    }
-
-    private MessageDigest createMessageDigest(DigestAlgorithm digestAlgorithm) {
-        try {
-            return MessageDigest.getInstance(digestAlgorithm.getName());
-        } catch (NoSuchAlgorithmException e) {
-            throw new StreamFileReaderException(e);
-        }
     }
 
     private boolean isHashObject(DataInputStream dis, long hashObjectClassId) throws IOException {

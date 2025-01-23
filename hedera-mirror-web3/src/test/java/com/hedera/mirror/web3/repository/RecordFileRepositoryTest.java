@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,23 +40,15 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findEarliest() {
-        var earliest = domainBuilder.recordFile().persist();
+        final var genesisRecordFile =
+                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         domainBuilder.recordFile().persist();
 
-        assertThat(recordFileRepository.findEarliest()).get().isEqualTo(earliest);
+        assertThat(recordFileRepository.findEarliest()).get().isEqualTo(genesisRecordFile);
     }
 
     @Test
-    void findFileHashByIndex() {
-        final var file = domainBuilder.recordFile().persist();
-
-        assertThat(recordFileRepository.findByIndex(file.getIndex()))
-                .map(RecordFile::getHash)
-                .hasValue(file.getHash());
-    }
-
-    @Test
-    void findLatestFile() {
+    void findLatest() {
         domainBuilder.recordFile().persist();
         var latest = domainBuilder.recordFile().persist();
 
@@ -64,7 +56,7 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findRecordFileByIndex() {
+    void findByIndex() {
         domainBuilder.recordFile().persist();
         var latest = domainBuilder.recordFile().persist();
         long blockNumber = latest.getIndex();
@@ -75,13 +67,23 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findRecordFileByIndexNotExists() {
+    void findByIndexNotExists() {
         long nonExistentBlockNumber = 1L;
         assertThat(recordFileRepository.findByIndex(nonExistentBlockNumber)).isEmpty();
     }
 
     @Test
-    void findRecordFileByTimestamp() {
+    void findByIndexRange() {
+        domainBuilder.recordFile().persist();
+        var recordFile2 = domainBuilder.recordFile().persist();
+        var recordFile3 = domainBuilder.recordFile().persist();
+        domainBuilder.recordFile().persist();
+        assertThat(recordFileRepository.findByIndexRange(recordFile2.getIndex(), recordFile3.getIndex()))
+                .containsExactly(recordFile2, recordFile3);
+    }
+
+    @Test
+    void findByTimestamp() {
         var timestamp = domainBuilder.timestamp();
         var recordFile = domainBuilder
                 .recordFile()

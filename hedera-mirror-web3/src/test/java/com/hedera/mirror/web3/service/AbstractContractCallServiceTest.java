@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,23 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -43,6 +52,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
+import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,14 +66,24 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
-@SuppressWarnings("unchecked")
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
+
+    protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
 
     @Resource
     protected TestWeb3jService testWeb3jService;
 
     @Resource
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    @Resource
+    protected State state;
+
+    @Resource
+    protected ContractExecutionService contractExecutionService;
+
+    protected RecordFile genesisRecordFile;
+    protected Entity treasuryEntity;
 
     public static Key getKeyWithDelegatableContractId(final Contract contract) {
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -82,8 +102,23 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     @BeforeEach
-    final void setup() {
-        domainBuilder.recordFile().persist();
+    protected void setup() {
+        // Change this to not be epoch once services fixes config updates for non-genesis flow
+        genesisRecordFile = domainBuilder
+                .recordFile()
+                .customize(f -> f.consensusEnd(0L).consensusStart(0L).index(0L))
+                .persist();
+        treasuryEntity = domainBuilder
+                .entity()
+                .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
+                .persist();
+        domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(
+                                treasuryEntity.getCreatedTimestamp(), treasuryEntity.toEntityId()))
+                        .balance(treasuryEntity.getBalance()))
+                .persist();
         testWeb3jService.reset();
     }
 
@@ -92,17 +127,19 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         testWeb3jService.reset();
     }
 
-    @SuppressWarnings("try")
     protected long gasUsedAfterExecution(final ContractExecutionParameters serviceParameters) {
-        return ContractCallContext.run(ctx -> {
-            ctx.initializeStackFrames(store.getStackedStateFrames());
-            long result = processor
-                    .execute(serviceParameters, serviceParameters.getGas())
-                    .getGasUsed();
+        try {
+            return contractExecutionService.callContract(serviceParameters).getGasUsed();
+        } catch (MirrorEvmTransactionException e) {
+            var result = e.getResult();
 
-            assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
-            return result;
-        });
+            // Some tests expect to fail but still want to capture the gas used
+            if (result != null) {
+                return result.getGasUsed();
+            }
+
+            throw e;
+        }
     }
 
     protected void verifyEthCallAndEstimateGas(
@@ -183,14 +220,99 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 value);
     }
 
+    /**
+     *  Persists entity of type token in the entity db table. Entity table contains properties common for all entities on the network (tokens, accounts, smart contracts, topics)
+     */
     protected Entity tokenEntityPersist() {
         return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+    }
+
+    /**
+     * Persists fungible token in the token db table.
+     * @param tokenEntity The entity from the entity db table related to the token
+     * @param treasuryAccount The account holding the initial token supply
+     */
+    protected Token fungibleTokenPersist(Entity tokenEntity, Entity treasuryAccount) {
+        return domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
+                .persist();
+    }
+
+    /**
+     * Persists non-fungible token in the token db table.
+     * @param tokenEntity The entity from the entity db table related to the token
+     */
+    protected Token nonFungibleTokenPersist(Entity tokenEntity) {
+        return domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+    }
+
+    protected Token nonFungibleTokenPersist(Entity tokenEntity, Entity treasuryAccount) {
+        return domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
+                .persist();
+    }
+
+    /**
+     * The method creates token allowance, which defines the amount of tokens that the owner allows another account (spender) to use on its behalf.
+     * @param amountGranted - initial amount of tokens that the spender is allowed to use on owner's behalf
+     * @param tokenEntity - the token entity the allowance is created for
+     * @param owner - the owner of the token amount that the allowance is created for
+     * @param spenderId - the spender id (another user's id or contract id) that is allowed to spend amountGranted of tokenEntity on owner's behalf
+     * @return TokenAllowance object that is persisted to the database
+     */
+    protected TokenAllowance tokenAllowancePersist(
+            Long amountGranted, Entity tokenEntity, Entity owner, EntityId spenderId) {
+        return domainBuilder
+                .tokenAllowance()
+                .customize(e -> e.owner(owner.getId())
+                        .amount(amountGranted)
+                        .amountGranted(amountGranted)
+                        .spender(spenderId.getId())
+                        .tokenId(tokenEntity.getId()))
+                .persist();
+    }
+
+    /**
+     * This method creates nft allowance for all instances of a specific token type (approvedForAll).
+     * The allowance allows the spender to transfer NFTs on the owner's behalf.
+     * @param token the NFT token for which the allowance is created
+     * @param owner the account owning the NFT
+     * @param spender the account allowed to transfer the NFT on owner's behalf
+     * @param payer the account paying for the allowance creation
+     * @return NftAllowance object that is persisted to the database
+     */
+    protected NftAllowance nftAllowancePersist(Token token, Entity owner, Entity spender, Entity payer) {
+        return domainBuilder
+                .nftAllowance()
+                .customize(a -> a.tokenId(token.getTokenId())
+                        .owner(owner.getId())
+                        .spender(spender.toEntityId().getId())
+                        .payerAccountId(payer.toEntityId())
+                        .approvedForAll(true))
+                .persist();
     }
 
     protected Entity accountEntityPersist() {
         return domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false).balance(1_000_000_000_000L))
+                .customize(e ->
+                        e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(100_000_000_000_000_000L))
+                .persist();
+    }
+
+    protected Entity accountEntityWithEvmAddressPersist() {
+        return domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
                 .persist();
     }
 
@@ -209,8 +331,51 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /**
+     * Creates a non-fungible token instance with a specific serial number(a record in the nft table is persisted).
+     * The instance is tied to a specific token in the token db table.
+     * @param token the token entity that the nft instance is linked to by tokenId
+     * @param nftSerialNumber the unique serial number of the nft instance
+     * @param ownerId the id of the account currently holding the nft
+     * @param spenderId id of the approved spender of the nft
+     */
+    protected Nft nonFungibleTokenInstancePersist(
+            final Token token, Long nftSerialNumber, final EntityId ownerId, final EntityId spenderId) {
+        return domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(token.getTokenId())
+                        .serialNumber(nftSerialNumber)
+                        .accountId(ownerId)
+                        .spender(spenderId))
+                .persist();
+    }
+
+    protected void persistAccountBalance(Entity account, long balance, long timestamp) {
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(timestamp, account.toEntityId()))
+                        .balance(balance))
+                .persist();
+    }
+
+    protected void persistAccountBalance(Entity account, long balance) {
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(account.getCreatedTimestamp(), account.toEntityId()))
+                        .balance(balance))
+                .persist();
+    }
+
+    protected void persistTokenBalance(Entity account, Entity token, long timestamp) {
+        domainBuilder
+                .tokenBalance()
+                .customize(ab -> ab.id(new TokenBalance.Id(timestamp, account.toEntityId(), token.toEntityId()))
+                        .balance(100))
+                .persist();
+    }
+
     protected String getAddressFromEntity(Entity entity) {
-        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
+        return EvmTokenUtils.toAddress(entity.toEntityId()).toHexString();
     }
 
     protected String getAliasFromEntity(Entity entity) {

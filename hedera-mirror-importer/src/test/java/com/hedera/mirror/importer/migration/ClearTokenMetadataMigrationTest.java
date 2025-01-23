@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.repository.RecordFileMigrationTest;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.nio.charset.StandardCharsets;
@@ -43,17 +43,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
+@DisablePartitionMaintenance
 @EnabledIfV1
-@Import(DisablePartitionMaintenanceConfiguration.class)
 @RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.97.1")
-class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
+class ClearTokenMetadataMigrationTest extends RecordFileMigrationTest {
 
     private static final long CREATE = -1;
     private static final Predicate<Token> IS_CURRENT = t -> t.getTimestampUpper() == null;
@@ -202,7 +201,8 @@ class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
                     long consensusEnd = r.build().getConsensusStart() + 10;
                     r.consensusEnd(consensusEnd).hapiVersionMinor(hapiVersionMinor);
                 })
-                .persist();
+                .get();
+        persistRecordFile(recordFile);
         // advance more than 10ns so the next timestamp would not fall into the same record file
         for (int i = 0; i < 12; i++) {
             domainBuilder.timestamp();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ public class RevertTest extends AbstractContractCallServiceTest {
     void testRevertPayable() {
         final var contract = testWeb3jService.deploy(Reverter::deploy);
         meterRegistry.clear();
+        testWeb3jService.setSender(TREASURY_ADDRESS);
 
         final var functionCall = contract.send_revertPayable(BigInteger.ONE);
         assertThatThrownBy(functionCall::send)

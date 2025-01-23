@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,39 +179,6 @@ class ApproveAllowanceLogicTest {
         assertEquals(1, updatedAccount.getCryptoAllowances().size());
         assertEquals(1, updatedAccount.getFungibleTokenAllowances().size());
         assertEquals(1, updatedAccount.getApproveForAllNfts().size());
-    }
-
-    @Test
-    void wipesSerialsWhenApprovedForAll() {
-        givenValidTxnCtx();
-
-        given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
-                .willReturn(payerAccount);
-        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
-                .willReturn(ownerAccount);
-        given(store.getUniqueToken(
-                        new NftId(TOKEN_ID_2.shard(), TOKEN_ID_2.realm(), TOKEN_ID_2.num(), SERIAL_1), OnMissing.THROW))
-                .willReturn(nft1);
-        given(store.getUniqueToken(
-                        new NftId(TOKEN_ID_2.shard(), TOKEN_ID_2.realm(), TOKEN_ID_2.num(), SERIAL_2), OnMissing.THROW))
-                .willReturn(nft2);
-
-        final var accountsChanged = new TreeMap<Long, Account>();
-        subject.approveAllowance(
-                store,
-                accountsChanged,
-                new TreeMap<>(),
-                op.getCryptoAllowancesList(),
-                op.getTokenAllowancesList(),
-                op.getNftAllowancesList(),
-                fromGrpcAccount(PAYER_ID).asGrpcAccount());
-
-        final var updatedAccount = accountsChanged.get(ownerAccount.getId().num());
-        assertEquals(1, updatedAccount.getCryptoAllowances().size());
-        assertEquals(1, updatedAccount.getFungibleTokenAllowances().size());
-        assertEquals(1, updatedAccount.getApproveForAllNfts().size());
-
-        verify(store).updateAccount(updatedAccount);
     }
 
     @Test

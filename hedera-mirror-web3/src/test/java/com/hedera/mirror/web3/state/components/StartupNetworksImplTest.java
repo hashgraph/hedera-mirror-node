@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@ package com.hedera.mirror.web3.state.components;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.node.internal.network.Network;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +36,8 @@ class StartupNetworksImplTest {
 
     @Test
     void testGenesisNetworkOrThrow() {
-        assertThat(startupNetworks.genesisNetworkOrThrow()).isEqualTo(Network.DEFAULT);
+        assertThat(startupNetworks.genesisNetworkOrThrow(mock(Configuration.class)))
+                .isEqualTo(Network.DEFAULT);
     }
 
     @Test

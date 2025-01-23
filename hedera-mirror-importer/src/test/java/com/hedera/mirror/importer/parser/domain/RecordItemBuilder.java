@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -695,7 +695,6 @@ public class RecordItemBuilder {
     }
 
     public Builder<NodeUpdateTransactionBody.Builder> nodeUpdate() {
-        var nodeId = id();
         var builder = NodeUpdateTransactionBody.newBuilder()
                 .setAccountId(accountId())
                 .setAdminKey(key())
@@ -703,15 +702,14 @@ public class RecordItemBuilder {
                 .setGossipCaCertificate(BytesValue.of(bytes(4)))
                 .addGossipEndpoint(gossipEndpoint())
                 .setGrpcCertificateHash(BytesValue.of(bytes(48)))
-                .setNodeId(nodeId)
+                .setNodeId(id())
                 .addServiceEndpoint(serviceEndpoint());
-        return new Builder<>(TransactionType.NODEUPDATE, builder).receipt(r -> r.setNodeId(nodeId));
+        return new Builder<>(TransactionType.NODEUPDATE, builder);
     }
 
     public Builder<NodeDeleteTransactionBody.Builder> nodeDelete() {
-        var nodeId = id();
-        var builder = NodeDeleteTransactionBody.newBuilder().setNodeId(nodeId);
-        return new Builder<>(TransactionType.NODEDELETE, builder).receipt(r -> r.setNodeId(nodeId));
+        var builder = NodeDeleteTransactionBody.newBuilder().setNodeId(id());
+        return new Builder<>(TransactionType.NODEDELETE, builder);
     }
 
     @SuppressWarnings("deprecation")
@@ -1266,7 +1264,7 @@ public class RecordItemBuilder {
     }
 
     public String text(int characters) {
-        return RandomStringUtils.randomAlphanumeric(characters);
+        return RandomStringUtils.secure().nextAlphanumeric(characters);
     }
 
     public Timestamp timestamp() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,15 +23,15 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/cucumber/godog"
 	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
 type cryptoFeature struct {
 	*baseFeature
 	aliasAccountId types2.AccountId
-	newAccountId   *hedera.AccountID // new account created during test
-	newAccountKey  *hedera.PrivateKey
+	newAccountId   *hiero.AccountID // new account created during test
+	newAccountKey  *hiero.PrivateKey
 }
 
 func (c *cryptoFeature) createCryptoAccount(ctx context.Context) error {
@@ -74,7 +74,7 @@ func (c *cryptoFeature) verifyCryptoCreateTransaction(ctx context.Context) error
 	}
 
 	accountIdStr := transaction.Metadata["entity_id"].(string)
-	accountId, err := hedera.AccountIDFromString(accountIdStr)
+	accountId, err := hiero.AccountIDFromString(accountIdStr)
 	if err != nil {
 		log.Errorf("Invalid account id: %s", accountIdStr)
 		return err
@@ -135,7 +135,7 @@ func (c *cryptoFeature) verifyCryptoTransferToAliasTransaction(ctx context.Conte
 		return err
 	}
 	accountIdStr := resp.Metadata["account_id"].(string)
-	accountId, err := hedera.AccountIDFromString(accountIdStr)
+	accountId, err := hiero.AccountIDFromString(accountIdStr)
 	if err != nil {
 		log.Errorf("Invalid account id: %s", accountIdStr)
 		return err
@@ -162,7 +162,7 @@ func (c *cryptoFeature) transferFromAlias(ctx context.Context) error {
 		},
 	}
 
-	return c.submit(ctx, "", operations, map[string]hedera.PrivateKey{
+	return c.submit(ctx, "", operations, map[string]hiero.PrivateKey{
 		c.aliasAccountId.String(): *c.newAccountKey,
 	})
 }
@@ -253,7 +253,7 @@ func (c *cryptoFeature) cleanup(ctx context.Context, s *godog.Scenario, err erro
 }
 
 func (c *cryptoFeature) generateKey() error {
-	sk, err := hedera.PrivateKeyGenerateEd25519()
+	sk, err := hiero.PrivateKeyGenerateEd25519()
 	if err != nil {
 		log.Errorf("Failed to generate private key for new account: %v", err)
 		return err

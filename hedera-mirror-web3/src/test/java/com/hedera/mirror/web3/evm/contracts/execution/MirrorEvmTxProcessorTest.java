@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,7 +143,6 @@ class MirrorEvmTxProcessorTest {
     private TokenAccessor tokenAccessor;
 
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
-    private SemanticVersion mcpVersion;
 
     static Stream<Arguments> provideIsEstimateParameters() {
         return Stream.of(Arguments.of(true), Arguments.of(false));
@@ -168,30 +167,15 @@ class MirrorEvmTxProcessorTest {
 
         final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps = Map.of(
                 EVM_VERSION_0_30,
-                () -> {
-                    mcpVersion = EVM_VERSION_0_30;
-                    return new MessageCallProcessor(v30, new PrecompileContractRegistry());
-                },
+                () -> new MessageCallProcessor(v30, new PrecompileContractRegistry()),
                 EVM_VERSION_0_34,
-                () -> {
-                    mcpVersion = EVM_VERSION_0_34;
-                    return new MessageCallProcessor(v34, new PrecompileContractRegistry());
-                },
+                () -> new MessageCallProcessor(v34, new PrecompileContractRegistry()),
                 EVM_VERSION_0_38,
-                () -> {
-                    mcpVersion = EVM_VERSION_0_38;
-                    return new MessageCallProcessor(v38, new PrecompileContractRegistry());
-                },
+                () -> new MessageCallProcessor(v38, new PrecompileContractRegistry()),
                 EVM_VERSION_0_46,
-                () -> {
-                    mcpVersion = EVM_VERSION_0_46;
-                    return new MessageCallProcessor(v38, new PrecompileContractRegistry());
-                },
+                () -> new MessageCallProcessor(v38, new PrecompileContractRegistry()),
                 EVM_VERSION,
-                () -> {
-                    mcpVersion = EVM_VERSION;
-                    return new MessageCallProcessor(v50, new PrecompileContractRegistry());
-                });
+                () -> new MessageCallProcessor(v50, new PrecompileContractRegistry()));
         Map<SemanticVersion, Provider<ContractCreationProcessor>> processorsMap = Map.of(
                 EVM_VERSION_0_30, () -> new ContractCreationProcessor(gasCalculator, v30, true, List.of(), 1),
                 EVM_VERSION_0_34, () -> new ContractCreationProcessor(gasCalculator, v34, true, List.of(), 1),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -84,11 +85,17 @@ class BackfillAndDeduplicateBalanceMigrationTest
 
     private final TokenBalanceRepository tokenBalanceRepository;
 
+    @BeforeEach
+    void setup() {
+        migration.migrationProperties.setEnabled(true);
+    }
+
     @AfterEach
     void teardown() {
         addBalanceDeduplicateFunctions();
         jdbcTemplate.execute(REVERT_DDL);
-        getMigrationProperties().getParams().clear();
+        migration.migrationProperties.setEnabled(false);
+        migration.migrationProperties.getParams().clear();
     }
 
     @Test
@@ -456,7 +463,7 @@ class BackfillAndDeduplicateBalanceMigrationTest
     @Test
     void minFrequency() {
         // given min frequency is set to 6 minutes
-        getMigrationProperties().getParams().put("minFrequency", "6m");
+        migration.migrationProperties.getParams().put("minFrequency", "6m");
 
         var treasury = EntityId.of(TREASURY);
         var account = EntityId.of(domainBuilder.id() + TREASURY);
@@ -605,10 +612,6 @@ class BackfillAndDeduplicateBalanceMigrationTest
                     ps.setLong(3, tokenBalance.getId().getConsensusTimestamp());
                     ps.setLong(4, tokenBalance.getId().getTokenId().getId());
                 });
-    }
-
-    private MigrationProperties getMigrationProperties() {
-        return importerProperties.getMigration().get("backfillAndDeduplicateBalanceMigration");
     }
 
     @SneakyThrows

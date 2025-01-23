@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,6 +129,7 @@ import java.util.stream.Collectors;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -770,7 +771,7 @@ public class ServicesConfiguration {
     HederaExtCodeHashOperationV038 hederaExtCodeHashOperationV038(
             final GasCalculator gasCalculator,
             final Predicate<Address> strictSystemAccountDetector,
-            BiPredicate<Address, MessageFrame> addressValidator,
+            @Qualifier("addressValidator") BiPredicate<Address, MessageFrame> addressValidator,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new HederaExtCodeHashOperationV038(
                 gasCalculator, addressValidator, strictSystemAccountDetector, mirrorNodeEvmProperties);
@@ -778,7 +779,8 @@ public class ServicesConfiguration {
 
     @Bean
     HederaExtCodeHashOperation hederaExtCodeHashOperation(
-            final GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> preV38AddressValidator) {
+            final GasCalculator gasCalculator,
+            @Qualifier("preV38AddressValidator") BiPredicate<Address, MessageFrame> preV38AddressValidator) {
         return new HederaExtCodeHashOperation(gasCalculator, preV38AddressValidator);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ class TopicMessageBuilder extends AbstractEntityBuilder<TopicMessage, TopicMessa
     }
 
     @Override
-    protected TopicMessage.TopicMessageBuilder getEntityBuilder() {
+    protected TopicMessage.TopicMessageBuilder getEntityBuilder(SpecBuilderContext builderContext) {
         return TopicMessage.builder()
                 .message("message".getBytes(StandardCharsets.UTF_8))
                 .payerAccountId(EntityId.of(3L))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package com.hedera.mirror.importer.domain;
 
+import static com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader.VERSION;
+
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
 import java.util.Comparator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -87,7 +88,7 @@ public class StreamFileSignature implements Comparable<StreamFileSignature> {
     }
 
     private boolean hasCompressedDataFile() {
-        return version >= ProtoSignatureFileReader.VERSION || filename.isCompressed();
+        return version >= VERSION || filename.isCompressed();
     }
 
     public enum SignatureStatus {

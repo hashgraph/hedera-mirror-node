@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -54,9 +53,6 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 class PublishMetricsTest {
 
     private static final String SCENARIO_NAME = "test";
-
-    @Mock
-    private NodeSupplier nodeSupplier;
 
     private MeterRegistry meterRegistry;
     private PublishMetrics publishMetrics;
@@ -68,7 +64,7 @@ class PublishMetricsTest {
     void setup() {
         meterRegistry = new SimpleMeterRegistry();
         publishProperties = new PublishProperties();
-        publishMetrics = new PublishMetrics(meterRegistry, nodeSupplier, publishProperties);
+        publishMetrics = new PublishMetrics(meterRegistry, publishProperties);
 
         PublishScenarioProperties publishScenarioProperties = new PublishScenarioProperties();
         publishScenarioProperties.setName(SCENARIO_NAME);

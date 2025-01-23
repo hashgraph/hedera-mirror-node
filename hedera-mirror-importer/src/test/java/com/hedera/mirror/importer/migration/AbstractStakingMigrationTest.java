@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,17 @@ package com.hedera.mirror.importer.migration;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
-import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.repository.RecordFileMigrationTest;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.util.Arrays;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.RowMapper;
 
-@Import(DisablePartitionMaintenanceConfiguration.class)
-abstract class AbstractStakingMigrationTest extends ImporterIntegrationTest {
+@DisablePartitionMaintenance
+abstract class AbstractStakingMigrationTest extends RecordFileMigrationTest {
 
     private static final RowMapper<Entity> ENTITY_ROW_MAPPER = rowMapper(Entity.class);
 

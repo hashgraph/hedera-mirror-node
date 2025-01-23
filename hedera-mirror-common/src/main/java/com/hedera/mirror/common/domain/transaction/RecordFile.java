@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,6 +112,10 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String previousHash;
 
+    private Long roundEnd;
+
+    private Long roundStart;
+
     private int sidecarCount;
 
     @Builder.Default
@@ -122,6 +126,10 @@ public class RecordFile implements StreamFile<RecordItem> {
     private Collection<SidecarFile> sidecars = List.of();
 
     private Integer size;
+
+    private Integer softwareVersionMajor;
+    private Integer softwareVersionMinor;
+    private Integer softwareVersionPatch;
 
     private int version;
 

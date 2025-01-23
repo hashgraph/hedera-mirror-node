@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,20 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.state.core.MapReadableStates;
 import com.hedera.mirror.web3.state.core.MapWritableKVState;
 import com.hedera.mirror.web3.state.core.MapWritableStates;
+import com.hedera.mirror.web3.state.keyvalue.AccountReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.AirdropsReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.ContractBytecodeReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.ContractStorageReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.FileReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.NftReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.TokenReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.TokenRelationshipReadableKVState;
+import com.hedera.mirror.web3.state.singleton.DefaultSingleton;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
@@ -44,7 +55,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,6 +103,9 @@ class MirrorNodeStateTest {
     private ServiceMigrator serviceMigrator;
 
     @Mock
+    private MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    @Mock
     private NetworkInfo networkInfo;
 
     @Mock
@@ -121,91 +134,104 @@ class MirrorNodeStateTest {
 
     @Test
     void testAddService() {
-        when(fileReadableKVState.getStateKey()).thenReturn("FILES");
-        when(accountReadableKVState.getStateKey()).thenReturn("ACCOUNTS");
-        when(airdropsReadableKVState.getStateKey()).thenReturn("PENDING_AIRDROPS");
-        when(aliasesReadableKVState.getStateKey()).thenReturn("ALIASES");
-        when(contractBytecodeReadableKVState.getStateKey()).thenReturn("BYTECODE");
-        when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
+        when(fileReadableKVState.getStateKey()).thenReturn(FileReadableKVState.KEY);
+        when(accountReadableKVState.getStateKey()).thenReturn(AccountReadableKVState.KEY);
+        when(airdropsReadableKVState.getStateKey()).thenReturn(AirdropsReadableKVState.KEY);
+        when(aliasesReadableKVState.getStateKey()).thenReturn(AliasesReadableKVState.KEY);
+        when(contractBytecodeReadableKVState.getStateKey()).thenReturn(ContractBytecodeReadableKVState.KEY);
+        when(contractStorageReadableKVState.getStateKey()).thenReturn(ContractStorageReadableKVState.KEY);
 
-        assertThat(mirrorNodeState.getReadableStates("NEW").contains("FILES")).isFalse();
-        final var newState =
-                mirrorNodeState.addService("NEW", new HashMap<>(Map.of("FILES", Map.of("FILES", fileReadableKVState))));
-        assertThat(newState.getReadableStates("NEW").contains("FILES")).isTrue();
+        assertThat(mirrorNodeState.getReadableStates("NEW").contains(FileReadableKVState.KEY))
+                .isFalse();
+        final var newState = mirrorNodeState.addService(
+                "NEW",
+                new HashMap<>(Map.of(FileReadableKVState.KEY, Map.of(FileReadableKVState.KEY, fileReadableKVState))));
+        assertThat(newState.getReadableStates("NEW").contains(FileReadableKVState.KEY))
+                .isTrue();
     }
 
     @Test
     void testRemoveService() {
-        when(accountReadableKVState.getStateKey()).thenReturn("ACCOUNTS");
-        when(airdropsReadableKVState.getStateKey()).thenReturn("PENDING_AIRDROPS");
-        when(aliasesReadableKVState.getStateKey()).thenReturn("ALIASES");
-        when(contractBytecodeReadableKVState.getStateKey()).thenReturn("BYTECODE");
-        when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
+        when(accountReadableKVState.getStateKey()).thenReturn(AccountReadableKVState.KEY);
+        when(airdropsReadableKVState.getStateKey()).thenReturn(AirdropsReadableKVState.KEY);
+        when(aliasesReadableKVState.getStateKey()).thenReturn(AliasesReadableKVState.KEY);
+        when(contractBytecodeReadableKVState.getStateKey()).thenReturn(ContractBytecodeReadableKVState.KEY);
+        when(contractStorageReadableKVState.getStateKey()).thenReturn(ContractStorageReadableKVState.KEY);
 
         final var testStates = new HashMap<>(Map.of(
-                "BYTECODE", Map.of("BYTECODE", contractBytecodeReadableKVState),
-                "STORAGE", Map.of("STORAGE", contractStorageReadableKVState)));
+                ContractBytecodeReadableKVState.KEY,
+                Map.of(ContractBytecodeReadableKVState.KEY, contractBytecodeReadableKVState),
+                ContractStorageReadableKVState.KEY,
+                Map.of(ContractStorageReadableKVState.KEY, contractStorageReadableKVState)));
         final var newState = mirrorNodeState.addService("NEW", testStates);
-        assertThat(newState.getReadableStates("NEW").contains("BYTECODE")).isTrue();
-        assertThat(newState.getReadableStates("NEW").contains("STORAGE")).isTrue();
-        newState.removeServiceState("NEW", "BYTECODE");
-        assertThat(newState.getReadableStates("NEW").contains("BYTECODE")).isFalse();
-        assertThat(newState.getReadableStates("NEW").contains("STORAGE")).isTrue();
+        assertThat(newState.getReadableStates("NEW").contains(ContractBytecodeReadableKVState.KEY))
+                .isTrue();
+        assertThat(newState.getReadableStates("NEW").contains(ContractStorageReadableKVState.KEY))
+                .isTrue();
+        newState.removeServiceState("NEW", ContractBytecodeReadableKVState.KEY);
+        assertThat(newState.getReadableStates("NEW").contains(ContractBytecodeReadableKVState.KEY))
+                .isFalse();
+        assertThat(newState.getReadableStates("NEW").contains(ContractStorageReadableKVState.KEY))
+                .isTrue();
     }
 
     @Test
     void testGetReadableStatesForFileService() {
-        when(fileReadableKVState.getStateKey()).thenReturn("FILES");
-        when(accountReadableKVState.getStateKey()).thenReturn("ACCOUNTS");
-        when(airdropsReadableKVState.getStateKey()).thenReturn("PENDING_AIRDROPS");
-        when(aliasesReadableKVState.getStateKey()).thenReturn("ALIASES");
-        when(contractBytecodeReadableKVState.getStateKey()).thenReturn("BYTECODE");
-        when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
+        when(fileReadableKVState.getStateKey()).thenReturn(FileReadableKVState.KEY);
+        when(accountReadableKVState.getStateKey()).thenReturn(AccountReadableKVState.KEY);
+        when(airdropsReadableKVState.getStateKey()).thenReturn(AirdropsReadableKVState.KEY);
+        when(aliasesReadableKVState.getStateKey()).thenReturn(AliasesReadableKVState.KEY);
+        when(contractBytecodeReadableKVState.getStateKey()).thenReturn(ContractBytecodeReadableKVState.KEY);
+        when(contractStorageReadableKVState.getStateKey()).thenReturn(ContractStorageReadableKVState.KEY);
 
         final var readableStates = mirrorNodeState.getReadableStates(FileService.NAME);
-        assertThat(readableStates).isEqualTo(new MapReadableStates(Map.of("FILES", fileReadableKVState)));
+        assertThat(readableStates)
+                .isEqualTo(new MapReadableStates(Map.of(FileReadableKVState.KEY, fileReadableKVState)));
     }
 
     @Test
     void testGetReadableStatesForContractService() {
-        when(accountReadableKVState.getStateKey()).thenReturn("ACCOUNTS");
-        when(airdropsReadableKVState.getStateKey()).thenReturn("PENDING_AIRDROPS");
-        when(aliasesReadableKVState.getStateKey()).thenReturn("ALIASES");
-        when(contractBytecodeReadableKVState.getStateKey()).thenReturn("BYTECODE");
-        when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
+        when(accountReadableKVState.getStateKey()).thenReturn(AccountReadableKVState.KEY);
+        when(airdropsReadableKVState.getStateKey()).thenReturn(AirdropsReadableKVState.KEY);
+        when(aliasesReadableKVState.getStateKey()).thenReturn(AliasesReadableKVState.KEY);
+        when(contractBytecodeReadableKVState.getStateKey()).thenReturn(ContractBytecodeReadableKVState.KEY);
+        when(contractStorageReadableKVState.getStateKey()).thenReturn(ContractStorageReadableKVState.KEY);
 
         final var readableStates = mirrorNodeState.getReadableStates(ContractService.NAME);
         assertThat(readableStates)
                 .isEqualTo(new MapReadableStates(Map.of(
-                        "BYTECODE", contractBytecodeReadableKVState, "STORAGE", contractStorageReadableKVState)));
+                        ContractBytecodeReadableKVState.KEY,
+                        contractBytecodeReadableKVState,
+                        ContractStorageReadableKVState.KEY,
+                        contractStorageReadableKVState)));
     }
 
     @Test
     void testGetReadableStatesForTokenService() {
-        when(accountReadableKVState.getStateKey()).thenReturn("ACCOUNTS");
-        when(airdropsReadableKVState.getStateKey()).thenReturn("PENDING_AIRDROPS");
-        when(aliasesReadableKVState.getStateKey()).thenReturn("ALIASES");
-        when(nftReadableKVState.getStateKey()).thenReturn("NFTS");
-        when(tokenReadableKVState.getStateKey()).thenReturn("TOKENS");
-        when(tokenRelationshipReadableKVState.getStateKey()).thenReturn("TOKEN_RELS");
-        when(contractBytecodeReadableKVState.getStateKey()).thenReturn("BYTECODE");
-        when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
-        when(fileReadableKVState.getStateKey()).thenReturn("FILES");
+        when(accountReadableKVState.getStateKey()).thenReturn(AccountReadableKVState.KEY);
+        when(airdropsReadableKVState.getStateKey()).thenReturn(AirdropsReadableKVState.KEY);
+        when(aliasesReadableKVState.getStateKey()).thenReturn(AliasesReadableKVState.KEY);
+        when(nftReadableKVState.getStateKey()).thenReturn(NftReadableKVState.KEY);
+        when(tokenReadableKVState.getStateKey()).thenReturn(TokenReadableKVState.KEY);
+        when(tokenRelationshipReadableKVState.getStateKey()).thenReturn(TokenRelationshipReadableKVState.KEY);
+        when(contractBytecodeReadableKVState.getStateKey()).thenReturn(ContractBytecodeReadableKVState.KEY);
+        when(contractStorageReadableKVState.getStateKey()).thenReturn(ContractStorageReadableKVState.KEY);
+        when(fileReadableKVState.getStateKey()).thenReturn(FileReadableKVState.KEY);
 
         final var readableStates = mirrorNodeState.getReadableStates(TokenService.NAME);
         assertThat(readableStates)
                 .isEqualTo(new MapReadableStates(Map.of(
-                        "ACCOUNTS",
+                        AccountReadableKVState.KEY,
                         accountReadableKVState,
-                        "PENDING_AIRDROPS",
+                        AirdropsReadableKVState.KEY,
                         airdropsReadableKVState,
-                        "ALIASES",
+                        AliasesReadableKVState.KEY,
                         aliasesReadableKVState,
-                        "NFTS",
+                        NftReadableKVState.KEY,
                         nftReadableKVState,
-                        "TOKENS",
+                        TokenReadableKVState.KEY,
                         tokenReadableKVState,
-                        "TOKEN_RELS",
+                        TokenRelationshipReadableKVState.KEY,
                         tokenRelationshipReadableKVState)));
     }
 
@@ -217,10 +243,13 @@ class MirrorNodeStateTest {
     @Test
     void testGetReadableStatesWithSingleton() {
         final var stateWithSingleton = buildStateObject();
-        stateWithSingleton.addService(EntityIdService.NAME, Map.of("EntityId", new AtomicReference<>(1L)));
+        final var key = "EntityId";
+        final var singleton = new DefaultSingleton(key);
+        singleton.set(1L);
+        stateWithSingleton.addService(EntityIdService.NAME, Map.of(key, singleton));
         final var readableStates = stateWithSingleton.getReadableStates(EntityIdService.NAME);
-        assertThat(readableStates.contains("EntityId")).isTrue();
-        assertThat(readableStates.getSingleton("EntityId").get()).isEqualTo(1L);
+        assertThat(readableStates.contains(key)).isTrue();
+        assertThat(readableStates.getSingleton(key).get()).isEqualTo(1L);
     }
 
     @Test
@@ -235,85 +264,99 @@ class MirrorNodeStateTest {
 
     @Test
     void testGetWritableStatesForFileService() {
-        when(fileReadableKVState.getStateKey()).thenReturn("FILES");
-        when(accountReadableKVState.getStateKey()).thenReturn("ACCOUNTS");
-        when(airdropsReadableKVState.getStateKey()).thenReturn("PENDING_AIRDROPS");
-        when(aliasesReadableKVState.getStateKey()).thenReturn("ALIASES");
-        when(contractBytecodeReadableKVState.getStateKey()).thenReturn("BYTECODE");
-        when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
+        when(fileReadableKVState.getStateKey()).thenReturn(FileReadableKVState.KEY);
+        when(accountReadableKVState.getStateKey()).thenReturn(AccountReadableKVState.KEY);
+        when(airdropsReadableKVState.getStateKey()).thenReturn(AirdropsReadableKVState.KEY);
+        when(aliasesReadableKVState.getStateKey()).thenReturn(AliasesReadableKVState.KEY);
+        when(contractBytecodeReadableKVState.getStateKey()).thenReturn(ContractBytecodeReadableKVState.KEY);
+        when(contractStorageReadableKVState.getStateKey()).thenReturn(ContractStorageReadableKVState.KEY);
 
         final var writableStates = mirrorNodeState.getWritableStates(FileService.NAME);
         final var readableStates = mirrorNodeState.getReadableStates(FileService.NAME);
         assertThat(writableStates)
-                .isEqualTo(new MapWritableStates(
-                        Map.of("FILES", new MapWritableKVState<>("FILES", readableStates.get("FILES")))));
+                .isEqualTo(new MapWritableStates(Map.of(
+                        FileReadableKVState.KEY,
+                        new MapWritableKVState<>(
+                                FileReadableKVState.KEY, readableStates.get(FileReadableKVState.KEY)))));
     }
 
     @Test
     void testGetWritableStatesForFileServiceWithListeners() {
         when(listener.stateTypes()).thenReturn(Set.of(StateType.MAP));
-        when(fileReadableKVState.getStateKey()).thenReturn("FILES");
-        when(accountReadableKVState.getStateKey()).thenReturn("ACCOUNTS");
-        when(airdropsReadableKVState.getStateKey()).thenReturn("PENDING_AIRDROPS");
-        when(aliasesReadableKVState.getStateKey()).thenReturn("ALIASES");
-        when(contractBytecodeReadableKVState.getStateKey()).thenReturn("BYTECODE");
-        when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
+        when(fileReadableKVState.getStateKey()).thenReturn(FileReadableKVState.KEY);
+        when(accountReadableKVState.getStateKey()).thenReturn(AccountReadableKVState.KEY);
+        when(airdropsReadableKVState.getStateKey()).thenReturn(AirdropsReadableKVState.KEY);
+        when(aliasesReadableKVState.getStateKey()).thenReturn(AliasesReadableKVState.KEY);
+        when(contractBytecodeReadableKVState.getStateKey()).thenReturn(ContractBytecodeReadableKVState.KEY);
+        when(contractStorageReadableKVState.getStateKey()).thenReturn(ContractStorageReadableKVState.KEY);
 
         mirrorNodeState.registerCommitListener(listener);
 
         final var writableStates = mirrorNodeState.getWritableStates(FileService.NAME);
         final var readableStates = mirrorNodeState.getReadableStates(FileService.NAME);
         assertThat(writableStates)
-                .isEqualTo(new MapWritableStates(
-                        Map.of("FILES", new MapWritableKVState<>("FILES", readableStates.get("FILES")))));
+                .isEqualTo(new MapWritableStates(Map.of(
+                        FileReadableKVState.KEY,
+                        new MapWritableKVState<>(
+                                FileReadableKVState.KEY, readableStates.get(FileReadableKVState.KEY)))));
     }
 
     @Test
     void testGetWritableStatesForContractService() {
-        when(accountReadableKVState.getStateKey()).thenReturn("ACCOUNTS");
-        when(airdropsReadableKVState.getStateKey()).thenReturn("PENDING_AIRDROPS");
-        when(aliasesReadableKVState.getStateKey()).thenReturn("ALIASES");
-        when(contractBytecodeReadableKVState.getStateKey()).thenReturn("BYTECODE");
-        when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
+        when(accountReadableKVState.getStateKey()).thenReturn(AccountReadableKVState.KEY);
+        when(airdropsReadableKVState.getStateKey()).thenReturn(AirdropsReadableKVState.KEY);
+        when(aliasesReadableKVState.getStateKey()).thenReturn(AliasesReadableKVState.KEY);
+        when(contractBytecodeReadableKVState.getStateKey()).thenReturn(ContractBytecodeReadableKVState.KEY);
+        when(contractStorageReadableKVState.getStateKey()).thenReturn(ContractStorageReadableKVState.KEY);
 
         final var writableStates = mirrorNodeState.getWritableStates(ContractService.NAME);
         final var readableStates = mirrorNodeState.getReadableStates(ContractService.NAME);
         assertThat(writableStates)
                 .isEqualTo(new MapWritableStates(Map.of(
-                        "BYTECODE",
-                        new MapWritableKVState<>("BYTECODE", readableStates.get("BYTECODE")),
-                        "STORAGE",
-                        new MapWritableKVState<>("STORAGE", readableStates.get("STORAGE")))));
+                        ContractBytecodeReadableKVState.KEY,
+                        new MapWritableKVState<>(
+                                ContractBytecodeReadableKVState.KEY,
+                                readableStates.get(ContractBytecodeReadableKVState.KEY)),
+                        ContractStorageReadableKVState.KEY,
+                        new MapWritableKVState<>(
+                                ContractStorageReadableKVState.KEY,
+                                readableStates.get(ContractStorageReadableKVState.KEY)))));
     }
 
     @Test
     void testGetWritableStatesForTokenService() {
-        when(accountReadableKVState.getStateKey()).thenReturn("ACCOUNTS");
-        when(airdropsReadableKVState.getStateKey()).thenReturn("PENDING_AIRDROPS");
-        when(aliasesReadableKVState.getStateKey()).thenReturn("ALIASES");
-        when(nftReadableKVState.getStateKey()).thenReturn("NFTS");
-        when(tokenReadableKVState.getStateKey()).thenReturn("TOKENS");
-        when(tokenRelationshipReadableKVState.getStateKey()).thenReturn("TOKEN_RELS");
-        when(contractBytecodeReadableKVState.getStateKey()).thenReturn("BYTECODE");
-        when(contractStorageReadableKVState.getStateKey()).thenReturn("STORAGE");
-        when(fileReadableKVState.getStateKey()).thenReturn("FILES");
+        when(accountReadableKVState.getStateKey()).thenReturn(AccountReadableKVState.KEY);
+        when(airdropsReadableKVState.getStateKey()).thenReturn(AirdropsReadableKVState.KEY);
+        when(aliasesReadableKVState.getStateKey()).thenReturn(AliasesReadableKVState.KEY);
+        when(nftReadableKVState.getStateKey()).thenReturn(NftReadableKVState.KEY);
+        when(tokenReadableKVState.getStateKey()).thenReturn(TokenReadableKVState.KEY);
+        when(tokenRelationshipReadableKVState.getStateKey()).thenReturn(TokenRelationshipReadableKVState.KEY);
+        when(contractBytecodeReadableKVState.getStateKey()).thenReturn(ContractBytecodeReadableKVState.KEY);
+        when(contractStorageReadableKVState.getStateKey()).thenReturn(ContractStorageReadableKVState.KEY);
+        when(fileReadableKVState.getStateKey()).thenReturn(FileReadableKVState.KEY);
 
         final var writableStates = mirrorNodeState.getWritableStates(TokenService.NAME);
         final var readableStates = mirrorNodeState.getReadableStates(TokenService.NAME);
         assertThat(writableStates)
                 .isEqualTo(new MapWritableStates(Map.of(
-                        "ACCOUNTS",
-                        new MapWritableKVState<>("ACCOUNTS", readableStates.get("ACCOUNTS")),
-                        "PENDING_AIRDROPS",
-                        new MapWritableKVState<>("PENDING_AIRDROPS", readableStates.get("PENDING_AIRDROPS")),
-                        "ALIASES",
-                        new MapWritableKVState<>("ALIASES", readableStates.get("ALIASES")),
-                        "NFTS",
-                        new MapWritableKVState<>("NFTS", readableStates.get("NFTS")),
-                        "TOKENS",
-                        new MapWritableKVState<>("TOKENS", readableStates.get("TOKENS")),
-                        "TOKEN_RELS",
-                        new MapWritableKVState<>("TOKEN_RELS", readableStates.get("TOKEN_RELS")))));
+                        AccountReadableKVState.KEY,
+                        new MapWritableKVState<>(
+                                AccountReadableKVState.KEY, readableStates.get(AccountReadableKVState.KEY)),
+                        AirdropsReadableKVState.KEY,
+                        new MapWritableKVState<>(
+                                AirdropsReadableKVState.KEY, readableStates.get(AirdropsReadableKVState.KEY)),
+                        AliasesReadableKVState.KEY,
+                        new MapWritableKVState<>(
+                                AliasesReadableKVState.KEY, readableStates.get(AliasesReadableKVState.KEY)),
+                        NftReadableKVState.KEY,
+                        new MapWritableKVState<>(NftReadableKVState.KEY, readableStates.get(NftReadableKVState.KEY)),
+                        TokenReadableKVState.KEY,
+                        new MapWritableKVState<>(
+                                TokenReadableKVState.KEY, readableStates.get(TokenReadableKVState.KEY)),
+                        TokenRelationshipReadableKVState.KEY,
+                        new MapWritableKVState<>(
+                                TokenRelationshipReadableKVState.KEY,
+                                readableStates.get(TokenRelationshipReadableKVState.KEY)))));
     }
 
     @Test
@@ -324,17 +367,22 @@ class MirrorNodeStateTest {
     @Test
     void testGetWritableStatesWithSingleton() {
         final var stateWithSingleton = buildStateObject();
-        stateWithSingleton.addService(EntityIdService.NAME, Map.of("EntityId", new AtomicReference<>(1L)));
+        final var key = "EntityId";
+        final var singleton = new DefaultSingleton(key);
+        singleton.set(1L);
+        stateWithSingleton.addService(EntityIdService.NAME, Map.of(key, singleton));
         final var writableStates = stateWithSingleton.getWritableStates(EntityIdService.NAME);
-        assertThat(writableStates.contains("EntityId")).isTrue();
-        assertThat(writableStates.getSingleton("EntityId").get()).isEqualTo(1L);
+        assertThat(writableStates.contains(key)).isTrue();
+        assertThat(writableStates.getSingleton(key).get()).isEqualTo(1L);
     }
 
     @Test
     void testGetWritableStatesWithSingletonWithListeners() {
         final var stateWithSingleton = buildStateObject();
-        final var ref = new AtomicReference<>(1L);
-        stateWithSingleton.addService(EntityIdService.NAME, Map.of("EntityId", ref));
+        final var key = "EntityId";
+        final var singleton = new DefaultSingleton(key);
+        singleton.set(1L);
+        stateWithSingleton.addService(EntityIdService.NAME, Map.of(key, singleton));
         when(listener.stateTypes()).thenReturn(Set.of(StateType.SINGLETON));
         stateWithSingleton.registerCommitListener(listener);
 
@@ -425,17 +473,26 @@ class MirrorNodeStateTest {
     }
 
     private MirrorNodeState initStateAfterMigration() {
-        final Map<String, Object> fileStateData = new HashMap<>(Map.of("FILES", Map.of("FILES", fileReadableKVState)));
+        final Map<String, Object> fileStateData =
+                new HashMap<>(Map.of(FileReadableKVState.KEY, Map.of(FileReadableKVState.KEY, fileReadableKVState)));
         final Map<String, Object> contractStateData = new HashMap<>(Map.of(
-                "BYTECODE", Map.of("BYTECODE", contractBytecodeReadableKVState),
-                "STORAGE", Map.of("STORAGE", contractStorageReadableKVState)));
+                ContractBytecodeReadableKVState.KEY,
+                Map.of(ContractBytecodeReadableKVState.KEY, contractBytecodeReadableKVState),
+                ContractStorageReadableKVState.KEY,
+                Map.of(ContractStorageReadableKVState.KEY, contractStorageReadableKVState)));
         final Map<String, Object> tokenStateData = new HashMap<>(Map.of(
-                "ACCOUNTS", Map.of("ACCOUNTS", accountReadableKVState),
-                "PENDING_AIRDROPS", Map.of("PENDING_AIRDROPS", airdropsReadableKVState),
-                "ALIASES", Map.of("ALIASES", aliasesReadableKVState),
-                "NFTS", Map.of("NFTS", nftReadableKVState),
-                "TOKENS", Map.of("TOKENS", tokenReadableKVState),
-                "TOKEN_RELS", Map.of("TOKEN_RELS", tokenRelationshipReadableKVState)));
+                AccountReadableKVState.KEY,
+                Map.of(AccountReadableKVState.KEY, accountReadableKVState),
+                AirdropsReadableKVState.KEY,
+                Map.of(AirdropsReadableKVState.KEY, airdropsReadableKVState),
+                AliasesReadableKVState.KEY,
+                Map.of(AliasesReadableKVState.KEY, aliasesReadableKVState),
+                NftReadableKVState.KEY,
+                Map.of(NftReadableKVState.KEY, nftReadableKVState),
+                TokenReadableKVState.KEY,
+                Map.of(TokenReadableKVState.KEY, tokenReadableKVState),
+                TokenRelationshipReadableKVState.KEY,
+                Map.of(TokenRelationshipReadableKVState.KEY, tokenRelationshipReadableKVState)));
 
         // Add service using the mock data source
         return buildStateObject()
@@ -445,6 +502,12 @@ class MirrorNodeStateTest {
     }
 
     private MirrorNodeState buildStateObject() {
-        return new MirrorNodeState(readableKVStates, servicesRegistry, serviceMigrator, networkInfo, startupNetworks);
+        return new MirrorNodeState(
+                readableKVStates,
+                servicesRegistry,
+                serviceMigrator,
+                networkInfo,
+                startupNetworks,
+                mirrorNodeEvmProperties);
     }
 }

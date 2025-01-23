@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.state.FileReadableKVState;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.state.keyvalue.FileReadableKVState;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.List;
@@ -57,6 +59,10 @@ public class ContractCallContext {
 
     @Setter
     private List<Opcode> opcodes = new ArrayList<>();
+
+    @Setter
+    private CallServiceParameters callServiceParameters;
+
     /**
      * Record file which stores the block timestamp and other historical block details used for filtering of historical
      * data.
@@ -78,16 +84,14 @@ public class ContractCallContext {
 
     /**
      * The TransactionExecutor from the modularized services integration deploys contracts in 2 steps:
-     *
-     * 1. The initcode is uploaded and saved as a file using a {@link FileCreateTransactionBody}.
-     * 2. The returned file id from step 1 is then passed to a {@link ContractCreateTransactionBody}.
-     * Each step performs a separate transaction.
-     * For step 2 even if we pass the correct file id, since the mirror node data is readonly,
-     * the {@link FileReadableKVState} is not able to populate the contract's bytecode from the DB
-     * since it was never explicitly persisted in the DB.
-     *
-     * This is the function of the field "file" to hold temporary the bytecode and the fileId
-     * during contract deploy.
+     * <p>
+     * 1. The initcode is uploaded and saved as a file using a {@link FileCreateTransactionBody}. 2. The returned file
+     * id from step 1 is then passed to a {@link ContractCreateTransactionBody}. Each step performs a separate
+     * transaction. For step 2 even if we pass the correct file id, since the mirror node data is readonly, the
+     * {@link FileReadableKVState} is not able to populate the contract's bytecode from the DB since it was never
+     * explicitly persisted in the DB.
+     * <p>
+     * This is the function of the field "file" to hold temporary the bytecode and the fileId during contract deploy.
      */
     @Setter
     private Optional<File> file = Optional.empty();
@@ -103,7 +107,6 @@ public class ContractCallContext {
     }
 
     public void reset() {
-        recordFile = null;
         stack = stackBase;
         file = Optional.empty();
     }
@@ -149,7 +152,10 @@ public class ContractCallContext {
     }
 
     public boolean useHistorical() {
-        return recordFile != null;
+        if (callServiceParameters != null) {
+            return callServiceParameters.getBlock() != BlockType.LATEST;
+        }
+        return recordFile != null; // Remove recordFile comparison after mono code deletion
     }
 
     public void incrementContractActionsCounter() {

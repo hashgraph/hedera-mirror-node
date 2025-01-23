@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,13 +44,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
+@DisablePartitionMaintenance
 @DisableRepeatableSqlMigration
 @EnabledIfV1
-@Import(DisablePartitionMaintenanceConfiguration.class)
 @RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.35.5")
@@ -394,22 +393,25 @@ class CleanupEntityMigrationTest extends ImporterIntegrationTest {
         jdbcOperations.execute("drop table if exists entity cascade;");
 
         // add t_entities if not present
-        jdbcOperations.execute("create table if not exists t_entities" + "(\n"
-                + "    entity_num             bigint  not null,\n"
-                + "    entity_realm           bigint  not null,\n"
-                + "    entity_shard           bigint  not null,\n"
-                + "    fk_entity_type_id      integer not null,\n"
-                + "    auto_renew_period      bigint,\n"
-                + "    key                    bytea,\n"
-                + "    deleted                boolean default false,\n"
-                + "    exp_time_ns            bigint,\n"
-                + "    ed25519_public_key_hex character varying,\n"
-                + "    submit_key             bytea,\n"
-                + "    memo                   text,\n"
-                + "    auto_renew_account_id  bigint,\n"
-                + "    id                     bigint  not null,\n"
-                + "    proxy_account_id       bigint"
-                + ");");
+        jdbcOperations.execute(
+                """
+    create table if not exists t_entities (
+        entity_num             bigint  not null,
+        entity_realm           bigint  not null,
+        entity_shard           bigint  not null,
+        fk_entity_type_id      integer not null,
+        auto_renew_period      bigint,
+        key                    bytea,
+        deleted                boolean default false,
+        exp_time_ns            bigint,
+        ed25519_public_key_hex character varying,
+        submit_key             bytea,
+        memo                   text,
+        auto_renew_account_id  bigint,
+        id                     bigint  not null,
+        proxy_account_id       bigint
+    );
+""");
     }
 
     private int getTEntitiesCount() {

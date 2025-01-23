@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.reader.record;
 
+import static com.hedera.mirror.common.util.DomainUtils.createSha384Digest;
 import static java.lang.String.format;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
@@ -26,7 +27,6 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.RecordStreamFile;
 import jakarta.inject.Named;
@@ -35,8 +35,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.DigestOutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -77,6 +75,9 @@ public class ProtoRecordFileReader implements RecordFileReader {
             long consensusEnd = items.get(count - 1).getConsensusTimestamp();
             var digestAlgorithm = getDigestAlgorithm(filename, startHashAlgorithm, endHashAlgorithm);
             var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
+            var majorVersion = hapiProtoVersion.getMajor();
+            var minorVersion = hapiProtoVersion.getMinor();
+            var patchVersion = hapiProtoVersion.getPatch();
             var sidecars = getSidecars(consensusEnd, recordStreamFile, streamFileData.getStreamFilename());
 
             return RecordFile.builder()
@@ -85,32 +86,27 @@ public class ProtoRecordFileReader implements RecordFileReader {
                     .consensusEnd(consensusEnd)
                     .count((long) count)
                     .digestAlgorithm(digestAlgorithm)
-                    .fileHash(getFileHash(digestAlgorithm, streamFileData.getDecompressedBytes()))
-                    .hapiVersionMajor(hapiProtoVersion.getMajor())
-                    .hapiVersionMinor(hapiProtoVersion.getMinor())
-                    .hapiVersionPatch(hapiProtoVersion.getPatch())
+                    .fileHash(getFileHash(streamFileData.getDecompressedBytes()))
+                    .hapiVersionMajor(majorVersion)
+                    .hapiVersionMinor(minorVersion)
+                    .hapiVersionPatch(patchVersion)
                     .hash(DomainUtils.bytesToHex(DomainUtils.getHashBytes(endObjectRunningHash)))
                     .index(recordStreamFile.getBlockNumber())
                     .items(items)
                     .loadStart(loadStart)
-                    .metadataHash(getMetadataHash(digestAlgorithm, recordStreamFile))
+                    .metadataHash(getMetadataHash(recordStreamFile))
                     .name(filename)
                     .previousHash(DomainUtils.bytesToHex(DomainUtils.getHashBytes(startObjectRunningHash)))
                     .sidecarCount(sidecars.size())
                     .sidecars(sidecars)
                     .size(bytes.length)
+                    .softwareVersionMajor(majorVersion)
+                    .softwareVersionMinor(minorVersion)
+                    .softwareVersionPatch(patchVersion)
                     .version(VERSION)
                     .build();
         } catch (IOException e) {
             throw new InvalidStreamFileException("Error reading record file " + filename, e);
-        }
-    }
-
-    private MessageDigest createMessageDigest(DigestAlgorithm digestAlgorithm) {
-        try {
-            return MessageDigest.getInstance(digestAlgorithm.getName());
-        } catch (NoSuchAlgorithmException e) {
-            throw new StreamFileReaderException(e);
         }
     }
 
@@ -134,14 +130,13 @@ public class ProtoRecordFileReader implements RecordFileReader {
                 });
     }
 
-    private String getFileHash(DigestAlgorithm algorithm, byte[] fileData) {
-        var messageDigest = createMessageDigest(algorithm);
+    private String getFileHash(byte[] fileData) {
+        var messageDigest = createSha384Digest();
         return DomainUtils.bytesToHex(messageDigest.digest(fileData));
     }
 
-    private String getMetadataHash(DigestAlgorithm algorithm, RecordStreamFile recordStreamFile) throws IOException {
-        try (var digestOutputStream =
-                        new DigestOutputStream(NullOutputStream.INSTANCE, createMessageDigest(algorithm));
+    private String getMetadataHash(RecordStreamFile recordStreamFile) throws IOException {
+        try (var digestOutputStream = new DigestOutputStream(NullOutputStream.INSTANCE, createSha384Digest());
                 var dataOutputStream = new DataOutputStream(digestOutputStream)) {
             var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
             dataOutputStream.writeInt(VERSION);

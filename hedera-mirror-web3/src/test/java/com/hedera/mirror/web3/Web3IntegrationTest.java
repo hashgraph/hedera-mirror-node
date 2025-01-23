@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @ExtendWith(ContextExtension.class)
 public abstract class Web3IntegrationTest extends CommonIntegrationTest {
 
-    @SpyBean
+    @MockitoSpyBean
     protected MirrorEvmTxProcessor processor;
 
     @Resource

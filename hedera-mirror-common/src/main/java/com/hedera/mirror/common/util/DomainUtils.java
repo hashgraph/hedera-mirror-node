@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Internal;
 import com.google.protobuf.UnsafeByteOperations;
 import com.hedera.mirror.common.converter.ObjectToStringSerializer;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.exception.ProtobufException;
@@ -32,6 +33,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.List;
 import lombok.CustomLog;
@@ -164,6 +167,14 @@ public class DomainUtils {
         }
 
         return convertToNanosMax(instant.getEpochSecond(), instant.getNano());
+    }
+
+    public static MessageDigest createSha384Digest() {
+        try {
+            return MessageDigest.getInstance(DigestAlgorithm.SHA_384.getName());
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-384 algorithm not found", e);
+        }
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,14 +38,13 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
+@DisablePartitionMaintenance
 @DisableRepeatableSqlMigration
 @EnabledIfV1
-@Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.39.2")
 class EntityTimestampMigrationTest extends ImporterIntegrationTest {

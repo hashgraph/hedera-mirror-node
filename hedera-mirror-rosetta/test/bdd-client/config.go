@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"reflect"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/bdd-client/client"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -103,25 +103,25 @@ func addDecodeHooks(c *mapstructure.DecoderConfig) {
 }
 
 func accountIdDecodeHook(from, to reflect.Type, data interface{}) (interface{}, error) {
-	if to != reflect.TypeOf(hedera.AccountID{}) {
+	if to != reflect.TypeOf(hiero.AccountID{}) {
 		return data, nil
 	}
 
 	if accountIdStr, ok := data.(string); ok {
-		return hedera.AccountIDFromString(accountIdStr)
+		return hiero.AccountIDFromString(accountIdStr)
 	} else {
-		return nil, errors.Errorf("Invalid data type for hedera.AccountID")
+		return nil, errors.Errorf("Invalid data type for hiero.AccountID")
 	}
 }
 
 func privateKeyDecodeHook(from, to reflect.Type, data interface{}) (interface{}, error) {
-	if to != reflect.TypeOf(hedera.PrivateKey{}) {
+	if to != reflect.TypeOf(hiero.PrivateKey{}) {
 		return data, nil
 	}
 
 	if keyStr, ok := data.(string); ok {
-		return hedera.PrivateKeyFromString(keyStr)
+		return hiero.PrivateKeyFromString(keyStr)
 	} else {
-		return nil, errors.Errorf("Invalid data type for hedera.PrivateKey")
+		return nil, errors.Errorf("Invalid data type for hiero.PrivateKey")
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,11 +42,11 @@ class RecordFileServiceTest extends Web3IntegrationTest {
 
     @Test
     void testFindByBlockTypeEarliest() {
-        var recordFileEarliest =
+        final var genesisRecordFile =
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         domainBuilder.recordFile().customize(f -> f.index(1L)).persist();
         domainBuilder.recordFile().customize(f -> f.index(2L)).persist();
-        assertThat(recordFileService.findByBlockType(BlockType.EARLIEST)).contains(recordFileEarliest);
+        assertThat(recordFileService.findByBlockType(BlockType.EARLIEST)).contains(genesisRecordFile);
     }
 
     @Test

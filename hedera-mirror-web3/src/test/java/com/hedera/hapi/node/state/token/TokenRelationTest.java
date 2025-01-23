@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -338,6 +338,14 @@ public class TokenRelationTest {
                 item1.copyBuilder().nextToken((TokenID) null).build();
         assertThat(item1.nextTokenOrThrow()).isEqualTo(item1.tokenId());
         assertThatThrownBy(itemNullTokenId::nextTokenOrThrow).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testBalance() {
+        final var item1 = ARGUMENTS.get(0);
+        final var balance = 123L;
+        final var itemBalance = item1.copyBuilder().balance(balance).build();
+        assertThat(itemBalance.balance()).isEqualTo(balance);
     }
 
     @Test

@@ -5,10 +5,10 @@ set -euo pipefail
 source ./utils.sh
 
 REPLACE_DISKS="${REPLACE_DISKS:-true}"
+STACKGRES_MINIO_ROOT="${STACKGRES_MINIO_ROOT:-sgbackups.stackgres.io}"
 ZFS_POOL_NAME="${ZFS_POOL_NAME:-zfspv-pool}"
 
 function configureAndValidate() {
-  CURRENT_CONTEXT=$(kubectl config current-context)
   GCP_PROJECT="$(readUserInput "Enter GCP Project for target: ")"
   if [[ -z "${GCP_PROJECT}" ]]; then
     log "GCP_PROJECT is not set and is required. Exiting"
@@ -120,6 +120,7 @@ function configureAndValidate() {
 function prepareDiskReplacement() {
   for namespace in "${NAMESPACES[@]}"; do
     unrouteTraffic "${namespace}"
+    kubectl delete sgshardedbackups.stackgres.io -n "${namespace}" --all
     pauseCitus "${namespace}"
   done
 
@@ -159,7 +160,16 @@ function renameZfsVolumes() {
         log "Snapshot pvc ${ZFS_POOL_NAME}/${snapshotPvcVolumeName} already matches pvc ${ZFS_POOL_NAME}/${pvcVolumeName}"
       fi
     done
-    kubectl_common exec "${podInfo}" -c openebs-zfs-plugin -- zfs list
+
+    local zfsSnapshots="$(kubectl_common exec "${podInfo}" -c openebs-zfs-plugin -- bash -c 'zfs list -H -o name -t snapshot')"
+
+    if [[ -z "${zfsSnapshots}" ]]; then
+      log "No snapshots found for pool ${ZFS_POOL_NAME} and node ${nodeId}"
+    else
+      log "Deleting snapshots ${zfsSnapshots}"
+      kubectl_common exec "${podInfo}" -c openebs-zfs-plugin -- bash -c "echo \"${zfsSnapshots}\" | xargs -n1 zfs destroy"
+    fi
+   kubectl_common exec "${podInfo}" -c openebs-zfs-plugin -- zfs list -t filesystem,snapshot
   done
   log "ZFS datasets renamed"
 }
@@ -178,7 +188,7 @@ function replaceDisks() {
     local snapshotFullName="projects/${GCP_SNAPSHOT_PROJECT}/global/snapshots/${snapshotName}"
     log "Recreating disk ${diskName} in ${GCP_PROJECT} with snapshot ${snapshotName}"
     gcloud compute disks delete "${diskName}" --project "${GCP_PROJECT}" --zone "${diskZone}" --quiet
-    gcloud compute disks create "${diskName}" --project "${GCP_PROJECT}" --zone "${diskZone}" --source-snapshot "${snapshotFullName}" --type=pd-balanced --quiet &
+    watchInBackground "$$" gcloud compute disks create "${diskName}" --project "${GCP_PROJECT}" --zone "${diskZone}" --source-snapshot "${snapshotFullName}" --type=pd-balanced --quiet &
   done
 
   log "Waiting for disks to be created"
@@ -186,6 +196,33 @@ function replaceDisks() {
 
   resizeCitusNodePools 1
   renameZfsVolumes
+}
+
+function cleanupBackupStorage() {
+  local namespace="${1}"
+  local shardedClusterName="${2}"
+  local minioPod=$(kubectl_common get pods -l 'app.kubernetes.io/name=minio' -o json | jq -r '.items[0].metadata.name')
+  if [[ "${minioPod}" == "null" ]]; then
+    echo "Minio pod not found. Skipping cleanup"
+  else
+    local backups=$(kubectl get sgshardedclusters.stackgres.io -n "${namespace}" "${shardedClusterName}" -o json | jq -r '.spec.configurations.backups')
+    if [[ "${backups}" == "null" ]]; then
+      echo "No backup configuration found for sharded cluster ${shardedClusterName} in namespace ${namespace}. Skipping cleanup"
+      return
+    fi
+
+    kubectl patch sgshardedclusters.stackgres.io "${shardedClusterName}" -n "${namespace}" --type='json' -p '[{"op": "remove", "path": "/spec/configurations/backups"}]';
+
+    local minioDataPath=$(kubectl_common exec "${minioPod}" -- sh -c 'echo $MINIO_DATA_DIR')
+    local backupStorages=($(echo "${backups}" | jq -r '.[].sgObjectStorage'))
+    for backupStorage in "${backupStorages[@]}"; do
+      local minioBucket=$(kubectl get sgObjectStorage.stackgres.io -n "${namespace}" "${backupStorage}" -o json | jq -r '.spec.s3Compatible.bucket')
+      local pathToDelete="${minioDataPath}/${minioBucket}/${STACKGRES_MINIO_ROOT}/${namespace}"
+      echo "Cleaning up wal files in minio bucket ${minioBucket}. Will delete all files at path ${pathToDelete}"
+      doContinue
+      kubectl_common exec "${minioPod}" -- mc rm --recursive --force "${pathToDelete}"
+    done
+  fi
 }
 
 function configureShardedClusterResource() {
@@ -201,23 +238,37 @@ function configureShardedClusterResource() {
                                 sort_by(.citusCluster.citusGroup, .citusCluster.podName)|
                                 to_entries|
                                 map({index: .key, pods: {persistentVolume: {size: .value.snapshotPvcSize}}})')
-  local shardedClusterPatch=$(echo "${workerPvcOverrides}" |
-    jq -r --arg coordinatorPvcSize "${coordinatorPvcSize}" \
-      '{
+
+  log "Patching sharded cluster ${shardedClusterName} in namespace ${namespace}"
+  local shardedCluster=$(kubectl get sgshardedclusters.stackgres.io -n "${namespace}" "${shardedClusterName}" -o json)
+  local shardedClusterPatch=$(echo "${shardedCluster} ${workerPvcOverrides}" |
+     jq -s --arg COORDINATOR_PVC_SIZE "${coordinatorPvcSize}" \
+       '.[0] as $cluster |
+        .[1] as $overrides |
+        $cluster |
+        if(.spec.configurations | has("backups"))
+          then .spec.configurations.backups | map(del(.paths))
+        else
+          []
+        end |
+        {
           spec: {
+            configurations: {
+              backups: (.)
+            },
             coordinator: {
               pods: {
                 persistentVolume: {
-                  size: $coordinatorPvcSize
+                  size: $COORDINATOR_PVC_SIZE
                 }
               }
             },
             shards: {
-              overrides: (.)
+              overrides: $overrides
             }
-         }
-       }')
-  log "Patching sharded cluster ${shardedClusterName} in namespace ${namespace} with ${shardedClusterPatch}"
+          }
+        }')
+  cleanupBackupStorage "${namespace}" "${shardedClusterName}"
   kubectl patch sgshardedclusters.stackgres.io -n "${namespace}" "${shardedClusterName}" --type merge -p "${shardedClusterPatch}"
   log "
   **** IMPORTANT ****
@@ -234,55 +285,11 @@ function configureShardedClusterResource() {
 function markAndConfigurePrimaries() {
   local pvcsInNamespace="${1}"
   local shardedClusterName="${2}"
+  local namespace="${3}"
 
-  # Stackgres Passwords
   local primaryCoordinator=$(echo "${pvcsInNamespace}" |
           jq -r 'map(select(.snapshotPrimary and .citusCluster.isCoordinator))|first')
-  local sgPasswordsSecretName=$(echo "${primaryCoordinator}" | jq -r '.citusCluster.clusterName')
-  local sgPasswords=$(kubectl get secret -n "${namespace}" "${sgPasswordsSecretName}" -o json |
-    ksd |
-    jq -r '.stringData')
-  local superuserUsername=$(echo "${sgPasswords}" | jq -r '.["superuser-username"]')
-  local superuserPassword=$(echo "${sgPasswords}" | jq -r '.["superuser-password"]')
-  local replicationUsername=$(echo "${sgPasswords}" | jq -r '.["replication-username"]')
-  local replicationPassword=$(echo "${sgPasswords}" | jq -r '.["replication-password"]')
-  local authenticatorUsername=$(echo "${sgPasswords}" | jq -r '.["authenticator-username"]')
-  local authenticatorPassword=$(echo "${sgPasswords}" | jq -r '.["authenticator-password"]')
 
-  # Mirror Node Passwords
-  local mirrorNodePasswords=$(kubectl get secret -n "${namespace}" "${HELM_RELEASE_NAME}-passwords" -o json |
-    ksd |
-    jq -r '.stringData')
-  local graphqlUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRAPHQL_DB_USERNAME')
-  local graphqlPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRAPHQL_DB_PASSWORD')
-  local grpcUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRPC_DB_USERNAME')
-  local grpcPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_GRPC_DB_PASSWORD')
-  local importerUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_USERNAME')
-  local importerPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_PASSWORD')
-  local ownerUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_OWNER')
-  local ownerPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD')
-  local restUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_REST_DB_USERNAME')
-  local restPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_REST_DB_PASSWORD')
-  local restJavaUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_RESTJAVA_DB_USERNAME')
-  local restJavaPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_RESTJAVA_DB_PASSWORD')
-  local rosettaUsername=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_ROSETTA_DB_USERNAME')
-  local rosettaPassword=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_ROSETTA_DB_PASSWORD')
-  local web3Username=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_USERNAME')
-  local web3Password=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_WEB3_DB_PASSWORD')
-  local dbName=$(echo "${mirrorNodePasswords}" | jq -r '.HEDERA_MIRROR_IMPORTER_DB_NAME')
-  local updatePasswordsSql=$(cat <<EOF
-alter user ${superuserUsername} with password '${superuserPassword}';
-alter user ${graphqlUsername} with password '${graphqlPassword}';
-alter user ${grpcUsername} with password '${grpcPassword}';
-alter user ${importerUsername} with password '${importerPassword}';
-alter user ${ownerUsername} with password '${ownerPassword}';
-alter user ${restUsername} with password '${restPassword}';
-alter user ${restJavaUsername} with password '${restJavaPassword}';
-alter user ${rosettaUsername} with password '${rosettaPassword}';
-alter user ${web3Username} with password '${web3Password}';
-alter user ${replicationUsername} with password '${replicationPassword}';
-alter user ${authenticatorUsername} with password '${authenticatorPassword}';
-EOF)
 
   local clusterGroups=$(echo "${pvcsInNamespace}" |
     jq -r 'group_by(.citusCluster.clusterName)|
@@ -332,26 +339,10 @@ group ${citusGroup}. Will failover"
     fi
     log "Patching cluster ${clusterName} in namespace ${namespace} with ${clusterPatch}"
     kubectl patch sgclusters.stackgres.io -n "${namespace}" "${clusterName}" --type merge -p "${clusterPatch}"
-
-    log "Executing sql command for cluster ${clusterName}: ${updatePasswordsSql}"
-    kubectl exec -n "${namespace}"  "${primaryPod}" -c postgres-util -- \
-      psql -U "${superuserUsername}" -c "${updatePasswordsSql}"
-
-    kubectl exec -n "${namespace}" "${primaryPod}" -c postgres-util \
-          -- psql -U "${superuserUsername}" -d "${dbName}" -c \
-      "insert into pg_dist_authinfo(nodeid, rolename, authinfo)
-      values (0, '${superuserUsername}', 'password=${superuserPassword}'),
-             (0, '${graphqlUsername}', 'password=${graphqlPassword}'),
-             (0, '${grpcUsername}', 'password=${grpcPassword}'),
-             (0, '${importerUsername}', 'password=${importerPassword}'),
-             (0, '${ownerUsername}', 'password=${ownerPassword}'),
-             (0, '${restUsername}', 'password=${restPassword}'),
-             (0, '${restJavaUsername}', 'password=${restJavaPassword}'),
-             (0, '${rosettaUsername}', 'password=${rosettaPassword}'),
-             (0, '${web3Username}', 'password=${web3Password}') on conflict (nodeid, rolename)
-      do
-      update set authinfo = excluded.authinfo;"
   done
+
+  waitForPatroniMasters "${namespace}"
+  updateStackgresCreds "${shardedClusterName}" "${namespace}"
 }
 
 function patchCitusClusters() {
@@ -375,8 +366,8 @@ function patchCitusClusters() {
     local shardedClusterName=$(echo "${pvcsInNamespace}" | jq -r '.[0].citusCluster.shardedClusterName')
 
     configureShardedClusterResource "${pvcsInNamespace}" "${shardedClusterName}" "${namespace}"
-    unpauseCitus "${namespace}" "true"
-    markAndConfigurePrimaries "${pvcsInNamespace}" "${shardedClusterName}"
+    unpauseCitus "${namespace}" "true" "false"
+    markAndConfigurePrimaries "${pvcsInNamespace}" "${shardedClusterName}" "${namespace}"
     routeTraffic "${namespace}"
   done
 }

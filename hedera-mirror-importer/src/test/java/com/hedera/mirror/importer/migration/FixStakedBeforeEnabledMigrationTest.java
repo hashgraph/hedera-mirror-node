@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -262,10 +262,11 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
         importerProperties.setNetwork(HederaNetwork.MAINNET);
         lastHapi26EpochDay = Utility.getEpochDay(LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET);
         // Persist last Hapi version 26 RecordFile
-        domainBuilder
+        var recordFile = domainBuilder
                 .recordFile()
                 .customize(r -> r.consensusEnd(LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET)
                         .consensusStart(LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET - 2 * 1_000_000_000))
-                .persist();
+                .get();
+        persistRecordFile(recordFile);
     }
 }

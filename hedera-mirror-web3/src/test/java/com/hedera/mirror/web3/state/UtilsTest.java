@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import java.time.Instant;
 import org.hyperledger.besu.datatypes.Address;
@@ -75,14 +76,14 @@ class UtilsTest {
     @Test
     void testConvertToTimestamp() {
         // Given
-        long timestampMillis = 1633024800000L;
-        Instant expectedInstant = Instant.ofEpochMilli(timestampMillis);
+        Instant expectedInstant = Instant.now();
 
         long expectedEpochSecond = expectedInstant.getEpochSecond();
         int expectedNano = expectedInstant.getNano();
+        long timestampNanos = DomainUtils.convertToNanos(expectedEpochSecond, expectedNano);
 
         // When
-        Timestamp result = Utils.convertToTimestamp(timestampMillis);
+        Timestamp result = Utils.convertToTimestamp(timestampNanos);
 
         // Then
         assertThat(result.seconds()).isEqualTo(expectedEpochSecond);

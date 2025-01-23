@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +111,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import jakarta.persistence.EntityManager;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -762,6 +763,8 @@ public class DomainBuilder {
         long timestamp = timestamp();
         long consensusEnd = timestamp + 1;
         var instantString = now.toString().replace(':', '_');
+        var blockNumber = number();
+        var round = blockNumber + 1;
         var builder = RecordFile.builder()
                 .bytes(bytes(128))
                 .consensusStart(timestamp)
@@ -774,18 +777,23 @@ public class DomainBuilder {
                 .hapiVersionMinor(28)
                 .hapiVersionPatch(0)
                 .hash(hash(96))
-                .index(number())
+                .index(blockNumber)
                 .logsBloom(bloomFilter())
                 .loadEnd(now.toEpochMilli() + 1000L)
                 .loadStart(now.toEpochMilli())
                 .name(instantString + ".rcd.gz")
                 .nodeId(number())
                 .previousHash(hash(96))
+                .roundEnd(round)
+                .roundStart(round)
                 .sidecarCount(1)
                 .sidecars(List.of(sidecarFile()
                         .customize(s -> s.consensusEnd(consensusEnd).name(instantString + "_01.rcd.gz"))
                         .get()))
                 .size(256 * 1024)
+                .softwareVersionMajor(0)
+                .softwareVersionMinor(28)
+                .softwareVersionPatch(0)
                 .version(6);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -1024,7 +1032,7 @@ public class DomainBuilder {
     public DomainWrapper<TopicMessage, TopicMessage.TopicMessageBuilder> topicMessage() {
         var transactionId = TransactionID.newBuilder()
                 .setAccountID(AccountID.newBuilder().setAccountNum(id()))
-                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(timestamp()))
+                .setTransactionValidStart(protoTimestamp())
                 .build()
                 .toByteArray();
         var builder = TopicMessage.builder()
@@ -1147,12 +1155,21 @@ public class DomainBuilder {
         var key =
                 switch (keyCase) {
                     case ECDSA_SECP256K1 -> Key.newBuilder()
-                            .setECDSASecp256K1(ByteString.copyFrom(bytes(KEY_LENGTH_ECDSA)));
+                            .setECDSASecp256K1(ByteString.copyFrom(generateSecp256k1Key()));
                     case ED25519 -> Key.newBuilder().setEd25519(ByteString.copyFrom(bytes(KEY_LENGTH_ED25519)));
                     default -> throw new UnsupportedOperationException("Key type not supported");
                 };
 
         return key.build().toByteArray();
+    }
+
+    private byte[] generateSecp256k1Key() {
+        byte[] xCoordinate = bytes(32); // The x-coordinate of the elliptic curve point
+        byte prefix = (byte) (Math.random() < 0.5 ? 0x02 : 0x03); // Randomly chosen even or odd y-coordinate
+        ByteBuffer compressedKey = ByteBuffer.allocate(33);
+        compressedKey.put(prefix);
+        compressedKey.put(xCoordinate);
+        return compressedKey.array();
     }
 
     public long number() {
@@ -1170,11 +1187,11 @@ public class DomainBuilder {
     }
 
     public String text(int characters) {
-        return RandomStringUtils.randomAlphanumeric(characters);
+        return RandomStringUtils.secure().nextAlphanumeric(characters);
     }
 
     public String hash(int characters) {
-        return RandomStringUtils.random(characters, "0123456789abcdef");
+        return RandomStringUtils.secure().next(characters, "0123456789abcdef");
     }
 
     /**
@@ -1184,6 +1201,14 @@ public class DomainBuilder {
      */
     public void resetTimestamp(long value) {
         timestampOffset = value - timestampNoOffset();
+    }
+
+    public Timestamp protoTimestamp() {
+        long timestamp = timestamp();
+        return Timestamp.newBuilder()
+                .setSeconds(timestamp / DomainUtils.NANOS_PER_SECOND)
+                .setNanos((int) (timestamp % DomainUtils.NANOS_PER_SECOND))
+                .build();
     }
 
     public long timestamp() {

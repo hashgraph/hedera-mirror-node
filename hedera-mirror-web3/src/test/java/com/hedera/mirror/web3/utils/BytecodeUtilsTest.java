@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.service.AbstractContractCallServiceTest;
 import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
@@ -43,7 +43,7 @@ import org.springframework.context.annotation.Import;
 
 @Import(Web3jTestConfiguration.class)
 @RequiredArgsConstructor
-class BytecodeUtilsTest extends Web3IntegrationTest {
+class BytecodeUtilsTest extends AbstractContractCallServiceTest {
 
     private final ContractExecutionService contractExecutionService;
     private final TestWeb3jService testWeb3jService;

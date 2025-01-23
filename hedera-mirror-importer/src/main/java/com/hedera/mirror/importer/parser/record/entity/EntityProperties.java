@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,20 +22,25 @@ import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDU
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.EnumSet;
 import java.util.Set;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 @Data
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity")
+@Validated
 public class EntityProperties {
 
     @NotNull
+    @Valid
     private PersistProperties persist = new PersistProperties();
 
     @Data
+    @Validated
     public static class PersistProperties {
 
         private boolean claims = false;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,18 @@ package com.hedera.mirror.web3.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.state.keyvalue.AccountReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.ContractBytecodeReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.ContractStorageReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.FileReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.NftReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.TokenReadableKVState;
+import com.hedera.mirror.web3.state.keyvalue.TokenRelationshipReadableKVState;
+import com.hedera.mirror.web3.state.singleton.BlockInfoSingleton;
+import com.hedera.mirror.web3.state.singleton.DefaultSingleton;
+import com.hedera.mirror.web3.state.singleton.RunningHashesSingleton;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
@@ -26,6 +38,7 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.ServicesRegistry;
@@ -46,9 +59,14 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
 
     private final MirrorNodeState mirrorNodeState;
     private final ServicesRegistry servicesRegistry;
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Test
     void verifyMirrorNodeStateHasRegisteredServices() {
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            return;
+        }
+
         Set<Class<? extends Service>> expectedServices = new HashSet<>(List.of(
                 EntityIdService.class,
                 TokenServiceImpl.class,
@@ -57,7 +75,8 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
                 BlockRecordService.class,
                 FeeService.class,
                 CongestionThrottleService.class,
-                RecordCacheService.class));
+                RecordCacheService.class,
+                ScheduleServiceImpl.class));
 
         final var registeredServices = servicesRegistry.registrations();
         assertThat(registeredServices).hasSameSizeAs(expectedServices);
@@ -72,32 +91,36 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
 
     @Test
     void verifyServicesHaveAssignedDataSources() {
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            return;
+        }
+
         final var states = mirrorNodeState.getStates();
 
         // BlockRecordService
         Map<String, Class<?>> blockRecordServiceDataSources = Map.of(
-                "BLOCKS", AtomicReference.class,
-                "RUNNING_HASHES", AtomicReference.class);
+                "BLOCKS", BlockInfoSingleton.class,
+                "RUNNING_HASHES", RunningHashesSingleton.class);
         verifyServiceDataSources(states, BlockRecordService.NAME, blockRecordServiceDataSources);
 
         // FileService
-        Map<String, Class<?>> fileServiceDataSources = Map.of("FILES", Map.class);
+        Map<String, Class<?>> fileServiceDataSources = Map.of(FileReadableKVState.KEY, Map.class);
         verifyServiceDataSources(states, FileService.NAME, fileServiceDataSources);
 
         // CongestionThrottleService
         Map<String, Class<?>> congestionThrottleServiceDataSources = Map.of(
-                "THROTTLE_USAGE_SNAPSHOTS", AtomicReference.class,
-                "CONGESTION_LEVEL_STARTS", AtomicReference.class);
+                "THROTTLE_USAGE_SNAPSHOTS", DefaultSingleton.class,
+                "CONGESTION_LEVEL_STARTS", DefaultSingleton.class);
         verifyServiceDataSources(states, CongestionThrottleService.NAME, congestionThrottleServiceDataSources);
 
         // FeeService
-        Map<String, Class<?>> feeServiceDataSources = Map.of("MIDNIGHT_RATES", AtomicReference.class);
+        Map<String, Class<?>> feeServiceDataSources = Map.of("MIDNIGHT_RATES", DefaultSingleton.class);
         verifyServiceDataSources(states, FeeService.NAME, feeServiceDataSources);
 
         // ContractService
         Map<String, Class<?>> contractServiceDataSources = Map.of(
-                "BYTECODE", Map.class,
-                "STORAGE", Map.class);
+                ContractBytecodeReadableKVState.KEY, Map.class,
+                ContractStorageReadableKVState.KEY, Map.class);
         verifyServiceDataSources(states, ContractService.NAME, contractServiceDataSources);
 
         // RecordCacheService
@@ -105,18 +128,25 @@ public class MirrorNodeStateIntegrationTest extends Web3IntegrationTest {
         verifyServiceDataSources(states, RecordCacheService.NAME, recordCacheServiceDataSources);
 
         // EntityIdService
-        Map<String, Class<?>> entityIdServiceDataSources = Map.of("ENTITY_ID", AtomicReference.class);
+        Map<String, Class<?>> entityIdServiceDataSources = Map.of("ENTITY_ID", DefaultSingleton.class);
         verifyServiceDataSources(states, EntityIdService.NAME, entityIdServiceDataSources);
 
         // TokenService
         Map<String, Class<?>> tokenServiceDataSources = Map.of(
-                "ACCOUNTS", Map.class,
-                "PENDING_AIRDROPS", Map.class,
-                "ALIASES", Map.class,
-                "NFTS", Map.class,
-                "TOKENS", Map.class,
-                "TOKEN_RELS", Map.class,
-                "STAKING_NETWORK_REWARDS", AtomicReference.class);
+                AccountReadableKVState.KEY,
+                Map.class,
+                "PENDING_AIRDROPS",
+                Map.class,
+                AliasesReadableKVState.KEY,
+                Map.class,
+                NftReadableKVState.KEY,
+                Map.class,
+                TokenReadableKVState.KEY,
+                Map.class,
+                TokenRelationshipReadableKVState.KEY,
+                Map.class,
+                "STAKING_NETWORK_REWARDS",
+                AtomicReference.class);
         verifyServiceDataSources(states, TokenService.NAME, tokenServiceDataSources);
     }
 

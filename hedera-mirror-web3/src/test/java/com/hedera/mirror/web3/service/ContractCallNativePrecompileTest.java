@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -39,8 +41,12 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
     @BeforeEach
     void setup() {
-        // Persist needed entities
-        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+        // Change this to not be epoch once services fixes config updates for non-genesis flow
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.consensusEnd(0L).consensusStart(0L).index(0L))
+                .persist();
+        domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
     }
 
     @Test
@@ -237,7 +243,8 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
     private ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData, final Address contractAddress) {
-        final HederaEvmAccount sender = new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress())));
+        final var account = accountEntityWithEvmAddressPersist();
+        final HederaEvmAccount sender = new HederaEvmAccount(Address.wrap(Bytes.wrap(account.getEvmAddress())));
 
         return ContractExecutionParameters.builder()
                 .sender(sender)
@@ -260,5 +267,12 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
         final var gasConsumed = afterExecution.count() - gasUsedBeforeExecution;
         assertThat(gasConsumed).isPositive();
+    }
+
+    protected Entity accountEntityWithEvmAddressPersist() {
+        return domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
+                .persist();
     }
 }

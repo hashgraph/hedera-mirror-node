@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.mirror.monitor.publish;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
@@ -47,6 +48,7 @@ public class PublishProperties {
     private Duration nodeMaxBackoff = Duration.ofMinutes(1L);
 
     @NotNull
+    @Valid
     private Map<String, PublishScenarioProperties> scenarios = new LinkedHashMap<>();
 
     @DurationMin(seconds = 1L)

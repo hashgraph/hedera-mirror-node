@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package mocks
 
 import (
 	"context"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -32,13 +32,13 @@ type MockTransactionConstructorWithType struct {
 func (m *MockTransactionConstructorWithType) Construct(
 	ctx context.Context,
 	operations types.OperationSlice,
-) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
+) (hiero.TransactionInterface, []types.AccountId, *rTypes.Error) {
 	args := m.Called(ctx, operations)
-	return args.Get(0).(interfaces.Transaction), args.Get(1).([]types.AccountId),
+	return args.Get(0).(hiero.TransactionInterface), args.Get(1).([]types.AccountId),
 		args.Get(2).(*rTypes.Error)
 }
 
-func (m *MockTransactionConstructorWithType) Parse(ctx context.Context, transaction interfaces.Transaction) (
+func (m *MockTransactionConstructorWithType) Parse(ctx context.Context, transaction hiero.TransactionInterface) (
 	types.OperationSlice,
 	[]types.AccountId,
 	*rTypes.Error,

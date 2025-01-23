@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	tdomain "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/domain"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/thanhpk/randstr"
@@ -488,7 +488,7 @@ type accountRepositoryWithAliasSuite struct {
 func (suite *accountRepositoryWithAliasSuite) SetupSuite() {
 	suite.accountRepositorySuite.SetupSuite()
 
-	sk, err := hedera.PrivateKeyGenerateEd25519()
+	sk, err := hiero.PrivateKeyGenerateEd25519()
 	if err != nil {
 		panic(err)
 	}

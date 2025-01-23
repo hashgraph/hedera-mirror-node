@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import org.springframework.test.context.jdbc.Sql;
 @SpringBootTest
 public abstract class CommonIntegrationTest {
 
-    public static final String REDIS_IMAGE = "redis:6-alpine";
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
     @Resource

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,8 +152,9 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         // result
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(timestampRange.lowerEndpoint(), EntityId.of(2)))
-                        .balance(balance))
+                .customize(
+                        ab -> ab.id(new AccountBalance.Id(timestampRange.lowerEndpoint(), treasuryEntity.toEntityId()))
+                                .balance(balance))
                 .persist();
         domainBuilder
                 .accountBalance()
@@ -168,8 +169,9 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         // result
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(timestampRange.lowerEndpoint(), EntityId.of(2)))
-                        .balance(balance))
+                .customize(
+                        ab -> ab.id(new AccountBalance.Id(timestampRange.lowerEndpoint(), treasuryEntity.toEntityId()))
+                                .balance(balance))
                 .persist();
         domainBuilder
                 .tokenBalance()

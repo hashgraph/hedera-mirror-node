@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,8 +64,13 @@ class NodeUpdateTransactionHandler extends AbstractTransactionHandler {
                 node.setAdminKey(nodeUpdate.getAdminKey().toByteArray());
             }
 
+            // As a special case, nodes migrated state to mirror nodes via a NodeUpdate instead of a proper NodeCreate
+            if (recordItem.getTransactionRecord().getTransactionID().getNonce() > 0) {
+                node.setCreatedTimestamp(consensusTimestamp);
+            }
+
             node.setDeleted(false);
-            node.setNodeId(recordItem.getTransactionRecord().getReceipt().getNodeId());
+            node.setNodeId(nodeUpdate.getNodeId());
             node.setTimestampRange(Range.atLeast(consensusTimestamp));
 
             entityListener.onNode(node);

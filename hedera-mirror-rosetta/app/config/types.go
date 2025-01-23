@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 )
 
 const EntityCacheKey = "entity"
@@ -83,7 +83,7 @@ type Log struct {
 	Level string
 }
 
-type NodeMap map[string]hedera.AccountID
+type NodeMap map[string]hiero.AccountID
 
 type Pool struct {
 	MaxIdleConnections int `yaml:"maxIdleConnections"`

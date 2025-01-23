@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_RECO
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_RECORD_FILE_LATEST_INDEX;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -65,4 +66,7 @@ public interface RecordFileRepository extends PagingAndSortingRepository<RecordF
             put = @CachePut(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_RECORD_FILE_INDEX))
     @Query("select r from RecordFile r where r.consensusEnd >= ?1 order by r.consensusEnd asc limit 1")
     Optional<RecordFile> findByTimestamp(long timestamp);
+
+    @Query(value = "select * from record_file where index >= ?1 and index <= ?2 order by index asc", nativeQuery = true)
+    List<RecordFile> findByIndexRange(long startIndex, long endIndex);
 }

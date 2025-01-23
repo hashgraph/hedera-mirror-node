@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,15 +51,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
+@DisablePartitionMaintenance
 @EnabledIfV1
-@Import(DisablePartitionMaintenanceConfiguration.class)
 @RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.89.1")

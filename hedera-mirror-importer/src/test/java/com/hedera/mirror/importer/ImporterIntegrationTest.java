@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,12 @@ package com.hedera.mirror.importer;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.config.CommonIntegrationTest;
+import com.hedera.mirror.common.config.RedisTestConfiguration;
 import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.ImporterIntegrationTest.Configuration;
 import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.converter.JsonbToListConverter;
 import com.hedera.mirror.importer.parser.record.entity.ParserContext;
-import com.redis.testcontainers.RedisContainer;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.annotation.Resource;
 import jakarta.persistence.Id;
@@ -50,22 +49,16 @@ import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.utility.DockerImageName;
 
 @ExtendWith(SoftAssertionsExtension.class)
-@Import(Configuration.class)
+@Import(RedisTestConfiguration.class)
 public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
 
     private static final Map<Class<?>, String> DEFAULT_DOMAIN_CLASS_IDS = new ConcurrentHashMap<>();
@@ -168,17 +161,5 @@ public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
                 .collect(Collectors.joining(","));
 
         return !idColumns.isEmpty() ? idColumns : "id";
-    }
-
-    @TestConfiguration(proxyBeanMethods = false)
-    static class Configuration {
-
-        @Bean
-        @ServiceConnection("redis")
-        RedisContainer redis() {
-            var logger = LoggerFactory.getLogger(RedisContainer.class);
-            return new RedisContainer(DockerImageName.parse(REDIS_IMAGE))
-                    .withLogConsumer(new Slf4jLogConsumer(logger, true));
-        }
     }
 }

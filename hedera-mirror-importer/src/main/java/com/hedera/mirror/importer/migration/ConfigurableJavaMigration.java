@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,18 @@ import org.flywaydb.core.api.configuration.Configuration;
 
 abstract class ConfigurableJavaMigration extends AbstractJavaMigration {
 
+    private static final String ASYNC = "async";
     private static final MigrationProperties DEFAULT_MIGRATION_PROPERTIES = new MigrationProperties();
 
     protected final MigrationProperties migrationProperties;
 
     protected ConfigurableJavaMigration(Map<String, MigrationProperties> migrationPropertiesMap) {
         String propertiesKey = StringUtils.uncapitalize(getClass().getSimpleName());
-        migrationProperties = migrationPropertiesMap.getOrDefault(propertiesKey, DEFAULT_MIGRATION_PROPERTIES);
+        var defaultProperties = DEFAULT_MIGRATION_PROPERTIES;
+        if (this instanceof AsyncJavaMigration<?>) {
+            defaultProperties = migrationPropertiesMap.getOrDefault(ASYNC, DEFAULT_MIGRATION_PROPERTIES);
+        }
+        migrationProperties = migrationPropertiesMap.getOrDefault(propertiesKey, defaultProperties);
     }
 
     @Override

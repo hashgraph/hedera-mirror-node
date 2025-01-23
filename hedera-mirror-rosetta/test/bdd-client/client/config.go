@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@ import (
 	"time"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/pkg/errors"
 )
 
 type Operator struct {
-	Id         hedera.AccountID
-	PrivateKey hedera.PrivateKey
+	Id         hiero.AccountID
+	PrivateKey hiero.PrivateKey
 }
 
 func (o Operator) String() string {
@@ -71,7 +71,7 @@ func (r retry) Run(work func() (bool, *types.Error, error), forceRetryOnRosettaE
 type Server struct {
 	DataRetry   retry
 	HttpTimeout time.Duration
-	Network     map[string]hedera.AccountID
+	Network     map[string]hiero.AccountID
 	OfflineUrl  string
 	OnlineUrl   string
 	SubmitRetry retry

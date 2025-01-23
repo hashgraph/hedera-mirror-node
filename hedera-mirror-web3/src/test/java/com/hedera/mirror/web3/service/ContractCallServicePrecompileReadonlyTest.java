@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,12 +85,16 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var functionCall = contract.call_callMissingPrecompile();
 
         // Then
-        assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+        } else {
+            assertThatThrownBy(functionCall::send).isInstanceOf(PrecompileNotSupportedException.class);
+        }
     }
 
     // Temporary test until we start supporting this precompile
     @Test
-    void hrcIsAssociatedFails() {
+    void hrcIsAssociatedFails() throws Exception {
         // Given
         final var token = persistFungibleToken();
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
@@ -99,9 +103,13 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var functionCall = contract.call_hrcIsAssociated(getAddressFromEntity(token));
 
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(PrecompileNotSupportedException.class)
-                .hasMessage("HRC isAssociated() precompile is not supported.");
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            assertThat(functionCall.send()).isFalse();
+        } else {
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(PrecompileNotSupportedException.class)
+                    .hasMessage("HRC isAssociated() precompile is not supported.");
+        }
     }
 
     @Test
@@ -492,7 +500,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void getCustomFeesForTokenWithFixedFee() throws Exception {
         // Given
-        final var collectorAccount = accountEntityPersist();
+        final var collectorAccount = accountEntityWithEvmAddressPersist();
         final var tokenEntity = persistFungibleToken();
         final var fixedFee = com.hedera.mirror.common.domain.token.FixedFee.builder()
                 .amount(100L)
@@ -530,7 +538,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void getCustomFeesForTokenWithFractionalFee() throws Exception {
         // Given
-        final var collectorAccount = accountEntityPersist();
+        final var collectorAccount = accountEntityWithEvmAddressPersist();
         final var tokenEntity = persistFungibleToken();
         final var fractionalFee = FractionalFee.builder()
                 .collectorAccountId(collectorAccount.toEntityId())
@@ -572,7 +580,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void getCustomFeesForTokenWithRoyaltyFee() throws Exception {
         // Given
-        final var collectorAccount = accountEntityPersist();
+        final var collectorAccount = accountEntityWithEvmAddressPersist();
         final var tokenEntity = persistFungibleToken();
         final var royaltyFee = RoyaltyFee.builder()
                 .collectorAccountId(collectorAccount.toEntityId())
@@ -618,7 +626,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         // Given
         final var expiryPeriod = 9999999999999L;
         final var autoRenewExpiry = 100000000L;
-        final var autoRenewAccount = accountEntityPersist();
+        final var autoRenewAccount = accountEntityWithEvmAddressPersist();
         final var tokenEntity = domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.TOKEN)
@@ -653,8 +661,8 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     void getAllowanceForToken() throws Exception {
         // Given
         final var amountGranted = 50L;
-        final var owner = accountEntityPersist();
-        final var spender = accountEntityPersist();
+        final var owner = accountEntityWithEvmAddressPersist();
+        final var spender = accountEntityWithEvmAddressPersist();
         final var tokenEntity = persistFungibleToken();
 
         domainBuilder
@@ -681,8 +689,8 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void isApprovedForAllNFT() throws Exception {
         // Given
-        final var owner = accountEntityPersist();
-        final var spender = accountEntityPersist();
+        final var owner = accountEntityWithEvmAddressPersist();
+        final var spender = accountEntityWithEvmAddressPersist();
         final var tokenEntity = persistNft();
 
         domainBuilder
@@ -708,8 +716,8 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void getFungibleTokenInfo() throws Exception {
         // Given
-        final var treasury = accountEntityPersist();
-        final var feeCollector = accountEntityPersist();
+        final var treasury = accountEntityWithEvmAddressPersist();
+        final var feeCollector = accountEntityWithEvmAddressPersist();
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
         final var token = domainBuilder
@@ -775,8 +783,8 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     void getNonFungibleTokenInfo() throws Exception {
         // Given
         final var owner = accountEntityPersist();
-        final var treasury = accountEntityPersist();
-        final var feeCollector = accountEntityPersist();
+        final var treasury = accountEntityWithEvmAddressPersist();
+        final var feeCollector = accountEntityWithEvmAddressPersist();
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
         final var token = domainBuilder
@@ -787,7 +795,10 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                 .persist();
         final var nft = domainBuilder
                 .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(owner.toEntityId()))
+                .customize(n -> n.tokenId(tokenEntity.getId())
+                        .serialNumber(1L)
+                        .spender(null)
+                        .accountId(owner.toEntityId()))
                 .persist();
 
         final var customFees =
@@ -852,8 +863,8 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @EnumSource(TokenTypeEnum.class)
     void getTokenInfo(final TokenTypeEnum tokenType) throws Exception {
         // Given
-        final var treasury = accountEntityPersist();
-        final var feeCollector = accountEntityPersist();
+        final var treasury = accountEntityWithEvmAddressPersist();
+        final var feeCollector = accountEntityWithEvmAddressPersist();
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
         final var token = domainBuilder

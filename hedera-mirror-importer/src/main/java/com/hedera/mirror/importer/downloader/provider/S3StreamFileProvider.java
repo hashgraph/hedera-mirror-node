@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,10 +131,14 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     private String getPrefix(PathKey key, PathType pathType) {
-        return switch (pathType) {
-            case ACCOUNT_ID, AUTO -> getAccountIdPrefix(key);
-            case NODE_ID -> getNodeIdPrefix(key);
-        };
+        var basePrefix =
+                switch (pathType) {
+                    case ACCOUNT_ID, AUTO -> getAccountIdPrefix(key);
+                    case NODE_ID -> getNodeIdPrefix(key);
+                };
+        return StringUtils.isNotBlank(properties.getPathPrefix())
+                ? properties.getPathPrefix() + SEPARATOR + basePrefix
+                : basePrefix;
     }
 
     private StreamFileData toStreamFileData(StreamFilename streamFilename, ResponseBytes<GetObjectResponse> r) {

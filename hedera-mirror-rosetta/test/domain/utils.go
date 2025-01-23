@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package domain
 
-import "github.com/hashgraph/hedera-sdk-go/v2"
+import "github.com/hiero-ledger/hiero-sdk-go/v2"
 
-func GenEd25519KeyPair() (hedera.PrivateKey, hedera.PublicKey) {
-	sk, err := hedera.PrivateKeyGenerateEd25519()
+func GenEd25519KeyPair() (hiero.PrivateKey, hiero.PublicKey) {
+	sk, err := hiero.PrivateKeyGenerateEd25519()
 	if err != nil {
 		panic(err)
 	}

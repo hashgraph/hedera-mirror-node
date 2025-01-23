@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,26 +51,21 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
-tasks.compileJava {
-    // Disable serial, and this-escape warnings due to errors in generated code
+tasks.withType<JavaCompile>().configureEach {
+    // Disable serial and this-escape warnings due to errors in generated code
     options.compilerArgs.addAll(
-        listOf("-Werror", "-Xlint:all", "-Xlint:-serial,-this-escape,-preview")
+        listOf("-parameters", "-Werror", "-Xlint:all", "-Xlint:-this-escape,-preview")
     )
     options.encoding = "UTF-8"
     sourceCompatibility = "21"
     targetCompatibility = "21"
 }
 
-tasks.compileTestJava {
-    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-this-escape,-preview"))
-    options.encoding = "UTF-8"
-    sourceCompatibility = "21"
-    targetCompatibility = "21"
-}
+tasks.compileJava { options.compilerArgs.add("-Xlint:-serial") }
 
 tasks.javadoc { options.encoding = "UTF-8" }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
     finalizedBy(tasks.jacocoTestReport)
     jvmArgs = listOf("-XX:+EnableDynamicAgentLoading") // Allow byte buddy for Mockito
     maxHeapSize = "4096m"

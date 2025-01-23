@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,14 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/pkg/errors"
 )
 
 type AccountId struct {
 	accountId domain.EntityId
 	alias     []byte
-	aliasKey  *hedera.PublicKey
+	aliasKey  *hiero.PublicKey
 	curveType types.CurveType
 }
 
@@ -72,7 +72,7 @@ func (a AccountId) ToRosetta() *types.AccountIdentifier {
 	return &types.AccountIdentifier{Address: a.String()}
 }
 
-func (a AccountId) ToSdkAccountId() (zero hedera.AccountID, err error) {
+func (a AccountId) ToSdkAccountId() (zero hiero.AccountID, err error) {
 	shard, err := tools.CastToUint64(a.accountId.ShardNum)
 	if err != nil {
 		return zero, err
@@ -88,7 +88,7 @@ func (a AccountId) ToSdkAccountId() (zero hedera.AccountID, err error) {
 		return zero, err
 	}
 
-	return hedera.AccountID{
+	return hiero.AccountID{
 		Shard:    shard,
 		Realm:    realm,
 		Account:  account,
@@ -143,7 +143,7 @@ func NewAccountIdFromPublicKeyBytes(keyBytes []byte, shard, realm int64) (zero A
 		return zero, errors.Errorf("shard and realm must be positive integers")
 	}
 
-	aliasKey, err := hedera.PublicKeyFromBytes(keyBytes)
+	aliasKey, err := hiero.PublicKeyFromBytes(keyBytes)
 	if err != nil {
 		return zero, err
 	}
@@ -161,7 +161,7 @@ func NewAccountIdFromPublicKeyBytes(keyBytes []byte, shard, realm int64) (zero A
 	}, nil
 }
 
-func NewAccountIdFromSdkAccountId(accountId hedera.AccountID) (zero AccountId, _ error) {
+func NewAccountIdFromSdkAccountId(accountId hiero.AccountID) (zero AccountId, _ error) {
 	var alias []byte
 	var entityId domain.EntityId
 	var err error
@@ -214,7 +214,7 @@ func NewAccountIdFromString(address string, shard, realm int64) (zero AccountId,
 	return NewAccountIdFromAlias(alias, shard, realm)
 }
 
-func castFromSdkAccountId(accountId hedera.AccountID) (shard, realm, account int64, err error) {
+func castFromSdkAccountId(accountId hiero.AccountID) (shard, realm, account int64, err error) {
 	shard, err = tools.CastToInt64(accountId.Shard)
 	if err != nil {
 		return

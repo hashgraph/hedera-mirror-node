@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -506,7 +506,6 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         Entity actualFile = getTransactionEntity(txnRecord.getConsensusTimestamp());
 
         assertAll(
-                // TODO: Review row count of fileDataRepository with issue #294, probably should be 1
                 this::assertRowCountOnTwoFileTransactions,
                 () -> assertTransactionAndRecord(transactionBody, txnRecord),
                 // Additional entity checks
@@ -534,7 +533,6 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         Entity actualFile = getTransactionEntity(txnRecord.getConsensusTimestamp());
 
         assertAll(
-                // TODO: Review row count in fileDataRepository with issue #294, probably should be 0
                 () -> assertRowCountOnSuccess(FILE_ID),
                 () -> assertTransactionAndRecord(transactionBody, txnRecord),
                 // Additional entity checks
@@ -574,7 +572,6 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         Entity dbFileEntity = getTransactionEntity(txnRecord.getConsensusTimestamp());
 
         assertAll(
-                // TODO: Review row count of fileDataRepository with issue #294, probably should be 1
                 this::assertRowCountOnTwoFileTransactions,
                 () -> assertTransactionAndRecord(transactionBody, txnRecord),
                 // Additional entity checks
@@ -600,7 +597,6 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         Entity dbFileEntity = getTransactionEntity(txnRecord.getConsensusTimestamp());
 
         assertAll(
-                // TODO: Review row count in fileDataRepository with issue #294, probably should be 0
                 () -> assertRowCountOnSuccess(FILE_ID),
                 () -> assertTransactionAndRecord(transactionBody, txnRecord),
                 // Additional entity checks

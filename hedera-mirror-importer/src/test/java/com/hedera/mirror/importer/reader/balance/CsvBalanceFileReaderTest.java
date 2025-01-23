@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.reader.balance;
 
-import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
+import static com.hedera.mirror.common.util.DomainUtils.createSha384Digest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -263,7 +263,7 @@ abstract class CsvBalanceFileReaderTest {
     }
 
     protected void assertFileHash(File file, AccountBalanceFile accountBalanceFile) throws Exception {
-        MessageDigest md = MessageDigest.getInstance(SHA_384.getName());
+        MessageDigest md = createSha384Digest();
         byte[] array = Files.readAllBytes(file.toPath());
         String fileHash = DomainUtils.bytesToHex(md.digest(array));
         assertThat(accountBalanceFile.getFileHash()).isEqualTo(fileHash);

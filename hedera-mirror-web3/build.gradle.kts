@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 import java.net.HttpURLConnection
 import java.net.URI
 import org.web3j.solidity.gradle.plugin.SolidityCompile
-import org.web3j.solidity.gradle.plugin.SolidityResolve
 
 description = "Hedera Mirror Node Web3"
 
@@ -28,13 +27,20 @@ plugins {
     id("spring-conventions")
 }
 
-val javaxInjectVersion = "1"
+// We need to use this version in order to be able to decode hex data when using the hedera.app
+// dependency
+val headlongVersion = "6.1.1"
+
+repositories {
+    // Temporary repository added for com.hedera.cryptography snapshot dependencies
+    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+}
 
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
     implementation("com.bucket4j:bucket4j-core")
-    implementation("com.esaulpaugh:headlong")
+    implementation("com.esaulpaugh:headlong:$headlongVersion")
     implementation("com.hedera.hashgraph:app") { exclude(group = "io.netty") }
     implementation("com.hedera.evm:hedera-evm")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
@@ -125,7 +131,7 @@ val extractOpenZeppelin =
 
 tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
-tasks.compileJava { options.compilerArgs.add("--enable-preview") }
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("--enable-preview") }
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
@@ -137,17 +143,6 @@ tasks.processTestResources {
     dependsOn(tasks.named("moveAndCleanTestHistoricalFiles"))
 }
 
-tasks.register("resolveSolidityHistorical", SolidityResolve::class) {
-    group = "historical"
-    description = "Resolves the historical solidity version $historicalSolidityVersion"
-    sources = fileTree("src/testHistorical/solidity")
-    allowPaths = setOf("src/testHistorical/solidity")
-
-    val packageJsonFile = "./build/node_modules/@openzeppelin/contracts/package.json"
-    packageJson = file(packageJsonFile)
-    dependsOn("extractContracts")
-}
-
 afterEvaluate {
     tasks.named("compileTestHistoricalSolidity", SolidityCompile::class.java).configure {
         group = "historical"
@@ -156,7 +151,6 @@ afterEvaluate {
         version = historicalSolidityVersion
         source = fileTree("src/testHistorical/solidity") { include("*.sol") }
         dependsOn("extractContracts")
-        dependsOn("resolveSolidityHistorical")
     }
 }
 
@@ -164,7 +158,6 @@ afterEvaluate {
     tasks.named("generateTestHistoricalContractWrappers") {
         dependsOn(tasks.named("generateTestContractWrappers"))
         dependsOn(extractOpenZeppelin)
-        dependsOn(tasks.named("resolveSolidityHistorical"))
     }
 }
 
@@ -210,10 +203,10 @@ tasks.register<Copy>("moveAndCleanTestHistoricalFiles") {
     dependsOn(tasks.named("generateTestHistoricalContractWrappers"))
 }
 
-afterEvaluate { tasks.named("resolveSolidity") { dependsOn("extractContracts") } }
+afterEvaluate { tasks.named("extractSolidityImports") { dependsOn("extractContracts") } }
 
 tasks.compileTestJava {
-    options.compilerArgs.add("--enable-preview")
+    options.compilerArgs.add("-Xlint:-unchecked") // Web3j generates code with unchecked
     options.compilerArgs.removeIf { it == "-Werror" }
     dependsOn("moveAndCleanTestHistoricalFiles")
 }

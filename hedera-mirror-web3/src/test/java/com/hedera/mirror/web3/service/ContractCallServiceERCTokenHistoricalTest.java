@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -673,22 +672,17 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
         final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
         final var accountId = entityIdFromEvmAddress(senderAddress);
         final var tokenId = entityIdFromEvmAddress(tokenAddress);
-        // hardcoded treasury account id is mandatory
-        final long lowerTimestamp = historicalRange.lowerEndpoint();
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(lowerTimestamp, EntityId.of(2))))
-                .persist();
         domainBuilder
                 .tokenBalance()
-                .customize(tb -> tb.id(new TokenBalance.Id(lowerTimestamp, accountId, tokenId))
+                .customize(tb -> tb.id(new TokenBalance.Id(treasuryEntity.getCreatedTimestamp(), accountId, tokenId))
                         .balance(balance))
                 .persist();
         domainBuilder
                 .tokenBalance()
                 // Expected total supply is 12345
                 .customize(tb -> tb.balance(12345L - balance)
-                        .id(new TokenBalance.Id(lowerTimestamp, domainBuilder.entityId(), tokenEntityId)))
+                        .id(new TokenBalance.Id(
+                                treasuryEntity.getCreatedTimestamp(), domainBuilder.entityId(), tokenEntityId)))
                 .persist();
     }
 

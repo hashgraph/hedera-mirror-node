@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,6 +154,7 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
         assertThat(findHistory("token", PostMigrationToken.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
+    @SuppressWarnings("java:S1854") // timestamp is needed in order to avoid repetition
     private MigrationToken.MigrationTokenBuilder getMigrationToken() {
         long timestamp = domainBuilder.timestamp();
         return MigrationToken.builder()

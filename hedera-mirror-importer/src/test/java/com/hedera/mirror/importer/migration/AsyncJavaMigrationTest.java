@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.db.DBProperties;
 import jakarta.annotation.Nonnull;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,12 +54,22 @@ class AsyncJavaMigrationTest extends ImporterIntegrationTest {
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final TransactionOperations transactionOperations;
     private final String script = TestAsyncJavaMigration.class.getName();
+    private final Collection<AsyncJavaMigration<?>> asyncMigrations;
 
     @AfterEach
     @BeforeEach
     void cleanup() {
         namedParameterJdbcTemplate.update(
                 "delete from flyway_schema_history where script = :script", Map.of("script", script));
+    }
+
+    @Test
+    void disabledInConfig() {
+        asyncMigrations.forEach(migration -> {
+            assertThat(migration.migrationProperties.isEnabled())
+                    .as("%s is not disabled", migration.getClass().getSimpleName())
+                    .isFalse();
+        });
     }
 
     @ParameterizedTest

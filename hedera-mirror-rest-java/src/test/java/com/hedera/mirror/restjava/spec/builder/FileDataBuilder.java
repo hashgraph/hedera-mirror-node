@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 
 @Named
 class FileDataBuilder extends AbstractEntityBuilder<FileData, FileData.FileDataBuilder> {
-
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS =
             Map.of("fileData", HEX_OR_BASE64_CONVERTER);
 
@@ -40,7 +39,7 @@ class FileDataBuilder extends AbstractEntityBuilder<FileData, FileData.FileDataB
     }
 
     @Override
-    protected FileData.FileDataBuilder getEntityBuilder() {
+    protected FileData.FileDataBuilder getEntityBuilder(SpecBuilderContext builderContext) {
         return FileData.builder().transactionType(17);
     }
 

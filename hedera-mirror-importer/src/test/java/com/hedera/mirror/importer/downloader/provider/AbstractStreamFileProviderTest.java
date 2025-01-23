@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,28 +51,27 @@ abstract class AbstractStreamFileProviderTest {
     @TempDir
     protected Path dataPath;
 
-    protected FileCopier fileCopier;
     protected CommonDownloaderProperties properties;
     protected StreamFileProvider streamFileProvider;
 
     @BeforeEach
-    void setup() throws Exception {
+    void setup() {
         var mirrorProperties = new ImporterProperties();
         mirrorProperties.setDataPath(dataPath);
         properties = new CommonDownloaderProperties(mirrorProperties);
         customizeProperties(properties);
-        fileCopier = createFileCopier(dataPath);
         bucketRootPath = dataPath.resolve(properties.getBucketName());
     }
 
-    protected abstract FileCopier createFileCopier(Path dataPath);
+    protected abstract FileCopier createFileCopier();
 
     protected abstract String getProviderPathSeparator();
 
     protected abstract String resolveProviderRelativePath(ConsensusNode node, String fileName);
 
+    @SuppressWarnings("unused") // node is used in the child classes implementations
     protected FileCopier getFileCopier(ConsensusNode node) {
-        return fileCopier;
+        return createFileCopier();
     }
 
     protected void customizeProperties(CommonDownloaderProperties properties) {
@@ -138,6 +137,14 @@ abstract class AbstractStreamFileProviderTest {
     }
 
     @Test
+    void listWithPathPrefix() {
+        properties.setPathPrefix("prefix");
+        var node = node("0.0.3");
+        var nodeFileCopier = getFileCopier(node);
+        list(nodeFileCopier, node);
+    }
+
+    @Test
     void listThenGet() {
         var node = node("0.0.3");
         var nodeFileCopier = getFileCopier(node);
@@ -175,6 +182,12 @@ abstract class AbstractStreamFileProviderTest {
                 .isEqualTo(sidecar)
                 .extracting(StreamFileData::getDecompressedBytes)
                 .isEqualTo(sidecar.getDecompressedBytes());
+    }
+
+    @Test
+    void listThenGetWithPathPrefix() {
+        properties.setPathPrefix("prefix");
+        listThenGet();
     }
 
     @Test
@@ -251,7 +264,7 @@ abstract class AbstractStreamFileProviderTest {
 
     @SneakyThrows
     private void replaceContents(StreamFileData streamFileData, byte[] contents) {
-        var file = fileCopier
+        var file = createFileCopier()
                 .getTo()
                 .getParent()
                 .resolve(streamFileData.getFilePath())
@@ -368,20 +381,17 @@ abstract class AbstractStreamFileProviderTest {
         return TestUtils.nodeFromAccountId(nodeAccountId);
     }
 
+    @SneakyThrows
     protected StreamFileData streamFileData(ConsensusNode node, FileCopier fileCopier, String filename) {
-        try {
-            var streamFilename =
-                    StreamFilename.from(resolveProviderRelativePath(node, filename), getProviderPathSeparator());
-            var repoDataPath = fileCopier
-                    .getFrom()
-                    .resolve(nodePath(node))
-                    .resolve(streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "")
-                    .resolve(filename);
-            var bytes = FileUtils.readFileToByteArray(repoDataPath.toFile());
-            return new StreamFileData(streamFilename, () -> bytes, Instant.now());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        var streamFilename =
+                StreamFilename.from(resolveProviderRelativePath(node, filename), getProviderPathSeparator());
+        var repoDataPath = fileCopier
+                .getFrom()
+                .resolve(nodePath(node))
+                .resolve(streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "")
+                .resolve(filename);
+        var bytes = FileUtils.readFileToByteArray(repoDataPath.toFile());
+        return new StreamFileData(streamFilename, () -> bytes, Instant.now());
     }
 
     protected StreamFileData streamFileData(ConsensusNode node, String filename) {

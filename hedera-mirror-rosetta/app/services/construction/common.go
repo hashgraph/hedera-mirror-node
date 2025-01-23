@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@ package construction
 
 import (
 	"encoding/json"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -63,7 +63,7 @@ func newCommonTransactionConstructor(
 }
 
 type payerMetadata struct {
-	Payer *hedera.AccountID `json:"payer" validate:"required"`
+	Payer *hiero.AccountID `json:"payer" validate:"required"`
 }
 
 func compareCurrency(currencyA *rTypes.Currency, currencyB *rTypes.Currency) bool {
@@ -84,8 +84,8 @@ func compareCurrency(currencyA *rTypes.Currency, currencyB *rTypes.Currency) boo
 	return true
 }
 
-func isNonEmptyPublicKey(key hedera.Key) bool {
-	pk, ok := key.(hedera.PublicKey)
+func isNonEmptyPublicKey(key hiero.Key) bool {
+	pk, ok := key.(hiero.PublicKey)
 	if !ok {
 		return false
 	}
@@ -93,7 +93,7 @@ func isNonEmptyPublicKey(key hedera.Key) bool {
 	return len(pk.Bytes()) != 0
 }
 
-func isZeroAccountId(accountId hedera.AccountID) bool {
+func isZeroAccountId(accountId hiero.AccountID) bool {
 	return accountId.Shard == 0 && accountId.Realm == 0 && accountId.Account == 0
 }
 

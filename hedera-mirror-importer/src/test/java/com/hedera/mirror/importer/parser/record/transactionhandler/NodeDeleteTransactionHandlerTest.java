@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,7 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(transaction.getTransactionRecordBytes()).containsExactly(transactionRecordBytes);
         verify(entityListener, times(1)).onNode(assertArg(t -> assertThat(t)
                 .isNotNull()
-                .returns(recordItem.getTransactionRecord().getReceipt().getNodeId(), Node::getNodeId)
+                .returns(recordItem.getTransactionBody().getNodeDelete().getNodeId(), Node::getNodeId)
                 .returns(true, Node::isDeleted)));
     }
 }

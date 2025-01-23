@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,17 +158,11 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         // Test case: account_balance and token_balance entry BEFORE token transfers is missing
         // usually the account_balance/token_balance gets persisted ~8 mins after the account creation
 
-        var accountId = new AccountBalance.Id(domainBuilder.timestamp(), TREASURY_ENTITY_ID);
-        // persist account
-        domainBuilder
-                .entity()
-                .customize(a -> a.id(accountId.getAccountId().getId()))
-                .persist();
         // not persisted
         var tokenBalance1 = domainBuilder
                 .tokenBalance()
-                .customize(tb -> tb.id(new TokenBalance.Id(
-                        domainBuilder.timestamp(), accountId.getAccountId(), domainBuilder.entityId())))
+                .customize(tb -> tb.id(
+                        new TokenBalance.Id(domainBuilder.timestamp(), TREASURY_ENTITY_ID, domainBuilder.entityId())))
                 .get();
 
         long consensusTimestamp = tokenBalance1.getId().getConsensusTimestamp();

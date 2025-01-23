@@ -1,20 +1,9 @@
 {
   "description": "Transaction api calls for a specific transaction using transaction id and scheduled is true",
   "setup": {
-    "accounts": [
-      {
-        "num": 3
-      },
-      {
-        "num": 9
-      },
-      {
-        "num": 10
-      },
-      {
-        "num": 98
-      }
-    ],
+    "features": {
+      "fakeTime": "2009-02-13T10:50:00Z"
+    },
     "balances": [],
     "transactions": [
       {

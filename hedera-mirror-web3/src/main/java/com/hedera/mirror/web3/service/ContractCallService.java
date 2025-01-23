@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -44,21 +46,27 @@ import org.apache.tuweni.bytes.Bytes;
 public abstract class ContractCallService {
     static final String GAS_LIMIT_METRIC = "hedera.mirror.web3.call.gas.limit";
     static final String GAS_USED_METRIC = "hedera.mirror.web3.call.gas.used";
+    protected final Store store;
+    protected final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final MeterProvider<Counter> gasLimitCounter;
     private final MeterProvider<Counter> gasUsedCounter;
-    protected final Store store;
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final RecordFileService recordFileService;
     private final ThrottleProperties throttleProperties;
     private final Bucket gasLimitBucket;
 
+    private final TransactionExecutionService transactionExecutionService;
+
+    @SuppressWarnings("java:S107")
     protected ContractCallService(
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
             Bucket gasLimitBucket,
             ThrottleProperties throttleProperties,
             MeterRegistry meterRegistry,
             RecordFileService recordFileService,
-            Store store) {
+            Store store,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            TransactionExecutionService transactionExecutionService) {
         this.gasLimitCounter = Counter.builder(GAS_LIMIT_METRIC)
                 .description("The amount of gas limit sent in the request")
                 .withRegistry(meterRegistry);
@@ -70,43 +78,63 @@ public abstract class ContractCallService {
         this.recordFileService = recordFileService;
         this.throttleProperties = throttleProperties;
         this.gasLimitBucket = gasLimitBucket;
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
+        this.transactionExecutionService = transactionExecutionService;
+    }
+
+    @VisibleForTesting
+    public HederaEvmTransactionProcessingResult callContract(CallServiceParameters params)
+            throws MirrorEvmTransactionException {
+        return ContractCallContext.run(context -> callContract(params, context));
     }
 
     /**
      * This method is responsible for calling a smart contract function. The method is divided into two main parts:
      * <p>
-     *     1. If the call is historical, the method retrieves the corresponding record file and initializes
-     *     the contract call context with the historical state. The method then proceeds to call the contract.
+     * 1. If the call is historical, the method retrieves the corresponding record file and initializes the contract
+     * call context with the historical state. The method then proceeds to call the contract.
      * </p>
      * <p>
-     *     2. If the call is not historical, the method initializes the contract call context with the current state
-     *     and proceeds to call the contract.
+     * 2. If the call is not historical, the method initializes the contract call context with the current state and
+     * proceeds to call the contract.
      * </p>
      *
      * @param params the call service parameters
-     * @param ctx the contract call context
+     * @param ctx    the contract call context
      * @return {@link HederaEvmTransactionProcessingResult} of the contract call
-     * @throws MirrorEvmTransactionException if any pre-checks
-     * fail with {@link IllegalStateException} or {@link IllegalArgumentException}
+     * @throws MirrorEvmTransactionException if any pre-checks fail with {@link IllegalStateException} or
+     *                                       {@link IllegalArgumentException}
      */
     protected HederaEvmTransactionProcessingResult callContract(CallServiceParameters params, ContractCallContext ctx)
             throws MirrorEvmTransactionException {
-        // if we have historical call, then set the corresponding record file in the context
-        if (params.getBlock() != BlockType.LATEST) {
+        ctx.setCallServiceParameters(params);
+
+        if (mirrorNodeEvmProperties.isModularizedServices() || params.getBlock() != BlockType.LATEST) {
             ctx.setRecordFile(recordFileService
                     .findByBlockType(params.getBlock())
                     .orElseThrow(BlockNumberNotFoundException::new));
         }
+
         // initializes the stack frame with the current state or historical state (if the call is historical)
-        ctx.initializeStackFrames(store.getStackedStateFrames());
-        return doProcessCall(params, params.getGas(), true);
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            ctx.initializeStackFrames(store.getStackedStateFrames());
+        }
+
+        var result = doProcessCall(params, params.getGas(), true);
+        validateResult(result, params.getCallType());
+        return result;
     }
 
     protected HederaEvmTransactionProcessingResult doProcessCall(
             CallServiceParameters params, long estimatedGas, boolean restoreGasToThrottleBucket)
             throws MirrorEvmTransactionException {
         try {
-            var result = mirrorEvmTxProcessor.execute(params, estimatedGas);
+            HederaEvmTransactionProcessingResult result;
+            if (!mirrorNodeEvmProperties.isModularizedServices()) {
+                result = mirrorEvmTxProcessor.execute(params, estimatedGas);
+            } else {
+                result = transactionExecutionService.execute(params, estimatedGas, gasUsedCounter);
+            }
             if (!restoreGasToThrottleBucket) {
                 return result;
             }
@@ -119,15 +147,18 @@ public abstract class ContractCallService {
     }
 
     private void restoreGasToBucket(HederaEvmTransactionProcessingResult result, long gasLimit) {
+        final var gasUnit = throttleProperties.getGasUnit();
         // If the transaction fails, gasUsed is equal to gasLimit, so restore the configured refund percent
         // of the gasLimit value back in the bucket.
-        final var gasLimitToRestoreBaseline = (long) (gasLimit * throttleProperties.getGasLimitRefundPercent() / 100f);
+        final var gasLimitToRestoreBaseline =
+                (long) (Math.floorDiv(gasLimit, gasUnit) * throttleProperties.getGasLimitRefundPercent() / 100f);
         if (!result.isSuccessful() && gasLimit == result.getGasUsed()) {
             gasLimitBucket.addTokens(gasLimitToRestoreBaseline);
         } else {
             // The transaction was successful or reverted, so restore the remaining gas back in the bucket or
             // the configured refund percent of the gasLimit value back in the bucket - whichever is lower.
-            gasLimitBucket.addTokens(Math.min(gasLimit - result.getGasUsed(), gasLimitToRestoreBaseline));
+            final var gasRemaining = gasLimit - result.getGasUsed();
+            gasLimitBucket.addTokens(Math.min(Math.floorDiv(gasRemaining, gasUnit), gasLimitToRestoreBaseline));
         }
     }
 
@@ -136,7 +167,8 @@ public abstract class ContractCallService {
             updateGasUsedMetric(ERROR, txnResult.getGasUsed(), 1);
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-            throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            throw new MirrorEvmTransactionException(
+                    getStatusOrDefault(txnResult).name(), detail, revertReason.toHexString(), txnResult);
         } else {
             updateGasUsedMetric(type, txnResult.getGasUsed(), 1);
         }

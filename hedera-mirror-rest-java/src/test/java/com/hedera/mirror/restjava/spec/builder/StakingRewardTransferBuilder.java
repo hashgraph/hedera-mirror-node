@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,19 +22,11 @@ import com.hedera.mirror.restjava.spec.model.SpecSetup;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Named
 class StakingRewardTransferBuilder
         extends AbstractEntityBuilder<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder> {
-
-    private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS =
-            Map.of("accountId", ENTITY_ID_TO_LONG_CONVERTER);
-
-    StakingRewardTransferBuilder() {
-        super(METHOD_PARAMETER_CONVERTERS);
-    }
 
     @Override
     protected Supplier<List<Map<String, Object>>> getSpecEntitiesSupplier(SpecSetup specSetup) {
@@ -42,7 +34,7 @@ class StakingRewardTransferBuilder
     }
 
     @Override
-    protected StakingRewardTransfer.StakingRewardTransferBuilder getEntityBuilder() {
+    protected StakingRewardTransfer.StakingRewardTransferBuilder getEntityBuilder(SpecBuilderContext builderContext) {
         return StakingRewardTransfer.builder().accountId(1001L).amount(100L).payerAccountId(EntityId.of(950L));
     }
 

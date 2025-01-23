@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,6 @@ dependencies {
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("com.github.vertical-blank:sql-formatter")
     testImplementation("com.playtika.testcontainers:embedded-google-pubsub")
-    testImplementation("com.redis.testcontainers:testcontainers-redis-junit-jupiter")
     testImplementation("commons-beanutils:commons-beanutils")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.apache.commons:commons-math3")

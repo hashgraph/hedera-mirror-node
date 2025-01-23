@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,19 +22,19 @@ import (
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPublicKeyIsEmpty(t *testing.T) {
 	tests := []struct {
 		name        string
-		publicKey   hedera.PublicKey
+		publicKey   hiero.PublicKey
 		expectEmpty bool
 	}{
 		{
 			name:        "Empty",
-			publicKey:   hedera.PublicKey{},
+			publicKey:   hiero.PublicKey{},
 			expectEmpty: true,
 		},
 		{
@@ -60,7 +60,7 @@ func TestPublicKeyIsEmpty(t *testing.T) {
 func TestPublicKeyToAlias(t *testing.T) {
 	tests := []struct {
 		name              string
-		publicKey         hedera.PublicKey
+		publicKey         hiero.PublicKey
 		expectedAlias     []byte
 		expectedCurveType types.CurveType
 	}{
@@ -96,7 +96,7 @@ func TestPublicKeyToAlias(t *testing.T) {
 
 func TestPublicKeyToAliasEmptyKey(t *testing.T) {
 	// given
-	pk := hedera.PublicKey{}
+	pk := hiero.PublicKey{}
 	wrapped := PublicKey{PublicKey: pk}
 
 	// when

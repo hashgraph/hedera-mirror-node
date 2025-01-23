@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import lombok.Value;
  * Collection of fields that can be used by Transaction Filter to filter on.
  */
 @Value
+@SuppressWarnings("java:S6548") // Class is not a singleton
 public class TransactionFilterFields {
     public static final TransactionFilterFields EMPTY = new TransactionFilterFields(Set.of(), null);
     /**

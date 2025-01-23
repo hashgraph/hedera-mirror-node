@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,7 @@ class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
     private static final String CHAIN_ID = "chainId";
     private static final String CONTRACTS_CONFIG = "contracts";
     private static final String CHAIN_ID_KEY_CONFIG = CONTRACTS_CONFIG + DOT_SEPARATOR + CHAIN_ID;
-    private static final Map<String, String> YAML_PROPERTIES =
-            Map.of("contracts.allowCreate2", "false", "contracts.maxGasPerSec", "10000000", CHAIN_ID_KEY_CONFIG, "297");
+    private static final Map<String, String> YAML_PROPERTIES = Map.of(CHAIN_ID_KEY_CONFIG, "297");
     private static final String MAX_GAS_REFUND_PERCENTAGE = "maxRefundPercentOfGasLimit";
     private static final String MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG =
             CONTRACTS_CONFIG + DOT_SEPARATOR + MAX_GAS_REFUND_PERCENTAGE;

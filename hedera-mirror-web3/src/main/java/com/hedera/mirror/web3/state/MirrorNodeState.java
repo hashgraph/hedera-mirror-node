@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.state;
 
-import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.hedera.node.app.workflows.handle.metric.UnavailableMetrics.UNAVAILABLE_METRICS;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
@@ -25,28 +24,25 @@ import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.state.core.ListReadableQueueState;
 import com.hedera.mirror.web3.state.core.ListWritableQueueState;
 import com.hedera.mirror.web3.state.core.MapReadableKVState;
 import com.hedera.mirror.web3.state.core.MapReadableStates;
 import com.hedera.mirror.web3.state.core.MapWritableKVState;
 import com.hedera.mirror.web3.state.core.MapWritableStates;
+import com.hedera.mirror.web3.state.singleton.SingletonState;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
-import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
@@ -59,15 +55,11 @@ import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.metric.UnavailableMetrics;
-import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.VersionConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
-import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.KVChangeListener;
 import com.swirlds.state.spi.QueueChangeListener;
@@ -92,7 +84,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 
@@ -115,8 +106,15 @@ public class MirrorNodeState implements State {
     private final NetworkInfo networkInfo;
     private final StartupNetworks startupNetworks;
 
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     @PostConstruct
     private void init() {
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            // If the flag is not enabled, we don't need to make any further initialization.
+            return;
+        }
+
         ContractCallContext.run(ctx -> {
             registerServices(servicesRegistry);
             final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
@@ -126,25 +124,11 @@ public class MirrorNodeState implements State {
                     null,
                     new ServicesSoftwareVersion(
                             bootstrapConfig.getConfigData(VersionConfig.class).servicesVersion()),
-                    new ConfigProviderImpl().getConfiguration(),
-                    new ConfigProviderImpl().getConfiguration(),
+                    mirrorNodeEvmProperties.getVersionedConfiguration(),
+                    mirrorNodeEvmProperties.getVersionedConfiguration(),
                     networkInfo,
                     UnavailableMetrics.UNAVAILABLE_METRICS,
                     startupNetworks);
-
-            final var fileServiceStates = this.getWritableStates(FileService.NAME);
-            final var files = fileServiceStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
-            genesisContentProviders(bootstrapConfig).forEach((fileNum, provider) -> {
-                final var fileId = createFileID(fileNum, bootstrapConfig);
-                files.put(
-                        fileId,
-                        File.newBuilder()
-                                .fileId(fileId)
-                                .keys(KeyList.DEFAULT)
-                                .contents(provider.apply(bootstrapConfig))
-                                .build());
-            });
-            ((CommittableWritableStates) fileServiceStates).commit();
             return ctx;
         });
     }
@@ -207,8 +191,8 @@ public class MirrorNodeState implements State {
                     } else {
                         data.put(stateName, new MapReadableKVState(stateName, map));
                     }
-                } else if (state instanceof AtomicReference ref) {
-                    data.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
+                } else if (state instanceof SingletonState<?> singleton) {
+                    data.put(stateName, new ReadableSingletonStateBase<>(stateName, singleton));
                 }
             }
             return new MapReadableStates(data);
@@ -239,7 +223,7 @@ public class MirrorNodeState implements State {
                                     new MapWritableKVState<>(
                                             stateName,
                                             getReadableStates(serviceName).get(stateName))));
-                } else if (state instanceof AtomicReference<?> ref) {
+                } else if (state instanceof SingletonState<?> ref) {
                     data.put(stateName, withAnyRegisteredListeners(serviceName, stateName, ref));
                 }
             }
@@ -268,8 +252,10 @@ public class MirrorNodeState implements State {
     }
 
     private <V> WritableSingletonStateBase<V> withAnyRegisteredListeners(
-            @Nonnull final String serviceName, @Nonnull final String stateKey, @Nonnull final AtomicReference<V> ref) {
-        final var state = new WritableSingletonStateBase<>(stateKey, ref::get, ref::set);
+            @Nonnull final String serviceName,
+            @Nonnull final String stateKey,
+            @Nonnull final SingletonState<V> singleton) {
+        final var state = new WritableSingletonStateBase<>(stateKey, singleton, singleton::set);
         listeners.forEach(listener -> {
             if (listener.stateTypes().contains(SINGLETON)) {
                 registerSingletonListener(serviceName, state, listener);
@@ -376,11 +362,11 @@ public class MirrorNodeState implements State {
                 InstantSource.system(),
                 signatureVerifier(),
                 Gossip.UNAVAILABLE_GOSSIP,
-                () -> new ConfigProviderImpl().getConfiguration(),
+                () -> mirrorNodeEvmProperties.getVersionedConfiguration(),
                 () -> DEFAULT_NODE_INFO,
                 () -> UNAVAILABLE_METRICS,
                 new AppThrottleFactory(
-                        () -> new ConfigProviderImpl().getConfiguration(),
+                        () -> mirrorNodeEvmProperties.getVersionedConfiguration(),
                         () -> this,
                         () -> ThrottleDefinitions.DEFAULT,
                         ThrottleAccumulator::new));
@@ -392,17 +378,9 @@ public class MirrorNodeState implements State {
                         new BlockRecordService(),
                         new FeeService(),
                         new CongestionThrottleService(),
-                        new RecordCacheService())
+                        new RecordCacheService(),
+                        new ScheduleServiceImpl())
                 .forEach(servicesRegistry::register);
-    }
-
-    private Map<Long, Function<Configuration, Bytes>> genesisContentProviders(
-            final com.swirlds.config.api.Configuration config) {
-        final var genesisSchema = new V0490FileSchema();
-        final var filesConfig = config.getConfigData(FilesConfig.class);
-        return Map.of(
-                filesConfig.feeSchedules(), genesisSchema::genesisFeeSchedules,
-                filesConfig.exchangeRates(), genesisSchema::genesisExchangeRates);
     }
 
     private SignatureVerifier signatureVerifier() {

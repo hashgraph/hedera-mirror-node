@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,6 +172,7 @@ class RecordFileService extends BaseService {
       order by ${filters.orderBy} ${filters.order}
       limit ${filters.limit}
     `;
+
     const rows = await super.getRows(query, params);
     return rows.map((recordFile) => new RecordFile(recordFile));
   }
@@ -213,6 +214,10 @@ class RecordFileService extends BaseService {
           minTimestamp: first,
           order: orderFilterValues.ASC,
         };
+  }
+
+  pool() {
+    return primaryPool;
   }
 }
 

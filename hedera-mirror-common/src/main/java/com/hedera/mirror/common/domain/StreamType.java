@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.mirror.common.domain;
 
 import com.google.common.collect.ImmutableSortedSet;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.transaction.BlockFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import java.time.Duration;
 import java.util.Comparator;
@@ -38,7 +39,8 @@ public enum StreamType {
             "_Balances",
             List.of("csv", "pb"),
             Duration.ofMinutes(15L)),
-    RECORD(RecordFile::new, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L));
+    RECORD(RecordFile::new, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L)),
+    BLOCK(BlockFile::new, "", "", "", List.of("blk"), Duration.ofMillis(500L));
 
     public static final String SIGNATURE_SUFFIX = "_sig";
 

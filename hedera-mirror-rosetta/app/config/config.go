@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -162,7 +162,7 @@ func nodeMapDecodeHookFunc(from, to reflect.Type, data interface{}) (interface{}
 			return zeroNodeMap, errors.Errorf("Invalid data type for node account ID")
 		}
 
-		accountId, err := hedera.AccountIDFromString(nodeAccountIdStr)
+		accountId, err := hiero.AccountIDFromString(nodeAccountIdStr)
 		if err != nil {
 			return zeroNodeMap, err
 		}

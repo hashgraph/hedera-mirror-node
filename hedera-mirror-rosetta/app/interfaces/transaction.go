@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,44 +16,16 @@
 
 package interfaces
 
-import (
-	"github.com/hashgraph/hedera-sdk-go/v2"
-	"time"
-)
+import "github.com/hiero-ledger/hiero-sdk-go/v2"
 
 // Transaction defines the transaction methods used by constructor service
+// Remove the interface when SDK adds support of hiero.TransactionIsFrozen and
+// hiero.TransactionGetDefaultMaxTransactionFee
 type Transaction interface {
-
-	// Execute submits the Transaction to the network using client
-	Execute(client *hedera.Client) (hedera.TransactionResponse, error)
 
 	// IsFrozen returns if the transaction is frozen
 	IsFrozen() bool
 
 	// GetDefaultMaxTransactionFee returns the default max transaction fee set for the Transaction
-	GetDefaultMaxTransactionFee() hedera.Hbar
-
-	// GetNodeAccountIDs returns the node accounts ids set for the Transaction
-	GetNodeAccountIDs() []hedera.AccountID
-
-	// GetSignatures returns the signatures of the Transaction
-	GetSignatures() (map[hedera.AccountID]map[*hedera.PublicKey][]byte, error)
-
-	// GetTransactionHash returns the transaction hash
-	GetTransactionHash() ([]byte, error)
-
-	// GetTransactionID returns the transaction id
-	GetTransactionID() hedera.TransactionID
-
-	// GetTransactionMemo returns the transaction memo
-	GetTransactionMemo() string
-
-	// GetTransactionValidDuration returns the transaction valid duration
-	GetTransactionValidDuration() time.Duration
-
-	// String encodes the Transaction to a string
-	String() string
-
-	// ToBytes serializes the Transaction to a byte slice
-	ToBytes() ([]byte, error)
+	GetDefaultMaxTransactionFee() hiero.Hbar
 }

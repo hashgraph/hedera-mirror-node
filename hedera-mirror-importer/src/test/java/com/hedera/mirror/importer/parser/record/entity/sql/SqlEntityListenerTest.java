@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1749,9 +1749,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         var node1 = domainBuilder.node().get();
         var node2 = domainBuilder
                 .node()
-                .customize(node -> node.adminKey(null))
-                .customize(node -> node.createdTimestamp(null))
-                .customize(node -> node.nodeId(node1.getNodeId()))
+                .customize(node -> node.adminKey(null).nodeId(node1.getNodeId()))
                 .get();
 
         // when
@@ -1774,10 +1772,8 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         var node1 = domainBuilder.node().get();
         var node2 = domainBuilder
                 .node()
-                .customize(node -> node.adminKey(null))
-                .customize(node -> node.createdTimestamp(null))
-                .customize(node -> node.deleted(true))
-                .customize(node -> node.nodeId(node1.getNodeId()))
+                .customize(node ->
+                        node.adminKey(null).createdTimestamp(null).deleted(true).nodeId(node1.getNodeId()))
                 .get();
 
         // when

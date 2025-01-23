@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,8 +132,8 @@ public class ContractFeature extends BaseContractFeature {
         verifyMirrorTransactionsResponse(mirrorClient, status);
     }
 
-    @Then("the mirror node REST API should verify the deployed contract entity")
-    public void verifyDeployedContractMirror() {
+    @Then("the mirror node REST API should verify the contract")
+    public void verifyContract() {
         verifyContractFromMirror(false);
         verifyContractExecutionResultsById();
         verifyContractExecutionResultsByTransactionId();
@@ -142,13 +142,6 @@ public class ContractFeature extends BaseContractFeature {
     @Then("the mirror node REST API should verify the updated contract entity")
     public void verifyUpdatedContractMirror() {
         verifyContractFromMirror(false);
-    }
-
-    @Then("the mirror node REST API should verify the called contract function")
-    public void verifyContractFunctionCallMirror() {
-        verifyContractFromMirror(false);
-        verifyContractExecutionResultsById();
-        verifyContractExecutionResultsByTransactionId();
     }
 
     @Then("I call the contract via the mirror node REST API")

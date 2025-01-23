@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,16 +32,23 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Named
 @RequiredArgsConstructor
 public class PartitionMaintenance {
+
     private static final String RUN_MAINTENANCE_QUERY = "call create_mirror_node_time_partitions()";
 
     @Owner
     private final JdbcTemplate jdbcTemplate;
 
+    private final PartitionProperties partitionProperties;
+
     @EventListener(ApplicationReadyEvent.class)
     @Leader
     @Retryable
-    @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 * * ?}")
+    @Scheduled(cron = "${hedera.mirror.importer.db.partition.cron:0 0 0 * * ?}")
     public synchronized void runMaintenance() {
+        if (!partitionProperties.isEnabled()) {
+            return;
+        }
+
         log.info("Running partition maintenance");
         Stopwatch stopwatch = Stopwatch.createStarted();
         jdbcTemplate.execute(RUN_MAINTENANCE_QUERY);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ public class ByteArrayToHexSerializer extends JsonSerializer<byte[]> {
 
     public static final ByteArrayToHexSerializer INSTANCE = new ByteArrayToHexSerializer();
     static final String PREFIX = "\\x";
+
+    private ByteArrayToHexSerializer() {}
 
     @Override
     public void serialize(byte[] value, JsonGenerator jsonGenerator, SerializerProvider serializers)

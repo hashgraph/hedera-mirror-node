@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ class TokenAllowanceBuilder extends AbstractEntityBuilder<TokenAllowance, TokenA
     }
 
     @Override
-    protected TokenAllowance.TokenAllowanceBuilder<?, ?> getEntityBuilder() {
+    protected TokenAllowance.TokenAllowanceBuilder<?, ?> getEntityBuilder(SpecBuilderContext builderContext) {
         return TokenAllowance.builder()
                 .amount(0L)
                 .amountGranted(0L)

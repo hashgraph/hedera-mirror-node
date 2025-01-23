@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,13 +48,13 @@ public class Utils {
     }
 
     /**
-     * Converts a timestamp in milliseconds to a PBJ Timestamp object.
+     * Converts a timestamp in nanoseconds to a PBJ Timestamp object.
      *
-     * @param timestamp The timestamp in milliseconds.
+     * @param timestamp The timestamp in nanoseconds.
      * @return The PBJ Timestamp object.
      */
     public static Timestamp convertToTimestamp(final long timestamp) {
-        var instant = Instant.ofEpochMilli(timestamp);
+        var instant = Instant.ofEpochSecond(0, timestamp);
         return new Timestamp(instant.getEpochSecond(), instant.getNano());
     }
 

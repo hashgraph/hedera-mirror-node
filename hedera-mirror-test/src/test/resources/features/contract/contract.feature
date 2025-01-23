@@ -20,13 +20,13 @@ Feature: Contract Base Coverage Feature
 
         Given I successfully create a contract from the parent contract bytes with 10000000 balance
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
-        And the mirror node REST API should verify the deployed contract entity
+        And the mirror node REST API should verify the contract
         When I successfully update the contract
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the updated contract entity
         When I successfully call the contract
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
-        And the mirror node REST API should verify the called contract function
+        And the mirror node REST API should verify the contract
         And I call the contract via the mirror node REST API
         Given I call the parent contract to retrieve child contract bytecode
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction

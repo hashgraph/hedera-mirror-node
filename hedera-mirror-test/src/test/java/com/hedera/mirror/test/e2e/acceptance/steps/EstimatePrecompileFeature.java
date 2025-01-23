@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     private static final String HEX_DIGITS = "0123456789abcdef";
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
 
-    private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
+    private static final String RANDOM_ADDRESS =
+            to32BytesString(RandomStringUtils.secure().next(40, HEX_DIGITS));
     private static final long FIRST_NFT_SERIAL_NUMBER = 1;
     private final TokenClient tokenClient;
     private final AccountClient accountClient;
