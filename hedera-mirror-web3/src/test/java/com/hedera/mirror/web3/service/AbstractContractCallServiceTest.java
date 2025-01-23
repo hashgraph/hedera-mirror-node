@@ -31,11 +31,13 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
@@ -51,6 +53,7 @@ import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.AfterEach;
@@ -273,6 +276,35 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    protected Pair<Entity, Entity> persistTokenWithAutoRenewAndTreasuryAccounts(
+            final TokenTypeEnum tokenType, final Entity treasuryAccount, boolean isNft) {
+        final var autoRenewAccount = accountEntityPersist();
+        final var tokenToUpdateEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenToUpdateEntity.getId())
+                        .type(tokenType)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
+                .persist();
+        tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
+
+        if (isNft) {
+            domainBuilder
+                    .nft()
+                    .customize(n -> n.accountId(treasuryAccount.toEntityId())
+                            .spender(treasuryAccount.toEntityId())
+                            .accountId(treasuryAccount.toEntityId())
+                            .tokenId(tokenToUpdateEntity.getId())
+                            .serialNumber(1))
+                    .persist();
+        }
+
+        return Pair.of(tokenToUpdateEntity, autoRenewAccount);
+    }
+
     protected String getAddressFromEntity(Entity entity) {
         return EvmTokenUtils.toAddress(entity.toEntityId()).toHexString();
     }
@@ -301,6 +333,21 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         return ContractFunctionProviderRecord.builder()
                 .contractAddress(contractAddress)
                 .sender(senderAddress)
+                .build();
+    }
+
+    protected ContractExecutionParameters getContractExecutionParameters(
+            final RemoteFunctionCall<?> functionCall, final Contract contract, final Long value) {
+        return ContractExecutionParameters.builder()
+                .block(BlockType.LATEST)
+                .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
+                .callType(CallServiceParameters.CallType.ETH_CALL)
+                .gas(TRANSACTION_GAS_LIMIT)
+                .isEstimate(false)
+                .isStatic(false)
+                .receiver(Address.fromHexString(contract.getContractAddress()))
+                .sender(new HederaEvmAccount(testWeb3jService.getSender()))
+                .value(value)
                 .build();
     }
 
