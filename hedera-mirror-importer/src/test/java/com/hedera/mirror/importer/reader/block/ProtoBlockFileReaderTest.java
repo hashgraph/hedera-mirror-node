@@ -38,12 +38,10 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -77,7 +75,7 @@ class ProtoBlockFileReaderTest {
                         .build())
                 .build();
         byte[] bytes = gzip(block);
-        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", bytes);
+        var streamFileData = StreamFileData.from(BlockFile.getBlockStreamFilename(1), bytes);
         var expected = BlockFile.builder()
                 .loadStart(streamFileData.getStreamFilename().getTimestamp())
                 .name(streamFileData.getFilename())
@@ -95,7 +93,7 @@ class ProtoBlockFileReaderTest {
     @Test
     void throwWhenMissingBlockHeader() {
         var block = Block.newBuilder().addItems(blockProof()).build();
-        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", gzip(block));
+        var streamFileData = StreamFileData.from(BlockFile.getBlockStreamFilename(1), gzip(block));
         assertThatThrownBy(() -> reader.read(streamFileData))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Missing block header");
@@ -104,7 +102,7 @@ class ProtoBlockFileReaderTest {
     @Test
     void throwWhenMissingBlockProof() {
         var block = Block.newBuilder().addItems(blockHeader()).build();
-        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", gzip(block));
+        var streamFileData = StreamFileData.from(BlockFile.getBlockStreamFilename(1), gzip(block));
         assertThatThrownBy(() -> reader.read(streamFileData))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Missing block proof");
@@ -121,7 +119,7 @@ class ProtoBlockFileReaderTest {
                 .addItems(eventTransaction())
                 .addItems(blockProof())
                 .build();
-        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", gzip(block));
+        var streamFileData = StreamFileData.from(BlockFile.getBlockStreamFilename(1), gzip(block));
         assertThatThrownBy(() -> reader.read(streamFileData))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Missing transaction result");
@@ -144,7 +142,7 @@ class ProtoBlockFileReaderTest {
                 .addItems(transactionResult)
                 .addItems(blockProof())
                 .build();
-        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", gzip(block));
+        var streamFileData = StreamFileData.from(BlockFile.getBlockStreamFilename(1), gzip(block));
         assertThatThrownBy(() -> reader.read(streamFileData))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Failed to deserialize Transaction");
@@ -182,22 +180,16 @@ class ProtoBlockFileReaderTest {
                 .build();
     }
 
-    @SneakyThrows
-    private static byte[] gzip(Block block) {
-        try (var bos = new ByteArrayOutputStream();
-                var gos = new GzipCompressorOutputStream(bos)) {
-            gos.write(block.toByteArray());
-            gos.finish();
-            return bos.toByteArray();
-        }
+    private byte[] gzip(Block block) {
+        return TestUtils.gzip(block.toByteArray());
     }
 
     @SneakyThrows
     private static Stream<Arguments> readTestArgumentsProvider() {
         List<Arguments> argumentsList = new ArrayList<>();
 
-        String filename = "000000000000000000000000000007858853.blk.gz";
         long index = 7858853;
+        String filename = BlockFile.getBlockStreamFilename(index);
         long round = index + 1;
         var file = new ClassPathResource("data/blockstreams/" + filename).getFile();
         var streamFileData = StreamFileData.from(file);
@@ -223,8 +215,8 @@ class ProtoBlockFileReaderTest {
 
         // A block without event transactions, note consensusStart and consensusEnd are both null due to the bug that
         // BlockHeader.first_transaction_consensus_time is null
-        filename = "000000000000000000000000000007858854.blk.gz";
         index = 7858854;
+        filename = BlockFile.getBlockStreamFilename(index);
         round = index + 1;
         file = new ClassPathResource("data/blockstreams/" + filename).getFile();
         streamFileData = StreamFileData.from(file);

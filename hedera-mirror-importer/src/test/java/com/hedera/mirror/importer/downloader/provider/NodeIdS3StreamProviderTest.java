@@ -16,48 +16,29 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
-import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.nio.file.Path;
 import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
 
 /*
  * Copy HIP-679 bucket structured files and configure the stream file provider to access S3 using
  * the new consensus node ID based hierarchy rather than the legacy node account ID mechanism.
  */
-class NodeIdS3StreamProviderTest extends S3StreamFileProviderTest {
+class NodeIdS3StreamProviderTest extends AbstractHip679S3StreamFileProviderTest {
 
     @Override
-    protected FileCopier createFileCopier() {
-        String network = properties.getImporterProperties().getNetwork();
-        var fromPath = Path.of("data", "hip679", "provider-node-id");
+    @BeforeEach
+    void setup() {
+        super.setup();
 
-        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
-                .to(properties.getBucketName(), properties.getPathPrefix(), network);
-    }
-
-    @Override
-    protected void customizeProperties(CommonDownloaderProperties properties) {
-        super.customizeProperties(properties);
         properties.setPathType(PathType.NODE_ID);
         properties.setPathRefreshInterval(Duration.ofSeconds(2L));
     }
 
     @Override
-    protected Path nodePath(ConsensusNode node) {
-        return TestUtils.nodePath(node, PathType.NODE_ID, StreamType.RECORD);
-    }
-
-    @Override
-    protected String resolveProviderRelativePath(ConsensusNode node, String fileName) {
-        return TestUtils.nodeIdStreamFileProviderPath(
-                node,
-                StreamType.RECORD,
-                fileName,
-                properties.getImporterProperties().getNetwork());
+    protected FileCopier createDefaultFileCopier() {
+        return createFileCopier(Path.of("data", "hip679", "provider-node-id"), importerProperties.getNetwork());
     }
 }

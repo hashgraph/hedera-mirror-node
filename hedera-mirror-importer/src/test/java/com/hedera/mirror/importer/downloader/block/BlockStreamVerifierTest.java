@@ -36,7 +36,6 @@ import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.time.Instant;
 import java.util.Optional;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -157,7 +156,7 @@ class BlockStreamVerifierTest {
         return BlockFile.builder()
                 .hash(sha384Hash())
                 .index(blockNumber)
-                .name(getBlockFilename(blockNumber))
+                .name(BlockFile.getBlockStreamFilename(blockNumber))
                 .previousHash(previousHash)
                 .build();
     }
@@ -192,10 +191,6 @@ class BlockStreamVerifierTest {
         verifyNoInteractions(blockFileTransformer);
         verify(recordFileRepository).findLatest();
         verifyNoInteractions(streamFileNotifier);
-    }
-
-    private String getBlockFilename(long blockNumber) {
-        return StringUtils.leftPad(String.valueOf(blockNumber), 36, "0") + ".blk.gz";
     }
 
     private RecordFile getRecordFile() {

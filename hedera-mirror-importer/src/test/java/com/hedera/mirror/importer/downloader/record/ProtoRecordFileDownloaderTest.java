@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.downloader.record;
 
+import static com.hedera.mirror.importer.TestUtils.gzip;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -26,7 +27,6 @@ import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,7 +40,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -147,26 +146,20 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Test
     void sidecarFileHashMismatch() throws IOException {
-        try (var byteArrayOutputStream = new ByteArrayOutputStream();
-                var gzipCompressorOutputStream = new GzipCompressorOutputStream(byteArrayOutputStream)) {
-            gzipCompressorOutputStream.write(SidecarFile.getDefaultInstance().toByteArray());
-            gzipCompressorOutputStream.finish();
-            var fileData = byteArrayOutputStream.toByteArray();
+        var fileData = gzip(SidecarFile.getDefaultInstance().toByteArray());
+        fileCopier.copy();
+        Files.walk(s3Path).filter(p -> p.endsWith(SIDECAR_FILENAME)).forEach(p -> {
+            try {
+                FileUtils.writeByteArrayToFile(p.toFile(), fileData);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
 
-            fileCopier.copy();
-            Files.walk(s3Path).filter(p -> p.endsWith(SIDECAR_FILENAME)).forEach(p -> {
-                try {
-                    FileUtils.writeByteArrayToFile(p.toFile(), fileData);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            expectLastStreamFile(Instant.EPOCH);
-            downloader.download();
-
-            verifyForSuccess(List.of(file1));
-            assertThat(importerProperties.getDataPath()).isEmptyDirectory();
-        }
+        verifyForSuccess(List.of(file1));
+        assertThat(importerProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Override

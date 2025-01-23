@@ -56,10 +56,10 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
     }
 
     @Override
-    public Mono<StreamFileData> get(ConsensusNode consensusNode, StreamFilename streamFilename) {
+    public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
         var index = new AtomicInteger(0);
         return Mono.fromSupplier(() -> getProvider(index))
-                .flatMap(p -> p.get(consensusNode, streamFilename))
+                .flatMap(p -> p.get(node, streamFilename))
                 .retryWhen(Retry.from(s -> s.map(r -> shouldRetry(r, index))));
     }
 

@@ -249,7 +249,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     private BlockFile blockFile(List<BlockItem> blockItems) {
         long blockNumber = domainBuilder.number();
         byte[] bytes = domainBuilder.bytes(256);
-        String filename = StringUtils.leftPad(Long.toString(blockNumber), 36, "0") + ".blk.gz";
+        String filename = BlockFile.getBlockStreamFilename(blockNumber);
         var firstConsensusTimestamp = blockItems.isEmpty()
                 ? domainBuilder.protoTimestamp()
                 : blockItems.getFirst().transactionResult().getConsensusTimestamp();
