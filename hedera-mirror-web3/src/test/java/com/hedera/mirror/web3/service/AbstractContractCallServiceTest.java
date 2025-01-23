@@ -241,6 +241,18 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         tokenAccountPersist(token, account.toEntityId().getId());
     }
 
+    protected void tokenAccountPersist(final Entity token, final Entity account, long balance) {
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(token.getId())
+                        .accountId(account.getId())
+                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true)
+                        .balance(balance))
+                .persist();
+    }
+
     protected void tokenAccountPersist(final Entity token, final Long accountId) {
         domainBuilder
                 .tokenAccount()
@@ -289,18 +301,24 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                         .type(tokenType)
                         .treasuryAccountId(treasuryAccount.toEntityId()))
                 .persist();
-        tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
+
+        //tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
 
         if (isNft) {
             domainBuilder
                     .nft()
                     .customize(n -> n.accountId(treasuryAccount.toEntityId())
                             .spender(treasuryAccount.toEntityId())
-                            .accountId(treasuryAccount.toEntityId())
                             .tokenId(tokenToUpdateEntity.getId())
                             .serialNumber(1))
                     .persist();
+            tokenAccountPersist(tokenToUpdateEntity, treasuryAccount, 1);
+        } else {
+            tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
         }
+        //if (mirrorNodeEvmProperties.isModularizedServices()) {
+        //    tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
+        //}
 
         return Pair.of(tokenToUpdateEntity, autoRenewAccount);
     }
