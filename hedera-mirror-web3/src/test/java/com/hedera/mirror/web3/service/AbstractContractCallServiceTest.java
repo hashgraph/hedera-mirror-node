@@ -326,28 +326,25 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     protected void tokenAccountPersist(final Entity token, final Entity account) {
-        tokenAccountPersist(token, account.toEntityId().getId());
-    }
-
-    protected void tokenAccountPersist(final Entity token, final Entity account, long balance) {
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(token.getId())
-                        .accountId(account.getId())
-                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true)
-                        .balance(balance))
-                .persist();
+        tokenAccountPersist(token, account, domainBuilder.number());
     }
 
     protected void tokenAccountPersist(final Entity token, final Long accountId) {
+        tokenAccountPersist(token, accountId, domainBuilder.number());
+    }
+
+    protected void tokenAccountPersist(final Entity token, final Entity account, long balance) {
+        tokenAccountPersist(token, account.toEntityId().getId(), balance);
+    }
+
+    protected void tokenAccountPersist(final Entity token, final Long accountId, long balance) {
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(token.getId())
                         .accountId(accountId)
                         .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                         .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .balance(balance)
                         .associated(true))
                 .persist();
     }
