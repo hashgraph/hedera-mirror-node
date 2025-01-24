@@ -22,7 +22,6 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_3
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_50;
-import static com.hedera.mirror.web3.state.Utils.MAX_SIGNED_TXN_SIZE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
@@ -185,9 +184,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             "contracts.maxRefundPercentOfGasLimit",
             String.valueOf(maxGasRefundPercentage()),
             "contracts.sidecars",
-            "",
-            "executor.maxSignedTxnSize",
-            String.valueOf(MAX_SIGNED_TXN_SIZE));
+            "");
 
     @Getter(lazy = true)
     private final Map<String, String> transactionProperties = buildTransactionProperties();
@@ -342,6 +339,12 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         mirrorNodeProperties.put("contracts.evm.version", "v" + evmVersion.major() + "." + evmVersion.minor());
         mirrorNodeProperties.put(
                 "ledger.id", Bytes.wrap(getNetwork().getLedgerId()).toHexString());
+        // The configured data in the request is currently 128 KB. In services, we have a property for the
+        // max signed transaction size. We put 1 KB more here to have a buffer because the transaction has other
+        // fields (apart from the data) that will increase the transaction size.
+        mirrorNodeProperties.put(
+                "executor.maxSignedTxnSize",
+                String.valueOf(maxDataSize.toBytes() + DataSize.ofKilobytes(1).toBytes()));
         return Collections.unmodifiableMap(mirrorNodeProperties);
     }
 

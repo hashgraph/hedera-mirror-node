@@ -25,7 +25,6 @@ import java.util.Arrays;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 import org.hyperledger.besu.datatypes.Address;
-import org.springframework.util.unit.DataSize;
 
 @CustomLog
 @UtilityClass
@@ -35,10 +34,6 @@ public class Utils {
     public static final int EVM_ADDRESS_LEN = 20;
     /* A placeholder to store the 12-byte of zeros prefix that marks an EVM address as a "mirror" address. */
     private static final byte[] MIRROR_PREFIX = new byte[12];
-    // The configured data in the request is currently 128 KB. In services, we have a property for the
-    // max signed transaction size. We put 1 KB more here to have a buffer because the transaction has other
-    // fields (apart from the data) that will increase the transaction size.
-    public static final long MAX_SIGNED_TXN_SIZE = DataSize.ofKilobytes(129).toBytes();
 
     public static Key parseKey(final byte[] keyBytes) {
         try {
