@@ -31,6 +31,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.images.PullPolicy;
 import org.testcontainers.utility.DockerImageName;
 
 @TestConfiguration(proxyBeanMethods = false)
@@ -57,11 +58,11 @@ public class SpecTestConfig {
                 new Slf4jLogConsumer(logger, true),
                 o -> !StringUtils.contains(o.getUtf8StringWithoutLineEnding(), excluded));
         return new PostgreSQLContainer<>(dockerImageName)
-                .withNetwork(postgresqlNetwork)
-                .withNetworkAliases("postgresql")
                 .withClasspathResourceMapping("init.sql", "/docker-entrypoint-initdb.d/init.sql", BindMode.READ_ONLY)
                 .withDatabaseName("mirror_node")
                 .withLogConsumer(logConsumer)
+                .withNetwork(postgresqlNetwork)
+                .withNetworkAliases("postgresql")
                 .withPassword("mirror_node_pass")
                 .withUsername("mirror_node");
     }
@@ -81,8 +82,9 @@ public class SpecTestConfig {
 
         return new GenericContainer<>(DockerImageName.parse("gcr.io/mirrornode/hedera-mirror-rest:latest"))
                 .dependsOn(postgresql)
-                .withNetwork(prostgresqlNetwork)
                 .withExposedPorts(5551)
-                .withEnv(envBuilder.build());
+                .withEnv(envBuilder.build())
+                .withImagePullPolicy(PullPolicy.alwaysPull())
+                .withNetwork(prostgresqlNetwork);
     }
 }
