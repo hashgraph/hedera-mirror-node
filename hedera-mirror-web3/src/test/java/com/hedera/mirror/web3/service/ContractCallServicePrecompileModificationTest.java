@@ -21,7 +21,6 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EMPTY_UNTRIMMED_ADDRESS;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ZERO_VALUE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
@@ -1410,8 +1409,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var allCasesKeyType = 0b1111111;
         final var treasuryAccount = accountEntityPersist();
-        final var tokenWithAutoRenewPair = persistTokenWithAutoRenewAndTreasuryAccounts(tokenTypeEnum, treasuryAccount,
-                tokenTypeEnum == TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        final var tokenWithAutoRenewPair = persistTokenWithAutoRenewAndTreasuryAccounts(
+                tokenTypeEnum, treasuryAccount, tokenTypeEnum == TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 

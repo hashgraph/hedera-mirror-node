@@ -195,7 +195,7 @@ public class HederaTokenStore {
     public boolean associationExists(final AccountID aId, final TokenID tId) {
         return checkExistence(aId, tId) == OK
                 && !store.getTokenRelationship(asTokenRelationshipKey(aId, tId), OnMissing.DONT_THROW)
-                .isEmptyTokenRelationship();
+                        .isEmptyTokenRelationship();
     }
 
     public boolean exists(final TokenID id) {
@@ -594,9 +594,9 @@ public class HederaTokenStore {
 
     private ResponseCodeEnum checkNftBalances(
             final Token token, final TokenID tId, final TokenUpdateTransactionBody changes) {
-        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE) && changes.hasTreasury() && !changes.getTreasury()
-                .equals(token.getTreasury().getId()
-                        .asGrpcAccount())) {
+        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)
+                && changes.hasTreasury()
+                && !changes.getTreasury().equals(token.getTreasury().getId().asGrpcAccount())) {
             /* This relationship is verified to exist in the TokenUpdateTransitionLogic */
             final var newTreasuryRel = asTokenRelationshipKey(changes.getTreasury(), tId);
             final var relation = store.getTokenRelationship(newTreasuryRel, OnMissing.THROW);

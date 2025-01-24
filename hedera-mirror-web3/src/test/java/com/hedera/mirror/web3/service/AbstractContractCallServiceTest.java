@@ -410,8 +410,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                         .treasuryAccountId(treasuryAccount.toEntityId()))
                 .persist();
 
-        //tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
-
         if (isNft) {
             domainBuilder
                     .nft()
@@ -424,9 +422,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         } else {
             tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
         }
-        //if (mirrorNodeEvmProperties.isModularizedServices()) {
-        //    tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
-        //}
 
         return Pair.of(tokenToUpdateEntity, autoRenewAccount);
     }

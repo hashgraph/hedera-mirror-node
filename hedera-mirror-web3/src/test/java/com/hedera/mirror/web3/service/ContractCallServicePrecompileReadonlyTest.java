@@ -1094,14 +1094,14 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         final var fractionalFee = TokenTypeEnum.FUNGIBLE_COMMON.equals(tokenType)
                 ? FractionalFee.builder()
-                .allCollectorsAreExempt(true)
-                .collectorAccountId(feeCollector.toEntityId())
-                .denominator(domainBuilder.number())
-                .maximumAmount(domainBuilder.number())
-                .minimumAmount(1L)
-                .numerator(domainBuilder.number())
-                .netOfTransfers(true)
-                .build()
+                        .allCollectorsAreExempt(true)
+                        .collectorAccountId(feeCollector.toEntityId())
+                        .denominator(domainBuilder.number())
+                        .maximumAmount(domainBuilder.number())
+                        .minimumAmount(1L)
+                        .numerator(domainBuilder.number())
+                        .netOfTransfers(true)
+                        .build()
                 : null;
 
         final var fallbackFee = FallbackFee.builder()
@@ -1111,12 +1111,12 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         final var royaltyFee = TokenTypeEnum.NON_FUNGIBLE_UNIQUE.equals(tokenType)
                 ? RoyaltyFee.builder()
-                .allCollectorsAreExempt(true)
-                .collectorAccountId(feeCollector.toEntityId())
-                .denominator(domainBuilder.number())
-                .fallbackFee(fallbackFee)
-                .numerator(domainBuilder.number())
-                .build()
+                        .allCollectorsAreExempt(true)
+                        .collectorAccountId(feeCollector.toEntityId())
+                        .denominator(domainBuilder.number())
+                        .fallbackFee(fallbackFee)
+                        .numerator(domainBuilder.number())
+                        .build()
                 : null;
 
         if (TokenTypeEnum.FUNGIBLE_COMMON.equals(tokenType)) {
@@ -1161,13 +1161,13 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                     false,
                     key.getContractID().hasContractNum()
                             ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
-                            .toHexString()
+                                    .toHexString()
                             : Address.ZERO.toHexString(),
                     key.getEd25519().toByteArray(),
                     key.getECDSASecp256K1().toByteArray(),
                     key.getDelegatableContractId().hasContractNum()
                             ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
-                            .toHexString()
+                                    .toHexString()
                             : Address.ZERO.toHexString());
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalArgumentException("Unable to parse key", e);
