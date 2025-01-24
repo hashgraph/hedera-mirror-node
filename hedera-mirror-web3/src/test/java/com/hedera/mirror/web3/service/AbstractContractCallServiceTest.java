@@ -394,7 +394,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     protected Pair<Entity, Entity> persistTokenWithAutoRenewAndTreasuryAccounts(
-            final TokenTypeEnum tokenType, final Entity treasuryAccount, boolean isNft) {
+            final TokenTypeEnum tokenType, final Entity treasuryAccount) {
         final var autoRenewAccount = accountEntityPersist();
         final var tokenToUpdateEntity = domainBuilder
                 .entity()
@@ -407,7 +407,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                         .treasuryAccountId(treasuryAccount.toEntityId()))
                 .persist();
 
-        if (isNft) {
+        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
             domainBuilder
                     .nft()
                     .customize(n -> n.accountId(treasuryAccount.toEntityId())

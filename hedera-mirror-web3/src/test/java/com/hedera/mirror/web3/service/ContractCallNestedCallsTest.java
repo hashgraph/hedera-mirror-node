@@ -172,8 +172,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
     void updateTokenExpiryAndGetUpdatedTokenExpiry(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountEntityPersist();
-        final var tokenWithAutoRenewPair = persistTokenWithAutoRenewAndTreasuryAccounts(
-                tokenType, treasuryEntity, tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        final var tokenWithAutoRenewPair = persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity);
         final var tokenEntityId = tokenWithAutoRenewPair.getLeft();
         final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
@@ -204,8 +203,8 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
     void updateTokenInfoAndGetUpdatedTokenInfoSymbol(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountEntityPersist();
-        Pair<Entity, Entity> tokenWithAutoRenewPair = persistTokenWithAutoRenewAndTreasuryAccounts(
-                tokenType, treasuryEntity, tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        Pair<Entity, Entity> tokenWithAutoRenewPair =
+                persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity);
         final var tokenEntityId = tokenWithAutoRenewPair.getLeft();
         final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
@@ -237,8 +236,8 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
     void updateTokenInfoAndGetUpdatedTokenInfoName(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountEntityPersist();
-        Pair<Entity, Entity> tokenWithAutoRenewPair = persistTokenWithAutoRenewAndTreasuryAccounts(
-                tokenType, treasuryEntity, tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        Pair<Entity, Entity> tokenWithAutoRenewPair =
+                persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity);
         final var tokenEntityId = tokenWithAutoRenewPair.getLeft();
         final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
@@ -270,8 +269,8 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
     void updateTokenInfoAndGetUpdatedTokenInfoMemo(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountEntityPersist();
-        Pair<Entity, Entity> tokenWithAutoRenewPair = persistTokenWithAutoRenewAndTreasuryAccounts(
-                tokenType, treasuryEntity, tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        Pair<Entity, Entity> tokenWithAutoRenewPair =
+                persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity);
         final var tokenEntityId = tokenWithAutoRenewPair.getLeft();
         final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
@@ -303,8 +302,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
     void deleteTokenAndGetTokenInfoIsDeleted(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntity = accountEntityPersist();
-        final var tokenEntityId = persistTokenWithAutoRenewAndTreasuryAccounts(
-                tokenType, treasuryEntity, tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+        final var tokenEntityId = persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity)
                 .getLeft();
         final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);

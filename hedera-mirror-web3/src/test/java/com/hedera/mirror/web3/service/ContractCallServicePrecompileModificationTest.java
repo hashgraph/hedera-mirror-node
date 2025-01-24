@@ -1353,7 +1353,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var treasuryAccount = accountEntityPersist();
         final var tokenWithAutoRenewPair =
-                persistTokenWithAutoRenewAndTreasuryAccounts(TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount, false);
+                persistTokenWithAutoRenewAndTreasuryAccounts(TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -1374,7 +1374,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var treasuryAccount = accountEntityPersist();
         final var tokenWithAutoRenewPair =
-                persistTokenWithAutoRenewAndTreasuryAccounts(TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount, false);
+                persistTokenWithAutoRenewAndTreasuryAccounts(TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -1409,8 +1409,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var allCasesKeyType = 0b1111111;
         final var treasuryAccount = accountEntityPersist();
-        final var tokenWithAutoRenewPair = persistTokenWithAutoRenewAndTreasuryAccounts(
-                tokenTypeEnum, treasuryAccount, tokenTypeEnum == TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        final var tokenWithAutoRenewPair = persistTokenWithAutoRenewAndTreasuryAccounts(tokenTypeEnum, treasuryAccount);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
