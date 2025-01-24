@@ -98,6 +98,16 @@ public class BlockItemBuilder {
                 recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
     }
 
+    public Builder fileDelete(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+    }
+
     private AssessedCustomFee.Builder assessedCustomFees() {
         return AssessedCustomFee.newBuilder()
                 .setAmount(1L)
@@ -108,16 +118,9 @@ public class BlockItemBuilder {
 
     private TransactionResult.Builder transactionResult(
             TransactionRecord transactionRecord, Timestamp consensusTimestamp) {
-        return TransactionResult.newBuilder()
-                .addAllPaidStakingRewards(transactionRecord.getPaidStakingRewardsList())
-                .addAllTokenTransferLists(transactionRecord.getTokenTransferListsList())
-                .setConsensusTimestamp(consensusTimestamp)
-                .setParentConsensusTimestamp(transactionRecord.getParentConsensusTimestamp())
-                .setScheduleRef(transactionRecord.getScheduleRef())
-                .setTransferList(transactionRecord.getTransferList())
-                .setTransactionFeeCharged(transactionRecord.getTransactionFee())
-                .setStatus(transactionRecord.getReceipt().getStatus());
+        return null;
     }
+
 
 
 

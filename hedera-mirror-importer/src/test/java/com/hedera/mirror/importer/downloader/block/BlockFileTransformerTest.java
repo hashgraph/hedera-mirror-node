@@ -192,6 +192,25 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         });
     }
 
+    @Test
+    void fileDeleteTransform() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .fileDelete()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+        var blockItem = blockItemBuilder.fileDelete(expectedRecordItem).build();
+        var blockFie = blockFile(List.of(blockItem));
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFie);
+
+        //then
+        assertRecordFile(recordFile, blockFie, items -> {
+            assertThat(items).hasSize(1).first().satisfies(item -> assertRecordItem(item, expectedRecordItem));
+        });
+    }
+
     private void assertRecordFile(
             RecordFile actual, BlockFile blockFile, Consumer<Collection<RecordItem>> itemsAssert) {
         var hapiProtoVersion = blockFile.getBlockHeader().getHapiProtoVersion();
