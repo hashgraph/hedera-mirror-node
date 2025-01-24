@@ -35,7 +35,6 @@ class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
     private static final String DOT_SEPARATOR = ".";
     private static final String CHAIN_ID = "chainId";
     private static final String CONTRACTS_CONFIG = "contracts";
-    private static final String EXECUTOR_CONFIG = "executor";
     private static final String CHAIN_ID_KEY_CONFIG = CONTRACTS_CONFIG + DOT_SEPARATOR + CHAIN_ID;
     private static final Map<String, String> YAML_PROPERTIES = Map.of(CHAIN_ID_KEY_CONFIG, "297");
     private static final String MAX_GAS_REFUND_PERCENTAGE = "maxRefundPercentOfGasLimit";
@@ -73,8 +72,7 @@ class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
     void verifyUpstreamPropertiesExist() {
         Set<String> propertyKeys = properties.getProperties().keySet();
         // maxSignedTxnSize property does not have a config file, so it is verified here.
-        assertThat(propertyKeys.contains(TransactionExecutors.MAX_SIGNED_TXN_SIZE_PROPERTY))
-                .isTrue();
+        assertThat(propertyKeys).contains(TransactionExecutors.MAX_SIGNED_TXN_SIZE_PROPERTY);
         propertyKeys.stream()
                 .filter(configKey -> !configKey.equals(TransactionExecutors.MAX_SIGNED_TXN_SIZE_PROPERTY))
                 .forEach(configKey ->
