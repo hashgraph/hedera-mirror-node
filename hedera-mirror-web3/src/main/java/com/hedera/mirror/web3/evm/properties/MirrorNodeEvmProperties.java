@@ -22,6 +22,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_3
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_50;
+import static com.hedera.mirror.web3.state.Utils.MAX_SIGNED_TXN_SIZE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.state.lifecycle.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
@@ -184,7 +185,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             "contracts.maxRefundPercentOfGasLimit",
             String.valueOf(maxGasRefundPercentage()),
             "contracts.sidecars",
-            "");
+            "",
+            "executor.maxSignedTxnSize",
+            String.valueOf(MAX_SIGNED_TXN_SIZE));
 
     @Getter(lazy = true)
     private final Map<String, String> transactionProperties = buildTransactionProperties();
