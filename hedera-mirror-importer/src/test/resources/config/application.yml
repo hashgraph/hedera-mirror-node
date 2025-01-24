@@ -5,10 +5,8 @@ hedera:
         bucketName: test
       importHistoricalAccountInfo: false
       migration:
-        backfillAndDeduplicateBalanceMigration:
-          enabled: false # disable the migration so during test it doesn't drop the balance tables
-        fixCryptoAllowanceAmountMigration:
-          enabled: false # disable the migration so during test it doesn't drop the crypto_allowance_migration table
+        async:
+          enabled: false
         DUMMYMIGRATION:
           checksum: 5
       network: TESTNET

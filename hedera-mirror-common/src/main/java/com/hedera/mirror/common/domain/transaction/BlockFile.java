@@ -30,6 +30,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Singular;
 import lombok.ToString;
+import org.apache.commons.lang3.StringUtils;
 
 @Builder(toBuilder = true)
 @Data
@@ -92,7 +93,7 @@ public class BlockFile implements StreamFile<BlockItem> {
 
     @Override
     public String getFileHash() {
-        return null;
+        return StringUtils.EMPTY;
     }
 
     @Override

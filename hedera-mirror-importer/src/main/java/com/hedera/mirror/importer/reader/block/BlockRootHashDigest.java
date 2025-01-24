@@ -17,12 +17,11 @@
 package com.hedera.mirror.importer.reader.block;
 
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
+import static com.hedera.mirror.common.util.DomainUtils.createSha384Digest;
 
 import com.hedera.hapi.block.stream.protoc.BlockItem;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -36,9 +35,9 @@ import lombok.Data;
 @Data
 class BlockRootHashDigest {
 
-    private static final byte[] EMPTY_HASH = createMessageDigest().digest(new byte[0]);
+    private static final byte[] EMPTY_HASH = createSha384Digest().digest(new byte[0]);
 
-    private final MessageDigest digest = createMessageDigest();
+    private final MessageDigest digest = createSha384Digest();
     private boolean finalized;
     private final List<byte[]> inputHashes = new ArrayList<>();
     private final List<byte[]> outputHashes = new ArrayList<>();
@@ -111,14 +110,6 @@ class BlockRootHashDigest {
         }
 
         return leaves.getFirst();
-    }
-
-    private static MessageDigest createMessageDigest() {
-        try {
-            return MessageDigest.getInstance(SHA_384.getName());
-        } catch (NoSuchAlgorithmException ex) {
-            throw new StreamFileReaderException(ex);
-        }
     }
 
     private static void validateHash(byte[] hash, String name) {

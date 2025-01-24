@@ -35,6 +35,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -76,6 +77,9 @@ abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContr
 
     @Resource
     private EntityDatabaseAccessor entityDatabaseAccessor;
+
+    @Resource
+    protected EntityRepository entityRepository;
 
     @BeforeEach
     void setUpArgumentCaptors() {
@@ -251,5 +255,9 @@ abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContr
                 .customize(ab -> ab.id(new AccountBalance.Id(sender.getCreatedTimestamp(), treasuryEntity.toEntityId()))
                         .balance(treasuryEntity.getBalance()))
                 .persist();
+    }
+
+    protected Entity getEntity(EntityId entityId) {
+        return entityRepository.findById(entityId.getId()).get();
     }
 }

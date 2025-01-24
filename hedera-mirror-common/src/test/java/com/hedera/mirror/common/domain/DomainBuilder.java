@@ -1032,7 +1032,7 @@ public class DomainBuilder {
     public DomainWrapper<TopicMessage, TopicMessage.TopicMessageBuilder> topicMessage() {
         var transactionId = TransactionID.newBuilder()
                 .setAccountID(AccountID.newBuilder().setAccountNum(id()))
-                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(timestamp()))
+                .setTransactionValidStart(protoTimestamp())
                 .build()
                 .toByteArray();
         var builder = TopicMessage.builder()
@@ -1201,6 +1201,14 @@ public class DomainBuilder {
      */
     public void resetTimestamp(long value) {
         timestampOffset = value - timestampNoOffset();
+    }
+
+    public Timestamp protoTimestamp() {
+        long timestamp = timestamp();
+        return Timestamp.newBuilder()
+                .setSeconds(timestamp / DomainUtils.NANOS_PER_SECOND)
+                .setNanos((int) (timestamp % DomainUtils.NANOS_PER_SECOND))
+                .build();
     }
 
     public long timestamp() {

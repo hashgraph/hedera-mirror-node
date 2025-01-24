@@ -88,7 +88,7 @@ generatePojoConf {
     )
 }
 
-tasks.withType<JavaCompile> {
+tasks.withType<JavaCompile>().configureEach {
     dependsOn(tasks.generatePojo)
     if (name == "compileJava") {
         options.compilerArgs.addAll(

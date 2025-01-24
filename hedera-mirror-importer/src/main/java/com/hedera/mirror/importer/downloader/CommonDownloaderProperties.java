@@ -82,6 +82,8 @@ public class CommonDownloaderProperties {
     @NotNull
     private PathType pathType = PathType.ACCOUNT_ID;
 
+    private String pathPrefix = "";
+
     private String region = "us-east-1";
 
     private String secretKey;

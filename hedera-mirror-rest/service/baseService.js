@@ -66,7 +66,7 @@ class BaseService {
   }
 
   async getRows(query, params) {
-    return (await pool.queryQuietly(query, params)).rows;
+    return (await this.pool().queryQuietly(query, params)).rows;
   }
 
   async getSingleRow(query, params) {
@@ -104,6 +104,10 @@ class BaseService {
       orderClause,
       limitClause,
     ].join('\n');
+  }
+
+  pool() {
+    return pool;
   }
 }
 

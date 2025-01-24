@@ -172,6 +172,7 @@ class RecordFileService extends BaseService {
       order by ${filters.orderBy} ${filters.order}
       limit ${filters.limit}
     `;
+
     const rows = await super.getRows(query, params);
     return rows.map((recordFile) => new RecordFile(recordFile));
   }
@@ -213,6 +214,10 @@ class RecordFileService extends BaseService {
           minTimestamp: first,
           order: orderFilterValues.ASC,
         };
+  }
+
+  pool() {
+    return primaryPool;
   }
 }
 
