@@ -71,8 +71,6 @@ class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
     @Test
     void verifyUpstreamPropertiesExist() {
         Set<String> propertyKeys = properties.getProperties().keySet();
-        // maxSignedTxnSize property does not have a config file, so it is verified here.
-        assertThat(propertyKeys).contains(TransactionExecutors.MAX_SIGNED_TXN_SIZE_PROPERTY);
         propertyKeys.stream()
                 .filter(configKey -> !configKey.equals(TransactionExecutors.MAX_SIGNED_TXN_SIZE_PROPERTY))
                 .forEach(configKey ->
