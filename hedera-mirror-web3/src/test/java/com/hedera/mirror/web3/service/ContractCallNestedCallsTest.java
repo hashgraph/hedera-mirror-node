@@ -198,6 +198,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
 
     @ParameterizedTest
     @CsvSource(textBlock = """
+            FUNGIBLE_COMMON
             NON_FUNGIBLE_UNIQUE
             """)
     void updateTokenInfoAndGetUpdatedTokenInfoSymbol(final TokenTypeEnum tokenType) throws Exception {
@@ -303,7 +304,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
         // Given
         final var treasuryEntity = accountEntityPersist();
         final var tokenEntityId = persistTokenWithAutoRenewAndTreasuryAccounts(
-                        tokenType, treasuryEntity, tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                tokenType, treasuryEntity, tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                 .getLeft();
         final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
