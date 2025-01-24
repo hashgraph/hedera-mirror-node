@@ -35,9 +35,10 @@ class RunningHashesSingletonTest {
             var recordFile = domainBuilder.recordFile().get();
             context.setRecordFile(recordFile);
             assertThat(runningHashesSingleton.get())
-                    .isEqualTo(RunningHashes.newBuilder()
-                            .runningHash(Bytes.fromHex(recordFile.getHash()))
-                            .build());
+                    .returns(Bytes.EMPTY, RunningHashes::runningHash)
+                    .returns(Bytes.EMPTY, RunningHashes::nMinus1RunningHash)
+                    .returns(Bytes.EMPTY, RunningHashes::nMinus2RunningHash)
+                    .returns(Bytes.fromHex(recordFile.getHash()), RunningHashes::nMinus3RunningHash);
             return null;
         });
     }
