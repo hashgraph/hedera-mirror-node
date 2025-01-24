@@ -339,6 +339,12 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         mirrorNodeProperties.put("contracts.evm.version", "v" + evmVersion.major() + "." + evmVersion.minor());
         mirrorNodeProperties.put(
                 "ledger.id", Bytes.wrap(getNetwork().getLedgerId()).toHexString());
+        // The configured data in the request is currently 128 KB. In services, we have a property for the
+        // max signed transaction size. We put 1 KB more here to have a buffer because the transaction has other
+        // fields (apart from the data) that will increase the transaction size.
+        mirrorNodeProperties.put(
+                "executor.maxSignedTxnSize",
+                String.valueOf(maxDataSize.toBytes() + DataSize.ofKilobytes(1).toBytes()));
         return Collections.unmodifiableMap(mirrorNodeProperties);
     }
 

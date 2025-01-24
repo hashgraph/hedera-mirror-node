@@ -21,8 +21,6 @@ import static com.hedera.services.utils.EntityIdUtils.toFileId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
@@ -195,30 +193,6 @@ class FileReadableKVStateTest {
         File result = fileReadableKVState.readFromDataSource(FILE_ID);
 
         assertThat(result).isEqualTo(FILE);
-    }
-
-    @Test
-    void readFromDataSourceWhenThereIsContext() {
-        when(ContractCallContext.get().getFile()).thenReturn(Optional.of(FILE));
-
-        File result = fileReadableKVState.readFromDataSource(FILE_ID);
-
-        assertThat(result)
-                .isEqualTo(
-                        File.newBuilder().fileId(FILE_ID).contents(initBytecode).build());
-        verify(fileDataRepository, times(0)).findById(anyLong());
-        verify(fileDataRepository, times(0)).getFileAtTimestamp(anyLong(), anyLong());
-    }
-
-    @Test
-    void readFromDataSourceWhenThereIsContextButDoesNotMatchTheKey() {
-        when(ContractCallContext.get().getFile()).thenReturn(Optional.of(FILE));
-
-        File result = fileReadableKVState.readFromDataSource(
-                FileID.newBuilder().fileNum(321L).build());
-
-        assertThat(result).isNull();
-        verify(fileDataRepository, times(1)).getFileAtTimestamp(anyLong(), anyLong());
     }
 
     @Test

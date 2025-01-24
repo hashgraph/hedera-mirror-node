@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.node.app.workflows.standalone.TransactionExecutors;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.ConfigData;
 import java.lang.reflect.Field;
@@ -70,8 +71,10 @@ class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
     @Test
     void verifyUpstreamPropertiesExist() {
         Set<String> propertyKeys = properties.getProperties().keySet();
-        propertyKeys.forEach(
-                configKey -> assertThat(getContractsConfigKey(configKey)).isEqualTo(configKey));
+        propertyKeys.stream()
+                .filter(configKey -> !configKey.equals(TransactionExecutors.MAX_SIGNED_TXN_SIZE_PROPERTY))
+                .forEach(configKey ->
+                        assertThat(getContractsConfigKey(configKey)).isEqualTo(configKey));
     }
 
     @Test
