@@ -336,6 +336,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         props.put("contracts.evm.version", "v" + evmVersion.major() + "." + evmVersion.minor());
         props.put("contracts.maxRefundPercentOfGasLimit", String.valueOf(maxGasRefundPercentage()));
         props.put("contracts.sidecars", "");
+        // The configured data in the request is currently 128 KB. In services, we have a property for the
+        // max signed transaction size. We put 1 KB more here to have a buffer because the transaction has other
+        // fields (apart from the data) that will increase the transaction size.
+        props.put("executor.maxSignedTxnSize", String.valueOf(maxDataSize.toBytes() + 1024));
         props.put("ledger.id", Bytes.wrap(getNetwork().getLedgerId()).toHexString());
         props.putAll(properties); // Allow user defined properties to override the defaults
         return Collections.unmodifiableMap(props);
