@@ -28,8 +28,6 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.state.components.NetworkInfoImpl;
-import com.swirlds.state.lifecycle.info.NetworkInfo;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -37,8 +35,7 @@ import org.junit.jupiter.api.Test;
 
 class SystemFileLoaderTest {
 
-    private final NetworkInfo networkInfo = new NetworkInfoImpl();
-    private final SystemFileLoader systemFileLoader = new SystemFileLoader(networkInfo, new MirrorNodeEvmProperties());
+    private final SystemFileLoader systemFileLoader = new SystemFileLoader(new MirrorNodeEvmProperties());
 
     @Test
     void loadNonSystemFile() {
@@ -52,9 +49,7 @@ class SystemFileLoaderTest {
         var file = systemFileLoader.load(fileId);
         assertFile(file, fileId);
         var nodeAddressBook = NodeAddressBook.PROTOBUF.parse(file.contents());
-        assertThat(nodeAddressBook).isNotNull().isNotEqualTo(NodeAddressBook.DEFAULT);
-        assertThat(nodeAddressBook.nodeAddress())
-                .hasSize(networkInfo.addressBook().size());
+        assertThat(nodeAddressBook).isNotNull().isEqualTo(NodeAddressBook.DEFAULT);
     }
 
     @Test
@@ -63,9 +58,7 @@ class SystemFileLoaderTest {
         var file = systemFileLoader.load(fileId);
         assertFile(file, fileId);
         var nodeAddressBook = NodeAddressBook.PROTOBUF.parse(file.contents());
-        assertThat(nodeAddressBook).isNotNull().isNotEqualTo(NodeAddressBook.DEFAULT);
-        assertThat(nodeAddressBook.nodeAddress())
-                .hasSize(networkInfo.addressBook().size());
+        assertThat(nodeAddressBook).isNotNull().isEqualTo(NodeAddressBook.DEFAULT);
     }
 
     @Test

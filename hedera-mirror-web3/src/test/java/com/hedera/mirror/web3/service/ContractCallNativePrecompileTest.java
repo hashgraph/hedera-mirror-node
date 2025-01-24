@@ -41,11 +41,7 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
     @BeforeEach
     void setup() {
-        // Change this to not be epoch once services fixes config updates for non-genesis flow
-        domainBuilder
-                .recordFile()
-                .customize(f -> f.consensusEnd(0L).consensusStart(0L).index(0L))
-                .persist();
+        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
     }
 

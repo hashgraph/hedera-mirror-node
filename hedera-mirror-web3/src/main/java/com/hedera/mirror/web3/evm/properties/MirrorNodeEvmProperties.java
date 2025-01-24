@@ -176,16 +176,12 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
+    // Contains the user defined properties to pass to the consensus node library
     @Getter
     @NotNull
-    private Map<String, String> properties = Map.of(
-            "contracts.chainId",
-            chainIdBytes32().toBigInteger().toString(),
-            "contracts.maxRefundPercentOfGasLimit",
-            String.valueOf(maxGasRefundPercentage()),
-            "contracts.sidecars",
-            "");
+    private Map<String, String> properties = new HashMap<>();
 
+    // Contains the default properties merged with the user defined properties to pass to the consensus node library
     @Getter(lazy = true)
     private final Map<String, String> transactionProperties = buildTransactionProperties();
 
@@ -335,11 +331,15 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     }
 
     private Map<String, String> buildTransactionProperties() {
-        var mirrorNodeProperties = new HashMap<>(properties);
-        mirrorNodeProperties.put("contracts.evm.version", "v" + evmVersion.major() + "." + evmVersion.minor());
-        mirrorNodeProperties.put(
-                "ledger.id", Bytes.wrap(getNetwork().getLedgerId()).toHexString());
-        return Collections.unmodifiableMap(mirrorNodeProperties);
+        var props = new HashMap<String, String>();
+        props.put("contracts.chainId", chainIdBytes32().toBigInteger().toString());
+        props.put("contracts.evm.version", "v" + evmVersion.major() + "." + evmVersion.minor());
+        props.put("contracts.maxRefundPercentOfGasLimit", String.valueOf(maxGasRefundPercentage()));
+        props.put("contracts.sidecars", "");
+        props.put("executor.maxSignedTxnSize", "262144");
+        props.put("ledger.id", Bytes.wrap(getNetwork().getLedgerId()).toHexString());
+        props.putAll(properties); // Allow user defined properties to override the defaults
+        return Collections.unmodifiableMap(props);
     }
 
     @Getter

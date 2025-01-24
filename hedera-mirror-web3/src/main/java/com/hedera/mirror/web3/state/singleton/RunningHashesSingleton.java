@@ -22,10 +22,8 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
 
 @Named
-@RequiredArgsConstructor
 public class RunningHashesSingleton implements SingletonState<RunningHashes> {
 
     @Override
@@ -37,7 +35,10 @@ public class RunningHashesSingleton implements SingletonState<RunningHashes> {
     public RunningHashes get() {
         var recordFile = ContractCallContext.get().getRecordFile();
         return RunningHashes.newBuilder()
-                .runningHash(Bytes.fromHex(recordFile.getHash()))
+                .runningHash(Bytes.EMPTY)
+                .nMinus1RunningHash(Bytes.EMPTY)
+                .nMinus2RunningHash(Bytes.EMPTY)
+                .nMinus3RunningHash(Bytes.fromHex(recordFile.getHash())) // Used by prevrandao
                 .build();
     }
 }

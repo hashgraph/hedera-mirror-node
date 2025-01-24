@@ -32,10 +32,7 @@ import org.junit.jupiter.api.Test;
 class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
 
     private static final String DOT_SEPARATOR = ".";
-    private static final String CHAIN_ID = "chainId";
     private static final String CONTRACTS_CONFIG = "contracts";
-    private static final String CHAIN_ID_KEY_CONFIG = CONTRACTS_CONFIG + DOT_SEPARATOR + CHAIN_ID;
-    private static final Map<String, String> YAML_PROPERTIES = Map.of(CHAIN_ID_KEY_CONFIG, "297");
     private static final String MAX_GAS_REFUND_PERCENTAGE = "maxRefundPercentOfGasLimit";
     private static final String MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG =
             CONTRACTS_CONFIG + DOT_SEPARATOR + MAX_GAS_REFUND_PERCENTAGE;
@@ -62,9 +59,7 @@ class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
         assertThat(modularizedProperties)
                 .isNotEmpty()
                 // override from yaml
-                .doesNotContainEntry(CHAIN_ID_KEY_CONFIG, "296")
-                .containsEntry(MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG, "100")
-                .containsAllEntriesOf(YAML_PROPERTIES);
+                .containsEntry(MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG, "100");
     }
 
     @Test
