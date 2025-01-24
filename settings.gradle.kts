@@ -56,7 +56,7 @@ fun shortenProjectName(project: ProjectDescriptor) {
 
 develocity {
     buildScan {
-        publishing.onlyIf { false }
+        publishing.onlyIf { System.getenv().containsKey("CI") }
         termsOfUseUrl = "https://gradle.com/terms-of-service"
         termsOfUseAgree = "yes"
         tag("CI")
