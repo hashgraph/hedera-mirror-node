@@ -105,11 +105,8 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
 
 #### EntityRecordItemListener
 
-- Make the following changes to `insertAssessedCustomFees()`
-
-  - Process assessed custom fees in transaction record if tokens is enabled in `PersistProperties` or if it's a
-    `ConsensusSubmitMessage` transaction or if it's a `CryptoTransfer` transaction whose parent is a
-    `ConsensusSubmitMessage` transaction
+- Change `insertAssessedCustomFees()` to process assessed custom fees in transaction record regardless if tokens persist
+  property is enabled or not
 
 - Serialize individual `TransactionBody.max_custom_fees` elements and save as a collection of byte arrays
   in `buildTransaction`
