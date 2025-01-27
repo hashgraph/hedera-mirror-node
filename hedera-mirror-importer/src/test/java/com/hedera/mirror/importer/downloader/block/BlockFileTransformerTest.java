@@ -232,7 +232,14 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.fileCreate(expectedRecordItem).build();
-        var expectedFileId = blockItem.stateChanges().getFirst().getStateChanges(0).getMapUpdate().getKey().getFileIdKey().getFileNum();
+        var expectedFileId = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChanges(0)
+                .getMapUpdate()
+                .getKey()
+                .getFileIdKey()
+                .getFileNum();
         var blockFie = blockFile(List.of(blockItem));
 
         // when
@@ -246,7 +253,10 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(expectedFileId, transactionRecord -> transactionRecord.getReceipt().getFileID().getFileNum()));
+                .returns(
+                        expectedFileId,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getFileID().getFileNum()));
     }
 
     @Test
@@ -258,8 +268,21 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.fileUpdate(expectedRecordItem).build();
-        var expectedFileId = blockItem.stateChanges().getFirst().getStateChanges(0).getMapUpdate().getKey().getFileIdKey().getFileNum();
-        var expectedExchangeRate = blockItem.stateChanges().getFirst().getStateChanges(0).getSingletonUpdate().getExchangeRateSetValue().getCurrentRate();
+        var expectedFileId = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChanges(0)
+                .getMapUpdate()
+                .getKey()
+                .getFileIdKey()
+                .getFileNum();
+        var expectedExchangeRate = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChanges(0)
+                .getSingletonUpdate()
+                .getExchangeRateSetValue()
+                .getCurrentRate();
         var blockFie = blockFile(List.of(blockItem));
 
         // when
@@ -273,8 +296,14 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(expectedFileId, transactionRecord -> transactionRecord.getReceipt().getFileID().getFileNum())
-                .returns(expectedExchangeRate, transactionRecord -> transactionRecord.getReceipt().getExchangeRate().getCurrentRate()));
+                .returns(
+                        expectedFileId,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getFileID().getFileNum())
+                .returns(
+                        expectedExchangeRate,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getExchangeRate().getCurrentRate()));
     }
 
     private void assertRecordFile(

@@ -121,10 +121,15 @@ public class BlockItemBuilder {
         var transactionRecord = recordItem.getTransactionRecord();
         var transactionResult = transactionResult(transactionRecord, timestamp).build();
 
-        var exchangeRate = ExchangeRateSet.newBuilder().setCurrentRate(ExchangeRate.newBuilder().setCentEquiv(1).build()).build();
-        var singletonUpdate = SingletonUpdateChange.newBuilder().setExchangeRateSetValue(exchangeRate).build();
+        var exchangeRate = ExchangeRateSet.newBuilder()
+                .setCurrentRate(ExchangeRate.newBuilder().setCentEquiv(1).build())
+                .build();
+        var singletonUpdate = SingletonUpdateChange.newBuilder()
+                .setExchangeRateSetValue(exchangeRate)
+                .build();
 
-        var change = StateChange.newBuilder().setSingletonUpdate(singletonUpdate).build();
+        var change =
+                StateChange.newBuilder().setSingletonUpdate(singletonUpdate).build();
         var stateChanges = StateChanges.newBuilder().addStateChanges(change).build();
 
         return new BlockItemBuilder.Builder(
@@ -160,10 +165,7 @@ public class BlockItemBuilder {
                 .setTransferList(transactionRecord.getTransferList())
                 .setTransactionFeeCharged(transactionRecord.getTransactionFee())
                 .setStatus(transactionRecord.getReceipt().getStatus());
-
     }
-
-
 
     public class Builder {
         private final Transaction transaction;
