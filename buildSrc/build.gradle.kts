@@ -44,7 +44,7 @@ dependencies {
     implementation("io.spring.gradle:dependency-management-plugin:1.1.7")
     implementation("org.apache.commons:commons-compress:1.27.1")
     implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
-    implementation("org.gradle:test-retry-gradle-plugin:1.6.0")
+    implementation("org.gradle:test-retry-gradle-plugin:1.6.1")
     implementation("org.jooq:jooq-codegen-gradle:$jooqVersion")
     implementation("org.jooq:jooq-meta:$jooqVersion")
     implementation("org.openapitools:openapi-generator-gradle-plugin:7.10.0")
