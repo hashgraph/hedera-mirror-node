@@ -190,15 +190,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var recordFile = blockFileTransformer.transform(blockFie);
 
         // then
-        assertRecordFile(recordFile, blockFie, items -> {
-            assertThat(items)
-                    .hasSize(1)
-                    .first()
-                    .satisfies(item -> assertRecordItem(item, expectedRecordItem))
-                    .returns(null, RecordItem::getPrevious)
-                    .extracting(RecordItem::getTransactionRecord)
-                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash);
-        });
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
     @Test
@@ -216,15 +214,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var recordFile = blockFileTransformer.transform(blockFie);
 
         // then
-        assertRecordFile(recordFile, blockFie, items -> {
-            assertThat(items)
-                    .hasSize(1)
-                    .first()
-                    .satisfies(item -> assertRecordItem(item, expectedRecordItem))
-                    .returns(null, RecordItem::getPrevious)
-                    .extracting(RecordItem::getTransactionRecord)
-                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash);
-        });
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
     @Test
@@ -243,16 +239,14 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var recordFile = blockFileTransformer.transform(blockFie);
 
         // then
-        assertRecordFile(recordFile, blockFie, items -> {
-            assertThat(items)
-                    .hasSize(1)
-                    .first()
-                    .satisfies(item -> assertRecordItem(item, expectedRecordItem))
-                    .returns(null, RecordItem::getPrevious)
-                    .extracting(RecordItem::getTransactionRecord)
-                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                    .returns(expectedFileId, transactionRecord -> transactionRecord.getReceipt().getFileID().getFileNum());
-        });
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(expectedFileId, transactionRecord -> transactionRecord.getReceipt().getFileID().getFileNum()));
     }
 
     @Test
@@ -272,17 +266,15 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var recordFile = blockFileTransformer.transform(blockFie);
 
         // then
-        assertRecordFile(recordFile, blockFie, items -> {
-            assertThat(items)
-                    .hasSize(1)
-                    .first()
-                    .satisfies(item -> assertRecordItem(item, expectedRecordItem))
-                    .returns(null, RecordItem::getPrevious)
-                    .extracting(RecordItem::getTransactionRecord)
-                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                    .returns(expectedFileId, transactionRecord -> transactionRecord.getReceipt().getFileID().getFileNum())
-                    .returns(expectedExchangeRate, transactionRecord -> transactionRecord.getReceipt().getExchangeRate().getCurrentRate());
-        });
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(expectedFileId, transactionRecord -> transactionRecord.getReceipt().getFileID().getFileNum())
+                .returns(expectedExchangeRate, transactionRecord -> transactionRecord.getReceipt().getExchangeRate().getCurrentRate()));
     }
 
     private void assertRecordFile(
