@@ -33,6 +33,7 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
@@ -56,6 +57,7 @@ import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -325,26 +327,17 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     protected void tokenAccountPersist(final Entity token, final Entity account) {
-        tokenAccountPersist(token, account, domainBuilder.number());
+        tokenAccount(
+                ta -> ta.tokenId(token.getId()).accountId(account.toEntityId().getId()));
     }
 
-    protected void tokenAccountPersist(final Entity token, final Long accountId) {
-        tokenAccountPersist(token, accountId, domainBuilder.number());
-    }
-
-    protected void tokenAccountPersist(final Entity token, final Entity account, long balance) {
-        tokenAccountPersist(token, account.toEntityId().getId(), balance);
-    }
-
-    protected void tokenAccountPersist(final Entity token, final Long accountId, long balance) {
-        domainBuilder
+    protected TokenAccount tokenAccount(Consumer<TokenAccount.TokenAccountBuilder<?, ?>> consumer) {
+        return domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.tokenId(token.getId())
-                        .accountId(accountId)
-                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                .customize(ta -> ta.freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                         .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .balance(balance)
                         .associated(true))
+                .customize(consumer)
                 .persist();
     }
 
@@ -414,9 +407,13 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                             .tokenId(tokenToUpdateEntity.getId())
                             .serialNumber(1))
                     .persist();
-            tokenAccountPersist(tokenToUpdateEntity, treasuryAccount, 1);
+
+            tokenAccount(ta -> ta.tokenId(tokenToUpdateEntity.getId())
+                    .accountId(treasuryAccount.toEntityId().getId())
+                    .balance(1L));
         } else {
-            tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
+            tokenAccount(ta -> ta.tokenId(tokenToUpdateEntity.getId())
+                    .accountId(treasuryAccount.toEntityId().getId()));
         }
 
         return Pair.of(tokenToUpdateEntity, autoRenewAccount);

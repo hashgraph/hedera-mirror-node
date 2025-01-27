@@ -90,7 +90,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-        tokenAccountPersist(tokenEntity, contractEntityId.getId());
+        tokenAccount(ta -> ta.tokenId(tokenEntity.getId()).accountId(contractEntityId.getId()));
 
         tokenAllowancePersist(10L, tokenEntity, spender, contractEntityId);
 
@@ -119,7 +119,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-        tokenAccountPersist(tokenEntity, contractEntityId.getId());
+        tokenAccount(ta -> ta.tokenId(tokenEntity.getId()).accountId(contractEntityId.getId()));
 
         // When
         final var functionCall = contract.call_approveExternal(
@@ -148,7 +148,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-        tokenAccountPersist(tokenEntity, contractEntityId.getId());
+        tokenAccount(ta -> ta.tokenId(tokenEntity.getId()).accountId(contractEntityId.getId()));
 
         nonFungibleTokenInstancePersist(token, 1L, contractEntityId, spender.toEntityId());
 
@@ -181,7 +181,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-        tokenAccountPersist(tokenEntity, contractEntityId.getId());
+        tokenAccount(ta -> ta.tokenId(tokenEntity.getId()).accountId(contractEntityId.getId()));
 
         nonFungibleTokenInstancePersist(token, 1L, contractEntityId, spender.toEntityId());
 
@@ -293,7 +293,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-        tokenAccountPersist(tokenEntity, contractEntityId.getId());
+        tokenAccount(ta -> ta.tokenId(tokenEntity.getId()).accountId(contractEntityId.getId()));
 
         // When
         final var functionCall = contract.call_dissociateWithRedirect(getAddressFromEntity(tokenEntity));
