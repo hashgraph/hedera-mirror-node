@@ -362,6 +362,10 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
+    /**
+     * Burns tokens from the token's treasury account.
+     * The operation decreases the total supply of the token.
+     */
     @Test
     void burnFungibleToken() throws Exception {
         // Given
@@ -414,7 +418,9 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         Nft nft = domainBuilder
                 .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(null))
+                .customize(n -> n.tokenId(tokenEntity.getId())
+                        .serialNumber(1L)
+                        .accountId(mirrorNodeEvmProperties.isModularizedServices() ? null : treasury.toEntityId()))
                 .persist();
 
         domainBuilder

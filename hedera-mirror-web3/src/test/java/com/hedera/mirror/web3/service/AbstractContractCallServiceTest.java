@@ -312,7 +312,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected Entity accountEntityWithEvmAddressPersist() {
         return domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000_000L))
                 .persist();
     }
 
