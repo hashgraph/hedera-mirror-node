@@ -65,7 +65,7 @@ public class NftReadableKVState extends AbstractReadableKVState<NftID, Nft> {
                 .mintTime(convertToTimestamp(nft.getCreatedTimestamp()))
                 .nftId(new NftID(tokenID, nft.getSerialNumber()))
                 .ownerId(EntityIdUtils.toAccountId(nft.getAccountId()))
-                .spenderId(nft.getSpender() != null ? EntityIdUtils.toAccountId(nft.getSpender()) : null)
+                .spenderId(EntityIdUtils.toAccountId(nft.getSpender()))
                 .build();
     }
 }

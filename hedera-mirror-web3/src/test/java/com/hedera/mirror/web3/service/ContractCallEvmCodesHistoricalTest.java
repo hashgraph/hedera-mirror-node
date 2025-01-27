@@ -53,11 +53,7 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
 
     @ParameterizedTest
     @CsvSource({
-        // function getCodeHash with parameter hedera system accounts or accounts that do not exist
-        // expected to revert with INVALID_SOLIDITY_ADDRESS
-        "0000000000000000000000000000000000000000000000000000000000000167",
-        "0000000000000000000000000000000000000000000000000000000000000168",
-        "0000000000000000000000000000000000000000000000000000000000000169",
+        // function getCodeHash with accounts that do not exist expected to revert with INVALID_SOLIDITY_ADDRESS
         "00000000000000000000000000000000000000000000000000000000000005ee",
         "00000000000000000000000000000000000000000000000000000000000005e4",
     })

@@ -22,7 +22,6 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.lifecycle.info.NetworkInfo;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
@@ -38,7 +37,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SystemFileLoader {
 
-    private final NetworkInfo networkInfo;
     private final MirrorNodeEvmProperties properties;
     private final V0490FileSchema fileSchema = new V0490FileSchema();
 
@@ -53,8 +51,8 @@ public class SystemFileLoader {
         var configuration = properties.getVersionedConfiguration();
 
         var files = List.of(
-                load(101, fileSchema.genesisAddressBook(networkInfo)),
-                load(102, fileSchema.genesisNodeDetails(networkInfo)),
+                load(101, Bytes.EMPTY), // Requires a node store but these aren't used by contracts so omit
+                load(102, Bytes.EMPTY),
                 load(111, fileSchema.genesisFeeSchedules(configuration)),
                 load(112, fileSchema.genesisExchangeRates(configuration)),
                 load(121, fileSchema.genesisNetworkProperties(configuration)),

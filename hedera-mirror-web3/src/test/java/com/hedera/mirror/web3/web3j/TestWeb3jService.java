@@ -270,7 +270,7 @@ public class TestWeb3jService implements Web3jService {
 
     @Override
     public void close() throws IOException {
-        throw new UnsupportedOperationException("Close");
+        reset();
     }
 
     protected ContractExecutionParameters serviceParametersForExecutionSingle(
