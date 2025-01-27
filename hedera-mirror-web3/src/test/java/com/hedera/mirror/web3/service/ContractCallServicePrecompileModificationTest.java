@@ -31,6 +31,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
@@ -355,20 +356,27 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
+    /**
+     * Burns tokens from the token's treasury account.
+     * The operation decreases the total supply of the token.
+     */
     @Test
     void burnFungibleToken() throws Exception {
         // Given
-        final var treasury = accountEntityPersist();
         final var tokenEntity = tokenEntityPersist();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(treasury.toEntityId()))
-                .persist();
-        tokenAccountPersist(tokenEntity, treasury);
+        final var treasuryAccount = accountEntityPersist();
+        final var token = fungibleTokenPersist(tokenEntity, treasuryAccount);
+        tokenAccountPersist(tokenEntity, treasuryAccount);
 
-        final var totalSupply = token.getTotalSupply();
+        final var sender = accountEntityPersist();
+        accountBalanceRecordsPersist(sender);
+
+        long balanceTimestamp = treasuryAccount.getBalanceTimestamp();
+        persistTokenBalance(treasuryAccount, tokenEntity, balanceTimestamp);
+
+        testWeb3jService.setSender(getAddressFromEntity(sender));
+
+        final var tokenTotalSupply = token.getTotalSupply();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -379,7 +387,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var result = functionCall.send();
 
         // Then
-        assertThat(result.component2()).isEqualTo(BigInteger.valueOf(totalSupply - 4L));
+        assertThat(result.component2()).isEqualTo(BigInteger.valueOf(tokenTotalSupply - 4L));
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
@@ -395,12 +403,27 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .treasuryAccountId(treasury.toEntityId()))
                 .persist();
+
         tokenAccountPersist(tokenEntity, treasury);
         final var totalSupply = token.getTotalSupply();
 
-        domainBuilder
+        long balanceTimestamp = treasury.getBalanceTimestamp();
+        persistTokenBalance(treasury, tokenEntity, balanceTimestamp);
+
+        Nft nft = domainBuilder
                 .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(treasury.toEntityId()))
+                .customize(n -> n.tokenId(tokenEntity.getId())
+                        .serialNumber(1L)
+                        .accountId(mirrorNodeEvmProperties.isModularizedServices() ? null : treasury.toEntityId()))
+                .persist();
+
+        domainBuilder
+                .nftHistory()
+                .customize(n -> n.accountId(treasury.toEntityId())
+                        .createdTimestamp(treasury.getCreatedTimestamp())
+                        .serialNumber(nft.getSerialNumber())
+                        .timestampRange(treasury.getTimestampRange())
+                        .tokenId(token.getTokenId()))
                 .persist();
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);

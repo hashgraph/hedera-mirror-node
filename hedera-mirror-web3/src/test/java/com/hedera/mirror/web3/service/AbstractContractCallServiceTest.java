@@ -319,10 +319,13 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected Entity accountEntityWithEvmAddressPersist() {
         return domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000_000L))
                 .persist();
     }
 
+    /**
+     * Creates association between a token and an account, which is required for the account to hold and operate with the token.
+     */
     protected void tokenAccountPersist(final Entity token, final Entity account) {
         tokenAccount(
                 ta -> ta.tokenId(token.getId()).accountId(account.toEntityId().getId()));
@@ -358,6 +361,13 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /** This method adds a record to the account_balance table.
+     * When an account balance is updated during a consensus event, an account_balance record with the consensus_timestamp,
+     * account_id and balance is created.The balance_timestamp for the account entry is updated as well in the entity table.
+     * @param account The account that the account_balance record is going to be created for
+     * @param balance The account balance that is going to be stored for the particular timestamp
+     * @param timestamp The timestamp indicating the account balance update
+     */
     protected void persistAccountBalance(Entity account, long balance, long timestamp) {
         domainBuilder
                 .accountBalance()
@@ -374,6 +384,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /**
+     * This method persists a record in the token_balance db table. Each record represents the fungible token balance
+     * that a particular account holds at a given consensus timestamp.
+     */
     protected void persistTokenBalance(Entity account, Entity token, long timestamp) {
         domainBuilder
                 .tokenBalance()
