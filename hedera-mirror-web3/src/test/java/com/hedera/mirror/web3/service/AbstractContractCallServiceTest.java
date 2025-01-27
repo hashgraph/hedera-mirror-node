@@ -33,6 +33,7 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
@@ -56,6 +57,8 @@ import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.AfterEach;
@@ -321,17 +324,17 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     protected void tokenAccountPersist(final Entity token, final Entity account) {
-        tokenAccountPersist(token, account.toEntityId().getId());
+        tokenAccount(
+                ta -> ta.tokenId(token.getId()).accountId(account.toEntityId().getId()));
     }
 
-    protected void tokenAccountPersist(final Entity token, final Long accountId) {
-        domainBuilder
+    protected TokenAccount tokenAccount(Consumer<TokenAccount.TokenAccountBuilder<?, ?>> consumer) {
+        return domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.tokenId(token.getId())
-                        .accountId(accountId)
-                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                .customize(ta -> ta.freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .associated(true))
+                .customize(consumer)
                 .persist();
     }
 
@@ -379,6 +382,40 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    protected Pair<Entity, Entity> persistTokenWithAutoRenewAndTreasuryAccounts(
+            final TokenTypeEnum tokenType, final Entity treasuryAccount) {
+        final var autoRenewAccount = accountEntityPersist();
+        final var tokenToUpdateEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenToUpdateEntity.getId())
+                        .type(tokenType)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
+                .persist();
+
+        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
+            domainBuilder
+                    .nft()
+                    .customize(n -> n.accountId(treasuryAccount.toEntityId())
+                            .spender(treasuryAccount.toEntityId())
+                            .tokenId(tokenToUpdateEntity.getId())
+                            .serialNumber(1))
+                    .persist();
+
+            tokenAccount(ta -> ta.tokenId(tokenToUpdateEntity.getId())
+                    .accountId(treasuryAccount.toEntityId().getId())
+                    .balance(1L));
+        } else {
+            tokenAccount(ta -> ta.tokenId(tokenToUpdateEntity.getId())
+                    .accountId(treasuryAccount.toEntityId().getId()));
+        }
+
+        return Pair.of(tokenToUpdateEntity, autoRenewAccount);
+    }
+
     protected String getAddressFromEntity(Entity entity) {
         return EvmTokenUtils.toAddress(entity.toEntityId()).toHexString();
     }
@@ -408,6 +445,15 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .contractAddress(contractAddress)
                 .sender(senderAddress)
                 .build();
+    }
+
+    protected ContractExecutionParameters getContractExecutionParameters(
+            final RemoteFunctionCall<?> functionCall, final Contract contract, final Long value) {
+        return getContractExecutionParameters(
+                Bytes.fromHexString(functionCall.encodeFunctionCall()),
+                Address.fromHexString(contract.getContractAddress()),
+                testWeb3jService.getSender(),
+                value);
     }
 
     protected String getAddressFromEntityId(final EntityId entity) {
