@@ -26,7 +26,7 @@ import jakarta.inject.Named;
 import java.util.Objects;
 
 @Named
-public class FileDeleteTransformer extends AbstractBlockItemTransformer {
+public class FileCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
@@ -46,6 +46,6 @@ public class FileDeleteTransformer extends AbstractBlockItemTransformer {
 
     @Override
     public TransactionType getType() {
-        return TransactionType.FILEDELETE;
+        return TransactionType.FILECREATE;
     }
 }

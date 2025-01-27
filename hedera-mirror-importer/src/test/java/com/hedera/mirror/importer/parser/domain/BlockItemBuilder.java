@@ -16,18 +16,11 @@
 
 package com.hedera.mirror.importer.parser.domain;
 
-import com.hedera.hapi.block.stream.output.protoc.CallContractOutput;
-import com.hedera.hapi.block.stream.output.protoc.CryptoTransferOutput;
-import com.hedera.hapi.block.stream.output.protoc.StateChanges;
-import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
-import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
+import com.hedera.hapi.block.stream.output.protoc.*;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
-import com.hederahashgraph.api.proto.java.AssessedCustomFee;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.*;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Collections;
@@ -104,8 +97,48 @@ public class BlockItemBuilder {
         var transactionRecord = recordItem.getTransactionRecord();
         var transactionResult = transactionResult(transactionRecord, timestamp).build();
 
+        var stateChanges = buildStateChanges(recordItem);
+
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+                recordItem.getTransaction(), transactionResult, List.of(), List.of(stateChanges));
+    }
+
+    public Builder fileCreate(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        var stateChanges = buildStateChanges(recordItem);
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), List.of(stateChanges));
+    }
+
+    public Builder fileUpdate(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        var exchangeRate = ExchangeRateSet.newBuilder().setCurrentRate(ExchangeRate.newBuilder().setCentEquiv(1).build()).build();
+        var singletonUpdate = SingletonUpdateChange.newBuilder().setExchangeRateSetValue(exchangeRate).build();
+
+        var change = StateChange.newBuilder().setSingletonUpdate(singletonUpdate).build();
+        var stateChanges = StateChanges.newBuilder().addStateChanges(change).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), List.of(stateChanges));
+    }
+
+    private static StateChanges buildStateChanges(RecordItem recordItem) {
+        var id = recordItem.getTransactionRecord().getReceipt().getFileID().getFileNum();
+        var fileId = FileID.newBuilder().setFileNum(id).build();
+        var key = MapChangeKey.newBuilder().setFileIdKey(fileId).build();
+        var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
+        var change = StateChange.newBuilder().setMapUpdate(mapUpdate).build();
+
+        return StateChanges.newBuilder().addStateChanges(change).build();
     }
 
     private AssessedCustomFee.Builder assessedCustomFees() {
@@ -118,9 +151,17 @@ public class BlockItemBuilder {
 
     private TransactionResult.Builder transactionResult(
             TransactionRecord transactionRecord, Timestamp consensusTimestamp) {
-        return null;
-    }
+        return TransactionResult.newBuilder()
+                .addAllPaidStakingRewards(transactionRecord.getPaidStakingRewardsList())
+                .addAllTokenTransferLists(transactionRecord.getTokenTransferListsList())
+                .setConsensusTimestamp(consensusTimestamp)
+                .setParentConsensusTimestamp(transactionRecord.getParentConsensusTimestamp())
+                .setScheduleRef(transactionRecord.getScheduleRef())
+                .setTransferList(transactionRecord.getTransferList())
+                .setTransactionFeeCharged(transactionRecord.getTransactionFee())
+                .setStatus(transactionRecord.getReceipt().getStatus());
 
+    }
 
 
 

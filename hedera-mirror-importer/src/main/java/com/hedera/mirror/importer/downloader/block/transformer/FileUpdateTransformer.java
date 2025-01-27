@@ -23,22 +23,16 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
-import java.util.Objects;
-
 @Named
-public class FileDeleteTransformer extends AbstractBlockItemTransformer {
+public class FileUpdateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
         for (StateChanges stateChange : blockItem.stateChanges()) {
             for (StateChange change : stateChange.getStateChangesList()) {
-                if (Objects.nonNull(change)
-                        && change.hasMapUpdate()
-                        && change.getMapUpdate().hasKey()
-                        && change.getMapUpdate().getKey().hasFileIdKey()) {
-
-                    var fileIdKey = change.getMapUpdate().getKey().getFileIdKey();
-                    transactionRecordBuilder.getReceiptBuilder().setFileID(fileIdKey);
+                if (change.hasSingletonUpdate() && change.getSingletonUpdate().hasExchangeRateSetValue()) {
+                    var exchangeRate = change.getSingletonUpdate().getExchangeRateSetValue();
+                    transactionRecordBuilder.getReceiptBuilder().setExchangeRate(exchangeRate);
                 }
             }
         }
@@ -46,6 +40,6 @@ public class FileDeleteTransformer extends AbstractBlockItemTransformer {
 
     @Override
     public TransactionType getType() {
-        return TransactionType.FILEDELETE;
+        return TransactionType.FILEUPDATE;
     }
 }
