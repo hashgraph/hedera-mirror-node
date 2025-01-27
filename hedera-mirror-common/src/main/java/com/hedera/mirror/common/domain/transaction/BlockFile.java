@@ -16,7 +16,8 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import com.google.common.base.Strings;
+import static org.apache.commons.lang3.StringUtils.leftPad;
+
 import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
 import com.hedera.hapi.block.stream.protoc.BlockProof;
 import com.hedera.hapi.block.stream.protoc.RecordFileItem;
@@ -92,7 +93,7 @@ public class BlockFile implements StreamFile<BlockItem> {
     private int version;
 
     public static String getBlockStreamFilename(long blockNumber) {
-        return Strings.padStart(Long.toString(blockNumber), BASENAME_LENGTH, BASENAME_PADDING) + COMPRESSED_FILE_SUFFIX;
+        return leftPad(Long.toString(blockNumber), BASENAME_LENGTH, BASENAME_PADDING) + COMPRESSED_FILE_SUFFIX;
     }
 
     @Override

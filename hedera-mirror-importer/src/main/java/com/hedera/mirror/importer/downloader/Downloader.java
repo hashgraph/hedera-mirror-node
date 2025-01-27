@@ -362,8 +362,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                     streamFile.setBytes(null);
                 }
 
-                var consensusStart = Instant.ofEpochSecond(0, streamFile.getConsensusStart());
-                if (consensusStart.isAfter(endDate)) {
+                if (dataFilename.getInstant().isAfter(endDate)) {
                     downloaderProperties.setEnabled(false);
                     log.warn("Disabled polling after downloading all files <= endDate ({})", endDate);
                     return false;

@@ -47,11 +47,11 @@ public class BlockStreamPoller implements StreamPoller {
 
     private static final Optional<Long> PRE_GENESIS = Optional.of(-1L);
 
-    private final BlockPollerProperties properties;
     private final BlockFileReader blockFileReader;
     private final BlockStreamVerifier blockStreamVerifier;
     private final ConsensusNodeService consensusNodeService;
     private final AtomicReference<Optional<Long>> lastBlockNumber = new AtomicReference<>(Optional.empty());
+    private final BlockPollerProperties properties;
     private final RecordFileRepository recordFileRepository;
     private final StreamFileProvider streamFileProvider;
 

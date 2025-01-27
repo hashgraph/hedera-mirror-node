@@ -120,7 +120,10 @@ public final class S3StreamFileProvider extends AbstractStreamFileProvider {
 
     @Override
     protected String getBlockStreamFilePath(long shard, long nodeId, String filename) {
-        return TEMPLATE_BLOCK_STREAM_FILE_PATH.formatted(shard, nodeId, filename);
+        String filePath = TEMPLATE_BLOCK_STREAM_FILE_PATH.formatted(shard, nodeId, filename);
+        return StringUtils.isNotBlank(properties.getPathPrefix())
+                ? properties.getPathType() + SEPARATOR + filePath
+                : filePath;
     }
 
     private String getAccountIdPrefix(PathKey key) {

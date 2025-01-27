@@ -134,10 +134,10 @@ class BlockStreamPollerTest {
         var streamFileProvider = new S3StreamFileProvider(commonProperties, s3AsyncClient);
 
         blockStreamPoller = new BlockStreamPoller(
-                properties,
                 new ProtoBlockFileReader(),
                 blockStreamVerifier,
                 consensusNodeService,
+                properties,
                 recordFileRepository,
                 streamFileProvider);
 

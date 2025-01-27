@@ -29,8 +29,8 @@ public interface StreamFileProvider {
 
     /**
      * Fetches a stream file from a particular node upon subscription.
-     *
-     * @param streamFilename the stream filename to download. Note the object should provide the full path to the file
+     * @param node           the consensus node to download from
+     * @param streamFilename the stream filename to download
      * @return the downloaded stream file data, wrapped in a Mono
      */
     Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename);
