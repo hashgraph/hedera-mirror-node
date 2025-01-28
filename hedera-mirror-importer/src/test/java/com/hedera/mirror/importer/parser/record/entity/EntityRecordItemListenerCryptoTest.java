@@ -1059,6 +1059,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(dbAccountEntity).isNotNull().returns(false, Entity::getDeleted));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void cryptoAddLiveHashPersist() {
         Transaction transaction = cryptoAddLiveHashTransaction();
@@ -1087,6 +1088,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         dbLiveHash.getLivehash()));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void cryptoAddLiveHashDoNotPersist() {
         entityProperties.getPersist().setClaims(false);
@@ -1107,6 +1109,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertTransactionAndRecord(transactionBody, txnRecord));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void cryptoDeleteLiveHash() {
         Transaction transactionAddLiveHash = cryptoAddLiveHashTransaction();
@@ -2036,6 +2039,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         return buildTransaction(builder -> builder.setCryptoCreateAccount(cryptoCreateBuilder));
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction cryptoAddLiveHashTransaction() {
         return buildTransaction(builder -> builder.getCryptoAddLiveHashBuilder()
                 .getLiveHashBuilder()
@@ -2045,6 +2049,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .setKeys(KeyList.newBuilder().addKeys(keyFromString(KEY))));
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction cryptoDeleteLiveHashTransaction() {
         return buildTransaction(builder -> builder.getCryptoDeleteLiveHashBuilder()
                 .setAccountOfLiveHash(accountId1)
