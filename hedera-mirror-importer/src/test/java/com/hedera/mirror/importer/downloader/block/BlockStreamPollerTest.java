@@ -213,13 +213,14 @@ class BlockStreamPollerTest {
                 .containsExactly(
                         "Downloaded block file " + BLOCK_STREAM_FILENAMES[0] + " from node 0",
                         "Downloaded block file " + BLOCK_STREAM_FILENAMES[1] + " from node 2");
+        assertThat(countMatches(logs, "Failed to download block file ")).isZero();
 
         verifyArchivedFile(BLOCK_STREAM_FILENAMES[0], 0);
         verifyArchivedFile(BLOCK_STREAM_FILENAMES[1], 2);
     }
 
     @Test
-    void genesisNotFound(CapturedOutput capturedOutput) {
+    void genesisNotFound(CapturedOutput output) {
         // given, when
         blockStreamPoller.poll();
 
@@ -229,7 +230,7 @@ class BlockStreamPollerTest {
         verify(recordFileRepository).findLatest();
 
         String filename = BlockFile.getBlockStreamFilename(0L);
-        String logs = capturedOutput.getAll();
+        String logs = output.getAll();
         var nodeLogs = findAllMatches(logs, "Error downloading block file " + filename + " from node \\d");
         var expectedNodeLogs = nodes.stream()
                 .map(ConsensusNode::getNodeId)
@@ -242,7 +243,7 @@ class BlockStreamPollerTest {
 
     @SneakyThrows
     @Test
-    void readerFailure(CapturedOutput capturedOutput) {
+    void readerFailure(CapturedOutput output) {
         // given
         var filename = BlockFile.getBlockStreamFilename(0L);
         var genesisBlockFile =
@@ -257,7 +258,7 @@ class BlockStreamPollerTest {
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
-        var logs = capturedOutput.getAll();
+        var logs = output.getAll();
         assertThat(countMatches(logs, "Downloaded block file " + filename + " from node 0"))
                 .isOne();
         assertThat(countMatches(logs, "Error reading block file " + filename + " from node 0"))
@@ -267,7 +268,30 @@ class BlockStreamPollerTest {
     }
 
     @Test
-    void verifyFailure(CapturedOutput capturedOutput) {
+    void startBlockNumber(CapturedOutput output) {
+        // given
+        var filename = BLOCK_STREAM_FILENAMES[0];
+        importerProperties.setStartBlockNumber(7858853L);
+        fileCopier.filterFiles(filename).to(Long.toString(0)).copy();
+        doNothing().when(blockStreamVerifier).verify(any());
+
+        // when
+        blockStreamPoller.poll();
+
+        // then
+        verify(blockStreamVerifier).verify(argThat(b -> b.getBytes() == null && b.getIndex() == 7858853L));
+        verify(consensusNodeService).getNodes();
+        verify(recordFileRepository).findLatest();
+
+        String logs = output.getAll();
+        assertThat(findAllMatches(logs, "Downloaded block file .*\\.blk\\.gz from node \\d"))
+                .containsExactly("Downloaded block file " + filename + " from node 0");
+        assertThat(countMatches(logs, "Failed to download block file " + filename))
+                .isZero();
+    }
+
+    @Test
+    void verifyFailure(CapturedOutput output) {
         // given
         var filename = BLOCK_STREAM_FILENAMES[0];
         doThrow(new InvalidStreamFileException("")).when(blockStreamVerifier).verify(any());
@@ -287,7 +311,7 @@ class BlockStreamPollerTest {
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
-        var logs = capturedOutput.getAll();
+        var logs = output.getAll();
         var verifyFailureLogs = findAllMatches(logs, "Error verifying block file " + filename + " from node \\d");
         assertThat(verifyFailureLogs)
                 .containsExactlyInAnyOrder(
@@ -298,7 +322,7 @@ class BlockStreamPollerTest {
     }
 
     @Test
-    void verifyFailureThenSuccess(CapturedOutput capturedOutput) {
+    void verifyFailureThenSuccess(CapturedOutput output) {
         // given
         var filename = BLOCK_STREAM_FILENAMES[0];
         doThrow(new InvalidStreamFileException(""))
@@ -321,7 +345,7 @@ class BlockStreamPollerTest {
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
-        var logs = capturedOutput.getAll();
+        var logs = output.getAll();
         var downloadedLogs = findAllMatches(logs, "Downloaded block file " + filename + " from node \\d");
         assertThat(downloadedLogs)
                 .containsExactlyInAnyOrder(

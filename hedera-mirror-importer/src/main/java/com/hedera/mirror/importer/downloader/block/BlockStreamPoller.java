@@ -119,6 +119,11 @@ public class BlockStreamPoller implements StreamPoller {
                     var last = recordFileRepository
                             .findLatest()
                             .map(RecordFile::getIndex)
+                            .or(() -> Optional.ofNullable(properties
+                                            .getCommon()
+                                            .getImporterProperties()
+                                            .getStartBlockNumber())
+                                    .map(v -> v - 1))
                             .or(() -> PRE_GENESIS);
                     lastBlockNumber.compareAndSet(Optional.empty(), last);
                     return last;
