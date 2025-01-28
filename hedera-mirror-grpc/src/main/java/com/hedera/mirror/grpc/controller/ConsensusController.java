@@ -29,6 +29,7 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.Objects;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -89,14 +90,12 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
 
     // Consider caching this conversion for multiple subscribers to the same topic if the need arises.
     private ConsensusTopicResponse toResponse(TopicMessage t) {
-        int runningHashVersion =
-                t.getRunningHashVersion() == null ? DEFAULT_RUNNING_HASH_VERSION : t.getRunningHashVersion();
-
         var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
                 .setConsensusTimestamp(ProtoUtil.toTimestamp(t.getConsensusTimestamp()))
                 .setMessage(ProtoUtil.toByteString(t.getMessage()))
                 .setRunningHash(ProtoUtil.toByteString(t.getRunningHash()))
-                .setRunningHashVersion(runningHashVersion)
+                .setRunningHashVersion(
+                        Objects.requireNonNullElse(t.getRunningHashVersion(), DEFAULT_RUNNING_HASH_VERSION))
                 .setSequenceNumber(t.getSequenceNumber());
 
         if (t.getChunkNum() != null) {
