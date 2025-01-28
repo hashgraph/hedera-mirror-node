@@ -28,16 +28,13 @@ final class FileCreateTransformer extends AbstractBlockItemTransformer {
     @Override
     protected void updateTransactionRecord(
             BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder, TransactionBody transactionBody) {
-        var found = false;
+        outerLoop:
         for (var stateChange : blockItem.stateChanges()) {
             for (var change : stateChange.getStateChangesList()) {
                 if (change != null) {
                     var fileId = change.getMapUpdate().getKey().getFileIdKey();
                     transactionRecordBuilder.getReceiptBuilder().setFileID(fileId);
-                    found = true;
-                }
-                if (found) {
-                    break;
+                    break outerLoop;
                 }
             }
         }
