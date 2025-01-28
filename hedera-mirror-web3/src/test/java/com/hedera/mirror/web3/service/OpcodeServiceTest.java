@@ -28,7 +28,6 @@ import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -487,21 +486,22 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     void callWithDifferentCombinationsOfTracerOptions(
             final boolean stack, final boolean memory, final boolean storage) {
         // Given
+        final var senderEntity = accountPersistWithBalance(DEFAULT_SENDER_BALANCE);
+        final var treasuryEntity = accountEntityPersist();
+        final var treasuryAddress = toAddress(treasuryEntity.getId());
+
+        final var tokenEntity = persistTokenWithAutoRenewAndTreasuryAccounts(
+                        TokenTypeEnum.FUNGIBLE_COMMON, treasuryEntity)
+                .getLeft();
+        final var tokenAddress = toAddress(tokenEntity.getId());
         final var options = new OpcodeTracerOptions(stack, memory, storage);
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var treasuryEntity = accountEntityPersist();
-        final var treasuryAddress = toAddress(treasuryEntity.toEntityId());
-        final var tokenEntity = nftPersist(treasuryEntity);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var senderEntity = accountPersistWithBalance(DEFAULT_SENDER_BALANCE);
 
         final var functionCall = contract.send_mintTokenGetTotalSupplyAndBalanceOfTreasury(
-                tokenAddress.toHexString(),
-                BigInteger.ONE,
-                List.of(new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}),
-                treasuryAddress.toHexString());
+                tokenAddress.toHexString(), BigInteger.valueOf(100), List.of(), treasuryAddress.toHexString());
 
-        final var callData = functionCall.encodeFunctionCall().getBytes();
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
         final var transactionIdOrHash = setUp(
                 ETHEREUMTRANSACTION,
                 contract,
