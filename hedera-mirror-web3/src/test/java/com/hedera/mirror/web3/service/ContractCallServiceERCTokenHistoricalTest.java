@@ -223,8 +223,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
             tokenAccountFrozenRelationshipPersistHistorical(token, owner, historicalRange);
             // The token needs to exist in the "token" table in order to get its type, so we duplicate the data for the
             // historical token.
-            final var tokenLatest =
-                    fungibleTokenPersist(token, domainBuilder.entity().get());
+            fungibleTokenPersist(token, domainBuilder.entity().get());
             final var balance = 10L;
             balancePersistHistorical(toAddress(token.getId()), toAddress(owner.getId()), balance);
             final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
@@ -245,8 +244,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
             tokenAccountFrozenRelationshipPersistHistorical(token, owner, historicalRange);
             // The token needs to exist in the "token" table in order to get its type, so we duplicate the data for the
             // historical token.
-            final var tokenLatest =
-                    fungibleTokenPersist(token, domainBuilder.entity().get());
+            fungibleTokenPersist(token, domainBuilder.entity().get());
             final var balance = 10L;
             balancePersistHistorical(toAddress(token.getId()), toAddress(owner.getId()), balance);
             final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
@@ -532,8 +530,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
             final var token = fungibleTokenPersistHistorical(historicalRange);
             // The token needs to exist in the "token" table in order to get its type, so we duplicate the data for the
             // historical token.
-            final var tokenLatest =
-                    fungibleTokenPersist(token, domainBuilder.entity().get());
+            fungibleTokenPersist(token, domainBuilder.entity().get());
             tokenAccountFrozenRelationshipPersistHistorical(token, owner, historicalRange);
             final var balance = 10L;
             balancePersistHistorical(toAddress(token.getId()), toAddress(owner.getId()), balance);
@@ -556,8 +553,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
             final var token = fungibleTokenPersistHistorical(historicalRange);
             // The token needs to exist in the "token" table in order to get its type, so we duplicate the data for the
             // historical token.
-            final var tokenLatest =
-                    fungibleTokenPersist(token, domainBuilder.entity().get());
+            fungibleTokenPersist(token, domainBuilder.entity().get());
             tokenAccountFrozenRelationshipPersistHistorical(token, owner, historicalRange);
             final var balance = 10L;
             balancePersistHistorical(toAddress(token.getId()), toAddress(owner.getId()), balance);
