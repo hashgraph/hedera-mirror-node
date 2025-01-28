@@ -52,4 +52,5 @@ dependencies {
     testImplementation("io.fabric8:kubernetes-server-mock")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("uk.org.webcompere:system-stubs-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

@@ -74,7 +74,10 @@ tasks.withType<Test>().configureEach {
     systemProperty("spring.test.constructor.autowire.mode", "ALL")
     systemProperty("spring.main.cloud-platform", "NONE")
     useJUnitPlatform {}
-    if (System.getenv().containsKey("CI")) {
+    if (
+        System.getenv().containsKey("CI") &&
+            !System.getenv().containsKey("HEDERA_MIRROR_WEB3_EVM_MODULARIZEDSERVICES")
+    ) {
         retry { maxRetries = 3 }
     }
 }

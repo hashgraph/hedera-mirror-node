@@ -33,6 +33,7 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
@@ -56,6 +57,7 @@ import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -104,11 +106,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     @BeforeEach
     protected void setup() {
-        // Change this to not be epoch once services fixes config updates for non-genesis flow
-        genesisRecordFile = domainBuilder
-                .recordFile()
-                .customize(f -> f.consensusEnd(0L).consensusStart(0L).index(0L))
-                .persist();
+        genesisRecordFile =
+                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         treasuryEntity = domainBuilder
                 .entity()
                 .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
@@ -320,31 +319,25 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected Entity accountEntityWithEvmAddressPersist() {
         return domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000_000L))
                 .persist();
     }
 
+    /**
+     * Creates association between a token and an account, which is required for the account to hold and operate with the token.
+     */
     protected void tokenAccountPersist(final Entity token, final Entity account) {
-        tokenAccountPersist(token, account, domainBuilder.number());
+        tokenAccount(
+                ta -> ta.tokenId(token.getId()).accountId(account.toEntityId().getId()));
     }
 
-    protected void tokenAccountPersist(final Entity token, final Long accountId) {
-        tokenAccountPersist(token, accountId, domainBuilder.number());
-    }
-
-    protected void tokenAccountPersist(final Entity token, final Entity account, long balance) {
-        tokenAccountPersist(token, account.toEntityId().getId(), balance);
-    }
-
-    protected void tokenAccountPersist(final Entity token, final Long accountId, long balance) {
-        domainBuilder
+    protected TokenAccount tokenAccount(Consumer<TokenAccount.TokenAccountBuilder<?, ?>> consumer) {
+        return domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.tokenId(token.getId())
-                        .accountId(accountId)
-                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                .customize(ta -> ta.freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                         .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .balance(balance)
                         .associated(true))
+                .customize(consumer)
                 .persist();
     }
 
@@ -368,6 +361,13 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /** This method adds a record to the account_balance table.
+     * When an account balance is updated during a consensus event, an account_balance record with the consensus_timestamp,
+     * account_id and balance is created.The balance_timestamp for the account entry is updated as well in the entity table.
+     * @param account The account that the account_balance record is going to be created for
+     * @param balance The account balance that is going to be stored for the particular timestamp
+     * @param timestamp The timestamp indicating the account balance update
+     */
     protected void persistAccountBalance(Entity account, long balance, long timestamp) {
         domainBuilder
                 .accountBalance()
@@ -384,6 +384,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /**
+     * This method persists a record in the token_balance db table. Each record represents the fungible token balance
+     * that a particular account holds at a given consensus timestamp.
+     */
     protected void persistTokenBalance(Entity account, Entity token, long timestamp) {
         domainBuilder
                 .tokenBalance()
@@ -414,9 +418,13 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                             .tokenId(tokenToUpdateEntity.getId())
                             .serialNumber(1))
                     .persist();
-            tokenAccountPersist(tokenToUpdateEntity, treasuryAccount, 1);
+
+            tokenAccount(ta -> ta.tokenId(tokenToUpdateEntity.getId())
+                    .accountId(treasuryAccount.toEntityId().getId())
+                    .balance(1L));
         } else {
-            tokenAccountPersist(tokenToUpdateEntity, treasuryAccount);
+            tokenAccount(ta -> ta.tokenId(tokenToUpdateEntity.getId())
+                    .accountId(treasuryAccount.toEntityId().getId()));
         }
 
         return Pair.of(tokenToUpdateEntity, autoRenewAccount);

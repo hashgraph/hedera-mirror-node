@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.web3.common;
 
-import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.hapi.node.file.FileCreateTransactionBody;
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
@@ -27,7 +24,6 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerO
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.state.keyvalue.FileReadableKVState;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
@@ -82,20 +78,6 @@ public class ContractCallContext {
     @Setter
     private Optional<Long> timestamp = Optional.empty();
 
-    /**
-     * The TransactionExecutor from the modularized services integration deploys contracts in 2 steps:
-     * <p>
-     * 1. The initcode is uploaded and saved as a file using a {@link FileCreateTransactionBody}. 2. The returned file
-     * id from step 1 is then passed to a {@link ContractCreateTransactionBody}. Each step performs a separate
-     * transaction. For step 2 even if we pass the correct file id, since the mirror node data is readonly, the
-     * {@link FileReadableKVState} is not able to populate the contract's bytecode from the DB since it was never
-     * explicitly persisted in the DB.
-     * <p>
-     * This is the function of the field "file" to hold temporary the bytecode and the fileId during contract deploy.
-     */
-    @Setter
-    private Optional<File> file = Optional.empty();
-
     private ContractCallContext() {}
 
     public static ContractCallContext get() {
@@ -108,7 +90,6 @@ public class ContractCallContext {
 
     public void reset() {
         stack = stackBase;
-        file = Optional.empty();
     }
 
     public int getStackHeight() {

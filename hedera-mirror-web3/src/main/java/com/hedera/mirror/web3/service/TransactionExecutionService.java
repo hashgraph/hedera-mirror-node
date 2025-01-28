@@ -23,14 +23,11 @@ import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.node.file.FileCreateTransactionBody;
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
@@ -67,7 +64,6 @@ public class TransactionExecutionService {
     private static final AccountID TREASURY_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(2).build();
     private static final Duration TRANSACTION_DURATION = new Duration(15);
-    private static final int INITCODE_SIZE_KB = 6 * 1024;
 
     private final State mirrorNodeState;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -86,29 +82,7 @@ public class TransactionExecutionService {
         TransactionBody transactionBody;
         HederaEvmTransactionProcessingResult result = null;
         if (isContractCreate) {
-            if (params.getCallData().size() < INITCODE_SIZE_KB) {
-                transactionBody = buildContractCreateTransactionBodyWithInitBytecode(params, estimatedGas, maxLifetime);
-            } else {
-                // Upload the init bytecode
-                transactionBody = buildFileCreateTransactionBody(params, maxLifetime);
-                var uploadReceipt = executor.execute(transactionBody, Instant.now());
-                final var fileID = uploadReceipt
-                        .getFirst()
-                        .transactionRecord()
-                        .receiptOrThrow()
-                        .fileIDOrThrow();
-                final var file = File.newBuilder()
-                        .fileId(fileID)
-                        .contents(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
-                                params.getCallData().toFastHex(false).getBytes()))
-                        .build();
-                // Set the context variables for the uploaded contract.
-                ContractCallContext.get().setFile(Optional.of(file));
-
-                // Create the contract with the init bytecode
-                transactionBody =
-                        buildContractCreateTransactionBodyWithFileID(params, fileID, estimatedGas, maxLifetime);
-            }
+            transactionBody = buildContractCreateTransactionBody(params, estimatedGas, maxLifetime);
         } else {
             transactionBody = buildContractCallTransactionBody(params, estimatedGas);
         }
@@ -190,33 +164,12 @@ public class TransactionExecutionService {
                 .transactionValidDuration(TRANSACTION_DURATION);
     }
 
-    private TransactionBody buildFileCreateTransactionBody(final CallServiceParameters params, long maxLifetime) {
-        return defaultTransactionBodyBuilder(params)
-                .fileCreate(FileCreateTransactionBody.newBuilder()
-                        .contents(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
-                                params.getCallData().toArrayUnsafe()))
-                        .expirationTime(new Timestamp(maxLifetime, 0))
-                        .build())
-                .build();
-    }
-
-    private TransactionBody buildContractCreateTransactionBodyWithInitBytecode(
+    private TransactionBody buildContractCreateTransactionBody(
             final CallServiceParameters params, long estimatedGas, long maxLifetime) {
         return defaultTransactionBodyBuilder(params)
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .initcode(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
                                 params.getCallData().toArrayUnsafe()))
-                        .gas(estimatedGas)
-                        .autoRenewPeriod(new Duration(maxLifetime))
-                        .build())
-                .build();
-    }
-
-    private TransactionBody buildContractCreateTransactionBodyWithFileID(
-            final CallServiceParameters params, final FileID fileID, long estimatedGas, long maxLifetime) {
-        return defaultTransactionBodyBuilder(params)
-                .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
-                        .fileID(fileID)
                         .gas(estimatedGas)
                         .autoRenewPeriod(new Duration(maxLifetime))
                         .build())

@@ -723,7 +723,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     @Test
-    void contractCreationWork() throws Exception {
+    void contractCreationWorks() throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear();
@@ -736,6 +736,22 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         // concatenation of the string "state" twice, resulting in this value
         assertThat(result).isEqualTo("statestate");
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
+    }
+
+    @Test
+    void contractCreationWorksWithIncreasedMaxSignedTxnSize() {
+        // Given
+        testWeb3jService.setUseContractCallDeploy(true);
+
+        // When
+        // The size of the EthCall contract is bigger than 6 KB which is the default max size of init bytecode
+        // than can be deployed directly without uploading the contract as a file and then making a separate
+        // contract create transaction with a file ID. So, if this deploy works, we have verified that the
+        // property for increased maxSignedTxnSize works correctly.
+        var result = testWeb3jService.deploy(EthCall::deploy);
+
+        // Then
+        assertThat(result.getContractBinary()).isEqualTo(EthCall.BINARY);
     }
 
     @Test
