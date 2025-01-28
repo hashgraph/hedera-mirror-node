@@ -83,8 +83,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 /**
- * Provides a managing store for arbitrary tokens.
- * Differences with the original:
+ * Provides a managing store for arbitrary tokens. Differences with the original:
  * <ol>
  * <li>Removed validations performed in UsageLimits, since they check global node limits,
  * while on Archive Node we are interested in transaction scope only</li>
@@ -97,8 +96,8 @@ import java.util.function.UnaryOperator;
  */
 public class HederaTokenStore {
 
-    static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
     public static final TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
+    static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
     private static final Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
     private final OptionValidator validator;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -113,6 +112,22 @@ public class HederaTokenStore {
 
     public static TokenRelationshipKey asTokenRelationshipKey(AccountID accountID, TokenID tokenID) {
         return new TokenRelationshipKey(asTypedEvmAddress(tokenID), asTypedEvmAddress(accountID));
+    }
+
+    public static boolean affectsExpiryAtMost(final TokenUpdateTransactionBody op) {
+        return !op.hasAdminKey()
+                && !op.hasKycKey()
+                && !op.hasWipeKey()
+                && !op.hasFreezeKey()
+                && !op.hasSupplyKey()
+                && !op.hasFeeScheduleKey()
+                && !op.hasTreasury()
+                && !op.hasPauseKey()
+                && !op.hasAutoRenewAccount()
+                && op.getSymbol().isEmpty()
+                && op.getName().isEmpty()
+                && op.getAutoRenewPeriod().getSeconds() == 0
+                && !op.hasMemo();
     }
 
     protected ResponseCodeEnum checkAccountUsability(final AccountID aId) {
@@ -579,7 +594,9 @@ public class HederaTokenStore {
 
     private ResponseCodeEnum checkNftBalances(
             final Token token, final TokenID tId, final TokenUpdateTransactionBody changes) {
-        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE) && changes.hasTreasury()) {
+        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)
+                && changes.hasTreasury()
+                && !changes.getTreasury().equals(token.getTreasury().getId().asGrpcAccount())) {
             /* This relationship is verified to exist in the TokenUpdateTransitionLogic */
             final var newTreasuryRel = asTokenRelationshipKey(changes.getTreasury(), tId);
             final var relation = store.getTokenRelationship(newTreasuryRel, OnMissing.THROW);
@@ -675,22 +692,6 @@ public class HederaTokenStore {
             updatedToken = consumer.apply(asFcKeyUnchecked(supplier.get()));
         }
         return updatedToken;
-    }
-
-    public static boolean affectsExpiryAtMost(final TokenUpdateTransactionBody op) {
-        return !op.hasAdminKey()
-                && !op.hasKycKey()
-                && !op.hasWipeKey()
-                && !op.hasFreezeKey()
-                && !op.hasSupplyKey()
-                && !op.hasFeeScheduleKey()
-                && !op.hasTreasury()
-                && !op.hasPauseKey()
-                && !op.hasAutoRenewAccount()
-                && op.getSymbol().isEmpty()
-                && op.getName().isEmpty()
-                && op.getAutoRenewPeriod().getSeconds() == 0
-                && !op.hasMemo();
     }
 
     private ResponseCodeEnum fullySanityChecked(

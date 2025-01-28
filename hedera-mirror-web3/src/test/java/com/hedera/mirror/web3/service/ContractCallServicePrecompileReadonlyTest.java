@@ -980,7 +980,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         testWeb3jService.setEstimateGas(false);
     }
 
-    private ContractExecutionParameters getContractExecutionParameters(
+    protected ContractExecutionParameters getContractExecutionParameters(
             final RemoteFunctionCall<?> functionCall, final Contract contract, final Long value) {
         return ContractExecutionParameters.builder()
                 .block(BlockType.LATEST)

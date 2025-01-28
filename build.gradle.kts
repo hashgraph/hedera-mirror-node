@@ -30,12 +30,12 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.69.1")
+    set("grpcVersion", "1.70.0")
     set("mapStructVersion", "1.6.3")
     set("nodeJsVersion", "18.20.5")
     set("protobufVersion", "3.25.5")
     set("reactorGrpcVersion", "1.2.4")
-    set("vertxVersion", "4.5.11")
+    set("vertxVersion", "4.5.12")
     set("tuweniVersion", "2.3.1")
 }
 
@@ -101,7 +101,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2024.0.0")
         api("org.testcontainers:junit-jupiter:1.20.4")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.30.2")
+        api("software.amazon.awssdk:bom:2.30.6")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.7")
         api("org.web3j:core:4.12.2")
         api("tech.pegasys:jc-kzg-4844:1.0.0")
