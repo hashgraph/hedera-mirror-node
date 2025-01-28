@@ -221,6 +221,10 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
             final var owner = accountEntityPersistHistorical(historicalRange);
             final var token = fungibleTokenPersistHistorical(historicalRange);
             tokenAccountFrozenRelationshipPersistHistorical(token, owner, historicalRange);
+            // The token needs to exist in the "token" table in order to get its type, so we duplicate the data for the
+            // historical token.
+            final var tokenLatest =
+                    fungibleTokenPersist(token, domainBuilder.entity().get());
             final var balance = 10L;
             balancePersistHistorical(toAddress(token.getId()), toAddress(owner.getId()), balance);
             final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
@@ -239,6 +243,10 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
             final var owner = accountEntityWithAliasPersistHistorical(SENDER_ALIAS, SENDER_PUBLIC_KEY, historicalRange);
             final var token = fungibleTokenPersistHistorical(historicalRange);
             tokenAccountFrozenRelationshipPersistHistorical(token, owner, historicalRange);
+            // The token needs to exist in the "token" table in order to get its type, so we duplicate the data for the
+            // historical token.
+            final var tokenLatest =
+                    fungibleTokenPersist(token, domainBuilder.entity().get());
             final var balance = 10L;
             balancePersistHistorical(toAddress(token.getId()), toAddress(owner.getId()), balance);
             final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
@@ -355,7 +363,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     : contract.call_getApprovedNonStatic(getAddressFromEntity(nftToken), BigInteger.valueOf(1L))
                             .send();
             // Then
-            assertThat(result).isEqualTo(getAliasFromEntity(spender));
+            assertThat(result).isEqualTo(getAddressFromEntity(spender));
         }
 
         @ParameterizedTest // OK
@@ -522,6 +530,10 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
             // Given
             final var owner = accountEntityPersistHistorical(historicalRange);
             final var token = fungibleTokenPersistHistorical(historicalRange);
+            // The token needs to exist in the "token" table in order to get its type, so we duplicate the data for the
+            // historical token.
+            final var tokenLatest =
+                    fungibleTokenPersist(token, domainBuilder.entity().get());
             tokenAccountFrozenRelationshipPersistHistorical(token, owner, historicalRange);
             final var balance = 10L;
             balancePersistHistorical(toAddress(token.getId()), toAddress(owner.getId()), balance);
@@ -542,6 +554,10 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
             // Given
             final var owner = accountEntityWithAliasPersistHistorical(SENDER_ALIAS, SENDER_PUBLIC_KEY, historicalRange);
             final var token = fungibleTokenPersistHistorical(historicalRange);
+            // The token needs to exist in the "token" table in order to get its type, so we duplicate the data for the
+            // historical token.
+            final var tokenLatest =
+                    fungibleTokenPersist(token, domainBuilder.entity().get());
             tokenAccountFrozenRelationshipPersistHistorical(token, owner, historicalRange);
             final var balance = 10L;
             balancePersistHistorical(toAddress(token.getId()), toAddress(owner.getId()), balance);
@@ -588,7 +604,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
                     : contract.call_getOwnerOfNonStatic(getAddressFromEntity(nftToken), BigInteger.valueOf(1L))
                             .send();
             // Then
-            assertThat(result).isEqualTo(getAliasFromEntity(owner));
+            assertThat(result).isEqualTo(getAddressFromEntity(owner));
         }
 
         @ParameterizedTest
@@ -599,13 +615,15 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
             final var nftToken = nftPersistHistorical(owner.toEntityId());
             final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
             // When
-            final var result = isStatic
+            final var functionCall = isStatic
                     ? contract.call_getOwnerOf(getAddressFromEntity(nftToken), BigInteger.valueOf(2L))
-                            .send()
-                    : contract.call_getOwnerOfNonStatic(getAddressFromEntity(nftToken), BigInteger.valueOf(2L))
-                            .send();
+                    : contract.call_getOwnerOfNonStatic(getAddressFromEntity(nftToken), BigInteger.valueOf(2L));
             // Then
-            assertThat(result).isEqualTo(Address.ZERO.toHexString());
+            if (mirrorNodeEvmProperties.isModularizedServices()) {
+                assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+            } else {
+                assertThat(functionCall.send()).isEqualTo(Address.ZERO.toHexString());
+            }
         }
 
         @ParameterizedTest

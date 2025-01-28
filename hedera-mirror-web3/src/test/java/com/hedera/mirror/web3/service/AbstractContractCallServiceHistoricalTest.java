@@ -80,6 +80,8 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
+                        .evmAddress(null)
+                        .alias(null)
                         .deleted(false)
                         .balance(1_000_000_000_000L)
                         .timestampRange(timestampRange)

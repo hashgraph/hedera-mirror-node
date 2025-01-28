@@ -125,9 +125,7 @@ public class ContractCallContext {
      */
     public void initializeStackFrames(final StackedStateFrames stackedStateFrames) {
         if (stackedStateFrames != null) {
-            final var stateTimestamp = timestamp.isPresent()
-                    ? timestamp
-                    : Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd);
+            final var stateTimestamp = getTimestampOrDefaultFromRecordFile();
             stackBase = stack = stackedStateFrames.getInitializedStackBase(stateTimestamp);
         }
     }
@@ -141,5 +139,21 @@ public class ContractCallContext {
 
     public void incrementContractActionsCounter() {
         this.contractActionIndexOfCurrentFrame++;
+    }
+
+    /**
+     * Returns the set timestamp or the consensus end timestamp from the set record file only if we are in a historical context. If not - an empty optional is returned.
+     * */
+    public Optional<Long> getTimestamp() {
+        if (useHistorical()) {
+            return getTimestampOrDefaultFromRecordFile();
+        }
+        return Optional.empty();
+    }
+
+    private Optional<Long> getTimestampOrDefaultFromRecordFile() {
+        return timestamp.isPresent()
+                ? timestamp
+                : Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd);
     }
 }
