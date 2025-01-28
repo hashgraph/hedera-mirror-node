@@ -60,7 +60,7 @@ class ContractCallContextTest {
         context.setCallServiceParameters(
                 ContractExecutionParameters.builder().block(BlockType.LATEST).build());
 
-        assertThat(context.getTimestamp()).isEqualTo(Optional.empty());
+        assertThat(context.getTimestamp()).isEmpty();
     }
 
     @Test
