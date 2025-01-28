@@ -169,10 +169,11 @@ abstract class AbstractStreamFileProviderTest {
         // given
         properties.setPathType(pathType);
         createBlockStreamFileCopier().copy();
+        var node = node("0.0.3");
         var streamFilename = StreamFilename.from(BlockFile.getBlockStreamFilename(7858853));
 
         // when, then
-        assertThatThrownBy(() -> streamFileProvider.get(node("0.0.3"), streamFilename))
+        assertThatThrownBy(() -> streamFileProvider.get(node, streamFilename))
                 .isInstanceOf(IllegalStateException.class);
     }
 
