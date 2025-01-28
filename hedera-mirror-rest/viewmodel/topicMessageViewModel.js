@@ -36,16 +36,12 @@ class TopicMessageViewModel {
    * @param {String} messageEncoding the encoding to display the message in
    */
   constructor(topicMessage, messageEncoding) {
-    const runningHashVersion = _.isNil(topicMessage.runningHashVersion)
-      ? TopicMessageViewModel.DEFAULT_RUNNING_HASH_VERSION
-      : topicMessage.runningHashVersion;
-
     this.chunk_info = _.isNil(topicMessage.chunkNum) ? null : new ChunkInfoViewModel(topicMessage);
     this.consensus_timestamp = nsToSecNs(topicMessage.consensusTimestamp);
     this.message = encodeBinary(topicMessage.message, messageEncoding);
     this.payer_account_id = EntityId.parse(topicMessage.payerAccountId).toString();
     this.running_hash = encodeBase64(topicMessage.runningHash);
-    this.running_hash_version = runningHashVersion;
+    this.running_hash_version = topicMessage.runningHashVersion ?? TopicMessageViewModel.DEFAULT_RUNNING_HASH_VERSION;
     this.sequence_number = topicMessage.sequenceNumber;
     this.topic_id = EntityId.parse(topicMessage.topicId).toString();
   }
