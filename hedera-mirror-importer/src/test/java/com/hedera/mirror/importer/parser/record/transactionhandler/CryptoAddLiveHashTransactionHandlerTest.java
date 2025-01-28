@@ -32,6 +32,7 @@ class CryptoAddLiveHashTransactionHandlerTest extends AbstractTransactionHandler
         return new CryptoAddLiveHashTransactionHandler(entityListener, entityProperties);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return recordItemBuilder
@@ -48,6 +49,7 @@ class CryptoAddLiveHashTransactionHandlerTest extends AbstractTransactionHandler
         return EntityType.ACCOUNT;
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void updateTransaction() {
         // Given

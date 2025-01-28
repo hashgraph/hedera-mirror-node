@@ -65,6 +65,7 @@ class CommonMapperTest {
         assertThat(commonMapper.mapEntityId(0L)).usingRecursiveComparison().isEqualTo(toEntityId(0L, 0L, 0L));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void mapKey() {
         var bytes = ByteString.copyFromUtf8("public key");
