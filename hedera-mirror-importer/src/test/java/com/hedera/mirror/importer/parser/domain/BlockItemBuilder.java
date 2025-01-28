@@ -16,7 +16,14 @@
 
 package com.hedera.mirror.importer.parser.domain;
 
-import com.hedera.hapi.block.stream.output.protoc.*;
+import com.hedera.hapi.block.stream.output.protoc.CallContractOutput;
+import com.hedera.hapi.block.stream.output.protoc.CryptoTransferOutput;
+import com.hedera.hapi.block.stream.output.protoc.MapChangeKey;
+import com.hedera.hapi.block.stream.output.protoc.MapUpdateChange;
+import com.hedera.hapi.block.stream.output.protoc.StateChange;
+import com.hedera.hapi.block.stream.output.protoc.StateChanges;
+import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
+import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
@@ -97,10 +104,8 @@ public class BlockItemBuilder {
         var transactionRecord = recordItem.getTransactionRecord();
         var transactionResult = transactionResult(transactionRecord, timestamp).build();
 
-        var stateChanges = buildStateChanges(recordItem);
-
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult, List.of(), List.of(stateChanges));
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
     }
 
     public Builder fileCreate(RecordItem recordItem) {
@@ -109,7 +114,7 @@ public class BlockItemBuilder {
         var transactionRecord = recordItem.getTransactionRecord();
         var transactionResult = transactionResult(transactionRecord, timestamp).build();
 
-        var stateChanges = buildStateChanges(recordItem);
+        var stateChanges = buildFileIdStateChanges(recordItem);
 
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(), transactionResult, List.of(), List.of(stateChanges));
@@ -121,22 +126,11 @@ public class BlockItemBuilder {
         var transactionRecord = recordItem.getTransactionRecord();
         var transactionResult = transactionResult(transactionRecord, timestamp).build();
 
-        var exchangeRate = ExchangeRateSet.newBuilder()
-                .setCurrentRate(ExchangeRate.newBuilder().setCentEquiv(1).build())
-                .build();
-        var singletonUpdate = SingletonUpdateChange.newBuilder()
-                .setExchangeRateSetValue(exchangeRate)
-                .build();
-
-        var change =
-                StateChange.newBuilder().setSingletonUpdate(singletonUpdate).build();
-        var stateChanges = StateChanges.newBuilder().addStateChanges(change).build();
-
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult, List.of(), List.of(stateChanges));
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
     }
 
-    private static StateChanges buildStateChanges(RecordItem recordItem) {
+    private static StateChanges buildFileIdStateChanges(RecordItem recordItem) {
         var id = recordItem.getTransactionRecord().getReceipt().getFileID().getFileNum();
         var fileId = FileID.newBuilder().setFileNum(id).build();
         var key = MapChangeKey.newBuilder().setFileIdKey(fileId).build();

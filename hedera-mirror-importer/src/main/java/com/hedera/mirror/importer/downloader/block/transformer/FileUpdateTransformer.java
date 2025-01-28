@@ -16,27 +16,11 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import com.hedera.hapi.block.stream.output.protoc.StateChange;
-import com.hedera.hapi.block.stream.output.protoc.StateChanges;
-import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
-public class FileUpdateTransformer extends AbstractBlockItemTransformer {
-
-    @Override
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        for (StateChanges stateChange : blockItem.stateChanges()) {
-            for (StateChange change : stateChange.getStateChangesList()) {
-                if (change.hasSingletonUpdate() && change.getSingletonUpdate().hasExchangeRateSetValue()) {
-                    var exchangeRate = change.getSingletonUpdate().getExchangeRateSetValue();
-                    transactionRecordBuilder.getReceiptBuilder().setExchangeRate(exchangeRate);
-                }
-            }
-        }
-    }
+final class FileUpdateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     public TransactionType getType() {

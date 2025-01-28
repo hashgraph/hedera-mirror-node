@@ -268,21 +268,6 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.fileUpdate(expectedRecordItem).build();
-        var expectedFileId = blockItem
-                .stateChanges()
-                .getFirst()
-                .getStateChanges(0)
-                .getMapUpdate()
-                .getKey()
-                .getFileIdKey()
-                .getFileNum();
-        var expectedExchangeRate = blockItem
-                .stateChanges()
-                .getFirst()
-                .getStateChanges(0)
-                .getSingletonUpdate()
-                .getExchangeRateSetValue()
-                .getCurrentRate();
         var blockFie = blockFile(List.of(blockItem));
 
         // when
@@ -295,15 +280,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(
-                        expectedFileId,
-                        transactionRecord ->
-                                transactionRecord.getReceipt().getFileID().getFileNum())
-                .returns(
-                        expectedExchangeRate,
-                        transactionRecord ->
-                                transactionRecord.getReceipt().getExchangeRate().getCurrentRate()));
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
     private void assertRecordFile(
@@ -360,7 +337,6 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                         "transactionRecord.assessedCustomFees_",
                         "transactionRecord.scheduleRef_",
                         "transactionRecord.parentConsensusTimestamp_",
-                        "transactionRecord.receipt_.exchangeRate_",
                         // Record file builder transaction hash is not generated based on transaction bytes, so these
                         // will not match
                         "transactionRecord.transactionHash_",
@@ -372,7 +348,8 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedIsInitialized",
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedSize",
                         "transactionRecord.receipt_.fileID_.memoizedHashCode",
-                        "transactionRecord.receipt_.fileID_.memoizedSize")
+                        "transactionRecord.receipt_.fileID_.memoizedSize",
+                        "transactionRecord.receipt_.fileID_.memoizedIsInitialized")
                 .isEqualTo(expectedRecordItem);
     }
 

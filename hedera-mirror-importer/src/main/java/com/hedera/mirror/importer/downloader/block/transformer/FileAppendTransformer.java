@@ -20,7 +20,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.inject.Named;
 
 @Named
-public class FileAppendTransformer extends AbstractBlockItemTransformer {
+final class FileAppendTransformer extends AbstractBlockItemTransformer {
 
     @Override
     public TransactionType getType() {
