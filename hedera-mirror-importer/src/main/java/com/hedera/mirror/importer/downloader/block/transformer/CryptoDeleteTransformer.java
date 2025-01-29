@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
-public class CryptoDeleteTransformer extends AbstractBlockItemTransformer {
+final class CryptoDeleteTransformer extends AbstractBlockItemTransformer {
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
         var transactionBody = blockItem.transaction().getBody().getCryptoDelete();
