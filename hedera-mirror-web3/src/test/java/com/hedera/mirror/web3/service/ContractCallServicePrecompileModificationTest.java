@@ -440,18 +440,23 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
+    /**
+     * Wiping tokens is the process of removing tokens from an account's balance. The total supply is not affected.
+     */
     @Test
     void wipeFungibleToken() throws Exception {
         // Given
         final var owner = accountEntityWithEvmAddressPersist();
+        final var treasuryAccount = accountEntityPersist();
 
         final var tokenEntity = tokenEntityPersist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        fungibleTokenPersist(tokenEntity, treasuryAccount);
 
         tokenAccountPersist(tokenEntity, owner);
+
+        Long createdTimestamp = owner.getCreatedTimestamp();
+        persistTokenBalance(owner, tokenEntity, createdTimestamp);
+        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), createdTimestamp);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
