@@ -51,10 +51,17 @@ public class BinaryGasEstimator {
             contractCallContext.reset();
 
             long mid = (hi + lo) / 2;
-            HederaEvmTransactionProcessingResult transactionResult = call.apply(mid);
+            HederaEvmTransactionProcessingResult transactionResult = null;
+
+            try {
+                transactionResult = call.apply(mid);
+            } catch (Exception ignore) {
+            }
             iterationsMade++;
 
-            boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
+            boolean err = transactionResult == null
+                    || !transactionResult.isSuccessful()
+                    || transactionResult.getGasUsed() < 0;
             long gasUsed = err ? prevGasLimit : transactionResult.getGasUsed();
             totalGasUsed += gasUsed;
             if (err || gasUsed == 0) {
