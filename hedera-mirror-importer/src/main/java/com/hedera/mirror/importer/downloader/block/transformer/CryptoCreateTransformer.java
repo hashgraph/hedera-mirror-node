@@ -16,14 +16,25 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
+import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
-final class CryptoDeleteLiveHashTransformer extends AbstractBlockItemTransformer {
+public class CryptoCreateTransformer extends AbstractBlockItemTransformer {
+
+    @Override
+    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
+        var transactionBody = blockItem.transaction().getBody().getCryptoCreateAccount();
+        var alias = transactionBody.getAlias();
+        if (!alias.isEmpty()) {
+            transactionRecordBuilder.setAlias(alias);
+        }
+    }
 
     @Override
     public TransactionType getType() {
-        return TransactionType.CRYPTODELETELIVEHASH;
+        return TransactionType.CRYPTOCREATEACCOUNT;
     }
 }

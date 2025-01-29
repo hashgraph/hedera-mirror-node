@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.hedera.mirror.importer.downloader.block.transformer;
 
 import com.hedera.mirror.common.domain.transaction.BlockItem;
@@ -28,31 +27,22 @@ public class CryptoDeleteAllowanceTransformer extends AbstractBlockItemTransform
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
         var transactionBody = blockItem.transaction().getBody();
-        if (!transactionBody.hasCryptoDeleteAllowance()) {
-            return;
-        }
         var cryptoDeleteAllowance = transactionBody.getCryptoDeleteAllowance();
-        for (var nftAllowance: cryptoDeleteAllowance.getNftAllowancesList()) {
-            var ownerId = nftAllowance.getOwner();
-            var tokenId = nftAllowance.getTokenId();
-            transactionRecordBuilder.addAutomaticTokenAssociations(
-                    TokenAssociation.newBuilder()
-                            .setAccountId(ownerId)
-                            .setTokenId(tokenId)
-                            .build()
-            );
+        for (var nftAllowance : cryptoDeleteAllowance.getNftAllowancesList()) {
             for (var serialNumber : nftAllowance.getSerialNumbersList()) {
+                var ownerId = nftAllowance.getOwner();
+                var tokenId = nftAllowance.getTokenId();
                 transactionRecordBuilder.addTokenTransferLists(TokenTransferList.newBuilder()
-                                .setToken(tokenId)
-                                .addNftTransfers(NftTransfer.newBuilder()
-                                        .setSenderAccountID(ownerId)
-                                        .setReceiverAccountID(AccountID.getDefaultInstance())
-                                        .setSerialNumber(serialNumber)
-                                        .build())
+                        .setToken(tokenId)
+                        .addNftTransfers(NftTransfer.newBuilder()
+                                .setSenderAccountID(ownerId)
+                                .setReceiverAccountID(AccountID.getDefaultInstance())
+                                .build())
                         .build());
             }
         }
     }
+
     @Override
     public TransactionType getType() {
         return TransactionType.CRYPTODELETEALLOWANCE;
