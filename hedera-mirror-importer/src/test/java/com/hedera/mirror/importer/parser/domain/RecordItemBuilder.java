@@ -657,6 +657,12 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.FILECREATE, builder).receipt(b -> b.setFileID(fileId()));
     }
 
+    public Builder<FileCreateTransactionBody.Builder> fileCreateAuthorizationFailed() {
+        var builder = FileCreateTransactionBody.newBuilder();
+        return new Builder<>(TransactionType.FILECREATE, builder)
+                .receipt(b -> b.setStatus(ResponseCodeEnum.AUTHORIZATION_FAILED));
+    }
+
     public Builder<FileDeleteTransactionBody.Builder> fileDelete() {
         var fileId = fileId();
         var builder = FileDeleteTransactionBody.newBuilder().setFileID(fileId);

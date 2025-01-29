@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.downloader.block.transformer;
 import com.hedera.hapi.block.stream.output.protoc.StateIdentifier;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
@@ -29,19 +30,18 @@ final class FileCreateTransformer extends AbstractBlockItemTransformer {
     @Override
     protected void updateTransactionRecord(
             BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder, TransactionBody transactionBody) {
+
+        if (blockItem.transactionResult().getStatus() != ResponseCodeEnum.SUCCESS) {
+            return;
+        }
+
         for (var stateChange : blockItem.stateChanges()) {
             for (var change : stateChange.getStateChangesList()) {
-                if (change.getStateId() == StateIdentifier.STATE_ID_FILES.getNumber()) {
-                    if (change.hasMapUpdate()) {
-                        var mapUpdate = change.getMapUpdate();
-                        if (mapUpdate.hasKey()) {
-                            var key = mapUpdate.getKey();
-                            if (key.hasFileIdKey()) {
-                                var fileId = key.getFileIdKey();
-                                transactionRecordBuilder.getReceiptBuilder().setFileID(fileId);
-                                return;
-                            }
-                        }
+                if (change.getStateId() == StateIdentifier.STATE_ID_FILES.getNumber() && change.hasMapUpdate()) {
+                    var key = change.getMapUpdate().getKey();
+                    if (key.hasFileIdKey()) {
+                        transactionRecordBuilder.getReceiptBuilder().setFileID(key.getFileIdKey());
+                        return;
                     }
                 }
             }

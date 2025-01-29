@@ -260,6 +260,35 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     }
 
     @Test
+    void fileCreateTransform_whenStatusIsNotSuccess() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .fileCreateAuthorizationFailed()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.fileCreate(expectedRecordItem).build();
+
+        var blockFie = blockFile(List.of(blockItem));
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFie);
+
+        // then
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(
+                        0L,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getFileID().getFileNum()));
+    }
+
+    @Test
     void fileUpdateTransform() {
         // given
         var expectedRecordItem = recordItemBuilder

@@ -140,7 +140,10 @@ public class BlockItemBuilder {
         var fileId = FileID.newBuilder().setFileNum(id).build();
         var key = MapChangeKey.newBuilder().setFileIdKey(fileId).build();
         var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
-        var change = StateChange.newBuilder().setMapUpdate(mapUpdate).setStateId(STATE_FILES_ID).build();
+        var change = StateChange.newBuilder()
+                .setMapUpdate(mapUpdate)
+                .setStateId(STATE_FILES_ID)
+                .build();
 
         return StateChanges.newBuilder().addStateChanges(change).build();
     }
