@@ -105,6 +105,7 @@ class DomainUtilsTest {
         assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(ECDSA_SECP256K1_KEY);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void getPublicKeyWhenECDSA384() throws Exception {
         var bytes = Key.newBuilder()
@@ -114,6 +115,7 @@ class DomainUtilsTest {
         assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(ECDSA_384_KEY);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void getPublicKeyWhenRSA3072() throws Exception {
         var bytes = Key.newBuilder()

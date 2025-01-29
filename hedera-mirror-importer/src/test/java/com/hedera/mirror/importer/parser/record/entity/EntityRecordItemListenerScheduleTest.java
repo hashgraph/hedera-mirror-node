@@ -320,6 +320,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertThat(transactionRepository.count()).isEqualTo(1);
     }
 
+    @SuppressWarnings("deprecation")
     @ValueSource(booleans = {true, false})
     @ParameterizedTest
     void unknownSignatureType(boolean useBlockTransformer) {
@@ -477,6 +478,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 .addAccountAmounts(accountAmount(NODE.getAccountNum(), 2000)));
     }
 
+    @SuppressWarnings("deprecation")
     private SignatureMap getSigMap(int signatureCount, boolean isEd25519) {
         SignatureMap.Builder builder = SignatureMap.newBuilder();
         String salt = RandomStringUtils.secure().nextAlphabetic(5);

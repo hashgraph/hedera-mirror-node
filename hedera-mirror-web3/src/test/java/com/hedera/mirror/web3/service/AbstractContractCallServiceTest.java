@@ -33,6 +33,7 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
@@ -56,6 +57,8 @@ import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.AfterEach;
@@ -103,11 +106,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     @BeforeEach
     protected void setup() {
-        // Change this to not be epoch once services fixes config updates for non-genesis flow
-        genesisRecordFile = domainBuilder
-                .recordFile()
-                .customize(f -> f.consensusEnd(0L).consensusStart(0L).index(0L))
-                .persist();
+        genesisRecordFile =
+                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         treasuryEntity = domainBuilder
                 .entity()
                 .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
@@ -221,7 +221,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     /**
-     *  Persists entity of type token in the entity db table. Entity table contains properties common for all entities on the network (tokens, accounts, smart contracts, topics)
+     * Persists entity of type token in the entity db table. Entity table contains properties common for all entities on
+     * the network (tokens, accounts, smart contracts, topics)
      */
     protected Entity tokenEntityPersist() {
         return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
@@ -229,7 +230,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     /**
      * Persists fungible token in the token db table.
-     * @param tokenEntity The entity from the entity db table related to the token
+     *
+     * @param tokenEntity     The entity from the entity db table related to the token
      * @param treasuryAccount The account holding the initial token supply
      */
     protected Token fungibleTokenPersist(Entity tokenEntity, Entity treasuryAccount) {
@@ -243,6 +245,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     /**
      * Persists non-fungible token in the token db table.
+     *
      * @param tokenEntity The entity from the entity db table related to the token
      */
     protected Token nonFungibleTokenPersist(Entity tokenEntity) {
@@ -262,11 +265,14 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     /**
-     * The method creates token allowance, which defines the amount of tokens that the owner allows another account (spender) to use on its behalf.
+     * The method creates token allowance, which defines the amount of tokens that the owner allows another account
+     * (spender) to use on its behalf.
+     *
      * @param amountGranted - initial amount of tokens that the spender is allowed to use on owner's behalf
-     * @param tokenEntity - the token entity the allowance is created for
-     * @param owner - the owner of the token amount that the allowance is created for
-     * @param spenderId - the spender id (another user's id or contract id) that is allowed to spend amountGranted of tokenEntity on owner's behalf
+     * @param tokenEntity   - the token entity the allowance is created for
+     * @param owner         - the owner of the token amount that the allowance is created for
+     * @param spenderId     - the spender id (another user's id or contract id) that is allowed to spend amountGranted
+     *                      of tokenEntity on owner's behalf
      * @return TokenAllowance object that is persisted to the database
      */
     protected TokenAllowance tokenAllowancePersist(
@@ -282,12 +288,13 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     /**
-     * This method creates nft allowance for all instances of a specific token type (approvedForAll).
-     * The allowance allows the spender to transfer NFTs on the owner's behalf.
-     * @param token the NFT token for which the allowance is created
-     * @param owner the account owning the NFT
+     * This method creates nft allowance for all instances of a specific token type (approvedForAll). The allowance
+     * allows the spender to transfer NFTs on the owner's behalf.
+     *
+     * @param token   the NFT token for which the allowance is created
+     * @param owner   the account owning the NFT
      * @param spender the account allowed to transfer the NFT on owner's behalf
-     * @param payer the account paying for the allowance creation
+     * @param payer   the account paying for the allowance creation
      * @return NftAllowance object that is persisted to the database
      */
     protected NftAllowance nftAllowancePersist(Token token, Entity owner, Entity spender, Entity payer) {
@@ -312,32 +319,36 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected Entity accountEntityWithEvmAddressPersist() {
         return domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000L))
-                .persist();
-    }
-
-    protected void tokenAccountPersist(final Entity token, final Entity account) {
-        tokenAccountPersist(token, account.toEntityId().getId());
-    }
-
-    protected void tokenAccountPersist(final Entity token, final Long accountId) {
-        domainBuilder
-                .tokenAccount()
-                .customize(ta -> ta.tokenId(token.getId())
-                        .accountId(accountId)
-                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
-                        .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true))
+                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000_000L))
                 .persist();
     }
 
     /**
-     * Creates a non-fungible token instance with a specific serial number(a record in the nft table is persisted).
-     * The instance is tied to a specific token in the token db table.
-     * @param token the token entity that the nft instance is linked to by tokenId
+     * Creates association between a token and an account, which is required for the account to hold and operate with the token.
+     */
+    protected void tokenAccountPersist(final Entity token, final Entity account) {
+        tokenAccount(
+                ta -> ta.tokenId(token.getId()).accountId(account.toEntityId().getId()));
+    }
+
+    protected TokenAccount tokenAccount(Consumer<TokenAccount.TokenAccountBuilder<?, ?>> consumer) {
+        return domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true))
+                .customize(consumer)
+                .persist();
+    }
+
+    /**
+     * Creates a non-fungible token instance with a specific serial number(a record in the nft table is persisted). The
+     * instance is tied to a specific token in the token db table.
+     *
+     * @param token           the token entity that the nft instance is linked to by tokenId
      * @param nftSerialNumber the unique serial number of the nft instance
-     * @param ownerId the id of the account currently holding the nft
-     * @param spenderId id of the approved spender of the nft
+     * @param ownerId         the id of the account currently holding the nft
+     * @param spenderId       id of the approved spender of the nft
      */
     protected Nft nonFungibleTokenInstancePersist(
             final Token token, Long nftSerialNumber, final EntityId ownerId, final EntityId spenderId) {
@@ -350,6 +361,13 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /** This method adds a record to the account_balance table.
+     * When an account balance is updated during a consensus event, an account_balance record with the consensus_timestamp,
+     * account_id and balance is created.The balance_timestamp for the account entry is updated as well in the entity table.
+     * @param account The account that the account_balance record is going to be created for
+     * @param balance The account balance that is going to be stored for the particular timestamp
+     * @param timestamp The timestamp indicating the account balance update
+     */
     protected void persistAccountBalance(Entity account, long balance, long timestamp) {
         domainBuilder
                 .accountBalance()
@@ -366,12 +384,50 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /**
+     * This method persists a record in the token_balance db table. Each record represents the fungible token balance
+     * that a particular account holds at a given consensus timestamp.
+     */
     protected void persistTokenBalance(Entity account, Entity token, long timestamp) {
         domainBuilder
                 .tokenBalance()
                 .customize(ab -> ab.id(new TokenBalance.Id(timestamp, account.toEntityId(), token.toEntityId()))
                         .balance(100))
                 .persist();
+    }
+
+    protected Pair<Entity, Entity> persistTokenWithAutoRenewAndTreasuryAccounts(
+            final TokenTypeEnum tokenType, final Entity treasuryAccount) {
+        final var autoRenewAccount = accountEntityPersist();
+        final var tokenToUpdateEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenToUpdateEntity.getId())
+                        .type(tokenType)
+                        .treasuryAccountId(treasuryAccount.toEntityId()))
+                .persist();
+
+        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
+            domainBuilder
+                    .nft()
+                    .customize(n -> n.accountId(treasuryAccount.toEntityId())
+                            .spender(treasuryAccount.toEntityId())
+                            .tokenId(tokenToUpdateEntity.getId())
+                            .serialNumber(1))
+                    .persist();
+
+            tokenAccount(ta -> ta.tokenId(tokenToUpdateEntity.getId())
+                    .accountId(treasuryAccount.toEntityId().getId())
+                    .balance(1L));
+        } else {
+            tokenAccount(ta -> ta.tokenId(tokenToUpdateEntity.getId())
+                    .accountId(treasuryAccount.toEntityId().getId()));
+        }
+
+        return Pair.of(tokenToUpdateEntity, autoRenewAccount);
     }
 
     protected String getAddressFromEntity(Entity entity) {
@@ -403,6 +459,15 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .contractAddress(contractAddress)
                 .sender(senderAddress)
                 .build();
+    }
+
+    protected ContractExecutionParameters getContractExecutionParameters(
+            final RemoteFunctionCall<?> functionCall, final Contract contract, final Long value) {
+        return getContractExecutionParameters(
+                Bytes.fromHexString(functionCall.encodeFunctionCall()),
+                Address.fromHexString(contract.getContractAddress()),
+                testWeb3jService.getSender(),
+                value);
     }
 
     protected String getAddressFromEntityId(final EntityId entity) {

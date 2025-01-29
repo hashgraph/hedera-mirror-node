@@ -1077,6 +1077,7 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.TOKENWIPE, transactionBody).receipt(r -> r.setNewTotalSupply(2L));
     }
 
+    @SuppressWarnings("deprecation")
     public Builder<UncheckedSubmitBody.Builder> uncheckedSubmit() {
         var transactionBody = UncheckedSubmitBody.newBuilder().setTransactionBytes(bytes(32));
         return new Builder<>(TransactionType.UNCHECKEDSUBMIT, transactionBody);

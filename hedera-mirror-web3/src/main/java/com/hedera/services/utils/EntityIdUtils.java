@@ -189,6 +189,9 @@ public final class EntityIdUtils {
     }
 
     public static com.hedera.hapi.node.base.AccountID toAccountId(final EntityId entityId) {
+        if (entityId == null) {
+            return null;
+        }
         return com.hedera.hapi.node.base.AccountID.newBuilder()
                 .shardNum(entityId.getShard())
                 .realmNum(entityId.getRealm())

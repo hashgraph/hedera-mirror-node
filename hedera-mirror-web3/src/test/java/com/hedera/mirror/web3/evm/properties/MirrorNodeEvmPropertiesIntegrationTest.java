@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.node.app.workflows.standalone.TransactionExecutors;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.ConfigData;
 import java.lang.reflect.Field;
@@ -32,10 +33,7 @@ import org.junit.jupiter.api.Test;
 class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
 
     private static final String DOT_SEPARATOR = ".";
-    private static final String CHAIN_ID = "chainId";
     private static final String CONTRACTS_CONFIG = "contracts";
-    private static final String CHAIN_ID_KEY_CONFIG = CONTRACTS_CONFIG + DOT_SEPARATOR + CHAIN_ID;
-    private static final Map<String, String> YAML_PROPERTIES = Map.of(CHAIN_ID_KEY_CONFIG, "297");
     private static final String MAX_GAS_REFUND_PERCENTAGE = "maxRefundPercentOfGasLimit";
     private static final String MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG =
             CONTRACTS_CONFIG + DOT_SEPARATOR + MAX_GAS_REFUND_PERCENTAGE;
@@ -62,16 +60,16 @@ class MirrorNodeEvmPropertiesIntegrationTest extends Web3IntegrationTest {
         assertThat(modularizedProperties)
                 .isNotEmpty()
                 // override from yaml
-                .doesNotContainEntry(CHAIN_ID_KEY_CONFIG, "296")
-                .containsEntry(MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG, "100")
-                .containsAllEntriesOf(YAML_PROPERTIES);
+                .containsEntry(MAX_GAS_REFUND_PERCENTAGE_KEY_CONFIG, "100");
     }
 
     @Test
     void verifyUpstreamPropertiesExist() {
         Set<String> propertyKeys = properties.getProperties().keySet();
-        propertyKeys.forEach(
-                configKey -> assertThat(getContractsConfigKey(configKey)).isEqualTo(configKey));
+        propertyKeys.stream()
+                .filter(configKey -> !configKey.equals(TransactionExecutors.MAX_SIGNED_TXN_SIZE_PROPERTY))
+                .forEach(configKey ->
+                        assertThat(getContractsConfigKey(configKey)).isEqualTo(configKey));
     }
 
     @Test
