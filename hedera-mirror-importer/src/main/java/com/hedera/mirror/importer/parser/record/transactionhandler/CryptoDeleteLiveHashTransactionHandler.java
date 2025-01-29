@@ -30,6 +30,7 @@ class CryptoDeleteLiveHashTransactionHandler extends AbstractTransactionHandler 
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(
                 recordItem.getTransactionBody().getCryptoDeleteLiveHash().getAccountOfLiveHash());
