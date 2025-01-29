@@ -660,7 +660,7 @@ public class RecordItemBuilder {
     public Builder<FileDeleteTransactionBody.Builder> fileDelete() {
         var fileId = fileId();
         var builder = FileDeleteTransactionBody.newBuilder().setFileID(fileId);
-        return new Builder<>(TransactionType.FILEDELETE, builder).receipt(b -> b.setFileID(fileId));
+        return new Builder<>(TransactionType.FILEDELETE, builder);
     }
 
     public Builder<FileUpdateTransactionBody.Builder> fileUpdate() {

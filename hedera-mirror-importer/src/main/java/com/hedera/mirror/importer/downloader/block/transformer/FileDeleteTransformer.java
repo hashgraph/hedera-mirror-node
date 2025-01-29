@@ -16,22 +16,11 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
 final class FileDeleteTransformer extends AbstractBlockItemTransformer {
-
-    @Override
-    protected void updateTransactionRecord(
-            BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder, TransactionBody transactionBody) {
-        transactionRecordBuilder
-                .getReceiptBuilder()
-                .setFileID(transactionBody.getFileDelete().getFileID());
-    }
 
     @Override
     public TransactionType getType() {

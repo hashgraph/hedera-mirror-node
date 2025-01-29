@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
+import com.hedera.hapi.block.stream.output.protoc.StateIdentifier;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -28,13 +29,20 @@ final class FileCreateTransformer extends AbstractBlockItemTransformer {
     @Override
     protected void updateTransactionRecord(
             BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder, TransactionBody transactionBody) {
-        outerLoop:
         for (var stateChange : blockItem.stateChanges()) {
             for (var change : stateChange.getStateChangesList()) {
-                if (change != null) {
-                    var fileId = change.getMapUpdate().getKey().getFileIdKey();
-                    transactionRecordBuilder.getReceiptBuilder().setFileID(fileId);
-                    break outerLoop;
+                if (change.getStateId() == StateIdentifier.STATE_ID_FILES.getNumber()) {
+                    if (change.hasMapUpdate()) {
+                        var mapUpdate = change.getMapUpdate();
+                        if (mapUpdate.hasKey()) {
+                            var key = mapUpdate.getKey();
+                            if (key.hasFileIdKey()) {
+                                var fileId = key.getFileIdKey();
+                                transactionRecordBuilder.getReceiptBuilder().setFileID(fileId);
+                                return;
+                            }
+                        }
+                    }
                 }
             }
         }
