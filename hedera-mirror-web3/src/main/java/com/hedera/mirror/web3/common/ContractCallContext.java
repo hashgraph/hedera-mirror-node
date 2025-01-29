@@ -152,8 +152,6 @@ public class ContractCallContext {
     }
 
     private Optional<Long> getTimestampOrDefaultFromRecordFile() {
-        return timestamp.isPresent()
-                ? timestamp
-                : Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd);
+        return timestamp.or(() -> Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd));
     }
 }
