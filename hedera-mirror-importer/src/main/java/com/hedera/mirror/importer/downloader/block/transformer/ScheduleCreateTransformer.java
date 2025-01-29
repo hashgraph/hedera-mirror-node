@@ -16,28 +16,38 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
+import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
-final class CryptoTransferTransformer extends AbstractBlockItemTransformer {
+final class ScheduleCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        for (var transactionOutput : blockItem.transactionOutput()) {
-            if (transactionOutput.hasCryptoTransfer()) {
-                var cryptoTransferOutput = transactionOutput.getCryptoTransfer();
-                var assessedCustomFees = cryptoTransferOutput.getAssessedCustomFeesList();
-                transactionRecordBuilder.addAllAssessedCustomFees(assessedCustomFees);
-                break;
+        if (blockItem.transactionResult().getStatus() != SUCCESS) {
+            return;
+        }
+
+        for (var stateChanges : blockItem.stateChanges()) {
+            for (var stateChange : stateChanges.getStateChangesList()) {
+                if (stateChange.getStateId() == STATE_ID_SCHEDULES_BY_ID.getNumber() && stateChange.hasMapUpdate()) {
+                    var key = stateChange.getMapUpdate().getKey();
+                    if (key.hasScheduleIdKey()) {
+                        transactionRecordBuilder.getReceiptBuilder().setScheduleID(key.getScheduleIdKey());
+                        return;
+                    }
+                }
             }
         }
     }
 
     @Override
     public TransactionType getType() {
-        return TransactionType.CRYPTOTRANSFER;
+        return TransactionType.SCHEDULECREATE;
     }
 }

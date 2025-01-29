@@ -16,8 +16,17 @@
 
 package com.hedera.mirror.importer.parser.domain;
 
+import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
+
 import com.hedera.hapi.block.stream.output.protoc.CallContractOutput;
+import com.hedera.hapi.block.stream.output.protoc.CreateScheduleOutput;
 import com.hedera.hapi.block.stream.output.protoc.CryptoTransferOutput;
+import com.hedera.hapi.block.stream.output.protoc.MapChangeKey;
+import com.hedera.hapi.block.stream.output.protoc.MapChangeValue;
+import com.hedera.hapi.block.stream.output.protoc.MapDeleteChange;
+import com.hedera.hapi.block.stream.output.protoc.MapUpdateChange;
+import com.hedera.hapi.block.stream.output.protoc.SignScheduleOutput;
+import com.hedera.hapi.block.stream.output.protoc.StateChange;
 import com.hedera.hapi.block.stream.output.protoc.StateChanges;
 import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
 import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
@@ -25,6 +34,7 @@ import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
+import com.hederahashgraph.api.proto.java.Schedule;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -50,11 +60,6 @@ public class BlockItemBuilder {
     }
 
     public BlockItemBuilder.Builder cryptoTransfer(RecordItem recordItem) {
-        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
-        var timestamp = Utility.instantToTimestamp(instant);
-        var transactionRecord = recordItem.getTransactionRecord();
-        var transactionResult = transactionResult(transactionRecord, timestamp).build();
-
         var contractCallTransactionOutput = TransactionOutput.newBuilder()
                 .setContractCall(CallContractOutput.newBuilder()
                         .setContractCallResult(recordItemBuilder.contractFunctionResult())
@@ -68,8 +73,93 @@ public class BlockItemBuilder {
 
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(),
-                transactionResult,
+                transactionResult(recordItem),
                 List.of(contractCallTransactionOutput, cryptoTransferTransactionOutput),
+                Collections.emptyList());
+    }
+
+    public BlockItemBuilder.Builder scheduleCreate() {
+        var recordItem = recordItemBuilder.scheduleCreate().build();
+        return scheduleCreate(recordItem);
+    }
+
+    public BlockItemBuilder.Builder scheduleCreate(RecordItem recordItem) {
+        var transactionRecord = recordItem.getTransactionRecord();
+        var scheduleId = transactionRecord.getReceipt().getScheduleID();
+        var transactionId = transactionRecord.getReceipt().getScheduledTransactionID();
+        var transactionOutput = TransactionOutput.newBuilder()
+                .setCreateSchedule(CreateScheduleOutput.newBuilder()
+                        .setScheduleId(scheduleId)
+                        .setScheduledTransactionId(transactionId)
+                        .build())
+                .build();
+
+        var stateChange = StateChange.newBuilder()
+                .setStateId(STATE_ID_SCHEDULES_BY_ID.getNumber())
+                .setMapUpdate(MapUpdateChange.newBuilder()
+                        .setKey(MapChangeKey.newBuilder().setScheduleIdKey(scheduleId)))
+                .build();
+        var stateChanges =
+                StateChanges.newBuilder().addStateChanges(stateChange).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(),
+                transactionResult(recordItem),
+                List.of(transactionOutput),
+                List.of(stateChanges));
+    }
+
+    public BlockItemBuilder.Builder scheduleDelete() {
+        var recordItem = recordItemBuilder.scheduleDelete().build();
+        return scheduleDelete(recordItem, false);
+    }
+
+    public BlockItemBuilder.Builder scheduleDelete(RecordItem recordItem, boolean deleted) {
+        var scheduleId = recordItem.getTransactionBody().getScheduleDelete().getScheduleID();
+        var stateChangeDelete = StateChange.newBuilder()
+                .setMapDelete(MapDeleteChange.newBuilder()
+                        .setKey(MapChangeKey.newBuilder().setScheduleIdKey(scheduleId)))
+                .build();
+        var stateChangeUpdate = StateChange.newBuilder()
+                .setStateId(STATE_ID_SCHEDULES_BY_ID.getNumber())
+                .setMapUpdate(MapUpdateChange.newBuilder()
+                        .setValue(MapChangeValue.newBuilder()
+                                .setScheduleValue(Schedule.newBuilder()
+                                        .setDeleted(deleted)
+                                        .setScheduleId(scheduleId)
+                                        .build())
+                                .build()))
+                .build();
+
+        var stateChanges = StateChanges.newBuilder()
+                .addStateChanges(stateChangeDelete)
+                .addStateChanges(stateChangeUpdate)
+                .build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(),
+                transactionResult(recordItem),
+                Collections.emptyList(),
+                List.of(stateChanges));
+    }
+
+    public BlockItemBuilder.Builder scheduleSign() {
+        var recordItem = recordItemBuilder.scheduleSign().build();
+        return scheduleSign(recordItem);
+    }
+
+    public BlockItemBuilder.Builder scheduleSign(RecordItem recordItem) {
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionId = transactionRecord.getReceipt().getScheduledTransactionID();
+        var transactionOutput = TransactionOutput.newBuilder()
+                .setSignSchedule(SignScheduleOutput.newBuilder()
+                        .setScheduledTransactionId(transactionId)
+                        .build())
+                .build();
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(),
+                transactionResult(recordItem),
+                List.of(transactionOutput),
                 Collections.emptyList());
     }
 
@@ -79,13 +169,8 @@ public class BlockItemBuilder {
     }
 
     public BlockItemBuilder.Builder unknown(RecordItem recordItem) {
-        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
-        var timestamp = Utility.instantToTimestamp(instant);
-        var transactionRecord = recordItem.getTransactionRecord();
-        var transactionResult = transactionResult(transactionRecord, timestamp).build();
-
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
 
     private AssessedCustomFee.Builder assessedCustomFees() {
@@ -96,14 +181,30 @@ public class BlockItemBuilder {
                 .setTokenId(recordItemBuilder.tokenId());
     }
 
+    private Timestamp timestamp(long consensusTimestamp) {
+        var instant = Instant.ofEpochSecond(0, consensusTimestamp);
+        return Utility.instantToTimestamp(instant);
+    }
+
+    private TransactionResult transactionResult(RecordItem recordItem) {
+        var transactionRecord = recordItem.getTransactionRecord();
+        var timestamp = timestamp(recordItem.getConsensusTimestamp());
+        return transactionResult(transactionRecord, timestamp).build();
+    }
+
     private TransactionResult.Builder transactionResult(
             TransactionRecord transactionRecord, Timestamp consensusTimestamp) {
-        return TransactionResult.newBuilder()
-                .addAllPaidStakingRewards(transactionRecord.getPaidStakingRewardsList())
+        var builder = TransactionResult.newBuilder();
+        if (transactionRecord.hasParentConsensusTimestamp()) {
+            builder.setParentConsensusTimestamp(transactionRecord.getParentConsensusTimestamp());
+        }
+        if (transactionRecord.hasScheduleRef()) {
+            builder.setScheduleRef(transactionRecord.getScheduleRef());
+        }
+
+        return builder.addAllPaidStakingRewards(transactionRecord.getPaidStakingRewardsList())
                 .addAllTokenTransferLists(transactionRecord.getTokenTransferListsList())
                 .setConsensusTimestamp(consensusTimestamp)
-                .setParentConsensusTimestamp(transactionRecord.getParentConsensusTimestamp())
-                .setScheduleRef(transactionRecord.getScheduleRef())
                 .setTransferList(transactionRecord.getTransferList())
                 .setTransactionFeeCharged(transactionRecord.getTransactionFee())
                 .setStatus(transactionRecord.getReceipt().getStatus());
