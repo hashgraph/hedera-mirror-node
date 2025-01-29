@@ -34,6 +34,7 @@ import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.parser.domain.BlockItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -263,8 +264,9 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     void fileCreateTransform_whenStatusIsNotSuccess() {
         // given
         var expectedRecordItem = recordItemBuilder
-                .fileCreateAuthorizationFailed()
+                .fileCreate()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.clearFileID().setStatus(ResponseCodeEnum.AUTHORIZATION_FAILED))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.fileCreate(expectedRecordItem).build();
