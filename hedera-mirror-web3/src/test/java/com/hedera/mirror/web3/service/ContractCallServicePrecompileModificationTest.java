@@ -447,10 +447,9 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void wipeFungibleToken() throws Exception {
         // Given
         final var owner = accountEntityWithEvmAddressPersist();
-        final var treasuryAccount = accountEntityPersist();
 
         final var tokenEntity = tokenEntityPersist();
-        fungibleTokenPersist(tokenEntity, treasuryAccount);
+        fungibleTokenPersist(tokenEntity, treasuryEntity);
 
         tokenAccountPersist(tokenEntity, owner);
 
