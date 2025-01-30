@@ -1302,6 +1302,27 @@ public class RecordItemBuilder {
         TOKEN
     }
 
+    @Getter
+    public enum SuccessfulStatusCreateFile {
+        FEE_SCHEDULE_FILE_PART_UPLOADED(104),
+        SUCCESS(22),
+        SUCCESS_BUT_MISSING_EXPECTED_OPERATION(220);
+
+        private final int code;
+
+        SuccessfulStatusCreateFile(int code) {
+            this.code = code;
+        }
+
+        public ResponseCodeEnum toResponseCodeEnum() {
+            return switch (this) {
+                case SUCCESS -> ResponseCodeEnum.SUCCESS;
+                case FEE_SCHEDULE_FILE_PART_UPLOADED -> ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
+                case SUCCESS_BUT_MISSING_EXPECTED_OPERATION -> ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+            };
+        }
+    }
+
     @Value
     private class EntityState {
         private final AtomicBoolean created = new AtomicBoolean(false);

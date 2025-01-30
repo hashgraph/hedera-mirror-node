@@ -28,8 +28,10 @@ final class FileCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-
-        if (blockItem.transactionResult().getStatus() != ResponseCodeEnum.SUCCESS) {
+        var status = blockItem.transactionResult().getStatus();
+        if (status != ResponseCodeEnum.SUCCESS
+                && status != ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED
+                && status != ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION) {
             return;
         }
 
