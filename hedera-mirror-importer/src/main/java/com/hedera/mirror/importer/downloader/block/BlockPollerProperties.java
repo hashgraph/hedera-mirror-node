@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 @Component("blockPollerProperties")
-@ConfigurationProperties("hedera.mirror.importer.poller.block")
+@ConfigurationProperties("hedera.mirror.importer.downloader.block")
 @Data
 @RequiredArgsConstructor
 @Validated
