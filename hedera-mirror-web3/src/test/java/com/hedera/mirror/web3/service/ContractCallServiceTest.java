@@ -129,7 +129,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     private static Stream<Arguments> ercPrecompileCallTypeArgumentsProvider() {
-        List<Long> gasLimits = List.of(15_000_000L, 30_000L);
+        List<Long> gasLimits = List.of(15_000_000L, 34_000L);
         List<Integer> gasUnits = List.of(1, 2);
 
         return Arrays.stream(CallType.values())
