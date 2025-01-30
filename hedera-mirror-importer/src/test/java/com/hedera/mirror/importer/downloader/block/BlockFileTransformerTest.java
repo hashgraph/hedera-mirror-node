@@ -236,7 +236,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedFileId = blockItem
                 .stateChanges()
                 .getFirst()
-                .getStateChanges(0)
+                .getStateChanges(3)
                 .getMapUpdate()
                 .getKey()
                 .getFileIdKey()

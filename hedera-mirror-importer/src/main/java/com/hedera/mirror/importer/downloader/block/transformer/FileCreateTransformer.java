@@ -20,7 +20,6 @@ import com.hedera.hapi.block.stream.output.protoc.StateIdentifier;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
@@ -28,8 +27,7 @@ import jakarta.inject.Named;
 final class FileCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
-    protected void updateTransactionRecord(
-            BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder, TransactionBody transactionBody) {
+    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
 
         if (blockItem.transactionResult().getStatus() != ResponseCodeEnum.SUCCESS) {
             return;

@@ -140,12 +140,27 @@ public class BlockItemBuilder {
         var fileId = FileID.newBuilder().setFileNum(id).build();
         var key = MapChangeKey.newBuilder().setFileIdKey(fileId).build();
         var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
-        var change = StateChange.newBuilder()
+
+        var firstChange = StateChange.newBuilder()
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .setStateId(1)
+                .build();
+
+        var secondChange = StateChange.newBuilder().setStateId(STATE_FILES_ID).build();
+
+        var thirdChange = StateChange.newBuilder()
+                .setStateId(STATE_FILES_ID)
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .build();
+
+        var fourtChange = StateChange.newBuilder()
                 .setMapUpdate(mapUpdate)
                 .setStateId(STATE_FILES_ID)
                 .build();
 
-        return StateChanges.newBuilder().addStateChanges(change).build();
+        var changes = List.of(firstChange, secondChange, thirdChange, fourtChange);
+
+        return StateChanges.newBuilder().addAllStateChanges(changes).build();
     }
 
     private AssessedCustomFee.Builder assessedCustomFees() {

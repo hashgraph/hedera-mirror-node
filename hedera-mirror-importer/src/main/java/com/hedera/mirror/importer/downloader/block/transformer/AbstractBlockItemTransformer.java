@@ -48,12 +48,11 @@ abstract class AbstractBlockItemTransformer implements BlockItemTransformer {
                 .setTransactionID(transactionBody.getTransactionID())
                 .setTransferList(transactionResult.getTransferList());
 
-        updateTransactionRecord(blockItem, transactionRecordBuilder, transactionBody);
+        updateTransactionRecord(blockItem, transactionRecordBuilder);
         return transactionRecordBuilder.build();
     }
 
-    protected void updateTransactionRecord(
-            BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder, TransactionBody transactionBody) {
+    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
         // do nothing
     }
 
