@@ -394,9 +394,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
             boolean defaultKycStatus,
             final boolean defaultFreezeStatus) {
         // Given
-        if (mirrorNodeEvmProperties.isModularizedServices()) {
-            defaultKycStatus = !defaultKycStatus;
-        }
+        defaultKycStatus = calculateDefaultKycStatus(defaultKycStatus);
         final var treasuryEntity = accountEntityPersist();
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var tokenInfo = getHederaToken(
@@ -440,9 +438,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
             boolean defaultKycStatus,
             final boolean defaultFreezeStatus) {
         // Given
-        if (mirrorNodeEvmProperties.isModularizedServices()) {
-            defaultKycStatus = !defaultKycStatus;
-        }
+        defaultKycStatus = calculateDefaultKycStatus(defaultKycStatus);
         final var treasuryEntity = accountEntityPersist();
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var tokenInfo = getHederaToken(
@@ -1007,5 +1003,19 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                         BigInteger.valueOf(Instant.now().getEpochSecond() + 8_000_000L),
                         getAliasFromEntity(autoRenewAccount),
                         BigInteger.valueOf(8_000_000)));
+    }
+
+    /**
+     * Adjusts the default KYC status based on the modularized services flag.
+     * <p>
+     * In modularized services, the KYC status behaves inversely compared to mono: - Without a KYC key:
+     * `KycNotApplicable` -> returns `TRUE`. - With a KYC key: Initial status is `Revoked` -> returns `FALSE`. This
+     * method toggles the status when modularized services are enabled.
+     *
+     * @param defaultKycStatus The initial KYC status boolean.
+     * @return The adjusted KYC status boolean.
+     */
+    private boolean calculateDefaultKycStatus(boolean defaultKycStatus) {
+        return mirrorNodeEvmProperties.isModularizedServices() != defaultKycStatus;
     }
 }
