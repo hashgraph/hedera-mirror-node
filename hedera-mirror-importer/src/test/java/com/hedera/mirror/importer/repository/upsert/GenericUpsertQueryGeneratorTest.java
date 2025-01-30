@@ -60,94 +60,93 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                 """
                 with non_history as (
                   select
+                    e.entity_id as e_entity_id,
                     e.fixed_fees as e_fixed_fees,
                     e.fractional_fees as e_fractional_fees,
                     e.royalty_fees as e_royalty_fees,
                     e.timestamp_range as e_timestamp_range,
-                    e.token_id as e_token_id,
                     t.*
                   from
                     custom_fee e
-                    join custom_fee_temp t on e.token_id = t.token_id
+                    join custom_fee_temp t on e.entity_id = t.entity_id
                   where
                     t.timestamp_range is null
                 )
                 insert into
                   custom_fee (
+                    entity_id,
                     fixed_fees,
                     fractional_fees,
                     royalty_fees,
-                    timestamp_range,
-                    token_id
+                    timestamp_range
                   )
                 select
+                  coalesce(entity_id, e_entity_id, null),
                   fixed_fees,
                   fractional_fees,
                   royalty_fees,
-                  coalesce(timestamp_range, e_timestamp_range, null),
-                  coalesce(token_id, e_token_id, null)
+                  coalesce(timestamp_range, e_timestamp_range, null)
                 from
-                  non_history on conflict (token_id) do
+                  non_history on conflict (entity_id) do
                 update
                 set
                   fixed_fees = excluded.fixed_fees,
                   fractional_fees = excluded.fractional_fees,
                   royalty_fees = excluded.royalty_fees,
                   timestamp_range = excluded.timestamp_range;
-
                 with existing as (
                   select
+                    e.entity_id as e_entity_id,
                     e.fixed_fees as e_fixed_fees,
                     e.fractional_fees as e_fractional_fees,
                     e.royalty_fees as e_royalty_fees,
                     e.timestamp_range as e_timestamp_range,
-                    e.token_id as e_token_id,
                     t.*
                   from
                     custom_fee_temp t
-                    left join custom_fee e on e.token_id = t.token_id
+                    left join custom_fee e on e.entity_id = t.entity_id
                   where
                     t.timestamp_range is not null
                 ),
                 existing_history as (
                   insert into
                     custom_fee_history (
+                      entity_id,
                       fixed_fees,
                       fractional_fees,
                       royalty_fees,
-                      timestamp_range,
-                      token_id
+                      timestamp_range
                     )
                   select
-                    distinct on (token_id) e_fixed_fees,
+                    distinct on (entity_id) e_entity_id,
+                    e_fixed_fees,
                     e_fractional_fees,
                     e_royalty_fees,
-                    int8range(lower(e_timestamp_range), lower(timestamp_range)) as timestamp_range,
-                    e_token_id
+                    int8range(lower(e_timestamp_range), lower(timestamp_range)) as timestamp_range
                   from
                     existing
                   where
                     e_timestamp_range is not null
                     and timestamp_range is not null
                   order by
-                    token_id,
+                    entity_id,
                     timestamp_range asc
                 ),
                 temp_history as (
                   insert into
                     custom_fee_history (
+                      entity_id,
                       fixed_fees,
                       fractional_fees,
                       royalty_fees,
-                      timestamp_range,
-                      token_id
+                      timestamp_range
                     )
                   select
-                    distinct fixed_fees,
+                    distinct coalesce(e_entity_id, entity_id, null),
+                    fixed_fees,
                     fractional_fees,
                     royalty_fees,
-                    coalesce(timestamp_range, e_timestamp_range, null),
-                    coalesce(e_token_id, token_id, null)
+                    coalesce(timestamp_range, e_timestamp_range, null)
                   from
                     existing
                   where
@@ -155,23 +154,23 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                 )
                 insert into
                   custom_fee (
+                    entity_id,
                     fixed_fees,
                     fractional_fees,
                     royalty_fees,
-                    timestamp_range,
-                    token_id
+                    timestamp_range
                   )
                 select
+                  coalesce(entity_id, e_entity_id, null),
                   fixed_fees,
                   fractional_fees,
                   royalty_fees,
-                  coalesce(timestamp_range, e_timestamp_range, null),
-                  coalesce(token_id, e_token_id, null)
+                  coalesce(timestamp_range, e_timestamp_range, null)
                 from
                   existing
                 where
                   timestamp_range is not null
-                  and upper(timestamp_range) is null on conflict (token_id) do
+                  and upper(timestamp_range) is null on conflict (entity_id) do
                 update
                 set
                   fixed_fees = excluded.fixed_fees,
@@ -216,7 +215,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                             e.stake_period_start as e_stake_period_start,
                             e.staked_account_id as e_staked_account_id,
                             e.staked_node_id as e_staked_node_id,
-                            e.submit_key as e_submit_key,
                             e.timestamp_range as e_timestamp_range,
                             e.type as e_type,
                             t.*
@@ -254,7 +252,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                             stake_period_start,
                             staked_account_id,
                             staked_node_id,
-                            submit_key,
                             timestamp_range,
                             type
                           )
@@ -303,7 +300,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                           coalesce(stake_period_start, e_stake_period_start, '-1'),
                           coalesce(staked_account_id, e_staked_account_id, null),
                           coalesce(staked_node_id, e_staked_node_id, '-1'),
-                          coalesce(submit_key, e_submit_key, null),
                           coalesce(timestamp_range, e_timestamp_range, null),
                           coalesce(type, e_type, 'UNKNOWN')
                           from
@@ -329,7 +325,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                             stake_period_start = excluded.stake_period_start,
                             staked_account_id = excluded.staked_account_id,
                             staked_node_id = excluded.staked_node_id,
-                            submit_key = excluded.submit_key,
                             timestamp_range = excluded.timestamp_range,
                             type = excluded.type;
                         with existing as (
@@ -360,7 +355,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                             e.stake_period_start as e_stake_period_start,
                             e.staked_account_id as e_staked_account_id,
                             e.staked_node_id as e_staked_node_id,
-                            e.submit_key as e_submit_key,
                             e.timestamp_range as e_timestamp_range,
                             e.type as e_type,
                             t.*
@@ -399,7 +393,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                               stake_period_start,
                               staked_account_id,
                               staked_node_id,
-                              submit_key,
                               timestamp_range,
                               type
                             )
@@ -430,7 +423,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                             e_stake_period_start,
                             e_staked_account_id,
                             e_staked_node_id,
-                            e_submit_key,
                             int8range(lower(e_timestamp_range), lower(timestamp_range)) as timestamp_range,
                             e_type
                           from
@@ -471,7 +463,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                               stake_period_start,
                               staked_account_id,
                               staked_node_id,
-                              submit_key,
                               timestamp_range,
                               type
                             )
@@ -520,7 +511,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                             coalesce(stake_period_start, e_stake_period_start, '-1'),
                             coalesce(staked_account_id, e_staked_account_id, null),
                             coalesce(staked_node_id, e_staked_node_id, '-1'),
-                            coalesce(submit_key, e_submit_key, null),
                             coalesce(timestamp_range, e_timestamp_range, null),
                             coalesce(type, e_type, 'UNKNOWN')
                           from
@@ -556,7 +546,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                             stake_period_start,
                             staked_account_id,
                             staked_node_id,
-                            submit_key,
                             timestamp_range,
                             type
                           )
@@ -605,7 +594,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                           coalesce(stake_period_start, e_stake_period_start, '-1'),
                           coalesce(staked_account_id, e_staked_account_id, null),
                           coalesce(staked_node_id, e_staked_node_id, '-1'),
-                          coalesce(submit_key, e_submit_key, null),
                           coalesce(timestamp_range, e_timestamp_range, null),
                           coalesce(type, e_type, 'UNKNOWN')
                         from
@@ -634,7 +622,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
                           stake_period_start = excluded.stake_period_start,
                           staked_account_id = excluded.staked_account_id,
                           staked_node_id = excluded.staked_node_id,
-                          submit_key = excluded.submit_key,
                           timestamp_range = excluded.timestamp_range,
                           type = excluded.type;
                         """;

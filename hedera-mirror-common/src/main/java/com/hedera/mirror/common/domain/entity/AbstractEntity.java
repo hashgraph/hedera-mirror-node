@@ -122,9 +122,6 @@ public abstract class AbstractEntity implements History {
 
     private Long stakePeriodStart;
 
-    @ToString.Exclude
-    private byte[] submitKey;
-
     private Range<Long> timestampRange;
 
     @Enumerated(EnumType.STRING)

@@ -73,13 +73,17 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
+import com.hederahashgraph.api.proto.java.CustomFeeLimit;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.FeeExemptKeyList;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
+import com.hederahashgraph.api.proto.java.FixedCustomFeeList;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
@@ -232,9 +236,12 @@ public class RecordItemBuilder {
 
     public Builder<ConsensusCreateTopicTransactionBody.Builder> consensusCreateTopic() {
         var transactionBody = ConsensusCreateTopicTransactionBody.newBuilder()
+                .addAllFeeExemptKeyList(List.of(key(), key()))
+                .addAllCustomFees(fixedCustomFees())
                 .setAdminKey(key())
                 .setAutoRenewAccount(accountId())
                 .setAutoRenewPeriod(duration(3600))
+                .setFeeScheduleKey(key())
                 .setMemo(text(16))
                 .setSubmitKey(key());
         return new Builder<>(TransactionType.CONSENSUSCREATETOPIC, transactionBody)
@@ -270,6 +277,9 @@ public class RecordItemBuilder {
                 .setAdminKey(key())
                 .setAutoRenewAccount(accountId())
                 .setAutoRenewPeriod(duration(3600))
+                .setCustomFees(FixedCustomFeeList.newBuilder().addAllFees(fixedCustomFees()))
+                .setFeeExemptKeyList(FeeExemptKeyList.newBuilder().addAllKeys(List.of(key(), key())))
+                .setFeeScheduleKey(key())
                 .setExpirationTime(timestamp())
                 .setMemo(StringValue.of(text(16)))
                 .setSubmitKey(key())
@@ -588,6 +598,18 @@ public class RecordItemBuilder {
         }
 
         return customFee;
+    }
+
+    private List<FixedCustomFee> fixedCustomFees() {
+        return List.of(
+                FixedCustomFee.newBuilder()
+                        .setFeeCollectorAccountId(accountId())
+                        .setFixedFee(FixedFee.newBuilder().setAmount(id()))
+                        .build(),
+                FixedCustomFee.newBuilder()
+                        .setFeeCollectorAccountId(accountId())
+                        .setFixedFee(FixedFee.newBuilder().setAmount(id()).setDenominatingTokenId(tokenId()))
+                        .build());
     }
 
     private FixedFee.Builder fixedFee() {
@@ -1213,7 +1235,7 @@ public class RecordItemBuilder {
         return id.incrementAndGet();
     }
 
-    private Key key() {
+    public Key key() {
         if (id.get() % 2 == 0) {
             return Key.newBuilder().setECDSASecp256K1(bytes(KEY_LENGTH_ECDSA)).build();
         } else {
@@ -1340,6 +1362,8 @@ public class RecordItemBuilder {
             this.transactionBody = transactionBody;
             this.transactionBodyWrapper = defaultTransactionBody();
             this.transactionRecord = defaultTransactionRecord();
+
+            postInitialize();
         }
 
         public RecordItem build() {
@@ -1487,6 +1511,21 @@ public class RecordItemBuilder {
                     .setAccountID(payerAccountId)
                     .setTransactionValidStart(validStart)
                     .build();
+        }
+
+        private void postInitialize() {
+            if (type == TransactionType.CONSENSUSSUBMITMESSAGE) {
+                var maxCustomFees = List.of(
+                        CustomFeeLimit.newBuilder()
+                                .addFees(FixedFee.newBuilder().setAmount(id()))
+                                .setAccountId(payerAccountId)
+                                .build(),
+                        CustomFeeLimit.newBuilder()
+                                .addFees(FixedFee.newBuilder().setAmount(id()).setDenominatingTokenId(tokenId()))
+                                .setAccountId(accountId())
+                                .build());
+                transactionBodyWrapper.addAllMaxCustomFees(maxCustomFees);
+            }
         }
 
         private Transaction.Builder transaction() {

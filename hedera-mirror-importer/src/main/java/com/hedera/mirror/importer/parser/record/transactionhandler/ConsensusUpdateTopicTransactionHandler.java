@@ -16,20 +16,26 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.domain.token.FixedFee;
+import com.hedera.mirror.common.domain.topic.Topic;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
+import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import jakarta.inject.Named;
-import lombok.CustomLog;
+import java.util.ArrayList;
+import java.util.List;
 
-@CustomLog
 @Named
 class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
@@ -45,6 +51,7 @@ class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransacti
 
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
         var transactionBody = recordItem.getTransactionBody().getConsensusUpdateTopic();
 
         if (transactionBody.hasAutoRenewAccount()) {
@@ -57,7 +64,7 @@ class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransacti
                                 recordItem.addEntityId(entityId);
                             },
                             () -> Utility.handleRecoverableError(
-                                    "Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp()));
+                                    "Invalid autoRenewAccountId at {}", consensusTimestamp));
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {
@@ -69,19 +76,66 @@ class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransacti
             entity.setExpirationTimestamp(DomainUtils.timestampInNanosMax(expirationTime));
         }
 
-        if (transactionBody.hasAdminKey()) {
-            entity.setKey(transactionBody.getAdminKey().toByteArray());
-        }
-
         if (transactionBody.hasMemo()) {
             entity.setMemo(transactionBody.getMemo().getValue());
         }
 
-        if (transactionBody.hasSubmitKey()) {
-            entity.setSubmitKey(transactionBody.getSubmitKey().toByteArray());
-        }
-
         entity.setType(EntityType.TOPIC);
         entityListener.onEntity(entity);
+
+        updateTopic(consensusTimestamp, entity.getId(), transactionBody);
+
+        if (transactionBody.hasCustomFees()) {
+            updateCustomFee(transactionBody.getCustomFees().getFeesList(), recordItem, entity.getId());
+        }
+    }
+
+    void updateCustomFee(List<FixedCustomFee> fixedCustomFees, RecordItem recordItem, long topicId) {
+        var fixedFees = new ArrayList<FixedFee>();
+        for (var fixedCustomFee : fixedCustomFees) {
+            var collector = EntityId.of(fixedCustomFee.getFeeCollectorAccountId());
+            var fixedFee = fixedCustomFee.getFixedFee();
+            var tokenId = fixedFee.hasDenominatingTokenId() ? EntityId.of(fixedFee.getDenominatingTokenId()) : null;
+            fixedFees.add(FixedFee.builder()
+                    .amount(fixedFee.getAmount())
+                    .collectorAccountId(collector)
+                    .denominatingTokenId(tokenId)
+                    .build());
+            recordItem.addEntityId(collector);
+            recordItem.addEntityId(tokenId);
+        }
+
+        var customFee = CustomFee.builder()
+                .entityId(topicId)
+                .fixedFees(fixedFees)
+                .timestampRange(Range.atLeast(recordItem.getConsensusTimestamp()))
+                .build();
+        entityListener.onCustomFee(customFee);
+    }
+
+    private void updateTopic(
+            long consensusTimestamp, long topicId, ConsensusUpdateTopicTransactionBody transactionBody) {
+        var adminKey =
+                transactionBody.hasAdminKey() ? transactionBody.getAdminKey().toByteArray() : null;
+        // The fee exempt key list is not cleared in the database if it's an empty list, instead, importer would
+        // serialize the protobuf message with an empty key list. The reader should understand that semantically
+        // an empty list is the same as no fee exempt key list.
+        var feeExemptKeyList = transactionBody.hasFeeExemptKeyList()
+                ? transactionBody.getFeeExemptKeyList().toByteArray()
+                : null;
+        var feeScheduleKey = transactionBody.hasFeeScheduleKey()
+                ? transactionBody.getFeeScheduleKey().toByteArray()
+                : null;
+        var submitKey =
+                transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey().toByteArray() : null;
+        var topic = Topic.builder()
+                .adminKey(adminKey)
+                .id(topicId)
+                .feeExemptKeyList(feeExemptKeyList)
+                .feeScheduleKey(feeScheduleKey)
+                .submitKey(submitKey)
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .build();
+        entityListener.onTopic(topic);
     }
 }

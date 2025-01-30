@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor
 @EnabledIfV1
@@ -39,7 +37,6 @@ class PartitionMaintenanceV1Test extends ImporterIntegrationTest {
     private static final String TOKEN_BALANCE_TABLE_NAME = "token_balance";
 
     private final @Qualifier(CACHE_TIME_PARTITION) CacheManager cacheManager;
-    private final @Owner JdbcTemplate jdbcTemplate;
     private final PartitionMaintenance partitionMaintenance;
     private final TimePartitionService timePartitionService;
 
@@ -95,6 +92,6 @@ class PartitionMaintenanceV1Test extends ImporterIntegrationTest {
     private void dropPartitionBackwards(List<TimePartition> partitions, int index) {
         var sql = String.format(
                 "drop table %s", partitions.get(partitions.size() - index - 1).getName());
-        jdbcTemplate.execute(sql);
+        ownerJdbcTemplate.execute(sql);
     }
 }

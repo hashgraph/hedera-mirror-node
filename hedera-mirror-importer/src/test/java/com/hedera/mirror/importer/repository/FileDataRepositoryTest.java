@@ -23,12 +23,13 @@ import com.google.common.primitives.Bytes;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class FileDataRepositoryTest extends AbstractRepositoryTest {
+class FileDataRepositoryTest extends ImporterIntegrationTest {
 
     private static final EntityId ADDRESS_BOOK_101 = EntityId.of("0.0.101");
     private static final EntityId ADDRESS_BOOK_102 = EntityId.of("0.0.102");

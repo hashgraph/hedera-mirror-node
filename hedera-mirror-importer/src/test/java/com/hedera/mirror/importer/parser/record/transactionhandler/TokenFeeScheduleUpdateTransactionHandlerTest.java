@@ -86,7 +86,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
 
         assertThat(customFee.getValue())
                 .returns(Range.atLeast(transaction.getConsensusTimestamp()), CustomFee::getTimestampRange)
-                .returns(transaction.getEntityId().getId(), CustomFee::getTokenId)
+                .returns(transaction.getEntityId().getId(), CustomFee::getEntityId)
                 .returns(null, CustomFee::getFractionalFees)
                 .returns(null, CustomFee::getRoyaltyFees);
         var listAssert =
@@ -134,7 +134,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
 
         assertThat(customFee.getValue())
                 .returns(Range.atLeast(transaction.getConsensusTimestamp()), CustomFee::getTimestampRange)
-                .returns(transaction.getEntityId().getId(), CustomFee::getTokenId)
+                .returns(transaction.getEntityId().getId(), CustomFee::getEntityId)
                 .returns(null, CustomFee::getFixedFees)
                 .returns(null, CustomFee::getRoyaltyFees);
         var listAssert =
@@ -191,7 +191,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
         var capturedCustomFee = customFee.getValue();
         assertThat(capturedCustomFee)
                 .returns(Range.atLeast(consensusTimestamp), CustomFee::getTimestampRange)
-                .returns(transaction.getEntityId().getId(), CustomFee::getTokenId)
+                .returns(transaction.getEntityId().getId(), CustomFee::getEntityId)
                 .returns(null, CustomFee::getFixedFees)
                 .returns(null, CustomFee::getFractionalFees);
         var listAssert =
@@ -276,7 +276,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .returns(null, CustomFee::getFractionalFees)
                 .returns(null, CustomFee::getRoyaltyFees)
                 .returns(Range.atLeast(consensusTimestamp), CustomFee::getTimestampRange)
-                .returns(transaction.getEntityId().getId(), CustomFee::getTokenId);
+                .returns(transaction.getEntityId().getId(), CustomFee::getEntityId);
 
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));

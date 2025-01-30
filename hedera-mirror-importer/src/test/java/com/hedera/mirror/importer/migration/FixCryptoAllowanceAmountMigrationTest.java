@@ -26,7 +26,6 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
@@ -47,7 +46,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 @EnabledIfV1
 @RequiredArgsConstructor
@@ -57,7 +55,6 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final DBProperties dbProperties;
     private final EntityProperties entityProperties;
-    private final @Owner JdbcTemplate jdbcTemplate;
     private final @Getter Class<FixCryptoAllowanceAmountMigration> migrationClass =
             FixCryptoAllowanceAmountMigration.class;
     private final RecordFileParser recordFileParser;
@@ -80,8 +77,8 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
     void setup() {
         // Create migration object for each test case due to the cached earliestTimestamp
         var mirrorProperties = new ImporterProperties();
-        migration =
-                new FixCryptoAllowanceAmountMigration(dbProperties, entityProperties, mirrorProperties, jdbcTemplate);
+        migration = new FixCryptoAllowanceAmountMigration(
+                dbProperties, entityProperties, mirrorProperties, ownerJdbcTemplate);
     }
 
     @Test
@@ -289,7 +286,7 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
         var entityProps = new EntityProperties();
         entityProps.getPersist().setTrackAllowance(trackAllowance);
         var allowanceAmountMigration = new FixCryptoAllowanceAmountMigration(
-                dbProperties, entityProps, new ImporterProperties(), jdbcTemplate);
+                dbProperties, entityProps, new ImporterProperties(), ownerJdbcTemplate);
         var configuration = new FluentConfiguration().target(allowanceAmountMigration.getMinimumVersion());
 
         // when, then

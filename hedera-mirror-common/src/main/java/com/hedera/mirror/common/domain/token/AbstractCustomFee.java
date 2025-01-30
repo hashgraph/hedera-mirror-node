@@ -60,7 +60,7 @@ public abstract class AbstractCustomFee implements History {
     private Range<Long> timestampRange;
 
     @Id
-    private Long tokenId;
+    private Long entityId;
 
     public void addFixedFee(@NonNull FixedFee fixedFee) {
         if (this.fixedFees == null) {

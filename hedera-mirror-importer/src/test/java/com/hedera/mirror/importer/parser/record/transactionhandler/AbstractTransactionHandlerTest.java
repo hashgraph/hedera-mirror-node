@@ -59,6 +59,7 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
@@ -493,11 +494,15 @@ abstract class AbstractTransactionHandlerTest {
         List<String> fieldNames = innerBody.getDescriptorForType().getFields().stream()
                 .map(FieldDescriptor::getName)
                 .toList();
+        boolean isTopicCreateOrUpdate = defaultBody.getDataCase() == DataCase.CONSENSUSCREATETOPIC
+                || defaultBody.getDataCase() == DataCase.CONSENSUSUPDATETOPIC;
 
         for (String fieldName : fieldNames) {
             switch (fieldName) {
                 case "adminKey":
-                    entity.setKey(DEFAULT_KEY.toByteArray());
+                    if (!isTopicCreateOrUpdate) {
+                        entity.setKey(DEFAULT_KEY.toByteArray());
+                    }
                     break;
                 case "autoRenewPeriod":
                     entity.setAutoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD.getSeconds());
@@ -510,9 +515,6 @@ abstract class AbstractTransactionHandlerTest {
                     break;
                 case "receiverSigRequired":
                     entity.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
-                    break;
-                case "submitKey":
-                    entity.setSubmitKey(DEFAULT_SUBMIT_KEY.toByteArray());
                     break;
                 default:
                     break;

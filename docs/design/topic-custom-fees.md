@@ -29,6 +29,7 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
   ```sql
   create table if not exists topic
   (
+    admin_key           bytea     null,
     created_timestamp   bigint    null,
     id                  bigint    primary key,
     fee_exempt_key_list bytea     null,
@@ -54,8 +55,16 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
   Add a database migration to backfill `topic` table from `entity` table. Note for consistency, for all existing topics,
   add a `custom_fee` row with empty custom fees and lower timestamp set to topic's created timestamp.
 
+  The `admin_key` column in `topic` table will hold the value of `key` column in `entity` table, and future topic's
+  admin key will only persist to `topic` table. Note the `key` column in `entity` and `entity_history` will remain
+  since it's still used by other types of entities.
+
   The `submit_key` column needs to be dropped from `entity` and `entity_history` table since it's moved to the new
   table.
+
+  The `admin_key` column in `topic` table will hold the value of `key` column in `entity` table, and future topic's
+  admin key will only persist to `topic` table. Note the `key` column in `entity` and `entity_history` will remain
+  since it's still used by other types of entities.
 
 - Rename column `token_id` to `entity_id` in `custom_fee` and `custom_fee_history` tables
 
@@ -81,6 +90,7 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
 
 - Add an abstract `AbstractTopic` class. The class implements `History` interface, and has the following fields
 
+  - `adminKey`
   - `createdTimestamp`
   - `id`
   - `feeExemptKeyList`

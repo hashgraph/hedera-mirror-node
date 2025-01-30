@@ -37,6 +37,7 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -45,6 +46,8 @@ import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.awaitility.Durations;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -53,11 +56,22 @@ import org.springframework.transaction.support.TransactionTemplate;
 @RequiredArgsConstructor
 class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
 
+    private final EntityProperties entityProperties;
     private final EntityRecordItemListener entityRecordItemListener;
     private final EntityStakeRepository entityStakeRepository;
     private final RecordItemBuilder recordItemBuilder;
     private final RecordStreamFileListener recordStreamFileListener;
     private final TransactionTemplate transactionTemplate;
+
+    @BeforeEach
+    void setup() {
+        entityProperties.getPersist().setPendingReward(true);
+    }
+
+    @AfterEach
+    void cleanup() {
+        entityProperties.getPersist().setPendingReward(false);
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})

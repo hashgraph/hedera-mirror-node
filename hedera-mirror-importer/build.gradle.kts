@@ -69,3 +69,5 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+repositories { maven { url = uri("https://jitpack.io") } }

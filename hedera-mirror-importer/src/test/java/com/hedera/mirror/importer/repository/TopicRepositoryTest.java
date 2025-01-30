@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,21 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import jakarta.annotation.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
 
-public abstract class AbstractRepositoryTest extends ImporterIntegrationTest {
+@RequiredArgsConstructor
+class TopicRepositoryTest extends ImporterIntegrationTest {
 
-    @Resource
-    protected DomainBuilder domainBuilder;
+    private final TopicRepository topicRepository;
 
-    @Resource
-    protected JdbcOperations jdbcOperations;
+    @Test
+    void save() {
+        var topic = domainBuilder.topic().get();
+        topicRepository.save(topic);
+        assertThat(topicRepository.findById(topic.getId())).contains(topic);
+    }
 }

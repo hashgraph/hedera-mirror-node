@@ -30,7 +30,6 @@ import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.ImporterProperties;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -45,7 +44,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,7 +63,6 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final EntityRepository entityRepository;
     private final ImporterProperties importerProperties;
-    private final @Owner JdbcTemplate jdbcTemplate;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final RecordFileRepository recordFileRepository;
     private final TransactionTemplate transactionTemplate;
@@ -169,8 +166,8 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
     void migrateWhenNoAccountBalanceAtOrBeforeLastRecordFile() {
         // given
         setup();
-        jdbcTemplate.update(DELETE_ACCOUNT_BALANCE_SQL, recordFile2.getConsensusEnd());
-        jdbcTemplate.update(DELETE_ACCOUNT_BALANCE_FILE_SQL, recordFile2.getConsensusEnd());
+        ownerJdbcTemplate.update(DELETE_ACCOUNT_BALANCE_SQL, recordFile2.getConsensusEnd());
+        ownerJdbcTemplate.update(DELETE_ACCOUNT_BALANCE_FILE_SQL, recordFile2.getConsensusEnd());
 
         // when
         migration.doMigrate();
@@ -232,7 +229,8 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
     @Transactional
     void onEndEarlyReturn() {
         // given
-        var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
+        var transactionManager =
+                new DataSourceTransactionManager(Objects.requireNonNull(ownerJdbcTemplate.getDataSource()));
         var txnTemplate = new TransactionTemplate(transactionManager);
         setup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
