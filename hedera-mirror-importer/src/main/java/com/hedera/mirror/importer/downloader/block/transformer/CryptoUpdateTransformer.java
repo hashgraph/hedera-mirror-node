@@ -16,29 +16,11 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_ACCOUNTS;
-
-import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
 final class CryptoUpdateTransformer extends AbstractBlockItemTransformer {
-
-    @Override
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        for (var stateChanges : blockItem.stateChanges()) {
-            for (var stateChange : stateChanges.getStateChangesList()) {
-                if (stateChange.getStateId() == STATE_ID_ACCOUNTS.getNumber() && stateChange.hasMapUpdate()) {
-                    var value = stateChange.getMapUpdate().getValue();
-                    if (value.hasAccountIdValue()) {
-                        transactionRecordBuilder.getReceiptBuilder().setAccountID(value.getAccountIdValue());
-                    }
-                }
-            }
-        }
-    }
 
     @Override
     public TransactionType getType() {
