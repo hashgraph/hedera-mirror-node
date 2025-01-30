@@ -16,32 +16,11 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hederahashgraph.api.proto.java.*;
 import jakarta.inject.Named;
 
 @Named
 final class CryptoDeleteAllowanceTransformer extends AbstractBlockItemTransformer {
-
-    @Override
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        var transactionBody = blockItem.transaction().getBody();
-        var cryptoDeleteAllowance = transactionBody.getCryptoDeleteAllowance();
-        for (var nftAllowance : cryptoDeleteAllowance.getNftAllowancesList()) {
-            for (var serialNumber : nftAllowance.getSerialNumbersList()) {
-                var ownerId = nftAllowance.getOwner();
-                var tokenId = nftAllowance.getTokenId();
-                transactionRecordBuilder.addTokenTransferLists(TokenTransferList.newBuilder()
-                        .setToken(tokenId)
-                        .addNftTransfers(NftTransfer.newBuilder()
-                                .setSenderAccountID(ownerId)
-                                .setReceiverAccountID(AccountID.getDefaultInstance())
-                                .build())
-                        .build());
-            }
-        }
-    }
 
     @Override
     public TransactionType getType() {

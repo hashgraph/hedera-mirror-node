@@ -16,11 +16,10 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
+import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_ACCOUNTS;
+
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.TokenAssociation;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
@@ -29,34 +28,15 @@ final class CryptoUpdateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        var transactionBody = blockItem.transaction().getBody().getCryptoUpdateAccount();
-        var accountIdToUpdate = transactionBody.getAccountIDToUpdate();
-
-        var receiptBuilder = transactionRecordBuilder.getReceiptBuilder();
-        receiptBuilder.setAccountID(accountIdToUpdate);
-
-        var transferList = transactionRecordBuilder.getTransferListBuilder();
-
-        transferList.addAccountAmounts(AccountAmount.newBuilder()
-                .setAccountID(accountIdToUpdate)
-                .setAmount(0)
-                .build());
-
-        if (transactionBody.hasMaxAutomaticTokenAssociations()) {
-            var tokenAssociation = TokenAssociation.newBuilder()
-                    .setAccountId(accountIdToUpdate)
-                    .setTokenId(TokenID.getDefaultInstance())
-                    .build();
-            transactionRecordBuilder.addAutomaticTokenAssociations(tokenAssociation);
-        }
-
-        if (transactionBody.hasDeclineReward()
-                && transactionBody.getDeclineReward().getValue()) {
-            var stakingReward = AccountAmount.newBuilder()
-                    .setAccountID(accountIdToUpdate)
-                    .setAmount(0)
-                    .build();
-            transactionRecordBuilder.addPaidStakingRewards(stakingReward);
+        for (var stateChanges : blockItem.stateChanges()) {
+            for (var stateChange : stateChanges.getStateChangesList()) {
+                if (stateChange.getStateId() == STATE_ID_ACCOUNTS.getNumber() && stateChange.hasMapUpdate()) {
+                    var value = stateChange.getMapUpdate().getValue();
+                    if (value.hasAccountIdValue()) {
+                        transactionRecordBuilder.getReceiptBuilder().setAccountID(value.getAccountIdValue());
+                    }
+                }
+            }
         }
     }
 

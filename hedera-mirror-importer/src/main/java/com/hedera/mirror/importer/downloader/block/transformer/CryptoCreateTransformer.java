@@ -16,6 +16,10 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
+import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_ACCOUNTS;
+import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_ALIASES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -26,10 +30,26 @@ final class CryptoCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        var transactionBody = blockItem.transaction().getBody().getCryptoCreateAccount();
-        var alias = transactionBody.getAlias();
-        if (!alias.isEmpty()) {
-            transactionRecordBuilder.setAlias(alias);
+        if (blockItem.transactionResult().getStatus() != SUCCESS) {
+            return;
+        }
+
+        for (var stateChanges : blockItem.stateChanges()) {
+            for (var stateChange : stateChanges.getStateChangesList()) {
+                if (stateChange.getStateId() == STATE_ID_ACCOUNTS.getNumber() && stateChange.hasMapUpdate()) {
+                    var value = stateChange.getMapUpdate().getValue();
+                    if (value.hasAccountIdValue()) {
+                        transactionRecordBuilder.getReceiptBuilder().setAccountID(value.getAccountIdValue());
+                    }
+                }
+                if (stateChange.getStateId() == STATE_ID_ALIASES.getNumber() && stateChange.hasMapUpdate()) {
+                    var value = stateChange.getMapUpdate().getValue();
+                    if (value.hasAccountValue()) {
+                        transactionRecordBuilder.setAlias(
+                                value.getAccountValue().getAlias());
+                    }
+                }
+            }
         }
     }
 

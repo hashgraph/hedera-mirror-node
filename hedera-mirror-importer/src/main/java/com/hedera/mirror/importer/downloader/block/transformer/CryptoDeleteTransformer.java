@@ -16,10 +16,11 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
+import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_ACCOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
@@ -27,25 +28,23 @@ import jakarta.inject.Named;
 final class CryptoDeleteTransformer extends AbstractBlockItemTransformer {
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        var transactionBody = blockItem.transaction().getBody().getCryptoDelete();
-        var transferAccountId = transactionBody.getTransferAccountID();
-        var deleteAccountId = transactionBody.getDeleteAccountID();
-        var receiptBuilder = transactionRecordBuilder.getReceiptBuilder();
+        if (blockItem.transactionResult().getStatus() != SUCCESS) {
+            return;
+        }
 
-        receiptBuilder.setAccountID(deleteAccountId);
-        if (!transferAccountId.equals(AccountID.getDefaultInstance())) {
-            transactionRecordBuilder
-                    .getTransferListBuilder()
-                    .mergeFrom(AccountAmount.newBuilder()
-                            .setAccountID(deleteAccountId)
-                            .setAmount(-1)
-                            .build());
-            transactionRecordBuilder
-                    .getTransferListBuilder()
-                    .mergeFrom(AccountAmount.newBuilder()
-                            .setAccountID(transferAccountId)
-                            .setAmount(+1)
-                            .build());
+        for (var stateChanges : blockItem.stateChanges()) {
+            for (var stateChange : stateChanges.getStateChangesList()) {
+                if (stateChange.getStateId() == STATE_ID_ACCOUNTS.getNumber() && stateChange.hasMapUpdate()) {
+                    var value = stateChange.getMapUpdate().getValue();
+                    if (value.hasAccountValue()) {
+                        var accountDelete = value.getAccountValue();
+                        if (accountDelete.getDeleted()) {
+                            transactionRecordBuilder.getReceiptBuilder().setAccountID(accountDelete.getAccountId());
+                            return;
+                        }
+                    }
+                }
+            }
         }
     }
 
