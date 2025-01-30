@@ -73,7 +73,6 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     private static final long ZERO_AMOUNT = 0L;
     private static final long DEFAULT_TRANSACTION_VALUE = 100_000_000_000L;
-    private static final long DEFAULT_SENDER_BALANCE = 100_000_000_000_000L;
     private static final String SUCCESS_PREFIX = "0x0000000000000000000000000000000000000000000000000000000000000020";
 
     private final OpcodeService opcodeService;
@@ -130,8 +129,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
 
         final var options = new OpcodeTracerOptions();
-        final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
-                contract, callData, DEFAULT_SENDER_BALANCE, ZERO_AMOUNT, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
 
         // When
         final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
@@ -192,8 +191,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
 
         final var options = new OpcodeTracerOptions();
-        final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
-                contract, callData, DEFAULT_SENDER_BALANCE, ZERO_AMOUNT, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
 
         // When
         final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
@@ -226,8 +225,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResult = TypeEncoder.encode(tokenExpiry);
         final var expectedResultBytes = Bytes.fromHexString(expectedResult).toArray();
 
-        final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
-                contract, callData, DEFAULT_SENDER_BALANCE, ZERO_AMOUNT, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
 
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
@@ -264,8 +263,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResultBytes = tokenInfo.symbol.getBytes();
         final var expectedResult = evmEncoder.encodeSymbol(tokenInfo.symbol).toHexString();
 
-        final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
-                contract, callData, DEFAULT_SENDER_BALANCE, ZERO_AMOUNT, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
         // When
@@ -300,8 +299,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResultBytes = tokenInfo.name.getBytes();
         final var expectedResult = evmEncoder.encodeName(tokenInfo.name).toHexString();
 
-        final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
-                contract, callData, DEFAULT_SENDER_BALANCE, ZERO_AMOUNT, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
 
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
@@ -338,8 +337,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResultBytes = tokenInfo.memo.getBytes();
         final var expectedResult = evmEncoder.encodeName(tokenInfo.memo).toHexString();
 
-        final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
-                contract, callData, DEFAULT_SENDER_BALANCE, ZERO_AMOUNT, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
 
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
@@ -369,8 +368,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final byte[] expectedResultBytes = {1};
         final var expectedResult = DomainUtils.bytesToHex(DomainUtils.leftPadBytes(expectedResultBytes, Bytes32.SIZE));
 
-        final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
-                contract, callData, DEFAULT_SENDER_BALANCE, ZERO_AMOUNT, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
 
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
@@ -417,7 +416,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResultBytes = expectedResult.getBytes();
 
         final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
-                contract, callData, DEFAULT_SENDER_BALANCE, DEFAULT_TRANSACTION_VALUE, expectedResultBytes);
+                contract, callData, DEFAULT_TRANSACTION_VALUE, expectedResultBytes);
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
         // When
@@ -462,7 +461,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResultBytes = expectedResult.getBytes();
 
         final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
-                contract, callData, DEFAULT_SENDER_BALANCE, DEFAULT_TRANSACTION_VALUE, expectedResultBytes);
+                contract, callData, DEFAULT_TRANSACTION_VALUE, expectedResultBytes);
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
         // When
@@ -486,7 +485,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     void callWithDifferentCombinationsOfTracerOptions(
             final boolean stack, final boolean memory, final boolean storage) {
         // Given
-        final var senderEntity = accountPersistWithBalance(DEFAULT_SENDER_BALANCE);
+        final var senderEntity = accountPersistWithAccountBalances();
         final var treasuryEntity = accountEntityPersist();
         final var treasuryAddress = toAddress(treasuryEntity.getId());
 
@@ -657,12 +656,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     }
 
     private TransactionIdOrHashParameter setUpEthereumTransactionWithSenderBalance(
-            final Contract contract,
-            final byte[] callData,
-            final long senderBalance,
-            final long transactionValue,
-            final byte[] expectedResult) {
-        final var senderEntity = accountPersistWithBalance(senderBalance);
+            final Contract contract, final byte[] callData, final long transactionValue, final byte[] expectedResult) {
+        final var senderEntity = accountPersistWithAccountBalances();
         return setUpForSuccessWithExpectedResultAndBalance(
                 ETHEREUMTRANSACTION,
                 contract,
@@ -874,8 +869,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     }
 
     private Token nftPersist(final Entity treasuryEntity) {
-        final var nftEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
+        final var nftEntity = tokenEntityPersist();
 
         final var token = domainBuilder
                 .token()
@@ -900,21 +894,18 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         return domainBuilder.entity().customize(a -> a.evmAddress(null)).persist();
     }
 
-    private Entity accountPersistWithBalance(final long balance) {
-        final var entity = domainBuilder
-                .entity()
-                .customize(e -> e.evmAddress(null).alias(null).balance(balance))
-                .persist();
+    private Entity accountPersistWithAccountBalances() {
+        final var entity = accountEntityPersist();
 
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(entity.getCreatedTimestamp(), EntityId.of(2)))
-                        .balance(balance))
+                        .balance(entity.getBalance()))
                 .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(entity.getCreatedTimestamp(), entity.toEntityId()))
-                        .balance(balance))
+                        .balance(entity.getBalance()))
                 .persist();
 
         return entity;
