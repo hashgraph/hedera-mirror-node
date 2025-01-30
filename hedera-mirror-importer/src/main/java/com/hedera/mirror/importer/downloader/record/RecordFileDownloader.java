@@ -51,7 +51,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@ConditionalOnProperty(name = "hedera.mirror.importer.downloader.block.enabled", havingValue = "false")
+@ConditionalOnProperty(
+        name = "hedera.mirror.importer.downloader.block.enabled",
+        havingValue = "false",
+        matchIfMissing = true)
 @Named
 public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
 
