@@ -220,6 +220,41 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 value);
     }
 
+    protected Token fungibleTokenPersist2() {
+        return fungibleTokenCustomizable2(e -> {}, t -> {});
+    }
+
+    protected Token fungibleTokenPersistWithTreasuryAccount2() {
+        return fungibleTokenCustomizable2(
+                e -> {},
+                t -> t.treasuryAccountId(domainBuilder.entity().persist().toEntityId()));
+    }
+
+    protected Token fungibleTokenPersistWithTreasuryAndKYCKey() {
+        return fungibleTokenCustomizable2(e -> {}, t -> t.treasuryAccountId(
+                        domainBuilder.entity().persist().toEntityId())
+                .kycKey(domainBuilder.key()));
+    }
+
+    protected Token fungibleTokenCustomizable2(
+            Consumer<Entity.EntityBuilder<?, ?>> entityCustomizer, Consumer<Token.TokenBuilder<?, ?>> customizer) {
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> {
+                    e.type(EntityType.TOKEN);
+                    entityCustomizer.accept(e);
+                })
+                .persist();
+
+        return domainBuilder
+                .token()
+                .customize(t -> {
+                    t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON);
+                    customizer.accept(t); // Apply any customizations provided
+                })
+                .persist();
+    }
+
     /**
      * Persists entity of type token in the entity db table. Entity table contains properties common for all entities on
      * the network (tokens, accounts, smart contracts, topics)
