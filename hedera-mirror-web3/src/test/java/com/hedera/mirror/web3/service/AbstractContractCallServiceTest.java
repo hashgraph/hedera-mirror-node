@@ -119,7 +119,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                                 treasuryEntity.getCreatedTimestamp(), treasuryEntity.toEntityId()))
                         .balance(treasuryEntity.getBalance()))
                 .persist();
-        testWeb3jService.reset();
     }
 
     @AfterEach
