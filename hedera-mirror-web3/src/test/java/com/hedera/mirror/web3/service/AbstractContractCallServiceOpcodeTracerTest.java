@@ -257,6 +257,29 @@ abstract class AbstractContractCallServiceOpcodeTracerTest extends AbstractContr
                 .persist();
     }
 
+    /**
+     * Persists a record in the account_balance table (consensus_timestamp, balance, account_id).
+     * Each record represents the HBAR balance of an account at a particular point in time(consensus timestamp).
+     * Lack of sufficient account balance will result in INSUFFICIENT_PAYER_BALANCE exception,
+     * when trying to pay for transaction execution.
+     * @param accountId the account's id whose balance is being recorded
+     * @param timestamp the point in time at which the account had the given balance
+     * @param balance the account's balance at the given timestamp
+     */
+    protected void accountBalanceRecordsPersist(EntityId accountId, Long timestamp, Long balance) {
+        domainBuilder
+                .accountBalance()
+                .customize(
+                        ab -> ab.id(new AccountBalance.Id(timestamp, accountId)).balance(balance))
+                .persist();
+
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(timestamp, treasuryEntity.toEntityId()))
+                        .balance(treasuryEntity.getBalance()))
+                .persist();
+    }
+
     protected Entity getEntity(EntityId entityId) {
         return entityRepository.findById(entityId.getId()).get();
     }

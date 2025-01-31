@@ -638,7 +638,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         entityListener.onNft(nft);
     }
 
-    @SuppressWarnings("java:S135")
+    @SuppressWarnings({"deprecation", "java:S135"})
     private void insertTransactionSignatures(
             EntityId entityId, long consensusTimestamp, List<SignaturePair> signaturePairList) {
         Set<ByteString> publicKeyPrefixes = new HashSet<>();

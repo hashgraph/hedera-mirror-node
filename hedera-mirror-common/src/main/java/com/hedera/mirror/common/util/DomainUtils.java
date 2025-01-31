@@ -105,7 +105,7 @@ public class DomainUtils {
         }
     }
 
-    @SuppressWarnings("java:S1168")
+    @SuppressWarnings({"deprecation", "java:S1168"})
     private static byte[] getPublicKey(Key key, int depth) {
         // We don't support searching for primitive keys at multiple levels since the REST API matches by hex prefix
         if (depth > 2) {
