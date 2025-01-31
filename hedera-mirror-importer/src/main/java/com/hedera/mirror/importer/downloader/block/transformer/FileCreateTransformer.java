@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.downloader.block.transformer;
 import com.hedera.hapi.block.stream.output.protoc.StateIdentifier;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
@@ -28,10 +27,8 @@ final class FileCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        var status = blockItem.transactionResult().getStatus();
-        if (status != ResponseCodeEnum.SUCCESS
-                && status != ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED
-                && status != ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION) {
+
+        if (!blockItem.isSuccessful()) {
             return;
         }
 

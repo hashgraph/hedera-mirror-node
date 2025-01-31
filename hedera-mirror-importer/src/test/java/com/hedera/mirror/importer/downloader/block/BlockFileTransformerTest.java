@@ -110,16 +110,17 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     @Test
     void corruptedTransactionBodyBytes() {
         // given
-        var blockItem = new BlockItem(
-                Transaction.newBuilder()
+        var blockItem = BlockItem.builder()
+                .transaction(Transaction.newBuilder()
                         .setSignedTransactionBytes(SignedTransaction.newBuilder()
                                 .setBodyBytes(DomainUtils.fromBytes(domainBuilder.bytes(512)))
                                 .build()
                                 .toByteString())
-                        .build(),
-                TransactionResult.newBuilder().build(),
-                Collections.emptyList(),
-                Collections.emptyList());
+                        .build())
+                .transactionResult(TransactionResult.newBuilder().build())
+                .transactionOutput(Collections.emptyList())
+                .stateChanges(Collections.emptyList())
+                .build();
         var blockFile = blockFile(List.of(blockItem));
 
         // when, then
@@ -129,13 +130,14 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     @Test
     void corruptedSignedTransactionBytes() {
         // given
-        var blockItem = new BlockItem(
-                Transaction.newBuilder()
+        var blockItem = BlockItem.builder()
+                .transaction(Transaction.newBuilder()
                         .setSignedTransactionBytes(DomainUtils.fromBytes(domainBuilder.bytes(256)))
-                        .build(),
-                TransactionResult.newBuilder().build(),
-                Collections.emptyList(),
-                Collections.emptyList());
+                        .build())
+                .transactionResult(TransactionResult.newBuilder().build())
+                .transactionOutput(Collections.emptyList())
+                .stateChanges(Collections.emptyList())
+                .build();
         var blockFile = blockFile(List.of(blockItem));
 
         // when, then
