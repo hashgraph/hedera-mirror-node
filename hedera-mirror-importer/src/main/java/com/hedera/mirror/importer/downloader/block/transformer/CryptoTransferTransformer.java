@@ -26,7 +26,7 @@ final class CryptoTransferTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        for (var transactionOutput : blockItem.transactionOutput()) {
+        for (var transactionOutput : blockItem.getTransactionOutput()) {
             if (transactionOutput.hasCryptoTransfer()) {
                 var cryptoTransferOutput = transactionOutput.getCryptoTransfer();
                 var assessedCustomFees = cryptoTransferOutput.getAssessedCustomFeesList();

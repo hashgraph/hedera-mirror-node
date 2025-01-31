@@ -785,11 +785,7 @@ public class RecordItemBuilder {
     }
 
     public Builder<ScheduleDeleteTransactionBody.Builder> scheduleDelete() {
-        return scheduleDelete(scheduleId());
-    }
-
-    public Builder<ScheduleDeleteTransactionBody.Builder> scheduleDelete(ScheduleID scheduleId) {
-        var builder = ScheduleDeleteTransactionBody.newBuilder().setScheduleID(scheduleId);
+        var builder = ScheduleDeleteTransactionBody.newBuilder().setScheduleID(scheduleId());
         return new Builder<>(TransactionType.SCHEDULEDELETE, builder);
     }
 

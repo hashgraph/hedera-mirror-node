@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -28,11 +26,11 @@ final class ScheduleSignTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        if (blockItem.transactionResult().getStatus() != SUCCESS) {
+        if (!blockItem.isSuccessful()) {
             return;
         }
 
-        for (var transactionOutput : blockItem.transactionOutput()) {
+        for (var transactionOutput : blockItem.getTransactionOutput()) {
             if (transactionOutput.hasSignSchedule()
                     && transactionOutput.getSignSchedule().hasScheduledTransactionId()) {
                 transactionRecordBuilder

@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.downloader.block.transformer;
 
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -29,18 +28,30 @@ final class ScheduleCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        if (blockItem.transactionResult().getStatus() != SUCCESS) {
+        if (!blockItem.isSuccessful()) {
             return;
         }
 
-        for (var stateChanges : blockItem.stateChanges()) {
+        var receiptBuilder = transactionRecordBuilder.getReceiptBuilder();
+        outer:
+        for (var stateChanges : blockItem.getStateChanges()) {
             for (var stateChange : stateChanges.getStateChangesList()) {
                 if (stateChange.getStateId() == STATE_ID_SCHEDULES_BY_ID.getNumber() && stateChange.hasMapUpdate()) {
                     var key = stateChange.getMapUpdate().getKey();
                     if (key.hasScheduleIdKey()) {
-                        transactionRecordBuilder.getReceiptBuilder().setScheduleID(key.getScheduleIdKey());
-                        return;
+                        receiptBuilder.setScheduleID(key.getScheduleIdKey());
+                        break outer;
                     }
+                }
+            }
+        }
+
+        for (var transactionOutput : blockItem.getTransactionOutput()) {
+            if (transactionOutput.hasCreateSchedule()) {
+                var output = transactionOutput.getCreateSchedule();
+                if (output.hasScheduledTransactionId()) {
+                    receiptBuilder.setScheduledTransactionID(output.getScheduledTransactionId());
+                    return;
                 }
             }
         }

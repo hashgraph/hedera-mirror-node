@@ -31,7 +31,7 @@ abstract class AbstractBlockItemTransformer implements BlockItemTransformer {
     private static final MessageDigest DIGEST = createSha384Digest();
 
     public TransactionRecord getTransactionRecord(BlockItem blockItem, TransactionBody transactionBody) {
-        var transactionResult = blockItem.transactionResult();
+        var transactionResult = blockItem.getTransactionResult();
         var receiptBuilder = TransactionReceipt.newBuilder().setStatus(transactionResult.getStatus());
         var transactionRecordBuilder = TransactionRecord.newBuilder()
                 .addAllAutomaticTokenAssociations(transactionResult.getAutomaticTokenAssociationsList())
@@ -42,7 +42,7 @@ abstract class AbstractBlockItemTransformer implements BlockItemTransformer {
                 .setReceipt(receiptBuilder)
                 .setTransactionFee(transactionResult.getTransactionFeeCharged())
                 .setTransactionHash(
-                        calculateTransactionHash(blockItem.transaction().getSignedTransactionBytes()))
+                        calculateTransactionHash(blockItem.getTransaction().getSignedTransactionBytes()))
                 .setTransactionID(transactionBody.getTransactionID())
                 .setTransferList(transactionResult.getTransferList());
 

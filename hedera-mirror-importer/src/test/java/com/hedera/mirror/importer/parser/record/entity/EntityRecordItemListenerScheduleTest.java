@@ -27,10 +27,13 @@ import com.google.protobuf.UnknownFieldSet;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.downloader.block.BlockFileTransformer;
+import com.hedera.mirror.importer.parser.domain.BlockFileBuilder;
 import com.hedera.mirror.importer.parser.domain.BlockItemBuilder;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -75,7 +78,14 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     private static final Key SCHEDULE_REF_KEY = keyFromString(KEY);
     private static final long SIGN_TIMESTAMP = 10L;
 
-    private final BlockItemBuilder blockItemBuilder = new BlockItemBuilder();
+    @Resource
+    private BlockFileBuilder blockFileBuilder;
+
+    @Resource
+    private BlockFileTransformer blockFileTransformer;
+
+    @Resource
+    private BlockItemBuilder blockItemBuilder;
 
     @Resource
     protected ScheduleRepository scheduleRepository;
@@ -553,7 +563,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 .build();
 
         if (useBlockTransformer) {
-            var blockItem = blockItemBuilder.scheduleDelete(recordItem, false).build();
+            var blockItem = blockItemBuilder.scheduleDelete(recordItem).build();
             recordItem = transformBlockItemToRecordItem(blockItem);
         }
 
@@ -617,6 +627,12 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 .returns(
                         responseCode.getNumber(),
                         from(com.hedera.mirror.common.domain.transaction.Transaction::getResult));
+    }
+
+    public RecordItem transformBlockItemToRecordItem(BlockItem blockItem) {
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+        var blockRecordFile = blockFileTransformer.transform(blockFile);
+        return blockRecordFile.getItems().iterator().next();
     }
 
     private List<TransactionSignature> toTransactionSignatureList(

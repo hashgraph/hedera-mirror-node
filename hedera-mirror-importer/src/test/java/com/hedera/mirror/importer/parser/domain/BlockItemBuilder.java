@@ -111,10 +111,10 @@ public class BlockItemBuilder {
 
     public BlockItemBuilder.Builder scheduleDelete() {
         var recordItem = recordItemBuilder.scheduleDelete().build();
-        return scheduleDelete(recordItem, false);
+        return scheduleDelete(recordItem);
     }
 
-    public BlockItemBuilder.Builder scheduleDelete(RecordItem recordItem, boolean deleted) {
+    public BlockItemBuilder.Builder scheduleDelete(RecordItem recordItem) {
         var scheduleId = recordItem.getTransactionBody().getScheduleDelete().getScheduleID();
         var stateChangeDelete = StateChange.newBuilder()
                 .setMapDelete(MapDeleteChange.newBuilder()
@@ -125,7 +125,6 @@ public class BlockItemBuilder {
                 .setMapUpdate(MapUpdateChange.newBuilder()
                         .setValue(MapChangeValue.newBuilder()
                                 .setScheduleValue(Schedule.newBuilder()
-                                        .setDeleted(deleted)
                                         .setScheduleId(scheduleId)
                                         .build())
                                 .build()))

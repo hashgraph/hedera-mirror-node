@@ -18,21 +18,13 @@ package com.hedera.mirror.importer;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Range;
-import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
 import com.hedera.mirror.common.config.CommonIntegrationTest;
 import com.hedera.mirror.common.config.RedisTestConfiguration;
 import com.hedera.mirror.common.converter.EntityIdConverter;
-import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.BlockFile;
-import com.hedera.mirror.common.domain.transaction.BlockItem;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.converter.JsonbToListConverter;
-import com.hedera.mirror.importer.downloader.block.BlockFileTransformer;
 import com.hedera.mirror.importer.parser.record.entity.ParserContext;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.annotation.Resource;
 import jakarta.persistence.Id;
@@ -88,9 +80,6 @@ public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
 
     @Resource
     private ImporterProperties importerProperties;
-
-    @Resource
-    private BlockFileTransformer blockFileTransformer;
 
     @Getter
     @Value("#{environment.matchesProfiles('!v2')}")
@@ -154,53 +143,6 @@ public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
     protected Boolean tableExists(String name) {
         return jdbcOperations.queryForObject(
                 "select exists(select 1 from information_schema.tables where table_name = ?)", Boolean.class, name);
-    }
-
-    protected RecordItem transformBlockItemToRecordItem(BlockItem blockItem) {
-        var blockFile = blockFile(List.of(blockItem));
-        var blockRecordFile = blockFileTransformer.transform(blockFile);
-        return blockRecordFile.getItems().iterator().next();
-    }
-
-    protected BlockFile blockFile(List<BlockItem> blockItems) {
-        long blockNumber = domainBuilder.number();
-        byte[] bytes = domainBuilder.bytes(256);
-        String filename = StringUtils.leftPad(Long.toString(blockNumber), 36, "0") + ".blk.gz";
-        var firstConsensusTimestamp = blockItems.isEmpty()
-                ? domainBuilder.protoTimestamp()
-                : blockItems.getFirst().transactionResult().getConsensusTimestamp();
-        byte[] previousHash = domainBuilder.bytes(48);
-        long consensusStart = DomainUtils.timestampInNanosMax(firstConsensusTimestamp);
-        long consensusEnd = blockItems.isEmpty()
-                ? consensusStart
-                : DomainUtils.timestampInNanosMax(
-                        blockItems.getLast().transactionResult().getConsensusTimestamp());
-
-        return BlockFile.builder()
-                .blockHeader(BlockHeader.newBuilder()
-                        .setFirstTransactionConsensusTime(firstConsensusTimestamp)
-                        .setNumber(blockNumber)
-                        .setPreviousBlockHash(DomainUtils.fromBytes(previousHash))
-                        .setHapiProtoVersion(SemanticVersion.newBuilder().setMinor(57))
-                        .setSoftwareVersion(SemanticVersion.newBuilder().setMinor(57))
-                        .build())
-                .bytes(bytes)
-                .consensusEnd(consensusEnd)
-                .consensusStart(consensusStart)
-                .count((long) blockItems.size())
-                .digestAlgorithm(DigestAlgorithm.SHA_384)
-                .hash(DomainUtils.bytesToHex(domainBuilder.bytes(48)))
-                .index(blockNumber)
-                .items(blockItems)
-                .loadStart(System.currentTimeMillis())
-                .name(filename)
-                .nodeId(domainBuilder.number())
-                .previousHash(DomainUtils.bytesToHex(previousHash))
-                .roundEnd(blockNumber + 1)
-                .roundStart(blockNumber + 1)
-                .size(bytes.length)
-                .version(7)
-                .build();
     }
 
     private String getDefaultIdColumns(Class<?> entityClass) {
