@@ -38,6 +38,7 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
+import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls;
@@ -45,7 +46,6 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.standalone.TransactionExecutor;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import io.micrometer.core.instrument.Counter;
@@ -71,7 +71,7 @@ class TransactionExecutionServiceTest {
     private static final Long DEFAULT_GAS = 50000L;
 
     @Mock
-    private State mirrorNodeState;
+    private MirrorNodeState mirrorNodeState;
 
     @Mock
     private OpcodeTracer opcodeTracer;

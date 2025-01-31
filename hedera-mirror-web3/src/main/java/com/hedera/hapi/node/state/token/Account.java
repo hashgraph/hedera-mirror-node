@@ -326,21 +326,21 @@ public record Account(
             result = 31 * result + Integer.hashCode(contractKvPairsNumber);
         }
 
-        for (Object o : cryptoAllowancesSupplier.get()) {
+        for (var o : cryptoAllowancesSupplier.get()) {
             if (o != null) {
                 result = 31 * result + o.hashCode();
             } else {
                 result = 31 * result;
             }
         }
-        for (Object o : approveForAllNftAllowancesSupplier.get()) {
+        for (var o : approveForAllNftAllowancesSupplier.get()) {
             if (o != null) {
                 result = 31 * result + o.hashCode();
             } else {
                 result = 31 * result;
             }
         }
-        for (Object o : tokenAllowancesSupplier.get()) {
+        for (var o : tokenAllowancesSupplier.get()) {
             if (o != null) {
                 result = 31 * result + o.hashCode();
             } else {

@@ -45,6 +45,7 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
+import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
@@ -53,7 +54,6 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key;
-import com.swirlds.state.State;
 import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -80,7 +80,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Resource
-    protected State state;
+    protected MirrorNodeState state;
 
     @Resource
     protected ContractExecutionService contractExecutionService;
@@ -112,7 +112,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .entity()
                 .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
                 .persist();
-        domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
+        domainBuilder.entity().customize(e -> e.id(98L).num(98L).balance(0L)).persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(

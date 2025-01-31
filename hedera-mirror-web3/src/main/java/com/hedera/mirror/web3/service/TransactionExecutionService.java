@@ -38,11 +38,11 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.config.data.EntitiesConfig;
-import com.swirlds.state.State;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import jakarta.inject.Named;
@@ -65,7 +65,7 @@ public class TransactionExecutionService {
             AccountID.newBuilder().accountNum(2).build();
     private static final Duration TRANSACTION_DURATION = new Duration(15);
 
-    private final State mirrorNodeState;
+    private final MirrorNodeState mirrorNodeState;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final OpcodeTracer opcodeTracer;
     private final MirrorOperationTracer mirrorOperationTracer;
@@ -88,6 +88,8 @@ public class TransactionExecutionService {
         }
 
         var receipt = executor.execute(transactionBody, Instant.now(), getOperationTracers());
+        mirrorNodeState.commit();
+
         var transactionRecord = receipt.getFirst().transactionRecord();
         if (transactionRecord.receiptOrThrow().status() == com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS) {
             result = buildSuccessResult(isContractCreate, transactionRecord, params);

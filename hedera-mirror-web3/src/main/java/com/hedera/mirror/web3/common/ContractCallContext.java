@@ -27,12 +27,15 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import lombok.Getter;
 import lombok.Setter;
 
+@SuppressWarnings("unchecked")
 @Getter
 public class ContractCallContext {
 
@@ -58,6 +61,10 @@ public class ContractCallContext {
 
     @Setter
     private CallServiceParameters callServiceParameters;
+
+    private Map<Object, Object> readCache = new HashMap<>();
+
+    private Map<String, Map<Object, Object>> stateModifications = new HashMap<>();
 
     /**
      * Record file which stores the block timestamp and other historical block details used for filtering of historical
@@ -150,6 +157,22 @@ public class ContractCallContext {
         }
         return Optional.empty();
     }
+
+    public <K, V> V getFromReadCache(K key) {
+        return (V) readCache.get(key);
+    }
+
+    public <K, V> void putInReadCache(K key, V value) {
+        readCache.put(key, value);
+    }
+
+    //    public <K, V> V getFromWriteCache(K key) {
+    //        return (V) modifications.get(key);
+    //    }
+    //
+    //    public <K, V> void putInWriteCache(K key, V value) {
+    //        modifications.put(key, value);
+    //    }
 
     private Optional<Long> getTimestampOrDefaultFromRecordFile() {
         return timestamp.or(() -> Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd));

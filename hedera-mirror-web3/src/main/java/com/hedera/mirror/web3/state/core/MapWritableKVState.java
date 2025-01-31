@@ -50,12 +50,12 @@ public class MapWritableKVState<K, V> extends WritableKVStateBase<K, V> {
 
     @Override
     protected void putIntoDataSource(@Nonnull K key, @Nonnull V value) {
-        put(key, value);
+        //        put(key, value);
     }
 
     @Override
     protected void removeFromDataSource(@Nonnull K key) {
-        remove(key);
+        //        remove(key);
     }
 
     @Override
