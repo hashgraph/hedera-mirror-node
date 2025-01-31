@@ -29,6 +29,7 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.Objects;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -45,6 +46,9 @@ import reactor.core.publisher.Mono;
 @CustomLog
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
+
+    // Blockstreams no longer contain runningHashVersion, default to the latest version
+    static final int DEFAULT_RUNNING_HASH_VERSION = 3;
 
     private final TopicMessageService topicMessageService;
 
@@ -90,7 +94,8 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                 .setConsensusTimestamp(ProtoUtil.toTimestamp(t.getConsensusTimestamp()))
                 .setMessage(ProtoUtil.toByteString(t.getMessage()))
                 .setRunningHash(ProtoUtil.toByteString(t.getRunningHash()))
-                .setRunningHashVersion(t.getRunningHashVersion())
+                .setRunningHashVersion(
+                        Objects.requireNonNullElse(t.getRunningHashVersion(), DEFAULT_RUNNING_HASH_VERSION))
                 .setSequenceNumber(t.getSequenceNumber());
 
         if (t.getChunkNum() != null) {

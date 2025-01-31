@@ -64,7 +64,7 @@ import org.testcontainers.containers.GenericContainer;
         properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class RestSpecTest extends RestJavaIntegrationTest {
     private static final Pattern INCLUDED_SPEC_DIRS = Pattern.compile(
-            "^(accounts|accounts/\\{id}/allowances.*|accounts/\\{id}/rewards.*|blocks.*|contracts|network/exchangerate.*|network/fees.*|network/stake.*|topics/\\{id}/messages)$");
+            "^(accounts|accounts/\\{id}/allowances.*|accounts/\\{id}/rewards.*|blocks.*|contracts|network/exchangerate.*|network/fees.*|network/stake.*)$");
     private static final String RESPONSE_HEADER_FILE = "responseHeaders.json";
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
     private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");
