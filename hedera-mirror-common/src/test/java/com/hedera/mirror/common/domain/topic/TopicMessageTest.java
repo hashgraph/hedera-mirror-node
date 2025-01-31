@@ -23,13 +23,15 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class TopicMessageTest {
 
     // Test serialization to JSON to verify contract with PostgreSQL listen/notify
-    @Test
-    void toJson() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void toJson(boolean nullVersion) throws Exception {
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setChunkNum(1);
         topicMessage.setChunkTotal(2);
@@ -37,7 +39,7 @@ class TopicMessageTest {
         topicMessage.setMessage(new byte[] {1, 2, 3});
         topicMessage.setPayerAccountId(EntityId.of("0.1.1000"));
         topicMessage.setRunningHash(new byte[] {4, 5, 6});
-        topicMessage.setRunningHashVersion(2);
+        topicMessage.setRunningHashVersion(nullVersion ? null : 2);
         topicMessage.setSequenceNumber(1L);
         topicMessage.setTopicId(EntityId.of("0.0.1001"));
         topicMessage.setValidStartTimestamp(1594401416000000000L);
@@ -50,6 +52,7 @@ class TopicMessageTest {
                 .setScheduled(true)
                 .build();
         topicMessage.setInitialTransactionId(transactionID.toByteArray());
+        var expectedVersion = nullVersion ? "\"running_hash_version\":null," : "\"running_hash_version\":2,";
 
         String json = OBJECT_MAPPER.writeValueAsString(topicMessage);
         assertThat(json)
@@ -61,7 +64,7 @@ class TopicMessageTest {
                         + "\"message\":\"AQID\","
                         + "\"payer_account_id\":4294968296,"
                         + "\"running_hash\":\"BAUG\","
-                        + "\"running_hash_version\":2,"
+                        + expectedVersion
                         + "\"sequence_number\":1,"
                         + "\"topic_id\":1001,"
                         + "\"valid_start_timestamp\":1594401416000000000}");
