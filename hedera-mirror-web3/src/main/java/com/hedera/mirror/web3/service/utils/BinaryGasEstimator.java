@@ -80,7 +80,7 @@ public class BinaryGasEstimator {
         return hi;
     }
 
-    // This method is needed because within the modularized services if the contract call fails an exceptio is thrown
+    // This method is needed because within the modularized services if the contract call fails an exception is thrown
     // instead of transaction result with 'failed' status which will result in a failing test. This way we handle the
     // exception and return estimated gas
     private HederaEvmTransactionProcessingResult safeCall(
