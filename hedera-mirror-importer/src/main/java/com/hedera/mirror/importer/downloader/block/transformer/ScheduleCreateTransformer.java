@@ -23,6 +23,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
+@SuppressWarnings("java:S3776")
 @Named
 final class ScheduleCreateTransformer extends AbstractBlockItemTransformer {
 
@@ -33,25 +34,24 @@ final class ScheduleCreateTransformer extends AbstractBlockItemTransformer {
         }
 
         var receiptBuilder = transactionRecordBuilder.getReceiptBuilder();
-        outer:
+        for (var transactionOutput : blockItem.getTransactionOutput()) {
+            if (transactionOutput.hasCreateSchedule()) {
+                var output = transactionOutput.getCreateSchedule();
+                if (output.hasScheduledTransactionId()) {
+                    receiptBuilder.setScheduledTransactionID(output.getScheduledTransactionId());
+                    break;
+                }
+            }
+        }
+
         for (var stateChanges : blockItem.getStateChanges()) {
             for (var stateChange : stateChanges.getStateChangesList()) {
                 if (stateChange.getStateId() == STATE_ID_SCHEDULES_BY_ID.getNumber() && stateChange.hasMapUpdate()) {
                     var key = stateChange.getMapUpdate().getKey();
                     if (key.hasScheduleIdKey()) {
                         receiptBuilder.setScheduleID(key.getScheduleIdKey());
-                        break outer;
+                        return;
                     }
-                }
-            }
-        }
-
-        for (var transactionOutput : blockItem.getTransactionOutput()) {
-            if (transactionOutput.hasCreateSchedule()) {
-                var output = transactionOutput.getCreateSchedule();
-                if (output.hasScheduledTransactionId()) {
-                    receiptBuilder.setScheduledTransactionID(output.getScheduledTransactionId());
-                    return;
                 }
             }
         }
