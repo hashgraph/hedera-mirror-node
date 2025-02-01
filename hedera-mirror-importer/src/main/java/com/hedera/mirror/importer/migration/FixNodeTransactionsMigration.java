@@ -185,7 +185,7 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
 
     @Override
     public MigrationVersion getVersion() {
-        return v2 ? MigrationVersion.fromVersion("2.8.0") : MigrationVersion.fromVersion("1.103.0");
+        return v2 ? MigrationVersion.fromVersion("2.8.1") : MigrationVersion.fromVersion("1.103.1");
     }
 
     @Override
