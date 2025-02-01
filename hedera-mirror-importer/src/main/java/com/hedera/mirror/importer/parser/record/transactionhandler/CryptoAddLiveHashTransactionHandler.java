@@ -37,11 +37,7 @@ class CryptoAddLiveHashTransactionHandler extends AbstractTransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem
-                .getTransactionBody()
-                .getCryptoAddLiveHash()
-                .getLiveHash()
-                .getAccountId());
+        return EntityId.of(getLiveHash(recordItem).getAccountId());
     }
 
     @Override
@@ -55,10 +51,14 @@ class CryptoAddLiveHashTransactionHandler extends AbstractTransactionHandler {
             return;
         }
 
-        var transactionBody = recordItem.getTransactionBody().getCryptoAddLiveHash();
         var liveHash = new LiveHash();
         liveHash.setConsensusTimestamp(transaction.getConsensusTimestamp());
-        liveHash.setLivehash(toBytes(transactionBody.getLiveHash().getHash()));
+        liveHash.setLivehash(toBytes(getLiveHash(recordItem).getHash()));
         entityListener.onLiveHash(liveHash);
+    }
+
+    @SuppressWarnings("deprecation")
+    private com.hederahashgraph.api.proto.java.LiveHash getLiveHash(RecordItem recordItem) {
+        return recordItem.getTransactionBody().getCryptoAddLiveHash().getLiveHash();
     }
 }

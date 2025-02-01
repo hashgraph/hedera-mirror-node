@@ -31,6 +31,7 @@
       },
       {
         "consensus_timestamp": "1236567890000000005",
+        "running_hash_version": null,
         "sequence_number": 5,
         "topic_id": 7
       },
@@ -71,7 +72,7 @@
         "message": "bWVzc2FnZQ==",
         "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",
-        "running_hash_version": 2,
+        "running_hash_version": 3,
         "sequence_number": 5,
         "topic_id": "0.0.7"
       }

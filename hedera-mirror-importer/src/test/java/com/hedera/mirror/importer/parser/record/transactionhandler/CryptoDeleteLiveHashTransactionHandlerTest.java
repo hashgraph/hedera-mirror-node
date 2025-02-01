@@ -28,6 +28,7 @@ class CryptoDeleteLiveHashTransactionHandlerTest extends AbstractTransactionHand
         return new CryptoDeleteLiveHashTransactionHandler();
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()

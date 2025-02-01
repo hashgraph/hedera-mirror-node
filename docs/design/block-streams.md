@@ -58,6 +58,7 @@ Update the handling of the topic message `runningHashVersion`:
 - Update `ConsensusSubmitMessageTransactionHandler` to account for block streams no longer sending the runningHashVersion value:
   - If the TransactionReceipt runningHashVersion is 3 (the current value) set the runningHashVersion to null.
   - If the TransactionReceipt runningHashVersion is not 3 set the runningHashVersion to that value.
+- The `ConsensusSubmitMessageTransformer`, when transforming a block item to a record item, will set the topic message receipt runningHashVersion to 3.
 
 ### Interfaces and Classes
 

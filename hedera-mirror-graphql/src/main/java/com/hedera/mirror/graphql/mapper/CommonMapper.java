@@ -105,6 +105,7 @@ public interface CommonMapper {
         }
     }
 
+    @SuppressWarnings("deprecation")
     default Object mapKey(Key key) {
         var keyCase = key.getKeyCase();
         return switch (keyCase) {
