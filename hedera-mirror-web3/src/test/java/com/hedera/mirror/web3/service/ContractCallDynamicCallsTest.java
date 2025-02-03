@@ -59,15 +59,12 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     void mintTokenGetTotalSupplyAndBalanceOfTreasury(
             final TokenTypeEnum tokenType, final long amount, final String metadata) {
         // Given
-        final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
+        final var treasuryEntity = accountEntityPersist();
+        final var treasuryAddress = toAddress(treasuryEntity.getId());
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), treasuryEntityId);
+        final var tokenEntity = persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity)
+                .getLeft();
+        final var tokenAddress = toAddress(tokenEntity.getId());
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 

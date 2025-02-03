@@ -29,12 +29,12 @@ final class ScheduleCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        if (!blockItem.isSuccessful()) {
+        if (!blockItem.successful()) {
             return;
         }
 
         var receiptBuilder = transactionRecordBuilder.getReceiptBuilder();
-        for (var transactionOutput : blockItem.getTransactionOutput()) {
+        for (var transactionOutput : blockItem.transactionOutput()) {
             if (transactionOutput.hasCreateSchedule()) {
                 var output = transactionOutput.getCreateSchedule();
                 if (output.hasScheduledTransactionId()) {
@@ -44,7 +44,7 @@ final class ScheduleCreateTransformer extends AbstractBlockItemTransformer {
             }
         }
 
-        for (var stateChanges : blockItem.getStateChanges()) {
+        for (var stateChanges : blockItem.stateChanges()) {
             for (var stateChange : stateChanges.getStateChangesList()) {
                 if (stateChange.getStateId() == STATE_ID_SCHEDULES_BY_ID.getNumber() && stateChange.hasMapUpdate()) {
                     var key = stateChange.getMapUpdate().getKey();

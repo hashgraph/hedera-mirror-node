@@ -21,7 +21,6 @@ import static com.hedera.mirror.common.domain.transaction.TransactionType.ETHERE
 import static com.hedera.mirror.common.util.CommonUtils.instant;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.CREATE_TOKEN_VALUE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
@@ -29,7 +28,6 @@ import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -49,16 +47,18 @@ import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls;
 import com.hedera.mirror.web3.web3j.generated.ExchangeRatePrecompile;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls;
-import com.hedera.mirror.web3.web3j.generated.NestedCalls.Expiry;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.HederaToken;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.TokenKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -71,8 +71,8 @@ import org.web3j.tx.Contract;
 @RequiredArgsConstructor
 class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
-    private static final long AMOUNT = 0L;
-
+    private static final long ZERO_AMOUNT = 0L;
+    private static final long DEFAULT_TRANSACTION_VALUE = 100_000_000_000L;
     private static final String SUCCESS_PREFIX = "0x0000000000000000000000000000000000000000000000000000000000000020";
 
     private final OpcodeService opcodeService;
@@ -82,35 +82,35 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     @CsvSource(
             textBlock =
                     """
-                    CONTRACT_ID,                ADMIN_KEY,
-                    CONTRACT_ID,                KYC_KEY,
-                    CONTRACT_ID,                FREEZE_KEY,
-                    CONTRACT_ID,                WIPE_KEY,
-                    CONTRACT_ID,                SUPPLY_KEY,
-                    CONTRACT_ID,                FEE_SCHEDULE_KEY,
-                    CONTRACT_ID,                PAUSE_KEY,
-                    ED25519,                    ADMIN_KEY,
-                    ED25519,                    KYC_KEY,
-                    ED25519,                    FREEZE_KEY,
-                    ED25519,                    WIPE_KEY,
-                    ED25519,                    SUPPLY_KEY,
-                    ED25519,                    FEE_SCHEDULE_KEY,
-                    ED25519,                    PAUSE_KEY,
-                    ECDSA_SECPK256K1,           ADMIN_KEY,
-                    ECDSA_SECPK256K1,           KYC_KEY,
-                    ECDSA_SECPK256K1,           FREEZE_KEY,
-                    ECDSA_SECPK256K1,           WIPE_KEY,
-                    ECDSA_SECPK256K1,           SUPPLY_KEY,
-                    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
-                    ECDSA_SECPK256K1,           PAUSE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
-                    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY,
-                    """)
+                            CONTRACT_ID,                ADMIN_KEY,
+                            CONTRACT_ID,                KYC_KEY,
+                            CONTRACT_ID,                FREEZE_KEY,
+                            CONTRACT_ID,                WIPE_KEY,
+                            CONTRACT_ID,                SUPPLY_KEY,
+                            CONTRACT_ID,                FEE_SCHEDULE_KEY,
+                            CONTRACT_ID,                PAUSE_KEY,
+                            ED25519,                    ADMIN_KEY,
+                            ED25519,                    KYC_KEY,
+                            ED25519,                    FREEZE_KEY,
+                            ED25519,                    WIPE_KEY,
+                            ED25519,                    SUPPLY_KEY,
+                            ED25519,                    FEE_SCHEDULE_KEY,
+                            ED25519,                    PAUSE_KEY,
+                            ECDSA_SECPK256K1,           ADMIN_KEY,
+                            ECDSA_SECPK256K1,           KYC_KEY,
+                            ECDSA_SECPK256K1,           FREEZE_KEY,
+                            ECDSA_SECPK256K1,           WIPE_KEY,
+                            ECDSA_SECPK256K1,           SUPPLY_KEY,
+                            ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
+                            ECDSA_SECPK256K1,           PAUSE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
+                            DELEGATABLE_CONTRACT_ID,    KYC_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    PAUSE_KEY,
+                            """)
     void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType) {
         // Given
         final var tokenEntity = fungibleTokenPersist();
@@ -129,7 +129,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
 
         final var options = new OpcodeTracerOptions();
-        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
 
         // When
         final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
@@ -142,39 +143,39 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     @CsvSource(
             textBlock =
                     """
-                    CONTRACT_ID,                ADMIN_KEY,
-                    CONTRACT_ID,                KYC_KEY,
-                    CONTRACT_ID,                FREEZE_KEY,
-                    CONTRACT_ID,                WIPE_KEY,
-                    CONTRACT_ID,                SUPPLY_KEY,
-                    CONTRACT_ID,                FEE_SCHEDULE_KEY,
-                    CONTRACT_ID,                PAUSE_KEY,
-                    ED25519,                    ADMIN_KEY,
-                    ED25519,                    KYC_KEY,
-                    ED25519,                    FREEZE_KEY,
-                    ED25519,                    WIPE_KEY,
-                    ED25519,                    SUPPLY_KEY,
-                    ED25519,                    FEE_SCHEDULE_KEY,
-                    ED25519,                    PAUSE_KEY,
-                    ECDSA_SECPK256K1,           ADMIN_KEY,
-                    ECDSA_SECPK256K1,           KYC_KEY,
-                    ECDSA_SECPK256K1,           FREEZE_KEY,
-                    ECDSA_SECPK256K1,           WIPE_KEY,
-                    ECDSA_SECPK256K1,           SUPPLY_KEY,
-                    ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
-                    ECDSA_SECPK256K1,           PAUSE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
-                    DELEGATABLE_CONTRACT_ID,    KYC_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
-                    DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
-                    DELEGATABLE_CONTRACT_ID,    PAUSE_KEY
-                    """)
+                            CONTRACT_ID,                ADMIN_KEY,
+                            CONTRACT_ID,                KYC_KEY,
+                            CONTRACT_ID,                FREEZE_KEY,
+                            CONTRACT_ID,                WIPE_KEY,
+                            CONTRACT_ID,                SUPPLY_KEY,
+                            CONTRACT_ID,                FEE_SCHEDULE_KEY,
+                            CONTRACT_ID,                PAUSE_KEY,
+                            ED25519,                    ADMIN_KEY,
+                            ED25519,                    KYC_KEY,
+                            ED25519,                    FREEZE_KEY,
+                            ED25519,                    WIPE_KEY,
+                            ED25519,                    SUPPLY_KEY,
+                            ED25519,                    FEE_SCHEDULE_KEY,
+                            ED25519,                    PAUSE_KEY,
+                            ECDSA_SECPK256K1,           ADMIN_KEY,
+                            ECDSA_SECPK256K1,           KYC_KEY,
+                            ECDSA_SECPK256K1,           FREEZE_KEY,
+                            ECDSA_SECPK256K1,           WIPE_KEY,
+                            ECDSA_SECPK256K1,           SUPPLY_KEY,
+                            ECDSA_SECPK256K1,           FEE_SCHEDULE_KEY,
+                            ECDSA_SECPK256K1,           PAUSE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    ADMIN_KEY,
+                            DELEGATABLE_CONTRACT_ID,    KYC_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FREEZE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    WIPE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    SUPPLY_KEY,
+                            DELEGATABLE_CONTRACT_ID,    FEE_SCHEDULE_KEY,
+                            DELEGATABLE_CONTRACT_ID,    PAUSE_KEY
+                            """)
     void updateTokenKeysAndGetUpdatedTokenKeyForNFT(final KeyValueType keyValueType, final KeyType keyType) {
         // Given
-        final var treasuryEntity = accountPersist();
-        final var tokenEntity = nftPersist(treasuryEntity.toEntityId());
+        final var treasuryEntity = accountEntityPersist();
+        final var tokenEntity = nftPersist(treasuryEntity);
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
@@ -190,7 +191,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
 
         final var options = new OpcodeTracerOptions();
-        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
 
         // When
         final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
@@ -201,19 +203,20 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenExpiryAndGetUpdatedTokenExpiry(final TokenTypeEnum tokenType) {
         // Given
-        final var treasuryEntity = accountPersist();
-        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntity)
-                : nftPersist(treasuryEntity.toEntityId());
-        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var treasuryEntity = accountEntityPersist();
+        final var tokenWithAutoRenewPair = persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity);
+        final var tokenEntityId = tokenWithAutoRenewPair.getLeft();
+        final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var autoRenewAccount = accountPersist();
-        final var tokenExpiry = getTokenExpiry(autoRenewAccount);
+        final var tokenExpiry = new NestedCalls.Expiry(
+                BigInteger.valueOf(Instant.now().getEpochSecond() + 8_000_000L),
+                toAddress(tokenWithAutoRenewPair.getRight().toEntityId()).toHexString(),
+                BigInteger.valueOf(8_000_000));
 
         final var functionCall =
                 contract.call_updateTokenExpiryAndGetUpdatedTokenExpiry(tokenAddress.toHexString(), tokenExpiry);
@@ -222,7 +225,9 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResult = TypeEncoder.encode(tokenExpiry);
         final var expectedResultBytes = Bytes.fromHexString(expectedResult).toArray();
 
-        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
+
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
         // When
@@ -234,19 +239,22 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenInfoAndGetUpdatedTokenInfoSymbol(final TokenTypeEnum tokenType) {
         // Given
-        final var treasuryEntity = accountPersist();
-        final var autoRenewAccount = accountPersist();
-        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntity)
-                : nftPersist(treasuryEntity.toEntityId());
-        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var treasuryEntity = accountEntityPersist();
+        Pair<Entity, Entity> tokenWithAutoRenewPair =
+                persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity);
+        final var tokenEntityId = tokenWithAutoRenewPair.getLeft();
+        final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+        final var tokenInfo = populateHederaToken(
+                contract.getContractAddress(),
+                tokenType,
+                treasuryEntity.toEntityId(),
+                tokenWithAutoRenewPair.getRight());
 
         final var functionCall =
                 contract.call_updateTokenInfoAndGetUpdatedTokenInfoSymbol(tokenAddress.toHexString(), tokenInfo);
@@ -255,7 +263,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResultBytes = tokenInfo.symbol.getBytes();
         final var expectedResult = evmEncoder.encodeSymbol(tokenInfo.symbol).toHexString();
 
-        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
         // When
@@ -266,19 +275,22 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenInfoAndGetUpdatedTokenInfoName(final TokenTypeEnum tokenType) {
         // Given
-        final var treasuryEntity = accountPersist();
-        final var autoRenewAccount = accountPersist();
-        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntity)
-                : nftPersist(treasuryEntity.toEntityId());
-        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var treasuryEntity = accountEntityPersist();
+        Pair<Entity, Entity> tokenWithAutoRenewPair =
+                persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity);
+        final var tokenEntityId = tokenWithAutoRenewPair.getLeft();
+        final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+        final var tokenInfo = populateHederaToken(
+                contract.getContractAddress(),
+                tokenType,
+                treasuryEntity.toEntityId(),
+                tokenWithAutoRenewPair.getRight());
 
         final var functionCall =
                 contract.call_updateTokenInfoAndGetUpdatedTokenInfoName(tokenAddress.toHexString(), tokenInfo);
@@ -287,7 +299,9 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResultBytes = tokenInfo.name.getBytes();
         final var expectedResult = evmEncoder.encodeName(tokenInfo.name).toHexString();
 
-        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
+
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
         // When
@@ -299,19 +313,22 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void updateTokenInfoAndGetUpdatedTokenInfoMemo(final TokenTypeEnum tokenType) {
         // Given
-        final var treasuryEntity = accountPersist();
-        final var autoRenewAccount = accountPersist();
-        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntity)
-                : nftPersist(treasuryEntity.toEntityId());
-        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var treasuryEntity = accountEntityPersist();
+        Pair<Entity, Entity> tokenWithAutoRenewPair =
+                persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity);
+        final var tokenEntityId = tokenWithAutoRenewPair.getLeft();
+        final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var tokenInfo = getHederaToken(tokenType, treasuryEntity, autoRenewAccount);
+        final var tokenInfo = populateHederaToken(
+                contract.getContractAddress(),
+                tokenType,
+                treasuryEntity.toEntityId(),
+                tokenWithAutoRenewPair.getRight());
 
         final var functionCall =
                 contract.call_updateTokenInfoAndGetUpdatedTokenInfoMemo(tokenAddress.toHexString(), tokenInfo);
@@ -320,7 +337,9 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResultBytes = tokenInfo.memo.getBytes();
         final var expectedResult = evmEncoder.encodeName(tokenInfo.memo).toHexString();
 
-        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
+
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
         // When
@@ -332,16 +351,15 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
     @ParameterizedTest
     @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
+            FUNGIBLE_COMMON
+            NON_FUNGIBLE_UNIQUE
+            """)
     void deleteTokenAndGetTokenInfoIsDeleted(final TokenTypeEnum tokenType) {
         // Given
-        final var treasuryEntity = accountPersist();
-        final var tokenEntityId = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist()
-                : nftPersist(treasuryEntity.toEntityId());
-        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
+        final var treasuryEntity = accountEntityPersist();
+        final var tokenEntityId = persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryEntity)
+                .getLeft();
+        final var tokenAddress = toAddress(tokenEntityId.getId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
 
         final var functionCall = contract.call_deleteTokenAndGetTokenInfoIsDeleted(tokenAddress.toHexString());
@@ -350,7 +368,9 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final byte[] expectedResultBytes = {1};
         final var expectedResult = DomainUtils.bytesToHex(DomainUtils.leftPadBytes(expectedResultBytes, Bytes32.SIZE));
 
-        final var transactionIdOrHash = setUpEthereumTransaction(contract, callData, expectedResultBytes);
+        final var transactionIdOrHash =
+                setUpEthereumTransactionWithSenderBalance(contract, callData, ZERO_AMOUNT, expectedResultBytes);
+
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
         // When
@@ -364,21 +384,26 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     @CsvSource(
             textBlock =
                     """
-                true, false, true, true
-                false, false, false, false
-                true, true, true, true
-                """)
+                            true, false, true, true
+                            false, false, false, false
+                            true, true, true, true
+                            """)
     void createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
             final boolean withKeys,
             final boolean inheritKey,
-            final boolean defaultKycStatus,
+            boolean defaultKycStatus,
             final boolean defaultFreezeStatus) {
         // Given
-        final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
+        defaultKycStatus = calculateDefaultKycStatus(defaultKycStatus);
+        final var treasuryEntity = accountEntityPersist();
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var tokenInfo = getHederaToken(
-                TokenTypeEnum.FUNGIBLE_COMMON, withKeys, inheritKey, defaultFreezeStatus, treasuryEntity);
-        tokenInfo.freezeDefault = defaultFreezeStatus;
+                contract.getContractAddress(),
+                TokenTypeEnum.FUNGIBLE_COMMON,
+                withKeys,
+                inheritKey,
+                defaultFreezeStatus,
+                treasuryEntity);
 
         final var functionCall =
                 contract.call_createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
@@ -388,8 +413,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResult = getExpectedResultFromBooleans(defaultKycStatus, defaultFreezeStatus, true);
         final var expectedResultBytes = expectedResult.getBytes();
 
-        final var transactionIdOrHash =
-                setUpEthereumTransactionWithSenderBalance(contract, callData, CREATE_TOKEN_VALUE, expectedResultBytes);
+        final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
+                contract, callData, DEFAULT_TRANSACTION_VALUE, expectedResultBytes);
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
         // When
@@ -403,21 +428,26 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     @CsvSource(
             textBlock =
                     """
-                true, false, true, true
-                false, false, false, false
-                true, true, true, true
-                """)
+                            true, false, true, true
+                            false, false, false, false
+                            true, true, true, true
+                            """)
     void createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
             final boolean withKeys,
             final boolean inheritKey,
-            final boolean defaultKycStatus,
+            boolean defaultKycStatus,
             final boolean defaultFreezeStatus) {
         // Given
-        final var treasuryEntity = accountPersistWithBalance(CREATE_TOKEN_VALUE);
+        defaultKycStatus = calculateDefaultKycStatus(defaultKycStatus);
+        final var treasuryEntity = accountEntityPersist();
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var tokenInfo = getHederaToken(
-                TokenTypeEnum.NON_FUNGIBLE_UNIQUE, withKeys, inheritKey, defaultFreezeStatus, treasuryEntity);
-        tokenInfo.freezeDefault = defaultFreezeStatus;
+                contract.getContractAddress(),
+                TokenTypeEnum.NON_FUNGIBLE_UNIQUE,
+                withKeys,
+                inheritKey,
+                defaultFreezeStatus,
+                treasuryEntity);
 
         final var functionCall =
                 contract.call_createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(tokenInfo);
@@ -426,8 +456,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var expectedResult = getExpectedResultFromBooleans(defaultKycStatus, defaultFreezeStatus, true);
         final var expectedResultBytes = expectedResult.getBytes();
 
-        final var transactionIdOrHash =
-                setUpEthereumTransactionWithSenderBalance(contract, callData, CREATE_TOKEN_VALUE, expectedResultBytes);
+        final var transactionIdOrHash = setUpEthereumTransactionWithSenderBalance(
+                contract, callData, DEFAULT_TRANSACTION_VALUE, expectedResultBytes);
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
         // When
@@ -451,21 +481,22 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     void callWithDifferentCombinationsOfTracerOptions(
             final boolean stack, final boolean memory, final boolean storage) {
         // Given
+        final var senderEntity = accountPersistWithAccountBalances();
+        final var treasuryEntity = accountEntityPersist();
+        final var treasuryAddress = toAddress(treasuryEntity.getId());
+
+        final var tokenEntity = persistTokenWithAutoRenewAndTreasuryAccounts(
+                        TokenTypeEnum.FUNGIBLE_COMMON, treasuryEntity)
+                .getLeft();
+        final var tokenAddress = toAddress(tokenEntity.getId());
         final var options = new OpcodeTracerOptions(stack, memory, storage);
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var treasuryEntity = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntity.toEntityId());
-        final var tokenEntity = nftPersist(treasuryEntity.toEntityId());
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var senderEntity = accountPersist();
 
         final var functionCall = contract.send_mintTokenGetTotalSupplyAndBalanceOfTreasury(
-                tokenAddress.toHexString(),
-                BigInteger.ONE,
-                List.of(new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}),
-                treasuryAddress.toHexString());
+                tokenAddress.toHexString(), BigInteger.valueOf(100), List.of(), treasuryAddress.toHexString());
 
-        final var callData = functionCall.encodeFunctionCall().getBytes();
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
         final var transactionIdOrHash = setUp(
                 ETHEREUMTRANSACTION,
                 contract,
@@ -473,6 +504,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 true,
                 true,
                 senderEntity.toEntityId(),
+                ZERO_AMOUNT,
                 domainBuilder.timestamp());
 
         // When
@@ -497,6 +529,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 true,
                 false,
                 senderEntity.toEntityId(),
+                DEFAULT_TRANSACTION_VALUE,
                 consensusTimestamp);
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
@@ -521,6 +554,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 false,
                 true,
                 senderEntity.toEntityId(),
+                DEFAULT_TRANSACTION_VALUE,
                 domainBuilder.timestamp());
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
 
@@ -534,15 +568,20 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     void callWithContractTransactionHashNotFoundExceptionTest() {
         // Given
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-        final var senderEntity = accountPersist();
-        final var treasuryEntity = accountPersist();
-        final var autoRenewAccount = accountPersist();
-        final var hederaToken = getHederaToken(TokenTypeEnum.FUNGIBLE_COMMON, treasuryEntity, autoRenewAccount);
+        final var senderEntity = accountEntityPersist();
+        final var treasuryEntity = accountEntityPersist();
+        Pair<Entity, Entity> tokenWithAutoRenewPair =
+                persistTokenWithAutoRenewAndTreasuryAccounts(TokenTypeEnum.FUNGIBLE_COMMON, treasuryEntity);
+        final var tokenInfo = populateHederaToken(
+                contract.getContractAddress(),
+                TokenTypeEnum.FUNGIBLE_COMMON,
+                treasuryEntity.toEntityId(),
+                tokenWithAutoRenewPair.getRight());
 
         final OpcodeTracerOptions options = new OpcodeTracerOptions();
         final var functionCall =
                 contract.call_createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(
-                        hederaToken, BigInteger.ONE, BigInteger.ONE);
+                        tokenInfo, BigInteger.ONE, BigInteger.ONE);
         final var transactionIdOrHash = setUp(
                 ETHEREUMTRANSACTION,
                 contract,
@@ -550,6 +589,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 false,
                 true,
                 senderEntity.toEntityId(),
+                DEFAULT_TRANSACTION_VALUE,
                 domainBuilder.timestamp());
 
         // Then
@@ -591,56 +631,6 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         };
     }
 
-    private HederaToken getHederaToken(
-            final TokenTypeEnum tokenType,
-            final boolean withKeys,
-            final boolean inheritAccountKey,
-            final boolean freezeDefault,
-            final Entity treasuryEntity) {
-        final List<TokenKey> tokenKeys = new LinkedList<>();
-        final var keyType = inheritAccountKey ? KeyValueType.INHERIT_ACCOUNT_KEY : KeyValueType.ECDSA_SECPK256K1;
-        if (withKeys) {
-            tokenKeys.add(new TokenKey(KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
-            tokenKeys.add(new TokenKey(KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
-        }
-
-        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            tokenKeys.add(new TokenKey(KeyType.SUPPLY_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
-        }
-
-        return new HederaToken(
-                "name",
-                "symbol",
-                toAddress(treasuryEntity.getId()).toHexString(),
-                "memo",
-                Boolean.TRUE, // finite amount
-                BigInteger.valueOf(10L), // max supply
-                freezeDefault, // freeze default
-                tokenKeys,
-                getTokenExpiry(domainBuilder.entity().persist()));
-    }
-
-    private HederaToken getHederaToken(
-            final TokenTypeEnum tokenType, final Entity treasuryEntity, final Entity autoRenewAccountEntity) {
-        return new HederaToken(
-                "name",
-                "symbol",
-                toAddress(treasuryEntity.getId()).toHexString(),
-                "memo",
-                tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? Boolean.FALSE : Boolean.TRUE,
-                BigInteger.valueOf(10L),
-                Boolean.TRUE,
-                List.of(),
-                getTokenExpiry(autoRenewAccountEntity));
-    }
-
-    private Expiry getTokenExpiry(final Entity autoRenewAccountEntity) {
-        return new Expiry(
-                BigInteger.valueOf(4_000_000_000L),
-                toAddress(autoRenewAccountEntity.toEntityId()).toHexString(),
-                BigInteger.valueOf(8_000_000L));
-    }
-
     private TransactionIdOrHashParameter setUp(
             final TransactionType transactionType,
             final Contract contract,
@@ -648,6 +638,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
             final boolean persistTransaction,
             final boolean persistContractResult,
             final EntityId senderEntityId,
+            final long transactionValue,
             final long consensusTimestamp) {
         return setUpForSuccessWithExpectedResult(
                 transactionType,
@@ -656,17 +647,13 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 persistTransaction,
                 persistContractResult,
                 senderEntityId,
+                transactionValue,
                 consensusTimestamp);
     }
 
-    private TransactionIdOrHashParameter setUpEthereumTransaction(
-            final NestedCalls contract, final byte[] callData, final byte[] expectedResult) {
-        return setUpEthereumTransactionWithSenderBalance(contract, callData, 0, expectedResult);
-    }
-
     private TransactionIdOrHashParameter setUpEthereumTransactionWithSenderBalance(
-            final Contract contract, final byte[] callData, final long senderBalance, final byte[] expectedResult) {
-        final var senderEntity = accountPersistWithBalance(senderBalance);
+            final Contract contract, final byte[] callData, final long transactionValue, final byte[] expectedResult) {
+        final var senderEntity = accountPersistWithAccountBalances();
         return setUpForSuccessWithExpectedResultAndBalance(
                 ETHEREUMTRANSACTION,
                 contract,
@@ -674,7 +661,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 true,
                 true,
                 senderEntity.toEntityId(),
-                senderBalance,
+                transactionValue,
                 expectedResult,
                 senderEntity.getCreatedTimestamp() + 1);
     }
@@ -686,6 +673,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
             final boolean persistTransaction,
             final boolean persistContractResult,
             final EntityId senderEntityId,
+            final long transactionValue,
             final long consensusTimestamp) {
         return setUpForSuccessWithExpectedResultAndBalance(
                 transactionType,
@@ -694,7 +682,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 persistTransaction,
                 persistContractResult,
                 senderEntityId,
-                0,
+                transactionValue,
                 null,
                 consensusTimestamp);
     }
@@ -706,7 +694,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
             final boolean persistTransaction,
             final boolean persistContractResult,
             final EntityId senderEntityId,
-            final long senderBalance,
+            final long transactionValue,
             final byte[] expectedResult,
             final long consensusTimestamp) {
 
@@ -726,7 +714,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                     senderEntityId,
                     contract.getContractAddress(),
                     persistTransaction,
-                    senderBalance);
+                    transactionValue);
         } else {
             ethTransaction = null;
         }
@@ -737,7 +725,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 senderEntityId,
                 transaction,
                 persistContractResult,
-                senderBalance);
+                transactionValue);
 
         persistContractActionsWithExpectedResult(
                 senderEntityId,
@@ -745,7 +733,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 contractEntityId,
                 contract.getContractAddress(),
                 expectedResult,
-                senderBalance);
+                transactionValue);
 
         if (persistTransaction) {
             persistContractTransactionHash(
@@ -797,7 +785,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                         .value(
                                 value > 0
                                         ? BigInteger.valueOf(value).toByteArray()
-                                        : BigInteger.valueOf(AMOUNT).toByteArray()));
+                                        : BigInteger.valueOf(ZERO_AMOUNT).toByteArray()));
         return persistTransaction ? ethTransactionBuilder.persist() : ethTransactionBuilder.get();
     }
 
@@ -810,7 +798,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
             final boolean persistContractResult,
             final long value) {
         final var contractResultBuilder = domainBuilder.contractResult().customize(contractResult -> contractResult
-                .amount(value > 0 ? value : AMOUNT)
+                .amount(value > 0 ? value : ZERO_AMOUNT)
                 .consensusTimestamp(consensusTimestamp)
                 .contractId(contractEntityId.getId())
                 .functionParameters(callData)
@@ -839,7 +827,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                         .gas(TRANSACTION_GAS_LIMIT)
                         .resultData(expectedResult)
                         .resultDataType(OUTPUT.getNumber())
-                        .value(value > 0 ? value : AMOUNT))
+                        .value(value > 0 ? value : ZERO_AMOUNT))
                 .persist();
     }
 
@@ -861,45 +849,39 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     }
 
     private Token fungibleTokenPersist() {
+        return fungibleTokenPersist(domainBuilder.entity().persist());
+    }
+
+    private Token fungibleTokenPersist(final Entity treasuryEntity) {
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
 
         return domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
-    }
-
-    private Token fungibleTokenPersist(final Entity autoRenewAccount) {
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
-                .persist();
-
-        return domainBuilder
-                .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(autoRenewAccount.toEntityId()))
+                        .treasuryAccountId(treasuryEntity.toEntityId()))
                 .persist();
     }
 
-    private Token nftPersist(final EntityId treasuryEntityId) {
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(TOKEN).autoRenewAccountId(treasuryEntityId.getId()))
-                .persist();
+    private Token nftPersist(final Entity treasuryEntity) {
+        final var nftEntity = tokenEntityPersist();
 
         final var token = domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
+                .customize(t -> t.tokenId(nftEntity.getId())
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                        .treasuryAccountId(treasuryEntityId))
+                        .treasuryAccountId(treasuryEntity.toEntityId()))
                 .persist();
 
+        final var treasuryEntityId = token.getTreasuryAccountId();
         domainBuilder
                 .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .customize(n -> n.accountId(treasuryEntityId)
+                        .spender(treasuryEntityId)
+                        .accountId(treasuryEntityId)
+                        .tokenId(nftEntity.getId())
+                        .serialNumber(1))
                 .persist();
         return token;
     }
@@ -908,23 +890,132 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         return domainBuilder.entity().customize(a -> a.evmAddress(null)).persist();
     }
 
-    private Entity accountPersistWithBalance(final long balance) {
-        final var entity = domainBuilder
-                .entity()
-                .customize(e -> e.evmAddress(null).balance(balance))
-                .persist();
+    private Entity accountPersistWithAccountBalances() {
+        final var entity = accountEntityPersist();
 
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(entity.getCreatedTimestamp(), EntityId.of(2)))
-                        .balance(balance))
+                        .balance(entity.getBalance()))
                 .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(entity.getCreatedTimestamp(), entity.toEntityId()))
-                        .balance(balance))
+                        .balance(entity.getBalance()))
                 .persist();
 
         return entity;
+    }
+
+    private NestedCalls.HederaToken populateHederaToken(
+            final String contractAddress,
+            final TokenTypeEnum tokenType,
+            final EntityId treasuryAccountId,
+            Entity autoRenewAccount) {
+        // expiration
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(tokenType).treasuryAccountId(treasuryAccountId))
+                .persist();
+
+        final var supplyKey = new NestedCalls.KeyValue(
+                Boolean.FALSE,
+                contractAddress,
+                new byte[0],
+                new byte[0],
+                Address.ZERO.toHexString()); // the key needed for token minting or burning
+        final var keys = new ArrayList<TokenKey>();
+        keys.add(new NestedCalls.TokenKey(
+                AbstractContractCallServiceTest.KeyType.SUPPLY_KEY.getKeyTypeNumeric(), supplyKey));
+        return new NestedCalls.HederaToken(
+                token.getName(),
+                token.getSymbol(),
+                getAddressFromEntityId(treasuryAccountId), // id of the account holding the initial token supply
+                tokenEntity.getMemo(), // token description encoded in UTF-8 format
+                true,
+                BigInteger.valueOf(10_000L),
+                false,
+                keys,
+                new NestedCalls.Expiry(
+                        BigInteger.valueOf(Instant.now().getEpochSecond() + 8_000_000L),
+                        getAddressFromEntity(autoRenewAccount),
+                        BigInteger.valueOf(8_000_000)));
+    }
+
+    private HederaToken getHederaToken(
+            final String contractAddress,
+            final TokenTypeEnum tokenType,
+            final boolean withKeys,
+            final boolean inheritAccountKey,
+            final boolean freezeDefault,
+            final Entity treasuryEntity) {
+        final List<TokenKey> tokenKeys = new LinkedList<>();
+        final var keyType = inheritAccountKey ? KeyValueType.INHERIT_ACCOUNT_KEY : KeyValueType.ECDSA_SECPK256K1;
+        if (withKeys) {
+            tokenKeys.add(new TokenKey(KeyType.KYC_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
+            tokenKeys.add(new TokenKey(KeyType.FREEZE_KEY.getKeyTypeNumeric(), getKeyValueForType(keyType, null)));
+        }
+
+        return populateHederaToken(contractAddress, tokenType, treasuryEntity.toEntityId(), freezeDefault, tokenKeys);
+    }
+
+    private NestedCalls.HederaToken populateHederaToken(
+            final String contractAddress,
+            final TokenTypeEnum tokenType,
+            final EntityId treasuryAccountId,
+            boolean freezeDefault,
+            List<TokenKey> tokenKeys) {
+        final var autoRenewAccount =
+                accountEntityWithEvmAddressPersist(); // the account that is going to be charged for token renewal upon
+        // expiration
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(tokenType).treasuryAccountId(treasuryAccountId))
+                .persist();
+
+        final var supplyKey = new NestedCalls.KeyValue(
+                Boolean.FALSE,
+                contractAddress,
+                new byte[0],
+                new byte[0],
+                Address.ZERO.toHexString()); // the key needed for token minting or burning
+        tokenKeys.add(new NestedCalls.TokenKey(
+                AbstractContractCallServiceTest.KeyType.SUPPLY_KEY.getKeyTypeNumeric(), supplyKey));
+
+        return new NestedCalls.HederaToken(
+                token.getName(),
+                token.getSymbol(),
+                getAddressFromEntityId(treasuryAccountId), // id of the account holding the initial token supply
+                tokenEntity.getMemo(), // token description encoded in UTF-8 format
+                true,
+                BigInteger.valueOf(10_000L),
+                freezeDefault,
+                tokenKeys,
+                new NestedCalls.Expiry(
+                        BigInteger.valueOf(Instant.now().getEpochSecond() + 8_000_000L),
+                        getAliasFromEntity(autoRenewAccount),
+                        BigInteger.valueOf(8_000_000)));
+    }
+
+    /**
+     * Adjusts the default KYC status based on the modularized services flag.
+     * <p>
+     * In modularized services, the KYC status behaves inversely compared to mono: - Without a KYC key:
+     * `KycNotApplicable` -> returns `TRUE`. - With a KYC key: Initial status is `Revoked` -> returns `FALSE`. This
+     * method toggles the status when modularized services are enabled.
+     *
+     * @param defaultKycStatus The initial KYC status boolean.
+     * @return The adjusted KYC status boolean.
+     */
+    private boolean calculateDefaultKycStatus(boolean defaultKycStatus) {
+        return mirrorNodeEvmProperties.isModularizedServices() != defaultKycStatus;
     }
 }
