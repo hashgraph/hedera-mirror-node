@@ -18,33 +18,28 @@ package com.hedera.mirror.common.domain.transaction;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
-public class BlockItemTest {
-
-    static Stream<ResponseCodeEnum> validStatuses() {
-        return Stream.of(
-                ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED,
-                ResponseCodeEnum.SUCCESS,
-                ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
-    }
+class BlockItemTest {
 
     @ParameterizedTest
-    @MethodSource("validStatuses")
-    void parseSuccess_whenNoParentPresentAndCorrectStatus_returnTrue(ResponseCodeEnum status) {
-        TransactionResult transactionResult =
-                TransactionResult.newBuilder().setStatus(status).build();
+    @EnumSource(
+            value = ResponseCodeEnum.class,
+            mode = INCLUDE,
+            names = {"FEE_SCHEDULE_FILE_PART_UPLOADED", "SUCCESS", "SUCCESS_BUT_MISSING_EXPECTED_OPERATION"})
+    void parseSuccessWhenNoParentPresentAndCorrectStatusReturnTrue(ResponseCodeEnum status) {
+        var transactionResult = TransactionResult.newBuilder().setStatus(status).build();
 
-        BlockItem blockItem = BlockItem.builder()
+        var blockItem = BlockItem.builder()
                 .transaction(Transaction.newBuilder().build())
                 .transactionResult(transactionResult)
                 .transactionOutput(List.of())
@@ -52,99 +47,117 @@ public class BlockItemTest {
                 .previous(null)
                 .build();
 
-        assertTrue(blockItem.isSuccessful());
+        assertTrue(blockItem.successful());
     }
 
     @ParameterizedTest
-    @MethodSource("validStatuses")
-    void parseSuccess_withSuccessfulParentAndCorrectStatus_returnTrue(ResponseCodeEnum status) {
+    @EnumSource(
+            value = ResponseCodeEnum.class,
+            mode = INCLUDE,
+            names = {"FEE_SCHEDULE_FILE_PART_UPLOADED", "SUCCESS", "SUCCESS_BUT_MISSING_EXPECTED_OPERATION"})
+    void parseSuccessWithSuccessfulParentAndCorrectStatusReturnTrue(ResponseCodeEnum status) {
 
-        BlockItem parentBlockItem = BlockItem.builder()
-                .transaction(Transaction.newBuilder().build())
-                .transactionResult(
-                        TransactionResult.newBuilder().setStatus(status).build())
-                .transactionOutput(List.of())
-                .stateChanges(List.of())
-                .parent(null)
-                .build();
-
-        TransactionResult transactionResult =
-                TransactionResult.newBuilder().setStatus(status).build();
-
-        BlockItem blockItem = BlockItem.builder()
-                .transaction(Transaction.newBuilder().build())
-                .transactionResult(transactionResult)
-                .transactionOutput(List.of())
-                .stateChanges(List.of())
-                .parent(parentBlockItem)
-                .build();
-
-        assertTrue(blockItem.isSuccessful());
-    }
-
-    @Test
-    void parseSuccess_parentNotSuccessful_returnFalse() {
-
-        BlockItem parentBlockItem = BlockItem.builder()
+        var parentBlockItem = BlockItem.builder()
                 .transaction(Transaction.newBuilder().build())
                 .transactionResult(TransactionResult.newBuilder()
-                        .setStatus(ResponseCodeEnum.INVALID_TRANSACTION)
+                        .setStatus(status)
+                        .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(12345L))
                         .build())
                 .transactionOutput(List.of())
                 .stateChanges(List.of())
-                .parent(null)
+                .previous(null)
                 .build();
 
-        TransactionResult transactionResult = TransactionResult.newBuilder()
-                .setStatus(ResponseCodeEnum.SUCCESS)
+        var transactionResult = TransactionResult.newBuilder()
+                .setStatus(status)
+                .setParentConsensusTimestamp(
+                        Timestamp.newBuilder().setSeconds(12345L).build())
                 .build();
 
-        BlockItem blockItem = BlockItem.builder()
+        var blockItem = BlockItem.builder()
                 .transaction(Transaction.newBuilder().build())
                 .transactionResult(transactionResult)
                 .transactionOutput(List.of())
                 .stateChanges(List.of())
-                .parent(parentBlockItem)
+                .previous(parentBlockItem)
                 .build();
 
-        assertFalse(blockItem.isSuccessful());
-    }
-
-    @ParameterizedTest
-    @MethodSource("validStatuses")
-    void parseSuccess_parentSuccessfulButStatusNotOneOfTheExpected_returnFalse(ResponseCodeEnum status) {
-
-        BlockItem parentBlockItem = BlockItem.builder()
-                .transaction(Transaction.newBuilder().build())
-                .transactionResult(
-                        TransactionResult.newBuilder().setStatus(status).build())
-                .transactionOutput(List.of())
-                .stateChanges(List.of())
-                .parent(null)
-                .build();
-
-        TransactionResult transactionResult =
-                TransactionResult.newBuilder().setStatus(ResponseCodeEnum.BUSY).build();
-
-        BlockItem blockItem = BlockItem.builder()
-                .transaction(Transaction.newBuilder().build())
-                .transactionResult(transactionResult)
-                .transactionOutput(List.of())
-                .stateChanges(List.of())
-                .parent(parentBlockItem) // Parent is successful but status is not one of the expected
-                .build();
-
-        // Assert: The block item should not be successful because the status is not one of the expected ones
-        assertFalse(blockItem.isSuccessful());
+        assertTrue(blockItem.successful());
     }
 
     @Test
-    void parseParent_whenNoParent() {
-        TransactionResult transactionResult = TransactionResult.newBuilder()
+    void parseSuccessParentNotSuccessfulReturnFalse() {
+
+        var parentBlockItem = BlockItem.builder()
+                .transaction(Transaction.newBuilder().build())
+                .transactionResult(TransactionResult.newBuilder()
+                        .setStatus(ResponseCodeEnum.INVALID_TRANSACTION)
+                        .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(12345L))
+                        .build())
+                .transactionOutput(List.of())
+                .stateChanges(List.of())
+                .previous(null)
+                .build();
+
+        var transactionResult = TransactionResult.newBuilder()
+                .setStatus(ResponseCodeEnum.SUCCESS)
+                .setParentConsensusTimestamp(
+                        Timestamp.newBuilder().setSeconds(12345L).build())
+                .build();
+
+        var blockItem = BlockItem.builder()
+                .transaction(Transaction.newBuilder().build())
+                .transactionResult(transactionResult)
+                .transactionOutput(List.of())
+                .stateChanges(List.of())
+                .previous(parentBlockItem)
+                .build();
+
+        assertFalse(blockItem.successful());
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = ResponseCodeEnum.class,
+            mode = INCLUDE,
+            names = {"FEE_SCHEDULE_FILE_PART_UPLOADED", "SUCCESS", "SUCCESS_BUT_MISSING_EXPECTED_OPERATION"})
+    void parseSuccessParentSuccessfulButStatusNotOneOfTheExpectedReturnFalse(ResponseCodeEnum status) {
+
+        var parentBlockItem = BlockItem.builder()
+                .transaction(Transaction.newBuilder().build())
+                .transactionResult(TransactionResult.newBuilder()
+                        .setStatus(status)
+                        .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(12345L))
+                        .build())
+                .transactionOutput(List.of())
+                .stateChanges(List.of())
+                .previous(null)
+                .build();
+
+        var transactionResult = TransactionResult.newBuilder()
+                .setStatus(ResponseCodeEnum.BUSY)
+                .setParentConsensusTimestamp(Timestamp.newBuilder().setSeconds(12345L))
+                .build();
+
+        var blockItem = BlockItem.builder()
+                .transaction(Transaction.newBuilder().build())
+                .transactionResult(transactionResult)
+                .transactionOutput(List.of())
+                .stateChanges(List.of())
+                .previous(parentBlockItem) // Parent is successful but status is not one of the expected
+                .build();
+
+        // Assert: The block item should not be successful because the status is not one of the expected ones
+        assertFalse(blockItem.successful());
+    }
+
+    @Test
+    void parseParentWhenNoParent() {
+        var transactionResult = TransactionResult.newBuilder()
                 .setStatus(ResponseCodeEnum.SUCCESS)
                 .build();
 
-        BlockItem blockItem = BlockItem.builder()
+        var blockItem = BlockItem.builder()
                 .transaction(Transaction.newBuilder().build())
                 .transactionResult(transactionResult)
                 .transactionOutput(List.of())
@@ -153,26 +166,26 @@ public class BlockItemTest {
                 .build();
 
         // When: The parent is not set
-        BlockItem parent = blockItem.parent();
+        var parent = blockItem.parent();
 
         // Then: The parent should remain null
         assertNull(parent, "Parent should be null when no parent is provided");
     }
 
     @Test
-    void parseParent_whenConsensusTimestampMatch_ParentIsPrevious() {
-        TransactionResult transactionResult = TransactionResult.newBuilder()
+    void parseParentWhenConsensusTimestampMatchParentIsPrevious() {
+        var transactionResult = TransactionResult.newBuilder()
                 .setStatus(ResponseCodeEnum.SUCCESS)
                 .setParentConsensusTimestamp(
                         Timestamp.newBuilder().setSeconds(12345L).build())
                 .build();
 
-        Transaction previousTransaction = Transaction.newBuilder().build();
-        TransactionResult previousTransactionResult = TransactionResult.newBuilder()
+        var previousTransaction = Transaction.newBuilder().build();
+        var previousTransactionResult = TransactionResult.newBuilder()
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(12345L).build())
                 .build();
 
-        BlockItem previousBlockItem = BlockItem.builder()
+        var previousBlockItem = BlockItem.builder()
                 .transaction(previousTransaction)
                 .transactionResult(previousTransactionResult)
                 .transactionOutput(List.of())
@@ -180,7 +193,7 @@ public class BlockItemTest {
                 .previous(null)
                 .build();
 
-        BlockItem blockItem = BlockItem.builder()
+        var blockItem = BlockItem.builder()
                 .transaction(Transaction.newBuilder().build())
                 .transactionResult(transactionResult)
                 .transactionOutput(List.of())
@@ -189,7 +202,7 @@ public class BlockItemTest {
                 .build();
 
         // When: The parent matches the consensus timestamp of the previous block item
-        BlockItem parent = blockItem.parent();
+        var parent = blockItem.parent();
 
         // Then: The parent should match the previous block item
         assertEquals(
@@ -197,20 +210,20 @@ public class BlockItemTest {
     }
 
     @Test
-    void parseParent_whenConsensusTimestampDoNotMatch_NoParent() {
+    void parseParentWhenConsensusTimestampDoNotMatchNoParent() {
         // Given: Create a previous block item with a non-matching parent consensus timestamp
-        TransactionResult transactionResult = TransactionResult.newBuilder()
+        var transactionResult = TransactionResult.newBuilder()
                 .setStatus(ResponseCodeEnum.SUCCESS)
                 .setParentConsensusTimestamp(
                         Timestamp.newBuilder().setSeconds(12345L).build())
                 .build();
 
-        Transaction previousTransaction = Transaction.newBuilder().build();
-        TransactionResult previousTransactionResult = TransactionResult.newBuilder()
+        var previousTransaction = Transaction.newBuilder().build();
+        var previousTransactionResult = TransactionResult.newBuilder()
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(67890L).build())
                 .build();
 
-        BlockItem previousBlockItem = BlockItem.builder()
+        var previousBlockItem = BlockItem.builder()
                 .transaction(previousTransaction)
                 .transactionResult(previousTransactionResult)
                 .transactionOutput(List.of())
@@ -218,7 +231,7 @@ public class BlockItemTest {
                 .previous(null)
                 .build();
 
-        BlockItem blockItem = BlockItem.builder()
+        var blockItem = BlockItem.builder()
                 .transaction(Transaction.newBuilder().build())
                 .transactionResult(transactionResult)
                 .transactionOutput(List.of())
@@ -227,7 +240,7 @@ public class BlockItemTest {
                 .build();
 
         // When: The parent consensus timestamp does not match the previous block item
-        BlockItem parent = blockItem.parent();
+        var parent = blockItem.parent();
 
         // Then: The parent should not match, return the parent as is
         assertNotEquals(
@@ -237,12 +250,12 @@ public class BlockItemTest {
     }
 
     @Test
-    void parseParent_ConsensusTimestampMatchesOlderSibling() {
-        TransactionResult parentTransactionResult = TransactionResult.newBuilder()
+    void parseParentConsensusTimestampMatchesOlderSibling() {
+        var parentTransactionResult = TransactionResult.newBuilder()
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(12345L).build()) // Parent timestamp
                 .build();
 
-        BlockItem parentBlockItem = BlockItem.builder()
+        var parentBlockItem = BlockItem.builder()
                 .transaction(Transaction.newBuilder().build())
                 .transactionResult(parentTransactionResult)
                 .transactionOutput(List.of())
@@ -250,12 +263,12 @@ public class BlockItemTest {
                 .previous(null)
                 .build();
 
-        TransactionResult previousTransactionResult = TransactionResult.newBuilder()
+        var previousTransactionResult = TransactionResult.newBuilder()
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(12346L).build())
                 .setParentConsensusTimestamp(parentTransactionResult.getConsensusTimestamp())
                 .build();
 
-        BlockItem previousBlockItem = BlockItem.builder()
+        var previousBlockItem = BlockItem.builder()
                 .transaction(Transaction.newBuilder().build())
                 .transactionResult(previousTransactionResult)
                 .transactionOutput(List.of())
@@ -263,13 +276,13 @@ public class BlockItemTest {
                 .previous(parentBlockItem)
                 .build();
 
-        TransactionResult transactionResult = TransactionResult.newBuilder()
+        var transactionResult = TransactionResult.newBuilder()
                 .setParentConsensusTimestamp(
                         Timestamp.newBuilder().setSeconds(12345L).build())
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(12347L).build())
                 .build();
 
-        BlockItem blockItem = BlockItem.builder()
+        var blockItem = BlockItem.builder()
                 .transaction(Transaction.newBuilder().build())
                 .transactionResult(transactionResult)
                 .transactionOutput(List.of())
@@ -277,7 +290,7 @@ public class BlockItemTest {
                 .previous(previousBlockItem)
                 .build();
 
-        BlockItem parent = blockItem.parent();
+        var parent = blockItem.parent();
 
         assertEquals(
                 parentBlockItem,

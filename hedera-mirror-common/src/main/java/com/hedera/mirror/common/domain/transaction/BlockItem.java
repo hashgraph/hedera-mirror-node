@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.List;
 import lombok.Builder;
 
-@Builder(buildMethodName = "builderInternal", toBuilder = true)
+@Builder(toBuilder = true)
 public record BlockItem(
         Transaction transaction,
         TransactionResult transactionResult,
@@ -33,41 +33,37 @@ public record BlockItem(
         List<StateChanges> stateChanges,
         BlockItem parent,
         BlockItem previous,
-        boolean isSuccessful)
+        boolean successful)
         implements StreamItem {
 
-    // Custom Builder
-    public static class BlockItemBuilder {
-        public BlockItem build() {
-            parent = parseParent();
-            isSuccessful = parseSuccess();
-            return builderInternal();
-        }
+    public BlockItem {
+        parent = parseParent(transactionResult, previous, parent);
+        successful = parseSuccess(transactionResult, parent);
+    }
 
-        private BlockItem parseParent() {
-            // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
-            if (transactionResult.hasParentConsensusTimestamp() && previous != null) {
-                var parentTimestamp = transactionResult.getParentConsensusTimestamp();
-                if (parentTimestamp.equals(previous.transactionResult.getConsensusTimestamp())) {
-                    return previous;
-                } else if (previous.parent != null
-                        && parentTimestamp.equals(previous.parent.transactionResult.getConsensusTimestamp())) {
-                    // check older siblings parent, if child count is > 1 this prevents having to search to parent
-                    return previous.parent;
-                }
+    private BlockItem parseParent(TransactionResult transactionResult, BlockItem previous, BlockItem parent) {
+        // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
+        if (transactionResult.hasParentConsensusTimestamp() && previous != null) {
+            var parentTimestamp = transactionResult.getParentConsensusTimestamp();
+            if (parentTimestamp.equals(previous.transactionResult.getConsensusTimestamp())) {
+                return previous;
+            } else if (previous.parent != null
+                    && parentTimestamp.equals(previous.parent.transactionResult.getConsensusTimestamp())) {
+                // check older siblings parent, if child count is > 1 this prevents having to search to parent
+                return previous.parent;
             }
-            return this.parent;
+        }
+        return this.parent;
+    }
+
+    private boolean parseSuccess(TransactionResult transactionResult, BlockItem parent) {
+        if (parent != null && !parent.successful()) {
+            return false;
         }
 
-        private boolean parseSuccess() {
-            if (parent != null && !parent.isSuccessful()) {
-                return false;
-            }
-
-            var status = transactionResult.getStatus();
-            return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED
-                    || status == ResponseCodeEnum.SUCCESS
-                    || status == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
-        }
+        var status = transactionResult.getStatus();
+        return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED
+                || status == ResponseCodeEnum.SUCCESS
+                || status == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
     }
 }

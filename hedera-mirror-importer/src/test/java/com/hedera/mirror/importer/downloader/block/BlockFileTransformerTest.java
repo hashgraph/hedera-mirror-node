@@ -227,13 +227,16 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = RecordItemBuilder.SuccessfulStatusCreateFile.class)
-    void fileCreateTransform(RecordItemBuilder.SuccessfulStatusCreateFile successfulStatus) {
+    @EnumSource(
+            value = ResponseCodeEnum.class,
+            mode = EnumSource.Mode.INCLUDE,
+            names = {"FEE_SCHEDULE_FILE_PART_UPLOADED", "SUCCESS", "SUCCESS_BUT_MISSING_EXPECTED_OPERATION"})
+    void fileCreateTransform(ResponseCodeEnum successfulStatus) {
         // given
         var expectedRecordItem = recordItemBuilder
                 .fileCreate()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.setStatus(successfulStatus.toResponseCodeEnum()))
+                .receipt(r -> r.setStatus(successfulStatus))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.fileCreate(expectedRecordItem).build();

@@ -28,7 +28,7 @@ final class FileCreateTransformer extends AbstractBlockItemTransformer {
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
 
-        if (!blockItem.isSuccessful()) {
+        if (!blockItem.successful()) {
             return;
         }
 
