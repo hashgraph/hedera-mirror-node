@@ -38,7 +38,7 @@
     "log4js": "^6.9.1",
     "long": "^5.2.4",
     "mathjs": "^14.1.0",
-    "parse-duration": "^1.1.1",
+    "parse-duration": "^2.0.1",
     "pg": "~8.13.1",
     "pg-range": "^1.1.2",
     "prom-client": "^14.2.0",
@@ -51,7 +51,7 @@
     "word-wrap": "npm:@aashutoshrathi/word-wrap@^1.2.6"
   },
   "devDependencies": {
-    "@testcontainers/postgresql": "^10.16.0",
+    "@testcontainers/postgresql": "^10.17.1",
     "app-root-path": "^3.1.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^10.0.1",

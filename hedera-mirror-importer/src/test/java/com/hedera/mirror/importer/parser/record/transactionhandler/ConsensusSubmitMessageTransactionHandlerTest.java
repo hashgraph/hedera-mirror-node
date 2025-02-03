@@ -27,6 +27,8 @@ import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
 class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -55,10 +57,14 @@ class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHa
         return true;
     }
 
-    @Test
-    void updateTransaction() {
+    @ParameterizedTest
+    @CsvSource({"0,1", "2,2", "3,"})
+    void updateTransaction(long runningHashVersion, Integer expectedRunningHashVersion) {
         // Given
-        var recordItem = recordItemBuilder.consensusSubmitMessage().build();
+        var recordItem = recordItemBuilder
+                .consensusSubmitMessage()
+                .receipt(r -> r.setTopicRunningHashVersion(runningHashVersion))
+                .build();
         var transaction = domainBuilder.transaction().get();
         var topicMessage = ArgumentCaptor.forClass(TopicMessage.class);
         var transactionBody = recordItem.getTransactionBody().getConsensusSubmitMessage();
@@ -81,7 +87,7 @@ class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHa
                 .returns(transactionBody.getMessage().toByteArray(), TopicMessage::getMessage)
                 .returns(recordItem.getPayerAccountId(), TopicMessage::getPayerAccountId)
                 .returns(receipt.getTopicRunningHash().toByteArray(), TopicMessage::getRunningHash)
-                .returns((int) receipt.getTopicRunningHashVersion(), TopicMessage::getRunningHashVersion)
+                .returns(expectedRunningHashVersion, TopicMessage::getRunningHashVersion)
                 .returns(receipt.getTopicSequenceNumber(), TopicMessage::getSequenceNumber)
                 .returns(transaction.getEntityId(), TopicMessage::getTopicId);
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);

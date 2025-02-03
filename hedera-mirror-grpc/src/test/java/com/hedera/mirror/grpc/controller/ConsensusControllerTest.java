@@ -314,6 +314,25 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .verify(WAIT);
     }
 
+    @Test
+    void nullRunningHashVersion() {
+        var topicMessage =
+                domainBuilder.topicMessage(t -> t.runningHashVersion(null)).block();
+        var query = ConsensusTopicQuery.newBuilder()
+                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
+                .setConsensusEndTime(
+                        Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
+                .setLimit(1L)
+                .build();
+        assertThat(blockingService.subscribeTopic(query))
+                .toIterable()
+                .hasSize(1)
+                .containsSequence(grpcResponse(topicMessage))
+                .allSatisfy(t -> assertThat(t.getRunningHashVersion())
+                        .isEqualTo(ConsensusController.DEFAULT_RUNNING_HASH_VERSION));
+    }
+
     void assertException(Throwable t, Status.Code status, String message) {
         assertThat(t).isNotNull().isInstanceOf(StatusRuntimeException.class).hasMessageContaining(message);
 
@@ -323,11 +342,14 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
     @SneakyThrows
     private ConsensusTopicResponse grpcResponse(TopicMessage t) {
+        var runningHashVersion = t.getRunningHashVersion() == null
+                ? ConsensusController.DEFAULT_RUNNING_HASH_VERSION
+                : t.getRunningHashVersion();
         return ConsensusTopicResponse.newBuilder()
                 .setConsensusTimestamp(ProtoUtil.toTimestamp(t.getConsensusTimestamp()))
                 .setMessage(ProtoUtil.toByteString(t.getMessage()))
                 .setRunningHash(ProtoUtil.toByteString(t.getRunningHash()))
-                .setRunningHashVersion(t.getRunningHashVersion())
+                .setRunningHashVersion(runningHashVersion)
                 .setSequenceNumber(t.getSequenceNumber())
                 .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
                         .setNumber(t.getChunkNum())

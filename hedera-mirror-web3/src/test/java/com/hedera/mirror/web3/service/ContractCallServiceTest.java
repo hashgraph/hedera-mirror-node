@@ -129,7 +129,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     private static Stream<Arguments> ercPrecompileCallTypeArgumentsProvider() {
-        List<Long> gasLimits = List.of(15_000_000L, 30_000L);
+        List<Long> gasLimits = List.of(15_000_000L, 34_000L);
         List<Integer> gasUnits = List.of(1, 2);
 
         return Arrays.stream(CallType.values())
@@ -468,6 +468,41 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
         assertGasLimit(ETH_ESTIMATE_GAS, TRANSACTION_GAS_LIMIT);
+    }
+
+    // This test will be removed in the future. Needed only for test coverage right now.
+    @Test
+    void estimateGasForBalanceCallToContractModularizedServices() throws Exception {
+        // Given
+        final var modularizedServicesFlag = mirrorNodeEvmProperties.isModularizedServices();
+        final var backupProperties = mirrorNodeEvmProperties.getProperties();
+
+        try {
+            mirrorNodeEvmProperties.setModularizedServices(true);
+            Method postConstructMethod = Arrays.stream(MirrorNodeState.class.getDeclaredMethods())
+                    .filter(method -> method.isAnnotationPresent(PostConstruct.class))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("@PostConstruct method not found"));
+
+            postConstructMethod.setAccessible(true); // Make the method accessible
+            postConstructMethod.invoke(state);
+
+            final Map<String, String> propertiesMap = new HashMap<>();
+            propertiesMap.put("contracts.maxRefundPercentOfGasLimit", "100");
+            propertiesMap.put("contracts.maxGasPerSec", "15000000");
+            mirrorNodeEvmProperties.setProperties(propertiesMap);
+            final var contract = testWeb3jService.deploy(EthCall::deploy);
+            meterRegistry.clear();
+
+            // When
+            final var functionCall = contract.send_getAccountBalance(contract.getContractAddress());
+
+            // Then
+            verifyEthCallAndEstimateGas(functionCall, contract);
+        } finally {
+            mirrorNodeEvmProperties.setModularizedServices(modularizedServicesFlag);
+            mirrorNodeEvmProperties.setProperties(backupProperties);
+        }
     }
 
     @Test
