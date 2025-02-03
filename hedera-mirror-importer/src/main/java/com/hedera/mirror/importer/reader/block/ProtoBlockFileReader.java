@@ -140,6 +140,7 @@ public class ProtoBlockFileReader implements BlockFileReader {
 
     private void readEventTransactions(ReaderContext context) {
         BlockItem protoBlockItem;
+        com.hedera.mirror.common.domain.transaction.BlockItem previous = null;
         while ((protoBlockItem = context.readBlockItemFor(EVENT_TRANSACTION)) != null) {
             try {
                 var eventTransaction = protoBlockItem.getEventTransaction();
@@ -171,10 +172,12 @@ public class ProtoBlockFileReader implements BlockFileReader {
                             .transactionResult(transactionResult)
                             .transactionOutput(Collections.unmodifiableList(transactionOutputs))
                             .stateChanges(Collections.unmodifiableList(stateChangesList))
+                            .previous(previous)
                             .build();
                     context.getBlockFile()
                             .item(blockItem)
                             .onNewTransaction(getTransactionConsensusTimestamp(transactionResult));
+                    previous = blockItem;
                 }
             } catch (InvalidProtocolBufferException e) {
                 throw new InvalidStreamFileException(
