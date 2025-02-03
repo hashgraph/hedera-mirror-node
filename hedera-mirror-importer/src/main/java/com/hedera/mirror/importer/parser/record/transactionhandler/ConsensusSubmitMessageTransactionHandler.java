@@ -33,6 +33,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 class ConsensusSubmitMessageTransactionHandler extends AbstractTransactionHandler {
 
+    // Blockstreams no longer contain runningHashVersion, this is the latest version
+    static final int DEFAULT_RUNNING_HASH_VERSION = 3;
+
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
@@ -69,9 +72,14 @@ class ConsensusSubmitMessageTransactionHandler extends AbstractTransactionHandle
         var transactionBody = recordItem.getTransactionBody().getConsensusSubmitMessage();
         var transactionRecord = recordItem.getTransactionRecord();
         var receipt = transactionRecord.getReceipt();
-        int runningHashVersion =
-                receipt.getTopicRunningHashVersion() == 0 ? 1 : (int) receipt.getTopicRunningHashVersion();
         var topicMessage = new TopicMessage();
+
+        // Only persist the value if it is not the default
+        if (receipt.getTopicRunningHashVersion() != DEFAULT_RUNNING_HASH_VERSION) {
+            var runningHashVersion =
+                    receipt.getTopicRunningHashVersion() == 0 ? 1 : (int) receipt.getTopicRunningHashVersion();
+            topicMessage.setRunningHashVersion(runningHashVersion);
+        }
 
         // Handle optional fragmented topic message
         if (transactionBody.hasChunkInfo()) {
@@ -89,7 +97,6 @@ class ConsensusSubmitMessageTransactionHandler extends AbstractTransactionHandle
         topicMessage.setMessage(toBytes(transactionBody.getMessage()));
         topicMessage.setPayerAccountId(recordItem.getPayerAccountId());
         topicMessage.setRunningHash(toBytes(receipt.getTopicRunningHash()));
-        topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setSequenceNumber(receipt.getTopicSequenceNumber());
         topicMessage.setTopicId(transaction.getEntityId());
         entityListener.onTopicMessage(topicMessage);
