@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-v2.yaml
-      version: '0.121.2'
+      version: '0.122.0'
   driftDetection:
     mode: enabled
     ignore:
@@ -48,6 +48,7 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: mainnet-eu
+          priorityClassName: high
           remoteWrite:
             - basicAuth:
                 password:
