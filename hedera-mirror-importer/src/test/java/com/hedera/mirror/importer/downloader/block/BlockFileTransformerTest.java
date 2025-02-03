@@ -268,7 +268,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void fileCreateTransform_whenStatusIsNotSuccess() {
+    void fileCreateTransformWhenStatusIsNotSuccess() {
         // given
         var expectedRecordItem = recordItemBuilder
                 .fileCreate()
