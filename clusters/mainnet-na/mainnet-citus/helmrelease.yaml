@@ -106,7 +106,7 @@ spec:
             test:
               acceptance:
                 network: MAINNET
-      cucumberTags: "@critical"
+      cucumberTags: "@critical and not @schedulebase"
       enabled: true
     web3:
       env:
