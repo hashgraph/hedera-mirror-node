@@ -168,6 +168,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .receipt(r -> r.setScheduledTransactionID(
                         TransactionID.newBuilder().setAccountID(accountId).build()))
                 .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.scheduleCreate(expectedRecordItem).build();
         var expectedScheduleId = blockItem
                 .stateChanges()
@@ -191,6 +192,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                     .satisfies(item -> assertRecordItem(item, expectedRecordItem))
                     .returns(null, RecordItem::getPrevious)
                     .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
                     .extracting(TransactionRecord::getReceipt)
                     .returns(accountId, r -> r.getScheduledTransactionID().getAccountID())
                     .returns(expectedScheduleId, r -> r.getScheduleID().getScheduleNum());
@@ -205,6 +207,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .receipt(r -> r.setStatus(ResponseCodeEnum.INVALID_TRANSACTION))
                 .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.scheduleCreate(expectedRecordItem).build();
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
@@ -213,9 +216,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         // then
         assertRecordFile(recordFile, blockFile, items -> {
-            assertThat(items).hasSize(1).first().returns(ScheduleID.getDefaultInstance(), r -> r.getTransactionRecord()
-                    .getReceipt()
-                    .getScheduleID());
+            assertThat(items)
+                    .hasSize(1)
+                    .first()
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(
+                            ScheduleID.getDefaultInstance(), r -> r.getReceipt().getScheduleID())
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash);
         });
     }
 
@@ -226,7 +233,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .scheduleDelete()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
-
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.scheduleDelete(expectedRecordItem).build();
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
@@ -235,7 +242,12 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         // then
         assertRecordFile(recordFile, blockFile, items -> {
-            assertThat(items).hasSize(1).first().satisfies(item -> assertRecordItem(item, expectedRecordItem));
+            assertThat(items)
+                    .hasSize(1)
+                    .first()
+                    .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash);
         });
     }
 
@@ -249,6 +261,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .receipt(r -> r.setScheduledTransactionID(
                         TransactionID.newBuilder().setAccountID(accountId).build()))
                 .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.scheduleSign(expectedRecordItem).build();
         var expectedScheduleId =
                 blockItem.transactionOutput().getFirst().getSignSchedule().getScheduledTransactionId();
@@ -265,6 +278,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                     .satisfies(item -> assertRecordItem(item, expectedRecordItem))
                     .returns(null, RecordItem::getPrevious)
                     .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
                     .returns(
                             expectedScheduleId,
                             transactionRecord -> transactionRecord.getReceipt().getScheduledTransactionID());
@@ -283,6 +297,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                                 .build())
                         .setStatus(ResponseCodeEnum.INVALID_TRANSACTION))
                 .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.scheduleSign(expectedRecordItem).build();
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
@@ -294,9 +309,10 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
             assertThat(items)
                     .hasSize(1)
                     .first()
-                    .returns(
-                            TransactionID.getDefaultInstance(),
-                            r -> r.getTransactionRecord().getReceipt().getScheduledTransactionID());
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                    .returns(TransactionID.getDefaultInstance(), r -> r.getReceipt()
+                            .getScheduledTransactionID());
         });
     }
 
