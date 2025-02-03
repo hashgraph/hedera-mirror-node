@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -44,11 +45,13 @@ import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
+import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.reader.block.ProtoBlockFileReader;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -60,9 +63,13 @@ import org.apache.commons.io.FileUtils;
 import org.gaul.s3proxy.S3Proxy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.Mockito;
@@ -70,6 +77,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import reactor.core.publisher.Mono;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -94,6 +102,7 @@ class BlockStreamPollerTest {
     @TempDir
     private Path dataPath;
 
+    private CommonDownloaderProperties commonProperties;
     private FileCopier fileCopier;
     private ImporterProperties importerProperties;
     private List<ConsensusNode> nodes;
@@ -112,9 +121,9 @@ class BlockStreamPollerTest {
 
         importerProperties = new ImporterProperties();
         importerProperties.setDataPath(archivePath);
-        var commonProperties = new CommonDownloaderProperties(importerProperties);
+        commonProperties = new CommonDownloaderProperties(importerProperties);
         commonProperties.setPathType(PathType.NODE_ID);
-        properties = new BlockPollerProperties(commonProperties);
+        properties = new BlockPollerProperties();
         properties.setEnabled(true);
 
         nodes = List.of(
@@ -136,6 +145,7 @@ class BlockStreamPollerTest {
         blockStreamPoller = new BlockStreamPoller(
                 new ProtoBlockFileReader(),
                 blockStreamVerifier,
+                commonProperties,
                 consensusNodeService,
                 properties,
                 recordFileRepository,
@@ -163,10 +173,13 @@ class BlockStreamPollerTest {
         verifyNoInteractions(recordFileRepository);
     }
 
+    @ParameterizedTest(name = "startBlockNumber={0}")
+    @NullSource
+    @ValueSource(longs = {7858855L})
     @SneakyThrows
-    @Test
-    void poll(CapturedOutput output) {
+    void poll(Long startBlockNumber, CapturedOutput output) {
         // given
+        importerProperties.setStartBlockNumber(startBlockNumber);
         properties.setWriteFiles(true);
         fileCopier.filterFiles(BLOCK_STREAM_FILENAMES[0]).to(Long.toString(0)).copy();
         fileCopier.filterFiles(BLOCK_STREAM_FILENAMES[1]).to(Long.toString(2)).copy();
@@ -231,14 +244,55 @@ class BlockStreamPollerTest {
 
         String filename = BlockFile.getBlockStreamFilename(0L);
         String logs = output.getAll();
-        var nodeLogs = findAllMatches(logs, "Error downloading block file " + filename + " from node \\d");
+        assertThat(countMatches(logs, "Downloaded block file " + filename)).isZero();
+        var nodeLogs = findAllMatches(logs, "Failed to process block file " + filename + " from node \\d");
         var expectedNodeLogs = nodes.stream()
                 .map(ConsensusNode::getNodeId)
-                .map(nodeId -> String.format("Error downloading block file %s from node %d", filename, nodeId))
+                .map(nodeId -> "Failed to process block file %s from node %d".formatted(filename, nodeId))
                 .toList();
         assertThat(nodeLogs).containsExactlyInAnyOrderElementsOf(expectedNodeLogs);
         assertThat(countMatches(logs, "Failed to download block file " + filename))
                 .isOne();
+    }
+
+    @Test
+    void emptyMono(CapturedOutput output) {
+        // given
+        String filename = BlockFile.getBlockStreamFilename(0L);
+        var streamFileProvider = mock(StreamFileProvider.class);
+        when(streamFileProvider.get(any(), any())).thenReturn(Mono.empty());
+        var poller = new BlockStreamPoller(
+                new ProtoBlockFileReader(),
+                blockStreamVerifier,
+                commonProperties,
+                consensusNodeService,
+                properties,
+                recordFileRepository,
+                streamFileProvider);
+
+        // when
+        poller.poll();
+
+        // then
+        verifyNoInteractions(blockStreamVerifier);
+        verify(consensusNodeService).getNodes();
+        verify(recordFileRepository).findLatest();
+        verify(streamFileProvider, times(4)).get(any(), any());
+
+        String logs = output.getAll();
+        assertThat(countMatches(logs, "Downloaded block file " + filename)).isZero();
+        var downloadLogs = findAllMatches(logs, "Failed to download block file .*\\.blk\\.gz from node \\d");
+        var expected = nodes.stream()
+                .map(ConsensusNode::getNodeId)
+                .map(nodeId -> "Failed to download block file %s from node %d".formatted(filename, nodeId))
+                .toList();
+        assertThat(downloadLogs).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(countMatches(logs, "Failed to download block file " + filename + "from node"))
+                .isZero();
+        assertThat(countMatches(logs, "Failed to process block file " + filename))
+                .isZero();
+        assertThat(countMatches(logs, "Failed to download block file " + filename))
+                .isEqualTo(5);
     }
 
     @SneakyThrows
@@ -261,8 +315,12 @@ class BlockStreamPollerTest {
         var logs = output.getAll();
         assertThat(countMatches(logs, "Downloaded block file " + filename + " from node 0"))
                 .isOne();
-        assertThat(countMatches(logs, "Error reading block file " + filename + " from node 0"))
-                .isOne();
+        var errorLogs = findAllMatches(logs, "Failed to process block file " + filename + " from node \\d");
+        var expected = nodes.stream()
+                .map(ConsensusNode::getNodeId)
+                .map(nodeId -> "Failed to process block file %s from node %d".formatted(filename, nodeId))
+                .toList();
+        assertThat(errorLogs).containsExactlyInAnyOrderElementsOf(expected);
         assertThat(countMatches(logs, "Failed to download block file " + filename))
                 .isOne();
     }
@@ -291,6 +349,42 @@ class BlockStreamPollerTest {
     }
 
     @Test
+    void timeout(CapturedOutput output) {
+        // given
+        String filename = BlockFile.getBlockStreamFilename(0L);
+        commonProperties.setTimeout(Duration.ofMillis(100L));
+        var streamFileProvider = mock(StreamFileProvider.class);
+        when(streamFileProvider.get(any(), any()))
+                .thenReturn(Mono.delay(Duration.ofMillis(120L)).then(Mono.empty()));
+        var poller = new BlockStreamPoller(
+                new ProtoBlockFileReader(),
+                blockStreamVerifier,
+                commonProperties,
+                consensusNodeService,
+                properties,
+                recordFileRepository,
+                streamFileProvider);
+
+        // when
+        poller.poll();
+
+        // then
+        verifyNoInteractions(blockStreamVerifier);
+        verify(consensusNodeService).getNodes();
+        verify(recordFileRepository).findLatest();
+        verify(streamFileProvider).get(any(), any());
+
+        String logs = output.getAll();
+        assertThat(countMatches(logs, "Downloaded block file " + filename)).isZero();
+        assertThat(countMatches(logs, "Failed to download block file " + filename + "from node"))
+                .isZero();
+        assertThat(countMatches(logs, "Failed to process block file " + filename))
+                .isOne();
+        assertThat(countMatches(logs, "Failed to download block file " + filename))
+                .isOne();
+    }
+
+    @Test
     void verifyFailure(CapturedOutput output) {
         // given
         var filename = BLOCK_STREAM_FILENAMES[0];
@@ -312,16 +406,22 @@ class BlockStreamPollerTest {
         verify(recordFileRepository).findLatest();
 
         var logs = output.getAll();
-        var verifyFailureLogs = findAllMatches(logs, "Error verifying block file " + filename + " from node \\d");
-        assertThat(verifyFailureLogs)
+        var downloadedLogs = findAllMatches(logs, "Downloaded block file .*\\.blk\\.gz from node \\d");
+        assertThat(downloadedLogs)
                 .containsExactlyInAnyOrder(
-                        "Error verifying block file " + filename + " from node 0",
-                        "Error verifying block file " + filename + " from node 1");
+                        "Downloaded block file " + filename + " from node 0",
+                        "Downloaded block file " + filename + " from node 1");
+        var errorLogs = findAllMatches(logs, "Failed to process block file " + filename + " from node \\d");
+        var expected = nodes.stream()
+                .map(ConsensusNode::getNodeId)
+                .map(nodeId -> "Failed to process block file %s from node %d".formatted(filename, nodeId))
+                .toList();
+        assertThat(errorLogs).containsExactlyInAnyOrderElementsOf(expected);
         assertThat(countMatches(logs, "Failed to download block file " + filename))
                 .isOne();
     }
 
-    @Test
+    @RepeatedTest(5)
     void verifyFailureThenSuccess(CapturedOutput output) {
         // given
         var filename = BLOCK_STREAM_FILENAMES[0];
@@ -351,7 +451,8 @@ class BlockStreamPollerTest {
                 .containsExactlyInAnyOrder(
                         "Downloaded block file " + filename + " from node 0",
                         "Downloaded block file " + filename + " from node 1");
-        assertThat(countMatches(logs, "Error verifying block file " + filename)).isOne();
+        assertThat(countMatches(logs, "Failed to process block file " + filename))
+                .isBetween(1, 3);
         assertThat(countMatches(logs, "Failed to download block file " + filename))
                 .isZero();
     }
