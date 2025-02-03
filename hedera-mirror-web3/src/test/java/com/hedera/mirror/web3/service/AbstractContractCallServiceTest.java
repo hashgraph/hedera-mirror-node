@@ -416,7 +416,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
             domainBuilder
                     .nft()
-                    .customize(n -> n.accountId(treasuryAccount.toEntityId())
+                    .customize(n -> n.accountId(
+                                    mirrorNodeEvmProperties.isModularizedServices()
+                                            ? null
+                                            : treasuryAccount.toEntityId())
                             .spender(treasuryAccount.toEntityId())
                             .tokenId(tokenToUpdateEntity.getId())
                             .serialNumber(1))
