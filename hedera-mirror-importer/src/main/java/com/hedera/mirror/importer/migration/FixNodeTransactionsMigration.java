@@ -23,7 +23,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.parser.record.transactionhandler.NodeTransactionHandler;
+import com.hedera.mirror.importer.parser.record.transactionhandler.AbstractNodeTransactionHandler;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.inject.Named;
@@ -85,16 +85,16 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
             """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final ObjectProvider<NodeTransactionHandler> nodeTransactionHandlers;
+    private final ObjectProvider<AbstractNodeTransactionHandler> nodeTransactionHandlers;
     private final EntityProperties entityProperties;
-    private final Map<TransactionType, NodeTransactionHandler> nodeTransactionHandlerMap =
+    private final Map<TransactionType, AbstractNodeTransactionHandler> nodeTransactionHandlerMap =
             new EnumMap<>(TransactionType.class);
     private final boolean v2;
 
     @Lazy
     FixNodeTransactionsMigration(
             Environment environment,
-            ObjectProvider<NodeTransactionHandler> nodeTransactionHandlers,
+            ObjectProvider<AbstractNodeTransactionHandler> nodeTransactionHandlers,
             ImporterProperties importerProperties,
             EntityProperties entityProperties,
             NamedParameterJdbcTemplate jdbcTemplate) {
@@ -145,7 +145,7 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
                 .flatMap(List::stream)
                 .collect(Collectors.groupingBy(node -> node.getTimestampUpper() == null));
 
-        var nonHistoryEntities = nodeEntities.get(true);
+        var nonHistoryEntities = nodeEntities.getOrDefault(true, List.of());
         var historyEntities = nodeEntities.getOrDefault(false, List.of());
 
         var statementSetter = new ParameterizedPreparedStatementSetter<Node>() {

@@ -24,7 +24,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public abstract class NodeTransactionHandler extends AbstractTransactionHandler {
+public abstract class AbstractNodeTransactionHandler extends AbstractTransactionHandler {
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 

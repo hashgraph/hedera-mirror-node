@@ -26,7 +26,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 
 @Named
-class NodeCreateTransactionHandler extends NodeTransactionHandler {
+class NodeCreateTransactionHandler extends AbstractNodeTransactionHandler {
 
     public NodeCreateTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
         super(entityListener, entityProperties);
