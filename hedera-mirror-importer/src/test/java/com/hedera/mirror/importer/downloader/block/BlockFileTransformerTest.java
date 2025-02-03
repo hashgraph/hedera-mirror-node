@@ -21,9 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
-import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
 import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
-import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.BlockFile;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -31,13 +29,15 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.parser.domain.BlockFileBuilder;
 import com.hedera.mirror.importer.parser.domain.BlockItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,7 +56,8 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     private static final int HAPI_VERSION_MINOR = 57;
     private static final Version HAPI_VERSION = new Version(0, HAPI_VERSION_MINOR);
 
-    private final BlockItemBuilder blockItemBuilder = new BlockItemBuilder();
+    private final BlockFileBuilder blockFileBuilder;
+    private final BlockItemBuilder blockItemBuilder;
     private final BlockFileTransformer blockFileTransformer;
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
@@ -82,7 +83,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var blockItem2 = blockItemBuilder.cryptoTransfer(expectedRecordItem2).build();
         var expectedFees2 =
                 blockItem2.transactionOutput().get(1).getCryptoTransfer().getAssessedCustomFeesList();
-        var blockFile = blockFile(List.of(blockItem1, blockItem2));
+        var blockFile = blockFileBuilder.items(List.of(blockItem1, blockItem2)).build();
 
         // when
         var recordFile = blockFileTransformer.transform(blockFile);
@@ -121,7 +122,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .transactionOutput(Collections.emptyList())
                 .stateChanges(Collections.emptyList())
                 .build();
-        var blockFile = blockFile(List.of(blockItem));
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when, then
         assertThatThrownBy(() -> blockFileTransformer.transform(blockFile)).isInstanceOf(ProtobufException.class);
@@ -138,7 +139,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .transactionOutput(Collections.emptyList())
                 .stateChanges(Collections.emptyList())
                 .build();
-        var blockFile = blockFile(List.of(blockItem));
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when, then
         assertThatThrownBy(() -> blockFileTransformer.transform(blockFile)).isInstanceOf(ProtobufException.class);
@@ -147,7 +148,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     @Test
     void emptyBlockFile() {
         // given
-        var blockFile = blockFile(Collections.emptyList());
+        var blockFile = blockFileBuilder.items(Collections.emptyList()).build();
 
         // when
         var recordFile = blockFileTransformer.transform(blockFile);
@@ -158,6 +159,164 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     }
 
     @Test
+    void scheduleCreate() {
+        // given
+        var accountId = recordItemBuilder.accountId();
+        var expectedRecordItem = recordItemBuilder
+                .scheduleCreate()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.setScheduledTransactionID(
+                        TransactionID.newBuilder().setAccountID(accountId).build()))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.scheduleCreate(expectedRecordItem).build();
+        var expectedScheduleId = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChangesList()
+                .getFirst()
+                .getMapUpdate()
+                .getKey()
+                .getScheduleIdKey()
+                .getScheduleNum();
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> {
+            assertThat(items)
+                    .hasSize(1)
+                    .first()
+                    .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                    .returns(null, RecordItem::getPrevious)
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                    .extracting(TransactionRecord::getReceipt)
+                    .returns(accountId, r -> r.getScheduledTransactionID().getAccountID())
+                    .returns(expectedScheduleId, r -> r.getScheduleID().getScheduleNum());
+        });
+    }
+
+    @Test
+    void scheduleCreateUnsuccessful() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .scheduleCreate()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.setStatus(ResponseCodeEnum.INVALID_TRANSACTION))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.scheduleCreate(expectedRecordItem).build();
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> {
+            assertThat(items)
+                    .hasSize(1)
+                    .first()
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(
+                            ScheduleID.getDefaultInstance(), r -> r.getReceipt().getScheduleID())
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash);
+        });
+    }
+
+    @Test
+    void scheduleDelete() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .scheduleDelete()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.scheduleDelete(expectedRecordItem).build();
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> {
+            assertThat(items)
+                    .hasSize(1)
+                    .first()
+                    .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash);
+        });
+    }
+
+    @Test
+    void scheduleSign() {
+        // given
+        var accountId = recordItemBuilder.accountId();
+        var expectedRecordItem = recordItemBuilder
+                .scheduleSign()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.setScheduledTransactionID(
+                        TransactionID.newBuilder().setAccountID(accountId).build()))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.scheduleSign(expectedRecordItem).build();
+        var expectedScheduleId =
+                blockItem.transactionOutput().getFirst().getSignSchedule().getScheduledTransactionId();
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> {
+            assertThat(items)
+                    .hasSize(1)
+                    .first()
+                    .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                    .returns(null, RecordItem::getPrevious)
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                    .returns(
+                            expectedScheduleId,
+                            transactionRecord -> transactionRecord.getReceipt().getScheduledTransactionID());
+        });
+    }
+
+    @Test
+    void scheduleSignUnsuccessful() {
+        // given
+        var accountId = recordItemBuilder.accountId();
+        var expectedRecordItem = recordItemBuilder
+                .scheduleSign()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.setScheduledTransactionID(TransactionID.newBuilder()
+                                .setAccountID(accountId)
+                                .build())
+                        .setStatus(ResponseCodeEnum.INVALID_TRANSACTION))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.scheduleSign(expectedRecordItem).build();
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> {
+            assertThat(items)
+                    .hasSize(1)
+                    .first()
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                    .returns(TransactionID.getDefaultInstance(), r -> r.getReceipt()
+                            .getScheduledTransactionID());
+        });
+    }
+
+    @Test
     void unknownTransform() {
         // given
         var expectedRecordItem = recordItemBuilder
@@ -165,7 +324,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
         var blockItem = blockItemBuilder.unknown(expectedRecordItem).build();
-        var blockFile = blockFile(List.of(blockItem));
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
         var recordFile = blockFileTransformer.transform(blockFile);
@@ -187,13 +346,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
         var blockItem = blockItemBuilder.fileAppend(expectedRecordItem).build();
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
-        var recordFile = blockFileTransformer.transform(blockFie);
+        var recordFile = blockFileTransformer.transform(blockFile);
 
         // then
-        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
                 .hasSize(1)
                 .first()
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
@@ -211,13 +370,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.fileDelete(expectedRecordItem).build();
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
-        var recordFile = blockFileTransformer.transform(blockFie);
+        var recordFile = blockFileTransformer.transform(blockFile);
 
         // then
-        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
                 .hasSize(1)
                 .first()
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
@@ -248,13 +407,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .getKey()
                 .getFileIdKey()
                 .getFileNum();
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
-        var recordFile = blockFileTransformer.transform(blockFie);
+        var recordFile = blockFileTransformer.transform(blockFile);
 
         // then
-        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
                 .hasSize(1)
                 .first()
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
@@ -278,13 +437,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.fileCreate(expectedRecordItem).build();
 
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
-        var recordFile = blockFileTransformer.transform(blockFie);
+        var recordFile = blockFileTransformer.transform(blockFile);
 
         // then
-        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
                 .hasSize(1)
                 .first()
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
@@ -306,13 +465,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.fileUpdate(expectedRecordItem).build();
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
-        var recordFile = blockFileTransformer.transform(blockFie);
+        var recordFile = blockFileTransformer.transform(blockFile);
 
         // then
-        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
                 .hasSize(1)
                 .first()
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
@@ -372,8 +531,10 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                         // contains memoBytes or a memo String value.
                         "transactionRecord.memo_",
                         "transactionRecord.receipt_.memoizedIsInitialized",
+                        "transactionRecord.receipt_.scheduleID_.memoizedHashCode",
+                        "transactionRecord.receipt_.scheduleID_.memoizedIsInitialized",
+                        "transactionRecord.receipt_.scheduleID_.memoizedSize",
                         "transactionRecord.assessedCustomFees_",
-                        "transactionRecord.scheduleRef_",
                         "transactionRecord.parentConsensusTimestamp_",
                         // Record file builder transaction hash is not generated based on transaction bytes, so these
                         // will not match
@@ -395,48 +556,5 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var digest = createSha384Digest();
         return ByteString.copyFrom(
                 digest.digest(DomainUtils.toBytes(recordItem.getTransaction().getSignedTransactionBytes())));
-    }
-
-    private BlockFile blockFile(List<BlockItem> blockItems) {
-        long blockNumber = domainBuilder.number();
-        byte[] bytes = domainBuilder.bytes(256);
-        String filename = StringUtils.leftPad(Long.toString(blockNumber), 36, "0") + ".blk.gz";
-        var firstConsensusTimestamp = blockItems.isEmpty()
-                ? domainBuilder.protoTimestamp()
-                : blockItems.getFirst().transactionResult().getConsensusTimestamp();
-        byte[] previousHash = domainBuilder.bytes(48);
-        long consensusStart = DomainUtils.timestampInNanosMax(firstConsensusTimestamp);
-        long consensusEnd = blockItems.isEmpty()
-                ? consensusStart
-                : DomainUtils.timestampInNanosMax(
-                        blockItems.getLast().transactionResult().getConsensusTimestamp());
-
-        return BlockFile.builder()
-                .blockHeader(BlockHeader.newBuilder()
-                        .setFirstTransactionConsensusTime(firstConsensusTimestamp)
-                        .setNumber(blockNumber)
-                        .setPreviousBlockHash(DomainUtils.fromBytes(previousHash))
-                        .setHapiProtoVersion(SemanticVersion.newBuilder().setMinor(HAPI_VERSION_MINOR))
-                        .setSoftwareVersion(SemanticVersion.newBuilder()
-                                .setMinor(HAPI_VERSION_MINOR)
-                                .setPatch(1))
-                        .build())
-                .bytes(bytes)
-                .consensusEnd(consensusEnd)
-                .consensusStart(consensusStart)
-                .count((long) blockItems.size())
-                .digestAlgorithm(DigestAlgorithm.SHA_384)
-                .hash(DomainUtils.bytesToHex(domainBuilder.bytes(48)))
-                .index(blockNumber)
-                .items(blockItems)
-                .loadStart(System.currentTimeMillis())
-                .name(filename)
-                .nodeId(domainBuilder.number())
-                .previousHash(DomainUtils.bytesToHex(previousHash))
-                .roundEnd(blockNumber + 1)
-                .roundStart(blockNumber + 1)
-                .size(bytes.length)
-                .version(7)
-                .build();
     }
 }
