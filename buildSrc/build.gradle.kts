@@ -33,7 +33,7 @@ dependencies {
 
     implementation("com.bmuschko:gradle-docker-plugin:9.4.0")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.25.0")
-    implementation("com.gradleup.shadow:shadow-gradle-plugin:8.3.5")
+    implementation("com.gradleup.shadow:shadow-gradle-plugin:8.3.6")
     implementation("com.github.node-gradle:gradle-node-plugin:7.1.0")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.2")
