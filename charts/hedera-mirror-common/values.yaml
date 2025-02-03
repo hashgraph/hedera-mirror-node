@@ -364,7 +364,7 @@ prometheus:
             app.kubernetes.io/name: traefik
     prometheusSpec:
       podMonitorSelectorNilUsesHelmValues: false
-      priorityClassName: low
+      priorityClassName: high
       resources:
         limits:
           cpu: 750m
