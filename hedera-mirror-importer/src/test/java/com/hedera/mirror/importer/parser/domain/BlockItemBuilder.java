@@ -175,45 +175,25 @@ public class BlockItemBuilder {
     }
 
     public Builder fileAppend(RecordItem recordItem) {
-        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
-        var timestamp = Utility.instantToTimestamp(instant);
-        var transactionRecord = recordItem.getTransactionRecord();
-        var transactionResult = transactionResult(transactionRecord, timestamp).build();
-
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
 
     public Builder fileDelete(RecordItem recordItem) {
-        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
-        var timestamp = Utility.instantToTimestamp(instant);
-        var transactionRecord = recordItem.getTransactionRecord();
-        var transactionResult = transactionResult(transactionRecord, timestamp).build();
-
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
 
     public Builder fileCreate(RecordItem recordItem) {
-        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
-        var timestamp = Utility.instantToTimestamp(instant);
-        var transactionRecord = recordItem.getTransactionRecord();
-        var transactionResult = transactionResult(transactionRecord, timestamp).build();
-
         var stateChanges = buildFileIdStateChanges(recordItem);
 
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult, List.of(), List.of(stateChanges));
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
     }
 
     public Builder fileUpdate(RecordItem recordItem) {
-        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
-        var timestamp = Utility.instantToTimestamp(instant);
-        var transactionRecord = recordItem.getTransactionRecord();
-        var transactionResult = transactionResult(transactionRecord, timestamp).build();
-
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
 
     private static StateChanges buildFileIdStateChanges(RecordItem recordItem) {
