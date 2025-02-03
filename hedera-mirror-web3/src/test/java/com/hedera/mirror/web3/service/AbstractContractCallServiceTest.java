@@ -227,6 +227,15 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
     }
 
+    protected Entity tokenEntityWithAutoRenewAccountPersist() {
+        Entity autoRenewAccount = accountEntityPersist();
+
+        return domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getAutoRenewAccountId()))
+                .persist();
+    }
+
     /**
      * Persists fungible token in the token db table.
      *
@@ -345,6 +354,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     /**
      * Creates a non-fungible token instance with a specific serial number(a record in the nft table is persisted). The
      * instance is tied to a specific token in the token db table.
+     * ownerId with value null indicates that the nft instance holder is the treasury account
      *
      * @param token           the token entity that the nft instance is linked to by tokenId
      * @param nftSerialNumber the unique serial number of the nft instance
@@ -416,10 +426,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
             domainBuilder
                     .nft()
-                    .customize(n -> n.accountId(
-                                    mirrorNodeEvmProperties.isModularizedServices()
-                                            ? null
-                                            : treasuryAccount.toEntityId())
+                    .customize(n -> n.accountId(treasuryAccount.toEntityId())
                             .spender(treasuryAccount.toEntityId())
                             .tokenId(tokenToUpdateEntity.getId())
                             .serialNumber(1))

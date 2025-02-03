@@ -80,27 +80,27 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                            FUNGIBLE_COMMON,        1,    0
-                            NON_FUNGIBLE_UNIQUE,    0,    1
-                            """)
-    void burnTokenGetTotalSupplyAndBalanceOfTreasury(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+    @Test
+    void burnFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
         // Given
         final var treasuryAccount = accountEntityPersist();
-        final var tokenEntity = persistTokenWithAutoRenewAndTreasuryAccounts(tokenType, treasuryAccount)
-                .getLeft();
+
+        final var tokenEntity = tokenEntityWithAutoRenewAccountPersist();
+
+        fungibleTokenPersist(tokenEntity, treasuryAccount);
+
+        tokenAccountPersist(tokenEntity, treasuryAccount);
+
+        final var sender = accountEntityPersist();
+        tokenAccountPersist(tokenEntity, sender);
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
         // When
         final var functionCall = contract.send_burnTokenGetTotalSupplyAndBalanceOfTreasury(
                 getAddressFromEntity(tokenEntity),
-                BigInteger.valueOf(amount),
-                serialNumber == 0 ? List.of() : List.of(BigInteger.valueOf(serialNumber)),
+                BigInteger.valueOf(1),
+                List.of(),
                 getAddressFromEntity(treasuryAccount));
 
         // Then
@@ -108,36 +108,82 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                            FUNGIBLE_COMMON,        1,    0
-                            NON_FUNGIBLE_UNIQUE,    0,    1
-                            """)
-    void wipeTokenGetTotalSupplyAndBalanceOfTreasury(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+    @Test
+    void burnNonFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
         // Given
-        final var treasuryEntityId = accountPersist();
-        final var senderEntityId = accountPersist();
-        final var senderAddress = toAddress(senderEntityId.getId());
+        final var treasuryAccount = accountEntityPersist();
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId, senderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
+        final var tokenEntity = tokenEntityWithAutoRenewAccountPersist();
 
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), treasuryEntityId);
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), senderEntityId);
+        Token token = nonFungibleTokenPersist(tokenEntity, treasuryAccount);
+
+        nonFungibleTokenInstancePersist(
+                token,
+                1L,
+                mirrorNodeEvmProperties.isModularizedServices() ? null : treasuryAccount.toEntityId(),
+                treasuryAccount.toEntityId());
+
+        tokenAccount(ta -> ta.tokenId(tokenEntity.getId())
+                .accountId(treasuryAccount.toEntityId().getId())
+                .balance(1L));
+
+        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
+
+        // When
+        final var functionCall = contract.send_burnTokenGetTotalSupplyAndBalanceOfTreasury(
+                getAddressFromEntity(tokenEntity),
+                BigInteger.valueOf(0),
+                List.of(BigInteger.valueOf(1)),
+                getAddressFromEntity(treasuryAccount));
+
+        // Then
+        verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
+    }
+
+    @Test
+    void wipeFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
+        // Given
+        final var treasuryAccount = accountEntityPersist();
+        final var tokenEntity = tokenEntityWithAutoRenewAccountPersist();
+        fungibleTokenPersist(tokenEntity, treasuryAccount);
+        tokenAccountPersist(tokenEntity, treasuryAccount);
+        final var sender = accountEntityPersist();
+        tokenAccountPersist(tokenEntity, sender);
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
         // When
         final var functionCall = contract.send_wipeTokenGetTotalSupplyAndBalanceOfTreasury(
-                tokenAddress.toHexString(),
-                BigInteger.valueOf(amount),
-                serialNumber == 0 ? List.of() : List.of(BigInteger.valueOf(serialNumber)),
-                senderAddress.toHexString());
+                getAddressFromEntity(tokenEntity), BigInteger.valueOf(1L), List.of(), getAddressFromEntity(sender));
+
+        // Then
+        verifyEthCallAndEstimateGas(functionCall, contract);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
+    }
+
+    @Test
+    void wipeNonFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
+        // Given
+        final var treasuryAccount = accountEntityPersist();
+        final var tokenEntity = tokenEntityWithAutoRenewAccountPersist();
+        tokenAccountPersist(tokenEntity, treasuryAccount);
+        Token token = nonFungibleTokenPersist(tokenEntity, treasuryAccount);
+        final var sender = accountEntityPersist();
+        nonFungibleTokenInstancePersist(token, 1L, sender.toEntityId(), sender.toEntityId());
+
+        tokenAccount(ta -> ta.tokenId(tokenEntity.getId())
+                .accountId(sender.toEntityId().getId())
+                .balance(1L));
+
+        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
+
+        // When
+        final var functionCall = contract.send_wipeTokenGetTotalSupplyAndBalanceOfTreasury(
+                getAddressFromEntity(tokenEntity),
+                BigInteger.valueOf(1L),
+                List.of(BigInteger.valueOf(1)),
+                getAddressFromEntity(sender));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
@@ -202,18 +248,16 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     @Test
     void associateTokenTransferEthCallFail() {
         // Given
-        final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
-        final var senderEntityId = accountPersist();
-        final var senderAddress = toAddress(senderEntityId.getId());
+        final var treasuryAccount = accountEntityPersist();
+        final var sender = accountEntityPersist();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
         // When
         final var functionCall = contract.send_associateTokenTransfer(
                 toAddress(EntityId.of(21496934L)).toHexString(), // Not existing address
-                treasuryAddress.toHexString(),
-                senderAddress.toHexString(),
+                getAddressFromEntity(treasuryAccount),
+                getAddressFromEntity(sender),
                 BigInteger.ZERO,
                 BigInteger.ONE);
 
