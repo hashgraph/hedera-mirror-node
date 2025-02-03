@@ -38,15 +38,20 @@ abstract class AbstractBlockItemTransformer implements BlockItemTransformer {
                 .addAllPaidStakingRewards(transactionResult.getPaidStakingRewardsList())
                 .addAllTokenTransferLists(transactionResult.getTokenTransferListsList())
                 .setConsensusTimestamp(transactionResult.getConsensusTimestamp())
-                .setParentConsensusTimestamp(transactionResult.getParentConsensusTimestamp())
                 .setMemo(transactionBody.getMemo())
                 .setReceipt(receiptBuilder)
-                .setScheduleRef(transactionResult.getScheduleRef())
                 .setTransactionFee(transactionResult.getTransactionFeeCharged())
                 .setTransactionHash(
                         calculateTransactionHash(blockItem.transaction().getSignedTransactionBytes()))
                 .setTransactionID(transactionBody.getTransactionID())
                 .setTransferList(transactionResult.getTransferList());
+
+        if (transactionResult.hasParentConsensusTimestamp()) {
+            transactionRecordBuilder.setParentConsensusTimestamp(transactionResult.getParentConsensusTimestamp());
+        }
+        if (transactionResult.hasScheduleRef()) {
+            transactionRecordBuilder.setScheduleRef(transactionResult.getScheduleRef());
+        }
 
         updateTransactionRecord(blockItem, transactionRecordBuilder);
         return transactionRecordBuilder.build();
