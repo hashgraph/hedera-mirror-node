@@ -22,6 +22,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.NodeTransactionHandler;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
@@ -64,7 +65,7 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
             """
             select consensus_start
             from record_file
-            where hapi_version_minor = :hapiMinorVersion
+            where hapi_version_minor >= :hapiMinorVersion
             and consensus_end >= :recordFileLowerBound
             order by consensus_end asc limit 1;
             """;
@@ -85,6 +86,7 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ObjectProvider<NodeTransactionHandler> nodeTransactionHandlers;
+    private final EntityProperties entityProperties;
     private final Map<TransactionType, NodeTransactionHandler> nodeTransactionHandlerMap =
             new EnumMap<>(TransactionType.class);
     private final boolean v2;
@@ -94,15 +96,22 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
             Environment environment,
             ObjectProvider<NodeTransactionHandler> nodeTransactionHandlers,
             ImporterProperties importerProperties,
+            EntityProperties entityProperties,
             NamedParameterJdbcTemplate jdbcTemplate) {
         super(importerProperties.getMigration());
-        this.jdbcTemplate = jdbcTemplate;
-        this.nodeTransactionHandlers = nodeTransactionHandlers;
         this.v2 = environment.acceptsProfiles(Profiles.of("v2"));
+        this.nodeTransactionHandlers = nodeTransactionHandlers;
+        this.entityProperties = entityProperties;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     protected void doMigrate() throws IOException {
+        if (!entityProperties.getPersist().isNodes()) {
+            log.info("Node entities are not persisted. Skipping migration.");
+            return;
+        }
+
         var nodeRecordItems = getRecordItems();
         if (nodeRecordItems.isEmpty()) {
             log.info("No node transactions to fix. Skipping migration.");
