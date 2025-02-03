@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.downloader.block;
 
-import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import lombok.Data;
@@ -31,8 +30,6 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 @Validated
 public class BlockPollerProperties {
-
-    private final CommonDownloaderProperties common;
 
     private boolean enabled = false;
 

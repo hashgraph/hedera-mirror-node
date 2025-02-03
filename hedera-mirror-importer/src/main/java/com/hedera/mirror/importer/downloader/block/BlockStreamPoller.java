@@ -16,11 +16,13 @@
 
 package com.hedera.mirror.importer.downloader.block;
 
+import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.transaction.BlockFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.StreamPoller;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.leader.Leader;
@@ -29,26 +31,24 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 @CustomLog
 @Named
 @RequiredArgsConstructor
-public class BlockStreamPoller implements StreamPoller {
+final class BlockStreamPoller implements StreamPoller {
 
     private static final Optional<Long> PRE_GENESIS = Optional.of(-1L);
 
     private final BlockFileReader blockFileReader;
     private final BlockStreamVerifier blockStreamVerifier;
+    private final CommonDownloaderProperties commonDownloaderProperties;
     private final ConsensusNodeService consensusNodeService;
     private final AtomicReference<Optional<Long>> lastBlockNumber = new AtomicReference<>(Optional.empty());
     private final BlockPollerProperties properties;
@@ -64,52 +64,47 @@ public class BlockStreamPoller implements StreamPoller {
         }
 
         long blockNumber = getNextBlockNumber();
-        var bytes = new AtomicReference<byte[]>();
-        var filename = BlockFile.getBlockStreamFilename(blockNumber);
-        var filePath = new AtomicReference<String>();
+        String filename = BlockFile.getBlockStreamFilename(blockNumber);
+        var nodes = getRandomizedNodes();
+        var stopwatch = Stopwatch.createStarted();
+        var streamFilename = StreamFilename.from(filename);
+        var streamPath = commonDownloaderProperties.getImporterProperties().getStreamPath();
+        var timeout = commonDownloaderProperties.getTimeout();
 
-        var blockFile = Objects.requireNonNull(Flux.fromIterable(getRandomizedNodes()))
-                .flatMap(
-                        node -> {
-                            long nodeId = node.getNodeId();
-                            return streamFileProvider
-                                    .get(node, StreamFilename.from(filename))
-                                    .doOnError(e -> log.warn(
-                                            "Error downloading block file {} from node {}", filename, nodeId, e))
-                                    .onErrorResume(e -> Mono.empty())
-                                    .doOnNext(s -> {
-                                        filePath.set(s.getStreamFilename().getFilePath());
-                                        log.debug("Downloaded block file {} from node {}", filename, nodeId);
-                                    })
-                                    .map(blockFileReader::read)
-                                    .doOnError(e ->
-                                            log.warn("Error reading block file {} from node {}", filename, nodeId, e))
-                                    .onErrorResume(e -> Mono.empty())
-                                    .doOnNext(f -> {
-                                        bytes.set(f.getBytes());
-                                        if (!properties.isPersistBytes()) {
-                                            f.setBytes(null);
-                                        }
-                                    })
-                                    .doOnNext(blockStreamVerifier::verify)
-                                    .doOnError(e ->
-                                            log.warn("Error verifying block file {} from node {}", filename, nodeId, e))
-                                    .onErrorResume(e -> Mono.empty());
-                        },
-                        1)
-                .timeout(properties.getCommon().getTimeout())
-                .blockFirst();
-        if (blockFile == null) {
-            log.warn("Failed to download block file {}", filename);
-            return;
+        for (int i = 0; i < nodes.size() && timeout.isPositive(); i++) {
+            var node = nodes.get(i);
+            long nodeId = node.getNodeId();
+
+            try {
+                var blockFileData = streamFileProvider.get(node, streamFilename).block(timeout);
+                if (blockFileData == null) {
+                    log.debug("Failed to download block file {} from node {}", filename, nodeId);
+                    continue;
+                }
+
+                log.debug("Downloaded block file {} from node {}", filename, nodeId);
+                var blockFile = blockFileReader.read(blockFileData);
+                byte[] bytes = blockFile.getBytes();
+                if (!properties.isPersistBytes()) {
+                    blockFile.setBytes(null);
+                }
+
+                blockStreamVerifier.verify(blockFile);
+                lastBlockNumber.set(Optional.of(blockNumber));
+
+                if (properties.isWriteFiles()) {
+                    Utility.archiveFile(blockFileData.getFilePath(), bytes, streamPath);
+                }
+
+                return;
+            } catch (Throwable t) {
+                log.error("Failed to process block file {} from node {}", filename, nodeId, t);
+            }
+
+            timeout = timeout.minus(stopwatch.elapsed());
         }
 
-        if (properties.isWriteFiles()) {
-            var importerProperties = properties.getCommon().getImporterProperties();
-            Utility.archiveFile(filePath.get(), bytes.get(), importerProperties.getStreamPath());
-        }
-
-        lastBlockNumber.set(Optional.of(blockNumber));
+        log.warn("Failed to download block file {}", filename);
     }
 
     private long getNextBlockNumber() {
@@ -119,8 +114,7 @@ public class BlockStreamPoller implements StreamPoller {
                     var last = recordFileRepository
                             .findLatest()
                             .map(RecordFile::getIndex)
-                            .or(() -> Optional.ofNullable(properties
-                                            .getCommon()
+                            .or(() -> Optional.ofNullable(commonDownloaderProperties
                                             .getImporterProperties()
                                             .getStartBlockNumber())
                                     .map(v -> v - 1))
@@ -132,7 +126,7 @@ public class BlockStreamPoller implements StreamPoller {
                 .orElse(0L);
     }
 
-    private Collection<ConsensusNode> getRandomizedNodes() {
+    private List<ConsensusNode> getRandomizedNodes() {
         var nodes = new ArrayList<>(consensusNodeService.getNodes());
         Collections.shuffle(nodes);
         return nodes;
