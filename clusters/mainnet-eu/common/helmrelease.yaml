@@ -48,6 +48,7 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: mainnet-eu
+          priorityClassName: high
           remoteWrite:
             - basicAuth:
                 password:
