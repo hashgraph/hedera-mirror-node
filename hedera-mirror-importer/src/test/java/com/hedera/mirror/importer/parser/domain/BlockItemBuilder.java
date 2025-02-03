@@ -18,6 +18,9 @@ package com.hedera.mirror.importer.parser.domain;
 
 import com.hedera.hapi.block.stream.output.protoc.CallContractOutput;
 import com.hedera.hapi.block.stream.output.protoc.CryptoTransferOutput;
+import com.hedera.hapi.block.stream.output.protoc.MapChangeKey;
+import com.hedera.hapi.block.stream.output.protoc.MapUpdateChange;
+import com.hedera.hapi.block.stream.output.protoc.StateChange;
 import com.hedera.hapi.block.stream.output.protoc.StateChanges;
 import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
 import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
@@ -25,6 +28,7 @@ import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -41,6 +45,7 @@ import org.springframework.context.annotation.Scope;
 @Named
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class BlockItemBuilder {
+    private static final int STATE_FILES_ID = 6;
 
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
@@ -86,6 +91,76 @@ public class BlockItemBuilder {
 
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+    }
+
+    public Builder fileAppend(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+    }
+
+    public Builder fileDelete(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+    }
+
+    public Builder fileCreate(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        var stateChanges = buildFileIdStateChanges(recordItem);
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), List.of(stateChanges));
+    }
+
+    public Builder fileUpdate(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+    }
+
+    private static StateChanges buildFileIdStateChanges(RecordItem recordItem) {
+        var id = recordItem.getTransactionRecord().getReceipt().getFileID().getFileNum();
+        var fileId = FileID.newBuilder().setFileNum(id).build();
+        var key = MapChangeKey.newBuilder().setFileIdKey(fileId).build();
+        var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
+
+        var firstChange = StateChange.newBuilder()
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .setStateId(1)
+                .build();
+
+        var secondChange = StateChange.newBuilder().setStateId(STATE_FILES_ID).build();
+
+        var thirdChange = StateChange.newBuilder()
+                .setStateId(STATE_FILES_ID)
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .build();
+
+        var fourtChange = StateChange.newBuilder()
+                .setMapUpdate(mapUpdate)
+                .setStateId(STATE_FILES_ID)
+                .build();
+
+        var changes = List.of(firstChange, secondChange, thirdChange, fourtChange);
+
+        return StateChanges.newBuilder().addAllStateChanges(changes).build();
     }
 
     private AssessedCustomFee.Builder assessedCustomFees() {
