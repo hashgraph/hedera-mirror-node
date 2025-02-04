@@ -264,6 +264,17 @@ public class RecordItemBuilder {
                         .setTopicSequenceNumber(state.get(topicId).getSequenceNumber()))
                 .receipt(r -> r.setTopicRunningHash(bytes(48)).setTopicRunningHashVersion(3));
 
+        var maxCustomFees = List.of(
+                CustomFeeLimit.newBuilder()
+                        .addFees(FixedFee.newBuilder().setAmount(id()))
+                        .setAccountId(accountId())
+                        .build(),
+                CustomFeeLimit.newBuilder()
+                        .addFees(FixedFee.newBuilder().setAmount(id()).setDenominatingTokenId(tokenId()))
+                        .setAccountId(accountId())
+                        .build());
+        builder.transactionBodyWrapper.addAllMaxCustomFees(maxCustomFees);
+
         transactionBody.setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
                 .setInitialTransactionID(builder.transactionBodyWrapper.getTransactionID())
                 .setNumber(1)
@@ -1362,8 +1373,6 @@ public class RecordItemBuilder {
             this.transactionBody = transactionBody;
             this.transactionBodyWrapper = defaultTransactionBody();
             this.transactionRecord = defaultTransactionRecord();
-
-            postInitialize();
         }
 
         public RecordItem build() {
@@ -1511,21 +1520,6 @@ public class RecordItemBuilder {
                     .setAccountID(payerAccountId)
                     .setTransactionValidStart(validStart)
                     .build();
-        }
-
-        private void postInitialize() {
-            if (type == TransactionType.CONSENSUSSUBMITMESSAGE) {
-                var maxCustomFees = List.of(
-                        CustomFeeLimit.newBuilder()
-                                .addFees(FixedFee.newBuilder().setAmount(id()))
-                                .setAccountId(payerAccountId)
-                                .build(),
-                        CustomFeeLimit.newBuilder()
-                                .addFees(FixedFee.newBuilder().setAmount(id()).setDenominatingTokenId(tokenId()))
-                                .setAccountId(accountId())
-                                .build());
-                transactionBodyWrapper.addAllMaxCustomFees(maxCustomFees);
-            }
         }
 
         private Transaction.Builder transaction() {

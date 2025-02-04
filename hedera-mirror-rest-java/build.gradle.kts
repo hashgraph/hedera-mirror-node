@@ -56,5 +56,3 @@ tasks.compileJava {
         )
     )
 }
-
-repositories { maven { url = uri("https://jitpack.io") } }

@@ -41,6 +41,4 @@ dependencies {
     testClasses(sourceSets["test"].output)
 }
 
-repositories { maven { url = uri("https://jitpack.io") } }
-
 java.sourceSets["main"].java { srcDir("build/generated/sources/annotationProcessor/java/main") }

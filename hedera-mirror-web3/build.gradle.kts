@@ -218,5 +218,3 @@ tasks.assemble {
     dependsOn(tasks.processTestResources)
     dependsOn(processTestHistoricalResources)
 }
-
-repositories { maven { url = uri("https://jitpack.io") } }

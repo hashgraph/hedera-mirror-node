@@ -105,5 +105,3 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 java.sourceSets["main"].java { srcDir(tasks.generatePojo) }
-
-repositories { maven { url = uri("https://jitpack.io") } }
