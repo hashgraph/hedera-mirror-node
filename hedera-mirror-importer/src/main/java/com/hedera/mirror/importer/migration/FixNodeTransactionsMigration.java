@@ -45,7 +45,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 @Named
 public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
     // Earliest consensus timestamp to consider
-    private static final long RECORD_FILE_LOWER_BOUND = 1733961600000000000L;
+    private static final long LOWER_TIMESTAMP = 1733961600000000000L;
 
     private static final String DROP_DATA_SQL =
             """
@@ -167,7 +167,7 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
         return jdbcTemplate
                 .query(
                         NODE_TRANSACTIONS_SQL,
-                        Map.of("startTimestamp", RECORD_FILE_LOWER_BOUND),
+                        Map.of("startTimestamp", LOWER_TIMESTAMP),
                         new DataClassRowMapper<>(Transaction.class))
                 .stream()
                 .map(this::toRecordItem)
