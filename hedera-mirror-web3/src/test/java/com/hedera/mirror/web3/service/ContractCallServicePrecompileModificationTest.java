@@ -440,18 +440,22 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
+    /**
+     * Wiping tokens is the process of removing tokens from an account's balance. The total supply is not affected.
+     */
     @Test
     void wipeFungibleToken() throws Exception {
         // Given
         final var owner = accountEntityWithEvmAddressPersist();
 
         final var tokenEntity = tokenEntityPersist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        fungibleTokenPersist(tokenEntity, treasuryEntity);
 
         tokenAccountPersist(tokenEntity, owner);
+
+        Long createdTimestamp = owner.getCreatedTimestamp();
+        persistTokenBalance(owner, tokenEntity, createdTimestamp);
+        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), createdTimestamp);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -1082,18 +1086,29 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @CsvSource({"single", "multiple"})
     void transferToken(final String type) throws Exception {
         // Given
-        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
-        final var tokenEntity = persistFungibleToken();
+        final var tokenEntity = tokenEntityPersist();
+        final var treasuryAccount = accountEntityPersist();
+        fungibleTokenPersist(tokenEntity, treasuryAccount);
+
         final var sender = accountEntityWithEvmAddressPersist();
         final var receiver = accountEntityWithEvmAddressPersist();
-        final var payer = accountEntityWithEvmAddressPersist();
 
-        tokenAccountPersist(tokenEntity, payer);
+        // Create token-account associations so sender and receiver can operate with the token
         tokenAccountPersist(tokenEntity, sender);
         tokenAccountPersist(tokenEntity, receiver);
 
+        accountBalanceRecordsPersist(sender.toEntityId(), sender.getCreatedTimestamp(), sender.getBalance());
+        accountBalanceRecordsPersist(receiver.toEntityId(), receiver.getCreatedTimestamp(), receiver.getBalance());
+
+        long senderBalanceTimestamp = sender.getBalanceTimestamp();
+        persistTokenBalance(sender, tokenEntity, senderBalanceTimestamp);
+
+        long receiverBalanceTimestamp = receiver.getBalanceTimestamp();
+        persistTokenBalance(receiver, tokenEntity, receiverBalanceTimestamp);
+
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         // When
-        testWeb3jService.setSender(getAliasFromEntity(payer));
+
         final var functionCall = "single".equals(type)
                 ? contract.call_transferTokenExternal(
                         getAddressFromEntity(tokenEntity),
@@ -1107,7 +1122,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
                 .contractAddress(Address.fromHexString(contract.getContractAddress()))
-                .sender(Address.fromHexString(getAliasFromEntity(payer)))
+                .sender(Address.fromHexString(getAliasFromEntity(sender)))
                 .build();
 
         // Then

@@ -26,6 +26,9 @@ import {encodeBase64, encodeBinary, nsToSecNs} from '../utils';
  * Topic message view model
  */
 class TopicMessageViewModel {
+  // Blockstreams no longer contain runningHashVersion, default to the latest version
+  static DEFAULT_RUNNING_HASH_VERSION = 3;
+
   /**
    * Constructs topicMessage view model
    *
@@ -38,7 +41,7 @@ class TopicMessageViewModel {
     this.message = encodeBinary(topicMessage.message, messageEncoding);
     this.payer_account_id = EntityId.parse(topicMessage.payerAccountId).toString();
     this.running_hash = encodeBase64(topicMessage.runningHash);
-    this.running_hash_version = topicMessage.runningHashVersion;
+    this.running_hash_version = topicMessage.runningHashVersion ?? TopicMessageViewModel.DEFAULT_RUNNING_HASH_VERSION;
     this.sequence_number = topicMessage.sequenceNumber;
     this.topic_id = EntityId.parse(topicMessage.topicId).toString();
   }

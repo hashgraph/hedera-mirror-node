@@ -121,7 +121,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                                 treasuryEntity.getCreatedTimestamp(), treasuryEntity.toEntityId()))
                         .balance(treasuryEntity.getBalance()))
                 .persist();
-        testWeb3jService.reset();
     }
 
     @AfterEach
@@ -419,7 +418,9 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     /**
-     * Creates association between a token and an account, which is required for the account to hold and operate with the token.
+     * Creates association between a token and an account, which is required for the account(with non-empty kycKey) to
+     * hold and operate with the token. Otherwise, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN will be thrown when executing a
+     * transaction involving the token that requires the account to have KYC approval.
      */
     protected void tokenAccountPersist(final Entity token, final Entity account) {
         tokenAccount(
@@ -480,8 +481,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     /**
-     * This method persists a record in the token_balance db table. Each record represents the fungible token balance
-     * that a particular account holds at a given consensus timestamp.
+     * Persists a record in the token_balance db table (consensus_timestamp, account_id, balance, token_id).
+     * Each record represents the fungible token balance that an account holds at a given consensus timestamp.
+     * No record for the token balance at a particular timestamp may result in INSUFFICIENT_TOKEN_BALANCE exception
+     * for a historical query with the same timestamp.
      */
     protected void persistTokenBalance(Entity account, Entity token, long timestamp) {
         domainBuilder

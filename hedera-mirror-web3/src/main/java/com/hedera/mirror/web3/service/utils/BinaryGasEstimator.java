@@ -22,8 +22,10 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import jakarta.inject.Named;
 import java.util.function.LongFunction;
 import java.util.function.ObjIntConsumer;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
+@CustomLog
 @RequiredArgsConstructor
 @Named
 public class BinaryGasEstimator {
@@ -51,10 +53,16 @@ public class BinaryGasEstimator {
             contractCallContext.reset();
 
             long mid = (hi + lo) / 2;
-            HederaEvmTransactionProcessingResult transactionResult = call.apply(mid);
+
+            // If modularizedServices is true - we call the safeCall function that handles if an exception is thrown
+            HederaEvmTransactionProcessingResult transactionResult =
+                    properties.isModularizedServices() ? safeCall(mid, call) : call.apply(mid);
+
             iterationsMade++;
 
-            boolean err = !transactionResult.isSuccessful() || transactionResult.getGasUsed() < 0;
+            boolean err = transactionResult == null
+                    || !transactionResult.isSuccessful()
+                    || transactionResult.getGasUsed() < 0;
             long gasUsed = err ? prevGasLimit : transactionResult.getGasUsed();
             totalGasUsed += gasUsed;
             if (err || gasUsed == 0) {
@@ -70,5 +78,18 @@ public class BinaryGasEstimator {
 
         metricUpdater.accept(totalGasUsed, iterationsMade);
         return hi;
+    }
+
+    // This method is needed because within the modularized services if the contract call fails an exception is thrown
+    // instead of transaction result with 'failed' status which will result in a failing test. This way we handle the
+    // exception and return estimated gas
+    private HederaEvmTransactionProcessingResult safeCall(
+            long mid, LongFunction<HederaEvmTransactionProcessingResult> call) {
+        try {
+            return call.apply(mid);
+        } catch (Exception ignored) {
+            log.info("Exception while calling contract for gas estimation");
+            return null;
+        }
     }
 }
