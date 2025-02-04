@@ -304,7 +304,7 @@ class TopicCustomFeesMigrationTest extends ImporterIntegrationTest {
         @Override
         public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
             var environment = configurableApplicationContext.getEnvironment();
-            String version = environment.acceptsProfiles(Profiles.of("v2")) ? "2.8.0" : "1.103.0";
+            String version = environment.acceptsProfiles(Profiles.of("v2")) ? "2.8.1" : "1.103.1";
             TestPropertyValues.of("spring.flyway.target=" + version).applyTo(environment);
         }
     }

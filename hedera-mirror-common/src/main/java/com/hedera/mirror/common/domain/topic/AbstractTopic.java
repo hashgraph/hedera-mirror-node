@@ -19,6 +19,7 @@ package com.hedera.mirror.common.domain.topic;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
+import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Data;
@@ -36,6 +37,7 @@ public abstract class AbstractTopic implements History {
 
     private byte[] adminKey;
 
+    @Column(updatable = false)
     @ToString.Include
     private Long createdTimestamp;
 
