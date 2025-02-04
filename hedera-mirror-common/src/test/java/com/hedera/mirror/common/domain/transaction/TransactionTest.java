@@ -38,6 +38,7 @@ class TransactionTest {
                       "index":4,
                       "initial_balance": 5,
                       "itemized_transfer": %s,
+                      "max_custom_fees": %s,
                       "memo": "BgcI",
                       "max_fee": 9,
                       "nft_transfer": %s,
@@ -55,6 +56,7 @@ class TransactionTest {
                       "valid_start_ns": 31
                     }
                     """;
+    private static final String EXPECTED_MAX_CUSTOM_FEES = "[\"AQI=\", \"Cgs=\"]";
     private static final String EXPECTED_ITEMIZED_TRANSFER_VALUE =
             """
                     "[{\\"amount\\":-200,\\"entity_id\\":50,\\"is_approval\\":true},{\\"amount\\":200,\\"entity_id\\":51,\\"is_approval\\":false}]"
@@ -140,21 +142,25 @@ class TransactionTest {
         String actual = OBJECT_MAPPER.writeValueAsString(transaction);
 
         // then
-        String expected =
-                String.format(EXPECTED_JSON_TEMPLATE, EXPECTED_ITEMIZED_TRANSFER_VALUE, EXPECTED_NFT_TRANSFER_VALUE);
+        String expected = String.format(
+                EXPECTED_JSON_TEMPLATE,
+                EXPECTED_ITEMIZED_TRANSFER_VALUE,
+                EXPECTED_MAX_CUSTOM_FEES,
+                EXPECTED_NFT_TRANSFER_VALUE);
         JSONAssert.assertEquals(expected, actual, JSONCompareMode.STRICT);
     }
 
     @Test
-    void toJsonNullItemizedTransferAndNullNftTransfer() throws Exception {
+    void toJsonNullItemizedTransferAndNullMaxCustomFeesAndNullNftTransfer() throws Exception {
         // given
         var transaction = getTransaction();
+        transaction.setMaxCustomFees(null);
 
         // when
         String actual = OBJECT_MAPPER.writeValueAsString(transaction);
 
         // then
-        String expected = String.format(EXPECTED_JSON_TEMPLATE, "null", "null");
+        String expected = String.format(EXPECTED_JSON_TEMPLATE, "null", "null", "null");
         JSONAssert.assertEquals(expected, actual, JSONCompareMode.STRICT);
     }
 
@@ -166,6 +172,7 @@ class TransactionTest {
         transaction.setErrata(ErrataType.INSERT);
         transaction.setIndex(4);
         transaction.setInitialBalance(5L);
+        transaction.setMaxCustomFees(new byte[][] {{0x1, 0x2}, {0xa, 0xb}});
         transaction.setMemo(new byte[] {6, 7, 8});
         transaction.setMaxFee(9L);
         transaction.setNodeAccountId(EntityId.of(3L));

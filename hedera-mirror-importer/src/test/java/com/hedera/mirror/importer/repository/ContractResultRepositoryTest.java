@@ -19,11 +19,12 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class ContractResultRepositoryTest extends AbstractRepositoryTest {
+class ContractResultRepositoryTest extends ImporterIntegrationTest {
 
     private final ContractResultRepository contractResultRepository;
 

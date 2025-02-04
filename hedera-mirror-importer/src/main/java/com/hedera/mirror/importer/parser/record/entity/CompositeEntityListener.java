@@ -38,6 +38,7 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.topic.Topic;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -217,6 +218,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
         onEach(EntityListener::onTokenTransfer, tokenTransfer);
+    }
+
+    @Override
+    public void onTopic(Topic topic) throws ImporterException {
+        onEach(EntityListener::onTopic, topic);
     }
 
     @Override

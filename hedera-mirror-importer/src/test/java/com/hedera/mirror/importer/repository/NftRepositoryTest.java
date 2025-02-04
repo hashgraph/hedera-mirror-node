@@ -20,12 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class NftRepositoryTest extends AbstractRepositoryTest {
+class NftRepositoryTest extends ImporterIntegrationTest {
 
     private final NftRepository nftRepository;
     private final TokenAccountRepository tokenAccountRepository;

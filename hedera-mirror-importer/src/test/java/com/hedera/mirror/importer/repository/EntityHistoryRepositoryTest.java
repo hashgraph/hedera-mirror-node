@@ -20,12 +20,13 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityHistory;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class EntityHistoryRepositoryTest extends AbstractRepositoryTest {
+class EntityHistoryRepositoryTest extends ImporterIntegrationTest {
 
     private final EntityHistoryRepository entityHistoryRepository;
 

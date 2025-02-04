@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
 class CustomFeeRepositoryTest extends Web3IntegrationTest {
+
     private final CustomFeeRepository customFeeRepository;
 
     @Test
@@ -36,7 +37,7 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
                 .customFee()
                 .customize(c -> c.fixedFees(List.of(fixedFee)))
                 .persist();
-        final var tokenId = customFee1.getTokenId();
+        final var tokenId = customFee1.getEntityId();
 
         var result = customFeeRepository.findById(tokenId);
         assertThat(result).isPresent();
@@ -53,7 +54,7 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
                 .customFee()
                 .customize(c -> c.fixedFees(List.of(fixedFee)))
                 .persist();
-        final var tokenId = customFee1.getTokenId();
+        final var tokenId = customFee1.getEntityId();
 
         var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower() + 1);
         assertThat(result).isPresent();
@@ -70,7 +71,7 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
                 .customFee()
                 .customize(c -> c.fixedFees(List.of(fixedFee)))
                 .persist();
-        final var tokenId = customFee1.getTokenId();
+        final var tokenId = customFee1.getEntityId();
 
         var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower());
         assertThat(result).isPresent();
@@ -87,7 +88,7 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
                 .customFee()
                 .customize(c -> c.fixedFees(List.of(fixedFee)))
                 .persist();
-        final var tokenId = customFee1.getTokenId();
+        final var tokenId = customFee1.getEntityId();
 
         var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower() - 1);
         assertThat(result).isEmpty();
@@ -101,7 +102,7 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
                 .customFeeHistory()
                 .customize(c -> c.fixedFees(List.of(fixedFee)))
                 .persist();
-        final var tokenId = customFee1.getTokenId();
+        final var tokenId = customFee1.getEntityId();
 
         var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower() + 1);
         assertThat(result).isPresent();
@@ -118,7 +119,7 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
                 .customFeeHistory()
                 .customize(c -> c.fixedFees(List.of(fixedFee)))
                 .persist();
-        final var tokenId = customFee1.getTokenId();
+        final var tokenId = customFee1.getEntityId();
 
         var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower());
         assertThat(result).isPresent();
@@ -135,7 +136,7 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
                 .customFeeHistory()
                 .customize(c -> c.fixedFees(List.of(fixedFee)))
                 .persist();
-        final var tokenId = customFee1.getTokenId();
+        final var tokenId = customFee1.getEntityId();
 
         var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower() - 1);
         assertThat(result).isEmpty();

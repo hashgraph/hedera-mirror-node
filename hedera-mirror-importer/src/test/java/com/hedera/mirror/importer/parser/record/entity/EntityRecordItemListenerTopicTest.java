@@ -22,14 +22,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.domain.topic.Topic;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.converter.KeyConverter;
@@ -39,8 +45,14 @@ import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.CustomFeeLimit;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FeeExemptKeyList;
+import com.hederahashgraph.api.proto.java.FixedCustomFee;
+import com.hederahashgraph.api.proto.java.FixedCustomFeeList;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -50,6 +62,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -92,13 +108,23 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
-        var expectedEntity =
-                createTopicEntity(topicId, null, null, adminKey, submitKey, memo, autoRenewAccountNum, autoRenewPeriod);
+        var expectedEntity = createTopicEntity(topicId, null, null, memo, autoRenewAccountNum, autoRenewPeriod);
         expectedEntity.setCreatedTimestamp(consensusTimestamp);
         expectedEntity.setDeleted(false);
         expectedEntity.setTimestampLower(consensusTimestamp);
 
         assertThat(entity).isEqualTo(expectedEntity);
+
+        var expectedTopic = Topic.builder()
+                .adminKey(adminKey.toByteArray())
+                .createdTimestamp(consensusTimestamp)
+                .feeExemptKeyList(FeeExemptKeyList.getDefaultInstance().toByteArray())
+                .id(entity.getId())
+                .submitKey(submitKey.toByteArray())
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .build();
+        assertThat(topicRepository.findAll()).containsExactly(expectedTopic);
+        assertThat(findHistory(Topic.class)).isEmpty();
     }
 
     @Test
@@ -117,11 +143,19 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
         assertThat(entity)
-                .returns("".getBytes(), from(Entity::getKey))
-                .returns("".getBytes(), from(Entity::getSubmitKey))
+                .returns(null, from(Entity::getKey))
                 .returns("", from(Entity::getMemo))
                 .returns(false, from(Entity::getDeleted))
                 .returns(EntityType.TOPIC, from(Entity::getType));
+
+        var expectedTopic = Topic.builder()
+                .createdTimestamp(consensusTimestamp)
+                .feeExemptKeyList(FeeExemptKeyList.getDefaultInstance().toByteArray())
+                .id(entity.getId())
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .build();
+        assertThat(topicRepository.findAll()).containsExactly(expectedTopic);
+        assertThat(findHistory(Topic.class)).isEmpty();
     }
 
     // https://github.com/hashgraph/hedera-mirror-node/issues/501
@@ -143,12 +177,19 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
         assertThat(entity)
-                .returns("".getBytes(), from(Entity::getKey))
-                .returns("".getBytes(), from(Entity::getSubmitKey))
+                .returns(null, from(Entity::getKey))
                 .returns("", from(Entity::getMemo))
                 .returns(false, from(Entity::getDeleted))
                 .returns(EntityType.TOPIC, from(Entity::getType))
                 .returns(autoRenewAccountId, AbstractEntity::getAutoRenewAccountId);
+        var expectedTopic = Topic.builder()
+                .createdTimestamp(consensusTimestamp)
+                .feeExemptKeyList(FeeExemptKeyList.getDefaultInstance().toByteArray())
+                .id(entity.getId())
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .build();
+        assertThat(topicRepository.findAll()).containsExactly(expectedTopic);
+        assertThat(findHistory(Topic.class)).isEmpty();
     }
 
     @Test
@@ -165,8 +206,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .transaction(transaction)
                 .build());
 
-        assertEquals(0L, entityRepository.count());
-        assertEquals(0L, transactionRepository.count());
+        assertThat(entityRepository.findAll()).isEmpty();
+        assertThat(transactionRepository.findAll()).isEmpty();
+        assertThat(topicRepository.findAll()).isEmpty();
+        assertThat(findHistory(Topic.class)).isEmpty();
     }
 
     @Test
@@ -182,7 +225,131 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, null);
-        assertEquals(0L, entityRepository.count());
+        assertThat(entityRepository.findAll()).isEmpty();
+        assertThat(topicRepository.findAll()).isEmpty();
+        assertThat(findHistory(Topic.class)).isEmpty();
+    }
+
+    @Test
+    void createUpdateTopicWithCustomFees() {
+        var expectedCustomFeeHistory = new ArrayList<CustomFee>();
+        var expectedEntityHistory = new ArrayList<Entity>();
+        var expectedTopicHistory = new ArrayList<Topic>();
+
+        // create topic
+        var create = recordItemBuilder
+                .consensusCreateTopic()
+                .transactionBody(
+                        b -> b.clearAutoRenewAccount().clearAutoRenewPeriod().clearCustomFees())
+                .build();
+        var body = create.getTransactionBody().getConsensusCreateTopic();
+        var topicId = create.getTransactionRecord().getReceipt().getTopicID();
+        var expectedEntity = EntityId.of(
+                        create.getTransactionRecord().getReceipt().getTopicID())
+                .toEntity();
+        var range = Range.atLeast(create.getConsensusTimestamp());
+        expectedEntity.setCreatedTimestamp(create.getConsensusTimestamp());
+        expectedEntity.setDeclineReward(false);
+        expectedEntity.setDeleted(false);
+        expectedEntity.setMemo(body.getMemo());
+        expectedEntity.setStakedNodeId(-1L);
+        expectedEntity.setStakePeriodStart(-1L);
+        expectedEntity.setTimestampRange(range);
+        expectedEntity.setType(EntityType.TOPIC);
+
+        var expectedTopic = Topic.builder()
+                .adminKey(body.getAdminKey().toByteArray())
+                .createdTimestamp(create.getConsensusTimestamp())
+                .feeExemptKeyList(FeeExemptKeyList.newBuilder()
+                        .addAllKeys(body.getFeeExemptKeyListList())
+                        .build()
+                        .toByteArray())
+                .feeScheduleKey(body.getFeeScheduleKey().toByteArray())
+                .id(expectedEntity.getId())
+                .submitKey(body.getSubmitKey().toByteArray())
+                .timestampRange(range)
+                .build();
+
+        var expectedCustomFee = CustomFee.builder()
+                .fixedFees(Collections.emptyList())
+                .entityId(expectedEntity.getId())
+                .timestampRange(range)
+                .build();
+
+        // update custom fee
+        var tokenId = recordItemBuilder.tokenId();
+        var collector = recordItemBuilder.accountId();
+        var updateCustomFee = recordItemBuilder
+                .consensusUpdateTopic()
+                .transactionBody(b -> b.clear()
+                        .setCustomFees(FixedCustomFeeList.newBuilder()
+                                .addFees(FixedCustomFee.newBuilder()
+                                        .setFixedFee(FixedFee.newBuilder()
+                                                .setAmount(100L)
+                                                .setDenominatingTokenId(tokenId))
+                                        .setFeeCollectorAccountId(collector)))
+                        .setTopicID(topicId))
+                .build();
+        range = Range.closedOpen(expectedEntity.getTimestampLower(), updateCustomFee.getConsensusTimestamp());
+        expectedCustomFeeHistory.add(
+                expectedCustomFee.toBuilder().timestampRange(range).build());
+        expectedEntityHistory.add(
+                expectedEntity.toBuilder().timestampRange(range).build());
+        expectedTopicHistory.add(expectedTopic.toBuilder().timestampRange(range).build());
+
+        range = Range.atLeast(updateCustomFee.getConsensusTimestamp());
+        expectedCustomFee.setFixedFees(List.of(com.hedera.mirror.common.domain.token.FixedFee.builder()
+                .amount(100L)
+                .collectorAccountId(EntityId.of(collector))
+                .denominatingTokenId(EntityId.of(tokenId))
+                .build()));
+        expectedCustomFee.setTimestampRange(range);
+        expectedEntity.setTimestampRange(range);
+        expectedTopic.setTimestampRange(range);
+
+        // clear fee exempt key list
+        var clearFeeExemptKeyList = recordItemBuilder
+                .consensusUpdateTopic()
+                .transactionBody(b -> b.clear()
+                        .setFeeExemptKeyList(FeeExemptKeyList.getDefaultInstance())
+                        .setTopicID(topicId))
+                .build();
+        range = Range.closedOpen(expectedEntity.getTimestampLower(), clearFeeExemptKeyList.getConsensusTimestamp());
+        expectedEntityHistory.add(
+                expectedEntity.toBuilder().timestampRange(range).build());
+        expectedTopicHistory.add(expectedTopic.toBuilder().timestampRange(range).build());
+
+        range = Range.atLeast(clearFeeExemptKeyList.getConsensusTimestamp());
+        expectedEntity.setTimestampRange(range);
+        expectedTopic.setFeeExemptKeyList(FeeExemptKeyList.getDefaultInstance().toByteArray());
+        expectedTopic.setTimestampRange(range);
+
+        // update fee schedule key
+        var newKey = recordItemBuilder.key();
+        var updateFeeScheduleKey = recordItemBuilder
+                .consensusUpdateTopic()
+                .transactionBody(b -> b.clear().setFeeScheduleKey(newKey).setTopicID(topicId))
+                .build();
+        range = Range.closedOpen(expectedEntity.getTimestampLower(), updateFeeScheduleKey.getConsensusTimestamp());
+        expectedEntityHistory.add(
+                expectedEntity.toBuilder().timestampRange(range).build());
+        expectedTopicHistory.add(expectedTopic.toBuilder().timestampRange(range).build());
+
+        range = Range.atLeast(updateFeeScheduleKey.getConsensusTimestamp());
+        expectedEntity.setTimestampRange(range);
+        expectedTopic.setFeeScheduleKey(newKey.toByteArray());
+        expectedTopic.setTimestampRange(range);
+
+        // when
+        parseRecordItemsAndCommit(List.of(create, updateCustomFee, clearFeeExemptKeyList, updateFeeScheduleKey));
+
+        // then
+        assertThat(customFeeRepository.findAll()).containsExactly(expectedCustomFee);
+        assertThat(findHistory(CustomFee.class)).containsExactlyInAnyOrderElementsOf(expectedCustomFeeHistory);
+        assertThat(entityRepository.findAll()).containsExactly(expectedEntity);
+        assertThat(findHistory(Entity.class)).containsExactlyInAnyOrderElementsOf(expectedEntityHistory);
+        assertThat(topicRepository.findAll()).containsExactly(expectedTopic);
+        assertThat(findHistory(Topic.class)).containsExactlyInAnyOrderElementsOf(expectedTopicHistory);
     }
 
     @ParameterizedTest
@@ -199,13 +366,19 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             String updatedMemo,
             Long autoRenewAccountId,
             Long autoRenewPeriod) {
-        var topic = domainBuilder
-                .topic()
+        var topicEntity = domainBuilder
+                .topicEntity()
                 .customize(t -> t.permanentRemoval(null).obtainerId(null))
                 .persist();
-        var updateTimestamp = topic.getCreatedTimestamp() + 100L;
+        var topic = domainBuilder
+                .topic()
+                .customize(t -> t.createdTimestamp(topicEntity.getCreatedTimestamp())
+                        .id(topicEntity.getId())
+                        .timestampRange(topicEntity.getTimestampRange()))
+                .persist();
+        var updateTimestamp = topicEntity.getCreatedTimestamp() + 100L;
 
-        var topicId = TopicID.newBuilder().setTopicNum(topic.getNum()).build();
+        var topicId = TopicID.newBuilder().setTopicNum(topicEntity.getNum()).build();
         var transaction = createUpdateTopicTransaction(
                 topicId,
                 updatedExpirationTimeSeconds,
@@ -218,18 +391,16 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transactionRecord = createTransactionRecord(topicId, updateTimestamp, SUCCESS);
 
         var expectedAutoRenewAccountId =
-                autoRenewAccountId == null ? topic.getAutoRenewAccountId() : autoRenewAccountId;
-        var expectedAutoRenewPeriod = autoRenewPeriod == null ? topic.getAutoRenewPeriod() : autoRenewPeriod;
+                autoRenewAccountId == null ? topicEntity.getAutoRenewAccountId() : autoRenewAccountId;
+        var expectedAutoRenewPeriod = autoRenewPeriod == null ? topicEntity.getAutoRenewPeriod() : autoRenewPeriod;
         var expected = createTopicEntity(
                 topicId,
                 updatedExpirationTimeSeconds,
                 updatedExpirationTimeNanos,
-                updatedAdminKey,
-                updatedSubmitKey,
                 updatedMemo,
                 expectedAutoRenewAccountId,
                 expectedAutoRenewPeriod);
-        expected.setCreatedTimestamp(topic.getCreatedTimestamp());
+        expected.setCreatedTimestamp(topicEntity.getCreatedTimestamp());
         expected.setDeleted(false);
         expected.setTimestampLower(updateTimestamp);
 
@@ -238,24 +409,37 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .transaction(transaction)
                 .build());
 
-        assertTransactionInRepository(SUCCESS, updateTimestamp, topic.getId());
+        assertTransactionInRepository(SUCCESS, updateTimestamp, topicEntity.getId());
         assertEntity(expected);
         assertEquals(1L, entityRepository.count());
+
+        var expectedTopic = topic.toBuilder()
+                .adminKey(updatedAdminKey.toByteArray())
+                .submitKey(updatedSubmitKey.toByteArray())
+                .timestampRange(Range.atLeast(updateTimestamp))
+                .build();
+        topic.setTimestampUpper(updateTimestamp);
+        assertThat(topicRepository.findAll()).containsExactly(expectedTopic);
+        assertThat(findHistory(Topic.class)).containsExactly(topic);
     }
 
     @Test
     void updateTopicTestError() {
         var topicId = TopicID.newBuilder().setTopicNum(1600).build();
-        var adminKey = keyFromString("admin-key");
-        var submitKey = keyFromString("submit-key");
         var updatedAdminKey = keyFromString("updated-admin-key");
         var updatedSubmitKey = keyFromString("updated-submit-key");
         var consensusTimestamp = 6_000_000L;
         var responseCode = ResponseCodeEnum.INVALID_TOPIC_ID;
 
         // Store topic to be updated.
-        var topic = createTopicEntity(topicId, 10L, 20, adminKey, submitKey, "memo", null, 30L);
-        entityRepository.save(topic);
+        var topicEntity = createTopicEntity(topicId, 10L, 20, "memo", null, 30L);
+        entityRepository.save(topicEntity);
+        var topic = domainBuilder
+                .topic()
+                .customize(t -> t.createdTimestamp(topicEntity.getCreatedTimestamp())
+                        .id(topicEntity.getId())
+                        .timestampRange(topicEntity.getTimestampRange()))
+                .persist();
 
         var transaction = createUpdateTopicTransaction(
                 topicId, 11L, 21, updatedAdminKey, updatedSubmitKey, "updated-memo", null, 30L);
@@ -268,7 +452,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
-        assertThat(entity).isEqualTo(topic);
+        assertThat(entity).isEqualTo(topicEntity);
+        assertThat(topicRepository.findAll()).containsExactly(topic);
+        assertThat(findHistory(Topic.class)).isEmpty();
     }
 
     @Test
@@ -293,11 +479,19 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
 
-        var expectedTopic =
-                createTopicEntity(TOPIC_ID, 11L, 0, adminKey, submitKey, memo, autoRenewAccount.getId(), 30L);
-        expectedTopic.setDeleted(false);
-        expectedTopic.setTimestampLower(consensusTimestamp);
-        assertThat(entity).isEqualTo(expectedTopic);
+        var expectedTopicEntity = createTopicEntity(TOPIC_ID, 11L, 0, memo, autoRenewAccount.getId(), 30L);
+        expectedTopicEntity.setDeleted(false);
+        expectedTopicEntity.setTimestampLower(consensusTimestamp);
+        assertThat(entity).isEqualTo(expectedTopicEntity);
+
+        var expectedTopic = Topic.builder()
+                .adminKey(adminKey.toByteArray())
+                .id(expectedTopicEntity.getId())
+                .submitKey(submitKey.toByteArray())
+                .timestampRange(expectedTopicEntity.getTimestampRange())
+                .build();
+        assertThat(topicRepository.findAll()).containsExactly(expectedTopic);
+        assertThat(findHistory(Topic.class)).isEmpty();
     }
 
     @ParameterizedTest
@@ -328,35 +522,30 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             Long updatedAutoRenewAccountNum,
             Long updatedAutoRenewPeriod) {
         // Store topic to be updated.
-        var topic = createTopicEntity(
-                topicId,
-                expirationTimeSeconds,
-                expirationTimeNanos,
-                adminKey,
-                submitKey,
-                memo,
-                autoRenewAccountNum,
-                autoRenewPeriod);
-        entityRepository.save(topic);
+        var topicEntity = createTopicEntity(
+                topicId, expirationTimeSeconds, expirationTimeNanos, memo, autoRenewAccountNum, autoRenewPeriod);
+        entityRepository.save(topicEntity);
+        var topic = domainBuilder
+                .topic()
+                .customize(t -> t.adminKey(adminKey != null ? adminKey.toByteArray() : null)
+                        .createdTimestamp(topicEntity.getCreatedTimestamp())
+                        .id(topicEntity.getId())
+                        .submitKey(submitKey != null ? submitKey.toByteArray() : null)
+                        .timestampRange(topicEntity.getTimestampRange()))
+                .persist();
 
         if (updatedAutoRenewAccountNum != null) {
-            topic.setAutoRenewAccountId(updatedAutoRenewAccountNum);
+            topicEntity.setAutoRenewAccountId(updatedAutoRenewAccountNum);
         }
         if (updatedAutoRenewPeriod != null) {
-            topic.setAutoRenewPeriod(updatedAutoRenewPeriod);
+            topicEntity.setAutoRenewPeriod(updatedAutoRenewPeriod);
         }
         if (updatedExpirationTimeSeconds != null && updatedExpirationTimeNanos != null) {
-            topic.setExpirationTimestamp(
+            topicEntity.setExpirationTimestamp(
                     DomainUtils.convertToNanosMax(updatedExpirationTimeSeconds, updatedExpirationTimeNanos));
         }
-        if (updatedAdminKey != null) {
-            topic.setKey(updatedAdminKey.toByteArray());
-        }
-        if (updatedSubmitKey != null) {
-            topic.setSubmitKey(updatedSubmitKey.toByteArray());
-        }
         if (updatedMemo != null) {
-            topic.setMemo(updatedMemo);
+            topicEntity.setMemo(updatedMemo);
         }
 
         var responseCode = SUCCESS;
@@ -377,15 +566,28 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .build());
 
         if (updatedAutoRenewAccountNum != null) {
-            topic.setAutoRenewAccountId(updatedAutoRenewAccountNum);
+            topicEntity.setAutoRenewAccountId(updatedAutoRenewAccountNum);
         }
-        topic.setDeleted(false);
-        topic.setTimestampLower(consensusTimestamp);
+        topicEntity.setDeleted(false);
+        topicEntity.setTimestampLower(consensusTimestamp);
 
-        var entity = getTopicEntity(topicId);
-        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        var actual = getTopicEntity(topicId);
+        assertTransactionInRepository(responseCode, consensusTimestamp, actual.getId());
         assertEquals(1L, entityRepository.count());
-        assertThat(entity).isEqualTo(topic);
+        assertThat(actual).isEqualTo(topicEntity);
+
+        var expectedTopic = topic.toBuilder()
+                .timestampRange(topicEntity.getTimestampRange())
+                .build();
+        if (updatedAdminKey != null) {
+            expectedTopic.setAdminKey(updatedAdminKey.toByteArray());
+        }
+        if (updatedSubmitKey != null) {
+            expectedTopic.setSubmitKey(updatedSubmitKey.toByteArray());
+        }
+        topic.setTimestampUpper(expectedTopic.getTimestampLower());
+        assertThat(topicRepository.findAll()).containsExactly(expectedTopic);
+        assertThat(findHistory(Topic.class)).containsExactly(topic);
     }
 
     @Test
@@ -394,7 +596,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var responseCode = SUCCESS;
 
         // Store topic to be deleted.
-        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
+        var topic = createTopicEntity(TOPIC_ID, null, null, "", null, null);
         entityRepository.save(topic);
 
         // Setup expected data
@@ -421,7 +623,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var responseCode = SUCCESS;
 
         // Setup expected data
-        var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
+        var topic = createTopicEntity(TOPIC_ID, null, null, "", null, null);
         topic.setDeleted(true);
         topic.setTimestampLower(consensusTimestamp);
         // Topic not saved to the repository.
@@ -446,7 +648,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var responseCode = INSUFFICIENT_ACCOUNT_BALANCE;
 
         // Store topic to be deleted.
-        var topic = createTopicEntity(TOPIC_ID, 10L, 20, null, null, "", null, null);
+        var topic = createTopicEntity(TOPIC_ID, 10L, 20, "", null, null);
         entityRepository.save(topic);
 
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
@@ -461,6 +663,82 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
         assertThat(entity).isEqualTo(topic);
+    }
+
+    @Test
+    void submitMessageMaxCustomFeeTest() {
+        // given
+        var accountId = recordItemBuilder.accountId();
+        var feeCollector = recordItemBuilder.accountId();
+        var tokenId = recordItemBuilder.tokenId();
+        var customFeeLimit = CustomFeeLimit.newBuilder()
+                .addFees(FixedFee.newBuilder().setAmount(50_000L))
+                .addFees(FixedFee.newBuilder().setAmount(60_000L).setDenominatingTokenId(tokenId))
+                .setAccountId(accountId)
+                .build();
+        var assessedCustomFees = List.of(
+                com.hederahashgraph.api.proto.java.AssessedCustomFee.newBuilder()
+                        .setAmount(40_000L)
+                        .setFeeCollectorAccountId(feeCollector)
+                        .addEffectivePayerAccountId(accountId)
+                        .build(),
+                com.hederahashgraph.api.proto.java.AssessedCustomFee.newBuilder()
+                        .setAmount(55_000L)
+                        .setFeeCollectorAccountId(feeCollector)
+                        .addEffectivePayerAccountId(accountId)
+                        .setTokenId(tokenId)
+                        .build());
+        var recordItem = recordItemBuilder
+                .consensusSubmitMessage()
+                .transactionBody(Builder::clearChunkInfo)
+                .transactionBodyWrapper(w -> w.clearMaxCustomFees().addMaxCustomFees(customFeeLimit))
+                .record(r -> r.addAllAssessedCustomFees(assessedCustomFees))
+                .build();
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        var body = recordItem.getTransactionBody().getConsensusSubmitMessage();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var transactionRecord = recordItem.getTransactionRecord();
+        var receipt = transactionRecord.getReceipt();
+        var topicId = EntityId.of(body.getTopicID());
+        var expectedAssessedCustomFees = List.of(
+                AssessedCustomFee.builder()
+                        .amount(40_000L)
+                        .collectorAccountId(EntityId.of(feeCollector).getId())
+                        .consensusTimestamp(consensusTimestamp)
+                        .effectivePayerAccountIds(List.of(EntityId.of(accountId).getId()))
+                        .payerAccountId(recordItem.getPayerAccountId())
+                        .build(),
+                AssessedCustomFee.builder()
+                        .amount(55_000L)
+                        .collectorAccountId(EntityId.of(feeCollector).getId())
+                        .consensusTimestamp(consensusTimestamp)
+                        .effectivePayerAccountIds(List.of(EntityId.of(accountId).getId()))
+                        .payerAccountId(recordItem.getPayerAccountId())
+                        .tokenId(EntityId.of(tokenId))
+                        .build());
+        assertThat(getAllAssessedCustomFees()).containsExactlyInAnyOrderElementsOf(expectedAssessedCustomFees);
+        var expectedTopicMessage = TopicMessage.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .message(DomainUtils.toBytes(body.getMessage()))
+                .payerAccountId(recordItem.getPayerAccountId())
+                .runningHash(DomainUtils.toBytes(receipt.getTopicRunningHash()))
+                .sequenceNumber(receipt.getTopicSequenceNumber())
+                .topicId(topicId)
+                .build();
+        assertThat(topicMessageRepository.findAll()).containsExactly(expectedTopicMessage);
+        var expectedMaxCustomFees = new byte[][] {customFeeLimit.toByteArray()};
+        assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(consensusTimestamp, Transaction::getConsensusTimestamp)
+                .returns(topicId, Transaction::getEntityId)
+                .returns(expectedMaxCustomFees, Transaction::getMaxCustomFees)
+                .returns(recordItem.getPayerAccountId(), Transaction::getPayerAccountId)
+                .returns(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId(), Transaction::getType);
     }
 
     @ParameterizedTest
@@ -704,7 +982,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
+        createTopicEntity(TOPIC_ID, null, null, "", null, null);
         // Topic NOT saved in the repository.
 
         TransactionID initialTransactionId =
@@ -845,12 +1123,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             TopicID topicId,
             Long expirationTimeSeconds,
             Integer expirationTimeNanos,
-            Key adminKey,
-            Key submitKey,
             String memo,
             Long autoRenewAccountNum,
             Long autoRenewPeriod) {
-        Entity topic = EntityId.of(topicId).toEntity();
+        var topic = EntityId.of(topicId).toEntity();
 
         if (autoRenewAccountNum != null) {
             topic.setAutoRenewAccountId(autoRenewAccountNum);
@@ -860,12 +1136,6 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         }
         if (expirationTimeSeconds != null && expirationTimeNanos != null) {
             topic.setExpirationTimestamp(DomainUtils.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
-        }
-        if (null != adminKey) {
-            topic.setKey(adminKey.toByteArray());
-        }
-        if (null != submitKey) {
-            topic.setSubmitKey(submitKey.toByteArray());
         }
 
         topic.setDeclineReward(false);
@@ -1002,6 +1272,22 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             transactionIdBuilder.setNonce(nonce);
         }
         return transactionIdBuilder.build();
+    }
+
+    private List<AssessedCustomFee> getAllAssessedCustomFees() {
+        return jdbcOperations.query("select * from assessed_custom_fee", (rs, rowNum) -> {
+            var array = rs.getArray("effective_payer_account_ids");
+            var ids = Arrays.asList((Long[]) array.getArray());
+            long tokenId = rs.getLong("token_id");
+            return AssessedCustomFee.builder()
+                    .amount(rs.getLong("amount"))
+                    .collectorAccountId(rs.getLong("collector_account_id"))
+                    .consensusTimestamp(rs.getLong("consensus_timestamp"))
+                    .effectivePayerAccountIds(ids)
+                    .tokenId(tokenId == 0 ? null : EntityId.of(tokenId))
+                    .payerAccountId(EntityId.of(rs.getLong("payer_account_id")))
+                    .build();
+        });
     }
 
     private Entity getTopicEntity(TopicID topicId) {

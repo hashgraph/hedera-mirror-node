@@ -65,9 +65,12 @@ public class Transaction implements Persistable<Long> {
     private List<ItemizedTransfer> itemizedTransfer;
 
     @ToString.Exclude
-    private byte[] memo;
+    private byte[][] maxCustomFees;
 
     private Long maxFee;
+
+    @ToString.Exclude
+    private byte[] memo;
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
     @JdbcTypeCode(SqlTypes.JSON)

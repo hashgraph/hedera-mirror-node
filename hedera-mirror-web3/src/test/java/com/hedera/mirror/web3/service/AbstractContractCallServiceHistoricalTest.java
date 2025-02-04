@@ -300,7 +300,7 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         if (TokenTypeEnum.FUNGIBLE_COMMON.equals(tokenType)) {
             return domainBuilder
                     .customFeeHistory()
-                    .customize(f -> f.tokenId(tokenEntity.getId())
+                    .customize(f -> f.entityId(tokenEntity.getId())
                             .fixedFees(List.of(fixedFee))
                             .fractionalFees(List.of(fractionalFee))
                             .royaltyFees(new ArrayList<>())
@@ -309,7 +309,7 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         } else {
             return domainBuilder
                     .customFeeHistory()
-                    .customize(f -> f.tokenId(tokenEntity.getId())
+                    .customize(f -> f.entityId(tokenEntity.getId())
                             .fixedFees(List.of(fixedFee))
                             .royaltyFees(List.of(royaltyFee))
                             .fractionalFees(new ArrayList<>())

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.restjava.service;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.importer.ImporterIntegrationTest;
-import jakarta.annotation.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.topic.Topic;
+import jakarta.annotation.Nonnull;
 
-public abstract class AbstractRepositoryTest extends ImporterIntegrationTest {
+public interface TopicService {
 
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @Resource
-    protected JdbcOperations jdbcOperations;
+    Topic findById(@Nonnull EntityId id);
 }
