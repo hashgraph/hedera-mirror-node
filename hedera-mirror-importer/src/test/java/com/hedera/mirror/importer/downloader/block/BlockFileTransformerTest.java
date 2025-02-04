@@ -112,7 +112,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     void cryptoAddLiveHashTransform() {
         // given
         var expectedRecordItem = recordItemBuilder
-                .fileAppend()
+                .cryptoAddLiveHash()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
 
@@ -138,7 +138,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     void cryptoDeleteLiveHashTransform() {
         // given
         var expectedRecordItem = recordItemBuilder
-                .fileAppend()
+                .cryptoDeleteLiveHash()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
 
@@ -165,7 +165,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     void cryptoDeleteAllowanceTransform() {
         // given
         var expectedRecordItem = recordItemBuilder
-                .fileAppend()
+                .cryptoDeleteAllowance()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
 
@@ -192,7 +192,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     void cryptoApproveAllowanceTransform() {
         // given
         var expectedRecordItem = recordItemBuilder
-                .fileAppend()
+                .cryptoApproveAllowance()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
 
@@ -219,7 +219,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     void cryptoDelete() {
         // given
         var expectedRecordItem = recordItemBuilder
-                .fileAppend()
+                .cryptoDelete()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
 
@@ -245,7 +245,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     void cryptoUpdate() {
         // given
         var expectedRecordItem = recordItemBuilder
-                .fileAppend()
+                .cryptoUpdate()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
 
