@@ -16,18 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.common.domain.transaction.TransactionType.ETHEREUMTRANSACTION;
-import static com.hedera.mirror.common.util.CommonUtils.instant;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ED25519_KEY;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
-import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
-import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -52,11 +40,6 @@ import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.TokenKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -67,6 +50,23 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.web3j.abi.TypeEncoder;
 import org.web3j.tx.Contract;
+
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
+import static com.hedera.mirror.common.domain.transaction.TransactionType.ETHEREUMTRANSACTION;
+import static com.hedera.mirror.common.util.CommonUtils.instant;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ED25519_KEY;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
+import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
+import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @RequiredArgsConstructor
 class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
