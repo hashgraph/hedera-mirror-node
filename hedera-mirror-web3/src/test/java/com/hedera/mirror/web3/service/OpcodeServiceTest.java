@@ -848,22 +848,6 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 .persist();
     }
 
-    private Token fungibleTokenPersist() {
-        return fungibleTokenPersist(domainBuilder.entity().persist());
-    }
-
-    private Token fungibleTokenPersist(final Entity treasuryEntity) {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        return domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(treasuryEntity.toEntityId()))
-                .persist();
-    }
-
     private Token nftPersist(final Entity treasuryEntity) {
         final var nftEntity = tokenEntityPersist();
 
@@ -887,7 +871,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     }
 
     private Entity accountPersist() {
-        return domainBuilder.entity().customize(a -> a.evmAddress(null)).persist();
+        return accountEntityPersistCustomizable(e -> e.evmAddress(null));
     }
 
     private Entity accountPersistWithAccountBalances() {
