@@ -237,9 +237,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     /**
-     * Persists fungible token in the token db table.
-     *
-     * @param tokenEntity     The entity from the entity db table related to the token
+     * Creates fungible token in the token db table.
+     * The token table stores the properties specific for tokens and each record refers to
+     * another one in the entity table, which has the properties common for all entities.
+     * @param tokenEntity     The entity from the entity db table related to the created token table record
      * @param treasuryAccount The account holding the initial token supply
      */
     protected Token fungibleTokenPersist(Entity tokenEntity, Entity treasuryAccount) {
@@ -316,6 +317,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /**
+     * Creates entity of type account in the entity db table.
+     * The entity table stores the properties common for all type of entities.
+     */
     protected Entity accountEntityPersist() {
         return domainBuilder
                 .entity()
@@ -339,6 +344,12 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected void tokenAccountPersist(final Entity token, final Entity account) {
         tokenAccount(
                 ta -> ta.tokenId(token.getId()).accountId(account.toEntityId().getId()));
+    }
+
+    protected void tokenAccountPersist(final Entity token, final Entity account, Long balance) {
+        tokenAccount(ta -> ta.tokenId(token.getId())
+                .accountId(account.toEntityId().getId())
+                .balance(balance));
     }
 
     protected TokenAccount tokenAccount(Consumer<TokenAccount.TokenAccountBuilder<?, ?>> consumer) {
