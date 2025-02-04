@@ -76,7 +76,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     @Override
     public final void reset() {
         super.reset();
-        ContractCallContext.get().getModificationsState(getStateKey()).clear();
+        getModificationsCache().clear();
     }
 
     /** {@inheritDoc} */
@@ -85,10 +85,8 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     public final V get(@NonNull K key) {
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
-        if (ContractCallContext.get().getModificationsState(getStateKey()).containsKey(key)) {
-            return (V) ContractCallContext.get()
-                    .getModificationsState(getStateKey())
-                    .get(key);
+        if (getModificationsCache().containsKey(key)) {
+            return (V) getModificationsCache().get(key);
         } else {
             return super.get(key);
         }
@@ -108,10 +106,8 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         Objects.requireNonNull(key);
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
-        if (ContractCallContext.get().getModificationsState(getStateKey()).containsKey(key)) {
-            return (V) ContractCallContext.get()
-                    .getModificationsState(getStateKey())
-                    .get(key);
+        if (getModificationsCache().containsKey(key)) {
+            return (V) getModificationsCache().get(key);
         }
 
         // If the modifications map does not contain an answer, but the read cache of the
@@ -133,14 +129,14 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     public final void put(@NonNull final K key, @NonNull final V value) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(value);
-        ContractCallContext.get().getModificationsState(getStateKey()).put(key, value);
+        getModificationsCache().put(key, value);
     }
 
     /** {@inheritDoc} */
     @Override
     public final void remove(@NonNull final K key) {
         Objects.requireNonNull(key);
-        ContractCallContext.get().getModificationsState(getStateKey()).put(key, null);
+        getModificationsCache().put(key, null);
     }
 
     /**
@@ -158,8 +154,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         // Capture the set of keys that have been removed, and the set of keys that have been added.
         final var removedKeys = new HashSet<K>();
         final var maybeAddedKeys = new HashSet<K>();
-        for (final var mod :
-                ContractCallContext.get().getModificationsState(getStateKey()).entrySet()) {
+        for (final var mod : getModificationsCache().entrySet()) {
             final var key = mod.getKey();
             final var val = mod.getValue();
             if (val == null) {
@@ -182,8 +177,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     @NonNull
     @Override
     public final Set<K> modifiedKeys() {
-        return (Set<K>)
-                ContractCallContext.get().getModificationsState(getStateKey()).keySet();
+        return (Set<K>) getModificationsCache().keySet();
     }
 
     /**
@@ -205,8 +199,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         int numAdditions = 0;
         int numRemovals = 0;
 
-        for (final var mod :
-                ContractCallContext.get().getModificationsState(getStateKey()).entrySet()) {
+        for (final var mod : getModificationsCache().entrySet()) {
             boolean isPresentInBackingMap = readFromDataSource((K) mod.getKey()) != null;
             boolean isRemovedInMod = mod.getValue() == null;
 
@@ -248,6 +241,10 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * @return size of the underlying data source.
      */
     protected abstract long sizeOfDataSource();
+
+    private Map<Object, Object> getModificationsCache() {
+        return ContractCallContext.get().getModificationsState(getStateKey());
+    }
 
     /**
      * A special iterator which includes all keys in the backend iterator, and all keys that have
