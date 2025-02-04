@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
-import static com.hedera.mirror.importer.migration.FixNodeTransactionsMigration.HAPI_VERSION_56;
-
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Node;
@@ -154,13 +151,6 @@ public class FixNodeTransactionsMigrationTest extends ImporterIntegrationTest {
                 .record(r -> r.setTransactionID(
                         r.getTransactionID().toBuilder().setNonce(1).build()))
                 .build();
-
-        domainBuilder
-                .recordFile()
-                .customize(r -> r.consensusStart(nodeCreateRecordItem.getConsensusTimestamp() - NANOS_PER_SECOND * 2)
-                        .consensusEnd(nodeCreateRecordItem.getConsensusTimestamp())
-                        .hapiVersionMinor(HAPI_VERSION_56))
-                .persist();
 
         domainBuilder
                 .transaction()
