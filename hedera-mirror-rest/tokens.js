@@ -19,18 +19,18 @@ import _ from 'lodash';
 import balances from './balances';
 import {getResponseLimit} from './config';
 import {
+  EMPTY_STRING,
   entityTypes,
   filterKeys,
   httpStatusCodes,
   orderFilterValues,
+  queryParamOperators,
   responseDataLabel,
   tokenTypeFilter,
-  EMPTY_STRING,
-  queryParamOperators,
 } from './constants';
 import EntityId from './entityId';
 import {InvalidArgumentError, NotFoundError} from './errors';
-import {CustomFee, Entity, Nft, NftHistory, NftTransfer, Token, Transaction} from './model';
+import {CustomFee, Entity, Nft, NftHistory, Token, Transaction} from './model';
 import {NftService, TokenService} from './service';
 import * as utils from './utils';
 import {CustomFeeViewModel, NftTransactionHistoryViewModel, NftViewModel} from './viewmodel';
@@ -42,7 +42,7 @@ const customFeeSelect = `select jsonb_build_object(
   'fixed_fees', ${CustomFee.FIXED_FEES},
   'fractional_fees', ${CustomFee.FRACTIONAL_FEES},
   'royalty_fees', ${CustomFee.ROYALTY_FEES},
-  'token_id', ${CustomFee.TOKEN_ID})`;
+  'token_id', ${CustomFee.ENTITY_ID})`;
 
 // select columns
 const sqlQueryColumns = {
@@ -464,7 +464,7 @@ const transformTimestampFilterOp = (op) => {
  * @return {{query: string, params: []}} the query string and params
  */
 const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
-  const conditions = [`${CustomFee.TOKEN_ID} = $1`];
+  const conditions = [`${CustomFee.ENTITY_ID} = $1`];
   const params = [tokenId];
   let customFeeQuery;
 

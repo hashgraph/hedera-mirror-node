@@ -619,7 +619,6 @@ const entityDefaults = {
   staked_account_id: null,
   staked_node_id: -1,
   stake_period_start: -1,
-  submit_key: null,
   timestamp_range: '[0,)',
   type: constants.entityTypes.ACCOUNT,
 };
@@ -805,17 +804,17 @@ const addCustomFee = async (customFee) => {
   const royalty_fees = customFee.royalty_fees ? JSONStringify(customFee.royalty_fees) : null;
   const table = getTableName('custom_fee', customFee);
   await ownerPool.query(
-    `insert into ${table} (fixed_fees,
+    `insert into ${table} (entity_id,
+                             fixed_fees,
                              fractional_fees,
                              royalty_fees,
-                             token_id,
                              timestamp_range)
      values ($1, $2, $3, $4, $5);`,
     [
+      EntityId.parse(customFee.entity_id).getEncodedId(),
       fixed_fees,
       fractional_fees,
       royalty_fees,
-      EntityId.parse(customFee.token_id).getEncodedId(),
       customFee.timestamp_range,
     ]
   );
@@ -1422,8 +1421,8 @@ const addToken = async (custom) => {
   if (!token.custom_fees) {
     // if there is no custom fees schedule for the token, add the default empty fee schedule at created_timestamp
     await addCustomFee({
+      entity_id: token.token_id,
       timestamp_range: `[${token.created_timestamp},)`,
-      token_id: token.token_id,
     });
   } else {
     await loadCustomFees(token.custom_fees);
