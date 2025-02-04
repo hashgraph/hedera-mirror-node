@@ -24,6 +24,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -58,6 +59,7 @@ import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -220,30 +222,61 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 value);
     }
 
-    protected Token fungibleTokenPersist2() {
-        return fungibleTokenCustomizable2(e -> {}, t -> {});
+    /**
+     * Persists entity of type token in the entity db table. Entity table contains properties common for all entities on
+     * the network (tokens, accounts, smart contracts, topics)
+     */
+    protected Entity tokenEntityPersist() {
+        return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
     }
 
-    protected Token fungibleTokenPersistWithTreasuryAccount2() {
-        return fungibleTokenCustomizable2(
-                e -> {},
-                t -> t.treasuryAccountId(domainBuilder.entity().persist().toEntityId()));
+    /**
+     *
+     * @return Token object that is persisted in db
+     */
+    protected Token fungibleTokenPersist() {
+        return fungibleTokenCustomizable(t -> {});
     }
 
-    protected Token fungibleTokenPersistWithTreasuryAndKYCKey() {
-        return fungibleTokenCustomizable2(e -> {}, t -> t.treasuryAccountId(
-                        domainBuilder.entity().persist().toEntityId())
-                .kycKey(domainBuilder.key()));
+    /**
+     *
+     * @param treasuryEntity - the treasuryEntity that has to be set in the token
+     * @return Token object that is persisted in db
+     */
+    protected Token fungibleTokenPersistWithTreasuryAccount(final Entity treasuryEntity) {
+        return fungibleTokenCustomizable(t -> t.treasuryAccountId(treasuryEntity.toEntityId()));
     }
 
-    protected Token fungibleTokenCustomizable2(
-            Consumer<Entity.EntityBuilder<?, ?>> entityCustomizer, Consumer<Token.TokenBuilder<?, ?>> customizer) {
+    /**
+     *
+     * @param treasuryEntityId - the treasuryEntityId that has to be set in the token
+     * @return Token object that is persisted in db
+     */
+    protected Token fungibleTokenPersistWithTreasuryAccount(final EntityId treasuryEntityId) {
+        return fungibleTokenCustomizable(t -> t.treasuryAccountId(treasuryEntityId));
+    }
+
+    /**
+     *
+     * @param treasuryEntity - the treasuryEntity which has to be set in the token
+     * @param kycKey - the kycKey that has to be set in the token
+     * @return Token object that is persisted in db
+     */
+    protected Token fungibleTokenPersistWithTreasuryAccountAndKYCKey(final EntityId treasuryEntity, final byte[] kycKey) {
+        return fungibleTokenCustomizable(t -> t.treasuryAccountId(
+                        treasuryEntity)
+                .kycKey(kycKey));
+    }
+
+    /**
+     * Method used to customize different fields of a token and persist it in db
+     * @param customizer - the consumer used to customize the token
+     * @return Token object which is persisted in the db
+     */
+    protected Token fungibleTokenCustomizable(Consumer<Token.TokenBuilder<?, ?>> customizer) {
         final var tokenEntity = domainBuilder
                 .entity()
-                .customize(e -> {
-                    e.type(EntityType.TOKEN);
-                    entityCustomizer.accept(e);
-                })
+                .customize(e -> e.type(EntityType.TOKEN))
                 .persist();
 
         return domainBuilder
@@ -253,14 +286,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                     customizer.accept(t); // Apply any customizations provided
                 })
                 .persist();
-    }
-
-    /**
-     * Persists entity of type token in the entity db table. Entity table contains properties common for all entities on
-     * the network (tokens, accounts, smart contracts, topics)
-     */
-    protected Entity tokenEntityPersist() {
-        return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
     }
 
     /**
@@ -343,18 +368,53 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /**
+     * Creates an account with evmAddress and alias set to null and persist to db
+     * @return Entity object that is persisted in the db
+     */
     protected Entity accountEntityPersist() {
-        return domainBuilder
-                .entity()
-                .customize(e ->
-                        e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(100_000_000_000_000_000L))
-                .persist();
+        return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT)
+                .evmAddress(null)
+                .alias(null)
+                .balance(100_000_000_000_000_000L));
     }
 
     protected Entity accountEntityWithEvmAddressPersist() {
+       return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT)
+                .balance(1_000_000_000_000_000L));
+    }
+
+    /**
+     *
+     * @param alias - the alias with which the account is created
+     * @param publicKey - the public key with which the account is created
+     * @return Entity object that is persisted in the db
+     */
+    protected Entity accountPersistWithAlias(final Address alias, final ByteString publicKey) {
+        return accountEntityPersistCustomizable(e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()));
+    }
+
+    /**
+     *
+     * @param balance - the balance with which the account is created
+     * @return Entity object that is persisted in the db
+     */
+    protected Entity accountEntityPersistWithBalance(final long balance) {
+        return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT)
+                .evmAddress(null)
+                .alias(null)
+                .balance(balance));
+    }
+
+    /**
+     *
+     * @param customizer - the consumer with which to customize the entity
+     * @return
+     */
+    protected Entity accountEntityPersistCustomizable(Consumer<Entity.EntityBuilder<?, ?>> customizer) {
         return domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000_000L))
+                .customize(customizer)
                 .persist();
     }
 

@@ -84,7 +84,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
     void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType)
             throws Exception {
         // Given
-        final var tokenEntityId = fungibleTokenPersistWithTreasuryAccount2();
+        final var tokenEntityId = fungibleTokenPersistWithTreasuryAccount(domainBuilder.entity().persist());
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
@@ -105,16 +105,6 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
 
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
-
-//    @Test
-//    void testingRefactoredCode() {
-//        final var tokenEntityId = fungibleTokenPersistWithTreasuryAccount2();
-//        System.out.println(tokenEntityId);
-//        final var tokenAddress = toAddress(tokenEntityId.getTokenId());
-//        System.out.println(tokenAddress);
-//        final var contract = testWeb3jService.deploy(NestedCalls::deploy);
-//        final var contractAddress = contract.getContractAddress();
-//    }
 
     @ParameterizedTest
     @CsvSource(
@@ -591,22 +581,6 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
                         BigInteger.valueOf(Instant.now().getEpochSecond() + 8_000_000L),
                         getAliasFromEntity(autoRenewAccount),
                         BigInteger.valueOf(8_000_000)));
-    }
-
-    private Token fungibleTokenPersist() {
-        return fungibleTokenPersist(domainBuilder.entity().persist());
-    }
-
-    private Token fungibleTokenPersist(final Entity treasuryEntity) {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        return domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(treasuryEntity.toEntityId()))
-                .persist();
     }
 
     private Token nftPersist() {

@@ -27,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
@@ -451,7 +450,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallBalanceOfStatic() throws Exception {
         final var owner = accountPersist();
-        final var tokenEntity = fungibleTokenPersist(owner);
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
         final var balance = 12L;
         domainBuilder
                 .tokenAccount()
@@ -473,7 +472,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallBalanceOfNonStatic() throws Exception {
         final var owner = accountPersist();
-        final var tokenEntity = fungibleTokenPersist(owner);
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
         final var balance = 12L;
         domainBuilder
                 .tokenAccount()
@@ -495,7 +494,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallBalanceOfWithAliasStatic() throws Exception {
         final var owner = senderEntityPersistWithAlias();
-        final var tokenEntity = fungibleTokenPersist(owner);
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
         final var balance = 12L;
         domainBuilder
                 .tokenAccount()
@@ -515,7 +514,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallBalanceOfWithAliasNonStatic() throws Exception {
         final var owner = senderEntityPersistWithAlias();
-        final var tokenEntity = fungibleTokenPersist(owner);
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
         final var balance = 12L;
         domainBuilder
                 .tokenAccount()
@@ -860,7 +859,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallBalanceOfRedirect() {
         final var owner = accountPersist();
-        final var tokenEntity = fungibleTokenPersist(owner);
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
         final var balance = 12L;
         domainBuilder
                 .tokenAccount()
@@ -878,7 +877,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallBalanceOfWithAliasRedirect() {
         final var owner = senderEntityPersistWithAlias();
-        final var tokenEntity = fungibleTokenPersist(owner);
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
         final var balance = 12L;
         domainBuilder
                 .tokenAccount()
@@ -1091,54 +1090,15 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     private EntityId spenderEntityPersistWithAlias() {
-        return accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY);
+        return accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY).toEntityId();
     }
 
     private EntityId senderEntityPersistWithAlias() {
-        return accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY);
-    }
-
-    private EntityId accountPersistWithAlias(final Address alias, final ByteString publicKey) {
-        return domainBuilder
-                .entity()
-                .customize(e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()))
-                .persist()
-                .toEntityId();
+        return accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY).toEntityId();
     }
 
     private EntityId accountPersist() {
-        return domainBuilder
-                .entity()
-                .customize(e -> e.evmAddress(null).alias(null).balance(12L))
-                .persist()
-                .toEntityId();
-    }
-
-    private Token fungibleTokenPersist(final EntityId treasuryEntityId) {
-        return fungibleTokenPersist(treasuryEntityId, domainBuilder.key());
-    }
-
-    private Token fungibleTokenPersist(final EntityId treasuryEntityId, final byte[] kycKey) {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        return domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(treasuryEntityId)
-                        .kycKey(kycKey))
-                .persist();
-    }
-
-    private Token fungibleTokenPersist() {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        return domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        return accountEntityPersistWithBalance(12L).toEntityId();
     }
 
     private Token nftPersist() {
