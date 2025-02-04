@@ -24,6 +24,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -110,9 +111,19 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         treasuryEntity = domainBuilder
                 .entity()
-                .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
+                .customize(e -> e.id(2L)
+                        .num(2L)
+                        .balance(5000000000000000000L)
+                        .timestampRange(Range.atLeast(genesisRecordFile.getConsensusStart()))
+                        .createdTimestamp(genesisRecordFile.getConsensusStart()))
                 .persist();
-        domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(98L)
+                        .num(98L)
+                        .timestampRange(Range.atLeast(genesisRecordFile.getConsensusStart()))
+                        .createdTimestamp(genesisRecordFile.getConsensusStart()))
+                .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(
