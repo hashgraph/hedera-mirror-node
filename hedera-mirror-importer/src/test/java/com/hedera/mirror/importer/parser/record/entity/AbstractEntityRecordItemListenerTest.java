@@ -427,11 +427,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
             Boolean deleted,
             Long expiryTimeNs,
             String memo,
-            Key submitKey,
             Long createdTimestamp,
             Long modifiedTimestamp) {
         byte[] adminKeyBytes = rawBytesFromKey(adminKey);
-        byte[] submitKeyBytes = rawBytesFromKey(submitKey);
 
         Entity entity = entityId.toEntity();
         entity.setAutoRenewAccountId(autoRenewAccountId);

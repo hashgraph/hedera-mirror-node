@@ -363,6 +363,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         return null;
     }
 
+    @SuppressWarnings("java:S1168")
     private byte[][] getMaxCustomFees(TransactionBody body, RecordItem recordItem) {
         int count = body.getMaxCustomFeesCount();
         if (count == 0) {

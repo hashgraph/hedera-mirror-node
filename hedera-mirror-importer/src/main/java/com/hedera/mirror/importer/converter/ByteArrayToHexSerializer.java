@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 import org.apache.commons.codec.binary.Hex;
 
+@SuppressWarnings("java:S6548")
 public class ByteArrayToHexSerializer extends JsonSerializer<byte[]> {
 
     public static final ByteArrayToHexSerializer INSTANCE = new ByteArrayToHexSerializer();

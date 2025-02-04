@@ -536,7 +536,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 EXPIRY_NS,
                 TOKEN_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
         var autoAssociatedAccounts = expectedTokenAccounts.stream()
@@ -1024,7 +1023,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 true,
                 EXPIRY_NS,
                 TOKEN_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 deleteTimeStamp);
         assertEquals(1L, entityRepository.count());
@@ -1059,7 +1057,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 EXPIRY_NS,
                 TOKEN_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
         var initialCustomFee = emptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
@@ -1136,7 +1133,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 EXPIRY_NS,
                 TOKEN_UPDATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 updateTimeStamp);
         assertEquals(1L, entityRepository.count());
@@ -4099,7 +4095,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 EXPIRY_NS,
                 TOKEN_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
 
