@@ -62,10 +62,6 @@ Hedera Token Service (HTS). This document explains how the mirror node can be up
   The `submit_key` column needs to be dropped from `entity` and `entity_history` table since it's moved to the new
   table.
 
-  The `admin_key` column in `topic` table will hold the value of `key` column in `entity` table, and future topic's
-  admin key will only persist to `topic` table. Note the `key` column in `entity` and `entity_history` will remain
-  since it's still used by other types of entities.
-
 - Rename column `token_id` to `entity_id` in `custom_fee` and `custom_fee_history` tables
 
   ```sql

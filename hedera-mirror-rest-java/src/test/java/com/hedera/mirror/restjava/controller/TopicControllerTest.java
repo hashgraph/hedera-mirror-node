@@ -60,16 +60,19 @@ class TopicControllerTest extends ControllerTest {
         @ParameterizedTest
         void success(String id) {
             // Given
+            var entity = domainBuilder.topicEntity().customize(e -> e.id(1000L)).persist();
             var topic = domainBuilder
-                    .entity()
-                    .customize(e -> e.id(1000L).type(EntityType.TOPIC))
+                    .topic()
+                    .customize(t -> t.createdTimestamp(entity.getCreatedTimestamp())
+                            .id(1000L)
+                            .timestampRange(entity.getTimestampRange()))
                     .persist();
 
             // When
             var response = restClient.get().uri("", id).retrieve().toEntity(Topic.class);
 
             // Then
-            assertThat(response.getBody()).isNotNull().isEqualTo(topicMapper.map(topic));
+            assertThat(response.getBody()).isNotNull().isEqualTo(topicMapper.map(entity, topic));
             // Based on application.yml response headers configuration
             assertThat(response.getHeaders().getAccessControlAllowOrigin()).isEqualTo("*");
             assertThat(response.getHeaders().getCacheControl()).isEqualTo("public, max-age=5");
@@ -113,7 +116,8 @@ class TopicControllerTest extends ControllerTest {
                     .body(Topic.class);
 
             // Then
-            validateError(callable, HttpClientErrorException.NotFound.class, "Topic not found: " + entity.toEntityId());
+            validateError(
+                    callable, HttpClientErrorException.NotFound.class, "Entity not found: " + entity.toEntityId());
         }
 
         @ParameterizedTest

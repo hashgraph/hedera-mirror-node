@@ -16,12 +16,11 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.rest.model.Topic;
 import com.hedera.mirror.restjava.common.EntityIdNumParameter;
 import com.hedera.mirror.restjava.mapper.TopicMapper;
 import com.hedera.mirror.restjava.service.EntityService;
-import jakarta.persistence.EntityNotFoundException;
+import com.hedera.mirror.restjava.service.TopicService;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,15 +36,12 @@ public class TopicController {
 
     private final EntityService entityService;
     private final TopicMapper topicMapper;
+    private final TopicService topicService;
 
     @GetMapping(value = "/{id}")
     Topic getTopic(@PathVariable EntityIdNumParameter id) {
+        var topic = topicService.findById(id.id());
         var entity = entityService.findById(id.id());
-
-        if (entity.getType() != EntityType.TOPIC) {
-            throw new EntityNotFoundException("Topic not found: " + id.id());
-        }
-
-        return topicMapper.map(entity);
+        return topicMapper.map(entity, topic);
     }
 }

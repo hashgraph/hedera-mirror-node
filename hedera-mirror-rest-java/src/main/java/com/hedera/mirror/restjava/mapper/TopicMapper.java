@@ -26,10 +26,9 @@ import org.mapstruct.Mapping;
 @Mapper(config = MapperConfiguration.class)
 public interface TopicMapper {
 
-    @Mapping(source = "autoRenewAccountId", target = "autoRenewAccount")
-    @Mapping(source = "createdTimestamp", target = "createdTimestamp", qualifiedByName = QUALIFIER_TIMESTAMP)
-    @Mapping(source = "id", target = "topicId")
-    @Mapping(source = "key", target = "adminKey")
-    @Mapping(source = "timestampRange", target = "timestamp")
-    Topic map(Entity source);
+    @Mapping(source = "entity.autoRenewAccountId", target = "autoRenewAccount")
+    @Mapping(source = "entity.createdTimestamp", target = "createdTimestamp", qualifiedByName = QUALIFIER_TIMESTAMP)
+    @Mapping(source = "entity.id", target = "topicId")
+    @Mapping(source = "entity.timestampRange", target = "timestamp")
+    Topic map(Entity entity, com.hedera.mirror.common.domain.topic.Topic topic);
 }
