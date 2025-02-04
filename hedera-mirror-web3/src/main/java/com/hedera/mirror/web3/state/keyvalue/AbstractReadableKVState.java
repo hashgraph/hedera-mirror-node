@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.state.keyvalue;
 
 import com.swirlds.state.spi.ReadableKVStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import jakarta.annotation.Nullable;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -26,12 +25,6 @@ public abstract class AbstractReadableKVState<K, V> extends ReadableKVStateBase<
 
     protected AbstractReadableKVState(@NonNull String stateKey) {
         super(stateKey);
-    }
-
-    @Nullable
-    @Override
-    public V get(@NonNull K key) {
-        return readFromDataSource(key);
     }
 
     @NonNull

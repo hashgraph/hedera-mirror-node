@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.state.keyvalue;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -25,6 +26,7 @@ import com.hedera.hapi.node.base.ContractID.ContractOneOfType;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.state.CommonEntityAccessor;
 import com.hedera.pbj.runtime.OneOf;
@@ -32,10 +34,15 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,11 +74,31 @@ class ContractBytecodeReadableKVStateTest {
     @InjectMocks
     private ContractBytecodeReadableKVState contractBytecodeReadableKVState;
 
+    private static MockedStatic<ContractCallContext> contextMockedStatic;
+
     @Mock
     private ContractRepository contractRepository;
 
     @Mock
     private CommonEntityAccessor commonEntityAccessor;
+
+    @Spy
+    private ContractCallContext contractCallContext;
+
+    @BeforeAll
+    static void initStaticMocks() {
+        contextMockedStatic = mockStatic(ContractCallContext.class);
+    }
+
+    @AfterAll
+    static void closeStaticMocks() {
+        contextMockedStatic.close();
+    }
+
+    @BeforeEach
+    void setup() {
+        contextMockedStatic.when(ContractCallContext::get).thenReturn(contractCallContext);
+    }
 
     @Test
     void whenContractIdAndEvmAddressAreNotSetReturnNull() {
