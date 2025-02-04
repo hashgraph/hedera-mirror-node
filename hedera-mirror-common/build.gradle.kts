@@ -25,8 +25,7 @@ dependencies {
     api("com.github.ben-manes.caffeine:caffeine")
     api("com.google.guava:guava")
     api("com.google.protobuf:protobuf-java")
-    //    api("com.hedera.hashgraph:hedera-protobuf-java-api") { isTransitive = false }
-    api("com.github.xin-hedera:hedera-protobufs-java") { isTransitive = false }
+    api("com.hedera.hashgraph:hedera-protobuf-java-api") { isTransitive = false }
     api("io.hypersistence:hypersistence-utils-hibernate-63")
     api("commons-codec:commons-codec")
     api("org.apache.commons:commons-lang3")
