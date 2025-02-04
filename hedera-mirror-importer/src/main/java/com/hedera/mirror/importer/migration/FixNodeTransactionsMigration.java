@@ -116,7 +116,7 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
 
         ParameterizedPreparedStatementSetter<Node> statementSetter = (ps, node) -> {
             ps.setLong(1, node.getNodeId());
-            ps.setLong(2, node.getCreatedTimestamp());
+            ps.setObject(2, node.getCreatedTimestamp(), java.sql.Types.BIGINT);
             ps.setBoolean(3, node.isDeleted());
             ps.setBytes(4, node.getAdminKey());
             ps.setString(5, PostgreSQLGuavaRangeType.INSTANCE.asString(node.getTimestampRange()));
