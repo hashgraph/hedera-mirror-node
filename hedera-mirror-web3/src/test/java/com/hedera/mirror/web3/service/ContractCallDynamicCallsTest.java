@@ -804,7 +804,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     }
 
     private EntityId accountPersist() {
-        return accountEntityPersistCustomizable(e -> e.evmAddress(null)).toEntityId();
+        return accountEntityPersist().toEntityId();
     }
 
     private EntityId senderEntityPersistWithAlias() {
