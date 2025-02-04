@@ -25,7 +25,6 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +38,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
 @DisablePartitionMaintenance
@@ -67,15 +65,12 @@ class TokenAccountMigrationTest extends ImporterIntegrationTest {
             );
             """;
 
-    private final @Owner JdbcTemplate jdbcTemplate;
-
     @Value("classpath:db/migration/v1/V1.66.1__token_account_history.sql")
     private final File migrationSql;
 
     @AfterEach
-    @SneakyThrows
     void teardown() {
-        jdbcTemplate.execute(REVERT_SQL);
+        ownerJdbcTemplate.execute(REVERT_SQL);
     }
 
     @Test
@@ -190,7 +185,7 @@ class TokenAccountMigrationTest extends ImporterIntegrationTest {
 
     @SneakyThrows
     private void runMigration() {
-        jdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     @SuppressWarnings("java:S1854") // No useless assignments in the method, since they help avoiding code repetition
@@ -234,7 +229,7 @@ class TokenAccountMigrationTest extends ImporterIntegrationTest {
     }
 
     private List<TokenAccountRange> findAllTokenAccounts() {
-        return jdbcTemplate.query(
+        return jdbcOperations.query(
                 "select " + "account_id, "
                         + "associated, "
                         + "automatic_association, "

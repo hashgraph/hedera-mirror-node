@@ -19,12 +19,13 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import jakarta.annotation.Resource;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 
-class TokenAllowanceRepositoryTest extends AbstractRepositoryTest {
+class TokenAllowanceRepositoryTest extends ImporterIntegrationTest {
 
     private static final RowMapper<TokenAllowance> ROW_MAPPER = rowMapper(TokenAllowance.class);
 

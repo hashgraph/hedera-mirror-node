@@ -22,6 +22,7 @@ import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import jakarta.annotation.Resource;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -33,7 +34,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.CollectionUtils;
 
-class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
+class AddressBookServiceEndpointRepositoryTest extends ImporterIntegrationTest {
 
     private final EntityId addressBookEntityId102 = EntityId.of("0.0.102");
 

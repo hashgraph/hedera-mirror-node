@@ -35,6 +35,7 @@ configurations.all {
 repositories {
     maven { url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/") }
     maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") }
+    maven { url = uri("https://jitpack.io") }
 }
 
 dependencyManagement {

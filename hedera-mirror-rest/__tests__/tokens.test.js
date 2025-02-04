@@ -1402,12 +1402,12 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
         'fixed_fees', fixed_fees,
         'fractional_fees', fractional_fees,
         'royalty_fees', royalty_fees,
-        'token_id', token_id
+        'token_id', entity_id
       )`;
     let customFeeQuery = `
       ${selectStatement}
       from custom_fee
-      where token_id = $1
+      where entity_id = $1
     ) as custom_fee`;
 
     if (!_.isEmpty(timestampCondition)) {
@@ -1416,11 +1416,11 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
         from (
             (select *, lower(timestamp_range) as created_timestamp 
               from custom_fee 
-              where token_id = $1 and lower(timestamp_range) ${timestampCondition})
+              where entity_id = $1 and lower(timestamp_range) ${timestampCondition})
             union all 
             (select *, lower(timestamp_range) as created_timestamp
               from custom_fee_history 
-              where token_id = $1 and lower(timestamp_range) ${timestampCondition} 
+              where entity_id = $1 and lower(timestamp_range) ${timestampCondition} 
               order by lower(timestamp_range) desc limit 1) 
             order by created_timestamp desc limit 1) as feeandhistory
         ) as custom_fee`;

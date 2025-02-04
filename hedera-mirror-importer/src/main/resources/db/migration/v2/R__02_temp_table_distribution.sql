@@ -14,7 +14,7 @@ $$ language plpgsql;
 
 call create_distributed_table_safe('contract_state_temp', 'contract_id', 'contract_state');
 call create_distributed_table_safe('crypto_allowance_temp', 'owner', 'crypto_allowance');
-call create_distributed_table_safe('custom_fee_temp', 'token_id', 'custom_fee');
+call create_distributed_table_safe('custom_fee_temp', 'entity_id', 'custom_fee');
 call create_distributed_table_safe('entity_stake_temp', 'id', 'entity_stake');
 call create_distributed_table_safe('entity_state_start', 'id', 'entity');
 call create_distributed_table_safe('entity_temp', 'id', 'entity');
@@ -26,4 +26,5 @@ call create_distributed_table_safe('token_airdrop_temp', 'receiver_account_id', 
 call create_distributed_table_safe('token_allowance_temp', 'owner', 'token_allowance');
 call create_distributed_table_safe('dissociate_token_transfer', 'token_id', 'nft');
 call create_distributed_table_safe('token_temp', 'token_id', 'token');
+call create_distributed_table_safe('topic_temp', 'id', 'topic');
 call create_distributed_table_safe('topic_message_lookup_temp', 'topic_id', 'topic_message_lookup');

@@ -24,7 +24,8 @@ plugins {
 }
 
 dependencies {
-    api("com.hedera.hashgraph:hedera-protobuf-java-api") { isTransitive = false }
+    //    api("com.hedera.hashgraph:hedera-protobuf-java-api") { isTransitive = false }
+    api("com.github.xin-hedera:hedera-protobufs-java") { isTransitive = false }
     api("com.salesforce.servicelibs:reactor-grpc-stub")
     api("io.grpc:grpc-protobuf")
     api("io.grpc:grpc-stub")

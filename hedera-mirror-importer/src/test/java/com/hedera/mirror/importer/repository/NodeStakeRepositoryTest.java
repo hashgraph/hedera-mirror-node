@@ -18,12 +18,13 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.util.Utility;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class NodeStakeRepositoryTest extends AbstractRepositoryTest {
+class NodeStakeRepositoryTest extends ImporterIntegrationTest {
 
     private final NodeStakeRepository nodeStakeRepository;
 

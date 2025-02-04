@@ -20,11 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class RecordFileRepositoryTest extends AbstractRepositoryTest {
+class RecordFileRepositoryTest extends ImporterIntegrationTest {
 
     private final RecordFileRepository recordFileRepository;
 
