@@ -30,7 +30,7 @@ final class CryptoCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        if (blockItem.transactionResult().getStatus() != SUCCESS) {
+        if (blockItem.successful()) {
             return;
         }
 

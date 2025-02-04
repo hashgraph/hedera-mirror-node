@@ -119,7 +119,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
         var blockItem = blockItemBuilder.cryptoAddLiveHash(expectedRecordItem).build();
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
         var recordFile = blockFileTransformer.transform(blockFie);
@@ -146,7 +146,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         var blockItem =
                 blockItemBuilder.cryptoDeleteLiveHash(expectedRecordItem).build();
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
         var recordFile = blockFileTransformer.transform(blockFie);
@@ -173,7 +173,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         var blockItem =
                 blockItemBuilder.cryptoDeleteAllowance(expectedRecordItem).build();
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
         var recordFile = blockFileTransformer.transform(blockFie);
@@ -200,7 +200,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         var blockItem =
                 blockItemBuilder.cryptoApproveAllowance(expectedRecordItem).build();
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
         var recordFile = blockFileTransformer.transform(blockFie);
@@ -226,7 +226,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
         var blockItem = blockItemBuilder.cryptoDelete(expectedRecordItem).build();
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
         var recordFile = blockFileTransformer.transform(blockFie);
@@ -252,7 +252,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
         var blockItem = blockItemBuilder.cryptoUpdate(expectedRecordItem).build();
-        var blockFie = blockFile(List.of(blockItem));
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
         var recordFile = blockFileTransformer.transform(blockFie);
