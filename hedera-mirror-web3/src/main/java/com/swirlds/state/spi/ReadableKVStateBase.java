@@ -21,6 +21,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -66,8 +67,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
             final var value = readFromDataSource(key);
             markRead(key, value);
         }
-        final var value =
-                ContractCallContext.get().getReadCacheState(getStateKey()).get(key);
+        final var value = getReadCache().get(key);
         return (value == marker) ? null : (V) value;
     }
 
@@ -78,8 +78,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      */
     @Nonnull
     public final Set<K> readKeys() {
-        return (Set<K>)
-                ContractCallContext.get().getReadCacheState(getStateKey()).entrySet();
+        return (Set<K>) getReadCache().entrySet();
     }
 
     /** {@inheritDoc} */
@@ -92,7 +91,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
     /** Clears all cached data, including the set of all read keys. */
     /*@OverrideMustCallSuper*/
     public void reset() {
-        ContractCallContext.get().getReadCacheState(getStateKey()).clear();
+        getReadCache().clear();
     }
 
     /**
@@ -121,8 +120,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      * @param value The value
      */
     protected final void markRead(@Nonnull K key, @Nullable V value) {
-        ContractCallContext.get().getReadCacheState(getStateKey()).put(key, Objects.requireNonNullElseGet(value, () ->
-                (V) marker));
+        getReadCache().put(key, Objects.requireNonNullElseGet(value, () -> (V) marker));
     }
 
     /**
@@ -132,6 +130,10 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      * @return Whether it has been read
      */
     protected final boolean hasBeenRead(@Nonnull K key) {
-        return ContractCallContext.get().getReadCacheState(getStateKey()).containsKey(key);
+        return getReadCache().containsKey(key);
+    }
+
+    private Map<Object, Object> getReadCache() {
+        return ContractCallContext.get().getReadCacheState(getStateKey());
     }
 }
