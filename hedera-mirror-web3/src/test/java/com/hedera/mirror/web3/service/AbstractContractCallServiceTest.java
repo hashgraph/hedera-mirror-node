@@ -59,7 +59,6 @@ import jakarta.annotation.Resource;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -261,10 +260,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * @param kycKey - the kycKey that has to be set in the token
      * @return Token object that is persisted in db
      */
-    protected Token fungibleTokenPersistWithTreasuryAccountAndKYCKey(final EntityId treasuryEntity, final byte[] kycKey) {
-        return fungibleTokenCustomizable(t -> t.treasuryAccountId(
-                        treasuryEntity)
-                .kycKey(kycKey));
+    protected Token fungibleTokenPersistWithTreasuryAccountAndKYCKey(
+            final EntityId treasuryEntity, final byte[] kycKey) {
+        return fungibleTokenCustomizable(
+                t -> t.treasuryAccountId(treasuryEntity).kycKey(kycKey));
     }
 
     /**
@@ -273,10 +272,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * @return Token object which is persisted in the db
      */
     protected Token fungibleTokenCustomizable(Consumer<Token.TokenBuilder<?, ?>> customizer) {
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.TOKEN))
-                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
 
         return domainBuilder
                 .token()
@@ -372,15 +369,12 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * @return Entity object that is persisted in the db
      */
     protected Entity accountEntityPersist() {
-        return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT)
-                .evmAddress(null)
-                .alias(null)
-                .balance(100_000_000_000_000_000L));
+        return accountEntityPersistCustomizable(
+                e -> e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(100_000_000_000_000_000L));
     }
 
     protected Entity accountEntityWithEvmAddressPersist() {
-       return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT)
-                .balance(1_000_000_000_000_000L));
+        return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000_000L));
     }
 
     /**
@@ -390,7 +384,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * @return Entity object that is persisted in the db
      */
     protected Entity accountPersistWithAlias(final Address alias, final ByteString publicKey) {
-        return accountEntityPersistCustomizable(e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()));
+        return accountEntityPersistCustomizable(
+                e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()));
     }
 
     /**
@@ -399,10 +394,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * @return Entity object that is persisted in the db
      */
     protected Entity accountEntityPersistWithBalance(final long balance) {
-        return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT)
-                .evmAddress(null)
-                .alias(null)
-                .balance(balance));
+        return accountEntityPersistCustomizable(
+                e -> e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(balance));
     }
 
     /**
@@ -411,10 +404,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * @return
      */
     protected Entity accountEntityPersistCustomizable(Consumer<Entity.EntityBuilder<?, ?>> customizer) {
-        return domainBuilder
-                .entity()
-                .customize(customizer)
-                .persist();
+        return domainBuilder.entity().customize(customizer).persist();
     }
 
     /**

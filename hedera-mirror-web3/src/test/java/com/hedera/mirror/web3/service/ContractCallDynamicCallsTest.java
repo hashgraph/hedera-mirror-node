@@ -763,8 +763,6 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
-
-
     private Token nftPersist(final EntityId treasuryEntityId) {
         return nftPersist(treasuryEntityId, treasuryEntityId);
     }
@@ -808,7 +806,6 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     private EntityId accountPersist() {
         return accountEntityPersistCustomizable(e -> e.evmAddress(null)).toEntityId();
     }
-
 
     private EntityId senderEntityPersistWithAlias() {
         return accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY).toEntityId();
