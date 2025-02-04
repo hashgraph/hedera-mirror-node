@@ -49,11 +49,14 @@ class TopicControllerTest extends ControllerTest {
 
         @Override
         protected RequestHeadersSpec<?> defaultRequest(RequestHeadersUriSpec<?> uriSpec) {
-            var topic = domainBuilder
-                    .entity()
-                    .customize(e -> e.type(EntityType.TOPIC))
+            var entity = domainBuilder.topicEntity().persist();
+            domainBuilder
+                    .topic()
+                    .customize(t -> t.createdTimestamp(entity.getCreatedTimestamp())
+                            .id(entity.getId())
+                            .timestampRange(entity.getTimestampRange()))
                     .persist();
-            return uriSpec.uri("", topic.toEntityId().toString());
+            return uriSpec.uri("", entity.toEntityId().toString());
         }
 
         @ValueSource(strings = {"1000", "0.1000", "0.0.1000"})
