@@ -59,7 +59,7 @@ public class FixNodeTransactionsMigrationTest extends ImporterIntegrationTest {
 
         runMigration();
 
-        softly.assertThat(nodeRepository.count()).isEqualTo(2);
+        softly.assertThat(nodeRepository.count()).isEqualTo(3);
         softly.assertThat(nodeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedNodes);
 
         softly.assertAll();
@@ -152,6 +152,11 @@ public class FixNodeTransactionsMigrationTest extends ImporterIntegrationTest {
                         r.getTransactionID().toBuilder().setNonce(1).build()))
                 .build();
 
+        var nodeUpdateWithoutCreateRecordItem = recordItemBuilder
+                .nodeUpdate()
+                .recordItem(ri -> ri.consensusTimestamp(nodeCreateRecordItem.getConsensusTimestamp() + 2))
+                .build();
+
         domainBuilder
                 .transaction()
                 .customize(t -> t.transactionBytes(
@@ -169,6 +174,18 @@ public class FixNodeTransactionsMigrationTest extends ImporterIntegrationTest {
                         .consensusTimestamp(nodeUpdateRecordItem.getConsensusTimestamp())
                         .transactionRecordBytes(
                                 nodeUpdateRecordItem.getTransactionRecord().toByteArray())
+                        .type(TransactionType.NODEUPDATE.getProtoId()))
+                .persist();
+
+        domainBuilder
+                .transaction()
+                .customize(t -> t.transactionBytes(nodeUpdateWithoutCreateRecordItem
+                                .getTransaction()
+                                .toByteArray())
+                        .consensusTimestamp(nodeUpdateWithoutCreateRecordItem.getConsensusTimestamp())
+                        .transactionRecordBytes(nodeUpdateWithoutCreateRecordItem
+                                .getTransactionRecord()
+                                .toByteArray())
                         .type(TransactionType.NODEUPDATE.getProtoId()))
                 .persist();
 
@@ -198,6 +215,21 @@ public class FixNodeTransactionsMigrationTest extends ImporterIntegrationTest {
                 .timestampRange(Range.atLeast(nodeUpdateRecordItem.getConsensusTimestamp()))
                 .build();
 
-        return List.of(expectedNodeCreate, expectedNodeUpdate);
+        var expectedNodeUpdateWithoutCreate = Node.builder()
+                .adminKey(nodeUpdateWithoutCreateRecordItem
+                        .getTransactionBody()
+                        .getNodeUpdate()
+                        .getAdminKey()
+                        .toByteArray())
+                .createdTimestamp(null)
+                .deleted(false)
+                .nodeId(nodeUpdateWithoutCreateRecordItem
+                        .getTransactionBody()
+                        .getNodeUpdate()
+                        .getNodeId())
+                .timestampRange(Range.atLeast(nodeUpdateWithoutCreateRecordItem.getConsensusTimestamp()))
+                .build();
+
+        return List.of(expectedNodeCreate, expectedNodeUpdate, expectedNodeUpdateWithoutCreate);
     }
 }
