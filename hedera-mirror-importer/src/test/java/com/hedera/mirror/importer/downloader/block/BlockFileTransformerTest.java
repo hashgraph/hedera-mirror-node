@@ -362,10 +362,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void utilPrng() {
+    void utilPrngWhenPrngBytes() {
         var expectedRecordItem = recordItemBuilder
                 .prng()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .recordItem(r -> r.transactionRecord(TransactionRecord.newBuilder()
+                        .setPrngBytes(ByteString.copyFromUtf8("random-bytes"))
+                        .build()))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.utilPrng(expectedRecordItem).build();
@@ -384,6 +387,36 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                     .extracting(RecordItem::getTransactionRecord)
                     .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
                     .returns(expectedUtilPrng, TransactionRecord::getPrngBytes);
+        });
+    }
+
+    @Test
+    void utilPrngWhenPrngNumber() {
+        var expectedPrngNumber = 12345;
+        var expectedRecordItem = recordItemBuilder
+                .prng()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .recordItem(r -> r.transactionRecord(TransactionRecord.newBuilder()
+                        .setPrngNumber(expectedPrngNumber)
+                        .build()))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.utilPrng(expectedRecordItem).build();
+        var expectedUtilPrng =
+                blockItem.transactionOutput().getFirst().getUtilPrng().getPrngNumber();
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        assertRecordFile(recordFile, blockFile, items -> {
+            assertThat(items)
+                    .hasSize(1)
+                    .first()
+                    .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                    .returns(null, RecordItem::getPrevious)
+                    .extracting(RecordItem::getTransactionRecord)
+                    .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                    .returns(expectedUtilPrng, TransactionRecord::getPrngNumber);
         });
     }
 
@@ -450,18 +483,9 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedRecordItem = recordItemBuilder
                 .nodeUpdate()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.setStatus(ResponseCodeEnum.SUCCESS))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.nodeUpdate(expectedRecordItem).build();
-        var expectedNodeId = blockItem
-                .stateChanges()
-                .getFirst()
-                .getStateChanges(3)
-                .getMapUpdate()
-                .getKey()
-                .getEntityNumberKey()
-                .getValue();
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
         var recordFile = blockFileTransformer.transform(blockFile);
         assertRecordFile(recordFile, blockFile, items -> assertThat(items)
@@ -470,37 +494,26 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(
-                        expectedNodeId,
-                        transactionRecord -> transactionRecord.getReceipt().getNodeId()));
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
     @Test
-    void nodeUpdateTransformWhenStatusIsNotSuccess() {
-        // given
+    void nodeStakeUpdateTransform() {
         var expectedRecordItem = recordItemBuilder
-                .nodeUpdate()
+                .nodeStakeUpdate()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.clearNodeId().setStatus(ResponseCodeEnum.INVALID_NODE_ID))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-        var blockItem = blockItemBuilder.nodeUpdate(expectedRecordItem).build();
-
+        var blockItem = blockItemBuilder.nodeStakeUpdate(expectedRecordItem).build();
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
-
-        // when
         var recordFile = blockFileTransformer.transform(blockFile);
-
-        // then
         assertRecordFile(recordFile, blockFile, items -> assertThat(items)
                 .hasSize(1)
                 .first()
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(0L, transactionRecord -> transactionRecord.getReceipt().getNodeId()));
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
     @Test
@@ -508,18 +521,9 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedRecordItem = recordItemBuilder
                 .nodeDelete()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.setStatus(ResponseCodeEnum.SUCCESS))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.nodeDelete(expectedRecordItem).build();
-        var expectedNodeId = blockItem
-                .stateChanges()
-                .getFirst()
-                .getStateChanges(3)
-                .getMapUpdate()
-                .getKey()
-                .getEntityNumberKey()
-                .getValue();
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
         var recordFile = blockFileTransformer.transform(blockFile);
         assertRecordFile(recordFile, blockFile, items -> assertThat(items)
@@ -528,37 +532,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(
-                        expectedNodeId,
-                        transactionRecord -> transactionRecord.getReceipt().getNodeId()));
-    }
-
-    @Test
-    void nodeDeleteTransformWhenStatusIsNotSuccess() {
-        // given
-        var expectedRecordItem = recordItemBuilder
-                .nodeDelete()
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.clearNodeId().setStatus(ResponseCodeEnum.INVALID_NODE_ID))
-                .build();
-        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-        var blockItem = blockItemBuilder.nodeDelete(expectedRecordItem).build();
-
-        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
-
-        // when
-        var recordFile = blockFileTransformer.transform(blockFile);
-
-        // then
-        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
-                .hasSize(1)
-                .first()
-                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
-                .returns(null, RecordItem::getPrevious)
-                .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(0L, transactionRecord -> transactionRecord.getReceipt().getNodeId()));
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
     @Test

@@ -22,14 +22,18 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
-public class UtilPrngTransformer extends AbstractBlockItemTransformer {
+final class UtilPrngTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
         for (var transactionOutput : blockItem.transactionOutput()) {
             if (transactionOutput.hasUtilPrng()) {
                 var utilPrng = transactionOutput.getUtilPrng();
-                transactionRecordBuilder.setPrngBytes(utilPrng.getPrngBytes());
+                if (utilPrng.hasPrngNumber()) {
+                    transactionRecordBuilder.setPrngNumber(utilPrng.getPrngNumber());
+                } else if (utilPrng.hasPrngBytes()) {
+                    transactionRecordBuilder.setPrngBytes(utilPrng.getPrngBytes());
+                }
                 return;
             }
         }

@@ -190,26 +190,19 @@ public class BlockItemBuilder {
                 Collections.emptyList());
     }
 
-    public BlockItemBuilder.Builder nodeCreate() {
-        var recordItem = recordItemBuilder.cryptoTransfer().build();
-        return nodeCreate(recordItem);
-    }
-
     public BlockItemBuilder.Builder nodeCreate(RecordItem recordItem) {
-        var stateChanges = buildNodeIdStateChanges(recordItem);
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
-    }
-
-    public BlockItemBuilder.Builder nodeUpdate() {
-        var recordItem = recordItemBuilder.cryptoTransfer().build();
-        return nodeUpdate(recordItem);
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
 
     public BlockItemBuilder.Builder nodeUpdate(RecordItem recordItem) {
-        var stateChanges = buildNodeIdStateChanges(recordItem);
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public BlockItemBuilder.Builder nodeStakeUpdate(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
 
     public BlockItemBuilder.Builder nodeDelete() {
