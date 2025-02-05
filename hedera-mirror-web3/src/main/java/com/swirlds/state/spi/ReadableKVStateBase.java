@@ -19,7 +19,6 @@ package com.swirlds.state.spi;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -35,8 +34,6 @@ import java.util.Set;
 public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V> {
     /** The state key, which cannot be null */
     private final String stateKey;
-
-    private final Set<K> unmodifiableReadKeys = new HashSet<>();
 
     private static final Object marker = new Object();
 
@@ -78,7 +75,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      */
     @Nonnull
     public final Set<K> readKeys() {
-        return (Set<K>) getReadCache().entrySet();
+        return (Set<K>) getReadCache().keySet();
     }
 
     /** {@inheritDoc} */
