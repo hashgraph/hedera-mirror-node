@@ -544,6 +544,51 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
+    @Test
+    void cryptoCreateTransform() {
+        var expectedRecordItem = recordItemBuilder
+                .cryptoCreate()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.setStatus(ResponseCodeEnum.SUCCESS))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.cryptoCreate(expectedRecordItem).build();
+        var expectedAccountId = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChanges(3)
+                .getMapUpdate()
+                .getValue()
+                .getAccountIdValue()
+                .getAccountNum();
+        var expectedEVMAddress = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChanges(4)
+                .getMapUpdate()
+                .getValue()
+                .getAccountValue()
+                .getAlias();
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(expectedEVMAddress, TransactionRecord::getEvmAddress)
+                .returns(
+                        expectedAccountId,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getAccountID().getAccountNum()));
+    }
+
     @ParameterizedTest
     @EnumSource(
             value = ResponseCodeEnum.class,

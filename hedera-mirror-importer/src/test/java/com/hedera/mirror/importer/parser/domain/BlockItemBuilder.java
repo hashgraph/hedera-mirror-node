@@ -35,6 +35,8 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Account;
 import com.hederahashgraph.api.proto.java.Schedule;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -52,7 +54,9 @@ import org.springframework.context.annotation.Scope;
 @Named
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class BlockItemBuilder {
+    private static final int STATE_ID_ACCOUNTS = 2;
     private static final int STATE_FILES_ID = 6;
+    private static final int STATE_ID_ALIASES = 3;
 
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
@@ -174,6 +178,101 @@ public class BlockItemBuilder {
                 recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
 
+    public Builder fileAppend(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public Builder fileDelete(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public Builder fileCreate(RecordItem recordItem) {
+        var stateChanges = buildFileIdStateChanges(recordItem);
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
+    }
+
+    public Builder fileUpdate(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    private static StateChanges buildFileIdStateChanges(RecordItem recordItem) {
+        var id = recordItem.getTransactionRecord().getReceipt().getFileID().getFileNum();
+        var fileId = FileID.newBuilder().setFileNum(id).build();
+        var key = MapChangeKey.newBuilder().setFileIdKey(fileId).build();
+        var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
+
+        var firstChange = StateChange.newBuilder()
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .setStateId(1)
+                .build();
+
+        var secondChange = StateChange.newBuilder().setStateId(STATE_FILES_ID).build();
+
+        var thirdChange = StateChange.newBuilder()
+                .setStateId(STATE_FILES_ID)
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .build();
+
+        var fourtChange = StateChange.newBuilder()
+                .setMapUpdate(mapUpdate)
+                .setStateId(STATE_FILES_ID)
+                .build();
+
+        var changes = List.of(firstChange, secondChange, thirdChange, fourtChange);
+
+        return StateChanges.newBuilder().addAllStateChanges(changes).build();
+    }
+
+    public Builder cryptoCreate(RecordItem recordItem) {
+        var stateChanges = buildCryptoIdStateChanges(recordItem);
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
+    }
+
+    private static StateChanges buildCryptoIdStateChanges(RecordItem recordItem) {
+        var id = recordItem.getTransactionRecord().getReceipt().getAccountID();
+        var accountId = AccountID.newBuilder().setAccountNum(id.getAccountNum()).build();
+        var value = MapChangeValue.newBuilder().setAccountIdValue(accountId).build();
+        var aliasValue = MapChangeValue.newBuilder()
+                .setAccountValue(Account.newBuilder().setAlias(id.getAlias()).build())
+                .build();
+        var mapUpdate = MapUpdateChange.newBuilder().setValue(value).build();
+        var mapAliasUpdate = MapUpdateChange.newBuilder().setValue(aliasValue).build();
+
+        var firstChange = StateChange.newBuilder()
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .setStateId(1)
+                .build();
+
+        var secondChange =
+                StateChange.newBuilder().setStateId(STATE_ID_ACCOUNTS).build();
+
+        var thirdChange = StateChange.newBuilder()
+                .setStateId(STATE_ID_ACCOUNTS)
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .build();
+
+        var fourthChange = StateChange.newBuilder()
+                .setMapUpdate(mapUpdate)
+                .setStateId(STATE_ID_ACCOUNTS)
+                .build();
+
+        var aliasChange = StateChange.newBuilder()
+                .setMapUpdate(mapAliasUpdate)
+                .setStateId(STATE_ID_ALIASES)
+                .build();
+
+        var changes = List.of(firstChange, secondChange, thirdChange, fourthChange, aliasChange);
+
+        return StateChanges.newBuilder().addAllStateChanges(changes).build();
+    }
+
     public Builder cryptoAddLiveHash(RecordItem recordItem) {
         var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
         var timestamp = Utility.instantToTimestamp(instant);
@@ -232,56 +331,6 @@ public class BlockItemBuilder {
 
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
-    }
-
-    public Builder fileAppend(RecordItem recordItem) {
-        return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
-    }
-
-    public Builder fileDelete(RecordItem recordItem) {
-        return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
-    }
-
-    public Builder fileCreate(RecordItem recordItem) {
-        var stateChanges = buildFileIdStateChanges(recordItem);
-
-        return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
-    }
-
-    public Builder fileUpdate(RecordItem recordItem) {
-        return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
-    }
-
-    private static StateChanges buildFileIdStateChanges(RecordItem recordItem) {
-        var id = recordItem.getTransactionRecord().getReceipt().getFileID().getFileNum();
-        var fileId = FileID.newBuilder().setFileNum(id).build();
-        var key = MapChangeKey.newBuilder().setFileIdKey(fileId).build();
-        var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
-
-        var firstChange = StateChange.newBuilder()
-                .setMapUpdate(MapUpdateChange.newBuilder().build())
-                .setStateId(1)
-                .build();
-
-        var secondChange = StateChange.newBuilder().setStateId(STATE_FILES_ID).build();
-
-        var thirdChange = StateChange.newBuilder()
-                .setStateId(STATE_FILES_ID)
-                .setMapUpdate(MapUpdateChange.newBuilder().build())
-                .build();
-
-        var fourtChange = StateChange.newBuilder()
-                .setMapUpdate(mapUpdate)
-                .setStateId(STATE_FILES_ID)
-                .build();
-
-        var changes = List.of(firstChange, secondChange, thirdChange, fourtChange);
-
-        return StateChanges.newBuilder().addAllStateChanges(changes).build();
     }
 
     private AssessedCustomFee.Builder assessedCustomFees() {

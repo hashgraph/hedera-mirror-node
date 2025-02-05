@@ -29,7 +29,7 @@ final class CryptoCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        if (blockItem.successful()) {
+        if (!blockItem.successful()) {
             return;
         }
 
@@ -44,7 +44,7 @@ final class CryptoCreateTransformer extends AbstractBlockItemTransformer {
                 if (stateChange.getStateId() == STATE_ID_ALIASES.getNumber() && stateChange.hasMapUpdate()) {
                     var value = stateChange.getMapUpdate().getValue();
                     if (value.hasAccountValue()) {
-                        transactionRecordBuilder.setAlias(
+                        transactionRecordBuilder.setEvmAddress(
                                 value.getAccountValue().getAlias());
                     }
                 }
