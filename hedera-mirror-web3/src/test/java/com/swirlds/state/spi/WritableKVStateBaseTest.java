@@ -71,7 +71,6 @@ class WritableKVStateBaseTest {
         ContractCallContext.run(ctx -> {
             final var accountID = mock(AccountID.class);
             final var account = mock(Account.class);
-            final Map<Object, Object> map = Map.of(accountID, account);
             final WritableKVStateBase<AccountID, Account> writableKVStateBase =
                     new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateBase);
             ctx.getModificationsState(AccountReadableKVState.KEY).put(accountID, account);
@@ -94,6 +93,19 @@ class WritableKVStateBaseTest {
     }
 
     @Test
+    void testGetForModifyFromDataSource() {
+        ContractCallContext.run(ctx -> {
+            final var accountID = mock(AccountID.class);
+            final var account = mock(Account.class);
+            final WritableKVStateBase<AccountID, Account> writableKVStateBase =
+                    new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateBase);
+            when(readableKVStateBase.get(accountID)).thenReturn(account);
+            assertThat(writableKVStateBase.getForModify(accountID)).isEqualTo(account);
+            return ctx;
+        });
+    }
+
+    @Test
     void testWithRemovedEntry() {
         ContractCallContext.run(ctx -> {
             final var accountID = mock(AccountID.class);
@@ -103,6 +115,27 @@ class WritableKVStateBaseTest {
             ctx.getReadCacheState(AccountReadableKVState.KEY).put(accountID, account);
             ctx.getModificationsState(AccountReadableKVState.KEY).put(accountID, null); // The entry was removed
             assertThat(writableKVStateBase.size()).isZero();
+            return ctx;
+        });
+    }
+
+    @Test
+    void testKeysWithRemovedEntry() {
+        ContractCallContext.run(ctx -> {
+            final var accountID = mock(AccountID.class);
+            final var accountID2 = mock(AccountID.class);
+            final var account = mock(Account.class);
+            final var account2 = mock(Account.class);
+            final WritableKVStateBase<AccountID, Account> writableKVStateBase =
+                    new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateBase);
+            ctx.getReadCacheState(AccountReadableKVState.KEY).put(accountID, account);
+            ctx.getReadCacheState(AccountReadableKVState.KEY).put(accountID2, account2);
+            ctx.getModificationsState(AccountReadableKVState.KEY).put(accountID, null); // The entry was removed
+            when(readableKVStateBase.keys())
+                    .thenReturn(Map.of(accountID, account, accountID2, account2)
+                            .keySet()
+                            .iterator());
+            assertThat(writableKVStateBase.keys().next()).isEqualTo(accountID2);
             return ctx;
         });
     }
