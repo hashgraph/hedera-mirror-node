@@ -184,21 +184,16 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
             """)
     void freezeTokenGetPauseStatusUnpauseGetPauseStatus(final TokenTypeEnum tokenType) {
         // Given
-        final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
+        final var treasuryAccount = accountEntityPersist();
+        final var sender = accountEntityPersist();
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), treasuryEntityId);
+        Entity tokenEntity = setUpToken(tokenType, treasuryAccount, sender, sender);
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
         // When
         final var functionCall = contract.send_freezeTokenGetPauseStatusUnpauseGetPauseStatus(
-                tokenAddress.toHexString(), treasuryAddress.toHexString());
+                getAddressFromEntity(tokenEntity), getAddressFromEntity(treasuryAccount));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
