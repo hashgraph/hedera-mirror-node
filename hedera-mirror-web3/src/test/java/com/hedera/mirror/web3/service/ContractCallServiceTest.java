@@ -565,7 +565,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     }
 
     @Test
-    void ethCallWithValueAndNotExistingSenderAlias() throws Exception {
+    void ethCallWithValueAndNotExistingSenderAlias() {
         // Given
         final var receiverEntity = accountPersist();
         final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
