@@ -32,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class WritableKVStateBaseTest {
+class WritableKVStateBaseTest {
 
     @Mock
     private ReadableKVStateBase<AccountID, Account> readableKVStateBase;
@@ -58,7 +58,6 @@ public class WritableKVStateBaseTest {
         ContractCallContext.run(ctx -> {
             final var accountID = mock(AccountID.class);
             final var account = mock(Account.class);
-            final Map<Object, Object> map = Map.of(accountID, account);
             final WritableKVStateBase<AccountID, Account> writableKVStateBase =
                     new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateBase);
             when(readableKVStateBase.get(accountID)).thenReturn(account);
@@ -86,11 +85,24 @@ public class WritableKVStateBaseTest {
         ContractCallContext.run(ctx -> {
             final var accountID = mock(AccountID.class);
             final var account = mock(Account.class);
-            final Map<Object, Object> map = Map.of(accountID, account);
             final WritableKVStateBase<AccountID, Account> writableKVStateBase =
                     new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateBase);
             ctx.getReadCacheState(AccountReadableKVState.KEY).put(accountID, account);
             assertThat(writableKVStateBase.getForModify(accountID)).isEqualTo(account);
+            return ctx;
+        });
+    }
+
+    @Test
+    void testWithRemovedEntry() {
+        ContractCallContext.run(ctx -> {
+            final var accountID = mock(AccountID.class);
+            final var account = mock(Account.class);
+            final WritableKVStateBase<AccountID, Account> writableKVStateBase =
+                    new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateBase);
+            ctx.getReadCacheState(AccountReadableKVState.KEY).put(accountID, account);
+            ctx.getModificationsState(AccountReadableKVState.KEY).put(accountID, null); // The entry was removed
+            assertThat(writableKVStateBase.size()).isZero();
             return ctx;
         });
     }
