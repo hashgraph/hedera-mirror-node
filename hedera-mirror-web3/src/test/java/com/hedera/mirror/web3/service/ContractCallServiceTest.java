@@ -240,7 +240,6 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 .persist();
 
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
-
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var functionCall = contract.call_multiplySimpleNumbers();
         meterRegistry.clear(); // Clear it as the contract deploy increases the gas limit metric
