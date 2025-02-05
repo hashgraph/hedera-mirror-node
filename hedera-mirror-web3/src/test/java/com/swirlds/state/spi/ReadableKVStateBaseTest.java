@@ -31,14 +31,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ReadableKVStateBaseTest {
+class ReadableKVStateBaseTest {
 
     @Test
     void testReadKeys() {
         ContractCallContext.run(ctx -> {
             final var accountID = mock(AccountID.class);
             final var account = mock(Account.class);
-            final Map<Object, Object> map = Map.of(accountID, account);
             final ReadableKVStateBase<AccountID, Account> readableKVStateBase =
                     new MapReadableKVState<>(AccountReadableKVState.KEY, Map.of());
             ctx.getReadCacheState(AccountReadableKVState.KEY).put(accountID, account);
@@ -52,7 +51,6 @@ public class ReadableKVStateBaseTest {
         ContractCallContext.run(ctx -> {
             final var accountID = mock(AccountID.class);
             final var account = mock(Account.class);
-            final Map<Object, Object> map = Map.of(accountID, account);
             final ReadableKVStateBase<AccountID, Account> readableKVStateBase =
                     new MapReadableKVState<>(AccountReadableKVState.KEY, Map.of());
             readableKVStateBase.markRead(accountID, account);
