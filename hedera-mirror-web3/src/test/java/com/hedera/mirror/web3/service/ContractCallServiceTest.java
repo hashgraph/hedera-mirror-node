@@ -247,13 +247,11 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         // When
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
             contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockType.number())));
-
             testWeb3jService.setBlockType(blockType);
             if (mirrorNodeEvmProperties.isModularizedServices()) {
                 assertThatThrownBy(functionCall::send)
                         .isInstanceOf(MirrorEvmTransactionException.class)
                         .hasMessage(INVALID_CONTRACT_ID.name());
-                ;
             } else {
                 assertThatThrownBy(functionCall::send)
                         .isInstanceOf(MirrorEvmTransactionException.class)
