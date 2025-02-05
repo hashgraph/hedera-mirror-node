@@ -113,7 +113,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                             """)
     void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType) {
         // Given
-        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(domainBuilder.entity().persist().toEntityId());
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(
+                domainBuilder.entity().persist().toEntityId());
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();

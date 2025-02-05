@@ -803,7 +803,6 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         return token;
     }
 
-
     private EntityId senderEntityPersistWithAlias() {
         return accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY).toEntityId();
     }
