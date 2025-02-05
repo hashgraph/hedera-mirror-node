@@ -17,6 +17,7 @@
 package com.swirlds.state.spi;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +26,9 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.state.core.MapWritableKVState;
 import com.hedera.mirror.web3.state.keyvalue.AccountReadableKVState;
+import java.util.Collections;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -106,15 +109,32 @@ class WritableKVStateBaseTest {
     }
 
     @Test
-    void testWithRemovedEntry() {
+    void testSizeWithRemovedEntry() {
         ContractCallContext.run(ctx -> {
             final var accountID = mock(AccountID.class);
+            final var accountID2 = mock(AccountID.class);
             final var account = mock(Account.class);
+            final var account2 = mock(Account.class);
             final WritableKVStateBase<AccountID, Account> writableKVStateBase =
                     new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateBase);
             ctx.getReadCacheState(AccountReadableKVState.KEY).put(accountID, account);
+            ctx.getReadCacheState(AccountReadableKVState.KEY).put(accountID2, account2);
             ctx.getModificationsState(AccountReadableKVState.KEY).put(accountID, null); // The entry was removed
-            assertThat(writableKVStateBase.size()).isZero();
+            when(readableKVStateBase.size()).thenReturn(2L);
+            when(readableKVStateBase.get(accountID)).thenReturn(account);
+            assertThat(writableKVStateBase.size()).isEqualTo(1L);
+            return ctx;
+        });
+    }
+
+    @Test
+    void testKeysEmpty() {
+        ContractCallContext.run(ctx -> {
+            final WritableKVStateBase<AccountID, Account> writableKVStateBase =
+                    new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateBase);
+            when(readableKVStateBase.keys()).thenReturn(Collections.emptyIterator());
+            final var iterator = writableKVStateBase.keys();
+            assertThatThrownBy(iterator::next).isInstanceOf(NoSuchElementException.class);
             return ctx;
         });
     }
