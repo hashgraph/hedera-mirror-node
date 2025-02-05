@@ -33,6 +33,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.testcontainers.lifecycle.TestcontainersStartup;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.transaction.support.TransactionOperations;
@@ -118,6 +119,7 @@ public class CommonTestConfiguration {
     @Bean
     JdbcConnectionDetails jdbcConnectionDetails(
             DataSourceProperties dataSourceProperties, PostgreSQLContainer<?> postgresql) {
+        TestcontainersStartup.start(postgresql);
         return new JdbcConnectionDetails() {
 
             @Override
@@ -133,13 +135,13 @@ public class CommonTestConfiguration {
             @Override
             public String getPassword() {
                 var password = dataSourceProperties.getPassword();
-                return password.contains("importer") ? password : postgresql().getPassword();
+                return password.contains("importer") ? password : postgresql.getPassword();
             }
 
             @Override
             public String getUsername() {
                 var username = dataSourceProperties.getUsername();
-                return username.contains("importer") ? username : postgresql().getUsername();
+                return username.contains("importer") ? username : postgresql.getUsername();
             }
         };
     }
