@@ -96,8 +96,8 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
     @Test
     void migrateWithoutBalanceSnapshots() {
         setup();
-        jdbcOperations.update("truncate account_balance");
-        jdbcOperations.update("truncate token_balance");
+        ownerJdbcTemplate.update("truncate account_balance");
+        ownerJdbcTemplate.update("truncate token_balance");
         runMigration();
 
         softly.assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
@@ -233,7 +233,7 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
     private void persistTokenClaimAirdropTransaction(
             long consensusTimestamp, List<NftTransfer> nftTransfers, long payerAccountId) {
         String nftTransferJson = ObjectToStringSerializer.OBJECT_MAPPER.writeValueAsString(nftTransfers);
-        jdbcOperations.update(
+        ownerJdbcTemplate.update(
                 """
                               insert into transaction (consensus_timestamp, nft_transfer, payer_account_id, type,
                                 result, valid_start_ns)
