@@ -144,17 +144,11 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
         // When
-        final var functionCall = tokenType.equals(TokenTypeEnum.FUNGIBLE_COMMON)
-                ? contract.send_wipeTokenGetTotalSupplyAndBalanceOfTreasury(
-                        getAddressFromEntity(tokenEntity),
-                        DEFAULT_AMOUNT,
-                        EMPTY_SERIAL_NUMBERS_LIST,
-                        getAddressFromEntity(sender))
-                : contract.send_wipeTokenGetTotalSupplyAndBalanceOfTreasury(
-                        getAddressFromEntity(tokenEntity),
-                        DEFAULT_AMOUNT,
-                        DEFAULT_SERIAL_NUMBERS,
-                        getAddressFromEntity(sender));
+        final var functionCall = contract.send_wipeTokenGetTotalSupplyAndBalanceOfTreasury(
+                getAddressFromEntity(tokenEntity),
+                DEFAULT_AMOUNT,
+                tokenType.equals(TokenTypeEnum.FUNGIBLE_COMMON) ? EMPTY_SERIAL_NUMBERS_LIST : DEFAULT_SERIAL_NUMBERS,
+                getAddressFromEntity(sender));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract);
