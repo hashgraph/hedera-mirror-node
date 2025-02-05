@@ -21,6 +21,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.AbstractNodeTransactionHandler;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -39,8 +40,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ParameterizedPreparedStatementSetter;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 @Named
 public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
@@ -56,7 +57,7 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
             """
             select consensus_timestamp, transaction_bytes, transaction_record_bytes
             from transaction
-            where consensus_timestamp >= :startTimestamp and type in (54, 55, 56)
+            where consensus_timestamp >= ? and type in (54, 55, 56)
             order by consensus_timestamp asc;
             """;
 
@@ -66,7 +67,7 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
             values (?, ?, ?, ?, ?::int8range);
             """;
 
-    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
     private final ObjectProvider<AbstractNodeTransactionHandler> nodeTransactionHandlers;
     private final EntityProperties entityProperties;
     private final Map<TransactionType, AbstractNodeTransactionHandler> nodeTransactionHandlerMap =
@@ -79,7 +80,7 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
             ObjectProvider<AbstractNodeTransactionHandler> nodeTransactionHandlers,
             ImporterProperties importerProperties,
             EntityProperties entityProperties,
-            NamedParameterJdbcTemplate jdbcTemplate) {
+            @Owner JdbcTemplate jdbcTemplate) {
         super(importerProperties.getMigration());
         this.v2 = environment.acceptsProfiles(Profiles.of("v2"));
         this.nodeTransactionHandlers = nodeTransactionHandlers;
@@ -122,14 +123,15 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
             ps.setString(5, PostgreSQLGuavaRangeType.INSTANCE.asString(node.getTimestampRange()));
         };
 
-        jdbcTemplate.getJdbcTemplate().execute(DROP_DATA_SQL);
-        jdbcTemplate
-                .getJdbcTemplate()
-                .batchUpdate(INSERT_SQL.formatted("node"), nodeState.values(), nodeState.size(), statementSetter);
-        jdbcTemplate
-                .getJdbcTemplate()
-                .batchUpdate(
-                        INSERT_SQL.formatted("node_history"), historicalNodes, historicalNodes.size(), statementSetter);
+        jdbcTemplate.execute(DROP_DATA_SQL);
+        jdbcTemplate.batchUpdate(INSERT_SQL.formatted("node"), nodeState.values(), nodeState.size(), statementSetter);
+        jdbcTemplate.batchUpdate(
+                INSERT_SQL.formatted("node_history"), historicalNodes, historicalNodes.size(), statementSetter);
+
+        log.info("Successfully processed {} node transactions producing {} rows and {} history rows",
+                nodeRecordItems.size(),
+                nodeState.size(),
+                historicalNodes.size());
     }
 
     private Node recordItemToNode(RecordItem recordItem) {
@@ -165,10 +167,7 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
 
     private List<RecordItem> getRecordItems() {
         return jdbcTemplate
-                .query(
-                        NODE_TRANSACTIONS_SQL,
-                        Map.of("startTimestamp", LOWER_TIMESTAMP),
-                        new DataClassRowMapper<>(Transaction.class))
+                .query(NODE_TRANSACTIONS_SQL, new DataClassRowMapper<>(Transaction.class), LOWER_TIMESTAMP)
                 .stream()
                 .map(this::toRecordItem)
                 .toList();
