@@ -73,6 +73,7 @@ import org.web3j.tx.Contract;
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
+    public static final long BALANCE = 1_000_000_000_000_000L;
 
     @Resource
     protected TestWeb3jService testWeb3jService;
@@ -238,15 +239,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     /**
      *
-     * @param treasuryEntity - the treasuryEntity that has to be set in the token
-     * @return Token object that is persisted in db
-     */
-    protected Token fungibleTokenPersistWithTreasuryAccount(final Entity treasuryEntity) {
-        return fungibleTokenCustomizable(t -> t.treasuryAccountId(treasuryEntity.toEntityId()));
-    }
-
-    /**
-     *
      * @param treasuryEntityId - the treasuryEntityId that has to be set in the token
      * @return Token object that is persisted in db
      */
@@ -370,11 +362,11 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      */
     protected Entity accountEntityPersist() {
         return accountEntityPersistCustomizable(
-                e -> e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(100_000_000_000_000_000L));
+                e -> e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(BALANCE));
     }
 
     protected Entity accountEntityWithEvmAddressPersist() {
-        return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000_000L));
+        return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT).balance(BALANCE));
     }
 
     /**

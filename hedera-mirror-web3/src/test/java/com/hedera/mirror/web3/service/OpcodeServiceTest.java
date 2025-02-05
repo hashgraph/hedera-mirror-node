@@ -870,7 +870,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     }
 
     private Entity accountPersist() {
-        return accountEntityPersistCustomizable(e -> e.evmAddress(null));
+        return accountEntityPersist();
     }
 
     private Entity accountPersistWithAccountBalances() {
