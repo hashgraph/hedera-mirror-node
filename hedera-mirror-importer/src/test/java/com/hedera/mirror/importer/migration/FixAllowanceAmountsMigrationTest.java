@@ -183,7 +183,7 @@ class FixAllowanceAmountsMigrationTest extends ImporterIntegrationTest {
     @SneakyThrows
     private void runMigration() {
         try (var is = migrationSql.getInputStream()) {
-            jdbcOperations.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+            ownerJdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
         }
     }
 }

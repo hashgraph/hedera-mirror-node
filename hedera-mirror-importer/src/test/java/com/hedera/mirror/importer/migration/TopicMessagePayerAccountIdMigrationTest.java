@@ -86,7 +86,7 @@ class TopicMessagePayerAccountIdMigrationTest extends ImporterIntegrationTest {
     }
 
     private void migrate() throws Exception {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     private List<MigrationTopicMessage> retrieveTopicMessages() {
