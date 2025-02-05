@@ -73,7 +73,7 @@ import org.web3j.tx.Contract;
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
-    public static final long BALANCE = 1_000_000_000_000_000L;
+    public static final long DEFAULT_ACCOUNT_BALANCE = 1_000_000_000_000_000L;
 
     @Resource
     protected TestWeb3jService testWeb3jService;
@@ -362,11 +362,11 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      */
     protected Entity accountEntityPersist() {
         return accountEntityPersistCustomizable(
-                e -> e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(BALANCE));
+                e -> e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(DEFAULT_ACCOUNT_BALANCE));
     }
 
     protected Entity accountEntityWithEvmAddressPersist() {
-        return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT).balance(BALANCE));
+        return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT).balance(DEFAULT_ACCOUNT_BALANCE));
     }
 
     /**

@@ -519,7 +519,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
         final var functionCall = contract.call_tinybarsToTinycents(BigInteger.TEN);
         final var callData = functionCall.encodeFunctionCall().getBytes();
-        final var senderEntity = accountPersist();
+        final var senderEntity = accountEntityPersist();
         final var consensusTimestamp = domainBuilder.timestamp();
         final var transactionIdOrHash = setUp(
                 TransactionType.CONTRACTCALL,
@@ -544,7 +544,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
         final var functionCall = contract.call_tinybarsToTinycents(BigInteger.TEN);
         final var callData = functionCall.encodeFunctionCall().getBytes();
-        final var senderEntity = accountPersist();
+        final var senderEntity = accountEntityPersist();
 
         final var transactionIdOrHash = setUp(
                 TransactionType.CONTRACTCALL,
@@ -867,10 +867,6 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                         .serialNumber(1))
                 .persist();
         return token;
-    }
-
-    private Entity accountPersist() {
-        return accountEntityPersist();
     }
 
     private Entity accountPersistWithAccountBalances() {
