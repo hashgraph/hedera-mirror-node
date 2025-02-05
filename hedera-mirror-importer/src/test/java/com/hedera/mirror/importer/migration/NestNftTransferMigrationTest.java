@@ -28,9 +28,9 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -48,12 +48,12 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
 @DisablePartitionMaintenance
+@DisableRepeatableSqlMigration
 @EnabledIfV1
 @RequiredArgsConstructor
 @Tag("migration")
@@ -75,8 +75,6 @@ class NestNftTransferMigrationTest extends ImporterIntegrationTest {
         OBJECT_MAPPER.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     }
 
-    private final @Owner JdbcTemplate jdbcTemplate;
-
     @Value("classpath:db/migration/v1/V1.81.0__nest_nft_transfer.sql")
     private final Resource sql;
 
@@ -96,7 +94,7 @@ class NestNftTransferMigrationTest extends ImporterIntegrationTest {
 
     @AfterEach
     void teardown() {
-        jdbcTemplate.execute(REVERT_DDL);
+        ownerJdbcTemplate.execute(REVERT_DDL);
     }
 
     @Test
@@ -306,7 +304,7 @@ class NestNftTransferMigrationTest extends ImporterIntegrationTest {
     }
 
     private void assertTransactions(Transaction... transactions) {
-        var actualTransactions = jdbcTemplate.query("select * from transaction", ROW_MAPPER).stream()
+        var actualTransactions = ownerJdbcTemplate.query("select * from transaction", ROW_MAPPER).stream()
                 .map(MigrationTransaction::toDomainTransaction)
                 .toList();
         assertThat(actualTransactions)
@@ -316,7 +314,7 @@ class NestNftTransferMigrationTest extends ImporterIntegrationTest {
 
     private void persistNftTransfers(List<MigrationNftTransfer> nftTransfers) {
         // hardcode payer account id, the column is "not null" and it's not needed for the migration
-        jdbcTemplate.batchUpdate(
+        ownerJdbcTemplate.batchUpdate(
                 """
                         insert into nft_transfer (consensus_timestamp, is_approval, payer_account_id, receiver_account_id,
                           sender_account_id, serial_number, token_id)
@@ -335,7 +333,7 @@ class NestNftTransferMigrationTest extends ImporterIntegrationTest {
     }
 
     private Transaction persistTransaction(Transaction transaction) {
-        jdbcTemplate.update(
+        ownerJdbcTemplate.update(
                 """
                         insert into transaction (consensus_timestamp, payer_account_id, result, type, valid_start_ns)
                         values (?, ?, ?, ?, ?)
@@ -351,7 +349,7 @@ class NestNftTransferMigrationTest extends ImporterIntegrationTest {
     @SneakyThrows
     private void runMigration() {
         try (var is = sql.getInputStream()) {
-            jdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+            ownerJdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
         }
     }
 

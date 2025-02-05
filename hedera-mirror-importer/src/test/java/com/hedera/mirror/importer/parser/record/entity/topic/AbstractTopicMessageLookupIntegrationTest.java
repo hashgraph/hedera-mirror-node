@@ -21,7 +21,6 @@ import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PA
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartition;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -31,10 +30,8 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 public abstract class AbstractTopicMessageLookupIntegrationTest extends ImporterIntegrationTest {
 
@@ -58,10 +55,6 @@ public abstract class AbstractTopicMessageLookupIntegrationTest extends Importer
     @Resource
     protected EntityProperties entityProperties;
 
-    @Autowired
-    @Owner
-    protected JdbcTemplate jdbcTemplate;
-
     @Resource
     protected TimePartitionService timePartitionService;
 
@@ -70,12 +63,12 @@ public abstract class AbstractTopicMessageLookupIntegrationTest extends Importer
 
     protected List<TimePartition> partitions;
 
-    @Autowired
     @Qualifier(CACHE_TIME_PARTITION)
+    @Resource
     private CacheManager cacheManager1;
 
-    @Autowired
     @Qualifier(CACHE_TIME_PARTITION_OVERLAP)
+    @Resource
     private CacheManager cacheManager2;
 
     @BeforeEach
@@ -93,7 +86,7 @@ public abstract class AbstractTopicMessageLookupIntegrationTest extends Importer
 
     private void createPartitions() {
         if (isV1()) {
-            jdbcTemplate.execute(CREATE_DDL);
+            ownerJdbcTemplate.execute(CREATE_DDL);
         }
 
         partitions = timePartitionService.getTimePartitions("topic_message");
@@ -106,8 +99,8 @@ public abstract class AbstractTopicMessageLookupIntegrationTest extends Importer
         }
 
         try {
-            jdbcTemplate.execute(CHECK_TABLE_EXISTENCE);
-            jdbcTemplate.execute(REVERT_DDL);
+            ownerJdbcTemplate.execute(CHECK_TABLE_EXISTENCE);
+            ownerJdbcTemplate.execute(REVERT_DDL);
             // clear cache so for v1 TimePartitionService won't return stale partition info
             cacheManager1.getCacheNames().forEach(n -> cacheManager1.getCache(n).clear());
             cacheManager2.getCacheNames().forEach(n -> cacheManager2.getCache(n).clear());

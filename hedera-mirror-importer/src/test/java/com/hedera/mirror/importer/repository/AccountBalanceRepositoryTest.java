@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,7 +34,7 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
+class AccountBalanceRepositoryTest extends ImporterIntegrationTest {
 
     private final AccountBalanceRepository accountBalanceRepository;
     private final EntityRepository entityRepository;
@@ -63,7 +64,7 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .entity()
                 .customize(e -> e.type(EntityType.UNKNOWN))
                 .persist();
-        domainBuilder.topic().persist();
+        domainBuilder.topicEntity().persist();
 
         var expected = Stream.of(account, contract, deletedAccount, fileWithBalance, unknownWithBalance)
                 .map(e -> AccountBalance.builder()

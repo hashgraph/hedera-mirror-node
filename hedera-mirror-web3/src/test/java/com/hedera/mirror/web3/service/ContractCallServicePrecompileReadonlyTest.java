@@ -509,10 +509,10 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                 .build();
         domainBuilder
                 .customFee()
-                .customize(f -> f.fixedFees(List.of(fixedFee))
+                .customize(f -> f.entityId(tokenEntity.getId())
+                        .fixedFees(List.of(fixedFee))
                         .fractionalFees(List.of())
-                        .royaltyFees(List.of())
-                        .tokenId(tokenEntity.getId()))
+                        .royaltyFees(List.of()))
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
@@ -550,10 +550,10 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                 .build();
         domainBuilder
                 .customFee()
-                .customize(f -> f.fractionalFees(List.of(fractionalFee))
+                .customize(f -> f.entityId(tokenEntity.getId())
+                        .fractionalFees(List.of(fractionalFee))
                         .fixedFees(List.of())
-                        .royaltyFees(List.of())
-                        .tokenId(tokenEntity.getId()))
+                        .royaltyFees(List.of()))
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
@@ -593,10 +593,10 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                 .build();
         domainBuilder
                 .customFee()
-                .customize(f -> f.royaltyFees(List.of(royaltyFee))
+                .customize(f -> f.entityId(tokenEntity.getId())
+                        .royaltyFees(List.of(royaltyFee))
                         .fixedFees(List.of())
-                        .fractionalFees(List.of())
-                        .tokenId(tokenEntity.getId()))
+                        .fractionalFees(List.of()))
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
@@ -1122,7 +1122,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         if (TokenTypeEnum.FUNGIBLE_COMMON.equals(tokenType)) {
             return domainBuilder
                     .customFee()
-                    .customize(f -> f.tokenId(tokenEntity.getId())
+                    .customize(f -> f.entityId(tokenEntity.getId())
                             .fixedFees(List.of(fixedFee))
                             .fractionalFees(List.of(fractionalFee))
                             .royaltyFees(new ArrayList<>()))
@@ -1130,7 +1130,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         } else if (TokenTypeEnum.NON_FUNGIBLE_UNIQUE.equals(tokenType)) {
             return domainBuilder
                     .customFee()
-                    .customize(f -> f.tokenId(tokenEntity.getId())
+                    .customize(f -> f.entityId(tokenEntity.getId())
                             .fixedFees(List.of(fixedFee))
                             .royaltyFees(List.of(royaltyFee))
                             .fractionalFees(new ArrayList<>()))

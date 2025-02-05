@@ -38,6 +38,7 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.topic.Topic;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -117,6 +118,8 @@ public interface EntityListener {
     default void onTokenAllowance(TokenAllowance tokenAllowance) {}
 
     default void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {}
+
+    default void onTopic(Topic topic) throws ImporterException {}
 
     default void onTopicMessage(TopicMessage topicMessage) throws ImporterException {}
 

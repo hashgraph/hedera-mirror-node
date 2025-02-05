@@ -129,7 +129,6 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 false,
                 null,
                 SCHEDULE_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
 
@@ -178,7 +177,6 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 false,
                 null,
                 scheduleCreate.getMemo(),
-                null,
                 timestamp,
                 timestamp);
         var expectedSchedule = Schedule.builder()
@@ -228,7 +226,6 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 true,
                 null,
                 SCHEDULE_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 deletedTimestamp);
         assertEquals(1, entityRepository.count());
@@ -300,7 +297,6 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 false,
                 null,
                 SCHEDULE_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
         assertEquals(1, entityRepository.count());
@@ -439,7 +435,6 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 false,
                 null,
                 SCHEDULE_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
         assertEquals(1, entityRepository.count());

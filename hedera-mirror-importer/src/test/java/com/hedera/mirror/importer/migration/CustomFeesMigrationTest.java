@@ -19,20 +19,21 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.converter.ObjectToStringSerializer;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.converter.EntityIdConverter;
+import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.token.FallbackFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.FractionalFee;
 import com.hedera.mirror.common.domain.token.RoyaltyFee;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
-import com.hedera.mirror.importer.migration.CustomFeesMigrationTest.MigrationCustomFee.Id;
-import com.hedera.mirror.importer.repository.CustomFeeRepository;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,32 +41,28 @@ import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.apache.commons.collections4.ListUtils;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StreamUtils;
 
 @DisablePartitionMaintenance
+@DisableRepeatableSqlMigration
 @RequiredArgsConstructor
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = {"spring.flyway.target=1.85.1"})
 class CustomFeesMigrationTest extends ImporterIntegrationTest {
-
-    private final CustomFeeRepository customFeeRepository;
-    private final @Owner JdbcTemplate jdbcTemplate;
-
-    @Value("classpath:db/migration/v1/V1.85.2__custom_fee_aggregate_history.sql")
-    private final Resource sql;
 
     private static final String REVERT_DDL =
             """
@@ -89,10 +86,22 @@ class CustomFeesMigrationTest extends ImporterIntegrationTest {
                on custom_fee (token_id desc, created_timestamp desc);
             """;
 
-    @BeforeEach
-    void setup() {
-        jdbcTemplate.execute(REVERT_DDL);
-        assertThat(ObjectToStringSerializer.INSTANCE).isNotNull();
+    private static final RecursiveComparisonConfiguration COMPARISON_CONFIGURATION =
+            RecursiveComparisonConfiguration.builder()
+                    .withComparatorForFields(
+                            CustomFeesMigrationTest::feeListComparator, "fixedFees", "fractionalFees", "royaltyFees")
+                    .withIgnoreCollectionOrder(true)
+                    .build();
+
+    private final Map<Long, PostMigrationCustomFee> customFeeState = new HashMap<>();
+    private final List<PostMigrationCustomFee> expectedHistoricCustomFees = new ArrayList<>();
+
+    @Value("classpath:db/migration/v1/V1.85.2__custom_fee_aggregate_history.sql")
+    private final Resource sql;
+
+    @AfterEach
+    void cleanup() {
+        ownerJdbcTemplate.execute(REVERT_DDL);
     }
 
     @Test
@@ -105,36 +114,38 @@ class CustomFeesMigrationTest extends ImporterIntegrationTest {
         long collectorAccountTwo = 603011;
         long collectorAccountThree = 603013;
         long denominatingTokenId = 603006;
-        var id = new MigrationCustomFee.Id(initialTimestamp, tokenId);
-        var initial = MigrationCustomFee.builder()
-                .id(id)
+        var initial = PreMigrationCustomFee.builder()
                 .allCollectorsAreExempt(false)
+                .createdTimestamp(initialTimestamp)
                 .minimumAmount(0L)
+                .tokenId(tokenId)
                 .build();
-        var updateId = new MigrationCustomFee.Id(updateTimestamp, tokenId);
-        var updateOne = MigrationCustomFee.builder()
-                .id(updateId)
+        var updateOne = PreMigrationCustomFee.builder()
                 .allCollectorsAreExempt(false)
+                .collectorAccountId(collectorAccountOne)
+                .createdTimestamp(updateTimestamp)
                 .minimumAmount(0L)
                 .amount(100L)
-                .collectorAccountId(collectorAccountOne)
+                .tokenId(tokenId)
                 .build();
-        var updateTwo = MigrationCustomFee.builder()
-                .id(updateId)
+        var updateTwo = PreMigrationCustomFee.builder()
                 .allCollectorsAreExempt(false)
+                .createdTimestamp(updateTimestamp)
                 .minimumAmount(0L)
                 .amount(10L)
                 .collectorAccountId(collectorAccountTwo)
                 .denominatingTokenId(denominatingTokenId)
+                .tokenId(tokenId)
                 .build();
-        var updateThree = MigrationCustomFee.builder()
-                .id(updateId)
+        var updateThree = PreMigrationCustomFee.builder()
                 .allCollectorsAreExempt(false)
+                .createdTimestamp(updateTimestamp)
                 .minimumAmount(0L)
                 .amount(1L)
                 .amountDenominator(10L)
                 .collectorAccountId(collectorAccountThree)
                 .netOfTransfers(false)
+                .tokenId(tokenId)
                 .build();
 
         persistMigrationCustomFees(List.of(initial, updateOne, updateTwo, updateThree));
@@ -143,51 +154,36 @@ class CustomFeesMigrationTest extends ImporterIntegrationTest {
         runMigration();
 
         // then
-        var expected = toAggregateCustomFees(List.of(updateTwo, updateOne, updateThree));
-        expected.forEach(e -> e.setTimestampRange(Range.atLeast(updateTimestamp)));
-        assertThat(customFeeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
-
-        var expectedHistory = toAggregateCustomFees(List.of(initial));
-        expectedHistory.forEach(h -> h.setTimestampRange(Range.closedOpen(initialTimestamp, updateTimestamp)));
-        assertThat(findHistory(CustomFee.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        assertThat(getAllCustomFees())
+                .usingRecursiveComparison(COMPARISON_CONFIGURATION)
+                .isEqualTo(customFeeState.values());
+        assertThat(getAllHistoricCustomFees())
+                .usingRecursiveComparison(COMPARISON_CONFIGURATION)
+                .isEqualTo(expectedHistoricCustomFees);
     }
 
     @Test
     void empty() {
         runMigration();
-        assertThat(customFeeRepository.findAll()).isEmpty();
-        assertThat(findHistory(CustomFee.class)).isEmpty();
+        assertThat(getAllCustomFees()).isEmpty();
+        assertThat(getAllHistoricCustomFees()).isEmpty();
     }
 
     @Test
     void migrate() {
         // given
-        var fixedFees = new MigrationCustomFeeData(getFixedFee());
-        var fractionalFees = new MigrationCustomFeeData(getFractionalFee());
-        var royaltyFees = new MigrationCustomFeeData(getRoyaltyFee());
-        var emptyFees = new MigrationCustomFeeData(getEmptyFee());
-
-        var migrationCustomFees = new ArrayList<MigrationCustomFee>();
-        migrationCustomFees.addAll(fixedFees.migrationCustomFees);
-        migrationCustomFees.addAll(fractionalFees.migrationCustomFees);
-        migrationCustomFees.addAll(royaltyFees.migrationCustomFees);
-        migrationCustomFees.addAll(emptyFees.migrationCustomFees);
-        persistMigrationCustomFees(migrationCustomFees);
+        persistMigrationCustomFees(List.of(getFixedFee(), getFractionalFee(), getRoyaltyFee(), getEmptyFee()));
 
         // when
         runMigration();
 
         // then
-        var expected = List.of(
-                fixedFees.aggregateFee, royaltyFees.aggregateFee, fractionalFees.aggregateFee, emptyFees.aggregateFee);
-        assertThat(customFeeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
-
-        var expectedHistory = new ArrayList<CustomFee>();
-        expectedHistory.addAll(fixedFees.aggregateHistory);
-        expectedHistory.addAll(royaltyFees.aggregateHistory);
-        expectedHistory.addAll(fractionalFees.aggregateHistory);
-        expectedHistory.addAll(emptyFees.aggregateHistory);
-        assertThat(findHistory(CustomFee.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        assertThat(getAllCustomFees())
+                .usingRecursiveComparison(COMPARISON_CONFIGURATION)
+                .isEqualTo(customFeeState.values());
+        assertThat(getAllHistoricCustomFees())
+                .usingRecursiveComparison(COMPARISON_CONFIGURATION)
+                .isEqualTo(expectedHistoricCustomFees);
     }
 
     @Test
@@ -203,326 +199,249 @@ class CustomFeesMigrationTest extends ImporterIntegrationTest {
 
         // Set all token ids and createdTimestamps to the same value,
         // they will then be aggregated into a single custom fee
-        fixedFee2.id.tokenId = fixedFee.id.tokenId;
-        fixedFee2.id.createdTimestamp = fixedFee.id.createdTimestamp;
-        fractionalFee.id.tokenId = fixedFee.id.tokenId;
-        fractionalFee.id.createdTimestamp = fixedFee.id.createdTimestamp;
-        fractionalFee2.id.tokenId = fixedFee.id.tokenId;
-        fractionalFee2.id.createdTimestamp = fixedFee.id.createdTimestamp;
-        royaltyFee.id.tokenId = fixedFee.id.tokenId;
-        royaltyFee.id.createdTimestamp = fixedFee.id.createdTimestamp;
-        royaltyFee2.id.tokenId = fixedFee.id.tokenId;
-        royaltyFee2.id.createdTimestamp = fixedFee.id.createdTimestamp;
+        var allCustomFees =
+                List.of(fixedFee, fixedFee2, fractionalFee, fractionalFee2, royaltyFee, royaltyFee2, emptyFee);
+        allCustomFees.forEach(fee -> {
+            fee.setCreatedTimestamp(fixedFee.getCreatedTimestamp());
+            fee.setTokenId(fixedFee.getTokenId());
+        });
+
         // Royalty Fee without Fallback Fee
-        royaltyFee2.amount = null;
-        emptyFee.id.tokenId = fixedFee.id.tokenId;
-        emptyFee.id.createdTimestamp = fixedFee.id.createdTimestamp;
+        royaltyFee2.setAmount(null);
 
-        var fixedFees = new MigrationCustomFeeData(fixedFee);
-        var fixedFees2 = new MigrationCustomFeeData(fixedFee2);
-        var fractionalFees = new MigrationCustomFeeData(fractionalFee);
-        var fractionalFees2 = new MigrationCustomFeeData(fractionalFee2);
-        var royaltyFees = new MigrationCustomFeeData(royaltyFee);
-        var royaltyFees2 = new MigrationCustomFeeData(royaltyFee2);
-        var emptyFees = new MigrationCustomFeeData(emptyFee);
-
-        var migrationCustomFees = new ArrayList<MigrationCustomFee>();
-        migrationCustomFees.addAll(fixedFees.migrationCustomFees);
-        migrationCustomFees.addAll(fixedFees2.migrationCustomFees);
-        migrationCustomFees.addAll(fractionalFees.migrationCustomFees);
-        migrationCustomFees.addAll(fractionalFees2.migrationCustomFees);
-        migrationCustomFees.addAll(royaltyFees.migrationCustomFees);
-        migrationCustomFees.addAll(royaltyFees2.migrationCustomFees);
-        migrationCustomFees.addAll(emptyFees.migrationCustomFees);
-        persistMigrationCustomFees(migrationCustomFees);
+        persistMigrationCustomFees(allCustomFees);
 
         // when
         runMigration();
 
         // then
-        var aggregates = List.of(
-                fixedFees.aggregateFee,
-                fixedFees2.aggregateFee,
-                fractionalFees.aggregateFee,
-                fractionalFees2.aggregateFee,
-                royaltyFees.aggregateFee,
-                royaltyFees2.aggregateFee);
-        var expected = combineAggregates(aggregates, false);
-        var repositoryResult = customFeeRepository.findAll();
-        var listAssert = Assertions.assertThat(repositoryResult).hasSize(1);
-        for (var result : expected) {
-            listAssert.anySatisfy(fee -> {
-                assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
-                assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
-                assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
-                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
-                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-            });
+        assertThat(getAllCustomFees())
+                .usingRecursiveComparison(COMPARISON_CONFIGURATION)
+                .isEqualTo(customFeeState.values());
+        assertThat(getAllHistoricCustomFees()).isEmpty();
+    }
+
+    private static int feeListComparator(Object first, Object second) {
+        // The migration script doesn't enforce order on the fixedFees / fractionalFees / royaltyFees jsonb array, thus
+        // the elements in any of the three jsonb array are with random order. The function compares the actual and
+        // expected list with order ignored
+        if (first == null && second == null) {
+            return 0;
         }
 
-        var aggregateHistory = new ArrayList<CustomFee>();
-        aggregateHistory.addAll(fixedFees.aggregateHistory);
-        aggregateHistory.addAll(fixedFees2.aggregateHistory);
-        aggregateHistory.addAll(fractionalFees.aggregateHistory);
-        aggregateHistory.addAll(fractionalFees2.aggregateHistory);
-        aggregateHistory.addAll(royaltyFees.aggregateHistory);
-        aggregateHistory.addAll(royaltyFees2.aggregateHistory);
-        var expectedHistory = combineAggregates(aggregateHistory, true);
-        var historyListAssert =
-                Assertions.assertThat(findHistory(CustomFee.class)).hasSize(2);
-        for (var historyResult : expectedHistory) {
-            historyListAssert.anySatisfy(h -> {
-                assertThat(h.getFixedFees()).containsExactlyInAnyOrderElementsOf(historyResult.getFixedFees());
-                assertThat(h.getFractionalFees())
-                        .containsExactlyInAnyOrderElementsOf(historyResult.getFractionalFees());
-                assertThat(h.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(historyResult.getRoyaltyFees());
-                assertThat(h.getTokenId()).isEqualTo(historyResult.getTokenId());
-                assertThat(h.getTimestampRange()).isEqualTo(historyResult.getTimestampRange());
-            });
+        if (!(first instanceof List<?> firstList)
+                || !(second instanceof List<?> secondList)
+                || firstList.size() != secondList.size()) {
+            return -1;
         }
+
+        var duplicate = new ArrayList<>(secondList);
+        for (Object firstElem : firstList) {
+            for (int index = 0; index < duplicate.size(); index++) {
+                if (Objects.equals(firstElem, duplicate.get(index))) {
+                    duplicate.remove(index);
+                    break;
+                }
+            }
+        }
+
+        return duplicate.isEmpty() ? 0 : -1;
+    }
+
+    private static <T> List<T> mergeList(List<T> first, List<T> second) {
+        if (first == null && second == null) {
+            return null;
+        }
+
+        return ListUtils.union(
+                Objects.requireNonNullElse(first, Collections.emptyList()),
+                Objects.requireNonNullElse(second, Collections.emptyList()));
+    }
+
+    private Collection<PostMigrationCustomFee> getAllCustomFees() {
+        return findEntity(PostMigrationCustomFee.class, "token_id", "custom_fee");
+    }
+
+    private Collection<PostMigrationCustomFee> getAllHistoricCustomFees() {
+        return findHistory("custom_fee", PostMigrationCustomFee.class);
     }
 
     @SneakyThrows
     private void runMigration() {
-        var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
-        var txnTemplate = new TransactionTemplate(transactionManager);
         try (var is = sql.getInputStream()) {
-            String migrationSql = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-            txnTemplate.executeWithoutResult(s -> {
-                jdbcTemplate.update(migrationSql);
-            });
+            ownerJdbcTemplate.execute(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
         }
     }
 
-    private MigrationCustomFee.MigrationCustomFeeBuilder getEmptyFee() {
-        return MigrationCustomFee.builder()
-                .id(new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id()))
-                .minimumAmount(0L);
+    private PreMigrationCustomFee getEmptyFee() {
+        return PreMigrationCustomFee.builder()
+                .createdTimestamp(domainBuilder.timestamp())
+                .minimumAmount(0L)
+                .tokenId(domainBuilder.id())
+                .build();
     }
 
-    private MigrationCustomFee.MigrationCustomFeeBuilder getFixedFee() {
-        return MigrationCustomFee.builder()
+    private PreMigrationCustomFee getFixedFee() {
+        return PreMigrationCustomFee.builder()
                 .allCollectorsAreExempt(false)
                 .amount(domainBuilder.number())
+                .createdTimestamp(domainBuilder.timestamp())
                 .denominatingTokenId(domainBuilder.id())
-                .id(new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id()))
-                .collectorAccountId(domainBuilder.id());
+                .collectorAccountId(domainBuilder.id())
+                .tokenId(domainBuilder.id())
+                .build();
     }
 
-    private MigrationCustomFee.MigrationCustomFeeBuilder getFractionalFee() {
-        return MigrationCustomFee.builder()
+    private PreMigrationCustomFee getFractionalFee() {
+        return PreMigrationCustomFee.builder()
                 .allCollectorsAreExempt(false)
                 .amount(domainBuilder.number())
+                .createdTimestamp(domainBuilder.timestamp())
                 .denominatingTokenId(domainBuilder.id())
                 .amountDenominator(domainBuilder.number())
-                .id(new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id()))
                 .collectorAccountId(domainBuilder.id())
                 .maximumAmount(domainBuilder.number())
                 .minimumAmount(1L)
-                .netOfTransfers(true);
+                .netOfTransfers(true)
+                .tokenId(domainBuilder.id())
+                .build();
     }
 
-    private MigrationCustomFee.MigrationCustomFeeBuilder getRoyaltyFee() {
-        return MigrationCustomFee.builder()
+    private PreMigrationCustomFee getRoyaltyFee() {
+        return PreMigrationCustomFee.builder()
                 .allCollectorsAreExempt(false)
                 .amount(domainBuilder.number())
-                .id(new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id()))
+                .createdTimestamp(domainBuilder.timestamp())
                 .collectorAccountId(domainBuilder.id())
                 .denominatingTokenId(domainBuilder.id())
                 .royaltyDenominator(10L)
-                .royaltyNumerator(1L);
+                .royaltyNumerator(1L)
+                .tokenId(domainBuilder.id())
+                .build();
     }
 
-    private class MigrationCustomFeeData {
-        public final List<MigrationCustomFee> migrationCustomFees;
-        public final CustomFee aggregateFee;
-        public final List<CustomFee> aggregateHistory;
-
-        public MigrationCustomFeeData(MigrationCustomFee.MigrationCustomFeeBuilder builder) {
-            var range = Range.atLeast(builder.id.createdTimestamp);
-            var createdTimestamp = range.lowerEndpoint() - 2;
-            var rangeUpdate1 = Range.closedOpen(createdTimestamp, range.lowerEndpoint() - 1);
-            var rangeUpdate2 = Range.closedOpen(range.lowerEndpoint() - 1, range.lowerEndpoint());
-            var currentMigrationCustomFee = builder.build();
-            // Empty fees can have null collectorAccountIds.
-            var updateCollectorAccountId1 =
-                    currentMigrationCustomFee.collectorAccountId == null ? null : domainBuilder.id();
-            var updateCollectorAccountId2 =
-                    currentMigrationCustomFee.collectorAccountId == null ? null : domainBuilder.id();
-            var migrationCustomFeeUpdate1 = builder.id(new Id(rangeUpdate1.lowerEndpoint(), builder.id.tokenId))
-                    .collectorAccountId(updateCollectorAccountId1)
-                    .build();
-            var migrationCustomFeeUpdate2 = builder.id(
-                            new MigrationCustomFee.Id(rangeUpdate2.lowerEndpoint(), builder.id.tokenId))
-                    .collectorAccountId(updateCollectorAccountId2)
-                    .build();
-
-            var currentTimestamp = currentMigrationCustomFee.id.createdTimestamp;
-            migrationCustomFees =
-                    List.of(currentMigrationCustomFee, migrationCustomFeeUpdate1, migrationCustomFeeUpdate2);
-
-            // build aggregate fees
-            var updatedCurrent = builder.id(new Id(rangeUpdate2.upperEndpoint(), builder.id.tokenId))
-                    .collectorAccountId(currentMigrationCustomFee.collectorAccountId)
-                    .build();
-            var updatedHistory = builder.id(new Id(createdTimestamp, builder.id.tokenId))
-                    .collectorAccountId(updateCollectorAccountId1)
-                    .build();
-            var updatedHistory2 = builder.id(new Id(rangeUpdate1.upperEndpoint(), builder.id.tokenId))
-                    .collectorAccountId(updateCollectorAccountId2)
-                    .build();
-            aggregateFee = toAggregateCustomFees(List.of(updatedCurrent)).get(0);
-            aggregateFee.setTimestampRange(Range.atLeast(currentTimestamp));
-
-            var aggregateHistory1 = toAggregateCustomFees(List.of(updatedHistory));
-            aggregateHistory1.get(0).setTimestampRange(rangeUpdate1);
-            var aggregateHistory2 = toAggregateCustomFees(List.of(updatedHistory2));
-            aggregateHistory2.get(0).setTimestampRange(rangeUpdate2);
-
-            aggregateHistory = List.of(aggregateHistory1.get(0), aggregateHistory2.get(0));
-        }
-    }
-
-    private List<CustomFee> toAggregateCustomFees(List<MigrationCustomFee> migrationCustomFees) {
-        Map<Long, CustomFee> customFeeMap = new HashMap<>();
-        for (MigrationCustomFee migrationCustomFee : migrationCustomFees) {
-            var mappedFee = customFeeMap.get(migrationCustomFee.id.tokenId);
-            var customFee = mappedFee != null
-                    ? mappedFee
-                    : domainBuilder
-                            .customFee()
-                            .customize(c -> c.tokenId(migrationCustomFee.id.tokenId)
-                                    .fixedFees(null)
-                                    .fractionalFees(null)
-                                    .royaltyFees(null))
-                            .get();
-
-            if (migrationCustomFee.collectorAccountId != null
-                    && migrationCustomFee.amount != null
-                    && migrationCustomFee.royaltyDenominator == null
-                    && migrationCustomFee.amountDenominator == null) {
-                customFee.addFixedFee(FixedFee.builder()
-                        .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
-                        .amount(migrationCustomFee.amount)
-                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId))
-                        .denominatingTokenId(
-                                migrationCustomFee.denominatingTokenId == null
-                                        ? null
-                                        : EntityId.of(migrationCustomFee.denominatingTokenId))
-                        .build());
-            }
-            if (migrationCustomFee.amountDenominator != null) {
-                customFee.addFractionalFee(FractionalFee.builder()
-                        .denominator(migrationCustomFee.amountDenominator)
-                        .maximumAmount(migrationCustomFee.maximumAmount)
-                        .minimumAmount(migrationCustomFee.minimumAmount)
-                        .netOfTransfers(migrationCustomFee.netOfTransfers)
-                        .numerator(migrationCustomFee.amount)
-                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId))
-                        .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
-                        .build());
-            }
-            if (migrationCustomFee.royaltyDenominator != null) {
-                var royaltyFee = RoyaltyFee.builder()
-                        .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
-                        .denominator(migrationCustomFee.royaltyDenominator)
-                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId))
-                        .numerator(migrationCustomFee.royaltyNumerator);
-                if (migrationCustomFee.getAmount() != null) {
-                    royaltyFee.fallbackFee(FallbackFee.builder()
-                            .amount(migrationCustomFee.amount)
-                            .denominatingTokenId(EntityId.of(migrationCustomFee.denominatingTokenId))
-                            .build());
-                }
-                customFee.addRoyaltyFee(royaltyFee.build());
-            }
-
-            customFeeMap.putIfAbsent(migrationCustomFee.id.tokenId, customFee);
-        }
-
-        return customFeeMap.values().stream().toList();
-    }
-
-    private List<CustomFee> combineAggregates(List<CustomFee> customFees, boolean history) {
-        Map<CustomFeeMapKey, CustomFee> customFeeMap = new HashMap<>();
-        for (var customFee : customFees) {
-            var keyRange = history ? customFee.getTimestampRange() : null;
-            var key = new CustomFeeMapKey(customFee.getTokenId(), keyRange);
-            if (!customFeeMap.containsKey(key)) {
-                customFeeMap.put(key, customFee);
-            } else {
-                var mappedFee = customFeeMap.get(key);
-                if (customFee.getFixedFees() != null) {
-                    for (var fixedFee : customFee.getFixedFees()) {
-                        mappedFee.addFixedFee(fixedFee);
-                    }
-                }
-                if (customFee.getFractionalFees() != null) {
-                    for (var fractionalFee : customFee.getFractionalFees()) {
-                        mappedFee.addFractionalFee(fractionalFee);
-                    }
-                }
-                if (customFee.getRoyaltyFees() != null) {
-                    for (var royaltyFee : customFee.getRoyaltyFees()) {
-                        mappedFee.addRoyaltyFee(royaltyFee);
-                    }
-                }
-            }
-        }
-        return customFeeMap.values().stream().toList();
-    }
-
-    private void persistMigrationCustomFees(List<MigrationCustomFee> migrationCustomFees) {
-        jdbcTemplate.batchUpdate(
+    private void persistMigrationCustomFees(List<PreMigrationCustomFee> migrationCustomFees) {
+        ownerJdbcTemplate.batchUpdate(
                 """
-                        insert into custom_fee (created_timestamp, token_id, all_collectors_are_exempt, amount, amount_denominator, collector_account_id, denominating_token_id, maximum_amount, minimum_amount, net_of_transfers, royalty_denominator, royalty_numerator)
+                        insert into custom_fee (created_timestamp, token_id, all_collectors_are_exempt, amount,
+                          amount_denominator, collector_account_id, denominating_token_id, maximum_amount,
+                          minimum_amount, net_of_transfers, royalty_denominator, royalty_numerator)
                         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 migrationCustomFees.stream()
                         .map(customFee -> new Object[] {
-                            customFee.id.createdTimestamp,
-                            customFee.id.tokenId,
-                            customFee.allCollectorsAreExempt,
-                            customFee.amount,
-                            customFee.amountDenominator,
-                            customFee.collectorAccountId,
-                            customFee.denominatingTokenId,
-                            customFee.maximumAmount,
-                            customFee.minimumAmount,
-                            customFee.netOfTransfers,
-                            customFee.royaltyDenominator,
-                            customFee.royaltyNumerator
+                            customFee.getCreatedTimestamp(),
+                            customFee.getTokenId(),
+                            customFee.isAllCollectorsAreExempt(),
+                            customFee.getAmount(),
+                            customFee.getAmountDenominator(),
+                            customFee.getCollectorAccountId(),
+                            customFee.getDenominatingTokenId(),
+                            customFee.getMaximumAmount(),
+                            customFee.getMinimumAmount(),
+                            customFee.getNetOfTransfers(),
+                            customFee.getRoyaltyDenominator(),
+                            customFee.getRoyaltyNumerator()
                         })
                         .toList());
+
+        // the pre-migration custom fees should be ordered by created timestamp to guarantee the correctness of the
+        // merge logic
+        for (var migrationCustomFee : migrationCustomFees) {
+            var migrated = new PostMigrationCustomFee();
+            migrated.setTokenId(migrationCustomFee.getTokenId());
+            migrated.setTimestampLower(migrationCustomFee.getCreatedTimestamp());
+            var collectorAccountId =
+                    EntityIdConverter.INSTANCE.convertToEntityAttribute(migrationCustomFee.getCollectorAccountId());
+            var denominatingTokenId =
+                    EntityIdConverter.INSTANCE.convertToEntityAttribute(migrationCustomFee.getDenominatingTokenId());
+            if (migrationCustomFee.getCollectorAccountId() != null
+                    && migrationCustomFee.getAmount() != null
+                    && migrationCustomFee.getAmountDenominator() == null
+                    && migrationCustomFee.getRoyaltyDenominator() == null) {
+                migrated.setFixedFees(List.of(FixedFee.builder()
+                        .allCollectorsAreExempt(migrationCustomFee.isAllCollectorsAreExempt())
+                        .amount(migrationCustomFee.getAmount())
+                        .collectorAccountId(collectorAccountId)
+                        .denominatingTokenId(denominatingTokenId)
+                        .build()));
+            } else if (migrationCustomFee.getAmountDenominator() != null) {
+                migrated.setFractionalFees(List.of(FractionalFee.builder()
+                        .allCollectorsAreExempt(migrationCustomFee.isAllCollectorsAreExempt())
+                        .collectorAccountId(collectorAccountId)
+                        .denominator(migrationCustomFee.getAmountDenominator())
+                        .maximumAmount(migrationCustomFee.getMaximumAmount())
+                        .minimumAmount(migrationCustomFee.getMinimumAmount())
+                        .netOfTransfers(migrationCustomFee.getNetOfTransfers())
+                        .numerator(migrationCustomFee.getAmount())
+                        .build()));
+            } else if (migrationCustomFee.getRoyaltyDenominator() != null) {
+                var royaltyFee = RoyaltyFee.builder()
+                        .allCollectorsAreExempt(migrationCustomFee.isAllCollectorsAreExempt())
+                        .collectorAccountId(collectorAccountId)
+                        .denominator(migrationCustomFee.getRoyaltyDenominator())
+                        .numerator(migrationCustomFee.getRoyaltyNumerator());
+                if (migrationCustomFee.getAmount() != null) {
+                    royaltyFee.fallbackFee(FallbackFee.builder()
+                            .amount(migrationCustomFee.getAmount())
+                            .denominatingTokenId(denominatingTokenId)
+                            .build());
+                }
+
+                migrated.setRoyaltyFees(List.of(royaltyFee.build()));
+            }
+
+            customFeeState.merge(migrated.getTokenId(), migrated, (previous, current) -> {
+                if (!Objects.equals(previous.getTimestampLower(), current.getTimestampLower())) {
+                    previous.setTimestampUpper(current.getTimestampLower());
+                    expectedHistoricCustomFees.add(previous);
+                    return current;
+                }
+
+                previous.setFixedFees(mergeList(previous.getFixedFees(), current.getFixedFees()));
+                previous.setFractionalFees(mergeList(previous.getFractionalFees(), current.getFractionalFees()));
+                previous.setRoyaltyFees(mergeList(previous.getRoyaltyFees(), current.getRoyaltyFees()));
+                return previous;
+            });
+        }
     }
 
+    @AllArgsConstructor
     @Data
-    private class CustomFeeMapKey {
-        public final long tokenId;
-        public final Range<Long> timestampRange;
+    @Entity
+    @NoArgsConstructor
+    private static class PostMigrationCustomFee implements History {
+
+        @JdbcTypeCode(SqlTypes.JSON)
+        private List<FixedFee> fixedFees;
+
+        @JdbcTypeCode(SqlTypes.JSON)
+        private List<FractionalFee> fractionalFees;
+
+        @JdbcTypeCode(SqlTypes.JSON)
+        private List<RoyaltyFee> royaltyFees;
+
+        private Range<Long> timestampRange;
+
+        @Id
+        private Long tokenId;
     }
 
     @AllArgsConstructor
     @Builder
     @Data
-    static class MigrationCustomFee {
-        private Id id;
+    private static class PreMigrationCustomFee {
         private boolean allCollectorsAreExempt;
         private Long amount;
         private Long amountDenominator;
         private Long collectorAccountId;
+        private long createdTimestamp;
         private Long denominatingTokenId;
         private Long maximumAmount;
         private long minimumAmount;
         private Boolean netOfTransfers;
         private Long royaltyDenominator;
         private Long royaltyNumerator;
-
-        @Data
-        @AllArgsConstructor
-        public static class Id {
-            private long createdTimestamp;
-            private long tokenId;
-        }
+        private long tokenId;
     }
 }

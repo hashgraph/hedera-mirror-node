@@ -34,8 +34,6 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
-import jakarta.annotation.Resource;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import java.io.File;
@@ -53,7 +51,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisablePartitionMaintenance
@@ -67,10 +64,6 @@ class SupportDeletedTokenDissociateMigrationTest extends ImporterIntegrationTest
     private static final EntityId TREASURY = EntityId.of("0.0.200");
     private static final EntityId NEW_TREASURY = EntityId.of("0.0.201");
     private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3);
-
-    @Resource
-    @Owner
-    private JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.45.0__support_deleted_token_dissociate.sql")
     private File migrationSql;

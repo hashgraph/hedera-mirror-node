@@ -32,10 +32,10 @@ class CustomFee {
 
   static tableName = `custom_fee`;
 
+  static ENTITY_ID = `entity_id`;
   static FIXED_FEES = `fixed_fees`;
   static FRACTIONAL_FEES = `fractional_fees`;
   static ROYALTY_FEES = `royalty_fees`;
-  static TOKEN_ID = `token_id`;
   static TIMESTAMP_RANGE = `timestamp_range`;
 }
 

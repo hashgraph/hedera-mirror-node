@@ -19,13 +19,14 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 
 @RequiredArgsConstructor
-class CustomFeeRepositoryTest extends AbstractRepositoryTest {
+class CustomFeeRepositoryTest extends ImporterIntegrationTest {
 
     private final CustomFeeRepository customFeeRepository;
     private static final RowMapper<CustomFee> ROW_MAPPER = rowMapper(CustomFee.class);
@@ -34,7 +35,7 @@ class CustomFeeRepositoryTest extends AbstractRepositoryTest {
     void save() {
         var customFee = domainBuilder.customFee().get();
         customFeeRepository.save(customFee);
-        assertThat(customFeeRepository.findById(customFee.getTokenId())).get().isEqualTo(customFee);
+        assertThat(customFeeRepository.findById(customFee.getEntityId())).get().isEqualTo(customFee);
     }
 
     /**
