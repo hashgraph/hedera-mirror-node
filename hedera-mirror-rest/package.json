@@ -38,7 +38,7 @@
     "log4js": "^6.9.1",
     "long": "^5.2.4",
     "mathjs": "^14.2.0",
-    "parse-duration": "^2.0.1",
+    "parse-duration": "^2.1.2",
     "pg": "~8.13.1",
     "pg-range": "^1.1.2",
     "prom-client": "^14.2.0",
