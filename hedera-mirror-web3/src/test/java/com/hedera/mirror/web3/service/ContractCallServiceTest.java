@@ -36,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -45,10 +46,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
@@ -240,11 +239,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                 .customize(recordFileBuilder -> recordFileBuilder.index(blockType.number()))
                 .persist();
 
-
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
-        final var payer = accountEntityWithEvmAddressPersist();
-        persistAccountBalance(payer, payer.getBalance());
-        testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
 
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var functionCall = contract.call_multiplySimpleNumbers();
@@ -254,25 +249,16 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
             contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockType.number())));
 
-            var historicalRange = setUpHistoricalContextBeforeEvm34(blockType.number());
-            final var payerEarliestBlock = accountEntityWithEvmAddressPersistBlockEarliest(historicalRange);
-            persistAccountBalance(payerEarliestBlock, payerEarliestBlock.getBalance());
-            testWeb3jService.setSender(toAddress(payerEarliestBlock.toEntityId()).toHexString());
-
             testWeb3jService.setBlockType(blockType);
-            if(mirrorNodeEvmProperties.isModularizedServices()){
-//                assertThatThrownBy(functionCall::send)
-//                        .isInstanceOf(MirrorEvmTransactionException.class);
-//
-                try{
-                    var result = functionCall.send();
-                } catch(Exception e){
-                    System.out.println("EXCEPTION");
-                }
-            } else{
-            assertThatThrownBy(functionCall::send)
-                    .isInstanceOf(MirrorEvmTransactionException.class)
-                    .hasMessage(INVALID_TRANSACTION.name());
+            if (mirrorNodeEvmProperties.isModularizedServices()) {
+                assertThatThrownBy(functionCall::send)
+                        .isInstanceOf(MirrorEvmTransactionException.class)
+                        .hasMessage(INVALID_CONTRACT_ID.name());
+                ;
+            } else {
+                assertThatThrownBy(functionCall::send)
+                        .isInstanceOf(MirrorEvmTransactionException.class)
+                        .hasMessage(INVALID_TRANSACTION.name());
             }
         } else {
             assertThat(functionCall.send()).isEqualTo(BigInteger.valueOf(4L));
@@ -281,38 +267,6 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
 
         // Then
         assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
-    }
-
-    protected Entity accountEntityWithEvmAddressPersistBlockEarliest(final Range<Long> timestampRange) {
-        return domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT)
-                        .balance(1_000_000_000_000_000L)
-                        .shard(0L)
-                        .realm(0L)
-                        .num(2L)
-                        .timestampRange(timestampRange)
-                        .createdTimestamp(timestampRange.lowerEndpoint()))
-                .persist();
-    }
-
-    private Range<Long> setUpHistoricalContextBeforeEvm34(Long blockNumber) {
-        final var recordFileEarliest = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(blockNumber))
-                .persist();
-        return Range.closedOpen(recordFileEarliest.getConsensusStart(), recordFileEarliest.getConsensusEnd());
-    }
-
-    protected Entity accountEntityPersistHistorical(final Range<Long> timestampRange) {
-        return domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT)
-                        .deleted(false)
-                        .balance(1_000_000_000_000L)
-                        .timestampRange(timestampRange)
-                        .createdTimestamp(timestampRange.lowerEndpoint()))
-                .persist();
     }
 
     @ParameterizedTest
@@ -332,13 +286,20 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var functionCall = contract.call_multiplySimpleNumbers();
         meterRegistry.clear(); // Clear it as the contract deploy increases the gas limit metric
 
+        // Then
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
             contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockType.number())));
             testWeb3jService.setBlockType(blockType);
-            // Then
-            assertThatThrownBy(functionCall::send)
-                    .isInstanceOf(MirrorEvmTransactionException.class)
-                    .hasMessage(INVALID_TRANSACTION.name());
+            if (mirrorNodeEvmProperties.isModularizedServices()) {
+                assertThatThrownBy(functionCall::send)
+                        .isInstanceOf(MirrorEvmTransactionException.class)
+                        .hasMessage(INVALID_CONTRACT_ID.name());
+            } else {
+                assertThatThrownBy(functionCall::send)
+                        .isInstanceOf(MirrorEvmTransactionException.class)
+                        .hasMessage(INVALID_TRANSACTION.name());
+            }
+
         } else {
             // Then
             assertThat(functionCall.send()).isEqualTo(new BigInteger(expectedResponse.substring(2), 16));
@@ -612,23 +573,10 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var serviceParameters =
                 getContractExecutionParametersWithValue(Bytes.EMPTY, notExistingSenderAlias, receiverAddress, 10L);
         // When
-        if (mirrorNodeEvmProperties.isModularizedServices()) {
-            try{
-                final var result = contractExecutionService.processCall(serviceParameters);
-
-            }catch (Exception e) {
-                System.out.println("EXCEPTION");
-            }
-//                assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
-//                        .isInstanceOf(MirrorEvmTransactionException.class)
-//                        .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
-
-        }else{
-            final var result = contractExecutionService.processCall(serviceParameters);
-            assertThat(result).isEqualTo(HEX_PREFIX);
-        }
+        final var result = contractExecutionService.processCall(serviceParameters);
 
         // Then
+        assertThat(result).isEqualTo(HEX_PREFIX);
         assertGasLimit(serviceParameters);
     }
 
@@ -760,6 +708,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
+    // IN PROGRESS
     @Test
     void estimateGasForDirectCreateContractDeploy() {
         // Given
