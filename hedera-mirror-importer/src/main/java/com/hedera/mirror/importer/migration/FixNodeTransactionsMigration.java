@@ -128,7 +128,8 @@ public class FixNodeTransactionsMigration extends ConfigurableJavaMigration {
         jdbcTemplate.batchUpdate(
                 INSERT_SQL.formatted("node_history"), historicalNodes, historicalNodes.size(), statementSetter);
 
-        log.info("Successfully processed {} node transactions producing {} rows and {} history rows",
+        log.info(
+                "Successfully processed {} node transactions producing {} rows and {} history rows",
                 nodeRecordItems.size(),
                 nodeState.size(),
                 historicalNodes.size());
