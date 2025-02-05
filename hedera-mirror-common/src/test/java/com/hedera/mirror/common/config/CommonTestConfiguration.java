@@ -132,12 +132,14 @@ public class CommonTestConfiguration {
 
             @Override
             public String getPassword() {
-                return dataSourceProperties.getPassword();
+                var password = dataSourceProperties.getPassword();
+                return password.contains("importer") ? password : postgresql().getPassword();
             }
 
             @Override
             public String getUsername() {
-                return dataSourceProperties.getUsername();
+                var username = dataSourceProperties.getUsername();
+                return username.contains("importer") ? username : postgresql().getUsername();
             }
         };
     }

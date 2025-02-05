@@ -89,8 +89,8 @@ class ChangeTransactionHashDistributionMigrationTest extends ImporterIntegration
     private void persistTransactionHashes(Collection<TransactionHash> transactionHashes) {
         ownerJdbcTemplate.batchUpdate(
                 """
-                        insert into transaction_hash (consensus_timestamp, hash, payer_account_id) values (?, ?, ?)
-                        """,
+                    insert into transaction_hash (consensus_timestamp, hash, payer_account_id) values (?, ?, ?)
+                    """,
                 transactionHashes,
                 transactionHashes.size(),
                 (ps, transactionHash) -> {

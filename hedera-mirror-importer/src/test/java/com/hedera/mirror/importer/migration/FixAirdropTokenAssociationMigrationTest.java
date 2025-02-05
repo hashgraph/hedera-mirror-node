@@ -233,7 +233,7 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
     private void persistTokenClaimAirdropTransaction(
             long consensusTimestamp, List<NftTransfer> nftTransfers, long payerAccountId) {
         String nftTransferJson = ObjectToStringSerializer.OBJECT_MAPPER.writeValueAsString(nftTransfers);
-        ownerJdbcTemplate.update(
+        jdbcOperations.update(
                 """
                               insert into transaction (consensus_timestamp, nft_transfer, payer_account_id, type,
                                 result, valid_start_ns)
