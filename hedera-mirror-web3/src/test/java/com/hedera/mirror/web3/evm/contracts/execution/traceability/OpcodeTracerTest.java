@@ -35,7 +35,10 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.NOT_STARTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.MESSAGE_CALL;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -45,18 +48,28 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSortedMap;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.state.core.MapWritableStates;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractActionType;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.state.State;
+import com.swirlds.state.spi.WritableKVState;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -101,6 +114,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class OpcodeTracerTest {
 
+    private static final String CONTRACT_SERVICE = "ContractService";
+    private static final String STORAGE_KEY = "STORAGE";
     private static final Address CONTRACT_ADDRESS = Address.fromHexString("0x123");
     private static final Address ETH_PRECOMPILE_ADDRESS = Address.fromHexString("0x01");
     private static final Address HTS_PRECOMPILE_ADDRESS = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
@@ -116,11 +131,10 @@ class OpcodeTracerTest {
             return new OperationResult(GAS_COST, null);
         }
     };
+    private static MockedStatic<ContractCallContext> contextMockedStatic;
 
     @Spy
     private ContractCallContext contractCallContext;
-
-    private static MockedStatic<ContractCallContext> contextMockedStatic;
 
     @Mock
     private WorldUpdater worldUpdater;
@@ -130,6 +144,12 @@ class OpcodeTracerTest {
 
     @Mock
     private PrecompilesHolder precompilesHolder;
+
+    @Mock
+    private MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    @Mock
+    private State mirrorNodeState;
 
     // Transient test data
     private OpcodeTracer tracer;
@@ -167,7 +187,7 @@ class OpcodeTracerTest {
                         EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS,
                         mock(PrecompiledContract.class)));
         REMAINING_GAS.set(INITIAL_GAS);
-        tracer = new OpcodeTracer(precompilesHolder);
+        tracer = new OpcodeTracer(precompilesHolder, mirrorNodeEvmProperties, mirrorNodeState);
         tracerOptions = new OpcodeTracerOptions(false, false, false);
         contextMockedStatic.when(ContractCallContext::get).thenReturn(contractCallContext);
     }
@@ -188,14 +208,20 @@ class OpcodeTracerTest {
                 MutableAccount account = worldUpdater.getAccount(frame.getRecipientAddress());
                 if (account != null) {
                     assertThat(account).isEqualTo(recipientAccount);
-                    verify(recipientAccount, times(1)).getUpdatedStorage();
+                    if (!mirrorNodeEvmProperties.isModularizedServices()) {
+                        verify(recipientAccount, times(1)).getUpdatedStorage();
+                    }
                 }
             } catch (final ModificationNotAllowedException e) {
-                verify(recipientAccount, never()).getUpdatedStorage();
+                if (!mirrorNodeEvmProperties.isModularizedServices()) {
+                    verify(recipientAccount, never()).getUpdatedStorage();
+                }
             }
         } else {
             verify(worldUpdater, never()).getAccount(any());
-            verify(recipientAccount, never()).getUpdatedStorage();
+            if (!mirrorNodeEvmProperties.isModularizedServices()) {
+                verify(recipientAccount, never()).getUpdatedStorage();
+            }
         }
     }
 
@@ -466,6 +492,188 @@ class OpcodeTracerTest {
     }
 
     @Test
+    @DisplayName("given storage is enabled in tracer options, should record storage for modularized services")
+    void shouldRecordStorageWhenEnabledModularized() {
+        // Given
+        tracerOptions = tracerOptions.toBuilder().storage(true).build();
+        when(mirrorNodeEvmProperties.isModularizedServices()).thenReturn(true);
+        frame = setupInitialFrame(tracerOptions);
+
+        // Mock writable states
+        MapWritableStates mockStates = mock(MapWritableStates.class);
+        when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
+        WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
+        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+
+        // Mock SlotKey and SlotValue
+        SlotKey slotKey = createMockSlotKey();
+        SlotValue slotValue = createMockSlotValue(UInt256.valueOf(233));
+
+        // Mock modified keys retrieval
+        when(mockStorageState.modifiedKeys()).thenReturn(Set.of(slotKey));
+        when(mockStorageState.get(slotKey)).thenReturn(slotValue);
+
+        // Expected storage map
+        final Map<UInt256, UInt256> expectedStorage = ImmutableSortedMap.of(UInt256.ZERO, UInt256.valueOf(233));
+
+        // When
+        final Opcode opcode = executeOperation(frame);
+
+        // Then
+        assertThat(opcode.storage()).isNotEmpty().containsAllEntriesOf(expectedStorage);
+    }
+
+    @Test
+    @DisplayName(
+            "given storage is enabled in tracer options, should return empty storage when there are no updates for modularized services")
+    void shouldReturnEmptyStorageWhenThereAreNoUpdates() {
+        // Given
+        tracerOptions = tracerOptions.toBuilder().storage(true).build();
+        when(mirrorNodeEvmProperties.isModularizedServices()).thenReturn(true);
+        frame = setupInitialFrame(tracerOptions);
+
+        // Mock writable states
+        MapWritableStates mockStates = mock(MapWritableStates.class);
+        when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
+        WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
+        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+
+        // Mock empty modified keys retrieval
+        when(mockStorageState.modifiedKeys()).thenReturn(Collections.emptySet());
+
+        // When
+        final Opcode opcode = executeOperation(frame);
+
+        // Then
+        assertThat(opcode.storage()).isEmpty();
+    }
+
+    @Test
+    @DisplayName(
+            "given storage is enabled in tracer options, should skip slotKey when hasContractID is false for modularized services")
+    void shouldSkipSlotKeyWhenHasContractIDIsFalse() {
+        // Given
+        tracerOptions = tracerOptions.toBuilder().storage(true).build();
+        when(mirrorNodeEvmProperties.isModularizedServices()).thenReturn(true);
+        frame = setupInitialFrame(tracerOptions);
+
+        MapWritableStates mockStates = mock(MapWritableStates.class);
+        when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
+        WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
+        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+
+        SlotKey slotKeyWithoutContractID = mock(SlotKey.class);
+        when(slotKeyWithoutContractID.hasContractID()).thenReturn(false);
+
+        when(mockStorageState.modifiedKeys()).thenReturn(Set.of(slotKeyWithoutContractID));
+
+        // When
+        final Opcode opcode = executeOperation(frame);
+
+        // Then
+        assertThat(opcode.storage()).isEmpty();
+    }
+
+    @Test
+    @DisplayName(
+            "given storage is enabled in tracer options, should skip slotKey when contractID is null for modularized services")
+    void shouldSkipSlotKeyWhenContractIDIsNull() {
+        // Given
+        tracerOptions = tracerOptions.toBuilder().storage(true).build();
+        when(mirrorNodeEvmProperties.isModularizedServices()).thenReturn(true);
+        frame = setupInitialFrame(tracerOptions);
+
+        MapWritableStates mockStates = mock(MapWritableStates.class);
+        when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
+        WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
+        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+
+        SlotKey slotKeyWithNullContractID = mock(SlotKey.class);
+        when(slotKeyWithNullContractID.hasContractID()).thenReturn(true);
+        when(slotKeyWithNullContractID.contractID()).thenReturn(null);
+
+        when(mockStorageState.modifiedKeys()).thenReturn(Set.of(slotKeyWithNullContractID));
+
+        // When
+        final Opcode opcode = executeOperation(frame);
+
+        // Then
+        assertThat(opcode.storage()).isEmpty();
+    }
+
+    @Test
+    @DisplayName(
+            "given storage is enabled in tracer options, should skip slotKey when contract address does not match for modularized services")
+    void shouldSkipSlotKeyWhenContractAddressDoesNotMatch() {
+        // Given
+        tracerOptions = tracerOptions.toBuilder().storage(true).build();
+        when(mirrorNodeEvmProperties.isModularizedServices()).thenReturn(true);
+        frame = setupInitialFrame(tracerOptions);
+
+        MapWritableStates mockStates = mock(MapWritableStates.class);
+        when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
+        WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
+        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+
+        SlotKey mismatchedSlotKey = createMockSlotKey(Address.fromHexString("0xDEADBEEF"));
+        when(mockStorageState.modifiedKeys()).thenReturn(Set.of(mismatchedSlotKey));
+
+        // When
+        final Opcode opcode = executeOperation(frame);
+
+        // Then
+        assertThat(opcode.storage()).isEmpty();
+    }
+
+    @Test
+    @DisplayName(
+            "given storage is enabled in tracer options, should skip slotKey when slotValue is null for modularized services")
+    void shouldSkipSlotKeyWhenSlotValueIsNull() {
+        // Given
+        tracerOptions = tracerOptions.toBuilder().storage(true).build();
+        when(mirrorNodeEvmProperties.isModularizedServices()).thenReturn(true);
+        frame = setupInitialFrame(tracerOptions);
+
+        MapWritableStates mockStates = mock(MapWritableStates.class);
+        when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
+        WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
+        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+
+        SlotKey slotKey = createMockSlotKey(CONTRACT_ADDRESS);
+
+        when(mockStorageState.modifiedKeys()).thenReturn(Set.of(slotKey));
+        when(mockStorageState.get(slotKey)).thenReturn(null); // SlotValue is null
+
+        // When
+        final Opcode opcode = executeOperation(frame);
+
+        // Then
+        assertThat(opcode.storage()).isEmpty();
+    }
+
+    @Test
+    @DisplayName(
+            "given storage is enabled in tracer options, should return empty storage when STORAGE_KEY retrieval fails for modularized services")
+    void shouldReturnEmptyStorageWhenStorageKeyRetrievalFails() {
+        // Given
+        tracerOptions = tracerOptions.toBuilder().storage(true).build();
+        when(mirrorNodeEvmProperties.isModularizedServices()).thenReturn(true);
+        frame = setupInitialFrame(tracerOptions);
+
+        MapWritableStates mockStates = mock(MapWritableStates.class);
+        when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
+
+        // Mock storage retrieval to throw IllegalArgumentException
+        when(mockStates.get(STORAGE_KEY)).thenThrow(new IllegalArgumentException("Storage retrieval failed"));
+
+        // When
+        final Opcode opcode = executeOperation(frame);
+
+        // Then
+        assertThat(opcode.storage()).isEmpty(); // Ensures empty storage response instead of exception
+    }
+
+    @Test
     @DisplayName("given account is missing in the world updater, should only log a warning and return empty storage")
     void shouldNotThrowExceptionWhenAccountIsMissingInWorldUpdater() {
         tracerOptions = tracerOptions.toBuilder().storage(true).build();
@@ -610,7 +818,7 @@ class OpcodeTracerTest {
         assertThat(opcodeForPrecompileCall.reason())
                 .isNotEmpty()
                 .isEqualTo(getAbiEncodedRevertReason(Bytes.of(
-                                ResponseCodeEnum.INVALID_ACCOUNT_ID.name().getBytes()))
+                        ResponseCodeEnum.INVALID_ACCOUNT_ID.name().getBytes()))
                         .toHexString());
     }
 
@@ -756,15 +964,17 @@ class OpcodeTracerTest {
                 UInt256.ZERO, UInt256.valueOf(233),
                 UInt256.ONE, UInt256.valueOf(2424));
 
-        when(recipientAccount.getUpdatedStorage()).thenReturn(storage);
+        if (!mirrorNodeEvmProperties.isModularizedServices()) {
+            when(recipientAccount.getUpdatedStorage()).thenReturn(storage);
+        }
         when(worldUpdater.getAccount(frame.getRecipientAddress())).thenReturn(recipientAccount);
 
         return storage;
     }
 
     private UInt256[] setupStackForCapture(final MessageFrame frame) {
-        final UInt256[] stack = new UInt256[] {
-            UInt256.fromHexString("0x01"), UInt256.fromHexString("0x02"), UInt256.fromHexString("0x03")
+        final UInt256[] stack = new UInt256[]{
+                UInt256.fromHexString("0x01"), UInt256.fromHexString("0x02"), UInt256.fromHexString("0x03")
         };
 
         for (final UInt256 stackItem : stack) {
@@ -775,8 +985,8 @@ class OpcodeTracerTest {
     }
 
     private Bytes[] setupMemoryForCapture(final MessageFrame frame) {
-        final Bytes[] words = new Bytes[] {
-            Bytes.fromHexString("0x01", 32), Bytes.fromHexString("0x02", 32), Bytes.fromHexString("0x03", 32)
+        final Bytes[] words = new Bytes[]{
+                Bytes.fromHexString("0x01", 32), Bytes.fromHexString("0x02", 32), Bytes.fromHexString("0x03", 32)
         };
 
         for (int i = 0; i < words.length; i++) {
@@ -822,7 +1032,8 @@ class OpcodeTracerTest {
                 .code(CodeV0.EMPTY_CODE)
                 .sender(Address.ZERO)
                 .originator(Address.ZERO)
-                .completer(ignored -> {})
+                .completer(ignored -> {
+                })
                 .miningBeneficiary(Address.ZERO)
                 .address(recipientAddress)
                 .contract(recipientAddress)
@@ -862,5 +1073,43 @@ class OpcodeTracerTest {
                 .resultDataType(resultDataType)
                 .value(1L)
                 .build();
+    }
+
+    /**
+     * Helper method to create a mocked SlotKey with a specified contract address. Uses lenient stubbing to prevent
+     * UnnecessaryStubbingException in certain tests.
+     */
+    private SlotKey createMockSlotKey(Address contractAddress) {
+        SlotKey slotKey = mock(SlotKey.class);
+
+        when(slotKey.hasContractID()).thenReturn(true);
+
+        ContractID testContractId = com.hedera.hapi.node.base.ContractID.newBuilder()
+                .contractNum(EntityIdUtils.numFromEvmAddress(contractAddress.toArray()))
+                .build();
+
+        lenient().when(slotKey.contractID()).thenReturn(testContractId);
+        lenient().when(slotKey.key()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(UInt256.ZERO.toArray()));
+
+        return slotKey;
+    }
+
+    /**
+     * Overloaded method to create a SlotKey with the default contract address.
+     */
+    /**
+     * Overloaded method to create a SlotKey with the default contract address.
+     */
+    private SlotKey createMockSlotKey() {
+        return createMockSlotKey(OpcodeTracerTest.CONTRACT_ADDRESS);
+    }
+
+    /**
+     * Helper method to create a mocked SlotValue.
+     */
+    private SlotValue createMockSlotValue(UInt256 value) {
+        SlotValue slotValue = mock(SlotValue.class);
+        when(slotValue.value()).thenReturn(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(value.toArray()));
+        return slotValue;
     }
 }
