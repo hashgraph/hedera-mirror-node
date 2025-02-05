@@ -708,7 +708,6 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
-    // IN PROGRESS
     @Test
     void estimateGasForDirectCreateContractDeploy() {
         // Given
