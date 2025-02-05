@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -38,7 +37,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisablePartitionMaintenance
@@ -48,8 +46,6 @@ import org.springframework.test.context.TestPropertySource;
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.51.1")
 class ContractLogsConvertTopicsToBytesMigrationTest extends ImporterIntegrationTest {
-
-    private final @Owner JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.51.2__contract_logs_convert_topics_to_bytes.sql")
     private final File migrationSql;
@@ -139,14 +135,13 @@ class ContractLogsConvertTopicsToBytesMigrationTest extends ImporterIntegrationT
     }
 
     private void revertMigration() {
-        jdbcOperations.update(
-                "alter table contract_log alter column topic0 type varchar(64) using encode(topic0, 'hex')");
-        jdbcOperations.update(
-                "alter table contract_log alter column topic1 type varchar(64) using encode(topic1, 'hex')");
-        jdbcOperations.update(
-                "alter table contract_log alter column topic2 type varchar(64) using encode(topic2, 'hex')");
-        jdbcOperations.update(
-                "alter table contract_log alter column topic3 type varchar(64) using encode(topic3, 'hex')");
+        ownerJdbcTemplate.execute(
+                """
+            alter table contract_log alter column topic0 type varchar(64) using encode(topic0, 'hex');
+            alter table contract_log alter column topic1 type varchar(64) using encode(topic1, 'hex');
+            alter table contract_log alter column topic2 type varchar(64) using encode(topic2, 'hex');
+            alter table contract_log alter column topic3 type varchar(64) using encode(topic3, 'hex');
+            """);
     }
 
     @Data

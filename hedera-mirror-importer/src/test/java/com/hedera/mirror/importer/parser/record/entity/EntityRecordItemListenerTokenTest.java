@@ -165,7 +165,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private static CustomFee emptyCustomFees(long consensusTimestamp, EntityId tokenId) {
         CustomFee customFee = new CustomFee();
-        customFee.setTokenId(tokenId.getId());
+        customFee.setEntityId(tokenId.getId());
         customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
         return customFee;
     }
@@ -173,7 +173,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static CustomFee nonEmptyCustomFee(long consensusTimestamp, EntityId tokenId, TokenType tokenType) {
         var customFee = new CustomFee();
         customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
-        customFee.setTokenId(tokenId.getId());
+        customFee.setEntityId(tokenId.getId());
         EntityId treasury = PAYER_ACCOUNT_ID;
 
         var fixedFee1 = new com.hedera.mirror.common.domain.token.FixedFee();
@@ -536,7 +536,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 EXPIRY_NS,
                 TOKEN_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
         var autoAssociatedAccounts = expectedTokenAccounts.stream()
@@ -1024,7 +1023,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 true,
                 EXPIRY_NS,
                 TOKEN_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 deleteTimeStamp);
         assertEquals(1L, entityRepository.count());
@@ -1059,7 +1057,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 EXPIRY_NS,
                 TOKEN_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
         var initialCustomFee = emptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
@@ -1136,7 +1133,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 EXPIRY_NS,
                 TOKEN_UPDATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 updateTimeStamp);
         assertEquals(1L, entityRepository.count());
@@ -4099,7 +4095,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 EXPIRY_NS,
                 TOKEN_CREATE_MEMO,
-                null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
 
@@ -4746,7 +4741,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     var amount = royaltyFee.getFallbackFee().getAmount();
                     var denominatingTokenId = royaltyFee.getFallbackFee().getDenominatingTokenId();
                     protoRoyaltyFee.setFallbackFee(
-                            convertFixedFee(amount, denominatingTokenId, customFee.getTokenId()));
+                            convertFixedFee(amount, denominatingTokenId, customFee.getEntityId()));
                 }
 
                 protoCustomFee.setRoyaltyFee(protoRoyaltyFee);
@@ -4762,7 +4757,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     protoCustomFee.setAllCollectorsAreExempt(fixedFee.isAllCollectorsAreExempt());
                     protoCustomFee.setFeeCollectorAccountId(convertAccountId(fixedFee.getCollectorAccountId()));
                     protoCustomFee.setFixedFee(convertFixedFee(
-                            fixedFee.getAmount(), fixedFee.getDenominatingTokenId(), customFee.getTokenId()));
+                            fixedFee.getAmount(), fixedFee.getDenominatingTokenId(), customFee.getEntityId()));
                     protoCustomFees.add(protoCustomFee.build());
                 }
             }

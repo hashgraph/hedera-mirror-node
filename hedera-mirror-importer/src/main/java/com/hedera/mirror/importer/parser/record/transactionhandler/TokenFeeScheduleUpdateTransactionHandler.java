@@ -83,7 +83,7 @@ class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandle
         var consensusTimestamp = transaction.getConsensusTimestamp();
         var tokenId = transaction.getEntityId();
         var customFee = new CustomFee();
-        customFee.setTokenId(tokenId.getId());
+        customFee.setEntityId(tokenId.getId());
         customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
 
         // For empty custom fees, add a single row with only the timestamp and tokenId.

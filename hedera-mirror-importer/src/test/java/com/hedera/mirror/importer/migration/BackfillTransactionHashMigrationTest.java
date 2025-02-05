@@ -27,7 +27,6 @@ import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.ImporterProperties;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
@@ -48,7 +47,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.env.Environment;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor
 @Tag("migration")
@@ -59,7 +57,6 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
 
     private final EntityProperties entityProperties;
     private final Environment environment;
-    private final @Owner JdbcTemplate jdbcTemplate;
     private final ImporterProperties importerProperties;
     private final TimePartitionService timePartitionService;
     private final TransactionHashRepository transactionHashRepository;
@@ -76,7 +73,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
         migrationProperties.getParams().put("startTimestamp", String.valueOf(DEFAULT_START_TIMESTAMP));
         importerProperties.getMigration().put(MIGRATION_NAME, migrationProperties);
         migration = new BackfillTransactionHashMigration(
-                entityProperties, environment, jdbcTemplate, importerProperties, timePartitionService);
+                entityProperties, environment, ownerJdbcTemplate, importerProperties, timePartitionService);
     }
 
     @AfterEach

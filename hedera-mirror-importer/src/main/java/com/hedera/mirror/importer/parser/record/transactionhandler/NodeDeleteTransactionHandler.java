@@ -19,19 +19,17 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
 
 @Named
-@RequiredArgsConstructor
-class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
+class NodeDeleteTransactionHandler extends AbstractNodeTransactionHandler {
 
-    private final EntityListener entityListener;
-    private final EntityProperties entityProperties;
+    public NodeDeleteTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
+        super(entityListener, entityProperties);
+    }
 
     @Override
     public TransactionType getType() {
@@ -39,24 +37,18 @@ class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
     }
 
     @Override
-    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isNodes()) {
-            return;
-        }
-        transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
-        transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
-        parseNode(recordItem);
-    }
-
-    private void parseNode(RecordItem recordItem) {
+    public Node parseNode(RecordItem recordItem) {
         if (recordItem.isSuccessful()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             var body = recordItem.getTransactionBody().getNodeDelete();
-            entityListener.onNode(Node.builder()
+
+            return Node.builder()
                     .deleted(true)
                     .nodeId(body.getNodeId())
                     .timestampRange(Range.atLeast(consensusTimestamp))
-                    .build());
+                    .build();
         }
+
+        return null;
     }
 }

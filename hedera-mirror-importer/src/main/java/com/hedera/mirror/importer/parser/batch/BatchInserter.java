@@ -27,6 +27,7 @@ import com.google.common.collect.Lists;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.converter.ListToStringSerializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
+import com.hedera.mirror.importer.converter.ByteArrayArrayToHexSerializer;
 import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
@@ -81,6 +82,7 @@ public class BatchInserter implements BatchPersister {
         this.tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, tableName);
         var mapper = new CsvMapper();
         SimpleModule module = new SimpleModule();
+        module.addSerializer(byte[][].class, ByteArrayArrayToHexSerializer.INSTANCE);
         module.addSerializer(byte[].class, ByteArrayToHexSerializer.INSTANCE);
         module.addSerializer(EntityIdSerializer.INSTANCE);
         module.addSerializer(ListToStringSerializer.INSTANCE);

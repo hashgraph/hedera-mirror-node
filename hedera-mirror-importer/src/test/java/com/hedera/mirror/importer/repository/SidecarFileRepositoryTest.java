@@ -18,12 +18,13 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class SidecarFileRepositoryTest extends AbstractRepositoryTest {
+class SidecarFileRepositoryTest extends ImporterIntegrationTest {
 
     private final SidecarFileRepository sidecarFileRepository;
 

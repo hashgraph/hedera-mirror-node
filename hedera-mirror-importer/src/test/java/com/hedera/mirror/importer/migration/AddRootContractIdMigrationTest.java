@@ -21,8 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
-import jakarta.annotation.Resource;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -34,7 +32,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisablePartitionMaintenance
@@ -43,10 +40,6 @@ import org.springframework.test.context.TestPropertySource;
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.51.0")
 class AddRootContractIdMigrationTest extends ImporterIntegrationTest {
-
-    @Resource
-    @Owner
-    private JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.51.1__contract_logs_root_id.sql")
     private File migrationSql;
@@ -140,7 +133,7 @@ class AddRootContractIdMigrationTest extends ImporterIntegrationTest {
     }
 
     private void revertMigration() {
-        jdbcOperations.update("alter table contract_log drop column if exists root_contract_id");
+        ownerJdbcTemplate.update("alter table contract_log drop column if exists root_contract_id");
     }
 
     @Data

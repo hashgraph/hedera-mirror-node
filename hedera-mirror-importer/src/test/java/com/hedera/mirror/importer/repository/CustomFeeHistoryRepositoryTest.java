@@ -61,6 +61,6 @@ class CustomFeeHistoryRepositoryTest extends ImporterIntegrationTest {
         var customFeeHistory = domainBuilder.customFeeHistory().get();
         repository.save(customFeeHistory);
         assertThat(repository.findAll()).containsExactly(customFeeHistory);
-        assertThat(repository.findById(customFeeHistory.getTokenId())).get().isEqualTo(customFeeHistory);
+        assertThat(repository.findById(customFeeHistory.getEntityId())).get().isEqualTo(customFeeHistory);
     }
 }

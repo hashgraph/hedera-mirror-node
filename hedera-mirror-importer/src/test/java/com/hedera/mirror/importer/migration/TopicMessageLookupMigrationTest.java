@@ -143,7 +143,7 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
         var closedPartition = partitions.get(0);
         var openPartition = partitions.get(1);
         var deleteSql = "delete from topic_message_lookup where partition = ?";
-        jdbcTemplate.update(deleteSql, closedPartition.getName());
+        ownerJdbcTemplate.update(deleteSql, closedPartition.getName());
         jdbcOperations.update(RESET_CHECKSUM_SQL, migration.getClass().getName());
 
         migrate(false);
@@ -203,7 +203,7 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
                     .persist();
 
             List.of(topicId1, topicId2, topicId3).forEach(topicId -> domainBuilder
-                    .topic()
+                    .topicEntity()
                     .customize(t -> t.id(topicId.getId()).num(topicId.getNum()))
                     .persist());
 

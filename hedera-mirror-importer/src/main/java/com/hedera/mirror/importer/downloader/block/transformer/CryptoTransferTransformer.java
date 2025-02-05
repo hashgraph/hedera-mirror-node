@@ -22,7 +22,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
-class CryptoTransferTransformer extends AbstractBlockItemTransformer {
+final class CryptoTransferTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {

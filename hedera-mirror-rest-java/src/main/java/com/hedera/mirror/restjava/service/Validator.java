@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.downloader.block.transformer;
+package com.hedera.mirror.restjava.service;
 
-import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.restjava.RestJavaProperties;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 @Named
-class UnknownTransformer extends AbstractBlockItemTransformer {
+@RequiredArgsConstructor
+public class Validator {
 
-    @Override
-    public TransactionType getType() {
-        return TransactionType.UNKNOWN;
+    private final RestJavaProperties properties;
+
+    public void validateShard(Object id, long shard) {
+        long expected = properties.getShard();
+        if (shard != expected) {
+            throw new IllegalArgumentException("ID %s has an invalid shard. Shard must be %d".formatted(id, expected));
+        }
     }
 }
