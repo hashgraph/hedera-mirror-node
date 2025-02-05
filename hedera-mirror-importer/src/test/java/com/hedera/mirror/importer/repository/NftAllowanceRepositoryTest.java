@@ -19,17 +19,18 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
-import jakarta.annotation.Resource;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 
-class NftAllowanceRepositoryTest extends AbstractRepositoryTest {
+@RequiredArgsConstructor
+class NftAllowanceRepositoryTest extends ImporterIntegrationTest {
 
     private static final RowMapper<NftAllowance> ROW_MAPPER = rowMapper(NftAllowance.class);
 
-    @Resource
-    private NftAllowanceRepository nftAllowanceRepository;
+    private final NftAllowanceRepository nftAllowanceRepository;
 
     @Test
     void save() {

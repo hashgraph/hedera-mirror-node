@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -33,7 +32,6 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor
 @TestInstance(Lifecycle.PER_CLASS)
@@ -76,17 +74,16 @@ class TimePartitionServiceTest extends ImporterIntegrationTest {
             drop table not_partitioned;
             """;
 
-    private final @Owner JdbcTemplate jdbcTemplate;
     private final TimePartitionService timePartitionService;
 
     @BeforeAll
     void setup() {
-        jdbcTemplate.execute(CREATE_TABLE_DDL);
+        ownerJdbcTemplate.execute(CREATE_TABLE_DDL);
     }
 
     @AfterAll
     void teardown() {
-        jdbcTemplate.execute(DROP_TABLE_DDL);
+        ownerJdbcTemplate.execute(DROP_TABLE_DDL);
     }
 
     @ParameterizedTest

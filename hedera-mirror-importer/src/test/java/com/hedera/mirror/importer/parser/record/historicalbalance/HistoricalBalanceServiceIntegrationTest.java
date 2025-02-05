@@ -34,7 +34,6 @@ import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -63,7 +62,6 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(OutputCaptureExtension.class)
@@ -77,7 +75,6 @@ class HistoricalBalanceServiceIntegrationTest extends ImporterIntegrationTest {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final EntityRepository entityRepository;
     private final FlywayProperties flywayProperties;
-    private final @Owner JdbcTemplate jdbcTemplate;
     private final HistoricalBalanceProperties properties;
     private final RecordFileRepository recordFileRepository;
     private final TimePartitionService timePartitionService;
@@ -136,7 +133,7 @@ class HistoricalBalanceServiceIntegrationTest extends ImporterIntegrationTest {
                         .balanceTimestamp(prevPartitionBalanceTimestamp - 100)
                         .deleted(true))
                 .persist();
-        domainBuilder.topic().persist();
+        domainBuilder.topicEntity().persist();
         tokenAccount = domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.accountId(account.getId()).balanceTimestamp(balanceTimestamp))
@@ -335,7 +332,7 @@ class HistoricalBalanceServiceIntegrationTest extends ImporterIntegrationTest {
     private Long createRecordFilePartitions(long endTimestamp) {
         Long partitionEnd = Long.MAX_VALUE;
         try {
-            partitionEnd = jdbcTemplate.queryForObject(
+            partitionEnd = ownerJdbcTemplate.queryForObject(
                     """
                 select to_timestamp
                 from mirror_node_time_partitions
@@ -355,7 +352,7 @@ class HistoricalBalanceServiceIntegrationTest extends ImporterIntegrationTest {
                 Instant.ofEpochSecond(endTimestamp / 1_000_000_000)
                         .atZone(ZoneOffset.UTC)
                         .format(DateTimeFormatter.ISO_LOCAL_DATE));
-        jdbcTemplate.queryForObject(
+        ownerJdbcTemplate.queryForObject(
                 """
                 select create_time_partitions(table_name := 'public.record_file',
                   partition_interval := ?::interval,
@@ -371,7 +368,7 @@ class HistoricalBalanceServiceIntegrationTest extends ImporterIntegrationTest {
     }
 
     private void deleteRecordFilePartitions(Long fromTimestamp) {
-        var partitions = jdbcTemplate.queryForList(
+        var partitions = ownerJdbcTemplate.queryForList(
                 """
                 select name
                 from mirror_node_time_partitions
@@ -386,7 +383,7 @@ class HistoricalBalanceServiceIntegrationTest extends ImporterIntegrationTest {
 
         var sql =
                 partitions.stream().map(p -> String.format("drop table %s", p)).collect(Collectors.joining(";"));
-        jdbcTemplate.execute(sql);
+        ownerJdbcTemplate.execute(sql);
     }
 
     private RecordFile parseRecordFile(final Long consensusEnd) {

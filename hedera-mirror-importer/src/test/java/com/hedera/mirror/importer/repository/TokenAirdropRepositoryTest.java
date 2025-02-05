@@ -20,11 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class TokenAirdropRepositoryTest extends AbstractRepositoryTest {
+class TokenAirdropRepositoryTest extends ImporterIntegrationTest {
 
     private final TokenAirdropRepository repository;
 

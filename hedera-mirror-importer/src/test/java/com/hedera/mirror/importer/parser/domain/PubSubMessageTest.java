@@ -24,11 +24,14 @@ import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.CustomFeeLimit;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -47,11 +50,16 @@ class PubSubMessageTest {
             AccountID.newBuilder().setAccountNum(10L).build();
     private static final TopicID TOPIC_ID =
             TopicID.newBuilder().setTopicNum(20L).build();
+    private static final TokenID TOKEN_ID =
+            TokenID.newBuilder().setTokenNum(30L).build();
     private static final ByteString BYTE_STRING = ByteString.copyFromUtf8("abcdef");
     private static final Long INT64_VALUE = 100_000_000L;
 
     private static TransactionBody getTransactionBody() {
         return TransactionBody.newBuilder()
+                .addMaxCustomFees(CustomFeeLimit.newBuilder()
+                        .addFees(FixedFee.newBuilder().setAmount(123L).setDenominatingTokenId(TOKEN_ID))
+                        .setAccountId(ACCOUNT_ID))
                 .setTransactionID(TransactionID.newBuilder()
                         .setAccountID(ACCOUNT_ID)
                         .setScheduled(false)
@@ -95,6 +103,25 @@ class PubSubMessageTest {
                       "scheduled": false,
                       "nonce": 0
                     },
+                    "maxCustomFees": [
+                      {
+                        "fees": [
+                          {
+                            "amount": "123",
+                            "denominatingTokenId": {
+                              "shardNum": "0",
+                              "realmNum": "0",
+                              "tokenNum": "30"
+                            }
+                          }
+                        ],
+                        "accountId": {
+                          "shardNum": "0",
+                          "realmNum": "0",
+                          "accountNum": "10"
+                        }
+                      }
+                    ],
                     "nodeAccountID": {
                       "shardNum": "0",
                       "realmNum": "0",

@@ -188,7 +188,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(customFee.getValue())
                 .returns(transaction.getConsensusTimestamp(), CustomFee::getTimestampLower)
                 .returns(Range.atLeast(transaction.getConsensusTimestamp()), CustomFee::getTimestampRange)
-                .returns(transaction.getEntityId().getId(), CustomFee::getTokenId)
+                .returns(transaction.getEntityId().getId(), CustomFee::getEntityId)
                 .returns(null, CustomFee::getFractionalFees)
                 .returns(null, CustomFee::getRoyaltyFees);
         var listAssert =

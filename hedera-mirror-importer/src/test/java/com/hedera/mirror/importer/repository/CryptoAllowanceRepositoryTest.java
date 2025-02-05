@@ -19,12 +19,13 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import jakarta.annotation.Resource;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 
-class CryptoAllowanceRepositoryTest extends AbstractRepositoryTest {
+class CryptoAllowanceRepositoryTest extends ImporterIntegrationTest {
 
     private static final RowMapper<CryptoAllowance> ROW_MAPPER = rowMapper(CryptoAllowance.class);
 

@@ -51,6 +51,7 @@ import com.hedera.mirror.importer.repository.EntityTransactionRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
+import com.hedera.mirror.importer.repository.TopicRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -155,6 +156,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
 
     @Resource
     protected TopicMessageRepository topicMessageRepository;
+
+    @Resource
+    protected TopicRepository topicRepository;
 
     @Resource
     protected TransactionRepository transactionRepository;
@@ -423,11 +427,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
             Boolean deleted,
             Long expiryTimeNs,
             String memo,
-            Key submitKey,
             Long createdTimestamp,
             Long modifiedTimestamp) {
         byte[] adminKeyBytes = rawBytesFromKey(adminKey);
-        byte[] submitKeyBytes = rawBytesFromKey(submitKey);
 
         Entity entity = entityId.toEntity();
         entity.setAutoRenewAccountId(autoRenewAccountId);
@@ -439,7 +441,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
         entity.setMemo(memo);
         entity.setTimestampLower(modifiedTimestamp);
         entity.setKey(adminKeyBytes);
-        entity.setSubmitKey(submitKeyBytes);
         entity.setStakedNodeId(-1L);
         entity.setStakePeriodStart(-1L);
         entity.setType(entityType);

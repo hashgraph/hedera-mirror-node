@@ -18,11 +18,12 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class TransactionRepositoryTest extends AbstractRepositoryTest {
+class TransactionRepositoryTest extends ImporterIntegrationTest {
 
     private final TransactionRepository transactionRepository;
 
@@ -44,5 +45,13 @@ class TransactionRepositoryTest extends AbstractRepositoryTest {
         assertThat(transactionRepository.findById(transaction.getConsensusTimestamp()))
                 .get()
                 .isEqualTo(transaction);
+
+        var t2 = domainBuilder
+                .transaction()
+                .customize(t -> t.maxCustomFees(null))
+                .get();
+        transactionRepository.save(t2);
+        var actual = transactionRepository.findById(t2.getConsensusTimestamp());
+        assertThat(actual).contains(t2);
     }
 }

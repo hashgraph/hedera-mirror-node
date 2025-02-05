@@ -42,6 +42,9 @@ import org.springframework.util.CollectionUtils;
 @Upsertable(history = true)
 public abstract class AbstractCustomFee implements History {
 
+    @Id
+    private Long entityId;
+
     @JsonSerialize(using = ObjectToStringSerializer.class)
     @JdbcTypeCode(SqlTypes.JSON)
     @UpsertColumn(shouldCoalesce = false)
@@ -58,9 +61,6 @@ public abstract class AbstractCustomFee implements History {
     private List<RoyaltyFee> royaltyFees;
 
     private Range<Long> timestampRange;
-
-    @Id
-    private Long tokenId;
 
     public void addFixedFee(@NonNull FixedFee fixedFee) {
         if (this.fixedFees == null) {
