@@ -84,7 +84,7 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
     void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType)
             throws Exception {
         // Given
-        final var tokenEntityId = fungibleTokenPersist();
+        final var tokenEntityId = fungibleTokenPersistWithTreasuryAccount(domainBuilder.entity().persist().toEntityId());
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();

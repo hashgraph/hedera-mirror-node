@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.transaction.TransactionType.ETHEREUMTRANSACTION;
 import static com.hedera.mirror.common.util.CommonUtils.instant;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
@@ -112,7 +113,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                             """)
     void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType) {
         // Given
-        final var tokenEntity = fungibleTokenPersist();
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(domainBuilder.entity().persist().toEntityId());
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
@@ -894,7 +895,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         // expiration
         final var tokenEntity = domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .customize(e -> e.type(TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
                 .persist();
         final var token = domainBuilder
                 .token()
@@ -953,7 +954,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         // expiration
         final var tokenEntity = domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .customize(e -> e.type(TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
                 .persist();
         final var token = domainBuilder
                 .token()
