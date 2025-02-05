@@ -572,6 +572,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var notExistingSenderAlias = Address.fromHexString("0x6b175474e89094c44da98b954eedeac495271d0f");
         final var serviceParameters =
                 getContractExecutionParametersWithValue(Bytes.EMPTY, notExistingSenderAlias, receiverAddress, 10L);
+
         // When
         final var result = contractExecutionService.processCall(serviceParameters);
 
