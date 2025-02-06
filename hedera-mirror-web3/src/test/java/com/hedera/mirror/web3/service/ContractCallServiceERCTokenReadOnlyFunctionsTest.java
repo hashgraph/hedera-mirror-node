@@ -1098,7 +1098,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     private EntityId accountPersist() {
-        return accountEntityPersistWithBalance(12L).toEntityId();
+        return accountEntityPersist().toEntityId();
     }
 
     private Token nftPersist() {
