@@ -423,7 +423,7 @@ class TransferTransactionPayerMigrationTest extends ImporterIntegrationTest {
     }
 
     private void migrate() throws Exception {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     private MigrationNftTransfer nftTransfer(

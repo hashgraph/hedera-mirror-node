@@ -87,10 +87,10 @@ class ChangeTransactionHashDistributionMigrationTest extends ImporterIntegration
     }
 
     private void persistTransactionHashes(Collection<TransactionHash> transactionHashes) {
-        jdbcOperations.batchUpdate(
+        ownerJdbcTemplate.batchUpdate(
                 """
-                insert into transaction_hash (consensus_timestamp, hash, payer_account_id) values (?, ?, ?)
-                """,
+                    insert into transaction_hash (consensus_timestamp, hash, payer_account_id) values (?, ?, ?)
+                    """,
                 transactionHashes,
                 transactionHashes.size(),
                 (ps, transactionHash) -> {
@@ -104,7 +104,7 @@ class ChangeTransactionHashDistributionMigrationTest extends ImporterIntegration
     private void runMigration() {
         try (var is = migrationSql.getInputStream()) {
             var script = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-            jdbcOperations.execute(script);
+            ownerJdbcTemplate.execute(script);
         }
     }
 }

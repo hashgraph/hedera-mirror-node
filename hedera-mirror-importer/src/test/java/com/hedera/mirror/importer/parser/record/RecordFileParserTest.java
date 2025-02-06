@@ -25,7 +25,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -196,7 +195,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
 
         var items = List.of(recordItem1, recordItem2, recordItem3, recordItem4, recordItem5);
         var recordFile = spy(getStreamFile(items, timestamp));
-        doNothing().when(recordFile).clear();
+        doReturn(recordFile).when(recordFile).clear();
 
         parser.parse(recordFile);
 

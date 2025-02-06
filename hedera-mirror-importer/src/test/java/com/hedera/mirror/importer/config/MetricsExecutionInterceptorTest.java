@@ -129,7 +129,8 @@ class MetricsExecutionInterceptorTest {
         "NODE_ID, BALANCE, 2021-03-10T22_12_56.075092Z_Balances.csv, signed",
         "NODE_ID, BALANCE, 2021-03-10T22_12_56.075092Z_Balances.csv_sig, signature",
         "NODE_ID, BALANCE, 2021-03-10T22_12_56.075092Z_Balances.pb.gz, signed",
-        "NODE_ID, BALANCE, 2021-03-10T22_12_56.075092Z_Balances.pb_sig.gz, signature"
+        "NODE_ID, BALANCE, 2021-03-10T22_12_56.075092Z_Balances.pb_sig.gz, signature",
+        "NODE_ID, BLOCK, 000000000000000000000000000007858853.blk.gz, signed"
     })
     void s3GetObjectExecution(PathType pathType, StreamType streamType, String fileName, String expectedAction) {
 
@@ -170,7 +171,9 @@ class MetricsExecutionInterceptorTest {
     }
 
     private String nodeIdPrefix(StreamType streamType, String network, String shard, String nodeId) {
-        return "%s/%s/%s/%s/".formatted(network, shard, nodeId, streamType.getNodeIdBasedSuffix());
+        return streamType != StreamType.BLOCK
+                ? "%s/%s/%s/%s/".formatted(network, shard, nodeId, streamType.getNodeIdBasedSuffix())
+                : "%s/%s/".formatted(shard, nodeId);
     }
 
     private String accountIdPrefix(StreamType streamType, String shard, String realm, String accountNum) {

@@ -71,19 +71,18 @@ public class ScheduleFeature extends AbstractFeature {
             "I successfully schedule a HBAR transfer from treasury to {account} with expiration time {string} and wait for expiry {string}")
     public void createNewHBarTransferSchedule(
             AccountNameEnum accountName, String expirationTimeInSeconds, String waitForExpiry) {
-        Instant expirationTime = null;
-
-        if (expirationTimeInSeconds != null && !expirationTimeInSeconds.equals("null")) {
-            Duration expirationOffset = DurationStyle.detectAndParse(expirationTimeInSeconds);
-            expirationTime = Instant.now().plus(expirationOffset);
-        }
-
         currentSignersCount = SIGNATORY_COUNT_OFFSET;
         var recipient = accountClient.getAccount(accountName);
         var scheduledTransaction = accountClient.getCryptoTransferTransaction(
                 accountClient.getTokenTreasuryAccount().getAccountId(),
                 recipient.getAccountId(),
                 Hbar.fromTinybars(DEFAULT_TINY_HBAR));
+
+        Instant expirationTime = null;
+        if (expirationTimeInSeconds != null && !expirationTimeInSeconds.equals("null")) {
+            Duration expirationOffset = DurationStyle.detectAndParse(expirationTimeInSeconds);
+            expirationTime = Instant.now().plus(expirationOffset);
+        }
 
         createNewSchedule(scheduledTransaction, expirationTime, Boolean.parseBoolean(waitForExpiry));
     }
@@ -103,6 +102,15 @@ public class ScheduleFeature extends AbstractFeature {
         } catch (Exception e) {
             log.info("Dummy transaction fails but triggers the schedule execution");
         }
+
+        // Wait until the transaction is executed and has a valid executed timestamp
+        await().atMost(Duration.ofSeconds(30))
+                .pollDelay(Duration.ofMillis(100))
+                .pollInterval(Duration.ofMillis(100))
+                .untilAsserted(() -> assertThat(mirrorClient
+                                .getScheduleInfo(scheduleId.toString())
+                                .getExecutedTimestamp())
+                        .isNotNull());
     }
 
     private void createNewSchedule(Transaction<?> transaction, Instant expirationTime, boolean waitForExpiry) {

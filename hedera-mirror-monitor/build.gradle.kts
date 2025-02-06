@@ -46,7 +46,7 @@ dependencies {
     runtimeOnly(
         group = "io.netty",
         name = "netty-resolver-dns-native-macos",
-        classifier = "osx-aarch_64"
+        classifier = "osx-aarch_64",
     )
     testImplementation("com.github.meanbeanlib:meanbean")
     testImplementation("io.fabric8:kubernetes-server-mock")

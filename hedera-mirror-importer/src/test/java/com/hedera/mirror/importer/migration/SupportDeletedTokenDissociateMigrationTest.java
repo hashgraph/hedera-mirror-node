@@ -204,7 +204,7 @@ class SupportDeletedTokenDissociateMigrationTest extends ImporterIntegrationTest
 
     @SneakyThrows
     private void migrate() {
-        jdbcOperations.execute(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.execute(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     private MigrationEntity entity(Token token) {

@@ -26,10 +26,7 @@ import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import org.apache.commons.compress.compressors.CompressorException;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -85,16 +82,12 @@ class SidecarFileReaderImplTest {
     }
 
     @Test
-    void readCorruptedProtoFile() throws IOException {
-        try (var byteArrayOutputStream = new ByteArrayOutputStream();
-                var gzipCompressorOutputStream = new GzipCompressorOutputStream(byteArrayOutputStream)) {
-            gzipCompressorOutputStream.write(domainBuilder.bytes(256));
-            gzipCompressorOutputStream.finish();
-            var streamFileData = StreamFileData.from(SIDECAR_FILENAME, byteArrayOutputStream.toByteArray());
-            var sidecar = domainBuilder.sidecarFile().get();
-            assertThatThrownBy(() -> sidecarFileReader.read(sidecar, streamFileData))
-                    .isInstanceOf(InvalidStreamFileException.class)
-                    .hasCauseInstanceOf(InvalidProtocolBufferException.class);
-        }
+    void readCorruptedProtoFile() {
+        var data = TestUtils.gzip(domainBuilder.bytes(256));
+        var streamFileData = StreamFileData.from(SIDECAR_FILENAME, data);
+        var sidecar = domainBuilder.sidecarFile().get();
+        assertThatThrownBy(() -> sidecarFileReader.read(sidecar, streamFileData))
+                .isInstanceOf(InvalidStreamFileException.class)
+                .hasCauseInstanceOf(InvalidProtocolBufferException.class);
     }
 }

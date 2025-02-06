@@ -220,7 +220,7 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
 
     @SneakyThrows
     private void migrate() {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     /**

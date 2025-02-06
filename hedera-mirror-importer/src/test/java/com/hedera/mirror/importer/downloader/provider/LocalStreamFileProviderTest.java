@@ -19,10 +19,6 @@ package com.hedera.mirror.importer.downloader.provider;
 import static com.hedera.mirror.importer.ImporterProperties.STREAMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
@@ -44,17 +40,13 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     private final LocalStreamFileProperties localProperties = new LocalStreamFileProperties();
 
     @Override
-    protected String getProviderPathSeparator() {
+    protected String providerPathSeparator() {
         return File.separator;
     }
 
     @Override
-    protected String resolveProviderRelativePath(ConsensusNode node, String fileName) {
-        return Path.of(
-                        StreamType.RECORD.getPath(),
-                        StreamType.RECORD.getNodePrefix() + node.getNodeAccountId(),
-                        fileName)
-                .toString();
+    protected String targetRootPath() {
+        return STREAMS;
     }
 
     @Override
@@ -64,18 +56,10 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
         streamFileProvider = new LocalStreamFileProvider(properties, localProperties);
     }
 
-    @Override
-    protected FileCopier createFileCopier() {
-        var fromPath = Path.of("data", "recordstreams", "v6");
-        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
-                .to(STREAMS, StreamType.RECORD.getPath());
-    }
-
     @Test
     void listAll() {
         var node = node("0.0.3");
-        var fileCopier = getFileCopier(node);
-        fileCopier.copy();
+        createDefaultFileCopier().copy();
         var sigs = streamFileProvider
                 .list(node, StreamFilename.EPOCH)
                 .collectList()
@@ -155,7 +139,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     void listDeletesFiles() throws Exception {
         localProperties.setDeleteAfterProcessing(true);
         var node = node("0.0.3");
-        getFileCopier(node).copy();
+        createDefaultFileCopier().copy();
         var lastFilename = StreamFilename.from(Instant.now().toString().replace(':', '_') + ".rcd.gz");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10))
@@ -175,7 +159,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     void listAllPathTypes(PathType pathType) {
         properties.setPathType(pathType);
 
-        var fileCopier = createFileCopier();
+        var fileCopier = createDefaultFileCopier();
         if (pathType == PathType.ACCOUNT_ID) {
             fileCopier.copy();
         } else {

@@ -128,7 +128,7 @@ class RemoveEntityTypeMigrationTest extends ImporterIntegrationTest {
 
     @SneakyThrows
     private void migrate() {
-        jdbcOperations.execute(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.execute(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     private MigrationEntityV1_47_1 entity(long id, long num, EntityType type) {

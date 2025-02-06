@@ -74,6 +74,7 @@ public class ImporterProperties {
 
     private Instant startDate;
 
+    @Min(0)
     private Long startBlockNumber;
 
     private Long topicRunningHashV2AddedTimestamp;

@@ -95,7 +95,7 @@ class UndoFileDataTimePartitionMigrationTest extends ImporterIntegrationTest {
     private void runMigration() {
         try (var is = migrationSql.getInputStream()) {
             var script = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-            jdbcOperations.execute(script);
+            ownerJdbcTemplate.execute(script);
         }
     }
 }

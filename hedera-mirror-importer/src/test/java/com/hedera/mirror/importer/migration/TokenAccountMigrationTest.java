@@ -185,7 +185,7 @@ class TokenAccountMigrationTest extends ImporterIntegrationTest {
 
     @SneakyThrows
     private void runMigration() {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     @SuppressWarnings("java:S1854") // No useless assignments in the method, since they help avoiding code repetition

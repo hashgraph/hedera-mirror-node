@@ -113,7 +113,8 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                             """)
     void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType) {
         // Given
-        final var tokenEntity = fungibleTokenPersist();
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(
+                domainBuilder.entity().persist().toEntityId());
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
@@ -520,7 +521,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
         final var functionCall = contract.call_tinybarsToTinycents(BigInteger.TEN);
         final var callData = functionCall.encodeFunctionCall().getBytes();
-        final var senderEntity = accountPersist();
+        final var senderEntity = accountEntityPersist();
         final var consensusTimestamp = domainBuilder.timestamp();
         final var transactionIdOrHash = setUp(
                 TransactionType.CONTRACTCALL,
@@ -545,7 +546,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
         final var functionCall = contract.call_tinybarsToTinycents(BigInteger.TEN);
         final var callData = functionCall.encodeFunctionCall().getBytes();
-        final var senderEntity = accountPersist();
+        final var senderEntity = accountEntityPersist();
 
         final var transactionIdOrHash = setUp(
                 TransactionType.CONTRACTCALL,
@@ -848,22 +849,6 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                 .persist();
     }
 
-    private Token fungibleTokenPersist() {
-        return fungibleTokenPersist(domainBuilder.entity().persist());
-    }
-
-    private Token fungibleTokenPersist(final Entity treasuryEntity) {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        return domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(treasuryEntity.toEntityId()))
-                .persist();
-    }
-
     private Token nftPersist(final Entity treasuryEntity) {
         final var nftEntity = tokenEntityPersist();
 
@@ -884,10 +869,6 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                         .serialNumber(1))
                 .persist();
         return token;
-    }
-
-    private Entity accountPersist() {
-        return domainBuilder.entity().customize(a -> a.evmAddress(null)).persist();
     }
 
     private Entity accountPersistWithAccountBalances() {
@@ -915,7 +896,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         // expiration
         final var tokenEntity = domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .customize(e -> e.type(TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
                 .persist();
         final var token = domainBuilder
                 .token()
@@ -974,7 +955,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         // expiration
         final var tokenEntity = domainBuilder
                 .entity()
-                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
+                .customize(e -> e.type(TOKEN).autoRenewAccountId(autoRenewAccount.getId()))
                 .persist();
         final var token = domainBuilder
                 .token()

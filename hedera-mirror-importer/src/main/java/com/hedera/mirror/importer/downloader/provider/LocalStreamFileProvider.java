@@ -36,27 +36,19 @@ import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @CustomLog
-@RequiredArgsConstructor
-public class LocalStreamFileProvider implements StreamFileProvider {
+public class LocalStreamFileProvider extends AbstractStreamFileProvider {
 
     private static final File[] EMPTY = new File[0];
 
-    private final CommonDownloaderProperties properties;
     private final LocalStreamFileProperties localProperties;
 
-    @Override
-    public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        var basePath = properties.getImporterProperties().getStreamPath().toFile();
-        return Mono.fromSupplier(() -> new File(basePath, streamFilename.getFilePath()))
-                .doOnNext(this::checkSize)
-                .map(file -> StreamFileData.from(file, streamFilename))
-                .timeout(properties.getTimeout())
-                .onErrorMap(FileOperationException.class, TransientProviderException::new);
+    public LocalStreamFileProvider(CommonDownloaderProperties properties, LocalStreamFileProperties localProperties) {
+        super(properties);
+        this.localProperties = localProperties;
     }
 
     @Override
@@ -75,6 +67,21 @@ public class LocalStreamFileProvider implements StreamFileProvider {
                 .doOnNext(s -> count.incrementAndGet())
                 .doOnComplete(() -> log.debug(
                         "Completed listing node {} for {} files after {} in {}", node, count, startAfter, stopwatch));
+    }
+
+    @Override
+    protected Mono<StreamFileData> doGet(StreamFilename streamFilename) {
+        var basePath = properties.getImporterProperties().getStreamPath().toFile();
+        return Mono.fromSupplier(() -> new File(basePath, streamFilename.getFilePath()))
+                .doOnNext(this::checkSize)
+                .map(file -> StreamFileData.from(file, streamFilename))
+                .timeout(properties.getTimeout())
+                .onErrorMap(FileOperationException.class, TransientProviderException::new);
+    }
+
+    @Override
+    protected String getBlockStreamFilePath(long shard, long nodeId, String filename) {
+        return Path.of(String.valueOf(shard), String.valueOf(nodeId), filename).toString();
     }
 
     private Flux<File> listFiles(PathType pathType, ConsensusNode node, StreamFilename streamFilename) {

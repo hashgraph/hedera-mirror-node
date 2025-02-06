@@ -470,7 +470,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
 
     private void runMigration() throws IOException {
         log.info("Run migration: {}", sql.getName());
-        jdbcOperations.update(FileUtils.readFileToString(sql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(sql, "UTF-8"));
     }
 
     /**
