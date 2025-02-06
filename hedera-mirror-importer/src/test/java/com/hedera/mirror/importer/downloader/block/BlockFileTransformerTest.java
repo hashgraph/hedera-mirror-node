@@ -109,6 +109,210 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     }
 
     @Test
+    void cryptoCreateTransform() {
+        var expectedRecordItem = recordItemBuilder
+                .cryptoCreate()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.setStatus(ResponseCodeEnum.SUCCESS))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.cryptoCreate(expectedRecordItem).build();
+        var expectedAccountId = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChanges(3)
+                .getMapUpdate()
+                .getValue()
+                .getAccountIdValue()
+                .getAccountNum();
+        var expectedEVMAddress = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChanges(3)
+                .getMapUpdate()
+                .getValue()
+                .getAccountValue()
+                .getAlias();
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(expectedEVMAddress, TransactionRecord::getEvmAddress)
+                .returns(
+                        expectedAccountId,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getAccountID().getAccountNum()));
+    }
+
+    @Test
+    void cryptoAddLiveHashTransform() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .cryptoAddLiveHash()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+
+        var blockItem = blockItemBuilder.cryptoAddLiveHash(expectedRecordItem).build();
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFie);
+
+        // then
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
+    }
+
+    @Test
+    void cryptoDeleteLiveHashTransform() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .cryptoDeleteLiveHash()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+
+        var blockItem =
+                blockItemBuilder.cryptoDeleteLiveHash(expectedRecordItem).build();
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFie);
+
+        // then
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
+    }
+
+    @Test
+    void cryptoDeleteAllowanceTransform() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .cryptoDeleteAllowance()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+
+        var blockItem =
+                blockItemBuilder.cryptoDeleteAllowance(expectedRecordItem).build();
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFie);
+
+        // then
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
+    }
+
+    @Test
+    void cryptoApproveAllowanceTransform() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .cryptoApproveAllowance()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+
+        var blockItem =
+                blockItemBuilder.cryptoApproveAllowance(expectedRecordItem).build();
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFie);
+
+        // then
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
+    }
+
+    @Test
+    void cryptoDelete() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .cryptoDelete()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+
+        var blockItem = blockItemBuilder.cryptoDelete(expectedRecordItem).build();
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFie);
+
+        // then
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
+    }
+
+    @Test
+    void cryptoUpdate() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .cryptoUpdate()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+
+        var blockItem = blockItemBuilder.cryptoUpdate(expectedRecordItem).build();
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFie);
+
+        // then
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
+    }
+
+    @Test
     void corruptedTransactionBodyBytes() {
         // given
         var blockItem = BlockItem.builder()
@@ -546,6 +750,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                         "transactionRecord.transactionID_.memoizedSize",
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedIsInitialized",
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedSize",
+                        "transactionRecord.receipt_.accountID_.memoizedHashCode",
                         "transactionRecord.receipt_.fileID_.memoizedHashCode",
                         "transactionRecord.receipt_.fileID_.memoizedSize",
                         "transactionRecord.receipt_.fileID_.memoizedIsInitialized")
