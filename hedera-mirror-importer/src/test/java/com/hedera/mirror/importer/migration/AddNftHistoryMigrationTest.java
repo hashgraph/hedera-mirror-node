@@ -22,9 +22,9 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.NftRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -40,11 +40,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
 @DisablePartitionMaintenance
+@DisableRepeatableSqlMigration
 @EnabledIfV1
 @RequiredArgsConstructor
 @Tag("migration")
@@ -71,8 +71,6 @@ class AddNftHistoryMigrationTest extends ImporterIntegrationTest {
                     drop table if exists nft_history;
                     """;
 
-    private final @Owner JdbcTemplate jdbcTemplate;
-
     private final NftRepository nftRepository;
 
     @Value("classpath:db/migration/v1/V1.81.1__add_nft_history.sql")
@@ -80,7 +78,7 @@ class AddNftHistoryMigrationTest extends ImporterIntegrationTest {
 
     @AfterEach
     void teardown() {
-        jdbcTemplate.execute(REVERT_DDL);
+        ownerJdbcTemplate.execute(REVERT_DDL);
     }
 
     @Test
@@ -213,7 +211,7 @@ class AddNftHistoryMigrationTest extends ImporterIntegrationTest {
     }
 
     private void persistNftTransfers(List<MigrationNftTransfer> nftTransfers) {
-        jdbcTemplate.batchUpdate(
+        jdbcOperations.batchUpdate(
                 """
                         insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id,
                           serial_number, token_id, payer_account_id)
@@ -231,7 +229,7 @@ class AddNftHistoryMigrationTest extends ImporterIntegrationTest {
     }
 
     private void persistNfts(List<MigrationNft> nfts) {
-        jdbcTemplate.batchUpdate(
+        jdbcOperations.batchUpdate(
                 """
                         insert into nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp,
                           metadata, serial_number, spender, token_id)
@@ -255,7 +253,7 @@ class AddNftHistoryMigrationTest extends ImporterIntegrationTest {
     @SneakyThrows
     private void runMigration() {
         try (var is = sql.getInputStream()) {
-            jdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+            ownerJdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
         }
     }
 

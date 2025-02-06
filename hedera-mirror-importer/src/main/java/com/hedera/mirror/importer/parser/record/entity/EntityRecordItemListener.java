@@ -190,6 +190,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setEntityId(entityId);
         transaction.setIndex(recordItem.getTransactionIndex());
         transaction.setInitialBalance(0L);
+        transaction.setMaxCustomFees(getMaxCustomFees(body, recordItem));
         transaction.setMaxFee(body.getTransactionFee());
         transaction.setMemo(DomainUtils.toBytes(body.getMemoBytes()));
         transaction.setNodeAccountId(nodeAccount);
@@ -360,6 +361,26 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
         }
         return null;
+    }
+
+    @SuppressWarnings("java:S1168")
+    private byte[][] getMaxCustomFees(TransactionBody body, RecordItem recordItem) {
+        int count = body.getMaxCustomFeesCount();
+        if (count == 0) {
+            return null;
+        }
+
+        var maxCustomFees = new byte[count][];
+        for (int i = 0; i < count; i++) {
+            var maxCustomFee = body.getMaxCustomFees(i);
+            maxCustomFees[i] = maxCustomFee.toByteArray();
+            recordItem.addEntityId(EntityId.of(maxCustomFee.getAccountId()));
+            for (var fixedFee : maxCustomFee.getFeesList()) {
+                recordItem.addEntityId(EntityId.of(fixedFee.getDenominatingTokenId()));
+            }
+        }
+
+        return maxCustomFees;
     }
 
     private void insertFungibleTokenTransfers(RecordItem recordItem, TokenTransferList tokenTransferList) {
@@ -724,37 +745,33 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertAssessedCustomFees(RecordItem recordItem) {
-        if (entityProperties.getPersist().isTokens()) {
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-            var assessedCustomFeesList = recordItem.getTransactionRecord().getAssessedCustomFeesList();
-            for (int i = 0; i < assessedCustomFeesList.size(); i++) {
-                var protoAssessedCustomFee = assessedCustomFeesList.get(i);
-                var collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
-                // the effective payers must also appear in the *transfer lists of this transaction and the
-                // corresponding EntityIds should have been added to EntityListener, so skip it here.
-                var tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
-                var assessedCustomFee = new AssessedCustomFee();
-                assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
-                assessedCustomFee.setCollectorAccountId(collectorAccountId.getId());
-                assessedCustomFee.setConsensusTimestamp(consensusTimestamp);
-                assessedCustomFee.setPayerAccountId(recordItem.getPayerAccountId());
-                assessedCustomFee.setTokenId(tokenId);
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        for (var protoAssessedCustomFee : recordItem.getTransactionRecord().getAssessedCustomFeesList()) {
+            var collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
+            // the effective payers must also appear in the *transfer lists of this transaction and the
+            // corresponding EntityIds should have been added to EntityListener, so skip it here.
+            var tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
+            var assessedCustomFee = new AssessedCustomFee();
+            assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
+            assessedCustomFee.setCollectorAccountId(collectorAccountId.getId());
+            assessedCustomFee.setConsensusTimestamp(consensusTimestamp);
+            assessedCustomFee.setPayerAccountId(recordItem.getPayerAccountId());
+            assessedCustomFee.setTokenId(tokenId);
 
-                if (protoAssessedCustomFee.getEffectivePayerAccountIdCount() > 0) {
-                    var effectivePayerEntityIds = new ArrayList<Long>();
-                    for (var protoAccountId : protoAssessedCustomFee.getEffectivePayerAccountIdList()) {
-                        var effectivePayerAccountId = EntityId.of(protoAccountId);
-                        effectivePayerEntityIds.add(effectivePayerAccountId.getId());
-                        recordItem.addEntityId(effectivePayerAccountId);
-                    }
-                    assessedCustomFee.setEffectivePayerAccountIds(effectivePayerEntityIds);
+            if (protoAssessedCustomFee.getEffectivePayerAccountIdCount() > 0) {
+                var effectivePayerEntityIds = new ArrayList<Long>();
+                for (var protoAccountId : protoAssessedCustomFee.getEffectivePayerAccountIdList()) {
+                    var effectivePayerAccountId = EntityId.of(protoAccountId);
+                    effectivePayerEntityIds.add(effectivePayerAccountId.getId());
+                    recordItem.addEntityId(effectivePayerAccountId);
                 }
-
-                entityListener.onAssessedCustomFee(assessedCustomFee);
-
-                recordItem.addEntityId(collectorAccountId);
-                recordItem.addEntityId(tokenId);
+                assessedCustomFee.setEffectivePayerAccountIds(effectivePayerEntityIds);
             }
+
+            entityListener.onAssessedCustomFee(assessedCustomFee);
+
+            recordItem.addEntityId(collectorAccountId);
+            recordItem.addEntityId(tokenId);
         }
     }
 

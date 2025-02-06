@@ -22,6 +22,7 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.ContractActionRepository;
@@ -42,12 +43,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StreamUtils;
 
 @DisablePartitionMaintenance
+@DisableRepeatableSqlMigration
 @EnabledIfV1
 @RequiredArgsConstructor
 @Tag("migration")
@@ -56,13 +58,10 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
 
     private static final String REVERT_DDL = "alter table contract_result drop column gas_consumed";
 
-    private final JdbcTemplate jdbcTemplate;
-
     @Value("classpath:db/migration/v1/V1.94.1.1__add_gas_consumed_field.sql")
     private final Resource sql;
 
     private final TransactionTemplate transactionTemplate;
-
     private final ContractActionRepository contractActionRepository;
     private final ContractRepository contractRepository;
     private final ContractResultRepository contractResultRepository;
@@ -70,7 +69,7 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
 
     @AfterEach
     void teardown() {
-        jdbcOperations.update(REVERT_DDL);
+        ownerJdbcTemplate.update(REVERT_DDL);
     }
 
     @Test
@@ -122,7 +121,7 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
                 contract.getId(),
                 failedInitCode,
                 domainBuilder);
-        persistMigrationContractResult(migrateContractResult, jdbcTemplate);
+        persistMigrationContractResult(migrateContractResult, jdbcOperations);
         domainBuilder
                 .contractAction()
                 .customize(ca -> ca.consensusTimestamp(ethTx.getConsensusTimestamp()))
@@ -141,7 +140,7 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
         try (final var is = sql.getInputStream()) {
             transactionTemplate.executeWithoutResult(s -> {
                 try {
-                    jdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+                    ownerJdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
                 } catch (final IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -196,7 +195,8 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
                 .build();
     }
 
-    public static void persistMigrationContractResult(final MigrationContractResult result, JdbcTemplate jdbcTemplate) {
+    public static void persistMigrationContractResult(
+            final MigrationContractResult result, JdbcOperations jdbcOperations) {
         final String sql =
                 """
                 insert into contract_result
@@ -206,7 +206,7 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
                 transaction_result) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        jdbcTemplate.update(sql, ps -> {
+        jdbcOperations.update(sql, ps -> {
             ps.setLong(1, result.getAmount());
             ps.setBytes(2, result.getBloom());
             ps.setBytes(3, result.getCallResult());

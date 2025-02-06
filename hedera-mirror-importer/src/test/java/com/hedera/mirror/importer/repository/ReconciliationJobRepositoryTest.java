@@ -18,11 +18,12 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class ReconciliationJobRepositoryTest extends AbstractRepositoryTest {
+class ReconciliationJobRepositoryTest extends ImporterIntegrationTest {
 
     private final ReconciliationJobRepository reconciliationJobRepository;
 

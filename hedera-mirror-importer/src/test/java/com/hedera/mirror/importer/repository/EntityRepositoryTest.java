@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 
 @RequiredArgsConstructor
-class EntityRepositoryTest extends AbstractRepositoryTest {
+class EntityRepositoryTest extends ImporterIntegrationTest {
 
     private static final RowMapper<Entity> ROW_MAPPER = rowMapper(Entity.class);
 

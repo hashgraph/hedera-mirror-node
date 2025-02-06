@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountHistory;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.EntityHistoryRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
@@ -63,14 +61,12 @@ class AddBalanceTimestampMigrationTest extends AbstractStakingMigrationTest {
         alter table token_account_history drop column balance_timestamp;
         """;
 
-    private final @Owner JdbcOperations jdbcOperations;
-
     @Value("classpath:db/migration/v1/V1.87.2__add_balance_timestamps.sql")
     private File migrationSql;
 
     @AfterEach
     void teardown() {
-        jdbcOperations.update(REVERT_DDL);
+        ownerJdbcTemplate.execute(REVERT_DDL);
     }
 
     @Test
@@ -179,7 +175,7 @@ class AddBalanceTimestampMigrationTest extends AbstractStakingMigrationTest {
 
     @SneakyThrows
     private void runMigration() {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     private IterableAssert<Entity> assertEntities() {

@@ -19,11 +19,12 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
+class AccountBalanceFileRepositoryTest extends ImporterIntegrationTest {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
 

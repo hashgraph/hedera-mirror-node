@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer.Id;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
@@ -39,6 +40,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StreamUtils;
 
 @DisablePartitionMaintenance
+@DisableRepeatableSqlMigration
 @EnabledIfV1
 @RequiredArgsConstructor
 @Tag("migration")

@@ -84,7 +84,8 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
     void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType)
             throws Exception {
         // Given
-        final var tokenEntityId = fungibleTokenPersist();
+        final var tokenEntityId = fungibleTokenPersistWithTreasuryAccount(
+                domainBuilder.entity().persist().toEntityId());
         final var tokenAddress = toAddress(tokenEntityId.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
@@ -581,22 +582,6 @@ class ContractCallNestedCallsTest extends AbstractContractCallServiceOpcodeTrace
                         BigInteger.valueOf(Instant.now().getEpochSecond() + 8_000_000L),
                         getAliasFromEntity(autoRenewAccount),
                         BigInteger.valueOf(8_000_000)));
-    }
-
-    private Token fungibleTokenPersist() {
-        return fungibleTokenPersist(domainBuilder.entity().persist());
-    }
-
-    private Token fungibleTokenPersist(final Entity treasuryEntity) {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        return domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(treasuryEntity.toEntityId()))
-                .persist();
     }
 
     private Token nftPersist() {

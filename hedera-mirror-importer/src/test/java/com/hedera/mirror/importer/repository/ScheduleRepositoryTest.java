@@ -21,12 +21,14 @@ import static org.assertj.core.api.Assertions.from;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.schedule.Schedule;
-import jakarta.annotation.Resource;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
-class ScheduleRepositoryTest extends AbstractRepositoryTest {
-    @Resource
-    private ScheduleRepository scheduleRepository;
+@RequiredArgsConstructor
+class ScheduleRepositoryTest extends ImporterIntegrationTest {
+
+    private final ScheduleRepository scheduleRepository;
 
     @Test
     void save() {

@@ -22,9 +22,9 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import java.nio.charset.StandardCharsets;
@@ -37,11 +37,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
 @DisablePartitionMaintenance
+@DisableRepeatableSqlMigration
 @EnabledIfV1
 @RequiredArgsConstructor
 @Tag("migration")
@@ -88,9 +88,6 @@ class FixAllowanceAmountsMigrationTest extends ImporterIntegrationTest {
 
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
 
-    @Owner
-    private final JdbcOperations jdbcOperations;
-
     @Value("classpath:db/migration/v1/V1.84.2__allowance_amount.sql")
     private final Resource migrationSql;
 
@@ -98,7 +95,7 @@ class FixAllowanceAmountsMigrationTest extends ImporterIntegrationTest {
 
     @AfterEach
     void teardown() {
-        jdbcOperations.update(REVERT_DDL);
+        ownerJdbcTemplate.update(REVERT_DDL);
     }
 
     @Test
@@ -186,7 +183,7 @@ class FixAllowanceAmountsMigrationTest extends ImporterIntegrationTest {
     @SneakyThrows
     private void runMigration() {
         try (var is = migrationSql.getInputStream()) {
-            jdbcOperations.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+            ownerJdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
         }
     }
 }

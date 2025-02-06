@@ -46,7 +46,6 @@ type Entity struct {
 	Realm                         int64
 	ReceiverSigRequired           *bool
 	Shard                         int64
-	SubmitKey                     []byte
 	TimestampRange                pgtype.Int8range
 	Type                          string
 }

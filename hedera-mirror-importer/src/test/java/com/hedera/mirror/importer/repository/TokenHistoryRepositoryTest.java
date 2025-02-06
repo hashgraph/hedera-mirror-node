@@ -19,12 +19,13 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 
 @RequiredArgsConstructor
-class TokenHistoryRepositoryTest extends AbstractRepositoryTest {
+class TokenHistoryRepositoryTest extends ImporterIntegrationTest {
 
     private static final RowMapper<Token> ROW_MAPPER = rowMapper(Token.class);
     private final TokenHistoryRepository tokenHistoryRepository;

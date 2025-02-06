@@ -32,7 +32,6 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
@@ -55,7 +54,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisablePartitionMaintenance
@@ -68,8 +66,6 @@ class TransferTransactionPayerMigrationTest extends ImporterIntegrationTest {
 
     private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3);
     private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001);
-
-    private final @Owner JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.47.0__add_transfer_payer.sql")
     private final File migrationSql;
@@ -427,7 +423,7 @@ class TransferTransactionPayerMigrationTest extends ImporterIntegrationTest {
     }
 
     private void migrate() throws Exception {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     private MigrationNftTransfer nftTransfer(
@@ -613,19 +609,14 @@ class TransferTransactionPayerMigrationTest extends ImporterIntegrationTest {
      */
     private void revertToPreV_1_47() {
         // drop payer_account_id columns
-        jdbcOperations.execute(
-                "alter table if exists assessed_custom_fee\n" + "    drop column if exists payer_account_id;");
-
-        jdbcOperations.execute(
-                "alter table if exists crypto_transfer\n" + "    drop column if exists payer_account_id;");
-
-        jdbcOperations.execute("alter table if exists nft_transfer\n" + "    drop column if exists payer_account_id;");
-
-        jdbcOperations.execute(
-                "alter table if exists non_fee_transfer\n" + "    drop column if exists payer_account_id;");
-
-        jdbcOperations.execute(
-                "alter table if exists token_transfer\n" + "    drop column if exists payer_account_id;");
+        ownerJdbcTemplate.execute(
+                """
+            alter table if exists assessed_custom_fee drop column if exists payer_account_id;
+            alter table if exists crypto_transfer drop column if exists payer_account_id;
+            alter table if exists nft_transfer drop column if exists payer_account_id;
+            alter table if exists non_fee_transfer drop column if exists payer_account_id;
+            alter table if exists token_transfer drop column if exists payer_account_id;
+            """);
     }
 
     private String longListSerializer(List<Long> longs) {

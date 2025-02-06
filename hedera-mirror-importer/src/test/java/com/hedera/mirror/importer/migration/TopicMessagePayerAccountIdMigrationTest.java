@@ -21,8 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
-import jakarta.annotation.Resource;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -34,7 +32,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisablePartitionMaintenance
@@ -43,10 +40,6 @@ import org.springframework.test.context.TestPropertySource;
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.52.0")
 class TopicMessagePayerAccountIdMigrationTest extends ImporterIntegrationTest {
-
-    @Resource
-    @Owner
-    private JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.53.0__topic_message_add_payer_account_id_and_initial_transaction_id.sql")
     private File migrationSql;
@@ -93,7 +86,7 @@ class TopicMessagePayerAccountIdMigrationTest extends ImporterIntegrationTest {
     }
 
     private void migrate() throws Exception {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     private List<MigrationTopicMessage> retrieveTopicMessages() {
@@ -136,10 +129,13 @@ class TopicMessagePayerAccountIdMigrationTest extends ImporterIntegrationTest {
     }
 
     private void revertMigration() {
-        jdbcOperations.update("delete from topic_message");
-        jdbcOperations.update("delete from transaction");
-        jdbcOperations.update("alter table topic_message alter column payer_account_id drop not null");
-        jdbcOperations.update("alter table topic_message drop column initial_transaction_id");
+        ownerJdbcTemplate.execute(
+                """
+                                    truncate topic_message;
+                                    truncate transaction;
+                                    alter table topic_message alter column payer_account_id drop not null;
+                                    alter table topic_message drop column initial_transaction_id;
+                                    """);
     }
 
     @Data
@@ -155,7 +151,7 @@ class TopicMessagePayerAccountIdMigrationTest extends ImporterIntegrationTest {
     }
 
     @Data
-    private class MigrationTransaction {
+    private static class MigrationTransaction {
         private Long consensusTimestamp;
         private final long entityId = 1L;
         private final long nodeAccountId = 3L;

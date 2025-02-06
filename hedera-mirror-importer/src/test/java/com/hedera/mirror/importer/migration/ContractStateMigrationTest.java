@@ -24,7 +24,6 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.ContractStateRepository;
 import java.io.File;
 import java.util.ArrayList;
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
 @DisablePartitionMaintenance
@@ -50,8 +48,6 @@ class ContractStateMigrationTest extends ImporterIntegrationTest {
             drop table if exists contract_state;
             """;
 
-    private final @Owner JdbcTemplate jdbcTemplate;
-
     @Value("classpath:db/migration/v1/V1.67.1__contract_state.sql")
     private final File migrationSql;
 
@@ -60,7 +56,7 @@ class ContractStateMigrationTest extends ImporterIntegrationTest {
     @AfterEach
     @SneakyThrows
     void teardown() {
-        jdbcTemplate.execute(REVERT_SQL);
+        ownerJdbcTemplate.execute(REVERT_SQL);
     }
 
     @Test
@@ -131,6 +127,6 @@ class ContractStateMigrationTest extends ImporterIntegrationTest {
 
     @SneakyThrows
     private void runMigration() {
-        jdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 }

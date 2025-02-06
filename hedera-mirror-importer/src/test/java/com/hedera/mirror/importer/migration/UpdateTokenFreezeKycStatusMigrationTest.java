@@ -26,9 +26,9 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.persistence.Id;
 import java.nio.charset.StandardCharsets;
@@ -46,10 +46,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
+@DisableRepeatableSqlMigration
+@DisablePartitionMaintenance
 @EnabledIfV1
 @RequiredArgsConstructor
 @Tag("migration")
@@ -86,14 +87,12 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
 
     private final DomainBuilder domainBuilder;
 
-    private final @Owner JdbcTemplate jdbcTemplate;
-
     @Value("classpath:db/migration/v1/V1.94.0__update_token_freeze_kyc_status.sql")
     private final Resource migrationSql;
 
     @AfterEach
     void cleanup() {
-        jdbcTemplate.execute(REVERT_DDL);
+        ownerJdbcTemplate.execute(REVERT_DDL);
     }
 
     @Test
@@ -177,7 +176,7 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
                         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::int8range, ?, ?)
                         """,
                 current ? "token" : "token_history");
-        jdbcTemplate.batchUpdate(sql, migrationTokens, migrationTokens.size(), (ps, token) -> {
+        jdbcOperations.batchUpdate(sql, migrationTokens, migrationTokens.size(), (ps, token) -> {
             ps.setLong(1, token.getCreatedTimestamp());
             ps.setInt(2, token.getDecimals());
             ps.setBoolean(3, token.isFreezeDefault());
@@ -197,12 +196,12 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
     private void runMigration() {
         try (var is = migrationSql.getInputStream()) {
             var script = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-            jdbcTemplate.execute(script);
+            ownerJdbcTemplate.execute(script);
         }
     }
 
     private List<PostMigrationToken> postFindAll() {
-        return jdbcTemplate.query("SELECT * FROM token", (rs, index) -> PostMigrationToken.builder()
+        return jdbcOperations.query("SELECT * FROM token", (rs, index) -> PostMigrationToken.builder()
                 .createdTimestamp(rs.getLong("created_timestamp"))
                 .decimals(rs.getInt("decimals"))
                 .freezeDefault(rs.getBoolean("freeze_default"))

@@ -42,8 +42,8 @@
         "symbol": "ORIGINALRDKSE",
         "custom_fees": [
           {
-            "timestamp_range": "[1234567890000000002,)",
-            "token_id": "0.0.1135"
+            "entity_id": "0.0.1135",
+            "timestamp_range": "[1234567890000000002,)"
           }
         ],
         "created_timestamp": "1234567890000000002",

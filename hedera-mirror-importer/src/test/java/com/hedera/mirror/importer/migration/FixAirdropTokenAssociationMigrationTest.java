@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.DomainWrapper;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
@@ -29,33 +30,28 @@ import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import jakarta.annotation.Resource;
-import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.LongStream;
-import kotlin.text.Charsets;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Profiles;
 import org.springframework.test.context.ContextConfiguration;
 
-@DisablePartitionMaintenance
 @ContextConfiguration(initializers = FixAirdropTokenAssociationMigrationTest.Initializer.class)
+@DisablePartitionMaintenance
 @DisableRepeatableSqlMigration
 @Tag("migration")
 class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
@@ -64,9 +60,6 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
 
     @Resource
     private FixAirdropTokenAssociationMigration migration;
-
-    @Value("classpath:db/migration/v2/R__03_view.sql")
-    private File createViewSql;
 
     @Resource
     private TimePartitionService timePartitionService;
@@ -80,14 +73,6 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
     private List<TokenAccount> expectedTokenAccounts;
     private List<TokenBalance> expectedTokenBalances;
     private List<TokenAccount> expectedHistoricalTokenAccounts;
-
-    @BeforeEach
-    @SneakyThrows
-    void beforeEach() {
-        if (!isV1()) {
-            jdbcOperations.update(FileUtils.readFileToString(createViewSql, Charsets.UTF_8));
-        }
-    }
 
     @Test
     void empty() {
@@ -111,14 +96,19 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
     @Test
     void migrateWithoutBalanceSnapshots() {
         setup();
-        jdbcOperations.update("truncate account_balance");
-        jdbcOperations.update("truncate token_balance");
+        ownerJdbcTemplate.update("truncate account_balance");
+        ownerJdbcTemplate.update("truncate token_balance");
         runMigration();
 
         softly.assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
         softly.assertThat(tokenBalanceRepository.count()).isZero();
         softly.assertThat(findHistory(TokenAccount.class))
                 .containsExactlyInAnyOrderElementsOf(expectedHistoricalTokenAccounts);
+    }
+
+    @Override
+    protected List<String> getRequiredRepeatableMigrations() {
+        return !isV1() ? List.of("db/migration/v2/R__03_view.sql") : Collections.emptyList();
     }
 
     @SneakyThrows
@@ -206,14 +196,7 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
                             .tokenId(EntityId.of(tokenId))
                             .build())
                     .toList();
-            domainBuilder
-                    .transaction()
-                    .customize(t -> t.consensusTimestamp(timestamp)
-                            .nftTransfer(nftTransfers)
-                            .payerAccountId(EntityId.of(accountId))
-                            .type(TransactionType.TOKENCLAIMAIRDROP.getProtoId())
-                            .validStartNs(timestamp - 100))
-                    .persist();
+            persistTokenClaimAirdropTransaction(timestamp, nftTransfers, accountId);
         }
 
         if (createExplicitAssociation) {
@@ -244,6 +227,22 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
                             .tokenId(tokenId))
                     .get();
         }
+    }
+
+    @SneakyThrows
+    private void persistTokenClaimAirdropTransaction(
+            long consensusTimestamp, List<NftTransfer> nftTransfers, long payerAccountId) {
+        String nftTransferJson = ObjectToStringSerializer.OBJECT_MAPPER.writeValueAsString(nftTransfers);
+        jdbcOperations.update(
+                """
+                              insert into transaction (consensus_timestamp, nft_transfer, payer_account_id, type,
+                                result, valid_start_ns)
+                              values (?, ?::jsonb, ?, 60, 22, ?)
+                              """,
+                consensusTimestamp,
+                nftTransferJson,
+                payerAccountId,
+                consensusTimestamp - 100);
     }
 
     private void setup() {
