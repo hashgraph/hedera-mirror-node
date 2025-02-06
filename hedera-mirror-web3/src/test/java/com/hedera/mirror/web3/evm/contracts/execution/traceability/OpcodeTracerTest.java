@@ -817,7 +817,7 @@ class OpcodeTracerTest {
         assertThat(opcodeForPrecompileCall.reason())
                 .isNotEmpty()
                 .isEqualTo(getAbiEncodedRevertReason(Bytes.of(
-                        ResponseCodeEnum.INVALID_ACCOUNT_ID.name().getBytes()))
+                                ResponseCodeEnum.INVALID_ACCOUNT_ID.name().getBytes()))
                         .toHexString());
     }
 
@@ -972,8 +972,8 @@ class OpcodeTracerTest {
     }
 
     private UInt256[] setupStackForCapture(final MessageFrame frame) {
-        final UInt256[] stack = new UInt256[]{
-                UInt256.fromHexString("0x01"), UInt256.fromHexString("0x02"), UInt256.fromHexString("0x03")
+        final UInt256[] stack = new UInt256[] {
+            UInt256.fromHexString("0x01"), UInt256.fromHexString("0x02"), UInt256.fromHexString("0x03")
         };
 
         for (final UInt256 stackItem : stack) {
@@ -984,8 +984,8 @@ class OpcodeTracerTest {
     }
 
     private Bytes[] setupMemoryForCapture(final MessageFrame frame) {
-        final Bytes[] words = new Bytes[]{
-                Bytes.fromHexString("0x01", 32), Bytes.fromHexString("0x02", 32), Bytes.fromHexString("0x03", 32)
+        final Bytes[] words = new Bytes[] {
+            Bytes.fromHexString("0x01", 32), Bytes.fromHexString("0x02", 32), Bytes.fromHexString("0x03", 32)
         };
 
         for (int i = 0; i < words.length; i++) {
@@ -1031,8 +1031,7 @@ class OpcodeTracerTest {
                 .code(CodeV0.EMPTY_CODE)
                 .sender(Address.ZERO)
                 .originator(Address.ZERO)
-                .completer(ignored -> {
-                })
+                .completer(ignored -> {})
                 .miningBeneficiary(Address.ZERO)
                 .address(recipientAddress)
                 .contract(recipientAddress)
