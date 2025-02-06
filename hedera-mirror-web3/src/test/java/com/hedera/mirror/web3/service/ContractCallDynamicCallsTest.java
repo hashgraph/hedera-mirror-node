@@ -51,7 +51,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTracerTest {
 
-    private static final BigInteger DEFAULT_AMOUNT = BigInteger.ONE;
+    private static final BigInteger DEFAULT_TOKEN_AMOUNT = BigInteger.ONE;
     private static final List<BigInteger> DEFAULT_SERIAL_NUMBERS = List.of(BigInteger.ONE);
     private static final List<BigInteger> EMPTY_SERIAL_NUMBERS_LIST = List.of();
 
@@ -94,7 +94,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     void burnTokenGetTotalSupplyAndBalanceOfTreasury(final TokenTypeEnum tokenType) {
         // Given
         final var treasuryAccount = accountEntityPersist();
-        final var tokenEntity = tokenEntityWithAutoRenewAccountPersist();
+        final var tokenEntity = tokenEntityPersist();
 
         tokenAccountPersist(tokenEntity, treasuryAccount, 1L);
 
@@ -115,7 +115,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var functionCall = tokenType.equals(TokenTypeEnum.FUNGIBLE_COMMON)
                 ? contract.send_burnTokenGetTotalSupplyAndBalanceOfTreasury(
                         getAddressFromEntity(tokenEntity),
-                        DEFAULT_AMOUNT,
+                        DEFAULT_TOKEN_AMOUNT,
                         EMPTY_SERIAL_NUMBERS_LIST,
                         getAddressFromEntity(treasuryAccount))
                 : contract.send_burnTokenGetTotalSupplyAndBalanceOfTreasury(
@@ -139,14 +139,14 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var treasuryAccount = accountEntityPersist();
         final var sender = accountEntityPersist();
 
-        Entity tokenEntity = setUpToken(tokenType, treasuryAccount, sender, sender);
+        final var tokenEntity = setUpToken(tokenType, treasuryAccount, sender, sender);
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
         // When
         final var functionCall = contract.send_wipeTokenGetTotalSupplyAndBalanceOfTreasury(
                 getAddressFromEntity(tokenEntity),
-                DEFAULT_AMOUNT,
+                DEFAULT_TOKEN_AMOUNT,
                 tokenType.equals(TokenTypeEnum.FUNGIBLE_COMMON) ? EMPTY_SERIAL_NUMBERS_LIST : DEFAULT_SERIAL_NUMBERS,
                 getAddressFromEntity(sender));
 
@@ -165,7 +165,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var treasuryAccount = accountEntityPersist();
         final var sender = accountEntityPersist();
 
-        Entity tokenEntity = setUpToken(tokenType, treasuryAccount, sender, sender);
+        final var tokenEntity = setUpToken(tokenType, treasuryAccount, sender, sender);
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
         // When
@@ -177,6 +177,11 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
+    /**
+     * The test calls HederaTokenService.freezeToken(token, account) precompiled system contract to
+     * freeze a given fungible/non-fungible token for a given account.
+     * @param tokenType
+     */
     @ParameterizedTest
     @CsvSource(textBlock = """
             FUNGIBLE_COMMON,
@@ -187,7 +192,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var treasuryAccount = accountEntityPersist();
         final var sender = accountEntityPersist();
 
-        Entity tokenEntity = setUpToken(tokenType, treasuryAccount, sender, sender);
+        final var tokenEntity = setUpToken(tokenType, treasuryAccount, sender, sender);
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
@@ -861,7 +866,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     }
 
     private Entity setUpToken(TokenTypeEnum tokenType, Entity treasuryAccount, Entity owner, Entity spender) {
-        final var tokenEntity = tokenEntityWithAutoRenewAccountPersist();
+        final var tokenEntity = tokenEntityPersist();
 
         tokenAccountPersist(tokenEntity, treasuryAccount, 1L);
         tokenAccountPersist(tokenEntity, spender, 1L);

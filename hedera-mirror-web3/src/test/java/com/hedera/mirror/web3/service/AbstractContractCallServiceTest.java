@@ -227,15 +227,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
         return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
     }
 
-    protected Entity tokenEntityWithAutoRenewAccountPersist() {
-        Entity autoRenewAccount = accountEntityPersist();
-
-        return domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.TOKEN).autoRenewAccountId(autoRenewAccount.getAutoRenewAccountId()))
-                .persist();
-    }
-
     /**
      * Creates fungible token in the token db table.
      * The token table stores the properties specific for tokens and each record refers to
