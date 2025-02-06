@@ -22,10 +22,10 @@ import java.io.FileFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.function.Function;
 import lombok.CustomLog;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.Value;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -115,40 +115,34 @@ public class FileCopier {
      * @param destinationAdjuster adjustment to make to {@code to} path. Often {@code to} as been configured to be a
      *                            specific account ID directory stream type, such as {@code accountBalances} or
      *                            {@code recordstreams} etc. Provide a function to adjust this prior to files being
-     *                            copied. If no adjustment is required, provide {@link Function.identity()}
+     *                            copied. If no adjustment is required, provide {@link Function#identity()}
      * @param network             Hedera or dev/test network name, typically found in mirror node properties.
      */
+    @SneakyThrows
     public void copyAsNodeIdStructure(Function<Path, Path> destinationAdjuster, String network) {
+        var destination = destinationAdjuster.apply(to);
+        var networkDir = destination.resolve(network);
+        var sourceNodeDirs = FileUtils.listFilesAndDirs(from.toFile(), TrueFileFilter.INSTANCE, null);
 
-        try {
-            var destination = destinationAdjuster.apply(to);
-            var networkDir = destination.resolve(network);
-            var sourceNodeDirs = FileUtils.listFilesAndDirs(from.toFile(), TrueFileFilter.INSTANCE, null);
-
-            for (var sourceNodeDir : sourceNodeDirs) {
-
-                var sourceNodeDirName = sourceNodeDir.getName();
-                var streamTypeOpt = Arrays.stream(StreamType.values())
-                        .filter(st -> !StringUtils.isEmpty(st.getNodePrefix())
-                                && sourceNodeDirName.startsWith(st.getNodePrefix()))
-                        .findFirst();
-
-                if (streamTypeOpt.isPresent()) {
-                    var streamType = streamTypeOpt.get();
-                    var nodeAccountId = sourceNodeDirName.substring(
-                            streamType.getNodePrefix().length());
-                    EntityId nodeEntityId = EntityId.of(nodeAccountId);
-
-                    var destinationNodeIdPath = networkDir.resolve(Path.of(
-                            String.valueOf(nodeEntityId.getShard()),
-                            String.valueOf(nodeEntityId.getNum() - 3L), // Node ID
-                            streamType.getNodeIdBasedSuffix()));
-
-                    FileUtils.copyDirectory(sourceNodeDir, destinationNodeIdPath.toFile());
+        for (var sourceNodeDir : sourceNodeDirs) {
+            var sourceNodeDirName = sourceNodeDir.getName();
+            for (var streamType : StreamType.values()) {
+                var nodePrefix = streamType.getNodePrefix();
+                if (StringUtils.isEmpty(nodePrefix) || !sourceNodeDirName.startsWith(nodePrefix)) {
+                    continue;
                 }
+
+                var nodeAccountId = sourceNodeDirName.substring(nodePrefix.length());
+                var nodeEntityId = EntityId.of(nodeAccountId);
+
+                var destinationNodeIdPath = networkDir.resolve(Path.of(
+                        String.valueOf(nodeEntityId.getShard()),
+                        String.valueOf(nodeEntityId.getNum() - 3L), // Node ID
+                        streamType.getNodeIdBasedSuffix()));
+
+                FileUtils.copyDirectory(sourceNodeDir, destinationNodeIdPath.toFile());
+                break;
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 }

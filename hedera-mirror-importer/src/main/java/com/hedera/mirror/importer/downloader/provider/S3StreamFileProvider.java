@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -49,34 +48,20 @@ import software.amazon.awssdk.services.s3.model.RequestPayer;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 @CustomLog
-@RequiredArgsConstructor
-public final class S3StreamFileProvider implements StreamFileProvider {
+public final class S3StreamFileProvider extends AbstractStreamFileProvider {
 
     public static final String SEPARATOR = "/";
     private static final String RANGE_PREFIX = "bytes=0-";
     private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%s/%s%s/";
     private static final String TEMPLATE_NODE_ID_PREFIX = "%s/%d/%d/%s/";
+    private static final String TEMPLATE_BLOCK_STREAM_FILE_PATH = "%d/%d/%s";
 
-    private final CommonDownloaderProperties properties;
     private final Map<PathKey, PathResult> paths = new ConcurrentHashMap<>();
     private final S3AsyncClient s3Client;
 
-    public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-
-        var s3Key = streamFilename.getFilePath();
-        var request = GetObjectRequest.builder()
-                .bucket(properties.getBucketName())
-                .key(s3Key)
-                .requestPayer(RequestPayer.REQUESTER)
-                .range(RANGE_PREFIX + (properties.getMaxSize() - 1))
-                .build();
-
-        var responseFuture = s3Client.getObject(request, AsyncResponseTransformer.toBytes());
-        return Mono.fromFuture(responseFuture)
-                .map(r -> toStreamFileData(streamFilename, r))
-                .timeout(properties.getTimeout())
-                .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
-                .doOnSuccess(s -> log.debug("Finished downloading {}", s3Key));
+    public S3StreamFileProvider(CommonDownloaderProperties properties, S3AsyncClient s3Client) {
+        super(properties);
+        this.s3Client = s3Client;
     }
 
     @Override
@@ -108,13 +93,37 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .filter(r -> r.size() <= properties.getMaxSize())
                 .map(this::toStreamFilename)
                 .filter(s -> s != EPOCH && s.getFileType() == SIGNATURE)
-                .flatMapSequential(streamFilename -> get(node, streamFilename))
+                .flatMapSequential(this::doGet)
                 .doOnSubscribe(s -> log.debug(
                         "Searching for the next {} files after {}/{}",
                         batchSize,
                         properties.getBucketName(),
                         startAfter))
                 .switchIfEmpty(Flux.defer(() -> pathResult.fallback() ? list(node, lastFilename) : Flux.empty()));
+    }
+
+    @Override
+    protected Mono<StreamFileData> doGet(StreamFilename streamFilename) {
+        var s3Key = streamFilename.getFilePath();
+        var request = GetObjectRequest.builder()
+                .bucket(properties.getBucketName())
+                .key(s3Key)
+                .requestPayer(RequestPayer.REQUESTER)
+                .range(RANGE_PREFIX + (properties.getMaxSize() - 1))
+                .build();
+        return Mono.fromFuture(s3Client.getObject(request, AsyncResponseTransformer.toBytes()))
+                .map(r -> toStreamFileData(streamFilename, r))
+                .timeout(properties.getTimeout())
+                .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
+                .doOnSuccess(s -> log.debug("Finished downloading {}", s3Key));
+    }
+
+    @Override
+    protected String getBlockStreamFilePath(long shard, long nodeId, String filename) {
+        String filePath = TEMPLATE_BLOCK_STREAM_FILE_PATH.formatted(shard, nodeId, filename);
+        return StringUtils.isNotBlank(properties.getPathPrefix())
+                ? properties.getPathType() + SEPARATOR + filePath
+                : filePath;
     }
 
     private String getAccountIdPrefix(PathKey key) {

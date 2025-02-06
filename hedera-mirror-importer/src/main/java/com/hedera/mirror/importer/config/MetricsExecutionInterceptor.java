@@ -66,7 +66,8 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     private static final Pattern ENTITY_ID_PATTERN =
             Pattern.compile("/(balance|record)(s_)?(\\d{1,10})\\.\\d{1,10}\\.(\\d{1,10})");
     private static final Pattern SIDECAR_PATTERN = Pattern.compile("Z_\\d{1,2}\\.rcd");
-    private static final Pattern NODE_ID_PATTERN = Pattern.compile("[^/]/(\\d{1,10})/(\\d{1,10})/(balance|record)/");
+    private static final Pattern NODE_ID_PATTERN =
+            Pattern.compile("[^/]/+(\\d{1,10})/(\\d{1,10})/((balance|record)/)?");
 
     private final MeterRegistry meterRegistry;
 
@@ -130,7 +131,7 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
         var action = getAction(uriComponent);
 
         Matcher accountIdMatcher = ENTITY_ID_PATTERN.matcher(uriComponent);
-        if (accountIdMatcher.find() && accountIdMatcher.groupCount() == 4) {
+        if (accountIdMatcher.find()) {
             var shard = accountIdMatcher.group(3);
             var nodeId = String.valueOf(Long.parseLong(accountIdMatcher.group(4)) - 3L);
             var streamType = accountIdMatcher.group(1);
@@ -138,10 +139,10 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
         }
 
         Matcher nodeIdMatcher = NODE_ID_PATTERN.matcher(uriComponent);
-        if (nodeIdMatcher.find() && nodeIdMatcher.groupCount() == 3) {
+        if (nodeIdMatcher.find()) {
             var shard = nodeIdMatcher.group(1);
             var nodeId = nodeIdMatcher.group(2);
-            var streamType = nodeIdMatcher.group(3);
+            var streamType = nodeIdMatcher.group(4) != null ? nodeIdMatcher.group(4) : StreamType.BLOCK.name();
             return new UriAttributes(action, nodeId, shard, streamType.toUpperCase());
         }
 

@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
+import static org.apache.commons.lang3.StringUtils.leftPad;
+
 import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
 import com.hedera.hapi.block.stream.protoc.BlockProof;
 import com.hedera.hapi.block.stream.protoc.RecordFileItem;
@@ -37,6 +39,10 @@ import org.apache.commons.lang3.StringUtils;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BlockFile implements StreamFile<BlockItem> {
+
+    private static final int BASENAME_LENGTH = 36;
+    private static final char BASENAME_PADDING = '0';
+    private static final String COMPRESSED_FILE_SUFFIX = ".blk.gz";
 
     // Contains the block number and the previous block hash
     private BlockHeader blockHeader;
@@ -85,6 +91,14 @@ public class BlockFile implements StreamFile<BlockItem> {
     private Integer size;
 
     private int version;
+
+    public static String getBlockStreamFilename(long blockNumber) {
+        if (blockNumber < 0) {
+            throw new IllegalArgumentException("Block number must be non-negative");
+        }
+
+        return leftPad(Long.toString(blockNumber), BASENAME_LENGTH, BASENAME_PADDING) + COMPRESSED_FILE_SUFFIX;
+    }
 
     @Override
     public StreamFile<BlockItem> copy() {
