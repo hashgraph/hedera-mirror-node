@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 @DisableRepeatableSqlMigration
 @Tag("migration")
 @RequiredArgsConstructor
-public class FixNodeTransactionsMigrationTest extends ImporterIntegrationTest {
+class FixNodeTransactionsMigrationTest extends ImporterIntegrationTest {
 
     private final FixNodeTransactionsMigration migration;
     private final NodeRepository nodeRepository;
@@ -48,7 +48,6 @@ public class FixNodeTransactionsMigrationTest extends ImporterIntegrationTest {
         runMigration();
         softly.assertThat(nodeRepository.count()).isZero();
         softly.assertThat(findHistory(Node.class)).isEmpty();
-        softly.assertAll();
     }
 
     @Test
@@ -61,8 +60,6 @@ public class FixNodeTransactionsMigrationTest extends ImporterIntegrationTest {
 
         softly.assertThat(nodeRepository.count()).isEqualTo(3);
         softly.assertThat(nodeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedNodes);
-
-        softly.assertAll();
     }
 
     @Test
@@ -132,8 +129,6 @@ public class FixNodeTransactionsMigrationTest extends ImporterIntegrationTest {
 
         softly.assertThat(nodeRepository.findAll()).containsExactlyInAnyOrderElementsOf(newNodes);
         softly.assertThat(findHistory(Node.class)).containsExactlyInAnyOrderElementsOf(historyNodes);
-
-        softly.assertAll();
     }
 
     @SneakyThrows

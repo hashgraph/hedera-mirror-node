@@ -90,7 +90,7 @@ class AddRootContractIdMigrationTest extends ImporterIntegrationTest {
     }
 
     private void migrate() throws Exception {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     private List<MigrationContractLog> retrieveContractLogs() {

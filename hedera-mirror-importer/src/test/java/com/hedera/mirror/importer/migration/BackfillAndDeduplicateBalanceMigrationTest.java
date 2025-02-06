@@ -569,7 +569,7 @@ class BackfillAndDeduplicateBalanceMigrationTest
     @SneakyThrows
     private void addBalanceDeduplicateFunctions() {
         try (var is = migrationSql.getInputStream()) {
-            jdbcOperations.execute(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+            ownerJdbcTemplate.execute(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
         }
     }
 
