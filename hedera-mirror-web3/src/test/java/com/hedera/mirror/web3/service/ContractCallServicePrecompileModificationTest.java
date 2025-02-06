@@ -27,7 +27,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -870,17 +869,14 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     }
 
     @Test
-    void notExistingPrecompileCall() {
+    void notExistingPrecompileCall() throws Exception {
         // Given
         final var token = persistFungibleToken();
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         // Then
         if (mirrorNodeEvmProperties.isModularizedServices()) {
             final var modularizedCall = contract.call_callNotExistingPrecompile(getAddressFromEntity(token));
-            assertDoesNotThrow(() -> {
-                final var result = modularizedCall.send();
-                assertThat(Bytes.wrap(result)).isEqualTo(Bytes.EMPTY);
-            });
+            assertThat(Bytes.wrap(modularizedCall.send())).isEqualTo(Bytes.EMPTY);
         } else {
             final var functionCall = contract.send_callNotExistingPrecompile(getAddressFromEntity(token));
             assertThatThrownBy(functionCall::send)
