@@ -47,7 +47,7 @@ dependencies {
     runtimeOnly(
         group = "io.netty",
         name = "netty-resolver-dns-native-macos",
-        classifier = "osx-aarch_64"
+        classifier = "osx-aarch_64",
     )
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))

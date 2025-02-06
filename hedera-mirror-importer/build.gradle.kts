@@ -54,7 +54,7 @@ dependencies {
     runtimeOnly(
         group = "io.netty",
         name = "netty-resolver-dns-native-macos",
-        classifier = "osx-aarch_64"
+        classifier = "osx-aarch_64",
     )
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("com.github.vertical-blank:sql-formatter")

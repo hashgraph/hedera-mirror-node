@@ -37,7 +37,7 @@ openApiGenerate {
             "sourceFolder" to "",
             "supportUrlQuery" to "false",
             "useBeanValidation" to "true",
-            "useJakartaEe" to "true"
+            "useJakartaEe" to "true",
         )
     generateApiTests = false
     generateModelTests = false
