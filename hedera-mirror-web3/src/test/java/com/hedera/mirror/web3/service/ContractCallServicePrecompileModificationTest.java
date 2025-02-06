@@ -874,12 +874,15 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var token = persistFungibleToken();
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
-        // When
-        final var functionCall = contract.send_callNotExistingPrecompile(getAddressFromEntity(token));
         // Then
         if (mirrorNodeEvmProperties.isModularizedServices()) {
-            assertDoesNotThrow(functionCall::send);
+            final var modularizedCall = contract.call_callNotExistingPrecompile(getAddressFromEntity(token));
+            assertDoesNotThrow(() -> {
+                final var result = modularizedCall.send();
+                assertThat(Bytes.wrap(result)).isEqualTo(Bytes.EMPTY);
+            });
         } else {
+            final var functionCall = contract.send_callNotExistingPrecompile(getAddressFromEntity(token));
             assertThatThrownBy(functionCall::send)
                     .isInstanceOf(MirrorEvmTransactionException.class)
                     .hasMessage(INVALID_TOKEN_ID.name());
