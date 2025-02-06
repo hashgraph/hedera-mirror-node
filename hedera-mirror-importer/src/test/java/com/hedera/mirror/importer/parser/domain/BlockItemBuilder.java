@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.parser.domain;
 
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
 
+import com.google.protobuf.UInt64Value;
 import com.hedera.hapi.block.stream.output.protoc.CallContractOutput;
 import com.hedera.hapi.block.stream.output.protoc.CreateScheduleOutput;
 import com.hedera.hapi.block.stream.output.protoc.CryptoTransferOutput;
@@ -30,6 +31,7 @@ import com.hedera.hapi.block.stream.output.protoc.StateChange;
 import com.hedera.hapi.block.stream.output.protoc.StateChanges;
 import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
 import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
+import com.hedera.hapi.block.stream.output.protoc.UtilPrngOutput;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
@@ -53,6 +55,7 @@ import org.springframework.context.annotation.Scope;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class BlockItemBuilder {
     private static final int STATE_FILES_ID = 6;
+    private static final int STATE_ID_NODES = 20;
 
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
@@ -164,6 +167,85 @@ public class BlockItemBuilder {
                 Collections.emptyList());
     }
 
+    public BlockItemBuilder.Builder utilPrng() {
+        var recordItem = recordItemBuilder.prng().build();
+        return utilPrng(recordItem);
+    }
+
+    public BlockItemBuilder.Builder utilPrng(RecordItem recordItem) {
+        var transactionRecord = recordItem.getTransactionRecord();
+        var utilPrngOutputBuilder = UtilPrngOutput.newBuilder();
+        var utilPrng = transactionRecord.hasPrngNumber()
+                ? utilPrngOutputBuilder.setPrngNumber(transactionRecord.getPrngNumber())
+                : transactionRecord.hasPrngBytes()
+                        ? utilPrngOutputBuilder.setPrngBytes(transactionRecord.getPrngBytes())
+                        : null;
+        assert utilPrng != null;
+        var transactionOutput =
+                TransactionOutput.newBuilder().setUtilPrng(utilPrng).build();
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(),
+                transactionResult(recordItem),
+                List.of(transactionOutput),
+                Collections.emptyList());
+    }
+
+    public BlockItemBuilder.Builder nodeCreate(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public BlockItemBuilder.Builder nodeUpdate(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public BlockItemBuilder.Builder nodeStakeUpdate(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public BlockItemBuilder.Builder nodeDelete() {
+        var recordItem = recordItemBuilder.cryptoTransfer().build();
+        return nodeDelete(recordItem);
+    }
+
+    public BlockItemBuilder.Builder nodeDelete(RecordItem recordItem) {
+        var stateChanges = buildNodeIdStateChanges(recordItem);
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
+    }
+
+    public Builder systemDelete(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+    }
+
+    public Builder systemUndelete(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+    }
+
+    public Builder uncheckedSubmit(RecordItem recordItem) {
+        var instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        var timestamp = Utility.instantToTimestamp(instant);
+        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionResult = transactionResult(transactionRecord, timestamp).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult, List.of(), Collections.emptyList());
+    }
+
     public BlockItemBuilder.Builder unknown() {
         var recordItem = recordItemBuilder.unknown().build();
         return unknown(recordItem);
@@ -221,6 +303,32 @@ public class BlockItemBuilder {
 
         var changes = List.of(firstChange, secondChange, thirdChange, fourtChange);
 
+        return StateChanges.newBuilder().addAllStateChanges(changes).build();
+    }
+
+    private static StateChanges buildNodeIdStateChanges(RecordItem recordItem) {
+        var nodeId = recordItem.getTransactionRecord().getReceipt().getNodeId();
+        var key = MapChangeKey.newBuilder().setEntityNumberKey(UInt64Value.of(nodeId));
+        var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
+
+        var firstChange = StateChange.newBuilder()
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .setStateId(1)
+                .build();
+
+        var secondChange = StateChange.newBuilder().setStateId(STATE_ID_NODES).build();
+
+        var thirdChange = StateChange.newBuilder()
+                .setStateId(STATE_ID_NODES)
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .build();
+
+        var fourthChange = StateChange.newBuilder()
+                .setMapUpdate(mapUpdate)
+                .setStateId(STATE_ID_NODES)
+                .build();
+
+        var changes = List.of(firstChange, secondChange, thirdChange, fourthChange);
         return StateChanges.newBuilder().addAllStateChanges(changes).build();
     }
 
