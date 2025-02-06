@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.state.keyvalue.AccountReadableKVState;
 import com.hedera.mirror.web3.state.keyvalue.AliasesReadableKVState;
 import com.swirlds.state.spi.ReadableKVState;
@@ -77,25 +78,33 @@ class MapWritableKVStateTest {
 
     @Test
     void testPutIntoDataSource() {
-        assertThat(mapWritableKVState.contains(accountID)).isFalse();
-        mapWritableKVState.putIntoDataSource(accountID, account);
-        assertThat(mapWritableKVState.contains(accountID)).isTrue();
+        ContractCallContext.run(ctx -> {
+            assertThat(mapWritableKVState.contains(accountID)).isFalse();
+            mapWritableKVState.putIntoDataSource(accountID, account);
+            assertThat(mapWritableKVState.contains(accountID)).isTrue();
+            return ctx;
+        });
     }
 
     @Test
     void testRemoveFromDataSource() {
-        mapWritableKVState.putIntoDataSource(accountID, account);
-        assertThat(mapWritableKVState.contains(accountID)).isTrue();
-        mapWritableKVState.removeFromDataSource(accountID);
-        assertThat(mapWritableKVState.contains(accountID)).isFalse();
+        ContractCallContext.run(ctx -> {
+            mapWritableKVState.putIntoDataSource(accountID, account);
+            assertThat(mapWritableKVState.contains(accountID)).isTrue();
+            mapWritableKVState.removeFromDataSource(accountID);
+            assertThat(mapWritableKVState.contains(accountID)).isFalse();
+            return ctx;
+        });
     }
 
     @Test
     void testCommit() {
-        mapWritableKVState.putIntoDataSource(accountID, account);
-        assertThat(mapWritableKVState.contains(accountID)).isTrue();
-        mapWritableKVState.commit();
-        assertThat(mapWritableKVState.contains(accountID)).isFalse();
+        ContractCallContext.run(ctx -> {
+            mapWritableKVState.putIntoDataSource(accountID, account);
+            assertThat(mapWritableKVState.contains(accountID)).isTrue();
+            mapWritableKVState.commit(); // Does nothing, just for test coverage.
+            return ctx;
+        });
     }
 
     @Test
@@ -122,11 +131,14 @@ class MapWritableKVStateTest {
 
     @Test
     void testEqualsDifferentValues() {
-        final var readableKVStateMock = mock(ReadableKVState.class);
-        MapWritableKVState<AccountID, Account> other =
-                new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateMock);
-        other.put(accountID, account);
-        assertThat(mapWritableKVState).isNotEqualTo(other);
+        ContractCallContext.run(ctx -> {
+            final var readableKVStateMock = mock(ReadableKVState.class);
+            MapWritableKVState<AccountID, Account> other =
+                    new MapWritableKVState<>(AccountReadableKVState.KEY, readableKVStateMock);
+            other.put(accountID, account);
+            assertThat(mapWritableKVState).isNotEqualTo(other);
+            return ctx;
+        });
     }
 
     @Test
