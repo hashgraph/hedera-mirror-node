@@ -278,7 +278,7 @@ public class OpcodeTracer implements HederaOperationTracer {
             Set<SlotKey> modifiedKeys = states.get(STORAGE_KEY).modifiedKeys().stream()
                     .filter(SlotKey.class::isInstance)
                     .map(SlotKey.class::cast)
-                    .filter(slotKey -> slotKey.hasContractID() && slotKey.contractID() != null)
+                    .filter(SlotKey::hasContractID)
                     .collect(Collectors.toSet());
 
             if (modifiedKeys.isEmpty()) {

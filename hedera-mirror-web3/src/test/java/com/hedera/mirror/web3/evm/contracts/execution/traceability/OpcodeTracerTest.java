@@ -575,33 +575,6 @@ class OpcodeTracerTest {
 
     @Test
     @DisplayName(
-            "given storage is enabled in tracer options, should skip slotKey when contractID is null for modularized services")
-    void shouldSkipSlotKeyWhenContractIDIsNull() {
-        // Given
-        tracerOptions = tracerOptions.toBuilder().storage(true).build();
-        when(mirrorNodeEvmProperties.isModularizedServices()).thenReturn(true);
-        frame = setupInitialFrame(tracerOptions);
-
-        MapWritableStates mockStates = mock(MapWritableStates.class);
-        when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
-        WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
-
-        SlotKey slotKeyWithNullContractID = mock(SlotKey.class);
-        when(slotKeyWithNullContractID.hasContractID()).thenReturn(true);
-        when(slotKeyWithNullContractID.contractID()).thenReturn(null);
-
-        when(mockStorageState.modifiedKeys()).thenReturn(Set.of(slotKeyWithNullContractID));
-
-        // When
-        final Opcode opcode = executeOperation(frame);
-
-        // Then
-        assertThat(opcode.storage()).isEmpty();
-    }
-
-    @Test
-    @DisplayName(
             "given storage is enabled in tracer options, should skip slotKey when contract address does not match for modularized services")
     void shouldSkipSlotKeyWhenContractAddressDoesNotMatch() {
         // Given
