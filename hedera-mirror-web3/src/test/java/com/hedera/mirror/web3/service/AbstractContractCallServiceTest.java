@@ -74,7 +74,7 @@ import org.web3j.tx.Contract;
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
-    static final long DEFAULT_ACCOUNT_BALANCE = 100_000_000_000_000_000L;
+    protected static final long DEFAULT_ACCOUNT_BALANCE = 100_000_000_000_000_000L;
 
     @Resource
     protected TestWeb3jService testWeb3jService;
