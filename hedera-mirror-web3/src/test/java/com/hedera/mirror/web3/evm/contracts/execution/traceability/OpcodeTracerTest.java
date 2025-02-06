@@ -57,6 +57,7 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.state.core.MapWritableStates;
+import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractActionType;
 import com.hedera.services.utils.EntityIdUtils;
@@ -113,7 +114,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class OpcodeTracerTest {
 
-    private static final String CONTRACT_SERVICE = "ContractService";
+    private static final String CONTRACT_SERVICE = ContractService.NAME;
     private static final String STORAGE_KEY = "STORAGE";
     private static final Address CONTRACT_ADDRESS = Address.fromHexString("0x123");
     private static final Address ETH_PRECOMPILE_ADDRESS = Address.fromHexString("0x01");

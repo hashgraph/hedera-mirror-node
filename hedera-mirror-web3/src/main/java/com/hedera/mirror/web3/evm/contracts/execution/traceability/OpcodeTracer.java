@@ -31,6 +31,7 @@ import com.hedera.mirror.web3.convert.BytesDecoder;
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.state.core.MapWritableStates;
+import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.services.stream.proto.ContractActionType;
@@ -66,7 +67,6 @@ import org.springframework.util.CollectionUtils;
 @Getter
 public class OpcodeTracer implements HederaOperationTracer {
 
-    private static final String CONTRACT_SERVICE = "ContractService";
     private static final String STORAGE_KEY = "STORAGE";
     private final Map<Address, PrecompiledContract> hederaPrecompiles;
     private final MirrorNodeEvmProperties evmProperties;
@@ -272,7 +272,7 @@ public class OpcodeTracer implements HederaOperationTracer {
 
     private Map<Bytes, Bytes> getStorageUpdates(Address accountAddress) {
         Map<Bytes, Bytes> storageUpdates = new HashMap<>();
-        MapWritableStates states = (MapWritableStates) mirrorNodeState.getWritableStates(CONTRACT_SERVICE);
+        MapWritableStates states = (MapWritableStates) mirrorNodeState.getWritableStates(ContractService.NAME);
 
         try {
             Set<SlotKey> modifiedKeys = states.get(STORAGE_KEY).modifiedKeys().stream()
@@ -301,7 +301,7 @@ public class OpcodeTracer implements HederaOperationTracer {
         } catch (IllegalArgumentException e) {
             log.warn(
                     "Failed to retrieve modified storage keys for service: {}, key: {}",
-                    CONTRACT_SERVICE,
+                    ContractService.NAME,
                     STORAGE_KEY,
                     e);
         }
