@@ -27,6 +27,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -357,8 +358,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     }
 
     /**
-     * Burns tokens from the token's treasury account.
-     * The operation decreases the total supply of the token.
+     * Burns tokens from the token's treasury account. The operation decreases the total supply of the token.
      */
     @Test
     void burnFungibleToken() throws Exception {
@@ -870,16 +870,20 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     }
 
     @Test
-    void notExistingPrecompileCallFails() {
+    void notExistingPrecompileCall() {
         // Given
         final var token = persistFungibleToken();
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         // When
         final var functionCall = contract.send_callNotExistingPrecompile(getAddressFromEntity(token));
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(INVALID_TOKEN_ID.name());
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            assertDoesNotThrow(functionCall::send);
+        } else {
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(INVALID_TOKEN_ID.name());
+        }
     }
 
     @Test
