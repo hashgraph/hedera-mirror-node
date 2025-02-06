@@ -27,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
@@ -210,14 +209,11 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var owner = accountPersist();
         final var spender = accountPersist();
         final var tokenEntity = fungibleTokenPersist();
-        final var amountGranted = 50L;
-        domainBuilder
+        var entity = domainBuilder
                 .tokenAllowance()
                 .customize(a -> a.tokenId(tokenEntity.getTokenId())
                         .owner(owner.getNum())
-                        .spender(spender.getNum())
-                        .amount(amountGranted)
-                        .amountGranted(amountGranted))
+                        .spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -230,7 +226,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 tokenAddress.toHexString(),
                 toAddress(owner).toHexString(),
                 toAddress(spender).toHexString());
-        assertThat(result).isEqualTo(BigInteger.valueOf(amountGranted));
+        assertThat(result).isEqualTo(BigInteger.valueOf(entity.getAmountGranted()));
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
@@ -239,14 +235,11 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var owner = accountPersist();
         final var spender = accountPersist();
         final var tokenEntity = fungibleTokenPersist();
-        final var amountGranted = 50L;
-        domainBuilder
+        var entity = domainBuilder
                 .tokenAllowance()
                 .customize(a -> a.tokenId(tokenEntity.getTokenId())
                         .owner(owner.getNum())
-                        .spender(spender.getNum())
-                        .amount(amountGranted)
-                        .amountGranted(amountGranted))
+                        .spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -259,7 +252,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 tokenAddress.toHexString(),
                 toAddress(owner).toHexString(),
                 toAddress(spender).toHexString());
-        assertThat(result).isEqualTo(BigInteger.valueOf(amountGranted));
+        assertThat(result).isEqualTo(BigInteger.valueOf(entity.getAmountGranted()));
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
@@ -268,14 +261,11 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var spender = spenderEntityPersistWithAlias();
         final var owner = senderEntityPersistWithAlias();
         final var tokenEntity = fungibleTokenPersist();
-        final var amountGranted = 50L;
-        domainBuilder
+        var entity = domainBuilder
                 .tokenAllowance()
                 .customize(a -> a.tokenId(tokenEntity.getTokenId())
                         .owner(owner.getNum())
-                        .spender(spender.getNum())
-                        .amount(amountGranted)
-                        .amountGranted(amountGranted))
+                        .spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -284,7 +274,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 .send();
         final var functionCall = contract.send_allowance(
                 tokenAddress.toHexString(), SENDER_ALIAS.toHexString(), SPENDER_ALIAS.toHexString());
-        assertThat(result).isEqualTo(BigInteger.valueOf(amountGranted));
+        assertThat(result).isEqualTo(BigInteger.valueOf(entity.getAmountGranted()));
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
@@ -293,14 +283,11 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var spender = spenderEntityPersistWithAlias();
         final var owner = senderEntityPersistWithAlias();
         final var tokenEntity = fungibleTokenPersist();
-        final var amountGranted = 50L;
-        domainBuilder
+        var entity = domainBuilder
                 .tokenAllowance()
                 .customize(a -> a.tokenId(tokenEntity.getTokenId())
                         .owner(owner.getNum())
-                        .spender(spender.getNum())
-                        .amount(amountGranted)
-                        .amountGranted(amountGranted))
+                        .spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -309,7 +296,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 .send();
         final var functionCall = contract.send_allowanceNonStatic(
                 tokenAddress.toHexString(), SENDER_ALIAS.toHexString(), SPENDER_ALIAS.toHexString());
-        assertThat(result).isEqualTo(BigInteger.valueOf(amountGranted));
+        assertThat(result).isEqualTo(BigInteger.valueOf(entity.getAmountGranted()));
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
@@ -451,13 +438,10 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallBalanceOfStatic() throws Exception {
         final var owner = accountPersist();
-        final var tokenEntity = fungibleTokenPersist(owner);
-        final var balance = 12L;
-        domainBuilder
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
+        var entity = domainBuilder
                 .tokenAccount()
-                .customize(e -> e.accountId(owner.getId())
-                        .tokenId(tokenEntity.getTokenId())
-                        .balance(balance))
+                .customize(e -> e.accountId(owner.getId()).tokenId(tokenEntity.getTokenId()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -466,20 +450,17 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 .send();
         final var functionCall = contract.send_balanceOf(
                 tokenAddress.toHexString(), toAddress(owner).toHexString());
-        assertThat(result).isEqualTo(BigInteger.valueOf(balance));
+        assertThat(result).isEqualTo(BigInteger.valueOf(entity.getBalance()));
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
     void ethCallBalanceOfNonStatic() throws Exception {
         final var owner = accountPersist();
-        final var tokenEntity = fungibleTokenPersist(owner);
-        final var balance = 12L;
-        domainBuilder
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
+        var entity = domainBuilder
                 .tokenAccount()
-                .customize(e -> e.accountId(owner.getId())
-                        .tokenId(tokenEntity.getTokenId())
-                        .balance(balance))
+                .customize(e -> e.accountId(owner.getId()).tokenId(tokenEntity.getTokenId()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -488,40 +469,34 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 .send();
         final var functionCall = contract.send_balanceOfNonStatic(
                 tokenAddress.toHexString(), toAddress(owner).toHexString());
-        assertThat(result).isEqualTo(BigInteger.valueOf(balance));
+        assertThat(result).isEqualTo(BigInteger.valueOf(entity.getBalance()));
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
     void ethCallBalanceOfWithAliasStatic() throws Exception {
         final var owner = senderEntityPersistWithAlias();
-        final var tokenEntity = fungibleTokenPersist(owner);
-        final var balance = 12L;
-        domainBuilder
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
+        var entity = domainBuilder
                 .tokenAccount()
-                .customize(e -> e.accountId(owner.getId())
-                        .tokenId(tokenEntity.getTokenId())
-                        .balance(balance))
+                .customize(e -> e.accountId(owner.getId()).tokenId(tokenEntity.getTokenId()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
         final var result = contract.call_balanceOf(tokenAddress.toHexString(), SENDER_ALIAS.toHexString())
                 .send();
         final var functionCall = contract.send_balanceOf(tokenAddress.toHexString(), SENDER_ALIAS.toHexString());
-        assertThat(result).isEqualTo(BigInteger.valueOf(balance));
+        assertThat(result).isEqualTo(BigInteger.valueOf(entity.getBalance()));
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
     void ethCallBalanceOfWithAliasNonStatic() throws Exception {
         final var owner = senderEntityPersistWithAlias();
-        final var tokenEntity = fungibleTokenPersist(owner);
-        final var balance = 12L;
-        domainBuilder
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
+        var entity = domainBuilder
                 .tokenAccount()
-                .customize(e -> e.accountId(owner.getId())
-                        .tokenId(tokenEntity.getTokenId())
-                        .balance(balance))
+                .customize(e -> e.accountId(owner.getId()).tokenId(tokenEntity.getTokenId()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -529,7 +504,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
                 .send();
         final var functionCall =
                 contract.send_balanceOfNonStatic(tokenAddress.toHexString(), SENDER_ALIAS.toHexString());
-        assertThat(result).isEqualTo(BigInteger.valueOf(balance));
+        assertThat(result).isEqualTo(BigInteger.valueOf(entity.getBalance()));
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
@@ -760,14 +735,11 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var owner = accountPersist();
         final var spender = accountPersist();
         final var tokenEntity = fungibleTokenPersist();
-        final var amountGranted = 50L;
         domainBuilder
                 .tokenAllowance()
                 .customize(a -> a.tokenId(tokenEntity.getTokenId())
                         .owner(owner.getNum())
-                        .spender(spender.getNum())
-                        .amount(amountGranted)
-                        .amountGranted(amountGranted))
+                        .spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
@@ -783,14 +755,11 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var spender = spenderEntityPersistWithAlias();
         final var owner = senderEntityPersistWithAlias();
         final var tokenEntity = fungibleTokenPersist();
-        final var amountGranted = 50L;
         domainBuilder
                 .tokenAllowance()
                 .customize(a -> a.tokenId(tokenEntity.getTokenId())
                         .owner(owner.getNum())
-                        .spender(spender.getNum())
-                        .amount(amountGranted)
-                        .amountGranted(amountGranted))
+                        .spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
@@ -860,13 +829,10 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallBalanceOfRedirect() {
         final var owner = accountPersist();
-        final var tokenEntity = fungibleTokenPersist(owner);
-        final var balance = 12L;
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
         domainBuilder
                 .tokenAccount()
-                .customize(e -> e.accountId(owner.getId())
-                        .tokenId(tokenEntity.getTokenId())
-                        .balance(balance))
+                .customize(e -> e.accountId(owner.getId()).tokenId(tokenEntity.getTokenId()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
@@ -878,13 +844,11 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallBalanceOfWithAliasRedirect() {
         final var owner = senderEntityPersistWithAlias();
-        final var tokenEntity = fungibleTokenPersist(owner);
-        final var balance = 12L;
+        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(owner);
+
         domainBuilder
                 .tokenAccount()
-                .customize(e -> e.accountId(owner.getId())
-                        .tokenId(tokenEntity.getTokenId())
-                        .balance(balance))
+                .customize(e -> e.accountId(owner.getId()).tokenId(tokenEntity.getTokenId()))
                 .persist();
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
@@ -1091,54 +1055,15 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     }
 
     private EntityId spenderEntityPersistWithAlias() {
-        return accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY);
+        return accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY).toEntityId();
     }
 
     private EntityId senderEntityPersistWithAlias() {
-        return accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY);
-    }
-
-    private EntityId accountPersistWithAlias(final Address alias, final ByteString publicKey) {
-        return domainBuilder
-                .entity()
-                .customize(e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()))
-                .persist()
-                .toEntityId();
+        return accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY).toEntityId();
     }
 
     private EntityId accountPersist() {
-        return domainBuilder
-                .entity()
-                .customize(e -> e.evmAddress(null).alias(null).balance(12L))
-                .persist()
-                .toEntityId();
-    }
-
-    private Token fungibleTokenPersist(final EntityId treasuryEntityId) {
-        return fungibleTokenPersist(treasuryEntityId, domainBuilder.key());
-    }
-
-    private Token fungibleTokenPersist(final EntityId treasuryEntityId, final byte[] kycKey) {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        return domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(treasuryEntityId)
-                        .kycKey(kycKey))
-                .persist();
-    }
-
-    private Token fungibleTokenPersist() {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        return domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        return accountEntityPersist().toEntityId();
     }
 
     private Token nftPersist() {
