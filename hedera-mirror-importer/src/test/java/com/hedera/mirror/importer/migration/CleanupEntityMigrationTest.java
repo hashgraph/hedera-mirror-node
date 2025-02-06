@@ -382,7 +382,7 @@ class CleanupEntityMigrationTest extends ImporterIntegrationTest {
 
     @SneakyThrows
     private void migrate() {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     /**
@@ -422,10 +422,10 @@ class CleanupEntityMigrationTest extends ImporterIntegrationTest {
      */
     private void setEntityTablesPreV_1_36() {
         // remove entity table if present
-        jdbcOperations.execute("drop table if exists entity cascade;");
+        ownerJdbcTemplate.execute("drop table if exists entity cascade;");
 
         // add t_entities if not present
-        jdbcOperations.execute(
+        ownerJdbcTemplate.execute(
                 """
     create table if not exists t_entities (
         entity_num             bigint  not null,

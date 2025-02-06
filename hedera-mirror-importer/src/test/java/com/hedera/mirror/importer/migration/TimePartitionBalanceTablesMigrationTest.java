@@ -369,7 +369,7 @@ class TimePartitionBalanceTablesMigrationTest extends ImporterIntegrationTest {
             var script = StreamUtils.copyToString(is, StandardCharsets.UTF_8)
                     .replaceAll("\\$\\{partitionStartDate}", partitionStartDate)
                     .replaceAll("\\$\\{partitionTimeInterval}", partitionTimeInterval);
-            jdbcOperations.execute(script);
+            ownerJdbcTemplate.execute(script);
         }
     }
 }

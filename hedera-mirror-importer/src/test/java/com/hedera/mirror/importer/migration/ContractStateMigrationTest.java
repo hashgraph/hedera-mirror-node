@@ -127,6 +127,6 @@ class ContractStateMigrationTest extends ImporterIntegrationTest {
 
     @SneakyThrows
     private void runMigration() {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 }

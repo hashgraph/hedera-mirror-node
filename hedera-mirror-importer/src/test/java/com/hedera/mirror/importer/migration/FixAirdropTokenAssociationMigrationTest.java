@@ -96,8 +96,8 @@ class FixAirdropTokenAssociationMigrationTest extends ImporterIntegrationTest {
     @Test
     void migrateWithoutBalanceSnapshots() {
         setup();
-        jdbcOperations.update("truncate account_balance");
-        jdbcOperations.update("truncate token_balance");
+        ownerJdbcTemplate.update("truncate account_balance");
+        ownerJdbcTemplate.update("truncate token_balance");
         runMigration();
 
         softly.assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);

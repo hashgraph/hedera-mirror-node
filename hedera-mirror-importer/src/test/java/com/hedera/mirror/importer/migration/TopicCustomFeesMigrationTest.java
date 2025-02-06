@@ -282,7 +282,7 @@ class TopicCustomFeesMigrationTest extends ImporterIntegrationTest {
     private void runMigration() {
         String migrationFilepath = isV1() ? "v1/V1.103.2__topic_custom_fees.sql" : "v2/V2.8.2__topic_custom_fees.sql";
         var file = TestUtils.getResource("db/migration/" + migrationFilepath);
-        jdbcOperations.execute(FileUtils.readFileToString(file, StandardCharsets.UTF_8));
+        ownerJdbcTemplate.execute(FileUtils.readFileToString(file, StandardCharsets.UTF_8));
     }
 
     @Builder(toBuilder = true)

@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.ImporterProperties;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataAccessException;
 
 @RequiredArgsConstructor
 @Tag("migration")
@@ -36,6 +38,18 @@ class DummyMigrationTest extends ImporterIntegrationTest {
     void checksum() {
         var dummyMigration = new DummyMigration(importerProperties);
         assertThat(dummyMigration.getChecksum()).isEqualTo(5);
+    }
+
+    @Test
+    void verifyPermissions() {
+        final var sql =
+                """
+                create table if not exists test (id bigint primary key);
+                insert into test (id) values (1);
+                drop table test
+                """;
+        assertThatThrownBy(() -> jdbcOperations.update(sql)).isInstanceOf(DataAccessException.class);
+        ownerJdbcTemplate.update(sql); // Succeeds
     }
 
     static class DummyMigration extends RepeatableMigration {
