@@ -278,6 +278,7 @@ public class OpcodeTracer implements HederaOperationTracer {
             Set<SlotKey> modifiedKeys = states.get(STORAGE_KEY).modifiedKeys().stream()
                     .filter(SlotKey.class::isInstance)
                     .map(SlotKey.class::cast)
+                    .filter(slotKey -> slotKey.hasContractID() && slotKey.contractID() != null)
                     .collect(Collectors.toSet());
 
             if (modifiedKeys.isEmpty()) {
@@ -285,11 +286,6 @@ public class OpcodeTracer implements HederaOperationTracer {
             }
 
             for (SlotKey slotKey : modifiedKeys) {
-                // Check if contractID is null before processing
-                if (!slotKey.hasContractID() || slotKey.contractID() == null) {
-                    continue;
-                }
-
                 Address contractAddress = EntityIdUtils.asHexedEvmAddress(slotKey.contractID());
                 if (!accountAddress.equals(contractAddress)) {
                     continue;

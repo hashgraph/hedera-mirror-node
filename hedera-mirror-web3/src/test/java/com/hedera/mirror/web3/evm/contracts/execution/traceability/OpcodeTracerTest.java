@@ -35,7 +35,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.NOT_STARTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.MESSAGE_CALL;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
@@ -503,7 +502,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
 
         // Mock SlotKey and SlotValue
         SlotKey slotKey = createMockSlotKey();
@@ -536,7 +535,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
 
         // Mock empty modified keys retrieval
         when(mockStorageState.modifiedKeys()).thenReturn(Collections.emptySet());
@@ -560,7 +559,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
 
         SlotKey slotKeyWithoutContractID = mock(SlotKey.class);
         when(slotKeyWithoutContractID.hasContractID()).thenReturn(false);
@@ -586,7 +585,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
 
         SlotKey slotKeyWithNullContractID = mock(SlotKey.class);
         when(slotKeyWithNullContractID.hasContractID()).thenReturn(true);
@@ -613,7 +612,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
 
         SlotKey mismatchedSlotKey = createMockSlotKey(Address.fromHexString("0xDEADBEEF"));
         when(mockStorageState.modifiedKeys()).thenReturn(Set.of(mismatchedSlotKey));
@@ -637,7 +636,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(eq(STORAGE_KEY));
+        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
 
         SlotKey slotKey = createMockSlotKey(CONTRACT_ADDRESS);
 
