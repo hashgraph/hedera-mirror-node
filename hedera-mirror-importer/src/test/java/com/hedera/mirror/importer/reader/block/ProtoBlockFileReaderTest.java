@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
@@ -46,9 +45,40 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.core.io.ClassPathResource;
 
-class ProtoBlockFileReaderTest {
+public class ProtoBlockFileReaderTest {
+
+    public static final List<BlockFile> TEST_BLOCK_FILES = List.of(
+            BlockFile.builder()
+                    .consensusStart(1736197012160646000L)
+                    .consensusEnd(1736197012160646001L)
+                    .count(2L)
+                    .digestAlgorithm(DigestAlgorithm.SHA_384)
+                    .hash(
+                            "581caa8ab1fad535a0fac97957c5c0cf44c528ee55724353b4bab9093083fda32429f73248bc3128e329bbdfa1967d20")
+                    .index(7858853L)
+                    .name(BlockFile.getBlockStreamFilename(7858853))
+                    .previousHash(
+                            "ba1a0222099d542425f6915053b7f15e3b75fd680b0d84ca6d41fbffcd38f8fb5ac6ab6a235e69f7ae23118d1996c7f1")
+                    .roundStart(7858854L)
+                    .roundEnd(7858854L)
+                    .version(7)
+                    .build(),
+            BlockFile.builder()
+                    .consensusStart(null)
+                    .consensusEnd(null)
+                    .count(0L)
+                    .digestAlgorithm(DigestAlgorithm.SHA_384)
+                    .hash(
+                            "ef32f163bee6553087002310467b970b1de2c8cbec2eab46f0d0c58ff34043d080f43c9e3c759956fda19fc9f5a5966b")
+                    .index(7858854L)
+                    .name(BlockFile.getBlockStreamFilename(7858854))
+                    .previousHash(
+                            "581caa8ab1fad535a0fac97957c5c0cf44c528ee55724353b4bab9093083fda32429f73248bc3128e329bbdfa1967d20")
+                    .roundStart(7858855L)
+                    .roundEnd(7858855L)
+                    .version(7)
+                    .build());
 
     private final ProtoBlockFileReader reader = new ProtoBlockFileReader();
 
@@ -186,61 +216,13 @@ class ProtoBlockFileReaderTest {
 
     @SneakyThrows
     private static Stream<Arguments> readTestArgumentsProvider() {
-        List<Arguments> argumentsList = new ArrayList<>();
-
-        long index = 7858853;
-        String filename = BlockFile.getBlockStreamFilename(index);
-        long round = index + 1;
-        var file = new ClassPathResource("data/blockstreams/" + filename).getFile();
-        var streamFileData = StreamFileData.from(file);
-        var expected = BlockFile.builder()
-                .bytes(streamFileData.getBytes())
-                .consensusStart(1736197012160646000L)
-                .consensusEnd(1736197012160646001L)
-                .count(2L)
-                .digestAlgorithm(DigestAlgorithm.SHA_384)
-                .hash(
-                        "581caa8ab1fad535a0fac97957c5c0cf44c528ee55724353b4bab9093083fda32429f73248bc3128e329bbdfa1967d20")
-                .index(index)
-                .loadStart(streamFileData.getStreamFilename().getTimestamp())
-                .name(filename)
-                .previousHash(
-                        "ba1a0222099d542425f6915053b7f15e3b75fd680b0d84ca6d41fbffcd38f8fb5ac6ab6a235e69f7ae23118d1996c7f1")
-                .roundStart(round)
-                .roundEnd(round)
-                .size(streamFileData.getBytes().length)
-                .version(7)
-                .build();
-        argumentsList.add(Arguments.of(filename, streamFileData, expected));
-
-        // A block without event transactions, note consensusStart and consensusEnd are both null due to the bug that
-        // BlockHeader.first_transaction_consensus_time is null
-        index = 7858854;
-        filename = BlockFile.getBlockStreamFilename(index);
-        round = index + 1;
-        file = new ClassPathResource("data/blockstreams/" + filename).getFile();
-        streamFileData = StreamFileData.from(file);
-        // Verifies the calculated hash of the previous block matches the previous hash in this (the next) block file
-        String previousHash = expected.getHash();
-        expected = BlockFile.builder()
-                .bytes(streamFileData.getBytes())
-                .consensusStart(null)
-                .consensusEnd(null)
-                .count(0L)
-                .digestAlgorithm(DigestAlgorithm.SHA_384)
-                .hash(
-                        "ef32f163bee6553087002310467b970b1de2c8cbec2eab46f0d0c58ff34043d080f43c9e3c759956fda19fc9f5a5966b")
-                .index(index)
-                .loadStart(streamFileData.getStreamFilename().getTimestamp())
-                .name(filename)
-                .previousHash(previousHash)
-                .roundStart(round)
-                .roundEnd(round)
-                .size(streamFileData.getBytes().length)
-                .version(7)
-                .build();
-        argumentsList.add(Arguments.of(filename, streamFileData, expected));
-
-        return argumentsList.stream();
+        return TEST_BLOCK_FILES.stream().map(blockFile -> {
+            var file = TestUtils.getResource("data/blockstreams/" + blockFile.getName());
+            var streamFileData = StreamFileData.from(file);
+            blockFile.setBytes(streamFileData.getBytes());
+            blockFile.setLoadStart(streamFileData.getStreamFilename().getTimestamp());
+            blockFile.setSize(streamFileData.getBytes().length);
+            return Arguments.of(blockFile.getName(), streamFileData, blockFile);
+        });
     }
 }

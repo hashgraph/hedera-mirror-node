@@ -19,13 +19,17 @@ package com.hedera.mirror.importer.downloader.block;
 import static com.hedera.mirror.importer.TestUtils.S3_PROXY_PORT;
 import static com.hedera.mirror.importer.TestUtils.generateRandomByteArray;
 import static com.hedera.mirror.importer.TestUtils.gzip;
+import static com.hedera.mirror.importer.reader.block.ProtoBlockFileReaderTest.TEST_BLOCK_FILES;
 import static org.apache.commons.lang3.StringUtils.countMatches;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -35,7 +39,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.hedera.mirror.common.domain.transaction.BlockFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.TestUtils;
@@ -44,6 +47,7 @@ import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
+import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
@@ -85,16 +89,11 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class BlockStreamPollerTest {
 
-    private static final String[] BLOCK_STREAM_FILENAMES =
-            new String[] {BlockFile.getBlockStreamFilename(7858853L), BlockFile.getBlockStreamFilename(7858854L)};
-
     @TempDir
     private Path archivePath;
 
-    private BlockStreamPoller blockStreamPoller;
-
-    @Mock
     private BlockStreamVerifier blockStreamVerifier;
+    private BlockStreamPoller blockStreamPoller;
 
     @Mock(strictness = Strictness.LENIENT)
     private ConsensusNodeService consensusNodeService;
@@ -141,14 +140,26 @@ class BlockStreamPollerTest {
                 .region(Region.of(commonProperties.getRegion()))
                 .build();
         var streamFileProvider = new S3StreamFileProvider(commonProperties, s3AsyncClient);
-
+        var blockFileTransformer = mock(BlockFileTransformer.class);
+        lenient()
+                .doAnswer(invocation -> {
+                    var blockFile = invocation.getArgument(0, BlockFile.class);
+                    // Only the minimal set: hash and index
+                    return RecordFile.builder()
+                            .hash(blockFile.getHash())
+                            .index(blockFile.getIndex())
+                            .build();
+                })
+                .when(blockFileTransformer)
+                .transform(any(BlockFile.class));
+        blockStreamVerifier = spy(
+                new BlockStreamVerifier(blockFileTransformer, recordFileRepository, mock(StreamFileNotifier.class)));
         blockStreamPoller = new BlockStreamPoller(
                 new ProtoBlockFileReader(),
                 blockStreamVerifier,
                 commonProperties,
                 consensusNodeService,
                 properties,
-                recordFileRepository,
                 streamFileProvider);
 
         var fromPath = Path.of("data", "blockstreams");
@@ -181,26 +192,27 @@ class BlockStreamPollerTest {
         // given
         importerProperties.setStartBlockNumber(startBlockNumber);
         properties.setWriteFiles(true);
-        fileCopier.filterFiles(BLOCK_STREAM_FILENAMES[0]).to(Long.toString(0)).copy();
-        fileCopier.filterFiles(BLOCK_STREAM_FILENAMES[1]).to(Long.toString(2)).copy();
-        doNothing().when(blockStreamVerifier).verify(any());
+        fileCopier.filterFiles(blockFile(0).getName()).to("0").copy();
+        fileCopier.filterFiles(blockFile(1).getName()).to("2").copy();
         when(recordFileRepository.findLatest())
                 .thenReturn(Optional.of(RecordFile.builder()
-                        .index(7858852L)
-                        .hash(DomainUtils.bytesToHex(generateRandomByteArray(48)))
+                        .index(blockFile(0).getIndex() - 1)
+                        .hash(blockFile(0).getPreviousHash())
                         .build()));
 
         // when
         blockStreamPoller.poll();
 
         // then
-        verify(blockStreamVerifier).verify(argThat(b -> b.getBytes() == null && b.getIndex() == 7858853L));
+        verify(blockStreamVerifier)
+                .verify(argThat(b -> b.getBytes() == null && b.getIndex() == 7858853L && b.getNodeId() == 0L));
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
         String logs = output.getAll();
         var nodeLogs = findAllMatches(logs, "Downloaded block file .*\\.blk\\.gz from node \\d");
-        assertThat(nodeLogs).containsExactly("Downloaded block file " + BLOCK_STREAM_FILENAMES[0] + " from node 0");
+        assertThat(nodeLogs)
+                .containsExactly("Downloaded block file " + blockFile(0).getName() + " from node 0");
 
         // given now persist bytes
         properties.setPersistBytes(true);
@@ -210,13 +222,11 @@ class BlockStreamPollerTest {
         blockStreamPoller.poll();
 
         // then
-        byte[] expectedBytes = FileUtils.readFileToByteArray(fileCopier
-                .getTo()
-                .resolve(Long.toString(2))
-                .resolve(BLOCK_STREAM_FILENAMES[1])
-                .toFile());
+        byte[] expectedBytes = FileUtils.readFileToByteArray(
+                fileCopier.getTo().resolve("2").resolve(blockFile(1).getName()).toFile());
         verify(blockStreamVerifier)
-                .verify(argThat(b -> Arrays.equals(b.getBytes(), expectedBytes) && b.getIndex() == 7858854L));
+                .verify(argThat(b ->
+                        Arrays.equals(b.getBytes(), expectedBytes) && b.getIndex() == 7858854L && b.getNodeId() == 2L));
         verify(consensusNodeService, times(2)).getNodes();
         verify(recordFileRepository).findLatest();
 
@@ -224,12 +234,12 @@ class BlockStreamPollerTest {
         nodeLogs = findAllMatches(logs, "Downloaded block file .*\\.blk\\.gz from node \\d");
         assertThat(nodeLogs)
                 .containsExactly(
-                        "Downloaded block file " + BLOCK_STREAM_FILENAMES[0] + " from node 0",
-                        "Downloaded block file " + BLOCK_STREAM_FILENAMES[1] + " from node 2");
+                        "Downloaded block file " + blockFile(0).getName() + " from node 0",
+                        "Downloaded block file " + blockFile(1).getName() + " from node 2");
         assertThat(countMatches(logs, "Failed to download block file ")).isZero();
 
-        verifyArchivedFile(BLOCK_STREAM_FILENAMES[0], 0);
-        verifyArchivedFile(BLOCK_STREAM_FILENAMES[1], 2);
+        verifyArchivedFile(blockFile(0).getName(), 0);
+        verifyArchivedFile(blockFile(1).getName(), 2);
     }
 
     @Test
@@ -238,7 +248,7 @@ class BlockStreamPollerTest {
         blockStreamPoller.poll();
 
         // then
-        verifyNoInteractions(blockStreamVerifier);
+        verify(blockStreamVerifier, never()).verify(any(BlockFile.class));
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
@@ -255,60 +265,19 @@ class BlockStreamPollerTest {
                 .isOne();
     }
 
-    @Test
-    void emptyMono(CapturedOutput output) {
-        // given
-        String filename = BlockFile.getBlockStreamFilename(0L);
-        var streamFileProvider = mock(StreamFileProvider.class);
-        when(streamFileProvider.get(any(), any())).thenReturn(Mono.empty());
-        var poller = new BlockStreamPoller(
-                new ProtoBlockFileReader(),
-                blockStreamVerifier,
-                commonProperties,
-                consensusNodeService,
-                properties,
-                recordFileRepository,
-                streamFileProvider);
-
-        // when
-        poller.poll();
-
-        // then
-        verifyNoInteractions(blockStreamVerifier);
-        verify(consensusNodeService).getNodes();
-        verify(recordFileRepository).findLatest();
-        verify(streamFileProvider, times(4)).get(any(), any());
-
-        String logs = output.getAll();
-        assertThat(countMatches(logs, "Downloaded block file " + filename)).isZero();
-        var downloadLogs = findAllMatches(logs, "Failed to download block file .*\\.blk\\.gz from node \\d");
-        var expected = nodes.stream()
-                .map(ConsensusNode::getNodeId)
-                .map(nodeId -> "Failed to download block file %s from node %d".formatted(filename, nodeId))
-                .toList();
-        assertThat(downloadLogs).containsExactlyInAnyOrderElementsOf(expected);
-        assertThat(countMatches(logs, "Failed to download block file " + filename + "from node"))
-                .isZero();
-        assertThat(countMatches(logs, "Failed to process block file " + filename))
-                .isZero();
-        assertThat(countMatches(logs, "Failed to download block file " + filename))
-                .isEqualTo(5);
-    }
-
     @SneakyThrows
     @Test
     void readerFailure(CapturedOutput output) {
         // given
         var filename = BlockFile.getBlockStreamFilename(0L);
-        var genesisBlockFile =
-                fileCopier.getTo().resolve(Long.toString(0)).resolve(filename).toFile();
+        var genesisBlockFile = fileCopier.getTo().resolve("0").resolve(filename).toFile();
         FileUtils.writeByteArrayToFile(genesisBlockFile, gzip(generateRandomByteArray(1024)));
 
         // when
         blockStreamPoller.poll();
 
         // then
-        verifyNoInteractions(blockStreamVerifier);
+        verify(blockStreamVerifier, never()).verify(any(BlockFile.class));
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
@@ -328,16 +297,17 @@ class BlockStreamPollerTest {
     @Test
     void startBlockNumber(CapturedOutput output) {
         // given
-        var filename = BLOCK_STREAM_FILENAMES[0];
-        importerProperties.setStartBlockNumber(7858853L);
-        fileCopier.filterFiles(filename).to(Long.toString(0)).copy();
+        var filename = blockFile(0).getName();
+        importerProperties.setStartBlockNumber(blockFile(0).getIndex());
+        fileCopier.filterFiles(filename).to("0").copy();
         doNothing().when(blockStreamVerifier).verify(any());
 
         // when
         blockStreamPoller.poll();
 
         // then
-        verify(blockStreamVerifier).verify(argThat(b -> b.getBytes() == null && b.getIndex() == 7858853L));
+        verify(blockStreamVerifier)
+                .verify(argThat(b -> b.getBytes() == null && b.getIndex() == 7858853 && b.getNodeId() == 0L));
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
@@ -362,14 +332,13 @@ class BlockStreamPollerTest {
                 commonProperties,
                 consensusNodeService,
                 properties,
-                recordFileRepository,
                 streamFileProvider);
 
         // when
         poller.poll();
 
         // then
-        verifyNoInteractions(blockStreamVerifier);
+        verify(blockStreamVerifier, never()).verify(any(BlockFile.class));
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
         verify(streamFileProvider).get(any(), any());
@@ -387,15 +356,15 @@ class BlockStreamPollerTest {
     @Test
     void verifyFailure(CapturedOutput output) {
         // given
-        var filename = BLOCK_STREAM_FILENAMES[0];
+        var filename = blockFile(0).getName();
         doThrow(new InvalidStreamFileException("")).when(blockStreamVerifier).verify(any());
         when(recordFileRepository.findLatest())
                 .thenReturn(Optional.of(RecordFile.builder()
-                        .index(7858852L)
-                        .hash(DomainUtils.bytesToHex(generateRandomByteArray(48)))
+                        .index(blockFile(0).getIndex() - 1)
+                        .hash(blockFile(0).getPreviousHash())
                         .build()));
-        fileCopier.filterFiles(filename).to(Long.toString(0)).copy();
-        fileCopier.filterFiles(filename).to(Long.toString(1)).copy();
+        fileCopier.filterFiles(filename).to("0").copy();
+        fileCopier.filterFiles(filename).to("1").copy();
 
         // when
         blockStreamPoller.poll();
@@ -424,18 +393,18 @@ class BlockStreamPollerTest {
     @RepeatedTest(5)
     void verifyFailureThenSuccess(CapturedOutput output) {
         // given
-        var filename = BLOCK_STREAM_FILENAMES[0];
+        var filename = blockFile(0).getName();
         doThrow(new InvalidStreamFileException(""))
-                .doNothing()
+                .doCallRealMethod()
                 .when(blockStreamVerifier)
-                .verify(any());
+                .verify(any(BlockFile.class));
         when(recordFileRepository.findLatest())
                 .thenReturn(Optional.of(RecordFile.builder()
-                        .index(7858852L)
-                        .hash(DomainUtils.bytesToHex(generateRandomByteArray(48)))
+                        .index(blockFile(0).getIndex() - 1)
+                        .hash(blockFile(0).getPreviousHash())
                         .build()));
-        fileCopier.filterFiles(filename).to(Long.toString(0)).copy();
-        fileCopier.filterFiles(filename).to(Long.toString(1)).copy();
+        fileCopier.filterFiles(filename).to("0").copy();
+        fileCopier.filterFiles(filename).to("1").copy();
 
         // when
         blockStreamPoller.poll();
@@ -455,6 +424,10 @@ class BlockStreamPollerTest {
                 .isBetween(1, 3);
         assertThat(countMatches(logs, "Failed to download block file " + filename))
                 .isZero();
+    }
+
+    private static BlockFile blockFile(int index) {
+        return TEST_BLOCK_FILES.get(index);
     }
 
     @SneakyThrows

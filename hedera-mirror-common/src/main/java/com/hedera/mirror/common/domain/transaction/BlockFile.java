@@ -93,6 +93,10 @@ public class BlockFile implements StreamFile<BlockItem> {
     private int version;
 
     public static String getBlockStreamFilename(long blockNumber) {
+        if (blockNumber < 0) {
+            throw new IllegalArgumentException("Block number must be non-negative");
+        }
+
         return leftPad(Long.toString(blockNumber), BASENAME_LENGTH, BASENAME_PADDING) + COMPRESSED_FILE_SUFFIX;
     }
 

@@ -17,8 +17,6 @@
 package com.hedera.mirror.importer.downloader.block;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.common.domain.transaction.BlockFile;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.domain.StreamFilename;
@@ -27,14 +25,11 @@ import com.hedera.mirror.importer.downloader.StreamPoller;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.block.BlockFileReader;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -44,15 +39,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 @RequiredArgsConstructor
 final class BlockStreamPoller implements StreamPoller {
 
-    private static final Optional<Long> PRE_GENESIS = Optional.of(-1L);
+    private static final long GENESIS_BLOCK_NUMBER = 0;
 
     private final BlockFileReader blockFileReader;
     private final BlockStreamVerifier blockStreamVerifier;
     private final CommonDownloaderProperties commonDownloaderProperties;
     private final ConsensusNodeService consensusNodeService;
-    private final AtomicReference<Optional<Long>> lastBlockNumber = new AtomicReference<>(Optional.empty());
     private final BlockPollerProperties properties;
-    private final RecordFileRepository recordFileRepository;
     private final StreamFileProvider streamFileProvider;
 
     @Override
@@ -64,10 +57,10 @@ final class BlockStreamPoller implements StreamPoller {
         }
 
         long blockNumber = getNextBlockNumber();
-        String filename = BlockFile.getBlockStreamFilename(blockNumber);
         var nodes = getRandomizedNodes();
         var stopwatch = Stopwatch.createStarted();
-        var streamFilename = StreamFilename.from(filename);
+        var streamFilename = StreamFilename.from(blockNumber);
+        String filename = streamFilename.getFilename();
         var streamPath = commonDownloaderProperties.getImporterProperties().getStreamPath();
         var timeout = commonDownloaderProperties.getTimeout();
 
@@ -76,21 +69,21 @@ final class BlockStreamPoller implements StreamPoller {
             long nodeId = node.getNodeId();
 
             try {
-                var blockFileData = streamFileProvider.get(node, streamFilename).block(timeout);
-                if (blockFileData == null) {
-                    log.debug("Failed to download block file {} from node {}", filename, nodeId);
-                    continue;
-                }
-
+                var blockFileData = streamFileProvider
+                        .get(node, streamFilename)
+                        .blockOptional(timeout)
+                        .orElseThrow();
                 log.debug("Downloaded block file {} from node {}", filename, nodeId);
+
                 var blockFile = blockFileReader.read(blockFileData);
+                blockFile.setNodeId(nodeId);
+
                 byte[] bytes = blockFile.getBytes();
                 if (!properties.isPersistBytes()) {
                     blockFile.setBytes(null);
                 }
 
                 blockStreamVerifier.verify(blockFile);
-                lastBlockNumber.set(Optional.of(blockNumber));
 
                 if (properties.isWriteFiles()) {
                     Utility.archiveFile(blockFileData.getFilePath(), bytes, streamPath);
@@ -101,29 +94,22 @@ final class BlockStreamPoller implements StreamPoller {
                 log.error("Failed to process block file {} from node {}", filename, nodeId, t);
             }
 
-            timeout = timeout.minus(stopwatch.elapsed());
+            timeout = commonDownloaderProperties.getTimeout().minus(stopwatch.elapsed());
         }
 
         log.warn("Failed to download block file {}", filename);
     }
 
     private long getNextBlockNumber() {
-        return lastBlockNumber
-                .get()
-                .or(() -> {
-                    var last = recordFileRepository
-                            .findLatest()
-                            .map(RecordFile::getIndex)
-                            .or(() -> Optional.ofNullable(commonDownloaderProperties
-                                            .getImporterProperties()
-                                            .getStartBlockNumber())
-                                    .map(v -> v - 1))
-                            .or(() -> PRE_GENESIS);
-                    lastBlockNumber.compareAndSet(Optional.empty(), last);
-                    return last;
-                })
-                .map(v -> v + 1)
-                .orElse(0L);
+        return blockStreamVerifier.getLastBlockNumber().map(v -> v + 1).orElseGet(() -> {
+            var startBlockNumber =
+                    commonDownloaderProperties.getImporterProperties().getStartBlockNumber();
+            if (startBlockNumber != null) {
+                return startBlockNumber;
+            }
+
+            return GENESIS_BLOCK_NUMBER;
+        });
     }
 
     private List<ConsensusNode> getRandomizedNodes() {
