@@ -28,7 +28,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ECDSA_TYPE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ED_25519_TYPE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.LEDGER_ID;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -75,7 +74,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void isTokenFrozen(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var accountAndToken = accountTokenAndFrozenRelationshipPersistHistorical(historicalRange);
+        final var accountAndToken = accountTokenAndFrozenRelationshipNoAliasPersistHistorical(historicalRange);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContractHistorical::deploy);
 
@@ -108,7 +107,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void isKycGranted(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var account = accountEntityPersistHistorical(historicalRange);
+        final var account = accountEntityNoEvmAddressPersistHistorical(historicalRange);
         final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
         fungibleTokenPersistHistorical(tokenEntity, historicalRange);
         tokenAccountFrozenRelationshipPersistHistorical(tokenEntity, account, historicalRange);
@@ -148,7 +147,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void isKycGrantedForNFT(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var account = accountEntityPersistHistorical(historicalRange);
+        final var account = accountEntityNoEvmAddressPersistHistorical(historicalRange);
         final var tokenEntity = nftPersistHistorical(historicalRange);
         tokenAccountFrozenRelationshipPersistHistorical(tokenEntity, account, historicalRange);
 
@@ -528,7 +527,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         final var result = functionCall.send();
 
         // Then
-        assertThat(result).isEqualTo(SENDER_ALIAS.toHexString());
+        assertThat(result).isEqualTo(getAliasFromEntity(approvedAccount));
     }
 
     @ParameterizedTest
@@ -597,13 +596,10 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         final var historicalRange = setUpHistoricalContext(blockNumber);
         final var tokenSupply = 900L;
 
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.TOKEN).timestampRange(historicalRange))
-                .persist();
+        final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
         final var treasury =
                 accountPersistWithBalanceHistorical(tokenSupply, tokenEntity.toEntityId(), historicalRange);
-        final var feeCollector = accountEntityPersistHistorical(historicalRange);
+        final var feeCollector = accountEntityWithAliasPersistHistorical(historicalRange);
 
         final var token = domainBuilder
                 .token()
@@ -1097,11 +1093,6 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
                         .createdTimestamp(timestampRange.lowerEndpoint()))
                 .persist();
 
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(entity.getCreatedTimestamp(), EntityId.of(2)))
-                        .balance(balance))
-                .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(entity.getCreatedTimestamp(), entity.toEntityId()))

@@ -16,11 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KEY;
-
 import com.google.common.collect.Range;
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -38,7 +34,6 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
-import org.hyperledger.besu.datatypes.Address;
 
 public abstract class AbstractContractCallServiceHistoricalTest extends AbstractContractCallServiceTest {
 
@@ -89,26 +84,42 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
 
     protected Pair<Entity, Entity> accountTokenAndFrozenRelationshipPersistHistorical(
             final Range<Long> historicalRange) {
-        final var account = accountEntityWithAliasPersistHistorical(historicalRange);
+        final var accountEntity = accountEntityWithAliasPersistHistorical(historicalRange);
         final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
         fungibleTokenPersistHistorical(tokenEntity, historicalRange);
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
-                        .accountId(account.getId())
+                        .accountId(accountEntity.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .freezeStatus(TokenFreezeStatusEnum.FROZEN)
                         .associated(true)
                         .timestampRange(historicalRange))
                 .persist();
-        return Pair.of(account, tokenEntity);
+        return Pair.of(accountEntity, tokenEntity);
+    }
+
+    protected Pair<Entity, Entity> accountTokenAndFrozenRelationshipNoAliasPersistHistorical(
+            final Range<Long> historicalRange) {
+        final var accountEntity = accountEntityNoEvmAddressPersistHistorical(historicalRange);
+        final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
+        fungibleTokenPersistHistorical(tokenEntity, historicalRange);
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(accountEntity.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                        .associated(true)
+                        .timestampRange(historicalRange))
+                .persist();
+        return Pair.of(accountEntity, tokenEntity);
     }
 
     protected Entity accountEntityNoEvmAddressPersistHistorical(final Range<Long> timestampRange) {
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
-                        .deleted(false)
                         .evmAddress(null)
                         .alias(null)
                         .balance(1_000_000_000_000L)
@@ -118,17 +129,9 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
     }
 
     protected Entity accountEntityWithAliasPersistHistorical(final Range<Long> timestampRange) {
-        return accountEntityWithAliasPersistHistorical(SENDER_ALIAS, SENDER_PUBLIC_KEY, timestampRange);
-    }
-
-    protected Entity accountEntityWithAliasPersistHistorical(
-            final Address evmAddress, final ByteString alias, final Range<Long> timestampRange) {
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
-                        .alias(alias.toByteArray())
-                        .deleted(false)
-                        .evmAddress(evmAddress.toArray())
                         .balance(1_000_000_000_000L)
                         .createdTimestamp(timestampRange.lowerEndpoint())
                         .timestampRange(timestampRange))
@@ -210,6 +213,7 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .tokenHistory()
                 .customize(t -> t.tokenId(tokenEntity.getId())
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
                         .timestampRange(timestampRange))
                 .persist();
         domainBuilder
