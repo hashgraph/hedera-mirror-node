@@ -267,6 +267,10 @@ public final class EntityIdUtils {
         return CommonUtils.hex(asEvmAddress(id.num()));
     }
 
+    public static Address asHexedEvmAddress(final com.hedera.hapi.node.base.ContractID id) {
+        return Address.fromHexString(CommonUtils.hex(asEvmAddress(id.contractNum())));
+    }
+
     public static boolean isAlias(final AccountID idOrAlias) {
         return idOrAlias.getAccountNum() == 0 && !idOrAlias.getAlias().isEmpty();
     }

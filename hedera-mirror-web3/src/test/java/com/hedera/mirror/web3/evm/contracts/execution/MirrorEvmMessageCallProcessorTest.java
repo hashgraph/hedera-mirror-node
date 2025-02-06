@@ -33,6 +33,8 @@ import static org.mockito.Mockito.when;
 import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.stream.proto.ContractActionType;
@@ -59,6 +61,12 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
     @Mock
     private PrecompilesHolder precompilesHolder;
 
+    @Mock
+    private MirrorNodeEvmProperties evmProperties;
+
+    @Mock
+    private MirrorNodeState mirrorNodeState;
+
     private OpcodeTracer opcodeTracer;
     private MirrorEvmMessageCallProcessor subject;
 
@@ -66,7 +74,7 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
     void setUp() {
         when(precompilesHolder.getHederaPrecompiles()).thenReturn(hederaPrecompileList);
         when(messageFrame.getWorldUpdater()).thenReturn(updater);
-        opcodeTracer = Mockito.spy(new OpcodeTracer(precompilesHolder));
+        opcodeTracer = Mockito.spy(new OpcodeTracer(precompilesHolder, evmProperties, mirrorNodeState));
         subject = new MirrorEvmMessageCallProcessor(
                 autoCreationLogic,
                 entityAddressSequencer,
