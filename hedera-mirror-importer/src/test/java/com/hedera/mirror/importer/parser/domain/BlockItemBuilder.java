@@ -33,6 +33,7 @@ import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Schedule;
@@ -52,6 +53,8 @@ import org.springframework.context.annotation.Scope;
 @Named
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class BlockItemBuilder {
+    private static final int STATE_ID_ACCOUNTS = 2;
+    private static final int STATE_ID_ALIASES = 3;
     private static final int STATE_FILES_ID = 6;
 
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
@@ -170,6 +173,75 @@ public class BlockItemBuilder {
     }
 
     public BlockItemBuilder.Builder unknown(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public Builder cryptoCreate(RecordItem recordItem) {
+        var stateChanges = buildCryptoIdStateChanges(recordItem);
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
+    }
+
+    private static StateChanges buildCryptoIdStateChanges(RecordItem recordItem) {
+        var id = recordItem.getTransactionRecord().getReceipt().getAccountID();
+        var accountId = AccountID.newBuilder().setAccountNum(id.getAccountNum()).build();
+        var value = MapChangeValue.newBuilder().setAccountIdValue(accountId).build();
+        var mapUpdate = MapUpdateChange.newBuilder().setValue(value).build();
+
+        var firstChange = StateChange.newBuilder()
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .setStateId(1)
+                .build();
+
+        var secondChange =
+                StateChange.newBuilder().setStateId(STATE_ID_ACCOUNTS).build();
+
+        var thirdChange = StateChange.newBuilder()
+                .setStateId(STATE_ID_ACCOUNTS)
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .build();
+
+        var fourthChange = StateChange.newBuilder()
+                .setMapUpdate(mapUpdate)
+                .setStateId(STATE_ID_ACCOUNTS)
+                .build();
+
+        var changes = List.of(firstChange, secondChange, thirdChange, fourthChange);
+
+        return StateChanges.newBuilder().addAllStateChanges(changes).build();
+    }
+
+    public Builder cryptoAddLiveHash(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public Builder cryptoDeleteLiveHash(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public Builder cryptoDeleteAllowance(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public Builder cryptoApproveAllowance(RecordItem recordItem) {
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public Builder cryptoDelete(RecordItem recordItem) {
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public Builder cryptoUpdate(RecordItem recordItem) {
+
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
