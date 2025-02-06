@@ -292,13 +292,11 @@ public class OpcodeTracer implements HederaOperationTracer {
                 }
 
                 SlotValue slotValue = (SlotValue) states.get(STORAGE_KEY).get(slotKey);
-                if (slotValue == null) {
-                    continue;
+                if (slotValue != null) {
+                    storageUpdates.put(
+                            Bytes.of(slotKey.key().toByteArray()),
+                            Bytes.of(slotValue.value().toByteArray()));
                 }
-
-                storageUpdates.put(
-                        Bytes.of(slotKey.key().toByteArray()),
-                        Bytes.of(slotValue.value().toByteArray()));
             }
         } catch (IllegalArgumentException e) {
             log.warn(
