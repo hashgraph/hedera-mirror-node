@@ -134,7 +134,7 @@ allprojects {
             property("sonar.issue.ignore.multicriteria.e6.ruleKey", "java:S2970")
             property(
                 "sonar.exclusions",
-                "src/main/java/com/hedera/services/**,src/test/java/com/hedera/services/**"
+                "src/main/java/com/hedera/services/**,src/test/java/com/hedera/services/**",
             )
         }
     }
@@ -204,18 +204,12 @@ spotless {
     }
     format("javascript") {
         endWithNewline()
-        indentWithSpaces(2)
+        leadingTabsToSpaces(2)
         licenseHeader(licenseHeader, "$").updateYearWithLatest(true)
         prettier()
             .npmExecutable(npmExecutable)
             .npmInstallCache(Paths.get("${rootProject.rootDir}", ".gradle", "spotless"))
-            .config(
-                mapOf(
-                    "bracketSpacing" to false,
-                    "printWidth" to 120,
-                    "singleQuote" to true,
-                )
-            )
+            .config(mapOf("bracketSpacing" to false, "printWidth" to 120, "singleQuote" to true))
         target("hedera-mirror-rest/**/*.js", "hedera-mirror-test/**/*.js")
         targetExclude("**/build/**", "**/node_modules/**", "**/__tests__/integration/*.test.js")
     }
@@ -229,7 +223,7 @@ spotless {
             "hedera-mirror-rest/**",
             "hedera-mirror-rosetta/**",
             // Known issue with Java 21: https://github.com/palantir/palantir-java-format/issues/933
-            "hedera-mirror-rest-java/**/EntityServiceImpl.java"
+            "hedera-mirror-rest-java/**/EntityServiceImpl.java",
         )
         toggleOffOn()
     }
@@ -249,7 +243,7 @@ spotless {
     }
     format("miscellaneous") {
         endWithNewline()
-        indentWithSpaces(2)
+        leadingTabsToSpaces(2)
         prettier().npmExecutable(npmExecutable)
         target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
         targetExclude("**/build/**", "**/charts/**", "**/node_modules/**", "**/package-lock.json")
@@ -257,7 +251,7 @@ spotless {
     }
     format("proto") {
         endWithNewline()
-        indentWithSpaces(4)
+        leadingTabsToSpaces(4)
         licenseHeader(licenseHeader, "(package|syntax)").updateYearWithLatest(true)
         target("hedera-mirror-protobuf/**/*.proto")
         targetExclude("build/**")
@@ -265,7 +259,7 @@ spotless {
     }
     sql {
         endWithNewline()
-        indentWithSpaces()
+        leadingTabsToSpaces()
         target("hedera-mirror-(common|importer|rest)/**/*.sql")
         targetExclude("**/build/**", "**/node_modules/**")
         trimTrailingWhitespace()
@@ -278,7 +272,7 @@ fun replaceVersion(files: String, match: String) {
             "fileset"(
                 "dir" to rootProject.projectDir,
                 "includes" to files,
-                "excludes" to "**/node_modules/"
+                "excludes" to "**/node_modules/",
             )
         }
     }
@@ -295,12 +289,12 @@ tasks.register("release") {
         replaceVersion("gradle.properties", "(?<=^version=).+")
         replaceVersion(
             "hedera-mirror-rest/**/package*.json",
-            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
+            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+",
         )
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
         replaceVersion(
             "tools/traffic-replay/log-downloader/package*.json",
-            "(?<=\"@hashgraph/mirror-log-downloader\",\\s{3,7}\"version\": \")[^\"]+"
+            "(?<=\"@hashgraph/mirror-log-downloader\",\\s{3,7}\"version\": \")[^\"]+",
         )
     }
 }
