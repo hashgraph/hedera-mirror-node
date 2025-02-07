@@ -23,7 +23,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
-public class ConsensusCreateTopicTransformer extends AbstractBlockItemTransformer {
+final class ConsensusCreateTopicTransformer extends AbstractBlockItemTransformer {
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
 
