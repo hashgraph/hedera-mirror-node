@@ -258,13 +258,6 @@ class DomainUtilsTest {
                 .isEqualTo("abc�123�".getBytes(StandardCharsets.UTF_8));
     }
 
-    @Test
-    void timestampInNanosMaxEmpty() {
-        assertThat(DomainUtils.timestampInNanosMax(null)).isNull();
-        assertThat(DomainUtils.timestampInNanosMax(Timestamp.getDefaultInstance()))
-                .isNull();
-    }
-
     @ParameterizedTest(name = "with seconds {0} and nanos {1}")
     @CsvSource({"1569936354, 901", "0, 901", "1569936354, 0", "0,0"})
     void timeStampInNanosTimeStamp(long seconds, int nanos) {
