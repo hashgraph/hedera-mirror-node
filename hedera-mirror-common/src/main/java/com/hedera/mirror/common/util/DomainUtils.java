@@ -217,7 +217,7 @@ public class DomainUtils {
     }
 
     public static Long timestampInNanosMax(Timestamp timestamp) {
-        if (timestamp == null) {
+        if (timestamp == null || Timestamp.getDefaultInstance().equals(timestamp)) {
             return null;
         }
         return convertToNanosMax(timestamp.getSeconds(), timestamp.getNanos());

@@ -49,9 +49,9 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 
 @Named
-public class ProtoBlockFileReader implements BlockFileReader {
+class ProtoBlockFileReader implements BlockFileReader {
 
-    private static final int VERSION = 7;
+    static final int VERSION = 7;
 
     @Override
     public BlockFile read(StreamFileData streamFileData) {
@@ -113,8 +113,11 @@ public class ProtoBlockFileReader implements BlockFileReader {
                     blockHeader.getHashAlgorithm(), context.getFilename()));
         }
 
+        Long consensusStart = DomainUtils.timestampInNanosMax(blockHeader.getFirstTransactionConsensusTime());
         var previousHash = DomainUtils.toBytes(blockHeader.getPreviousBlockHash());
         blockFileBuilder.blockHeader(blockHeader);
+        blockFileBuilder.consensusStart(consensusStart);
+        blockFileBuilder.consensusEnd(consensusStart);
         blockFileBuilder.index(blockHeader.getNumber());
         blockFileBuilder.previousHash(DomainUtils.bytesToHex(previousHash));
         context.getBlockRootHashDigest().setPreviousHash(previousHash);
