@@ -16,11 +16,13 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
-import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.google.common.collect.Streams;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.transaction.BlockFile;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.TestUtils;
@@ -32,63 +34,68 @@ import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.AccumulatorPathVisitor;
+import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.commons.io.filefilter.PathMatcherFileFilter;
 import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 abstract class AbstractStreamFileProviderTest {
 
-    protected Path bucketRootPath;
-
     @TempDir
     protected Path dataPath;
 
+    protected ImporterProperties importerProperties;
     protected CommonDownloaderProperties properties;
     protected StreamFileProvider streamFileProvider;
 
     @BeforeEach
     void setup() {
-        var mirrorProperties = new ImporterProperties();
-        mirrorProperties.setDataPath(dataPath);
-        properties = new CommonDownloaderProperties(mirrorProperties);
-        customizeProperties(properties);
-        bucketRootPath = dataPath.resolve(properties.getBucketName());
+        importerProperties = new ImporterProperties();
+        importerProperties.setDataPath(dataPath);
+        properties = new CommonDownloaderProperties(importerProperties);
     }
 
-    protected abstract FileCopier createFileCopier();
-
-    protected abstract String getProviderPathSeparator();
-
-    protected abstract String resolveProviderRelativePath(ConsensusNode node, String fileName);
-
-    @SuppressWarnings("unused") // node is used in the child classes implementations
-    protected FileCopier getFileCopier(ConsensusNode node) {
-        return createFileCopier();
+    protected FileCopier createDefaultFileCopier() {
+        return createFileCopier(Path.of("data", "recordstreams", "v6"), StreamType.RECORD.getPath());
     }
 
-    protected void customizeProperties(CommonDownloaderProperties properties) {
-        // Do nothing by default
+    protected FileCopier createFileCopier(Path fromPath, String toPath) {
+        return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
+                .to(targetRootPath(), properties.getPathPrefix(), toPath);
     }
+
+    protected abstract String providerPathSeparator();
+
+    protected abstract String targetRootPath();
 
     @Test
     void get() {
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
+        var nodeFileCopier = createDefaultFileCopier();
         get(nodeFileCopier, node);
     }
 
     @Test
     void getLargeFile() {
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
+        var nodeFileCopier = createDefaultFileCopier();
         nodeFileCopier.copy();
         var data = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         StepVerifier.create(streamFileProvider.get(node, data.getStreamFilename()))
@@ -110,44 +117,83 @@ abstract class AbstractStreamFileProviderTest {
 
     @Test
     void getSidecar() {
-        var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
-        getSidecar(nodeFileCopier, node);
+        getSidecar(createDefaultFileCopier(), node("0.0.3"));
     }
 
     @Test
     void getNotFound() {
-        var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
-        getNotFound(nodeFileCopier, node);
+        getNotFound(createDefaultFileCopier(), node("0.0.3"));
     }
 
     @Test
     void getError() {
+        getError(createDefaultFileCopier(), node("0.0.3"));
+    }
+
+    @Test
+    void getBlockFile() {
+        // given
+        properties.setPathType(PathType.NODE_ID);
+        createBlockStreamFileCopier().copy();
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
-        getError(nodeFileCopier, node);
+        String filename = BlockFile.getBlockStreamFilename(7858853);
+        var expected = streamFileData(node, filename);
+
+        // when, then
+        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, StreamFilename.from(filename)))
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectNext(expected)
+                .expectComplete()
+                .verify(Duration.ofSeconds(10L));
+    }
+
+    @Test
+    void getBlockFileNotFound() {
+        // given
+        properties.setPathType(PathType.NODE_ID);
+        createBlockStreamFileCopier().copy();
+        var streamFilename = StreamFilename.from(BlockFile.getBlockStreamFilename(7858853));
+
+        // when, then
+        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node("0.0.4"), streamFilename))
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectError(TransientProviderException.class)
+                .verify(Duration.ofSeconds(10L));
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = PathType.class,
+            names = {"ACCOUNT_ID", "AUTO"})
+    void getBlockFileIncorrectPathType(PathType pathType) {
+        // given
+        properties.setPathType(pathType);
+        createBlockStreamFileCopier().copy();
+        var node = node("0.0.3");
+        var streamFilename = StreamFilename.from(BlockFile.getBlockStreamFilename(7858853));
+
+        // when, then
+        assertThatThrownBy(() -> streamFileProvider.get(node, streamFilename))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void list() {
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
-        list(nodeFileCopier, node);
+        list(createDefaultFileCopier(), node);
     }
 
     @Test
     void listWithPathPrefix() {
         properties.setPathPrefix("prefix");
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
-        list(nodeFileCopier, node);
+        list(createDefaultFileCopier(), node);
     }
 
     @Test
     void listThenGet() {
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
+        var nodeFileCopier = createDefaultFileCopier();
         nodeFileCopier.copy();
         var last = StreamFilename.from("2022-07-13T08_46_08.041986003Z.rcd_sig");
         var recordFile = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd.gz");
@@ -193,7 +239,7 @@ abstract class AbstractStreamFileProviderTest {
     @Test
     void listWhenBatchSizeLessThanFilesAvailable() {
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
+        var nodeFileCopier = createDefaultFileCopier();
         nodeFileCopier.copy();
         streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd.gz");
         var sig1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
@@ -210,35 +256,31 @@ abstract class AbstractStreamFileProviderTest {
     @Test
     void listAfter() {
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
-        listAfter(nodeFileCopier, node);
+        listAfter(createDefaultFileCopier(), node);
     }
 
     @Test
     void listNotFound() {
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
-        listNotFound(nodeFileCopier, node);
+        listNotFound(createDefaultFileCopier(), node);
     }
 
     @Test
     void listError() {
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
-        listError(nodeFileCopier, node);
+        listError(createDefaultFileCopier(), node);
     }
 
     @Test
-    void listInvalidFilename() throws Exception {
+    void listInvalidFilename() {
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
-        listInvalidFilename(nodeFileCopier, node);
+        listInvalidFilename(createDefaultFileCopier(), node);
     }
 
     @Test
     void listLargeFiles() {
         var node = node("0.0.3");
-        var nodeFileCopier = getFileCopier(node);
+        var nodeFileCopier = createDefaultFileCopier();
         nodeFileCopier.copy();
         var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
@@ -264,7 +306,7 @@ abstract class AbstractStreamFileProviderTest {
 
     @SneakyThrows
     private void replaceContents(StreamFileData streamFileData, byte[] contents) {
-        var file = createFileCopier()
+        var file = createDefaultFileCopier()
                 .getTo()
                 .getParent()
                 .resolve(streamFileData.getFilePath())
@@ -304,10 +346,9 @@ abstract class AbstractStreamFileProviderTest {
 
     protected final void getError(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
-        dataPath.toFile().setExecutable(false);
         var data = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
-        StepVerifier.withVirtualTime(() ->
-                        streamFileProvider.get(node, data.getStreamFilename()).map(StreamFileData::getBytes))
+        dataPath.toFile().setExecutable(false);
+        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectError(RuntimeException.class)
                 .verify(Duration.ofSeconds(10L));
@@ -355,16 +396,20 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    protected final void listInvalidFilename(FileCopier fileCopier, ConsensusNode node) throws Exception {
+    @SneakyThrows
+    protected final void listInvalidFilename(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
+        var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
+        var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
         fileCopier
                 .getTo()
-                .resolve(nodePath(node))
+                // the parent folder is either recordstreams or the network name, needed because data1's path includes
+                // the parent folder
+                .getParent()
+                .resolve(data1.getStreamFilename().getPath())
                 .resolve("Invalid.file")
                 .toFile()
                 .createNewFile();
-        var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
-        var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data1)
@@ -373,28 +418,36 @@ abstract class AbstractStreamFileProviderTest {
                 .verify(Duration.ofSeconds(10L));
     }
 
-    protected Path nodePath(ConsensusNode node) {
-        return TestUtils.nodePath(node, PathType.ACCOUNT_ID, StreamType.RECORD);
-    }
-
     protected ConsensusNode node(String nodeAccountId) {
         return TestUtils.nodeFromAccountId(nodeAccountId);
     }
 
     @SneakyThrows
-    protected StreamFileData streamFileData(ConsensusNode node, FileCopier fileCopier, String filename) {
-        var streamFilename =
-                StreamFilename.from(resolveProviderRelativePath(node, filename), getProviderPathSeparator());
-        var repoDataPath = fileCopier
-                .getFrom()
-                .resolve(nodePath(node))
-                .resolve(streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "")
-                .resolve(filename);
-        var bytes = FileUtils.readFileToByteArray(repoDataPath.toFile());
+    protected StreamFileData streamFileData(ConsensusNode node, String filename) {
+        // regex to match file path with either ACCOUNT_ID or NODE_ID path style
+        String regex = String.format("^.*(%s|/\\d/%d)/(.*/)?%s$", node.getNodeAccountId(), node.getNodeId(), filename);
+        var pattern = Pattern.compile(regex);
+        PathMatcher pathMatcher = path -> pattern.matcher(path.toString()).matches();
+        var visitor = AccumulatorPathVisitor.withLongCounters(
+                new PathMatcherFileFilter(pathMatcher), FileFilterUtils.trueFileFilter());
+        Files.walkFileTree(dataPath, visitor);
+        var filePath = visitor.getFileList().getFirst();
+        var basePath = Streams.stream(filePath.iterator())
+                .map(Path::toString)
+                // also ignore sidecar folder because StreamFilename adds it for sidecar files
+                .filter(p -> !Objects.equals(p, SIDECAR_FOLDER) && !Objects.equals(p, filename))
+                // ignore path segments until hit recordstreams or the network name
+                .dropWhile(
+                        p -> !Objects.equals(p, "recordstreams") && !Objects.equals(p, importerProperties.getNetwork()))
+                .collect(Collectors.joining(providerPathSeparator()));
+        var streamFilename = StreamFilename.from(basePath, filename, providerPathSeparator());
+        var bytes = FileUtils.readFileToByteArray(filePath.toFile());
         return new StreamFileData(streamFilename, () -> bytes, Instant.now());
     }
 
-    protected StreamFileData streamFileData(ConsensusNode node, String filename) {
-        return streamFileData(node, getFileCopier(node), filename);
+    private FileCopier createBlockStreamFileCopier() {
+        String toPath =
+                Path.of(Long.toString(importerProperties.getShard()), "0").toString(); // node id 0
+        return createFileCopier(Path.of("data", "blockstreams"), toPath);
     }
 }

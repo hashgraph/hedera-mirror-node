@@ -97,7 +97,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     protected final StreamFileReader<T, ?> streamFileReader;
     protected final StreamFileNotifier streamFileNotifier;
     protected final DateRangeCalculator dateRangeCalculator;
-    protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
+    protected final AtomicReference<Optional<StreamFile<I>>> lastStreamFile = new AtomicReference<>(Optional.empty());
 
     private final ConsensusNodeService consensusNodeService;
     private final StreamType streamType;
@@ -268,7 +268,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         return lastStreamFile
                 .get()
                 .or(() -> {
-                    Optional<T> streamFile = dateRangeCalculator.getLastStreamFile(streamType);
+                    Optional<StreamFile<I>> streamFile = dateRangeCalculator.getLastStreamFile(streamType);
                     lastStreamFile.compareAndSet(Optional.empty(), streamFile);
                     return streamFile;
                 })
@@ -404,8 +404,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
 
         // Cache a copy of the streamFile with bytes and items set to null so as not to keep them in memory
-        var copy = (T) streamFile.copy();
-        copy.clear();
+        var copy = streamFile.copy().clear();
         lastStreamFile.set(Optional.of(copy));
     }
 
@@ -508,11 +507,11 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             return allNodes;
         }
 
-        var nodes = new ArrayList<ConsensusNode>(allNodes);
+        var nodes = new ArrayList<>(allNodes);
         // shuffle nodes into a random order
         Collections.shuffle(nodes);
 
-        long totalStake = nodes.get(0).getTotalStake();
+        long totalStake = nodes.getFirst().getTotalStake();
         // only keep "just enough" nodes to reach/exceed downloadRatio
         long neededStake = BigDecimal.valueOf(totalStake)
                 .multiply(downloadRatio)

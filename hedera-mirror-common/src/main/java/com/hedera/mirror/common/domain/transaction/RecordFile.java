@@ -134,10 +134,11 @@ public class RecordFile implements StreamFile<RecordItem> {
     private int version;
 
     @Override
-    public void clear() {
+    public RecordFile clear() {
         StreamFile.super.clear();
         setLogsBloom(null);
         setSidecars(List.of());
+        return this;
     }
 
     @Override

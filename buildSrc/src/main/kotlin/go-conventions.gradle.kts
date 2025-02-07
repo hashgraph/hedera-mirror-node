@@ -68,7 +68,7 @@ tasks.register<Go>("test") {
         "-covermode=atomic",
         "-race",
         "-v",
-        go.pkg
+        go.pkg,
     )
     dependsOn("fix")
 

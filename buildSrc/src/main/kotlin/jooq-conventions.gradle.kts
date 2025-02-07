@@ -81,7 +81,7 @@ tasks.flywayMigrate {
     locations =
         arrayOf(
             "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1",
-            "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/common"
+            "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/common",
         )
     password = dbPassword
     placeholders =
@@ -94,7 +94,7 @@ tasks.flywayMigrate {
             "partitionTimeInterval" to "'100 years'",
             "schema" to dbSchema,
             "tempSchema" to "temporary",
-            "topicRunningHashV2AddedTimestamp" to "0"
+            "topicRunningHashV2AddedTimestamp" to "0",
         )
     user = dbUser
 

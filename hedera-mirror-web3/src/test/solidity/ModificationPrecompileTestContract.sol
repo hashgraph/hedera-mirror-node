@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IHRC {
     function associate() external returns (uint256 responseCode);
+
     function dissociate() external returns (uint256 responseCode);
 }
 
@@ -116,7 +117,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         );
 
         (int responseCode, address tokenAddress) =
-        HederaTokenService.createFungibleToken(token, 10, 10);
+                            HederaTokenService.createFungibleToken(token, 10, 10);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert ();
@@ -365,8 +366,10 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         return result;
     }
 
-    function callNotExistingPrecompile(address token) public {
-        this.redirectForToken(token, abi.encodeWithSelector(bytes4(keccak256("notExistingPrecompile()"))));
+    function callNotExistingPrecompile(address token) public returns (bytes memory result)
+    {
+        (int response, bytes memory result) = this.redirectForToken(token, abi.encodeWithSelector(bytes4(keccak256("notExistingPrecompile()"))));
+        return result;
     }
 
     function createContractViaCreate2AndTransferFromIt(address token, address sponsor, address receiver, int64 amount) external

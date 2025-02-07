@@ -40,6 +40,10 @@ public class BlockStreamVerifier {
 
     private final AtomicReference<Optional<BlockFile>> lastBlockFile = new AtomicReference<>(Optional.empty());
 
+    public Optional<Long> getLastBlockNumber() {
+        return getLastBlockFile().map(BlockFile::getIndex);
+    }
+
     public void verify(@NotNull BlockFile blockFile) {
         verifyBlockNumber(blockFile);
         verifyHashChain(blockFile);
@@ -66,10 +70,6 @@ public class BlockStreamVerifier {
         });
     }
 
-    private Optional<Long> getPreviousBlockNumber() {
-        return getLastBlockFile().map(BlockFile::getIndex);
-    }
-
     private void setLastBlockFile(BlockFile blockFile) {
         var copy = (BlockFile) blockFile.copy();
         copy.clear();
@@ -78,10 +78,10 @@ public class BlockStreamVerifier {
 
     private void verifyBlockNumber(BlockFile blockFile) {
         var blockNumber = blockFile.getIndex();
-        getPreviousBlockNumber().ifPresent(previousBlockNumber -> {
-            if (blockNumber != previousBlockNumber + 1) {
+        getLastBlockNumber().ifPresent(lastBlockNumber -> {
+            if (blockNumber != lastBlockNumber + 1) {
                 throw new InvalidStreamFileException(String.format(
-                        "Non-consecutive block number, previous = %d, current = %d", previousBlockNumber, blockNumber));
+                        "Non-consecutive block number, previous = %d, current = %d", lastBlockNumber, blockNumber));
             }
         });
 

@@ -44,9 +44,6 @@ public enum StreamType {
 
     public static final String SIGNATURE_SUFFIX = "_sig";
 
-    private static final String PARSED = "parsed";
-    private static final String SIGNATURES = "signatures";
-
     private final SortedSet<Extension> dataExtensions;
     private final String nodePrefix;
     private final String path;
@@ -76,14 +73,6 @@ public enum StreamType {
         signatureExtensions = dataExtensions.stream()
                 .map(ext -> Extension.of(ext.getName() + SIGNATURE_SUFFIX, ext.getPriority()))
                 .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
-    }
-
-    public String getParsed() {
-        return PARSED;
-    }
-
-    public String getSignatures() {
-        return SIGNATURES;
     }
 
     public boolean isChained() {

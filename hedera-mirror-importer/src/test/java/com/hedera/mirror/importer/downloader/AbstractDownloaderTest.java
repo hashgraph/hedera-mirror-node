@@ -16,10 +16,10 @@
 
 package com.hedera.mirror.importer.downloader;
 
+import static com.hedera.mirror.importer.TestUtils.S3_PROXY_PORT;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -70,7 +70,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -81,9 +80,6 @@ import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.gaul.s3proxy.S3Proxy;
-import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.jclouds.ContextBuilder;
-import org.jclouds.blobstore.BlobStoreContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -106,7 +102,6 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
 
-    private static final int S3_PROXY_PORT = 8001;
     private static final Pattern STREAM_FILENAME_INSTANT_PATTERN =
             Pattern.compile("^\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}(\\.\\d{1,9})?Z");
 
@@ -258,11 +253,12 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                 .from(getTestDataDir())
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath());
 
-        startS3Proxy();
+        s3Proxy = TestUtils.startS3Proxy(s3Path);
     }
 
     @AfterEach
-    void after() throws Exception {
+    @SneakyThrows
+    void after() {
         s3Proxy.stop();
     }
 
@@ -278,28 +274,6 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         commonDownloaderProperties.setDownloadRatio(BigDecimal.ONE);
 
         downloaderProperties = getDownloaderProperties();
-    }
-
-    private void startS3Proxy() throws Exception {
-        Properties properties = new Properties();
-        properties.setProperty(
-                "jclouds.filesystem.basedir", s3Path.toAbsolutePath().toString());
-
-        BlobStoreContext context =
-                ContextBuilder.newBuilder("filesystem").overrides(properties).build(BlobStoreContext.class);
-
-        s3Proxy = S3Proxy.builder()
-                .blobStore(context.getBlobStore())
-                .endpoint(URI.create("http://localhost:" + S3_PROXY_PORT))
-                .ignoreUnknownHeaders(true)
-                .build();
-        s3Proxy.start();
-
-        await("S3Proxy")
-                .dontCatchUncaughtExceptions()
-                .atMost(Duration.ofMillis(500))
-                .pollDelay(Duration.ofMillis(1))
-                .until(() -> AbstractLifeCycle.STARTED.equals(s3Proxy.getState()));
     }
 
     private void preparePathType(PathType pathType) {
