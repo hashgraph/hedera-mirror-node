@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.reader.block;
 
+import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -36,6 +37,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
@@ -48,6 +50,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class ProtoBlockFileReaderTest {
 
+    private static final long TIMESTAMP = 1738889423L;
     public static final List<BlockFile> TEST_BLOCK_FILES = List.of(
             BlockFile.builder()
                     .consensusStart(1736197012160646000L)
@@ -62,7 +65,7 @@ public class ProtoBlockFileReaderTest {
                             "ba1a0222099d542425f6915053b7f15e3b75fd680b0d84ca6d41fbffcd38f8fb5ac6ab6a235e69f7ae23118d1996c7f1")
                     .roundStart(7858854L)
                     .roundEnd(7858854L)
-                    .version(7)
+                    .version(ProtoBlockFileReader.VERSION)
                     .build(),
             BlockFile.builder()
                     .consensusStart(null)
@@ -77,7 +80,7 @@ public class ProtoBlockFileReaderTest {
                             "581caa8ab1fad535a0fac97957c5c0cf44c528ee55724353b4bab9093083fda32429f73248bc3128e329bbdfa1967d20")
                     .roundStart(7858855L)
                     .roundEnd(7858855L)
-                    .version(7)
+                    .version(ProtoBlockFileReader.VERSION)
                     .build());
 
     private final ProtoBlockFileReader reader = new ProtoBlockFileReader();
@@ -110,7 +113,7 @@ public class ProtoBlockFileReaderTest {
                 .loadStart(streamFileData.getStreamFilename().getTimestamp())
                 .name(streamFileData.getFilename())
                 .recordFileItem(RecordFileItem.getDefaultInstance())
-                .version(7)
+                .version(ProtoBlockFileReader.VERSION)
                 .build();
 
         // when
@@ -118,6 +121,25 @@ public class ProtoBlockFileReaderTest {
 
         // then
         assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void noEventTransactions() {
+        var roundHeader = BlockItem.newBuilder().setRoundHeader(RoundHeader.getDefaultInstance());
+        var eventHeader = BlockItem.newBuilder().setEventHeader(EventHeader.getDefaultInstance());
+        var block = Block.newBuilder()
+                .addItems(blockHeader())
+                .addItems(roundHeader)
+                .addItems(eventHeader)
+                .addItems(blockProof())
+                .build();
+        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", gzip(block));
+        assertThat(reader.read(streamFileData))
+                .returns(TIMESTAMP * NANOS_PER_SECOND, BlockFile::getConsensusEnd)
+                .returns(TIMESTAMP * NANOS_PER_SECOND, BlockFile::getConsensusStart)
+                .returns(0L, BlockFile::getCount)
+                .returns(List.of(), BlockFile::getItems)
+                .returns(ProtoBlockFileReader.VERSION, BlockFile::getVersion);
     }
 
     @Test
@@ -181,6 +203,7 @@ public class ProtoBlockFileReaderTest {
     private BlockItem blockHeader() {
         return BlockItem.newBuilder()
                 .setBlockHeader(BlockHeader.newBuilder()
+                        .setFirstTransactionConsensusTime(Timestamp.newBuilder().setSeconds(TIMESTAMP))
                         .setPreviousBlockHash(ByteString.copyFrom(TestUtils.generateRandomByteArray(48))))
                 .build();
     }
