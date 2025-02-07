@@ -20,19 +20,26 @@ import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Named
 final class UtilPrngTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
+
+        if (!blockItem.successful()) {
+            return;
+        }
+
         for (var transactionOutput : blockItem.transactionOutput()) {
             if (transactionOutput.hasUtilPrng()) {
                 var utilPrng = transactionOutput.getUtilPrng();
-                if (utilPrng.hasPrngNumber()) {
-                    transactionRecordBuilder.setPrngNumber(utilPrng.getPrngNumber());
-                } else if (utilPrng.hasPrngBytes()) {
-                    transactionRecordBuilder.setPrngBytes(utilPrng.getPrngBytes());
+                switch (utilPrng.getEntropyCase()) {
+                    case PRNG_NUMBER -> transactionRecordBuilder.setPrngNumber(utilPrng.getPrngNumber());
+                    case PRNG_BYTES -> transactionRecordBuilder.setPrngBytes(utilPrng.getPrngBytes());
+                    default -> UtilPrngTransformer.log.warn("Unhandled entropy case: {}", utilPrng.getEntropyCase());
                 }
                 return;
             }

@@ -1335,6 +1335,22 @@ public class RecordItemBuilder {
         TOKEN
     }
 
+    public enum PrngRange {
+        ZERO(0),
+        POSITIVE(10),
+        NEGATIVE(-5);
+
+        private final int value;
+
+        PrngRange(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+
     @Value
     private class EntityState {
         private final AtomicBoolean created = new AtomicBoolean(false);
