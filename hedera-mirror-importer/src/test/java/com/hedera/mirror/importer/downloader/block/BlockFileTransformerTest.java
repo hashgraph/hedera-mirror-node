@@ -34,14 +34,12 @@ import com.hedera.mirror.importer.parser.domain.BlockItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
 import com.hederahashgraph.api.proto.java.*;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -490,12 +488,17 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .status(status)
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-        var blockItem = blockItemBuilder.consensusCreateTopic(expectedRecordItem).build();
+        var blockItem =
+                blockItemBuilder.consensusCreateTopic(expectedRecordItem).build();
 
-        var expectedTopicId = blockItem.stateChanges()
+        var expectedTopicId = blockItem
+                .stateChanges()
                 .getFirst()
                 .getStateChanges(3)
-                .getMapUpdate().getKey().getTopicIdKey().getTopicNum();
+                .getMapUpdate()
+                .getKey()
+                .getTopicIdKey()
+                .getTopicNum();
 
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
@@ -510,7 +513,10 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(expectedTopicId, transactionRecord -> transactionRecord.getReceipt().getTopicID().getTopicNum()));
+                .returns(
+                        expectedTopicId,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getTopicID().getTopicNum()));
     }
 
     @Test
@@ -523,7 +529,8 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .status(ResponseCodeEnum.INVALID_TRANSACTION)
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-        var blockItem = blockItemBuilder.consensusCreateTopic(expectedRecordItem).build();
+        var blockItem =
+                blockItemBuilder.consensusCreateTopic(expectedRecordItem).build();
 
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
@@ -538,7 +545,10 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(0L, transactionRecord -> transactionRecord.getReceipt().getTopicID().getTopicNum()));
+                .returns(
+                        0L,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getTopicID().getTopicNum()));
     }
 
     @ParameterizedTest
@@ -554,17 +564,28 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .status(status)
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-        var blockItem = blockItemBuilder.consensusSubmitMessage(expectedRecordItem).build();
+        var blockItem =
+                blockItemBuilder.consensusSubmitMessage(expectedRecordItem).build();
 
-        var expectedRunningHash = blockItem.stateChanges()
+        var expectedFees =
+                blockItem.transactionOutput().getFirst().getSubmitMessage().getAssessedCustomFeesList();
+        var expectedRunningHash = blockItem
+                .stateChanges()
                 .getFirst()
                 .getStateChanges(3)
-                .getMapUpdate().getValue().getTopicValue().getRunningHash();
+                .getMapUpdate()
+                .getValue()
+                .getTopicValue()
+                .getRunningHash();
 
-        var expectedSequenceNumber = blockItem.stateChanges()
+        var expectedSequenceNumber = blockItem
+                .stateChanges()
                 .getFirst()
                 .getStateChanges(3)
-                .getMapUpdate().getValue().getTopicValue().getSequenceNumber();
+                .getMapUpdate()
+                .getValue()
+                .getTopicValue()
+                .getSequenceNumber();
 
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
@@ -579,9 +600,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(expectedRunningHash, transactionRecord -> transactionRecord.getReceipt().getTopicRunningHash())
-                .returns(expectedSequenceNumber, transactionRecord -> transactionRecord.getReceipt().getTopicSequenceNumber())
-        );
+                .returns(
+                        expectedRunningHash,
+                        transactionRecord -> transactionRecord.getReceipt().getTopicRunningHash())
+                .returns(
+                        expectedSequenceNumber,
+                        transactionRecord -> transactionRecord.getReceipt().getTopicSequenceNumber())
+                .returns(expectedFees, TransactionRecord::getAssessedCustomFeesList));
     }
 
     @Test
@@ -595,7 +620,8 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .status(ResponseCodeEnum.INVALID_TRANSACTION)
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-        var blockItem = blockItemBuilder.consensusSubmitMessage(expectedRecordItem).build();
+        var blockItem =
+                blockItemBuilder.consensusSubmitMessage(expectedRecordItem).build();
 
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
@@ -609,8 +635,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-        );
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
     @Test
@@ -660,7 +685,6 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .extracting(RecordItem::getTransactionRecord)
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
-
 
     private void assertRecordFile(
             RecordFile actual, BlockFile blockFile, Consumer<Collection<RecordItem>> itemsAssert) {
@@ -734,8 +758,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                         "transactionRecord.receipt_.topicID_.memoizedHashCode",
                         "transactionRecord.receipt_.topicID_.memoizedSize",
                         "transactionRecord.receipt_.topicID_.memoizedIsInitialized",
-                        "transactionRecord.receipt_.topicRunningHashVersion_"
-                )
+                        "transactionRecord.receipt_.topicRunningHashVersion_")
                 .isEqualTo(expectedRecordItem);
     }
 

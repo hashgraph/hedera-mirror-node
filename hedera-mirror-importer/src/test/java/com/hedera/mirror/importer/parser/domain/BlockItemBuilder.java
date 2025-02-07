@@ -18,18 +18,7 @@ package com.hedera.mirror.importer.parser.domain;
 
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
 
-import com.hedera.hapi.block.stream.output.protoc.CallContractOutput;
-import com.hedera.hapi.block.stream.output.protoc.CreateScheduleOutput;
-import com.hedera.hapi.block.stream.output.protoc.CryptoTransferOutput;
-import com.hedera.hapi.block.stream.output.protoc.MapChangeKey;
-import com.hedera.hapi.block.stream.output.protoc.MapChangeValue;
-import com.hedera.hapi.block.stream.output.protoc.MapDeleteChange;
-import com.hedera.hapi.block.stream.output.protoc.MapUpdateChange;
-import com.hedera.hapi.block.stream.output.protoc.SignScheduleOutput;
-import com.hedera.hapi.block.stream.output.protoc.StateChange;
-import com.hedera.hapi.block.stream.output.protoc.StateChanges;
-import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
-import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
+import com.hedera.hapi.block.stream.output.protoc.*;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
@@ -198,13 +187,9 @@ public class BlockItemBuilder {
         var key = MapChangeKey.newBuilder().setTopicIdKey(topicId).build();
         var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
 
-        var firstChange = StateChange.newBuilder()
-                .setStateId(1)
-                .build();
+        var firstChange = StateChange.newBuilder().setStateId(1).build();
 
-        var secondChange = StateChange.newBuilder()
-                .setStateId(STATE_TOPICS_ID)
-                .build();
+        var secondChange = StateChange.newBuilder().setStateId(STATE_TOPICS_ID).build();
 
         var thirdChange = StateChange.newBuilder()
                 .setStateId(STATE_TOPICS_ID)
@@ -224,19 +209,25 @@ public class BlockItemBuilder {
     }
 
     public Builder consensusSubmitMessage(RecordItem recordItem) {
+
+        var transactionOutput = TransactionOutput.newBuilder()
+                .setSubmitMessage(SubmitMessageOutput.newBuilder()
+                        .addAssessedCustomFees(assessedCustomFees())
+                        .build())
+                .build();
+
         var topicRunningHash = recordItem.getTransactionRecord().getReceipt().getTopicRunningHash();
         var sequenceNumber = recordItem.getTransactionRecord().getReceipt().getTopicSequenceNumber();
-        var topicValue = Topic.newBuilder().setRunningHash(topicRunningHash).setSequenceNumber(sequenceNumber).build();
+        var topicValue = Topic.newBuilder()
+                .setRunningHash(topicRunningHash)
+                .setSequenceNumber(sequenceNumber)
+                .build();
         var value = MapChangeValue.newBuilder().setTopicValue(topicValue).build();
         var mapUpdate = MapUpdateChange.newBuilder().setValue(value).build();
 
-        var firstChange = StateChange.newBuilder()
-                .setStateId(1)
-                .build();
+        var firstChange = StateChange.newBuilder().setStateId(1).build();
 
-        var secondChange = StateChange.newBuilder()
-                .setStateId(STATE_TOPICS_ID)
-                .build();
+        var secondChange = StateChange.newBuilder().setStateId(STATE_TOPICS_ID).build();
 
         var thirdChange = StateChange.newBuilder()
                 .setStateId(STATE_TOPICS_ID)
@@ -252,8 +243,10 @@ public class BlockItemBuilder {
         var stateChanges = StateChanges.newBuilder().addAllStateChanges(changes).build();
 
         return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
-
+                recordItem.getTransaction(),
+                transactionResult(recordItem),
+                List.of(transactionOutput),
+                List.of(stateChanges));
     }
 
     private static StateChanges buildFileIdStateChanges(RecordItem recordItem) {
@@ -320,8 +313,6 @@ public class BlockItemBuilder {
                 .setTransactionFeeCharged(transactionRecord.getTransactionFee())
                 .setStatus(transactionRecord.getReceipt().getStatus());
     }
-
-
 
     public class Builder {
         private final Transaction transaction;
