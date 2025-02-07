@@ -34,6 +34,26 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class StreamFilenameTest {
 
+    @Test
+    void fromBlockNumber() {
+        var streamFilename = StreamFilename.from(0);
+        assertThat(streamFilename)
+                .returns("gz", StreamFilename::getCompressor)
+                .returns("blk", s -> s.getExtension().getName())
+                .returns("000000000000000000000000000000000000.blk.gz", StreamFilename::getFilename)
+                .returns("000000000000000000000000000000000000.blk.gz", StreamFilename::getFilePath)
+                .returns("blk.gz", StreamFilename::getFullExtension)
+                .returns(null, StreamFilename::getPath)
+                .returns(StreamType.BLOCK, StreamFilename::getStreamType);
+    }
+
+    @Test
+    void fromNegativeBlockNumber() {
+        assertThatThrownBy(() -> StreamFilename.from(-1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Block number must be non-negative");
+    }
+
     @ParameterizedTest(name = "Create StreamFilename from {0}")
     @CsvSource({
         // @formatter:off

@@ -46,10 +46,15 @@ import jakarta.inject.Named;
 import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@ConditionalOnProperty(
+        name = "hedera.mirror.importer.downloader.block.enabled",
+        havingValue = "false",
+        matchIfMissing = true)
 @Named
 public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
 

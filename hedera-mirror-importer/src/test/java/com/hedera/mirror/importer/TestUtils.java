@@ -17,10 +17,10 @@
 package com.hedera.mirror.importer;
 
 import static java.lang.invoke.MethodType.methodType;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.data.util.Predicates.negate;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
@@ -31,13 +31,13 @@ import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.ConsensusNodeStub;
-import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
@@ -45,6 +45,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -58,17 +59,26 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.beanutils.BeanUtilsBean;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.gaul.s3proxy.S3Proxy;
+import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.jclouds.ContextBuilder;
+import org.jclouds.blobstore.BlobStoreContext;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @UtilityClass
 public class TestUtils {
+
+    public static final int S3_PROXY_PORT = 8001;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -157,6 +167,16 @@ public class TestUtils {
         }
     }
 
+    @SneakyThrows
+    public static byte[] gzip(byte[] data) {
+        try (var bos = new ByteArrayOutputStream();
+                var gcos = new GzipCompressorOutputStream(bos)) {
+            gcos.write(data);
+            gcos.finish();
+            return bos.toByteArray();
+        }
+    }
+
     public static <T> T merge(T previous, T current) {
         try {
             T merged = clone(previous);
@@ -193,7 +213,31 @@ public class TestUtils {
         return timestamp + delta.toNanos();
     }
 
-    public AccountID toAccountId(String accountId) {
+    @SneakyThrows
+    public static S3Proxy startS3Proxy(Path path) {
+        var properties = new Properties();
+        properties.setProperty(
+                "jclouds.filesystem.basedir", path.toAbsolutePath().toString());
+
+        try (var context =
+                ContextBuilder.newBuilder("filesystem").overrides(properties).build(BlobStoreContext.class)) {
+            var s3Proxy = S3Proxy.builder()
+                    .blobStore(context.getBlobStore())
+                    .endpoint(URI.create("http://localhost:" + S3_PROXY_PORT))
+                    .ignoreUnknownHeaders(true)
+                    .build();
+            s3Proxy.start();
+
+            await("S3Proxy")
+                    .dontCatchUncaughtExceptions()
+                    .atMost(Duration.ofMillis(500))
+                    .pollDelay(Duration.ofMillis(1))
+                    .until(() -> AbstractLifeCycle.STARTED.equals(s3Proxy.getState()));
+            return s3Proxy;
+        }
+    }
+
+    public static AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
         return AccountID.newBuilder()
                 .setShardNum(Long.parseLong(parts[0]))
@@ -273,7 +317,7 @@ public class TestUtils {
         return (null == key) ? null : key.toByteArray();
     }
 
-    public byte[] generateRandomByteArray(int size) {
+    public static byte[] generateRandomByteArray(int size) {
         byte[] hashBytes = new byte[size];
         RANDOM.nextBytes(hashBytes);
         return hashBytes;
@@ -285,34 +329,5 @@ public class TestUtils {
                 .nodeAccountId(entityId)
                 .nodeId(entityId.getNum() - 3)
                 .build();
-    }
-
-    public static Path nodePath(ConsensusNode node, PathType pathType, StreamType streamType) {
-        return pathType == PathType.ACCOUNT_ID
-                ? Path.of(streamType.getNodePrefix() + node.getNodeAccountId().toString())
-                : Path.of(
-                        String.valueOf(node.getNodeAccountId().getShard()),
-                        String.valueOf(node.getNodeId()),
-                        streamType.getNodeIdBasedSuffix());
-    }
-
-    public static String accountIdStreamFileProviderPath(ConsensusNode node, StreamType streamType, String fileName) {
-        return "%s/%s%s/%s"
-                .formatted(
-                        streamType.getPath(),
-                        streamType.getNodePrefix(),
-                        node.getNodeAccountId().toString(),
-                        fileName);
-    }
-
-    public static String nodeIdStreamFileProviderPath(
-            ConsensusNode node, StreamType streamType, String fileName, String network) {
-        return "%s/%d/%d/%s/%s"
-                .formatted(
-                        network,
-                        node.getNodeAccountId().getShard(),
-                        node.getNodeId(),
-                        streamType.getNodeIdBasedSuffix(),
-                        fileName);
     }
 }

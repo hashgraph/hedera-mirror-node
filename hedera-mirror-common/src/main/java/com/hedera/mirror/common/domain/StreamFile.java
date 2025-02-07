@@ -22,9 +22,10 @@ import lombok.NonNull;
 
 public interface StreamFile<T extends StreamItem> {
 
-    default void clear() {
+    default StreamFile<T> clear() {
         setBytes(null);
         setItems(List.of());
+        return this;
     }
 
     StreamFile<T> copy();
