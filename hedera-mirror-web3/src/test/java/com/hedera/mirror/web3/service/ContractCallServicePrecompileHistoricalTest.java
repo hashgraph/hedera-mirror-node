@@ -75,13 +75,16 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void isTokenFrozen(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var accountAndToken = accountTokenAndFrozenRelationshipPersistHistorical(historicalRange);
+        final var accountEntity = accountEntityNoEvmAddressPersistHistorical(historicalRange);
+        final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
+        fungibleTokenPersistHistorical(tokenEntity, historicalRange);
+        tokenAccountFrozenRelationshipPersistHistorical(tokenEntity, accountEntity, historicalRange);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContractHistorical::deploy);
 
         // When
-        final var functionCall = contract.call_isTokenFrozen(
-                getAddressFromEntity(accountAndToken.getRight()), getAddressFromEntity(accountAndToken.getLeft()));
+        final var functionCall =
+                contract.call_isTokenFrozen(getAddressFromEntity(tokenEntity), getAddressFromEntity(accountEntity));
 
         // Then
         assertThat(functionCall.send()).isTrue();
@@ -108,7 +111,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void isKycGranted(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var account = accountEntityPersistHistorical(historicalRange);
+        final var account = accountEntityNoEvmAddressPersistHistorical(historicalRange);
         final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
         fungibleTokenPersistHistorical(tokenEntity, historicalRange);
         tokenAccountFrozenRelationshipPersistHistorical(tokenEntity, account, historicalRange);
@@ -148,7 +151,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void isKycGrantedForNFT(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var account = accountEntityPersistHistorical(historicalRange);
+        final var account = accountEntityNoEvmAddressPersistHistorical(historicalRange);
         final var tokenEntity = nftPersistHistorical(historicalRange);
         tokenAccountFrozenRelationshipPersistHistorical(tokenEntity, account, historicalRange);
 
@@ -597,10 +600,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         final var historicalRange = setUpHistoricalContext(blockNumber);
         final var tokenSupply = 900L;
 
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.TOKEN).timestampRange(historicalRange))
-                .persist();
+        final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
         final var treasury =
                 accountPersistWithBalanceHistorical(tokenSupply, tokenEntity.toEntityId(), historicalRange);
         final var feeCollector = accountEntityPersistHistorical(historicalRange);
@@ -649,7 +649,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
 
-        final var owner = accountEntityPersistHistorical(historicalRange);
+        final var owner = accountEntityNoEvmAddressPersistHistorical(historicalRange);
         final var treasury = accountEntityPersistHistorical(historicalRange);
         final var feeCollector = accountEntityPersistHistorical(historicalRange);
         final var tokenEntity = domainBuilder
@@ -1100,7 +1100,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(entity.getCreatedTimestamp(), EntityId.of(2)))
-                        .balance(balance))
+                        .balance(treasuryEntity.getBalance()))
                 .persist();
         domainBuilder
                 .accountBalance()

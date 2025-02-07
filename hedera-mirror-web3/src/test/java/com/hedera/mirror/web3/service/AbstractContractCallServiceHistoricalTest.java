@@ -80,7 +80,6 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
-                        .deleted(false)
                         .balance(1_000_000_000_000L)
                         .timestampRange(timestampRange)
                         .createdTimestamp(timestampRange.lowerEndpoint()))
@@ -108,7 +107,6 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
-                        .deleted(false)
                         .evmAddress(null)
                         .alias(null)
                         .balance(1_000_000_000_000L)
@@ -127,7 +125,6 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
                         .alias(alias.toByteArray())
-                        .deleted(false)
                         .evmAddress(evmAddress.toArray())
                         .balance(1_000_000_000_000L)
                         .createdTimestamp(timestampRange.lowerEndpoint())
@@ -210,6 +207,7 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .tokenHistory()
                 .customize(t -> t.tokenId(tokenEntity.getId())
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
                         .timestampRange(timestampRange))
                 .persist();
         domainBuilder
