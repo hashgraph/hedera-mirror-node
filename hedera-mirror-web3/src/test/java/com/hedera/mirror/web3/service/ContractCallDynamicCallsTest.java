@@ -761,27 +761,6 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
     }
 
-    private Token fungibleTokenPersist(final EntityId treasuryEntityId) {
-        return fungibleTokenPersist(treasuryEntityId, domainBuilder.key());
-    }
-
-    private Token fungibleTokenPersist(final EntityId treasuryEntityId, final byte[] kycKey) {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        return domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
-                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .treasuryAccountId(treasuryEntityId)
-                        .kycKey(kycKey))
-                .persist();
-    }
-
-    private Token nftPersist(final EntityId treasuryEntityId) {
-        return nftPersist(treasuryEntityId, treasuryEntityId);
-    }
-
     private Token nftPersist(final EntityId treasuryEntityId, final EntityId ownerEntityId) {
         return nftPersist(treasuryEntityId, ownerEntityId, ownerEntityId);
     }
