@@ -64,7 +64,7 @@ public class ProtoBlockFileReaderTest {
                             "2b223b895e1a847579150a85a86e32e4aa42de0cc17a9f4e73f7f330e231515ece0fbf1818c29160a5f46da0268138d3")
                     .roundStart(982L)
                     .roundEnd(982L)
-                    .version(7)
+                    .version(ProtoBlockFileReader.VERSION)
                     .build(),
             BlockFile.builder()
                     .consensusStart(1738953032298721606L)
