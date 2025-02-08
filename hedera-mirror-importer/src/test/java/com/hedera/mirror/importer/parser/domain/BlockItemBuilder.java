@@ -38,7 +38,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Node;
 import com.hederahashgraph.api.proto.java.Schedule;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -304,7 +303,9 @@ public class BlockItemBuilder {
 
     private static StateChanges buildNodeIdStateChanges(RecordItem recordItem) {
         var nodeId = recordItem.getTransactionRecord().getReceipt().getNodeId();
-        var key = MapChangeKey.newBuilder().setEntityNumberKey(UInt64Value.of(nodeId)).build();
+        var key = MapChangeKey.newBuilder()
+                .setEntityNumberKey(UInt64Value.of(nodeId))
+                .build();
         var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
 
         var firstChange = StateChange.newBuilder()
