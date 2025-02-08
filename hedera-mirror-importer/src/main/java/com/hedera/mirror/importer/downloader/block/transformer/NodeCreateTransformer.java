@@ -33,13 +33,14 @@ final class NodeCreateTransformer extends AbstractBlockItemTransformer {
 
         for (var stateChange : blockItem.stateChanges()) {
             for (var change : stateChange.getStateChangesList()) {
-                if (change.getStateId() == StateIdentifier.STATE_ID_NODES.getNumber()
-                        && change.hasMapUpdate()
-                        && change.getMapUpdate().getValue().hasNodeValue()) {
-                    var value = change.getMapUpdate().getValue().getNodeValue();
-                    var nodeId = value.getNodeId();
-                    transactionRecordBuilder.getReceiptBuilder().setNodeId(nodeId);
-                    return;
+                if (change.getStateId() == StateIdentifier.STATE_ID_NODES.getNumber() && change.hasMapUpdate()) {
+                    var key = change.getMapUpdate().getKey();
+                    if (key.hasEntityNumberKey()) {
+                        transactionRecordBuilder
+                                .getReceiptBuilder()
+                                .setNodeId(key.getEntityNumberKey().getValue());
+                        return;
+                    }
                 }
             }
         }

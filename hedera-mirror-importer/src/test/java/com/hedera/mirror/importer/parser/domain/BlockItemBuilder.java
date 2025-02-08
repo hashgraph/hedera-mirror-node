@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.parser.domain;
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_NODES;
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
 
+import com.google.protobuf.UInt64Value;
 import com.hedera.hapi.block.stream.output.protoc.CallContractOutput;
 import com.hedera.hapi.block.stream.output.protoc.CreateScheduleOutput;
 import com.hedera.hapi.block.stream.output.protoc.CryptoTransferOutput;
@@ -303,10 +304,8 @@ public class BlockItemBuilder {
 
     private static StateChanges buildNodeIdStateChanges(RecordItem recordItem) {
         var nodeId = recordItem.getTransactionRecord().getReceipt().getNodeId();
-        var value = MapChangeValue.newBuilder()
-                .setNodeValue(Node.newBuilder().setNodeId(nodeId).build())
-                .build();
-        var mapUpdate = MapUpdateChange.newBuilder().setValue(value).build();
+        var key = MapChangeKey.newBuilder().setEntityNumberKey(UInt64Value.of(nodeId)).build();
+        var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
 
         var firstChange = StateChange.newBuilder()
                 .setMapUpdate(MapUpdateChange.newBuilder().build())

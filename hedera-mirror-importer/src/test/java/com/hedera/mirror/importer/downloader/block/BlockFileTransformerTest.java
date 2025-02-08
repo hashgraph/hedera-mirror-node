@@ -454,9 +454,9 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .getFirst()
                 .getStateChanges(3)
                 .getMapUpdate()
-                .getValue()
-                .getNodeValue()
-                .getNodeId();
+                .getKey()
+                .getEntityNumberKey()
+                .getValue();
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
         var recordFile = blockFileTransformer.transform(blockFile);
         assertRecordFile(recordFile, blockFile, items -> assertThat(items)
