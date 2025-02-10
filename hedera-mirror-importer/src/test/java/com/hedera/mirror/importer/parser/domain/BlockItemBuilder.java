@@ -418,15 +418,18 @@ public class BlockItemBuilder {
 
         var stateChangesBuilder = StateChanges.newBuilder();
         for (var serialNumber : serialNumbers) {
-            var mapDelete = MapDeleteChange.newBuilder()
+            var mapUpdate = MapUpdateChange.newBuilder()
                     .setKey(MapChangeKey.newBuilder()
                             .setNftIdKey(NftID.newBuilder()
                                     .setTokenID(tokenId)
                                     .setSerialNumber(serialNumber)
-                                    .build()));
+                                    .build()))
+                    .setValue(MapChangeValue.newBuilder()
+                            .setTokenValue(Token.newBuilder().setTotalSupply(supply)))
+                    .build();
             stateChangesBuilder.addStateChanges(StateChange.newBuilder()
                     .setStateId(STATE_ID_NFTS.getNumber())
-                    .setMapDelete(mapDelete.build()));
+                    .setMapUpdate(mapUpdate));
         }
 
         return new BlockItemBuilder.Builder(

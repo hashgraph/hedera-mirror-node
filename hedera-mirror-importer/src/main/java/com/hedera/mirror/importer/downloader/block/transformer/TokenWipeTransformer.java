@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
+import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_NFTS;
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_TOKENS;
 
 import com.hedera.mirror.common.domain.transaction.BlockItem;
@@ -35,10 +36,9 @@ final class TokenWipeTransformer extends AbstractBlockItemTransformer {
         var receiptBuilder = transactionRecordBuilder.getReceiptBuilder();
         for (var stateChanges : blockItem.stateChanges()) {
             for (var stateChange : stateChanges.getStateChangesList()) {
-                // Note: Only supporting fungible tokens for now.
-                // NFTs are represented in stateChanges as a MapDelete, which contains no total supply. This is an open
-                // issue.
-                if (stateChange.hasMapUpdate() && stateChange.getStateId() == STATE_ID_TOKENS.getNumber()) {
+                if (stateChange.hasMapUpdate()
+                        && (stateChange.getStateId() == STATE_ID_TOKENS.getNumber()
+                                || stateChange.getStateId() == STATE_ID_NFTS.getNumber())) {
                     var mapUpdate = stateChange.getMapUpdate();
                     if (mapUpdate.hasValue()) {
                         var value = mapUpdate.getValue();

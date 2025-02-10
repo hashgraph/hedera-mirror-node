@@ -66,12 +66,14 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     private static final Version HAPI_VERSION = new Version(0, HAPI_VERSION_MINOR);
 
     private final BlockFileBuilder blockFileBuilder;
-    private final BlockItemBuilder blockItemBuilder = new BlockItemBuilder();
+    private final BlockItemBuilder blockItemBuilder;
     private final BlockFileTransformer blockFileTransformer;
     private static final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
     private static Stream<Arguments> provideDefaultTransforms() {
         return Stream.of(
+                Arguments.of(TransactionType.CONSENSUSUPDATETOPIC, recordItemBuilder.consensusUpdateTopic()),
+                Arguments.of(TransactionType.CONSENSUSDELETETOPIC, recordItemBuilder.consensusDeleteTopic()),
                 Arguments.of(TransactionType.FILEAPPEND, recordItemBuilder.fileAppend()),
                 Arguments.of(TransactionType.FILEDELETE, recordItemBuilder.fileDelete()),
                 Arguments.of(TransactionType.FILEUPDATE, recordItemBuilder.fileUpdate()),
@@ -567,54 +569,6 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void consensusUpdateTopicTransform() {
-        // given
-        var expectedRecordItem = recordItemBuilder
-                .consensusUpdateTopic()
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .build();
-        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-        var blockItem = blockItemBuilder.fileUpdate(expectedRecordItem).build();
-        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
-
-        // when
-        var recordFile = blockFileTransformer.transform(blockFile);
-
-        // then
-        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
-                .hasSize(1)
-                .first()
-                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
-                .returns(null, RecordItem::getPrevious)
-                .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
-    }
-
-    @Test
-    void consensusDeleteTopicTransform() {
-        // given
-        var expectedRecordItem = recordItemBuilder
-                .consensusDeleteTopic()
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .build();
-        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-        var blockItem = blockItemBuilder.fileUpdate(expectedRecordItem).build();
-        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
-
-        // when
-        var recordFile = blockFileTransformer.transform(blockFile);
-
-        // then
-        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
-                .hasSize(1)
-                .first()
-                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
-                .returns(null, RecordItem::getPrevious)
-                .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
-    }
-
-    @Test
     void tokenAirdrop() {
         // given
         var expectedRecordItem = recordItemBuilder
@@ -848,13 +802,13 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     @ParameterizedTest
     @EnumSource(
             value = TokenType.class,
-            names = {"FUNGIBLE_COMMON"}) // Add NFT once it is supported by blockstreams
+            names = {"FUNGIBLE_COMMON", "NON_FUNGIBLE_UNIQUE"})
     void tokenWipe(TokenType type) {
         // given
-        var expectedRecordItem = recordItemBuilder
-                .tokenWipe(type)
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .build();
+        var builder = recordItemBuilder.tokenWipe(type).recordItem(r -> r.hapiVersion(HAPI_VERSION));
+        var expectedRecordItem = type.equals(TokenType.NON_FUNGIBLE_UNIQUE)
+                ? builder.transactionBody(t -> t.addSerialNumbers(2)).build()
+                : builder.build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.tokenWipe(expectedRecordItem).build();
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
