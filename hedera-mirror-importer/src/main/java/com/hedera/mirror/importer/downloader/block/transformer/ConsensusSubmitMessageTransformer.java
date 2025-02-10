@@ -49,13 +49,12 @@ final class ConsensusSubmitMessageTransformer extends AbstractBlockItemTransform
                     var value = change.getMapUpdate().getValue();
                     if (value.hasTopicValue()) {
                         var topicValue = value.getTopicValue();
-                        transactionRecordBuilder.getReceiptBuilder().setTopicRunningHash(topicValue.getRunningHash());
                         transactionRecordBuilder
                                 .getReceiptBuilder()
-                                .setTopicSequenceNumber(topicValue.getSequenceNumber());
-                        transactionRecordBuilder
-                                .getReceiptBuilder()
+                                .setTopicRunningHash(topicValue.getRunningHash())
+                                .setTopicSequenceNumber(topicValue.getSequenceNumber())
                                 .setTopicRunningHashVersion(DEFAULT_RUNNING_HASH_VERSION);
+
                         return;
                     }
                 }
