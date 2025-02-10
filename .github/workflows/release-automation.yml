@@ -105,7 +105,7 @@ jobs:
       - name: Close the Milestone
         if: ${{ steps.version_parser.outputs.prerelease == '' }}
         id: milestone
-        uses: step-security/close-milestone@2ec61fc36f20d36256b3652d302aa89fd4ca2abf # v2.1.0
+        uses: step-security/close-milestone@ca235f00d0aac66e5c6543a1d4d7f88b3072e4a0 # v2.1.1
         with:
           milestone_name: ${{ steps.version_parser.outputs.release }}
         env:
