@@ -79,7 +79,7 @@ public class ContractCallContext {
     private Map<String, Map<Object, Object>> readCache = new HashMap<>();
 
     @Getter(AccessLevel.NONE)
-    private Map<String, Map<Object, Object>> modifications = new HashMap<>();
+    private Map<String, Map<Object, Object>> writeCache = new HashMap<>();
 
     /**
      * The timestamp used to fetch the state from the stackedStateFrames.
@@ -99,7 +99,7 @@ public class ContractCallContext {
 
     public void reset() {
         stack = stackBase;
-        modifications.clear();
+        writeCache.clear();
     }
 
     public int getStackHeight() {
@@ -169,7 +169,7 @@ public class ContractCallContext {
         return readCache.computeIfAbsent(stateKey, k -> new HashMap<>());
     }
 
-    public Map<Object, Object> getModificationsState(final String stateKey) {
-        return modifications.computeIfAbsent(stateKey, k -> new HashMap<>());
+    public Map<Object, Object> getWriteCacheState(final String stateKey) {
+        return writeCache.computeIfAbsent(stateKey, k -> new HashMap<>());
     }
 }

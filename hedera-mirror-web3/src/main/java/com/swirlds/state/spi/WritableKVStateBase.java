@@ -38,8 +38,6 @@ import java.util.Set;
  */
 @SuppressWarnings("unchecked")
 public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
-    /** A map of all modified values buffered in this mutable state */
-    //    private final Map<K, V> modifications = new LinkedHashMap<>();
     /**
      * A list of listeners to be notified of changes to the state.
      */
@@ -83,7 +81,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     @Override
     public final void reset() {
         super.reset();
-        getModificationsCache().clear();
+        getWriteCacheState().clear();
     }
 
     /** {@inheritDoc} */
@@ -92,8 +90,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     public final V get(@Nonnull K key) {
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
-        if (getModificationsCache().containsKey(key)) {
-            return (V) getModificationsCache().get(key);
+        final var writeCache = getWriteCacheState();
+        if (writeCache.containsKey(key)) {
+            return (V) writeCache.get(key);
         } else {
             return super.get(key);
         }
@@ -113,8 +112,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         Objects.requireNonNull(key);
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
-        if (getModificationsCache().containsKey(key)) {
-            return (V) getModificationsCache().get(key);
+        final var writeCache = getWriteCacheState();
+        if (writeCache.containsKey(key)) {
+            return (V) writeCache.get(key);
         }
 
         // If the modifications map does not contain an answer, but the read cache of the
@@ -136,14 +136,14 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     public final void put(@Nonnull final K key, @Nonnull final V value) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(value);
-        getModificationsCache().put(key, value);
+        getWriteCacheState().put(key, value);
     }
 
     /** {@inheritDoc} */
     @Override
     public final void remove(@Nonnull final K key) {
         Objects.requireNonNull(key);
-        getModificationsCache().put(key, null);
+        getWriteCacheState().put(key, null);
     }
 
     /**
@@ -161,7 +161,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         // Capture the set of keys that have been removed, and the set of keys that have been added.
         final var removedKeys = new HashSet<K>();
         final var maybeAddedKeys = new HashSet<K>();
-        for (final var mod : getModificationsCache().entrySet()) {
+        for (final var mod : getWriteCacheState().entrySet()) {
             final var key = mod.getKey();
             final var val = mod.getValue();
             if (val == null) {
@@ -184,7 +184,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     @Nonnull
     @Override
     public final Set<K> modifiedKeys() {
-        return (Set<K>) getModificationsCache().keySet();
+        return (Set<K>) getWriteCacheState().keySet();
     }
 
     /**
@@ -206,7 +206,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         int numAdditions = 0;
         int numRemovals = 0;
 
-        for (final var mod : getModificationsCache().entrySet()) {
+        for (final var mod : getWriteCacheState().entrySet()) {
             boolean isPresentInBackingMap = readFromDataSource((K) mod.getKey()) != null;
             boolean isRemovedInMod = mod.getValue() == null;
 
@@ -249,8 +249,8 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      */
     protected abstract long sizeOfDataSource();
 
-    private Map<Object, Object> getModificationsCache() {
-        return ContractCallContext.get().getModificationsState(getStateKey());
+    private Map<Object, Object> getWriteCacheState() {
+        return ContractCallContext.get().getWriteCacheState(getStateKey());
     }
 
     /**
