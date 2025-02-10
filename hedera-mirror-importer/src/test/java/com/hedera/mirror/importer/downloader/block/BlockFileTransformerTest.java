@@ -72,8 +72,8 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
     private static Stream<Arguments> provideDefaultTransforms() {
         return Stream.of(
-                Arguments.of(TransactionType.CONSENSUSUPDATETOPIC, recordItemBuilder.consensusUpdateTopic()),
                 Arguments.of(TransactionType.CONSENSUSDELETETOPIC, recordItemBuilder.consensusDeleteTopic()),
+                Arguments.of(TransactionType.CONSENSUSUPDATETOPIC, recordItemBuilder.consensusUpdateTopic()),
                 Arguments.of(TransactionType.FILEAPPEND, recordItemBuilder.fileAppend()),
                 Arguments.of(TransactionType.FILEDELETE, recordItemBuilder.fileDelete()),
                 Arguments.of(TransactionType.FILEUPDATE, recordItemBuilder.fileUpdate()),
