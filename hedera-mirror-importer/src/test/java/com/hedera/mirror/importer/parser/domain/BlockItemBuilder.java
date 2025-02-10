@@ -92,11 +92,6 @@ public class BlockItemBuilder {
                 Collections.emptyList());
     }
 
-    public BlockItemBuilder.Builder scheduleCreate() {
-        var recordItem = recordItemBuilder.scheduleCreate().build();
-        return scheduleCreate(recordItem);
-    }
-
     public BlockItemBuilder.Builder scheduleCreate(RecordItem recordItem) {
         var transactionRecord = recordItem.getTransactionRecord();
         var scheduleId = transactionRecord.getReceipt().getScheduleID();
@@ -121,11 +116,6 @@ public class BlockItemBuilder {
                 transactionResult(recordItem),
                 List.of(transactionOutput),
                 List.of(stateChanges));
-    }
-
-    public BlockItemBuilder.Builder scheduleDelete() {
-        var recordItem = recordItemBuilder.scheduleDelete().build();
-        return scheduleDelete(recordItem);
     }
 
     public BlockItemBuilder.Builder scheduleDelete(RecordItem recordItem) {
@@ -156,11 +146,6 @@ public class BlockItemBuilder {
                 List.of(stateChanges));
     }
 
-    public BlockItemBuilder.Builder scheduleSign() {
-        var recordItem = recordItemBuilder.scheduleSign().build();
-        return scheduleSign(recordItem);
-    }
-
     public BlockItemBuilder.Builder scheduleSign(RecordItem recordItem) {
         var transactionRecord = recordItem.getTransactionRecord();
         var transactionId = transactionRecord.getReceipt().getScheduledTransactionID();
@@ -182,10 +167,10 @@ public class BlockItemBuilder {
     }
 
     public BlockItemBuilder.Builder unknown(RecordItem recordItem) {
-        return defaultRecordItem(recordItem);
+        return defaultBlockItem(recordItem);
     }
 
-    public BlockItemBuilder.Builder defaultRecordItem(RecordItem recordItem) {
+    public BlockItemBuilder.Builder defaultBlockItem(RecordItem recordItem) {
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
@@ -195,11 +180,6 @@ public class BlockItemBuilder {
 
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
-    }
-
-    public Builder fileUpdate(RecordItem recordItem) {
-        return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
 
     public Builder consensusCreateTopic(RecordItem recordItem) {

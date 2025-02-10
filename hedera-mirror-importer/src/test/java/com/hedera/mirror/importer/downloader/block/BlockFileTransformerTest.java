@@ -102,7 +102,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
             TransactionType type, RecordItemBuilder.Builder<? extends Builder<? extends Builder<?>>> recordItem) {
         var expectedRecordItem =
                 recordItem.recordItem(r -> r.hapiVersion(HAPI_VERSION)).build();
-        var blockItem = blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
+        var blockItem = blockItemBuilder.defaultBlockItem(expectedRecordItem).build();
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
