@@ -106,8 +106,8 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
         final var result = function.send();
 
         // Then
-        final var expectedOutput = Address.wrap(
-                        Bytes.wrap(recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())))
+        final var expectedOutput = Address.wrap(Bytes.wrap(
+                        recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())))
                 .toString();
         assertThat(result).isEqualTo(expectedOutput);
         verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
