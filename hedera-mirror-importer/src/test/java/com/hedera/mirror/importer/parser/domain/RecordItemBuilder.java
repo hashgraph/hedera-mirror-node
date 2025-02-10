@@ -914,9 +914,10 @@ public class RecordItemBuilder {
 
         if (tokenType == FUNGIBLE_COMMON) {
             transactionBody.setAmount(1000L);
+            builder.receipt(b -> b.setNewTotalSupply(2000L));
         } else {
             transactionBody.addMetadata(bytes(16)).addMetadata(bytes(16));
-            builder.receipt(b -> b.addSerialNumbers(1L).addSerialNumbers(2L));
+            builder.receipt(b -> b.addSerialNumbers(1L).addSerialNumbers(2L).setNewTotalSupply(3L));
         }
 
         return builder;
