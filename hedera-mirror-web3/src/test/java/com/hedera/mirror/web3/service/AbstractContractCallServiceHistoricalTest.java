@@ -87,6 +87,19 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .persist();
     }
 
+    protected Entity accountEntityPersistHistoricalNoEvmAddress(final Range<Long> timestampRange) {
+        return domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT)
+                        .deleted(false)
+                        .evmAddress(null)
+                        .alias(null)
+                        .balance(1_000_000_000_000L)
+                        .timestampRange(timestampRange)
+                        .createdTimestamp(timestampRange.lowerEndpoint()))
+                .persist();
+    }
+
     protected Pair<Entity, Entity> accountTokenAndFrozenRelationshipPersistHistorical(
             final Range<Long> historicalRange) {
         final var account = accountEntityWithAliasPersistHistorical(historicalRange);
