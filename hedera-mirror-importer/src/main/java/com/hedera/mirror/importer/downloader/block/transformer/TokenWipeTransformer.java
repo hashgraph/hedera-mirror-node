@@ -27,6 +27,7 @@ import jakarta.inject.Named;
 @Named
 final class TokenWipeTransformer extends AbstractBlockItemTransformer {
 
+    @SuppressWarnings("java:S3776")
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
         if (!blockItem.successful()) {

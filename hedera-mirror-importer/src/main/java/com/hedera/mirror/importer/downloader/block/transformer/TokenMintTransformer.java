@@ -29,6 +29,7 @@ import jakarta.inject.Named;
 @Named
 final class TokenMintTransformer extends AbstractBlockItemTransformer {
 
+    @SuppressWarnings("java:S3776")
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
         if (!blockItem.successful()) {
@@ -44,7 +45,6 @@ final class TokenMintTransformer extends AbstractBlockItemTransformer {
                         if (setSupply(mapUpdate, receiptBuilder)) {
                             return;
                         }
-                        ;
                     } else if (stateChange.getStateId() == STATE_ID_NFTS.getNumber()) {
                         var key = mapUpdate.getKey();
                         if (key.hasNftIdKey()) {
