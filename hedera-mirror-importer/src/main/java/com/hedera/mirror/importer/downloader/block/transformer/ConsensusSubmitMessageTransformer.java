@@ -24,6 +24,9 @@ import jakarta.inject.Named;
 
 @Named
 final class ConsensusSubmitMessageTransformer extends AbstractBlockItemTransformer {
+
+    private static final long DEFAULT_RUNNING_HASH_VERSION = 3;
+
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
 
@@ -45,12 +48,14 @@ final class ConsensusSubmitMessageTransformer extends AbstractBlockItemTransform
                 if (change.getStateId() == StateIdentifier.STATE_ID_TOPICS.getNumber() && change.hasMapUpdate()) {
                     var value = change.getMapUpdate().getValue();
                     if (value.hasTopicValue()) {
+                        var topicValue = value.getTopicValue();
+                        transactionRecordBuilder.getReceiptBuilder().setTopicRunningHash(topicValue.getRunningHash());
                         transactionRecordBuilder
                                 .getReceiptBuilder()
-                                .setTopicRunningHash(value.getTopicValue().getRunningHash());
+                                .setTopicSequenceNumber(topicValue.getSequenceNumber());
                         transactionRecordBuilder
                                 .getReceiptBuilder()
-                                .setTopicSequenceNumber(value.getTopicValue().getSequenceNumber());
+                                .setTopicRunningHashVersion(DEFAULT_RUNNING_HASH_VERSION);
                         return;
                     }
                 }

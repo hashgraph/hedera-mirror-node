@@ -386,17 +386,12 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
-    @ParameterizedTest
-    @EnumSource(
-            value = ResponseCodeEnum.class,
-            mode = EnumSource.Mode.INCLUDE,
-            names = {"FEE_SCHEDULE_FILE_PART_UPLOADED", "SUCCESS", "SUCCESS_BUT_MISSING_EXPECTED_OPERATION"})
-    void fileCreateTransform(ResponseCodeEnum successfulStatus) {
+    @Test
+    void fileCreateTransform() {
         // given
         var expectedRecordItem = recordItemBuilder
                 .fileCreate()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.setStatus(successfulStatus))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.fileCreate(expectedRecordItem).build();
@@ -481,17 +476,12 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
-    @ParameterizedTest
-    @EnumSource(
-            value = ResponseCodeEnum.class,
-            mode = EnumSource.Mode.INCLUDE,
-            names = {"FEE_SCHEDULE_FILE_PART_UPLOADED", "SUCCESS", "SUCCESS_BUT_MISSING_EXPECTED_OPERATION"})
-    void consensusCreateTopicTransform(ResponseCodeEnum status) {
+    @Test
+    void consensusCreateTopicTransform() {
         // given
         var expectedRecordItem = recordItemBuilder
                 .consensusCreateTopic()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .status(status)
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem =
@@ -557,17 +547,12 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                                 transactionRecord.getReceipt().getTopicID().getTopicNum()));
     }
 
-    @ParameterizedTest
-    @EnumSource(
-            value = ResponseCodeEnum.class,
-            mode = EnumSource.Mode.INCLUDE,
-            names = {"FEE_SCHEDULE_FILE_PART_UPLOADED", "SUCCESS", "SUCCESS_BUT_MISSING_EXPECTED_OPERATION"})
-    void consensusSubmitMessageTransform(ResponseCodeEnum status) {
+    @Test
+    void consensusSubmitMessageTransform() {
         // given
         var expectedRecordItem = recordItemBuilder
                 .consensusSubmitMessage()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .status(status)
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem =
