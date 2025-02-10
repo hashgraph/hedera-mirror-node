@@ -19,6 +19,8 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_34_BLOCK;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_PROTO;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_ALIAS;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -59,12 +61,8 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
         // Given
         final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var spenderPublicKey = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
-        final var spenderPublicKeyHistorical = ByteString.fromHex(spenderPublicKey);
-        final var spenderAliasHistorical = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKeyHistorical.substring(2).toByteArray())));
         final var spenderEntity = accountEntityWithAliasPersistHistorical(
-                spenderAliasHistorical, spenderPublicKeyHistorical, testWeb3jService.getHistoricalRange());
+                SPENDER_ALIAS, SPENDER_PUBLIC_KEY, testWeb3jService.getHistoricalRange());
         final var nftAmountToMint = 2;
         final var nft = nftPersistHistorical(
                 nftAmountToMint,
@@ -91,12 +89,9 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
         // When
         final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var spenderPublicKey = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
-        final var spenderPublicKeyHistorical = ByteString.fromHex(spenderPublicKey);
-        final var spenderAliasHistorical = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKeyHistorical.substring(2).toByteArray())));
+
         final var spenderEntity = accountEntityWithAliasPersistHistorical(
-                spenderAliasHistorical, spenderPublicKeyHistorical, testWeb3jService.getHistoricalRange());
+                SPENDER_ALIAS, SPENDER_PUBLIC_KEY, testWeb3jService.getHistoricalRange());
         final var nftAmountToMint = 2;
         final var nft = nftPersistHistorical(
                 nftAmountToMint,
@@ -111,9 +106,8 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
         final var result = function.send();
 
         // Then
-        final var key = ByteString.fromHex(spenderPublicKey);
         final var expectedOutput = Address.wrap(
-                        Bytes.wrap(recoverAddressFromPubKey(key.substring(2).toByteArray())))
+                        Bytes.wrap(recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())))
                 .toString();
         assertThat(result).isEqualTo(expectedOutput);
         verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
@@ -124,12 +118,8 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
         // Given
         final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var spenderPublicKey = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
-        final var spenderPublicKeyHistorical = ByteString.fromHex(spenderPublicKey);
-        final var spenderAliasHistorical = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKeyHistorical.substring(2).toByteArray())));
         final var spenderEntity = accountEntityWithAliasPersistHistorical(
-                spenderAliasHistorical, spenderPublicKeyHistorical, testWeb3jService.getHistoricalRange());
+                SPENDER_ALIAS, SPENDER_PUBLIC_KEY, testWeb3jService.getHistoricalRange());
         final var nftAmountToMint = 3;
         final var nft = nftPersistHistorical(
                 nftAmountToMint,
