@@ -52,7 +52,6 @@ import lombok.CustomLog;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -270,7 +269,7 @@ public class OpcodeTracer implements HederaOperationTracer {
         return BytesDecoder.getAbiEncodedRevertReason(revertReason);
     }
 
-    private Map<Bytes, Bytes> getStorageUpdates(Address accountAddress) {
+    private Optional<Map<Bytes, Bytes>> getStorageUpdates(Address accountAddress) {
         Map<Bytes, Bytes> storageUpdates = new HashMap<>();
         MapWritableStates states = (MapWritableStates) mirrorNodeState.getWritableStates(ContractService.NAME);
 
@@ -282,7 +281,7 @@ public class OpcodeTracer implements HederaOperationTracer {
                     .collect(Collectors.toSet());
 
             if (modifiedKeys.isEmpty()) {
-                return storageUpdates;
+                return Optional.empty();
             }
 
             for (SlotKey slotKey : modifiedKeys) {
@@ -306,21 +305,13 @@ public class OpcodeTracer implements HederaOperationTracer {
                     e);
         }
 
-        return storageUpdates;
+        return storageUpdates.isEmpty() ? Optional.empty() : Optional.of(storageUpdates);
     }
 
     private Map<Bytes, Bytes> getModularizedUpdatedStorage(Address accountAddress) {
-        Map<Bytes, Bytes> storageUpdates = getStorageUpdates(accountAddress);
-
-        if (storageUpdates.isEmpty()) {
-            return Collections.emptySortedMap();
-        }
-
-        return storageUpdates.entrySet().stream()
-                .collect(Collectors.toMap(
-                        entry -> UInt256.fromBytes(entry.getKey()),
-                        entry -> UInt256.fromBytes(entry.getValue()),
-                        (a, b) -> b,
-                        TreeMap::new));
+        return getStorageUpdates(accountAddress)
+                .map(storageUpdates -> storageUpdates.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, TreeMap::new)))
+                .orElseGet(TreeMap::new);
     }
 }
