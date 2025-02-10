@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
+import static com.hedera.mirror.importer.util.Utility.DEFAULT_RUNNING_HASH_VERSION;
+
 import com.hedera.hapi.block.stream.output.protoc.StateIdentifier;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -24,8 +26,6 @@ import jakarta.inject.Named;
 
 @Named
 final class ConsensusSubmitMessageTransformer extends AbstractBlockItemTransformer {
-
-    private static final long DEFAULT_RUNNING_HASH_VERSION = 3;
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
