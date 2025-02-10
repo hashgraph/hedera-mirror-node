@@ -19,8 +19,10 @@ package com.hedera.mirror.importer.downloader.block.transformer;
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_NFTS;
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_TOKENS;
 
+import com.hedera.hapi.block.stream.output.protoc.MapUpdateChange;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
@@ -37,33 +39,34 @@ final class TokenMintTransformer extends AbstractBlockItemTransformer {
         for (var stateChanges : blockItem.stateChanges()) {
             for (var stateChange : stateChanges.getStateChangesList()) {
                 if (stateChange.hasMapUpdate()) {
+                    var mapUpdate = stateChange.getMapUpdate();
                     if (stateChange.getStateId() == STATE_ID_TOKENS.getNumber()) {
-                        var mapUpdate = stateChange.getMapUpdate();
-                        if (mapUpdate.hasValue()) {
-                            var value = mapUpdate.getValue();
-                            if (value.hasTokenValue()) {
-                                receiptBuilder.setNewTotalSupply(
-                                        value.getTokenValue().getTotalSupply());
-                                return;
-                            }
+                        if (setSupply(mapUpdate, receiptBuilder)) {
+                            return;
                         }
+                        ;
                     } else if (stateChange.getStateId() == STATE_ID_NFTS.getNumber()) {
-                        var mapUpdate = stateChange.getMapUpdate();
                         var key = mapUpdate.getKey();
                         if (key.hasNftIdKey()) {
                             receiptBuilder.addSerialNumbers(key.getNftIdKey().getSerialNumber());
-                            if (mapUpdate.hasValue()) {
-                                var value = mapUpdate.getValue();
-                                if (value.hasTokenValue()) {
-                                    receiptBuilder.setNewTotalSupply(
-                                            value.getTokenValue().getTotalSupply());
-                                }
-                            }
+                            setSupply(mapUpdate, receiptBuilder);
                         }
                     }
                 }
             }
         }
+    }
+
+    private boolean setSupply(MapUpdateChange mapUpdate, TransactionReceipt.Builder receiptBuilder) {
+        if (mapUpdate.hasValue()) {
+            var value = mapUpdate.getValue();
+            if (value.hasTokenValue()) {
+                receiptBuilder.setNewTotalSupply(value.getTokenValue().getTotalSupply());
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
