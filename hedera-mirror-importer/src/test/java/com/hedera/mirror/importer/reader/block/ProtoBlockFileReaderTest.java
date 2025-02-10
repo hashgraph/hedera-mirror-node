@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.reader.block;
 
+import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -36,21 +37,51 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.core.io.ClassPathResource;
 
-class ProtoBlockFileReaderTest {
+public class ProtoBlockFileReaderTest {
+
+    public static final List<BlockFile> TEST_BLOCK_FILES = List.of(
+            BlockFile.builder()
+                    .consensusStart(1738953031945593129L)
+                    .consensusEnd(1738953032202698150L)
+                    .count(7L)
+                    .digestAlgorithm(DigestAlgorithm.SHA_384)
+                    .hash(
+                            "847ec86e6da4d279e0445a983f198ccf1883a2c32a7f8c8f87361e1311417b2b8d7531211aa52454a7de2aa06c162bf4")
+                    .index(981L)
+                    .name(BlockFile.getBlockStreamFilename(981))
+                    .previousHash(
+                            "2b223b895e1a847579150a85a86e32e4aa42de0cc17a9f4e73f7f330e231515ece0fbf1818c29160a5f46da0268138d3")
+                    .roundStart(982L)
+                    .roundEnd(982L)
+                    .version(ProtoBlockFileReader.VERSION)
+                    .build(),
+            BlockFile.builder()
+                    .consensusStart(1738953032298721606L)
+                    .consensusEnd(1738953032428026822L)
+                    .count(6L)
+                    .digestAlgorithm(DigestAlgorithm.SHA_384)
+                    .hash(
+                            "df7c5f12ca2ee96bd42c4f08c52450bb5ee334092fdab4fc2b632b03bca9b6aebeabe77ff93b08685d4df20f99af13d6")
+                    .index(982L)
+                    .name(BlockFile.getBlockStreamFilename(982))
+                    .previousHash(
+                            "847ec86e6da4d279e0445a983f198ccf1883a2c32a7f8c8f87361e1311417b2b8d7531211aa52454a7de2aa06c162bf4")
+                    .roundStart(983L)
+                    .roundEnd(983L)
+                    .version(ProtoBlockFileReader.VERSION)
+                    .build());
+    private static final long TIMESTAMP = 1738889423L;
 
     private final ProtoBlockFileReader reader = new ProtoBlockFileReader();
 
@@ -77,12 +108,12 @@ class ProtoBlockFileReaderTest {
                         .build())
                 .build();
         byte[] bytes = gzip(block);
-        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", bytes);
+        var streamFileData = StreamFileData.from(BlockFile.getBlockStreamFilename(1), bytes);
         var expected = BlockFile.builder()
                 .loadStart(streamFileData.getStreamFilename().getTimestamp())
                 .name(streamFileData.getFilename())
                 .recordFileItem(RecordFileItem.getDefaultInstance())
-                .version(7)
+                .version(ProtoBlockFileReader.VERSION)
                 .build();
 
         // when
@@ -93,9 +124,28 @@ class ProtoBlockFileReaderTest {
     }
 
     @Test
+    void noEventTransactions() {
+        var roundHeader = BlockItem.newBuilder().setRoundHeader(RoundHeader.getDefaultInstance());
+        var eventHeader = BlockItem.newBuilder().setEventHeader(EventHeader.getDefaultInstance());
+        var block = Block.newBuilder()
+                .addItems(blockHeader())
+                .addItems(roundHeader)
+                .addItems(eventHeader)
+                .addItems(blockProof())
+                .build();
+        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", gzip(block));
+        assertThat(reader.read(streamFileData))
+                .returns(TIMESTAMP * NANOS_PER_SECOND, BlockFile::getConsensusEnd)
+                .returns(TIMESTAMP * NANOS_PER_SECOND, BlockFile::getConsensusStart)
+                .returns(0L, BlockFile::getCount)
+                .returns(List.of(), BlockFile::getItems)
+                .returns(ProtoBlockFileReader.VERSION, BlockFile::getVersion);
+    }
+
+    @Test
     void throwWhenMissingBlockHeader() {
         var block = Block.newBuilder().addItems(blockProof()).build();
-        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", gzip(block));
+        var streamFileData = StreamFileData.from(BlockFile.getBlockStreamFilename(1), gzip(block));
         assertThatThrownBy(() -> reader.read(streamFileData))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Missing block header");
@@ -104,7 +154,7 @@ class ProtoBlockFileReaderTest {
     @Test
     void throwWhenMissingBlockProof() {
         var block = Block.newBuilder().addItems(blockHeader()).build();
-        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", gzip(block));
+        var streamFileData = StreamFileData.from(BlockFile.getBlockStreamFilename(1), gzip(block));
         assertThatThrownBy(() -> reader.read(streamFileData))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Missing block proof");
@@ -121,7 +171,7 @@ class ProtoBlockFileReaderTest {
                 .addItems(eventTransaction())
                 .addItems(blockProof())
                 .build();
-        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", gzip(block));
+        var streamFileData = StreamFileData.from(BlockFile.getBlockStreamFilename(1), gzip(block));
         assertThatThrownBy(() -> reader.read(streamFileData))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Missing transaction result");
@@ -144,7 +194,7 @@ class ProtoBlockFileReaderTest {
                 .addItems(transactionResult)
                 .addItems(blockProof())
                 .build();
-        var streamFileData = StreamFileData.from("000000000000000000000000000000000001.blk.gz", gzip(block));
+        var streamFileData = StreamFileData.from(BlockFile.getBlockStreamFilename(1), gzip(block));
         assertThatThrownBy(() -> reader.read(streamFileData))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasMessageContaining("Failed to deserialize Transaction");
@@ -153,6 +203,7 @@ class ProtoBlockFileReaderTest {
     private BlockItem blockHeader() {
         return BlockItem.newBuilder()
                 .setBlockHeader(BlockHeader.newBuilder()
+                        .setFirstTransactionConsensusTime(Timestamp.newBuilder().setSeconds(TIMESTAMP))
                         .setPreviousBlockHash(ByteString.copyFrom(TestUtils.generateRandomByteArray(48))))
                 .build();
     }
@@ -182,73 +233,19 @@ class ProtoBlockFileReaderTest {
                 .build();
     }
 
-    @SneakyThrows
-    private static byte[] gzip(Block block) {
-        try (var bos = new ByteArrayOutputStream();
-                var gos = new GzipCompressorOutputStream(bos)) {
-            gos.write(block.toByteArray());
-            gos.finish();
-            return bos.toByteArray();
-        }
+    private byte[] gzip(Block block) {
+        return TestUtils.gzip(block.toByteArray());
     }
 
     @SneakyThrows
     private static Stream<Arguments> readTestArgumentsProvider() {
-        List<Arguments> argumentsList = new ArrayList<>();
-
-        String filename = "000000000000000000000000000007858853.blk.gz";
-        long index = 7858853;
-        long round = index + 1;
-        var file = new ClassPathResource("data/blockstreams/" + filename).getFile();
-        var streamFileData = StreamFileData.from(file);
-        var expected = BlockFile.builder()
-                .bytes(streamFileData.getBytes())
-                .consensusStart(1736197012160646000L)
-                .consensusEnd(1736197012160646001L)
-                .count(2L)
-                .digestAlgorithm(DigestAlgorithm.SHA_384)
-                .hash(
-                        "581caa8ab1fad535a0fac97957c5c0cf44c528ee55724353b4bab9093083fda32429f73248bc3128e329bbdfa1967d20")
-                .index(index)
-                .loadStart(streamFileData.getStreamFilename().getTimestamp())
-                .name(filename)
-                .previousHash(
-                        "ba1a0222099d542425f6915053b7f15e3b75fd680b0d84ca6d41fbffcd38f8fb5ac6ab6a235e69f7ae23118d1996c7f1")
-                .roundStart(round)
-                .roundEnd(round)
-                .size(streamFileData.getBytes().length)
-                .version(7)
-                .build();
-        argumentsList.add(Arguments.of(filename, streamFileData, expected));
-
-        // A block without event transactions, note consensusStart and consensusEnd are both null due to the bug that
-        // BlockHeader.first_transaction_consensus_time is null
-        filename = "000000000000000000000000000007858854.blk.gz";
-        index = 7858854;
-        round = index + 1;
-        file = new ClassPathResource("data/blockstreams/" + filename).getFile();
-        streamFileData = StreamFileData.from(file);
-        // Verifies the calculated hash of the previous block matches the previous hash in this (the next) block file
-        String previousHash = expected.getHash();
-        expected = BlockFile.builder()
-                .bytes(streamFileData.getBytes())
-                .consensusStart(null)
-                .consensusEnd(null)
-                .count(0L)
-                .digestAlgorithm(DigestAlgorithm.SHA_384)
-                .hash(
-                        "ef32f163bee6553087002310467b970b1de2c8cbec2eab46f0d0c58ff34043d080f43c9e3c759956fda19fc9f5a5966b")
-                .index(index)
-                .loadStart(streamFileData.getStreamFilename().getTimestamp())
-                .name(filename)
-                .previousHash(previousHash)
-                .roundStart(round)
-                .roundEnd(round)
-                .size(streamFileData.getBytes().length)
-                .version(7)
-                .build();
-        argumentsList.add(Arguments.of(filename, streamFileData, expected));
-
-        return argumentsList.stream();
+        return TEST_BLOCK_FILES.stream().map(blockFile -> {
+            var file = TestUtils.getResource("data/blockstreams/" + blockFile.getName());
+            var streamFileData = StreamFileData.from(file);
+            blockFile.setBytes(streamFileData.getBytes());
+            blockFile.setLoadStart(streamFileData.getStreamFilename().getTimestamp());
+            blockFile.setSize(streamFileData.getBytes().length);
+            return Arguments.of(blockFile.getName(), streamFileData, blockFile);
+        });
     }
 }

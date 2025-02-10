@@ -24,6 +24,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.google.common.collect.Range;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -72,6 +74,7 @@ import org.web3j.tx.Contract;
 public abstract class AbstractContractCallServiceTest extends Web3IntegrationTest {
 
     protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
+    protected static final long DEFAULT_ACCOUNT_BALANCE = 100_000_000_000_000_000L;
 
     @Resource
     protected TestWeb3jService testWeb3jService;
@@ -110,9 +113,19 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         treasuryEntity = domainBuilder
                 .entity()
-                .customize(e -> e.id(2L).num(2L).balance(5000000000000000000L))
+                .customize(e -> e.id(2L)
+                        .num(2L)
+                        .balance(5000000000000000000L)
+                        .createdTimestamp(genesisRecordFile.getConsensusStart())
+                        .timestampRange(Range.atLeast(genesisRecordFile.getConsensusStart())))
                 .persist();
-        domainBuilder.entity().customize(e -> e.id(98L).num(98L)).persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(98L)
+                        .num(98L)
+                        .createdTimestamp(genesisRecordFile.getConsensusStart())
+                        .timestampRange(Range.atLeast(genesisRecordFile.getConsensusStart())))
+                .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(
@@ -228,9 +241,57 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     /**
-     * Persists fungible token in the token db table.
      *
-     * @param tokenEntity     The entity from the entity db table related to the token
+     * @return Token object that is persisted in db
+     */
+    protected Token fungibleTokenPersist() {
+        return fungibleTokenCustomizable(t -> {});
+    }
+
+    /**
+     *
+     * @param treasuryEntityId - the treasuryEntityId that has to be set in the token
+     * @return Token object that is persisted in db
+     */
+    protected Token fungibleTokenPersistWithTreasuryAccount(final EntityId treasuryEntityId) {
+        return fungibleTokenCustomizable(t -> t.treasuryAccountId(treasuryEntityId));
+    }
+
+    /**
+     *
+     * @param treasuryEntity - the treasuryEntity which has to be set in the token
+     * @param kycKey - the kycKey that has to be set in the token
+     * @return Token object that is persisted in db
+     */
+    protected Token fungibleTokenPersistWithTreasuryAccountAndKYCKey(
+            final EntityId treasuryEntity, final byte[] kycKey) {
+        return fungibleTokenCustomizable(
+                t -> t.treasuryAccountId(treasuryEntity).kycKey(kycKey));
+    }
+
+    /**
+     * Method used to customize different fields of a token and persist it in db
+     * @param customizer - the consumer used to customize the token
+     * @return Token object which is persisted in the db
+     */
+    protected Token fungibleTokenCustomizable(Consumer<Token.TokenBuilder<?, ?>> customizer) {
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+
+        return domainBuilder
+                .token()
+                .customize(t -> {
+                    t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON);
+                    customizer.accept(t); // Apply any customizations provided
+                })
+                .persist();
+    }
+
+    /**
+     * Creates fungible token in the token db table.
+     * The token table stores the properties specific for tokens and each record refers to
+     * another one in the entity table, which has the properties common for all entities.
+     * @param tokenEntity     The entity from the entity db table related to the created token table record
      * @param treasuryAccount The account holding the initial token supply
      */
     protected Token fungibleTokenPersist(Entity tokenEntity, Entity treasuryAccount) {
@@ -307,19 +368,47 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
+    /**
+     * Creates entity of type account in the entity db table.
+     * The entity table stores the properties common for all type of entities.
+     */
     protected Entity accountEntityPersist() {
-        return domainBuilder
-                .entity()
-                .customize(e ->
-                        e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(100_000_000_000_000_000L))
-                .persist();
+        return accountEntityPersistCustomizable(
+                e -> e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(DEFAULT_ACCOUNT_BALANCE));
     }
 
     protected Entity accountEntityWithEvmAddressPersist() {
-        return domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).balance(1_000_000_000_000_000L))
-                .persist();
+        return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT).balance(DEFAULT_ACCOUNT_BALANCE));
+    }
+
+    /**
+     *
+     * @param alias - the alias with which the account is created
+     * @param publicKey - the public key with which the account is created
+     * @return Entity object that is persisted in the db
+     */
+    protected Entity accountPersistWithAlias(final Address alias, final ByteString publicKey) {
+        return accountEntityPersistCustomizable(
+                e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()));
+    }
+
+    /**
+     *
+     * @param balance - the balance with which the account is created
+     * @return Entity object that is persisted in the db
+     */
+    protected Entity accountEntityPersistWithBalance(final long balance) {
+        return accountEntityPersistCustomizable(
+                e -> e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(balance));
+    }
+
+    /**
+     *
+     * @param customizer - the consumer with which to customize the entity
+     * @return
+     */
+    protected Entity accountEntityPersistCustomizable(Consumer<Entity.EntityBuilder<?, ?>> customizer) {
+        return domainBuilder.entity().customize(customizer).persist();
     }
 
     /**
@@ -330,6 +419,12 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     protected void tokenAccountPersist(final Entity token, final Entity account) {
         tokenAccount(
                 ta -> ta.tokenId(token.getId()).accountId(account.toEntityId().getId()));
+    }
+
+    protected void tokenAccountPersist(final Entity token, final Entity account, Long balance) {
+        tokenAccount(ta -> ta.tokenId(token.getId())
+                .accountId(account.toEntityId().getId())
+                .balance(balance));
     }
 
     protected TokenAccount tokenAccount(Consumer<TokenAccount.TokenAccountBuilder<?, ?>> consumer) {
@@ -345,6 +440,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     /**
      * Creates a non-fungible token instance with a specific serial number(a record in the nft table is persisted). The
      * instance is tied to a specific token in the token db table.
+     * ownerId with value null indicates that the nft instance holder is the treasury account
      *
      * @param token           the token entity that the nft instance is linked to by tokenId
      * @param nftSerialNumber the unique serial number of the nft instance

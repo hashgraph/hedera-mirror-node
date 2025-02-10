@@ -20,30 +20,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.ImporterProperties;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisablePartitionMaintenance
@@ -53,8 +52,6 @@ import org.springframework.test.context.TestPropertySource;
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.31.1")
 class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
-
-    private final @Owner JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.31.2__remove_invalid_entities.sql")
     private final File migrationSql;
@@ -69,7 +66,7 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void verifyEntityTypeMigrationEmpty() throws Exception {
+    void verifyEntityTypeMigrationEmpty() {
         // migration
         migrate();
 
@@ -78,7 +75,7 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void verifyEntityTypeMigrationValidEntities() throws Exception {
+    void verifyEntityTypeMigrationValidEntities() {
         insertEntity(1, EntityType.ACCOUNT);
         insertEntity(2, EntityType.CONTRACT);
         insertEntity(3, EntityType.FILE);
@@ -101,7 +98,7 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void verifyEntityTypeMigrationInvalidEntities() throws Exception {
+    void verifyEntityTypeMigrationInvalidEntities() {
         var typeMismatchedAccountEntityId = insertEntity(1, EntityType.TOPIC);
         var typeMismatchedContractEntityId = insertEntity(2, EntityType.TOKEN);
         var typeMismatchedFileEntityId = insertEntity(3, EntityType.CONTRACT);
@@ -127,25 +124,25 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
         assertEquals(7, transactionRepository.count());
 
         assertAll(
-                () -> assertThat(findEntityById(typeMismatchedAccountEntityId.getId()))
-                        .extracting(Entity::getType)
+                () -> assertThat(findEntityById(typeMismatchedAccountEntityId.id()))
+                        .extracting(MigrationEntity::type)
                         .isEqualTo(EntityType.ACCOUNT),
-                () -> assertThat(findEntityById(typeMismatchedContractEntityId.getId()))
-                        .extracting(Entity::getType)
+                () -> assertThat(findEntityById(typeMismatchedContractEntityId.id()))
+                        .extracting(MigrationEntity::type)
                         .isEqualTo(EntityType.CONTRACT),
-                () -> assertThat(findEntityById(typeMismatchedFileEntityId.getId()))
-                        .extracting(Entity::getType)
+                () -> assertThat(findEntityById(typeMismatchedFileEntityId.id()))
+                        .extracting(MigrationEntity::type)
                         .isEqualTo(EntityType.FILE),
-                () -> assertThat(findEntityById(typeMismatchedTopicEntityId.getId()))
-                        .extracting(Entity::getType)
+                () -> assertThat(findEntityById(typeMismatchedTopicEntityId.id()))
+                        .extracting(MigrationEntity::type)
                         .isEqualTo(EntityType.TOPIC),
-                () -> assertThat(findEntityById(typeMismatchedTokenEntityId.getId()))
-                        .extracting(Entity::getType)
+                () -> assertThat(findEntityById(typeMismatchedTokenEntityId.id()))
+                        .extracting(MigrationEntity::type)
                         .isEqualTo(EntityType.TOKEN));
     }
 
     @Test
-    void verifyEntityTypeMigrationInvalidEntitiesMultiBatch() throws Exception {
+    void verifyEntityTypeMigrationInvalidEntitiesMultiBatch() {
         insertEntity(1, EntityType.ACCOUNT);
         insertEntity(2, EntityType.CONTRACT);
         insertEntity(3, EntityType.FILE);
@@ -182,33 +179,37 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
         assertEquals(12, transactionRepository.count());
 
         assertAll(
-                () -> assertThat(findEntityById(typeMismatchedAccountEntityId.getId()))
-                        .extracting(Entity::getType)
+                () -> assertThat(findEntityById(typeMismatchedAccountEntityId.id()))
+                        .extracting(MigrationEntity::type)
                         .isEqualTo(EntityType.ACCOUNT),
-                () -> assertThat(findEntityById(typeMismatchedContractEntityId.getId()))
-                        .extracting(Entity::getType)
+                () -> assertThat(findEntityById(typeMismatchedContractEntityId.id()))
+                        .extracting(MigrationEntity::type)
                         .isEqualTo(EntityType.CONTRACT),
-                () -> assertThat(findEntityById(typeMismatchedFileEntityId.getId()))
-                        .extracting(Entity::getType)
+                () -> assertThat(findEntityById(typeMismatchedFileEntityId.id()))
+                        .extracting(MigrationEntity::type)
                         .isEqualTo(EntityType.FILE),
-                () -> assertThat(findEntityById(typeMismatchedTopicEntityId.getId()))
-                        .extracting(Entity::getType)
+                () -> assertThat(findEntityById(typeMismatchedTopicEntityId.id()))
+                        .extracting(MigrationEntity::type)
                         .isEqualTo(EntityType.TOPIC),
-                () -> assertThat(findEntityById(typeMismatchedTokenEntityId.getId()))
-                        .extracting(Entity::getType)
+                () -> assertThat(findEntityById(typeMismatchedTokenEntityId.id()))
+                        .extracting(MigrationEntity::type)
                         .isEqualTo(EntityType.TOKEN));
     }
 
+    private EntityId entityId(long num) {
+        return EntityId.of(0, 1, num);
+    }
+
     private Transaction transaction(
-            long consensusNs, long id, ResponseCodeEnum result, TransactionType transactionType) {
+            long consensusNs, long num, ResponseCodeEnum result, TransactionType transactionType) {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusTimestamp(consensusNs);
-        transaction.setEntityId(EntityId.of(0, 1, id));
+        transaction.setEntityId(entityId(num));
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
-        transaction.setNodeAccountId(EntityId.of(0, 1, 3));
-        transaction.setPayerAccountId(EntityId.of(0, 1, 98));
+        transaction.setNodeAccountId(entityId(3));
+        transaction.setPayerAccountId(entityId(98));
         transaction.setResult(result.getNumber());
         transaction.setType(transactionType.getProtoId());
         transaction.setValidStartNs(20L);
@@ -217,12 +218,9 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
         return transaction;
     }
 
-    private EntityId entityId(long id) {
-        return EntityId.of(0, 1, id);
-    }
-
-    private void migrate() throws IOException {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+    @SneakyThrows
+    private void migrate() {
+        ownerJdbcTemplate.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
     /**
@@ -255,63 +253,87 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
     /**
      * Insert entity object using only columns supported before V_1_36.2
      *
-     * @param id long id
+     * @param num long id
      * @param type EntityType
      */
-    private Entity insertEntity(long id, EntityType type) {
-        var entityId = entityId(id);
-        var entity = entityId.toEntity();
-        entity.setType(type);
-        entity.setMemo("abc" + (char) 0);
-        entity.setAutoRenewAccountId(EntityId.of("1.2.3").getId());
-        entity.setProxyAccountId(EntityId.of("4.5.6"));
+    private MigrationEntity insertEntity(long num, EntityType type) {
+        var entityId = entityId(num);
+        var entity = MigrationEntity.builder()
+                .autoRenewAccountId(EntityId.of("1.2.3").getId())
+                .id(entityId.getId())
+                .memo(DomainUtils.sanitize("abc" + (char) 0))
+                .num(entityId.getNum())
+                .proxyAccountId(EntityId.of("4.5.6").getId())
+                .realm(entityId.getRealm())
+                .shard(entityId.getShard())
+                .type(type)
+                .build();
 
         jdbcOperations.update(
-                "insert into t_entities (auto_renew_account_id, auto_renew_period, deleted, entity_num, "
-                        + "entity_realm, entity_shard, ed25519_public_key_hex, exp_time_ns, fk_entity_type_id, "
-                        + "id, key, memo, proxy_account_id, submit_key) values"
-                        + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                entity.getAutoRenewAccountId(),
-                entity.getAutoRenewPeriod(),
-                entity.getDeleted(),
-                entity.getNum(),
-                entity.getRealm(),
-                entity.getShard(),
-                entity.getPublicKey(),
-                entity.getExpirationTimestamp(),
-                entity.getType().getId(),
-                entity.getId(),
-                entity.getKey(),
-                entity.getMemo(),
-                entity.getProxyAccountId().getId(),
-                entity.getSubmitKey());
+                """
+                    insert into t_entities (auto_renew_account_id, auto_renew_period, deleted, entity_num,
+                      entity_realm, entity_shard, ed25519_public_key_hex, exp_time_ns, fk_entity_type_id,
+                      id, key, memo, proxy_account_id, submit_key)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                entity.autoRenewAccountId(),
+                entity.autoRenewPeriod(),
+                entity.deleted(),
+                entity.num(),
+                entity.realm(),
+                entity.shard(),
+                entity.publicKey(),
+                entity.expirationTimestamp(),
+                entity.type().getId(),
+                entity.id(),
+                entity.key(),
+                entity.memo(),
+                entity.proxyAccountId(),
+                entity.submitKey());
         return entity;
     }
 
-    private int getEntityCount() {
+    private Integer getEntityCount() {
         return jdbcOperations.queryForObject("select count(*) from t_entities", Integer.class);
     }
 
-    private Entity findEntityById(long id) {
+    private MigrationEntity findEntityById(long id) {
         return jdbcOperations.queryForObject(
                 "select * from t_entities where id = ?",
                 (rs, rowNum) -> {
-                    Entity entity = new Entity();
-                    entity.setAutoRenewAccountId(rs.getLong("auto_renew_account_id"));
-                    entity.setAutoRenewPeriod(rs.getLong("auto_renew_period"));
-                    entity.setDeleted(rs.getBoolean("deleted"));
-                    entity.setExpirationTimestamp(rs.getLong("exp_time_ns"));
-                    entity.setId(rs.getLong("id"));
-                    entity.setKey(rs.getBytes("key"));
-                    entity.setMemo(rs.getString("memo"));
-                    entity.setNum(rs.getLong("entity_num"));
-                    entity.setRealm(rs.getLong("entity_realm"));
-                    entity.setShard(rs.getLong("entity_shard"));
-                    entity.setProxyAccountId(EntityId.of(rs.getLong("proxy_account_id")));
-                    entity.setSubmitKey(rs.getBytes("submit_key"));
-                    entity.setType(EntityType.fromId(rs.getInt("fk_entity_type_id")));
-                    return entity;
+                    return MigrationEntity.builder()
+                            .autoRenewAccountId(rs.getLong("auto_renew_account_id"))
+                            .autoRenewPeriod(rs.getLong("auto_renew_period"))
+                            .deleted(rs.getBoolean("deleted"))
+                            .expirationTimestamp(rs.getLong("exp_time_ns"))
+                            .id(rs.getLong("id"))
+                            .key(rs.getBytes("key"))
+                            .memo(rs.getString("memo"))
+                            .num(rs.getLong("entity_num"))
+                            .realm(rs.getLong("entity_realm"))
+                            .shard(rs.getLong("entity_shard"))
+                            .proxyAccountId(rs.getLong("proxy_account_id"))
+                            .submitKey(rs.getBytes("submit_key"))
+                            .type(EntityType.fromId(rs.getInt("fk_entity_type_id")))
+                            .build();
                 },
-                new Object[] {id});
+                id);
     }
+
+    @Builder
+    private record MigrationEntity(
+            Long autoRenewAccountId,
+            Long autoRenewPeriod,
+            Boolean deleted,
+            Long expirationTimestamp,
+            Long id,
+            byte[] key,
+            String memo,
+            Long num,
+            Long proxyAccountId,
+            String publicKey,
+            Long realm,
+            Long shard,
+            byte[] submitKey,
+            EntityType type) {}
 }

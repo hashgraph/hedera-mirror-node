@@ -33,6 +33,7 @@
         "symbol": "ORIGINALRDKSE",
         "custom_fees": [
           {
+            "entity_id": "0.0.1135",
             "fractional_fees": [
               {
                 "collector_account_id": "0.0.8901",
@@ -42,10 +43,10 @@
                 "numerator": "10"
               }
             ],
-            "timestamp_range": "[1234567899999999001,1234567899999999006)",
-            "token_id": "0.0.1135"
+            "timestamp_range": "[1234567899999999001,1234567899999999006)"
           },
           {
+            "entity_id": "0.0.1135",
             "fixed_fees": [
               {
                 "amount": "12",
@@ -82,8 +83,7 @@
                 "denominator": "131"
               }
             ],
-            "timestamp_range": "[1234567899999999007,)",
-            "token_id": "0.0.1135"
+            "timestamp_range": "[1234567899999999007,)"
           }
         ],
         "created_timestamp": "1234567890000000002",

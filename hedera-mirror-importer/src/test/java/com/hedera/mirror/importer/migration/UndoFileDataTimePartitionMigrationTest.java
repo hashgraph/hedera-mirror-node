@@ -18,9 +18,9 @@ package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV2;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +31,10 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
+@DisableRepeatableSqlMigration
 @EnabledIfV2
 @RequiredArgsConstructor
 @Tag("migration")
@@ -64,7 +64,6 @@ class UndoFileDataTimePartitionMigrationTest extends ImporterIntegrationTest {
 
     private final FileDataRepository fileDataRepository;
     private final Flyway flyway;
-    private final @Owner JdbcTemplate jdbcTemplate;
 
     @Value("classpath:db/migration/v2/V2.2.0__undo_file_data_time_partition.sql")
     private final Resource migrationSql;
@@ -75,7 +74,7 @@ class UndoFileDataTimePartitionMigrationTest extends ImporterIntegrationTest {
         var partitionStartDate = flywayPlaceHolder.get("partitionStartDate");
         var partitionTimeInterval = flywayPlaceHolder.get("partitionTimeInterval");
         var revertDdl = String.format(REVERT_DDL_TEMPLATE, partitionTimeInterval, partitionStartDate);
-        jdbcTemplate.execute(revertDdl);
+        ownerJdbcTemplate.execute(revertDdl);
     }
 
     @Test
@@ -96,7 +95,7 @@ class UndoFileDataTimePartitionMigrationTest extends ImporterIntegrationTest {
     private void runMigration() {
         try (var is = migrationSql.getInputStream()) {
             var script = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
-            jdbcTemplate.execute(script);
+            ownerJdbcTemplate.execute(script);
         }
     }
 }

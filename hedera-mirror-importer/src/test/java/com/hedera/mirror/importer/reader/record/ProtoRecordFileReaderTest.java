@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.importer.reader.record;
 
+import static com.hedera.mirror.importer.TestUtils.gzip;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Ints;
@@ -36,10 +38,7 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.io.ByteArrayOutputStream;
 import java.util.function.Function;
-import lombok.SneakyThrows;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
 
 class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
@@ -94,16 +93,6 @@ class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
         var recordFile = reader.read(streamFileData);
 
         assertThat(recordFile.getDigestAlgorithm()).isEqualTo(DigestAlgorithm.SHA_384);
-    }
-
-    @SneakyThrows
-    private byte[] gzip(byte[] data) {
-        try (var byteArrayOutputStream = new ByteArrayOutputStream();
-                var compressorOutputStream = new GzipCompressorOutputStream(byteArrayOutputStream)) {
-            compressorOutputStream.write(data);
-            compressorOutputStream.finish();
-            return byteArrayOutputStream.toByteArray();
-        }
     }
 
     private static class ProtoRecordStreamFile {

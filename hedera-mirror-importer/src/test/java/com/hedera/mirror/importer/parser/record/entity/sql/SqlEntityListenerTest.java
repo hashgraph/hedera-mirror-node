@@ -52,6 +52,7 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.common.domain.topic.Topic;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -94,6 +95,7 @@ import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
+import com.hedera.mirror.importer.repository.TopicRepository;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
@@ -157,6 +159,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenRepository tokenRepository;
     private final TokenTransferRepository tokenTransferRepository;
+    private final TopicRepository topicRepository;
     private final TopicMessageRepository topicMessageRepository;
     private final TransactionRepository transactionRepository;
     private final TransactionHashRepository transactionHashRepository;
@@ -715,7 +718,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
 
         var emptyCustomFee = domainBuilder
                 .customFee()
-                .customize(cf -> cf.tokenId(nonEmptyCustomFee.getTokenId())
+                .customize(cf -> cf.entityId(nonEmptyCustomFee.getEntityId())
                         .fixedFees(null)
                         .fractionalFees(null)
                         .royaltyFees(null))
@@ -1081,7 +1084,6 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         entityUpdate.setStakedAccountId(domainBuilder.id());
         entityUpdate.setStakedNodeId(-1L);
         entityUpdate.setStakePeriodStart(domainBuilder.number());
-        entityUpdate.setSubmitKey(domainBuilder.key());
         entityUpdate.setType(ACCOUNT);
 
         Entity entityDelete = entityCreate.toEntityId().toEntity();
@@ -1188,6 +1190,104 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         // then
         assertThat(entityTransactionRepository.findAll())
                 .containsExactlyInAnyOrder(entityTransaction1, entityTransaction2);
+    }
+
+    @Test
+    void onTopic() {
+        // given
+        var topic1 = domainBuilder.topic().get();
+        var topic2 = domainBuilder.topic().get();
+
+        // when
+        sqlEntityListener.onTopic(topic1);
+        sqlEntityListener.onTopic(topic2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(topicRepository.findAll()).containsExactlyInAnyOrder(topic1, topic2);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3, 4, 5})
+    void onTopicHistory(int commitIndex) {
+        var create = domainBuilder.topic().get();
+        sqlEntityListener.onTopic(create);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(topicRepository.findAll()).containsExactly(create);
+            assertThat(findHistory(Topic.class)).isEmpty();
+        }
+
+        var updateAdminKey = Topic.builder()
+                .adminKey(domainBuilder.bytes(16))
+                .id(create.getId())
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+        sqlEntityListener.onTopic(updateAdminKey);
+        var expectedHistory = new ArrayList<Topic>();
+        create.setTimestampUpper(updateAdminKey.getTimestampLower());
+        expectedHistory.add(create);
+        var current = create.toBuilder()
+                .adminKey(updateAdminKey.getAdminKey())
+                .timestampRange(updateAdminKey.getTimestampRange())
+                .build();
+        if (commitIndex > 2) {
+            completeFileAndCommit();
+            assertThat(topicRepository.findAll()).containsExactly(current);
+            assertThat(findHistory(Topic.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        }
+
+        var updateFeeScheduleKey = Topic.builder()
+                .feeScheduleKey(domainBuilder.bytes(16))
+                .id(create.getId())
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+        sqlEntityListener.onTopic(updateFeeScheduleKey);
+        expectedHistory.add(current.toBuilder()
+                .timestampRange(Range.closedOpen(current.getTimestampLower(), updateFeeScheduleKey.getTimestampLower()))
+                .build());
+        current.setFeeScheduleKey(updateFeeScheduleKey.getFeeScheduleKey());
+        current.setTimestampLower(updateFeeScheduleKey.getTimestampLower());
+        if (commitIndex > 3) {
+            completeFileAndCommit();
+            assertThat(topicRepository.findAll()).containsExactly(current);
+            assertThat(findHistory(Topic.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        }
+
+        var updateFeeExemptKeyList = Topic.builder()
+                .feeExemptKeyList(domainBuilder.bytes(16))
+                .id(create.getId())
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+        sqlEntityListener.onTopic(updateFeeExemptKeyList);
+        expectedHistory.add(current.toBuilder()
+                .timestampRange(
+                        Range.closedOpen(current.getTimestampLower(), updateFeeExemptKeyList.getTimestampLower()))
+                .build());
+        current.setFeeExemptKeyList(updateFeeExemptKeyList.getFeeExemptKeyList());
+        current.setTimestampLower(updateFeeExemptKeyList.getTimestampLower());
+        if (commitIndex > 4) {
+            completeFileAndCommit();
+            assertThat(topicRepository.findAll()).containsExactly(current);
+            assertThat(findHistory(Topic.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        }
+
+        var updateSubmitKey = Topic.builder()
+                .id(create.getId())
+                .submitKey(domainBuilder.bytes(16))
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+        sqlEntityListener.onTopic(updateSubmitKey);
+        expectedHistory.add(current.toBuilder()
+                .timestampRange(Range.closedOpen(current.getTimestampLower(), updateSubmitKey.getTimestampLower()))
+                .build());
+        current.setSubmitKey(updateSubmitKey.getSubmitKey());
+        current.setTimestampLower(updateSubmitKey.getTimestampLower());
+
+        completeFileAndCommit();
+
+        assertThat(topicRepository.findAll()).containsExactly(current);
+        assertThat(findHistory(Topic.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     @Test

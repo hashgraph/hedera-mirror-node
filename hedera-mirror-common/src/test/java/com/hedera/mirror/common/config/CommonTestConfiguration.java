@@ -29,9 +29,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.boot.testcontainers.lifecycle.TestcontainersStartup;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.transaction.support.TransactionOperations;
@@ -97,7 +99,6 @@ public class CommonTestConfiguration {
     }
 
     @Bean(POSTGRESQL)
-    @ServiceConnection("postgresql")
     PostgreSQLContainer<?> postgresql() {
         var imageName = v2 ? "gcr.io/mirrornode/citus:12.1.1" : "postgres:16-alpine";
         var dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor("postgres");
@@ -112,6 +113,37 @@ public class CommonTestConfiguration {
                 .withLogConsumer(logConsumer)
                 .withPassword("mirror_node_pass")
                 .withUsername("mirror_node");
+    }
+
+    // Avoid using @ServiceConnection and use our own custom connection details so we can pass mirror_importer as user
+    @Bean
+    JdbcConnectionDetails jdbcConnectionDetails(
+            DataSourceProperties dataSourceProperties, PostgreSQLContainer<?> postgresql) {
+        TestcontainersStartup.start(postgresql);
+        return new JdbcConnectionDetails() {
+
+            @Override
+            public String getDriverClassName() {
+                return postgresql.getDriverClassName();
+            }
+
+            @Override
+            public String getJdbcUrl() {
+                return postgresql.getJdbcUrl();
+            }
+
+            @Override
+            public String getPassword() {
+                var password = dataSourceProperties.getPassword();
+                return password.contains("importer") ? password : postgresql.getPassword();
+            }
+
+            @Override
+            public String getUsername() {
+                var username = dataSourceProperties.getUsername();
+                return username.contains("importer") ? username : postgresql.getUsername();
+            }
+        };
     }
 
     @RequiredArgsConstructor

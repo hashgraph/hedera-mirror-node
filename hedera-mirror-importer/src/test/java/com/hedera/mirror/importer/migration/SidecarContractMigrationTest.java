@@ -38,10 +38,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.TreeSet;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor
+@Tag("migration")
 class SidecarContractMigrationTest extends ImporterIntegrationTest {
 
     private final ContractRepository contractRepository;

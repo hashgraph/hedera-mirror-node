@@ -44,33 +44,41 @@ class TopicMapperTest {
     @Test
     void map() {
         var key = domainBuilder.key(KeyCase.ED25519);
-        var topic =
-                domainBuilder.entity().customize(e -> e.key(key).submitKey(key)).get();
+        var entity = domainBuilder.topicEntity().get();
+        var topic = domainBuilder
+                .topic()
+                .customize(t -> t.adminKey(key)
+                        .createdTimestamp(entity.getCreatedTimestamp())
+                        .id(entity.getId())
+                        .submitKey(key)
+                        .timestampRange(entity.getTimestampRange()))
+                .get();
 
-        assertThat(mapper.map(topic))
+        assertThat(mapper.map(entity, topic))
                 .returns(TypeEnum.ED25519, t -> t.getAdminKey().getType())
                 .returns(
-                        Hex.encodeHexString(topic.getKey()),
+                        Hex.encodeHexString(topic.getAdminKey()),
                         t -> "1220" + t.getAdminKey().getKey())
-                .returns(EntityId.of(topic.getAutoRenewAccountId()).toString(), Topic::getAutoRenewAccount)
-                .returns(topic.getAutoRenewPeriod(), Topic::getAutoRenewPeriod)
+                .returns(EntityId.of(entity.getAutoRenewAccountId()).toString(), Topic::getAutoRenewAccount)
+                .returns(entity.getAutoRenewPeriod(), Topic::getAutoRenewPeriod)
                 .returns(commonMapper.mapTimestamp(topic.getCreatedTimestamp()), Topic::getCreatedTimestamp)
-                .returns(topic.getDeleted(), Topic::getDeleted)
-                .returns(topic.getMemo(), Topic::getMemo)
+                .returns(entity.getDeleted(), Topic::getDeleted)
+                .returns(entity.getMemo(), Topic::getMemo)
                 .returns(TypeEnum.ED25519, t -> t.getSubmitKey().getType())
                 .returns(
-                        Hex.encodeHexString(topic.getKey()),
+                        Hex.encodeHexString(topic.getSubmitKey()),
                         t -> "1220" + t.getSubmitKey().getKey())
                 .returns(commonMapper.mapTimestamp(topic.getTimestampLower()), t -> t.getTimestamp()
                         .getFrom())
                 .returns(null, t -> t.getTimestamp().getTo())
-                .returns(topic.toEntityId().toString(), Topic::getTopicId);
+                .returns(entity.toEntityId().toString(), Topic::getTopicId);
     }
 
     @Test
     void mapNulls() {
-        var topic = new Entity();
-        assertThat(mapper.map(topic))
+        var topicEntity = new Entity();
+        var topic = new com.hedera.mirror.common.domain.topic.Topic();
+        assertThat(mapper.map(topicEntity, topic))
                 .returns(null, Topic::getAdminKey)
                 .returns(null, Topic::getAutoRenewAccount)
                 .returns(null, Topic::getAutoRenewPeriod)

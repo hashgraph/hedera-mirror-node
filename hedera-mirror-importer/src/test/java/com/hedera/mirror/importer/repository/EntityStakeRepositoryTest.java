@@ -33,6 +33,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityStake;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.util.Utility;
 import java.time.Duration;
@@ -52,7 +53,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.transaction.support.TransactionOperations;
 
 @RequiredArgsConstructor
-class EntityStakeRepositoryTest extends AbstractRepositoryTest {
+class EntityStakeRepositoryTest extends ImporterIntegrationTest {
 
     private static final String[] ENTITY_STATE_START_FIELDS =
             new String[] {"balance", "id", "stakedAccountId", "stakedNodeId", "stakePeriodStart"};
@@ -578,7 +579,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .entity()
                 .customize(e -> e.stakedAccountId(domainBuilder.id()))
                 .persist();
-        domainBuilder.topic().persist();
+        domainBuilder.topicEntity().persist();
         var entity8 = domainBuilder
                 .entity()
                 .customize(e -> e.stakedAccountId(entity6.getId()))
@@ -692,7 +693,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .customize(e -> e.stakedNodeId(2L).type(CONTRACT))
                 .persist();
         domainBuilder.entity().customize(e -> e.deleted(true)).persist();
-        domainBuilder.topic().persist();
+        domainBuilder.topicEntity().persist();
         var nodeStake = domainBuilder.nodeStake().persist();
         var stakingRewardAccount = domainBuilder
                 .entity(STAKING_REWARD_ACCOUNT, nodeStake.getConsensusTimestamp() - 10)

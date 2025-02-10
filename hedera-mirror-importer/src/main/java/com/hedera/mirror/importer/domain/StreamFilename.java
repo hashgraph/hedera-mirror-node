@@ -23,6 +23,7 @@ import static org.apache.commons.io.FilenameUtils.removeExtension;
 
 import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.transaction.BlockFile;
 import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import java.time.Instant;
@@ -123,6 +124,10 @@ public class StreamFilename implements Comparable<StreamFilename> {
         }
         builder.append(this.filename);
         this.filePath = builder.toString();
+    }
+
+    public static StreamFilename from(long blockNumber) {
+        return from(BlockFile.getBlockStreamFilename(blockNumber));
     }
 
     public static StreamFilename from(String filePath) {

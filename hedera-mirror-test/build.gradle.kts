@@ -49,7 +49,7 @@ dependencies {
     testImplementation(
         group = "io.netty",
         name = "netty-resolver-dns-native-macos",
-        classifier = "osx-aarch_64"
+        classifier = "osx-aarch_64",
     )
     testImplementation("jakarta.inject:jakarta.inject-api")
     testImplementation("net.java.dev.jna:jna")
@@ -94,7 +94,7 @@ tasks.shadowJar {
     configurations =
         listOf(
             project.configurations.runtimeClasspath.get(),
-            project.configurations.testRuntimeClasspath.get()
+            project.configurations.testRuntimeClasspath.get(),
         )
     manifest { attributes["Main-Class"] = "com.hedera.mirror.test.TestApplication" }
     mergeServiceFiles()

@@ -57,7 +57,7 @@ public class BlockFileTransformer implements StreamFileTransformer<RecordFile, B
                 .hapiVersionMinor(minor)
                 .hapiVersionPatch(patch)
                 .hash(blockFile.getHash())
-                .index(blockHeader.getNumber())
+                .index(blockFile.getIndex())
                 .items(getRecordItems(blockFile.getItems(), hapiVersion))
                 .loadEnd(blockFile.getLoadEnd())
                 .loadStart(blockFile.getLoadStart())

@@ -22,12 +22,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
-class AddressBookRepositoryTest extends AbstractRepositoryTest {
+class AddressBookRepositoryTest extends ImporterIntegrationTest {
 
     private final AddressBookRepository addressBookRepository;
 

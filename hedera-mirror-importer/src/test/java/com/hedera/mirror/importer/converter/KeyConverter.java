@@ -23,15 +23,16 @@ import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
 public final class KeyConverter implements ArgumentConverter {
+
     @Override
     public Object convert(Object input, ParameterContext parameterContext) throws ArgumentConversionException {
         if (null == input) {
             return null;
         }
-        if (!(input instanceof String)) {
+        if (!(input instanceof String inputString)) {
             throw new ArgumentConversionException(input + " is not a string");
         }
-        var inputString = (String) input;
+
         if (inputString.isEmpty()) {
             return Key.newBuilder().build();
         } else {

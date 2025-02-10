@@ -351,10 +351,10 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
                 .build();
         domainBuilder
                 .customFee()
-                .customize(f -> f.fixedFees(List.of(fixedFee))
+                .customize(f -> f.entityId(tokenEntity.getId())
+                        .fixedFees(List.of(fixedFee))
                         .fractionalFees(List.of())
                         .royaltyFees(List.of())
-                        .tokenId(tokenEntity.getId())
                         .timestampRange(historicalRange))
                 .persist();
 
@@ -394,10 +394,10 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
                 .build();
         domainBuilder
                 .customFee()
-                .customize(f -> f.fractionalFees(List.of(fractionalFee))
+                .customize(f -> f.entityId(tokenEntity.getId())
+                        .fractionalFees(List.of(fractionalFee))
                         .fixedFees(List.of())
                         .royaltyFees(List.of())
-                        .tokenId(tokenEntity.getId())
                         .timestampRange(historicalRange))
                 .persist();
 
@@ -439,10 +439,10 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
                 .build();
         domainBuilder
                 .customFee()
-                .customize(f -> f.royaltyFees(List.of(royaltyFee))
+                .customize(f -> f.entityId(tokenEntity.getId())
+                        .royaltyFees(List.of(royaltyFee))
                         .fixedFees(List.of())
                         .fractionalFees(List.of())
-                        .tokenId(tokenEntity.getId())
                         .timestampRange(historicalRange))
                 .persist();
 

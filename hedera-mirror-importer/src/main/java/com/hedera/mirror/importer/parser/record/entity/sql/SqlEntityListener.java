@@ -44,6 +44,7 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.topic.Topic;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -178,7 +179,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onCustomFee(CustomFee customFee) throws ImporterException {
-        context.merge(customFee.getTokenId(), customFee, this::mergeCustomFee);
+        context.merge(customFee.getEntityId(), customFee, this::mergeCustomFee);
     }
 
     @Override
@@ -332,11 +333,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    @SuppressWarnings("java:S2259")
     public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
         if (entityProperties.getPersist().isTrackBalance()) {
             var tokenAccount = new TokenAccount();
-            var tokenTransferId = tokenTransfer.getId();
+            var tokenTransferId = Objects.requireNonNull(tokenTransfer.getId());
             tokenAccount.setAccountId(tokenTransferId.getAccountId().getId());
             tokenAccount.setAssociated(true);
             tokenAccount.setTokenId(tokenTransferId.getTokenId().getId());
@@ -346,6 +346,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         context.add(tokenTransfer);
+    }
+
+    @Override
+    public void onTopic(Topic topic) throws ImporterException {
+        context.merge(topic.getId(), topic, this::mergeTopic);
     }
 
     @Override
@@ -527,10 +532,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (dest.getStakePeriodStart() == null) {
             dest.setStakePeriodStart(src.getStakePeriodStart());
-        }
-
-        if (dest.getSubmitKey() == null) {
-            dest.setSubmitKey(src.getSubmitKey());
         }
 
         if (dest.getType() == null) {
@@ -806,6 +807,30 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         previous.setTimestampUpper(current.getTimestampLower());
+        return current;
+    }
+
+    private Topic mergeTopic(Topic previous, Topic current) {
+        current.setCreatedTimestamp(previous.getCreatedTimestamp());
+
+        if (current.getAdminKey() == null) {
+            current.setAdminKey(previous.getAdminKey());
+        }
+
+        if (current.getFeeExemptKeyList() == null) {
+            current.setFeeExemptKeyList(previous.getFeeExemptKeyList());
+        }
+
+        if (current.getFeeScheduleKey() == null) {
+            current.setFeeScheduleKey(previous.getFeeScheduleKey());
+        }
+
+        if (current.getSubmitKey() == null) {
+            current.setSubmitKey(previous.getSubmitKey());
+        }
+
+        previous.setTimestampUpper(current.getTimestampLower());
+
         return current;
     }
 

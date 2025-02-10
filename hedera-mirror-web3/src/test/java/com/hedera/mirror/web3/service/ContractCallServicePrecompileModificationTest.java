@@ -357,8 +357,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     }
 
     /**
-     * Burns tokens from the token's treasury account.
-     * The operation decreases the total supply of the token.
+     * Burns tokens from the token's treasury account. The operation decreases the total supply of the token.
      */
     @Test
     void burnFungibleToken() throws Exception {
@@ -870,16 +869,20 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     }
 
     @Test
-    void notExistingPrecompileCallFails() {
+    void notExistingPrecompileCall() throws Exception {
         // Given
         final var token = persistFungibleToken();
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
-        // When
-        final var functionCall = contract.send_callNotExistingPrecompile(getAddressFromEntity(token));
         // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(INVALID_TOKEN_ID.name());
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            final var modularizedCall = contract.call_callNotExistingPrecompile(getAddressFromEntity(token));
+            assertThat(Bytes.wrap(modularizedCall.send())).isEqualTo(Bytes.EMPTY);
+        } else {
+            final var functionCall = contract.send_callNotExistingPrecompile(getAddressFromEntity(token));
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .hasMessage(INVALID_TOKEN_ID.name());
+        }
     }
 
     @Test

@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.EnabledIfV2;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
 import org.springframework.jdbc.core.DataClassRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor
 @EnabledIfV2
@@ -48,7 +46,6 @@ class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
                             from time_partitions tp
                             order by tp.parent_table, tp.from_value::bigint desc
                     """;
-    private final @Owner JdbcTemplate jdbcTemplate;
     private final PartitionMaintenance partitionMaintenance;
     private final FlywayProperties flywayProperties;
 
@@ -71,7 +68,7 @@ class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
         String dropLatestTimePartitions = latestPartitions.stream()
                 .map(partitionInfo -> "drop table " + partitionInfo.partition)
                 .collect(Collectors.joining(";\n"));
-        jdbcTemplate.execute(dropLatestTimePartitions);
+        ownerJdbcTemplate.execute(dropLatestTimePartitions);
 
         List<PartitionInfo> newLatestPartitions = getCurrentPartitions();
 
@@ -91,7 +88,7 @@ class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
     }
 
     private List<PartitionInfo> getCurrentPartitions() {
-        return jdbcTemplate.query(
+        return ownerJdbcTemplate.query(
                 GET_LATEST_PARTITIONS,
                 new DataClassRowMapper<>(PartitionInfo.class),
                 flywayProperties.getPlaceholders().get("partitionTimeInterval"));

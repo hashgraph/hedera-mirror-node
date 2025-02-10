@@ -25,7 +25,6 @@ import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
-import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,7 +42,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
 
@@ -67,8 +65,6 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
     private static final RowMapper<MigrationAddressBookEntry> ADDRESS_BOOK_ENTRY_MAPPER =
             rowMapper(MigrationAddressBookEntry.class);
 
-    private final @Owner JdbcOperations jdbcOperations;
-
     @Value("classpath:db/migration/v1/V1.37.1__add_address_book_service_endpoints.sql")
     private final File sql;
 
@@ -77,7 +73,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
     @BeforeEach
     void before() {
         revertToPreV_1_37();
-        jdbcOperations.execute("alter table address_book_entry drop constraint if exists "
+        ownerJdbcTemplate.execute("alter table address_book_entry drop constraint if exists "
                 + "address_book_entry_consensus_timestamp_fkey");
         // previous address_book_entry had
         addressBookEntryIdCounter = 1;
@@ -474,7 +470,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
 
     private void runMigration() throws IOException {
         log.info("Run migration: {}", sql.getName());
-        jdbcOperations.update(FileUtils.readFileToString(sql, "UTF-8"));
+        ownerJdbcTemplate.update(FileUtils.readFileToString(sql, "UTF-8"));
     }
 
     /**
@@ -482,10 +478,10 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
      */
     private void revertToPreV_1_37() {
         // remove address_book_service_endpoint table if present
-        jdbcOperations.execute("drop table if exists address_book_service_endpoint cascade;");
+        ownerJdbcTemplate.execute("drop table if exists address_book_service_endpoint cascade;");
 
         // drop describe and stake columns. Also drop primary key
-        jdbcOperations.execute(
+        ownerJdbcTemplate.execute(
                 """
                             alter table if exists address_book_entry
                                 drop column if exists description,
@@ -494,7 +490,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
                             """);
 
         // restore id, ip and port columns. Also restore primary key
-        jdbcOperations.execute(
+        ownerJdbcTemplate.execute(
                 """
                             alter table if exists address_book_entry
                                 add column if not exists id integer,
@@ -521,36 +517,23 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
     @Data
     @NoArgsConstructor
     private static class MigrationAddressBookEntry {
-
         private long consensusTimestamp;
-
         private long nodeId;
-
         private String memo;
-
         private EntityId nodeAccountId;
-
         private byte[] nodeCertHash;
-
         private String publicKey;
-
         private String description;
-
         private Long stake;
     }
 
     @Data
     @NoArgsConstructor
     private static class MigrationAddressBook {
-
         private Long startConsensusTimestamp;
-
         private Long endConsensusTimestamp;
-
         private byte[] fileData;
-
         private EntityId fileId;
-
         private Integer nodeCount;
     }
 }

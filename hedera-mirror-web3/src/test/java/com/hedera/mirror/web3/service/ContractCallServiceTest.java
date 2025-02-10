@@ -36,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -178,6 +179,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     void pureCall() throws Exception {
         // Given
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
+        final var payer = accountEntityWithEvmAddressPersist();
+        persistAccountBalance(payer, payer.getBalance());
+        testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear(); // Clear it as the contract deploy increases the gas limit metric
 
@@ -244,9 +248,15 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
             contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockType.number())));
             testWeb3jService.setBlockType(blockType);
-            assertThatThrownBy(functionCall::send)
-                    .isInstanceOf(MirrorEvmTransactionException.class)
-                    .hasMessage(INVALID_TRANSACTION.name());
+            if (mirrorNodeEvmProperties.isModularizedServices()) {
+                assertThatThrownBy(functionCall::send)
+                        .isInstanceOf(MirrorEvmTransactionException.class)
+                        .hasMessage(INVALID_CONTRACT_ID.name());
+            } else {
+                assertThatThrownBy(functionCall::send)
+                        .isInstanceOf(MirrorEvmTransactionException.class)
+                        .hasMessage(INVALID_TRANSACTION.name());
+            }
         } else {
             assertThat(functionCall.send()).isEqualTo(BigInteger.valueOf(4L));
             assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -273,13 +283,20 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var functionCall = contract.call_multiplySimpleNumbers();
         meterRegistry.clear(); // Clear it as the contract deploy increases the gas limit metric
 
+        // Then
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
             contract.setDefaultBlockParameter(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockType.number())));
             testWeb3jService.setBlockType(blockType);
-            // Then
-            assertThatThrownBy(functionCall::send)
-                    .isInstanceOf(MirrorEvmTransactionException.class)
-                    .hasMessage(INVALID_TRANSACTION.name());
+            if (mirrorNodeEvmProperties.isModularizedServices()) {
+                assertThatThrownBy(functionCall::send)
+                        .isInstanceOf(MirrorEvmTransactionException.class)
+                        .hasMessage(INVALID_CONTRACT_ID.name());
+            } else {
+                assertThatThrownBy(functionCall::send)
+                        .isInstanceOf(MirrorEvmTransactionException.class)
+                        .hasMessage(INVALID_TRANSACTION.name());
+            }
+
         } else {
             // Then
             assertThat(functionCall.send()).isEqualTo(new BigInteger(expectedResponse.substring(2), 16));
@@ -359,6 +376,9 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     @Test
     void estimateGasForViewCall() {
         // Given
+        final var payer = accountEntityWithEvmAddressPersist();
+        persistAccountBalance(payer, payer.getBalance());
+        testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
         final var contract = testWeb3jService.deploy(EthCall::deploy);
 
         // When
