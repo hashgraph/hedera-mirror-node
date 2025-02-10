@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Collection;
 import java.util.Collections;
@@ -385,17 +386,12 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
-    @ParameterizedTest
-    @EnumSource(
-            value = ResponseCodeEnum.class,
-            mode = EnumSource.Mode.INCLUDE,
-            names = {"FEE_SCHEDULE_FILE_PART_UPLOADED", "SUCCESS", "SUCCESS_BUT_MISSING_EXPECTED_OPERATION"})
-    void fileCreateTransform(ResponseCodeEnum successfulStatus) {
+    @Test
+    void fileCreateTransform() {
         // given
         var expectedRecordItem = recordItemBuilder
                 .fileCreate()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.setStatus(successfulStatus))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.fileCreate(expectedRecordItem).build();
@@ -461,6 +457,207 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         // given
         var expectedRecordItem = recordItemBuilder
                 .fileUpdate()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.fileUpdate(expectedRecordItem).build();
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
+    }
+
+    @Test
+    void consensusCreateTopicTransform() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .consensusCreateTopic()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem =
+                blockItemBuilder.consensusCreateTopic(expectedRecordItem).build();
+
+        var expectedTopicId = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChanges(3)
+                .getMapUpdate()
+                .getKey()
+                .getTopicIdKey()
+                .getTopicNum();
+
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(
+                        expectedTopicId,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getTopicID().getTopicNum()));
+    }
+
+    @Test
+    void consensusCreateTopicTransformUnsuccessful() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .consensusCreateTopic()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(TransactionReceipt.Builder::clearTopicID)
+                .status(ResponseCodeEnum.INVALID_TRANSACTION)
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem =
+                blockItemBuilder.consensusCreateTopic(expectedRecordItem).build();
+
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(
+                        0L,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getTopicID().getTopicNum()));
+    }
+
+    @Test
+    void consensusSubmitMessageTransform() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .consensusSubmitMessage()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem =
+                blockItemBuilder.consensusSubmitMessage(expectedRecordItem).build();
+
+        var expectedFees =
+                blockItem.transactionOutput().getFirst().getSubmitMessage().getAssessedCustomFeesList();
+        var expectedRunningHash = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChanges(3)
+                .getMapUpdate()
+                .getValue()
+                .getTopicValue()
+                .getRunningHash();
+
+        var expectedSequenceNumber = blockItem
+                .stateChanges()
+                .getFirst()
+                .getStateChanges(3)
+                .getMapUpdate()
+                .getValue()
+                .getTopicValue()
+                .getSequenceNumber();
+
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(
+                        expectedRunningHash,
+                        transactionRecord -> transactionRecord.getReceipt().getTopicRunningHash())
+                .returns(
+                        expectedSequenceNumber,
+                        transactionRecord -> transactionRecord.getReceipt().getTopicSequenceNumber())
+                .returns(expectedFees, TransactionRecord::getAssessedCustomFeesList));
+    }
+
+    @Test
+    void consensusSubmitMessageTransformUnsuccessful() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .consensusSubmitMessage()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.setTopicRunningHash(ByteString.EMPTY))
+                .incrementer((b, r) -> r.getReceiptBuilder().setTopicSequenceNumber(0))
+                .status(ResponseCodeEnum.INVALID_TRANSACTION)
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem =
+                blockItemBuilder.consensusSubmitMessage(expectedRecordItem).build();
+
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
+    }
+
+    @Test
+    void consensusUpdateTopicTransform() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .consensusUpdateTopic()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.fileUpdate(expectedRecordItem).build();
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
+    }
+
+    @Test
+    void consensusDeleteTopicTransform() {
+        // given
+        var expectedRecordItem = recordItemBuilder
+                .consensusDeleteTopic()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
@@ -548,7 +745,11 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedSize",
                         "transactionRecord.receipt_.fileID_.memoizedHashCode",
                         "transactionRecord.receipt_.fileID_.memoizedSize",
-                        "transactionRecord.receipt_.fileID_.memoizedIsInitialized")
+                        "transactionRecord.receipt_.fileID_.memoizedIsInitialized",
+                        "transactionRecord.receipt_.topicID_.memoizedHashCode",
+                        "transactionRecord.receipt_.topicID_.memoizedSize",
+                        "transactionRecord.receipt_.topicID_.memoizedIsInitialized",
+                        "transactionRecord.receipt_.topicRunningHashVersion_")
                 .isEqualTo(expectedRecordItem);
     }
 
