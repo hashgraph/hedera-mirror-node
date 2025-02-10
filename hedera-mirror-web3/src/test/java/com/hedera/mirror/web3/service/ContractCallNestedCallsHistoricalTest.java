@@ -57,7 +57,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
     @Test
     void testGetHistoricalInfo() throws Exception {
         // Given
-        final var ownerEntity = accountEntityPersistHistoricalNoEvmAddress(
+        final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
         final var spenderPublicKey = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
         final var spenderPublicKeyHistorical = ByteString.fromHex(spenderPublicKey);
@@ -89,7 +89,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
     @Test
     void testGetApprovedHistorical() throws Exception {
         // When
-        final var ownerEntity = accountEntityPersistHistoricalNoEvmAddress(
+        final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
         final var spenderPublicKey = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
         final var spenderPublicKeyHistorical = ByteString.fromHex(spenderPublicKey);
@@ -122,7 +122,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
     @Test
     void testMintTokenHistorical() throws Exception {
         // Given
-        final var ownerEntity = accountEntityPersistHistoricalNoEvmAddress(
+        final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
         final var spenderPublicKey = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
         final var spenderPublicKeyHistorical = ByteString.fromHex(spenderPublicKey);
