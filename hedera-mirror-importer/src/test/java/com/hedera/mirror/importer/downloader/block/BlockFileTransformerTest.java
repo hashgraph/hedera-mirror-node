@@ -371,7 +371,6 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedRecordItem = recordItemBuilder
                 .prng(range)
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.setStatus(ResponseCodeEnum.SUCCESS))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.utilPrng(expectedRecordItem).build();
@@ -381,7 +380,6 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedRecordItemBytes = recordItemBuilder
                 .prng(range)
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION).transactionIndex(1))
-                .receipt(r -> r.setStatus(ResponseCodeEnum.SUCCESS))
                 .build();
         var expectedTransactionHashBytes = getExpectedTransactionHash(expectedRecordItemBytes);
         var blockItemBytes = blockItemBuilder.utilPrng(expectedRecordItemBytes).build();
@@ -446,7 +444,6 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedRecordItem = recordItemBuilder
                 .nodeCreate()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.setStatus(ResponseCodeEnum.SUCCESS))
                 .build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.nodeCreate(expectedRecordItem).build();

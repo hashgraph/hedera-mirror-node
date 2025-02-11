@@ -20,9 +20,9 @@ import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
-@Slf4j
+@CustomLog
 @Named
 final class UtilPrngTransformer extends AbstractBlockItemTransformer {
 
