@@ -119,11 +119,8 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.cryptoCreate(expectedRecordItem).build();
-        var expectedAccountId = blockItem
-                .transactionOutput()
-                .getFirst()
-                .getAccountCreate()
-                .getCreatedAccountId();
+        var expectedAccountId =
+                blockItem.transactionOutput().getFirst().getAccountCreate().getCreatedAccountId();
         var expectedEvmAddress = blockItem
                 .stateChanges()
                 .getFirst()
@@ -136,7 +133,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
-                // when
+        // when
         var recordFile = blockFileTransformer.transform(blockFile);
 
         // then
@@ -149,8 +146,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
                 .returns(
                         expectedAccountId,
-                        transactionRecord ->
-                                transactionRecord.getReceipt().getAccountID())
+                        transactionRecord -> transactionRecord.getReceipt().getAccountID())
                 .returns(expectedEvmAddress, TransactionRecord::getEvmAddress));
     }
 
@@ -180,72 +176,33 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
                 .returns(
                         AccountID.getDefaultInstance(),
-                        transactionRecord ->
-                                transactionRecord.getReceipt().getAccountID()));
+                        transactionRecord -> transactionRecord.getReceipt().getAccountID()));
     }
 
     @Test
     void cryptoUpdateTransform() {
+        // given
         var expectedRecordItem = recordItemBuilder
                 .cryptoUpdate()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
 
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-        var blockItem = blockItemBuilder.cryptoUpdate(expectedRecordItem).build();
-        var expectedAccountId = blockItem
-                .transactionOutput()
-                .getFirst()
-                .getAccountCreate()
-                .getCreatedAccountId();
 
-        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+        var blockItem = blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
+        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
-        var recordFile = blockFileTransformer.transform(blockFile);
+        var recordFile = blockFileTransformer.transform(blockFie);
 
         // then
-        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
                 .hasSize(1)
                 .first()
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(
-                        expectedAccountId,
-                        transactionRecord ->
-                                transactionRecord.getReceipt().getAccountID()));
-    }
-
-    @Test
-    void cryptoUpdateUnsuccessfulTransform() {
-        var expectedRecordItem = recordItemBuilder
-                .cryptoUpdate()
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.clearAccountID().setStatus(ResponseCodeEnum.INVALID_TRANSACTION))
-                .build();
-
-        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-        var blockItem = blockItemBuilder.cryptoUpdate(expectedRecordItem).build();
-
-        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
-
-        // when
-        var recordFile = blockFileTransformer.transform(blockFile);
-
-        // then
-        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
-                .hasSize(1)
-                .first()
-                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
-                .returns(null, RecordItem::getPrevious)
-                .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(
-                        AccountID.getDefaultInstance(),
-                        transactionRecord ->
-                                transactionRecord.getReceipt().getAccountID()));
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
     }
 
     @Test
@@ -284,8 +241,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
-        var blockItem =
-                blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
+        var blockItem = blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
         var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
@@ -311,8 +267,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
-        var blockItem =
-                blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
+        var blockItem = blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
         var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
@@ -338,8 +293,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
-        var blockItem =
-                blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
+        var blockItem = blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
         var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when

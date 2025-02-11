@@ -191,12 +191,18 @@ public class BlockItemBuilder {
         var accountId = transactionRecord.getReceipt().getAccountID();
         var alias = transactionRecord.getAlias();
         var transactionOutput = TransactionOutput.newBuilder()
-                .setAccountCreate(CreateAccountOutput.newBuilder().setCreatedAccountId(accountId).build()).build();
+                .setAccountCreate(CreateAccountOutput.newBuilder()
+                        .setCreatedAccountId(accountId)
+                        .build())
+                .build();
 
         var stateChange = StateChange.newBuilder()
                 .setStateId(STATE_ID_ALIASES.getNumber())
                 .setMapUpdate(MapUpdateChange.newBuilder()
-                        .setValue(MapChangeValue.newBuilder().setAccountValue(Account.newBuilder().setAlias(alias).build()).build()))
+                        .setValue(MapChangeValue.newBuilder()
+                                .setAccountValue(
+                                        Account.newBuilder().setAlias(alias).build())
+                                .build()))
                 .build();
         var stateChanges =
                 StateChanges.newBuilder().addStateChanges(stateChange).build();
@@ -206,24 +212,6 @@ public class BlockItemBuilder {
                 transactionResult(recordItem),
                 List.of(transactionOutput),
                 List.of(stateChanges));
-    }
-
-    public BlockItemBuilder.Builder cryptoUpdate() {
-        var recordItem = recordItemBuilder.cryptoCreate().build();
-        return cryptoUpdate(recordItem);
-    }
-
-    public BlockItemBuilder.Builder cryptoUpdate(RecordItem recordItem) {
-        var transactionRecord = recordItem.getTransactionRecord();
-        var accountId = transactionRecord.getReceipt().getAccountID();
-        var transactionOutput = TransactionOutput.newBuilder()
-                .setAccountCreate(CreateAccountOutput.newBuilder().setCreatedAccountId(accountId).build()).build();
-
-        return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(),
-                transactionResult(recordItem),
-                List.of(transactionOutput),
-                Collections.emptyList());
     }
 
     public Builder fileAppend(RecordItem recordItem) {
