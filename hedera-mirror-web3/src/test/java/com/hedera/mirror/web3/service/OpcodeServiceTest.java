@@ -50,6 +50,7 @@ import com.hedera.mirror.web3.web3j.generated.NestedCalls;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.HederaToken;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.TokenKey;
+import com.hedera.mirror.web3.web3j.generated.StorageContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import java.math.BigInteger;
@@ -469,6 +470,33 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
     }
 
     @ParameterizedTest
+    @CsvSource({"true, true", "false, true", "true, false", "false, false"})
+    void testGetUpdatedStorageCall(final boolean stack, final boolean memory) {
+        final var senderEntity = accountPersistWithAccountBalances();
+        final var contract = testWeb3jService.deploy(StorageContract::deploy);
+        final var options = new OpcodeTracerOptions(stack, memory, true);
+        final var functionCall = contract.send_updateStorage(BigInteger.ONE, BigInteger.TEN);
+
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
+        final var transactionIdOrHash = setUp(
+                ETHEREUMTRANSACTION,
+                contract,
+                callData,
+                true,
+                true,
+                senderEntity.toEntityId(),
+                ZERO_AMOUNT,
+                domainBuilder.timestamp());
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+        // Then
+        verifyOpcodesResponse(opcodesResponse, options);
+    }
+
+    @ParameterizedTest
     @CsvSource({
         "true, true, true",
         "false, true, true",
@@ -521,7 +549,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
         final var functionCall = contract.call_tinybarsToTinycents(BigInteger.TEN);
         final var callData = functionCall.encodeFunctionCall().getBytes();
-        final var senderEntity = accountEntityPersist();
+        final var senderEntity = accountPersist();
         final var consensusTimestamp = domainBuilder.timestamp();
         final var transactionIdOrHash = setUp(
                 TransactionType.CONTRACTCALL,
@@ -546,7 +574,7 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
         final var functionCall = contract.call_tinybarsToTinycents(BigInteger.TEN);
         final var callData = functionCall.encodeFunctionCall().getBytes();
-        final var senderEntity = accountEntityPersist();
+        final var senderEntity = accountPersist();
 
         final var transactionIdOrHash = setUp(
                 TransactionType.CONTRACTCALL,
@@ -869,6 +897,10 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                         .serialNumber(1))
                 .persist();
         return token;
+    }
+
+    private Entity accountPersist() {
+        return domainBuilder.entity().customize(a -> a.evmAddress(null)).persist();
     }
 
     private Entity accountPersistWithAccountBalances() {
