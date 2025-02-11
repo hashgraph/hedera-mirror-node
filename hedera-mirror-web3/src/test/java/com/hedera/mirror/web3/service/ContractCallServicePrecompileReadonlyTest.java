@@ -31,6 +31,9 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.Expiry;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.HederaToken;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenKey;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.entityIdFromTokenId;
+import static com.hedera.services.utils.EntityIdUtils.getAddressFromId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -96,11 +99,12 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void hrcIsAssociatedFails() throws Exception {
         // Given
-        final var token = persistFungibleToken();
+        final var token = fungibleTokenPersist();
+
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_hrcIsAssociated(getAddressFromEntity(token));
+        final var functionCall = contract.call_hrcIsAssociated(getAddressFromId(token.getTokenId()));
 
         // Then
         if (mirrorNodeEvmProperties.isModularizedServices()) {
@@ -181,14 +185,14 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     void isKycGranted() throws Exception {
         // Given
         final var account = accountEntityPersist();
-        final var tokenEntity = persistFungibleToken();
-        tokenAccountPersist(tokenEntity, account);
+        final var token = fungibleTokenPersist();
+        tokenAccountPersist(token.getTokenId(), account.getId());
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
         final var functionCall =
-                contract.call_isKycGranted(getAddressFromEntity(tokenEntity), getAddressFromEntity(account));
+                contract.call_isKycGranted(getAddressFromId(token.getTokenId()), getAddressFromEntity(account));
 
         // Then
         assertThat(functionCall.send()).isTrue();
@@ -204,14 +208,14 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                         .alias(SENDER_PUBLIC_KEY.toByteArray())
                         .evmAddress(SENDER_ALIAS.toArray()))
                 .persist();
-        final var tokenEntity = persistFungibleToken();
-        tokenAccountPersist(tokenEntity, account);
+        final var tokenEntity = fungibleTokenPersist();
+        tokenAccountPersist(tokenEntity.getTokenId(), account.getId());
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
         final var functionCall =
-                contract.call_isKycGranted(getAddressFromEntity(tokenEntity), getAliasFromEntity(account));
+                contract.call_isKycGranted(getAddressFromId(tokenEntity.getTokenId()), getAliasFromEntity(account));
 
         // Then
         assertThat(functionCall.send()).isTrue();
@@ -224,7 +228,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         // Given
         final var account = accountEntityPersist();
         final var tokenEntity = persistNft();
-        tokenAccountPersist(tokenEntity, account);
+        tokenAccountPersist(tokenEntity.getId(), account.getId());
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
@@ -248,7 +252,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                         .evmAddress(SENDER_ALIAS.toArray()))
                 .persist();
         final var tokenEntity = persistNft();
-        tokenAccountPersist(tokenEntity, account);
+        tokenAccountPersist(tokenEntity.getId(), account.getId());
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
@@ -265,12 +269,12 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void isTokenAddress() throws Exception {
         // Given
-        final var tokenEntity = persistFungibleToken();
+        final var tokenEntity = fungibleTokenPersist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_isTokenAddress(getAddressFromEntity(tokenEntity));
+        final var functionCall = contract.call_isTokenAddress(getAddressFromId(tokenEntity.getTokenId()));
 
         // Then
         assertThat(functionCall.send()).isTrue();
@@ -346,12 +350,12 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void getTokenType() throws Exception {
         // Given
-        final var tokenEntity = persistFungibleToken();
+        final var tokenEntity = fungibleTokenPersist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_getType(getAddressFromEntity(tokenEntity));
+        final var functionCall = contract.call_getType(getAddressFromId(tokenEntity.getTokenId()));
 
         // Then
         assertThat(functionCall.send()).isEqualTo(BigInteger.ZERO);
@@ -501,15 +505,17 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     void getCustomFeesForTokenWithFixedFee() throws Exception {
         // Given
         final var collectorAccount = accountEntityWithEvmAddressPersist();
-        final var tokenEntity = persistFungibleToken();
+        final var tokenEntity = fungibleTokenPersist();
+        final var tokenId = tokenEntity.getTokenId();
+        final var entityId = entityIdFromTokenId(tokenId);
         final var fixedFee = com.hedera.mirror.common.domain.token.FixedFee.builder()
                 .amount(100L)
                 .collectorAccountId(collectorAccount.toEntityId())
-                .denominatingTokenId(tokenEntity.toEntityId())
+                .denominatingTokenId(entityId)
                 .build();
         domainBuilder
                 .customFee()
-                .customize(f -> f.entityId(tokenEntity.getId())
+                .customize(f -> f.entityId(tokenId)
                         .fixedFees(List.of(fixedFee))
                         .fractionalFees(List.of())
                         .royaltyFees(List.of()))
@@ -518,11 +524,11 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_getCustomFeesForToken(getAddressFromEntity(tokenEntity));
+        final var functionCall = contract.call_getCustomFeesForToken(getAddressFromId(tokenId));
 
         final var expectedFee = new FixedFee(
                 BigInteger.valueOf(100L),
-                getAddressFromEntity(tokenEntity),
+                getAddressFromId(tokenId),
                 false,
                 false,
                 Address.fromHexString(
@@ -539,7 +545,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     void getCustomFeesForTokenWithFractionalFee() throws Exception {
         // Given
         final var collectorAccount = accountEntityWithEvmAddressPersist();
-        final var tokenEntity = persistFungibleToken();
+        final var tokenEntity = fungibleTokenPersist();
         final var fractionalFee = FractionalFee.builder()
                 .collectorAccountId(collectorAccount.toEntityId())
                 .denominator(10L)
@@ -550,7 +556,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                 .build();
         domainBuilder
                 .customFee()
-                .customize(f -> f.entityId(tokenEntity.getId())
+                .customize(f -> f.entityId(tokenEntity.getTokenId())
                         .fractionalFees(List.of(fractionalFee))
                         .fixedFees(List.of())
                         .royaltyFees(List.of()))
@@ -559,7 +565,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_getCustomFeesForToken(getAddressFromEntity(tokenEntity));
+        final var functionCall = contract.call_getCustomFeesForToken(getAddressFromId(tokenEntity.getTokenId()));
 
         final var expectedFee = new PrecompileTestContract.FractionalFee(
                 BigInteger.valueOf(100L),
@@ -581,19 +587,22 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     void getCustomFeesForTokenWithRoyaltyFee() throws Exception {
         // Given
         final var collectorAccount = accountEntityWithEvmAddressPersist();
-        final var tokenEntity = persistFungibleToken();
+        final var tokenEntity = fungibleTokenPersist();
+        final var tokenId = tokenEntity.getTokenId();
+        final var entityId = entityIdFromTokenId(tokenId);
+
         final var royaltyFee = RoyaltyFee.builder()
                 .collectorAccountId(collectorAccount.toEntityId())
                 .denominator(10L)
                 .fallbackFee(FallbackFee.builder()
                         .amount(100L)
-                        .denominatingTokenId(tokenEntity.toEntityId())
+                        .denominatingTokenId(entityId)
                         .build())
                 .numerator(20L)
                 .build();
         domainBuilder
                 .customFee()
-                .customize(f -> f.entityId(tokenEntity.getId())
+                .customize(f -> f.entityId(tokenId)
                         .royaltyFees(List.of(royaltyFee))
                         .fixedFees(List.of())
                         .fractionalFees(List.of()))
@@ -602,14 +611,13 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_getCustomFeesForToken(getAddressFromEntity(tokenEntity));
+        final var functionCall = contract.call_getCustomFeesForToken(getAddressFromId(tokenId));
 
         final var expectedFee = new PrecompileTestContract.RoyaltyFee(
                 BigInteger.valueOf(20L),
                 BigInteger.valueOf(10L),
                 BigInteger.valueOf(100L),
-                EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                EntityIdUtils.asHexedEvmAddress(new Id(entityId.getShard(), entityId.getRealm(), entityId.getNum())),
                 false,
                 Address.fromHexString(
                                 Bytes.wrap(collectorAccount.getEvmAddress()).toHexString())
@@ -663,11 +671,11 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var amountGranted = 50L;
         final var owner = accountEntityWithEvmAddressPersist();
         final var spender = accountEntityWithEvmAddressPersist();
-        final var tokenEntity = persistFungibleToken();
+        final var tokenEntity = fungibleTokenPersist();
 
         domainBuilder
                 .tokenAllowance()
-                .customize(a -> a.tokenId(tokenEntity.getId())
+                .customize(a -> a.tokenId(tokenEntity.getTokenId())
                         .owner(owner.getNum())
                         .spender(spender.getNum())
                         .amount(amountGranted)
@@ -678,7 +686,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         // When
         final var functionCall = contract.call_htsAllowance(
-                getAddressFromEntity(tokenEntity), getAliasFromEntity(owner), getAliasFromEntity(spender));
+                getAddressFromId(tokenEntity.getTokenId()), getAliasFromEntity(owner), getAliasFromEntity(spender));
 
         // Then
         assertThat(functionCall.send()).isEqualTo(BigInteger.valueOf(amountGranted));
@@ -1059,16 +1067,6 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         };
     }
 
-    private Entity persistFungibleToken() {
-        final var tokenEntity = tokenEntityPersist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
-
-        return tokenEntity;
-    }
-
     private Entity persistNft() {
         final var tokenEntity = tokenEntityPersist();
         domainBuilder
@@ -1160,14 +1158,12 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
             return new KeyValue(
                     false,
                     key.getContractID().hasContractNum()
-                            ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
-                                    .toHexString()
+                            ? asTypedEvmAddress(key.getContractID()).toHexString()
                             : Address.ZERO.toHexString(),
                     key.getEd25519().toByteArray(),
                     key.getECDSASecp256K1().toByteArray(),
                     key.getDelegatableContractId().hasContractNum()
-                            ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
-                                    .toHexString()
+                            ? asTypedEvmAddress(key.getDelegatableContractId()).toHexString()
                             : Address.ZERO.toHexString());
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalArgumentException("Unable to parse key", e);

@@ -75,6 +75,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     protected static final String TREASURY_ADDRESS = EvmTokenUtils.toAddress(2).toHexString();
     protected static final long DEFAULT_ACCOUNT_BALANCE = 100_000_000_000_000_000L;
+    protected static final int DEFAULT_TOKEN_BALANCE = 100;
 
     @Resource
     protected TestWeb3jService testWeb3jService;
@@ -258,18 +259,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     /**
-     *
-     * @param treasuryEntity - the treasuryEntity which has to be set in the token
-     * @param kycKey - the kycKey that has to be set in the token
-     * @return Token object that is persisted in db
-     */
-    protected Token fungibleTokenPersistWithTreasuryAccountAndKYCKey(
-            final EntityId treasuryEntity, final byte[] kycKey) {
-        return fungibleTokenCustomizable(
-                t -> t.treasuryAccountId(treasuryEntity).kycKey(kycKey));
-    }
-
-    /**
      * Method used to customize different fields of a token and persist it in db
      * @param customizer - the consumer used to customize the token
      * @return Token object which is persisted in the db
@@ -394,16 +383,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     /**
      *
-     * @param balance - the balance with which the account is created
-     * @return Entity object that is persisted in the db
-     */
-    protected Entity accountEntityPersistWithBalance(final long balance) {
-        return accountEntityPersistCustomizable(
-                e -> e.type(EntityType.ACCOUNT).evmAddress(null).alias(null).balance(balance));
-    }
-
-    /**
-     *
      * @param customizer - the consumer with which to customize the entity
      * @return
      */
@@ -416,17 +395,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * hold and operate with the token. Otherwise, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN will be thrown when executing a
      * transaction involving the token that requires the account to have KYC approval.
      */
-    protected void tokenAccountPersist(final Entity token, final Entity account) {
-        tokenAccount(
-                ta -> ta.tokenId(token.getId()).accountId(account.toEntityId().getId()));
-    }
-
-    protected void tokenAccountPersist(final Entity token, final Entity account, Long balance) {
-        tokenAccount(ta -> ta.tokenId(token.getId())
-                .accountId(account.toEntityId().getId())
-                .balance(balance));
-    }
-
     protected TokenAccount tokenAccount(Consumer<TokenAccount.TokenAccountBuilder<?, ?>> consumer) {
         return domainBuilder
                 .tokenAccount()
@@ -435,6 +403,19 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                         .associated(true))
                 .customize(consumer)
                 .persist();
+    }
+
+    protected void tokenAccountPersist(final long tokenId, final long accountId, Long balance) {
+        tokenAccount(ta -> {
+            ta.tokenId(tokenId).accountId(accountId);
+            if (balance != null) {
+                ta.balance(balance);
+            }
+        });
+    }
+
+    protected void tokenAccountPersist(final long tokenId, final long accountId) {
+        tokenAccountPersist(tokenId, accountId, null);
     }
 
     /**
@@ -487,11 +468,11 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * No record for the token balance at a particular timestamp may result in INSUFFICIENT_TOKEN_BALANCE exception
      * for a historical query with the same timestamp.
      */
-    protected void persistTokenBalance(Entity account, Entity token, long timestamp) {
+    protected void persistTokenBalance(EntityId account, EntityId token, long timestamp) {
         domainBuilder
                 .tokenBalance()
-                .customize(ab -> ab.id(new TokenBalance.Id(timestamp, account.toEntityId(), token.toEntityId()))
-                        .balance(100))
+                .customize(ab ->
+                        ab.id(new TokenBalance.Id(timestamp, account, token)).balance(DEFAULT_TOKEN_BALANCE))
                 .persist();
     }
 
