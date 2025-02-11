@@ -26,7 +26,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpected
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.entityIdFromTokenId;
-import static com.hedera.services.utils.EntityIdUtils.getAddressFromId;
+import static com.hedera.services.utils.EntityIdUtils.addressFromId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -126,7 +126,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         // When
         final var functionCall = contract.call_approveExternal(
-                getAddressFromId(tokenEntity.getTokenId()), getAddressFromEntity(spender), allowance);
+                addressFromId(tokenEntity.getTokenId()), getAddressFromEntity(spender), allowance);
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
@@ -383,7 +383,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         // When
         final var functionCall = contract.call_burnTokenExternal(
-                getAddressFromId(token.getTokenId()), BigInteger.valueOf(4), new ArrayList<>());
+                addressFromId(token.getTokenId()), BigInteger.valueOf(4), new ArrayList<>());
 
         final var result = functionCall.send();
 
@@ -576,7 +576,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         // When
         final var functionCall = contract.call_freezeTokenExternal(
-                getAddressFromId(tokenEntity.getTokenId()), getAliasFromEntity(accountWithoutFreeze));
+                addressFromId(tokenEntity.getTokenId()), getAliasFromEntity(accountWithoutFreeze));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
@@ -604,7 +604,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         // When
         final var functionCall = contract.call_unfreezeTokenExternal(
-                getAddressFromId(tokenEntity.getTokenId()), getAliasFromEntity(accountWithFreeze));
+                addressFromId(tokenEntity.getTokenId()), getAliasFromEntity(accountWithFreeze));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
@@ -722,7 +722,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 contract.getContractAddress(), TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount.toEntityId());
 
         final var fixedFee = new FixedFee(
-                BigInteger.valueOf(100L), getAddressFromId(tokenId), false, false, getAliasFromEntity(feeCollector));
+                BigInteger.valueOf(100L), addressFromId(tokenId), false, false, getAliasFromEntity(feeCollector));
         final var fractionalFee = new FractionalFee(
                 BigInteger.valueOf(1L),
                 BigInteger.valueOf(100L),
@@ -812,12 +812,12 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var token = populateHederaToken(
                 contract.getContractAddress(), TokenTypeEnum.NON_FUNGIBLE_UNIQUE, treasuryAccount.toEntityId());
         final var fixedFee = new FixedFee(
-                BigInteger.valueOf(100L), getAddressFromId(tokenId), false, false, getAliasFromEntity(feeCollector));
+                BigInteger.valueOf(100L), addressFromId(tokenId), false, false, getAliasFromEntity(feeCollector));
         final var royaltyFee = new RoyaltyFee(
                 BigInteger.valueOf(1L),
                 BigInteger.valueOf(100L),
                 BigInteger.valueOf(10L),
-                getAddressFromId(tokenId),
+                addressFromId(tokenId),
                 false,
                 getAliasFromEntity(feeCollector));
 
@@ -854,7 +854,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         // When
         final var functionCall = contract.call_createContractViaCreate2AndTransferFromIt(
-                getAddressFromId(token.getTokenId()),
+                addressFromId(token.getTokenId()),
                 getAliasFromEntity(sponsor),
                 getAliasFromEntity(receiver),
                 BigInteger.valueOf(10L));
@@ -871,10 +871,10 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         // Then
         if (mirrorNodeEvmProperties.isModularizedServices()) {
-            final var modularizedCall = contract.call_callNotExistingPrecompile(getAddressFromId(token.getTokenId()));
+            final var modularizedCall = contract.call_callNotExistingPrecompile(addressFromId(token.getTokenId()));
             assertThat(Bytes.wrap(modularizedCall.send())).isEqualTo(Bytes.EMPTY);
         } else {
-            final var functionCall = contract.send_callNotExistingPrecompile(getAddressFromId(token.getTokenId()));
+            final var functionCall = contract.send_callNotExistingPrecompile(addressFromId(token.getTokenId()));
             assertThatThrownBy(functionCall::send)
                     .isInstanceOf(MirrorEvmTransactionException.class)
                     .hasMessage(INVALID_TOKEN_ID.name());
@@ -1283,7 +1283,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var tokenTransferList = new TokenTransferList(
-                getAddressFromId(tokenId),
+                addressFromId(tokenId),
                 List.of(
                         new AccountAmount(getAliasFromEntity(sender), BigInteger.valueOf(5L), false),
                         new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(-5L), false)),
@@ -1332,7 +1332,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(5L), false)));
 
         final var tokenTransferList = new TokenTransferList(
-                getAddressFromId(tokenId),
+                addressFromId(tokenId),
                 List.of(
                         new AccountAmount(getAliasFromEntity(sender), BigInteger.valueOf(5L), false),
                         new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(-5L), false)),

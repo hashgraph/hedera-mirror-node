@@ -326,7 +326,7 @@ public final class EntityIdUtils {
         return alias.size() > EVM_ADDRESS_SIZE;
     }
 
-    public static String getAddressFromId(long tokenId) {
+    public static String addressFromId(long tokenId) {
         return EvmTokenUtils.toAddress(tokenId).toHexString();
     }
 
