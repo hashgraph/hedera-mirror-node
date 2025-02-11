@@ -31,6 +31,7 @@ import com.hedera.mirror.web3.convert.BytesDecoder;
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.state.core.MapWritableStates;
+import com.hedera.mirror.web3.state.keyvalue.ContractStorageReadableKVState;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
@@ -66,7 +67,6 @@ import org.springframework.util.CollectionUtils;
 @Getter
 public class OpcodeTracer implements HederaOperationTracer {
 
-    private static final String STORAGE_KEY = "STORAGE";
     private final Map<Address, PrecompiledContract> hederaPrecompiles;
     private final MirrorNodeEvmProperties evmProperties;
     private final State mirrorNodeState;
@@ -274,7 +274,7 @@ public class OpcodeTracer implements HederaOperationTracer {
         MapWritableStates states = (MapWritableStates) mirrorNodeState.getWritableStates(ContractService.NAME);
 
         try {
-            Set<SlotKey> modifiedKeys = states.get(STORAGE_KEY).modifiedKeys().stream()
+            Set<SlotKey> modifiedKeys = states.get(ContractStorageReadableKVState.KEY).modifiedKeys().stream()
                     .filter(SlotKey.class::isInstance)
                     .map(SlotKey.class::cast)
                     .filter(SlotKey::hasContractID)
@@ -290,7 +290,7 @@ public class OpcodeTracer implements HederaOperationTracer {
                     continue;
                 }
 
-                SlotValue slotValue = (SlotValue) states.get(STORAGE_KEY).get(slotKey);
+                SlotValue slotValue = (SlotValue) states.get(ContractStorageReadableKVState.KEY).get(slotKey);
                 if (slotValue != null) {
                     storageUpdates.put(
                             Bytes.of(slotKey.key().toByteArray()),
@@ -301,7 +301,7 @@ public class OpcodeTracer implements HederaOperationTracer {
             log.warn(
                     "Failed to retrieve modified storage keys for service: {}, key: {}",
                     ContractService.NAME,
-                    STORAGE_KEY,
+                    ContractStorageReadableKVState.KEY,
                     e);
         }
 

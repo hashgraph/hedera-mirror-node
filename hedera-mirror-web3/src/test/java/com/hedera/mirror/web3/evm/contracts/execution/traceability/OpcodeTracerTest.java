@@ -57,6 +57,7 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.state.core.MapWritableStates;
+import com.hedera.mirror.web3.state.keyvalue.ContractStorageReadableKVState;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractActionType;
@@ -115,7 +116,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class OpcodeTracerTest {
 
     private static final String CONTRACT_SERVICE = ContractService.NAME;
-    private static final String STORAGE_KEY = "STORAGE";
     private static final Address CONTRACT_ADDRESS = Address.fromHexString("0x123");
     private static final Address ETH_PRECOMPILE_ADDRESS = Address.fromHexString("0x01");
     private static final Address HTS_PRECOMPILE_ADDRESS = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
@@ -503,7 +503,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
+        doReturn(mockStorageState).when(mockStates).get(ContractStorageReadableKVState.KEY);
 
         // Mock SlotKey and SlotValue
         SlotKey slotKey = createMockSlotKey();
@@ -536,7 +536,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
+        doReturn(mockStorageState).when(mockStates).get(ContractStorageReadableKVState.KEY);
 
         // Mock empty modified keys retrieval
         when(mockStorageState.modifiedKeys()).thenReturn(Collections.emptySet());
@@ -560,7 +560,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
+        doReturn(mockStorageState).when(mockStates).get(ContractStorageReadableKVState.KEY);
 
         SlotKey slotKeyWithoutContractID = mock(SlotKey.class);
         when(slotKeyWithoutContractID.hasContractID()).thenReturn(false);
@@ -586,7 +586,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
+        doReturn(mockStorageState).when(mockStates).get(ContractStorageReadableKVState.KEY);
 
         SlotKey mismatchedSlotKey = createMockSlotKey(Address.fromHexString("0xDEADBEEF"));
         when(mockStorageState.modifiedKeys()).thenReturn(Set.of(mismatchedSlotKey));
@@ -610,7 +610,7 @@ class OpcodeTracerTest {
         MapWritableStates mockStates = mock(MapWritableStates.class);
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
         WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(STORAGE_KEY);
+        doReturn(mockStorageState).when(mockStates).get(ContractStorageReadableKVState.KEY);
 
         SlotKey slotKey = createMockSlotKey(CONTRACT_ADDRESS);
 
@@ -637,7 +637,8 @@ class OpcodeTracerTest {
         when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
 
         // Mock storage retrieval to throw IllegalArgumentException
-        when(mockStates.get(STORAGE_KEY)).thenThrow(new IllegalArgumentException("Storage retrieval failed"));
+        when(mockStates.get(ContractStorageReadableKVState.KEY)).thenThrow(
+                new IllegalArgumentException("Storage retrieval failed"));
 
         // When
         final Opcode opcode = executeOperation(frame);
@@ -791,7 +792,7 @@ class OpcodeTracerTest {
         assertThat(opcodeForPrecompileCall.reason())
                 .isNotEmpty()
                 .isEqualTo(getAbiEncodedRevertReason(Bytes.of(
-                                ResponseCodeEnum.INVALID_ACCOUNT_ID.name().getBytes()))
+                        ResponseCodeEnum.INVALID_ACCOUNT_ID.name().getBytes()))
                         .toHexString());
     }
 
@@ -946,8 +947,8 @@ class OpcodeTracerTest {
     }
 
     private UInt256[] setupStackForCapture(final MessageFrame frame) {
-        final UInt256[] stack = new UInt256[] {
-            UInt256.fromHexString("0x01"), UInt256.fromHexString("0x02"), UInt256.fromHexString("0x03")
+        final UInt256[] stack = new UInt256[]{
+                UInt256.fromHexString("0x01"), UInt256.fromHexString("0x02"), UInt256.fromHexString("0x03")
         };
 
         for (final UInt256 stackItem : stack) {
@@ -958,8 +959,8 @@ class OpcodeTracerTest {
     }
 
     private Bytes[] setupMemoryForCapture(final MessageFrame frame) {
-        final Bytes[] words = new Bytes[] {
-            Bytes.fromHexString("0x01", 32), Bytes.fromHexString("0x02", 32), Bytes.fromHexString("0x03", 32)
+        final Bytes[] words = new Bytes[]{
+                Bytes.fromHexString("0x01", 32), Bytes.fromHexString("0x02", 32), Bytes.fromHexString("0x03", 32)
         };
 
         for (int i = 0; i < words.length; i++) {
@@ -1005,7 +1006,8 @@ class OpcodeTracerTest {
                 .code(CodeV0.EMPTY_CODE)
                 .sender(Address.ZERO)
                 .originator(Address.ZERO)
-                .completer(ignored -> {})
+                .completer(ignored -> {
+                })
                 .miningBeneficiary(Address.ZERO)
                 .address(recipientAddress)
                 .contract(recipientAddress)
@@ -1066,9 +1068,6 @@ class OpcodeTracerTest {
         return slotKey;
     }
 
-    /**
-     * Overloaded method to create a SlotKey with the default contract address.
-     */
     /**
      * Overloaded method to create a SlotKey with the default contract address.
      */
