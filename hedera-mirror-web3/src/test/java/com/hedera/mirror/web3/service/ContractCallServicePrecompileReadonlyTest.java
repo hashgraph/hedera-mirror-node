@@ -31,9 +31,9 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.Expiry;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.HederaToken;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenKey;
+import static com.hedera.services.utils.EntityIdUtils.addressFromId;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.entityIdFromTokenId;
-import static com.hedera.services.utils.EntityIdUtils.addressFromId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
