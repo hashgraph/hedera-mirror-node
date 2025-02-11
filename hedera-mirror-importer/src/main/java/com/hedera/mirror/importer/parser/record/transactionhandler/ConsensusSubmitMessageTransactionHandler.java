@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
+import static com.hedera.mirror.importer.util.Utility.DEFAULT_RUNNING_HASH_VERSION;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
@@ -32,9 +33,6 @@ import lombok.RequiredArgsConstructor;
 @Named
 @RequiredArgsConstructor
 class ConsensusSubmitMessageTransactionHandler extends AbstractTransactionHandler {
-
-    // Blockstreams no longer contain runningHashVersion, this is the latest version
-    static final int DEFAULT_RUNNING_HASH_VERSION = 3;
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;

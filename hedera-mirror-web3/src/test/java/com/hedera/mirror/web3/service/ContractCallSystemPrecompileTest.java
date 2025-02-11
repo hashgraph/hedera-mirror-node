@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,8 +53,11 @@ class ContractCallSystemPrecompileTest extends AbstractContractCallServiceTest {
     @Test
     void exchangeRatePrecompileTinycentsToTinybarsTestEthCallAndEstimateWithValueRevertExecution() {
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
+        testWeb3jService.setSender(TREASURY_ADDRESS);
         final var functionCall = contract.send_tinycentsToTinybars(BigInteger.valueOf(100L), BigInteger.valueOf(100L));
-        String expectedErrorMessage = CONTRACT_REVERT_EXECUTED.name();
+        String expectedErrorMessage = mirrorNodeEvmProperties.isModularizedServices()
+                ? INVALID_CONTRACT_ID.name()
+                : CONTRACT_REVERT_EXECUTED.name();
         assertThatThrownBy(functionCall::send)
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(expectedErrorMessage);
@@ -63,8 +67,11 @@ class ContractCallSystemPrecompileTest extends AbstractContractCallServiceTest {
     @Test
     void exchangeRatePrecompileTinybarsToTinycentsTestEthCallAndEstimateWithValueRevertExecution() {
         final var contract = testWeb3jService.deploy(ExchangeRatePrecompile::deploy);
+        testWeb3jService.setSender(TREASURY_ADDRESS);
         final var functionCall = contract.send_tinybarsToTinycents(BigInteger.valueOf(100L), BigInteger.valueOf(100L));
-        String expectedErrorMessage = CONTRACT_REVERT_EXECUTED.name();
+        String expectedErrorMessage = mirrorNodeEvmProperties.isModularizedServices()
+                ? INVALID_CONTRACT_ID.name()
+                : CONTRACT_REVERT_EXECUTED.name();
         assertThatThrownBy(functionCall::send)
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(expectedErrorMessage);
@@ -81,9 +88,12 @@ class ContractCallSystemPrecompileTest extends AbstractContractCallServiceTest {
     @Test
     void pseudoRandomGeneratorPrecompileFunctionsTestEthEstimateGasWithValueRevertExecution() {
         final var contract = testWeb3jService.deploy(PrngSystemContract::deploy);
+        testWeb3jService.setSender(TREASURY_ADDRESS);
         final var functionCall = contract.send_getPseudorandomSeed(BigInteger.valueOf(100));
-        verifyEstimateGasRevertExecution(
-                functionCall, CONTRACT_REVERT_EXECUTED.name(), MirrorEvmTransactionException.class);
+        String expectedErrorMessage = mirrorNodeEvmProperties.isModularizedServices()
+                ? INVALID_CONTRACT_ID.name()
+                : CONTRACT_REVERT_EXECUTED.name();
+        verifyEstimateGasRevertExecution(functionCall, expectedErrorMessage, MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -96,9 +106,13 @@ class ContractCallSystemPrecompileTest extends AbstractContractCallServiceTest {
     @Test
     void pseudoRandomGeneratorPrecompileFunctionsTestEthCallWithValueRevertExecution() {
         final var contract = testWeb3jService.deploy(PrngSystemContract::deploy);
+        testWeb3jService.setSender(TREASURY_ADDRESS);
         final var functionCall = contract.send_getPseudorandomSeed(BigInteger.valueOf(100));
+        String expectedErrorMessage = mirrorNodeEvmProperties.isModularizedServices()
+                ? INVALID_CONTRACT_ID.name()
+                : CONTRACT_REVERT_EXECUTED.name();
         assertThatThrownBy(functionCall::send)
                 .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+                .hasMessage(expectedErrorMessage);
     }
 }

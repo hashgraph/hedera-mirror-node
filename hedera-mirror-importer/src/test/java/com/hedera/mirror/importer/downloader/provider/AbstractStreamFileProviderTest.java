@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
+import static com.hedera.mirror.importer.reader.block.ProtoBlockFileReaderTest.TEST_BLOCK_FILES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -136,7 +137,7 @@ abstract class AbstractStreamFileProviderTest {
         properties.setPathType(PathType.NODE_ID);
         createBlockStreamFileCopier().copy();
         var node = node("0.0.3");
-        String filename = BlockFile.getBlockStreamFilename(7858853);
+        String filename = TEST_BLOCK_FILES.getFirst().getName();
         var expected = streamFileData(node, filename);
 
         // when, then

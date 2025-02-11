@@ -91,7 +91,7 @@ public class TestWeb3jService implements Web3jService {
     private boolean persistContract = true;
     private byte[] contractRuntime;
     private BlockType blockType = BlockType.LATEST;
-    private Range historicalRange;
+    private Range<Long> historicalRange;
     private boolean useContractCallDeploy;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
