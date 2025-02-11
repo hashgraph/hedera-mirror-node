@@ -28,6 +28,7 @@ import com.hedera.hapi.block.stream.output.protoc.MapUpdateChange;
 import com.hedera.hapi.block.stream.output.protoc.SignScheduleOutput;
 import com.hedera.hapi.block.stream.output.protoc.StateChange;
 import com.hedera.hapi.block.stream.output.protoc.StateChanges;
+import com.hedera.hapi.block.stream.output.protoc.SubmitMessageOutput;
 import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
 import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
@@ -38,6 +39,8 @@ import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Schedule;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Topic;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
@@ -56,6 +59,7 @@ public class BlockItemBuilder {
     private static final int STATE_ID_ACCOUNTS = 2;
     private static final int STATE_ID_ALIASES = 3;
     private static final int STATE_FILES_ID = 6;
+    private static final int STATE_TOPICS_ID = 0;
 
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
@@ -266,6 +270,74 @@ public class BlockItemBuilder {
     public Builder fileUpdate(RecordItem recordItem) {
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public Builder consensusCreateTopic(RecordItem recordItem) {
+        var id = recordItem.getTransactionRecord().getReceipt().getTopicID().getTopicNum();
+        var topicId = TopicID.newBuilder().setTopicNum(id).build();
+        var key = MapChangeKey.newBuilder().setTopicIdKey(topicId).build();
+        var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
+
+        var firstChange = StateChange.newBuilder().setStateId(1).build();
+
+        var secondChange = StateChange.newBuilder().setStateId(STATE_TOPICS_ID).build();
+
+        var thirdChange = StateChange.newBuilder()
+                .setStateId(STATE_TOPICS_ID)
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .build();
+
+        var fourthChange = StateChange.newBuilder()
+                .setStateId(STATE_TOPICS_ID)
+                .setMapUpdate(mapUpdate)
+                .build();
+
+        var changes = List.of(firstChange, secondChange, thirdChange, fourthChange);
+        var stateChanges = StateChanges.newBuilder().addAllStateChanges(changes).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
+    }
+
+    public Builder consensusSubmitMessage(RecordItem recordItem) {
+
+        var transactionOutput = TransactionOutput.newBuilder()
+                .setSubmitMessage(SubmitMessageOutput.newBuilder()
+                        .addAssessedCustomFees(assessedCustomFees())
+                        .build())
+                .build();
+
+        var topicRunningHash = recordItem.getTransactionRecord().getReceipt().getTopicRunningHash();
+        var sequenceNumber = recordItem.getTransactionRecord().getReceipt().getTopicSequenceNumber();
+        var topicValue = Topic.newBuilder()
+                .setRunningHash(topicRunningHash)
+                .setSequenceNumber(sequenceNumber)
+                .build();
+        var value = MapChangeValue.newBuilder().setTopicValue(topicValue).build();
+        var mapUpdate = MapUpdateChange.newBuilder().setValue(value).build();
+
+        var firstChange = StateChange.newBuilder().setStateId(1).build();
+
+        var secondChange = StateChange.newBuilder().setStateId(STATE_TOPICS_ID).build();
+
+        var thirdChange = StateChange.newBuilder()
+                .setStateId(STATE_TOPICS_ID)
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .build();
+
+        var fourthChange = StateChange.newBuilder()
+                .setStateId(STATE_TOPICS_ID)
+                .setMapUpdate(mapUpdate)
+                .build();
+
+        var changes = List.of(firstChange, secondChange, thirdChange, fourthChange);
+        var stateChanges = StateChanges.newBuilder().addAllStateChanges(changes).build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(),
+                transactionResult(recordItem),
+                List.of(transactionOutput),
+                List.of(stateChanges));
     }
 
     private static StateChanges buildFileIdStateChanges(RecordItem recordItem) {

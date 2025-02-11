@@ -288,9 +288,10 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     /**
-     * Persists fungible token in the token db table.
-     *
-     * @param tokenEntity     The entity from the entity db table related to the token
+     * Creates fungible token in the token db table.
+     * The token table stores the properties specific for tokens and each record refers to
+     * another one in the entity table, which has the properties common for all entities.
+     * @param tokenEntity     The entity from the entity db table related to the created token table record
      * @param treasuryAccount The account holding the initial token supply
      */
     protected Token fungibleTokenPersist(Entity tokenEntity, Entity treasuryAccount) {
@@ -368,8 +369,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     /**
-     * Creates an account with evmAddress and alias set to null and persist to db
-     * @return Entity object that is persisted in the db
+     * Creates entity of type account in the entity db table.
+     * The entity table stores the properties common for all type of entities.
      */
     protected Entity accountEntityPersist() {
         return accountEntityPersistCustomizable(
@@ -420,6 +421,12 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 ta -> ta.tokenId(token.getId()).accountId(account.toEntityId().getId()));
     }
 
+    protected void tokenAccountPersist(final Entity token, final Entity account, Long balance) {
+        tokenAccount(ta -> ta.tokenId(token.getId())
+                .accountId(account.toEntityId().getId())
+                .balance(balance));
+    }
+
     protected TokenAccount tokenAccount(Consumer<TokenAccount.TokenAccountBuilder<?, ?>> consumer) {
         return domainBuilder
                 .tokenAccount()
@@ -433,6 +440,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     /**
      * Creates a non-fungible token instance with a specific serial number(a record in the nft table is persisted). The
      * instance is tied to a specific token in the token db table.
+     * ownerId with value null indicates that the nft instance holder is the treasury account
      *
      * @param token           the token entity that the nft instance is linked to by tokenId
      * @param nftSerialNumber the unique serial number of the nft instance
