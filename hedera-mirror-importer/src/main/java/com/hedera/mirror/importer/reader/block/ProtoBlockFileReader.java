@@ -51,7 +51,7 @@ import lombok.experimental.NonFinal;
 @Named
 public class ProtoBlockFileReader implements BlockFileReader {
 
-    private static final int VERSION = 7;
+    static final int VERSION = 7;
 
     @Override
     public BlockFile read(StreamFileData streamFileData) {
@@ -113,8 +113,13 @@ public class ProtoBlockFileReader implements BlockFileReader {
                     blockHeader.getHashAlgorithm(), context.getFilename()));
         }
 
+        Long consensusStart = blockHeader.hasFirstTransactionConsensusTime()
+                ? DomainUtils.timestampInNanosMax(blockHeader.getFirstTransactionConsensusTime())
+                : null;
         var previousHash = DomainUtils.toBytes(blockHeader.getPreviousBlockHash());
         blockFileBuilder.blockHeader(blockHeader);
+        blockFileBuilder.consensusStart(consensusStart);
+        blockFileBuilder.consensusEnd(consensusStart);
         blockFileBuilder.index(blockHeader.getNumber());
         blockFileBuilder.previousHash(DomainUtils.bytesToHex(previousHash));
         context.getBlockRootHashDigest().setPreviousHash(previousHash);
@@ -242,9 +247,9 @@ public class ProtoBlockFileReader implements BlockFileReader {
 
             index++;
             switch (itemCase) {
-                case EVENT_HEADER, EVENT_TRANSACTION -> blockRootHashDigest.addInputBlockItem(blockItem);
-                case STATE_CHANGES, TRANSACTION_OUTPUT, TRANSACTION_RESULT -> blockRootHashDigest.addOutputBlockItem(
-                        blockItem);
+                case EVENT_HEADER, EVENT_TRANSACTION, ROUND_HEADER -> blockRootHashDigest.addInputBlockItem(blockItem);
+                case BLOCK_HEADER, STATE_CHANGES, TRANSACTION_OUTPUT, TRANSACTION_RESULT -> blockRootHashDigest
+                        .addOutputBlockItem(blockItem);
                 default -> {
                     // other block items aren't considered input / output
                 }

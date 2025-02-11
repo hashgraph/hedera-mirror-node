@@ -64,17 +64,17 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-validation:22.0")
         api("com.hedera.hashgraph:app:0.58.4")
         api("com.hedera.evm:hedera-evm:0.54.2")
-        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.59.0")
+        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.59.1")
         api("com.hedera.hashgraph:sdk:2.46.0")
         api("com.ongres.scram:client:2.1")
-        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.10")
+        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.11")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.10.0")
         api("commons-io:commons-io:2.18.0")
-        api("io.cucumber:cucumber-bom:7.21.0")
+        api("io.cucumber:cucumber-bom:7.21.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
-        api("io.hypersistence:hypersistence-utils-hibernate-63:3.9.0")
+        api("io.hypersistence:hypersistence-utils-hibernate-63:3.9.1")
         api("io.projectreactor:reactor-core-micrometer:1.2.2")
         api("io.swagger:swagger-annotations:1.6.15")
         api("io.vertx:vertx-pg-client:$vertxVersion")
@@ -101,7 +101,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2024.0.0")
         api("org.testcontainers:junit-jupiter:1.20.4")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.30.11")
+        api("software.amazon.awssdk:bom:2.30.16")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.7")
         api("org.web3j:core:4.12.2")
         api("tech.pegasys:jc-kzg-4844:1.0.0")
@@ -134,7 +134,7 @@ allprojects {
             property("sonar.issue.ignore.multicriteria.e6.ruleKey", "java:S2970")
             property(
                 "sonar.exclusions",
-                "src/main/java/com/hedera/services/**,src/test/java/com/hedera/services/**"
+                "src/main/java/com/hedera/services/**,src/test/java/com/hedera/services/**",
             )
         }
     }
@@ -204,18 +204,12 @@ spotless {
     }
     format("javascript") {
         endWithNewline()
-        indentWithSpaces(2)
+        leadingTabsToSpaces(2)
         licenseHeader(licenseHeader, "$").updateYearWithLatest(true)
         prettier()
             .npmExecutable(npmExecutable)
             .npmInstallCache(Paths.get("${rootProject.rootDir}", ".gradle", "spotless"))
-            .config(
-                mapOf(
-                    "bracketSpacing" to false,
-                    "printWidth" to 120,
-                    "singleQuote" to true,
-                )
-            )
+            .config(mapOf("bracketSpacing" to false, "printWidth" to 120, "singleQuote" to true))
         target("hedera-mirror-rest/**/*.js", "hedera-mirror-test/**/*.js")
         targetExclude("**/build/**", "**/node_modules/**", "**/__tests__/integration/*.test.js")
     }
@@ -229,7 +223,7 @@ spotless {
             "hedera-mirror-rest/**",
             "hedera-mirror-rosetta/**",
             // Known issue with Java 21: https://github.com/palantir/palantir-java-format/issues/933
-            "hedera-mirror-rest-java/**/EntityServiceImpl.java"
+            "hedera-mirror-rest-java/**/EntityServiceImpl.java",
         )
         toggleOffOn()
     }
@@ -249,7 +243,7 @@ spotless {
     }
     format("miscellaneous") {
         endWithNewline()
-        indentWithSpaces(2)
+        leadingTabsToSpaces(2)
         prettier().npmExecutable(npmExecutable)
         target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
         targetExclude("**/build/**", "**/charts/**", "**/node_modules/**", "**/package-lock.json")
@@ -257,7 +251,7 @@ spotless {
     }
     format("proto") {
         endWithNewline()
-        indentWithSpaces(4)
+        leadingTabsToSpaces(4)
         licenseHeader(licenseHeader, "(package|syntax)").updateYearWithLatest(true)
         target("hedera-mirror-protobuf/**/*.proto")
         targetExclude("build/**")
@@ -265,7 +259,7 @@ spotless {
     }
     sql {
         endWithNewline()
-        indentWithSpaces()
+        leadingTabsToSpaces()
         target("hedera-mirror-(common|importer|rest)/**/*.sql")
         targetExclude("**/build/**", "**/node_modules/**")
         trimTrailingWhitespace()
@@ -278,7 +272,7 @@ fun replaceVersion(files: String, match: String) {
             "fileset"(
                 "dir" to rootProject.projectDir,
                 "includes" to files,
-                "excludes" to "**/node_modules/"
+                "excludes" to "**/node_modules/",
             )
         }
     }
@@ -295,12 +289,12 @@ tasks.register("release") {
         replaceVersion("gradle.properties", "(?<=^version=).+")
         replaceVersion(
             "hedera-mirror-rest/**/package*.json",
-            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
+            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+",
         )
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
         replaceVersion(
             "tools/traffic-replay/log-downloader/package*.json",
-            "(?<=\"@hashgraph/mirror-log-downloader\",\\s{3,7}\"version\": \")[^\"]+"
+            "(?<=\"@hashgraph/mirror-log-downloader\",\\s{3,7}\"version\": \")[^\"]+",
         )
     }
 }

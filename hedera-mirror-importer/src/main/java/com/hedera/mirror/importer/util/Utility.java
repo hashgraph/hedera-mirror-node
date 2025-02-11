@@ -56,6 +56,8 @@ public class Utility {
     static final String RECOVERABLE_ERROR = "Recoverable error. ";
     static final String HALT_ON_ERROR_DEFAULT = "false";
     private static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
+    // Blockstreams no longer contain runningHashVersion, this is the latest version
+    public static final long DEFAULT_RUNNING_HASH_VERSION = 3;
 
     /**
      * Converts an ECDSA secp256k1 alias to a 20 byte EVM address by taking the keccak hash of it. Logic copied from

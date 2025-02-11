@@ -186,7 +186,7 @@ class BlockStreamPollerTest {
 
     @ParameterizedTest(name = "startBlockNumber={0}")
     @NullSource
-    @ValueSource(longs = {7858855L})
+    @ValueSource(longs = {981L})
     @SneakyThrows
     void poll(Long startBlockNumber, CapturedOutput output) {
         // given
@@ -205,7 +205,7 @@ class BlockStreamPollerTest {
 
         // then
         verify(blockStreamVerifier)
-                .verify(argThat(b -> b.getBytes() == null && b.getIndex() == 7858853L && b.getNodeId() == 0L));
+                .verify(argThat(b -> b.getBytes() == null && b.getIndex() == blockNumber(0) && b.getNodeId() == 0L));
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
@@ -225,8 +225,9 @@ class BlockStreamPollerTest {
         byte[] expectedBytes = FileUtils.readFileToByteArray(
                 fileCopier.getTo().resolve("2").resolve(blockFile(1).getName()).toFile());
         verify(blockStreamVerifier)
-                .verify(argThat(b ->
-                        Arrays.equals(b.getBytes(), expectedBytes) && b.getIndex() == 7858854L && b.getNodeId() == 2L));
+                .verify(argThat(b -> Arrays.equals(b.getBytes(), expectedBytes)
+                        && b.getIndex() == blockNumber(1)
+                        && b.getNodeId() == 2L));
         verify(consensusNodeService, times(2)).getNodes();
         verify(recordFileRepository).findLatest();
 
@@ -307,7 +308,7 @@ class BlockStreamPollerTest {
 
         // then
         verify(blockStreamVerifier)
-                .verify(argThat(b -> b.getBytes() == null && b.getIndex() == 7858853 && b.getNodeId() == 0L));
+                .verify(argThat(b -> b.getBytes() == null && b.getIndex() == blockNumber(0) && b.getNodeId() == 0L));
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
@@ -370,7 +371,7 @@ class BlockStreamPollerTest {
         blockStreamPoller.poll();
 
         // then
-        verify(blockStreamVerifier, times(2)).verify(argThat(b -> b.getIndex() == 7858853L));
+        verify(blockStreamVerifier, times(2)).verify(argThat(b -> b.getIndex() == blockNumber(0)));
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
@@ -410,7 +411,7 @@ class BlockStreamPollerTest {
         blockStreamPoller.poll();
 
         // then
-        verify(blockStreamVerifier, times(2)).verify(argThat(b -> b.getIndex() == 7858853L));
+        verify(blockStreamVerifier, times(2)).verify(argThat(b -> b.getIndex() == blockNumber(0)));
         verify(consensusNodeService).getNodes();
         verify(recordFileRepository).findLatest();
 
@@ -428,6 +429,10 @@ class BlockStreamPollerTest {
 
     private static BlockFile blockFile(int index) {
         return TEST_BLOCK_FILES.get(index);
+    }
+
+    private long blockNumber(int index) {
+        return blockFile(index).getIndex();
     }
 
     @SneakyThrows

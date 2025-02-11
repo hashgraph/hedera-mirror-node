@@ -17,19 +17,18 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_34_BLOCK;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_PROTO;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_ALIAS;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -60,65 +59,55 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
     @Test
     void testGetHistoricalInfo() throws Exception {
         // Given
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var spenderAddress = toAddress(1016);
-        final var spenderPublicKeyHistorical = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress, spenderPublicKeyHistorical);
-        final var tokenAddress = toAddress(1063);
-        final var tokenMemo = "TestMemo";
-        final var nftAmountToMint = 2;
-        nftPersistHistorical(
-                tokenAddress,
-                tokenMemo,
-                nftAmountToMint,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
+        final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
+        final var spenderEntity = accountEntityWithAliasPersistHistorical(
+                SPENDER_ALIAS, SPENDER_PUBLIC_KEY, testWeb3jService.getHistoricalRange());
+        final var nftAmountToMint = 2;
+        final var nft = nftPersistHistorical(
+                nftAmountToMint,
+                ownerEntity.toEntityId(),
+                spenderEntity.toEntityId(),
+                ownerEntity.toEntityId(),
+                testWeb3jService.getHistoricalRange());
 
         final var contract = testWeb3jService.deploy(NestedCallsHistorical::deploy);
 
         // When
-        final var function = contract.call_nestedGetTokenInfo(tokenAddress.toHexString());
+        final var function = contract.call_nestedGetTokenInfo(getAddressFromEntity(nft));
         final var result = function.send();
         // Then
         assertThat(result).isNotNull();
         assertThat(result.token).isNotNull();
         assertThat(result.deleted).isFalse();
-        assertThat(result.token.memo).isEqualTo(tokenMemo);
+        assertThat(result.token.memo).isEqualTo(nft.getMemo());
         verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
     @Test
     void testGetApprovedHistorical() throws Exception {
         // When
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var spenderAddress = toAddress(1016);
-        final var spenderPublicKey = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress, spenderPublicKey);
-        final var tokenAddress = toAddress(1063);
-        final var tokenMemo = "TestMemo1";
-        final var nftAmountToMint = 2;
-        nftPersistHistorical(
-                tokenAddress,
-                tokenMemo,
-                nftAmountToMint,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
+        final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
+
+        final var spenderEntity = accountEntityWithAliasPersistHistorical(
+                SPENDER_ALIAS, SPENDER_PUBLIC_KEY, testWeb3jService.getHistoricalRange());
+        final var nftAmountToMint = 2;
+        final var nft = nftPersistHistorical(
+                nftAmountToMint,
+                ownerEntity.toEntityId(),
+                spenderEntity.toEntityId(),
+                ownerEntity.toEntityId(),
+                testWeb3jService.getHistoricalRange());
         final var contract = testWeb3jService.deploy(NestedCallsHistorical::deploy);
 
         // When
-        final var function = contract.call_nestedHtsGetApproved(tokenAddress.toHexString(), BigInteger.ONE);
+        final var function = contract.call_nestedHtsGetApproved(getAddressFromEntity(nft), BigInteger.ONE);
         final var result = function.send();
 
         // Then
-        final var key = ByteString.fromHex(spenderPublicKey);
-        final var expectedOutput = Address.wrap(
-                        Bytes.wrap(recoverAddressFromPubKey(key.substring(2).toByteArray())))
+        final var expectedOutput = Address.wrap(Bytes.wrap(
+                        recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())))
                 .toString();
         assertThat(result).isEqualTo(expectedOutput);
         verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
@@ -127,37 +116,31 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
     @Test
     void testMintTokenHistorical() throws Exception {
         // Given
-        final var ownerAddress = toAddress(1065);
-        final var ownerEntityId = ownerEntityPersistHistorical(ownerAddress);
-        final var spenderAddress = toAddress(1016);
-        final var spenderPublicKeyHistorical = "3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34";
-        final var spenderEntityPersist = spenderEntityPersistHistorical(spenderAddress, spenderPublicKeyHistorical);
-        final var tokenAddress = toAddress(1063);
-        final var tokenMemo = "TestMemo2";
-        final var nftAmountToMint = 3;
-        final var nftEntity = nftPersistHistorical(
-                tokenAddress,
-                tokenMemo,
-                nftAmountToMint,
-                ownerEntityId,
-                spenderEntityPersist,
-                ownerEntityId,
+        final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
+        final var spenderEntity = accountEntityWithAliasPersistHistorical(
+                SPENDER_ALIAS, SPENDER_PUBLIC_KEY, testWeb3jService.getHistoricalRange());
+        final var nftAmountToMint = 3;
+        final var nft = nftPersistHistorical(
+                nftAmountToMint,
+                ownerEntity.toEntityId(),
+                spenderEntity.toEntityId(),
+                ownerEntity.toEntityId(),
+                testWeb3jService.getHistoricalRange());
 
         domainBuilder
                 .tokenAccountHistory()
                 .customize(e -> e.freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
-                        .accountId(ownerEntityId.getId())
-                        .tokenId(nftEntity.getId())
-                        .timestampRange(Range.closedOpen(
-                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
+                        .accountId(ownerEntity.getId())
+                        .tokenId(nft.getId())
+                        .timestampRange(testWeb3jService.getHistoricalRange()))
                 .persist();
 
         final var contract = testWeb3jService.deploy(NestedCallsHistorical::deploy);
 
         // When
         final var function = contract.call_nestedMintToken(
-                tokenAddress.toHexString(),
+                getAddressFromEntity(nft),
                 BigInteger.ZERO,
                 Collections.singletonList(ByteString.copyFromUtf8("firstMeta").toByteArray()));
         final var result = function.send();
@@ -168,35 +151,23 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
         verifyOpcodeTracerCall(function.encodeFunctionCall(), contract);
     }
 
-    private EntityId nftPersistHistorical(
-            final Address tokenAddress,
-            final String memo,
+    private Entity nftPersistHistorical(
             final int nftAmountToMint,
             final EntityId ownerEntityId,
             final EntityId spenderEntityId,
             final EntityId treasuryId,
             final Range<Long> historicalBlock) {
 
-        final var nftEntityId = entityIdFromEvmAddress(tokenAddress);
-        final var nftEvmAddress = toEvmAddress(nftEntityId);
         final var ownerEntity = EntityId.of(ownerEntityId.getId());
 
-        domainBuilder
+        final var nftEntity = domainBuilder
                 .entity()
-                .customize(e -> e.id(nftEntityId.getId())
-                        .num(nftEntityId.getNum())
-                        .evmAddress(nftEvmAddress)
-                        .type(TOKEN)
-                        .key(KEY_PROTO)
-                        .expirationTimestamp(9999999999999L)
-                        .memo(memo)
-                        .deleted(false)
-                        .timestampRange(historicalBlock))
+                .customize(e -> e.type(TOKEN).key(KEY_PROTO).deleted(false).timestampRange(historicalBlock))
                 .persist();
 
         domainBuilder
                 .tokenHistory()
-                .customize(t -> t.tokenId(nftEntityId.getId())
+                .customize(t -> t.tokenId(nftEntity.getId())
                         .treasuryAccountId(treasuryId)
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .kycKey(KEY_PROTO)
@@ -206,7 +177,6 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
                         .supplyType(TokenSupplyTypeEnum.FINITE)
                         .freezeKey(KEY_PROTO)
                         .pauseKey(KEY_PROTO)
-                        .pauseStatus(TokenPauseStatusEnum.PAUSED)
                         .wipeKey(KEY_PROTO)
                         .supplyKey(KEY_PROTO)
                         .wipeKey(KEY_PROTO)
@@ -219,12 +189,12 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
             domainBuilder
                     .nftHistory()
                     .customize(n -> n.accountId(spenderEntityId)
-                            .createdTimestamp(1475067194949034022L)
+                            .createdTimestamp(historicalBlock.lowerEndpoint() - 1)
                             .serialNumber(finalI + 1)
                             .spender(spenderEntityId)
                             .metadata("NFT_METADATA_URI".getBytes())
                             .accountId(ownerEntity)
-                            .tokenId(nftEntityId.getId())
+                            .tokenId(nftEntity.getId())
                             .deleted(false)
                             .timestampRange(Range.openClosed(
                                     historicalBlock.lowerEndpoint() - 1, historicalBlock.upperEndpoint() + 1)))
@@ -233,47 +203,15 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
             domainBuilder
                     .nft()
                     .customize(n -> n.accountId(spenderEntityId)
-                            .createdTimestamp(1475067194949034022L)
+                            .createdTimestamp(historicalBlock.lowerEndpoint() - 1)
                             .serialNumber(finalI + 1)
                             .metadata("NFT_METADATA_URI".getBytes())
                             .accountId(ownerEntity)
-                            .tokenId(nftEntityId.getId())
+                            .tokenId(nftEntity.getId())
                             .deleted(false)
                             .timestampRange(Range.atLeast(historicalBlock.upperEndpoint() + 1)))
                     .persist();
         }
-        return nftEntityId;
-    }
-
-    private EntityId ownerEntityPersistHistorical(Address address) {
-        final var ownerEntityId = entityIdFromEvmAddress(address);
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(ownerEntityId.getId())
-                        .num(ownerEntityId.getNum())
-                        .alias(toEvmAddress(ownerEntityId))
-                        .timestampRange(Range.closedOpen(
-                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
-                .persist();
-        return ownerEntityId;
-    }
-
-    private EntityId spenderEntityPersistHistorical(Address spenderAddress, String spenderAlias) {
-        final var spenderEntityId = entityIdFromEvmAddress(spenderAddress);
-        final var spenderPublicKeyHistorical = ByteString.fromHex(spenderAlias);
-        final var spenderAliasHistorical = Address.wrap(Bytes.wrap(
-                recoverAddressFromPubKey(spenderPublicKeyHistorical.substring(2).toByteArray())));
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(spenderEntityId.getId())
-                        .num(spenderEntityId.getNum())
-                        .evmAddress(spenderAliasHistorical.toArray())
-                        .alias(spenderPublicKeyHistorical.toByteArray())
-                        .deleted(false)
-                        .createdTimestamp(recordFileBeforeEvm34.getConsensusStart())
-                        .timestampRange(Range.closedOpen(
-                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
-                .persist();
-        return spenderEntityId;
+        return nftEntity;
     }
 }
