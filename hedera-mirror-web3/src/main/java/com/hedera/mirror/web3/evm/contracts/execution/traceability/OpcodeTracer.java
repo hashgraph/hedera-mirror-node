@@ -290,7 +290,8 @@ public class OpcodeTracer implements HederaOperationTracer {
                     continue;
                 }
 
-                SlotValue slotValue = (SlotValue) states.get(ContractStorageReadableKVState.KEY).get(slotKey);
+                SlotValue slotValue = (SlotValue)
+                        states.get(ContractStorageReadableKVState.KEY).get(slotKey);
                 if (slotValue != null) {
                     storageUpdates.put(
                             Bytes.of(slotKey.key().toByteArray()),
