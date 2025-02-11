@@ -33,6 +33,7 @@ import com.hedera.mirror.importer.parser.domain.BlockFileBuilder;
 import com.hedera.mirror.importer.parser.domain.BlockItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -114,26 +115,56 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedRecordItem = recordItemBuilder
                 .cryptoCreate()
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .receipt(r -> r.setStatus(ResponseCodeEnum.SUCCESS))
                 .build();
+
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.cryptoCreate(expectedRecordItem).build();
         var expectedAccountId = blockItem
+                .transactionOutput()
+                .getFirst()
+                .getAccountCreate()
+                .getCreatedAccountId();
+        var expectedEvmAddress = blockItem
                 .stateChanges()
                 .getFirst()
-                .getStateChanges(3)
-                .getMapUpdate()
-                .getValue()
-                .getAccountIdValue()
-                .getAccountNum();
-        var expectedEVMAddress = blockItem
-                .stateChanges()
+                .getStateChangesList()
                 .getFirst()
-                .getStateChanges(3)
                 .getMapUpdate()
                 .getValue()
                 .getAccountValue()
                 .getAlias();
+
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+                // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(
+                        expectedAccountId,
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getAccountID())
+                .returns(expectedEvmAddress, TransactionRecord::getEvmAddress));
+    }
+
+    @Test
+    void cryptoCreateUnsuccessfulTransform() {
+        var expectedRecordItem = recordItemBuilder
+                .cryptoCreate()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.clearAccountID().setStatus(ResponseCodeEnum.INVALID_TRANSACTION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.cryptoCreate(expectedRecordItem).build();
+
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
@@ -147,11 +178,74 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(null, RecordItem::getPrevious)
                 .extracting(RecordItem::getTransactionRecord)
                 .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
-                .returns(expectedEVMAddress, TransactionRecord::getEvmAddress)
+                .returns(
+                        AccountID.getDefaultInstance(),
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getAccountID()));
+    }
+
+    @Test
+    void cryptoUpdateTransform() {
+        var expectedRecordItem = recordItemBuilder
+                .cryptoUpdate()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.cryptoUpdate(expectedRecordItem).build();
+        var expectedAccountId = blockItem
+                .transactionOutput()
+                .getFirst()
+                .getAccountCreate()
+                .getCreatedAccountId();
+
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
                 .returns(
                         expectedAccountId,
                         transactionRecord ->
-                                transactionRecord.getReceipt().getAccountID().getAccountNum()));
+                                transactionRecord.getReceipt().getAccountID()));
+    }
+
+    @Test
+    void cryptoUpdateUnsuccessfulTransform() {
+        var expectedRecordItem = recordItemBuilder
+                .cryptoUpdate()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.clearAccountID().setStatus(ResponseCodeEnum.INVALID_TRANSACTION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.cryptoUpdate(expectedRecordItem).build();
+
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(
+                        AccountID.getDefaultInstance(),
+                        transactionRecord ->
+                                transactionRecord.getReceipt().getAccountID()));
     }
 
     @Test
@@ -164,7 +258,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
-        var blockItem = blockItemBuilder.cryptoAddLiveHash(expectedRecordItem).build();
+        var blockItem = blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
         var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
@@ -191,7 +285,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
         var blockItem =
-                blockItemBuilder.cryptoDeleteLiveHash(expectedRecordItem).build();
+                blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
         var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
@@ -218,7 +312,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
         var blockItem =
-                blockItemBuilder.cryptoDeleteAllowance(expectedRecordItem).build();
+                blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
         var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
@@ -245,7 +339,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
         var blockItem =
-                blockItemBuilder.cryptoApproveAllowance(expectedRecordItem).build();
+                blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
         var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
@@ -271,33 +365,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
 
-        var blockItem = blockItemBuilder.cryptoDelete(expectedRecordItem).build();
-        var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
-
-        // when
-        var recordFile = blockFileTransformer.transform(blockFie);
-
-        // then
-        assertRecordFile(recordFile, blockFie, items -> assertThat(items)
-                .hasSize(1)
-                .first()
-                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
-                .returns(null, RecordItem::getPrevious)
-                .extracting(RecordItem::getTransactionRecord)
-                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash));
-    }
-
-    @Test
-    void cryptoUpdate() {
-        // given
-        var expectedRecordItem = recordItemBuilder
-                .cryptoUpdate()
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .build();
-
-        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
-
-        var blockItem = blockItemBuilder.cryptoUpdate(expectedRecordItem).build();
+        var blockItem = blockItemBuilder.defaultRecordItem(expectedRecordItem).build();
         var blockFie = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when

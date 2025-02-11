@@ -605,7 +605,7 @@ public class RecordItemBuilder {
                 .setProxyAccountID(accountId())
                 .setReceiverSigRequired(false)
                 .setStakedNodeId(1L);
-        return new Builder<>(TransactionType.CRYPTOUPDATEACCOUNT, builder);
+        return new Builder<>(TransactionType.CRYPTOUPDATEACCOUNT, builder).receipt(r -> r.setAccountID(accountId()));
     }
 
     public CustomFee.Builder customFee(CustomFee.FeeCase feeCase) {

@@ -18,14 +18,11 @@ package com.hedera.mirror.importer.downloader.block.transformer;
 
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
-import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_ALIASES;
-
 @Named
-final class CryptoCreateTransformer extends AbstractBlockItemTransformer {
+public class CryptoUpdateTransformer extends AbstractBlockItemTransformer {
 
     @Override
     protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
@@ -42,23 +39,10 @@ final class CryptoCreateTransformer extends AbstractBlockItemTransformer {
                 }
             }
         }
-
-            for (var stateChanges : blockItem.stateChanges()) {
-                for (var stateChange : stateChanges.getStateChangesList()) {
-                    if (stateChange.getStateId() == STATE_ID_ALIASES.getNumber() && stateChange.hasMapUpdate()) {
-                        var value = stateChange.getMapUpdate().getValue();
-                        var alias = value.getAccountValue().getAlias();
-                        if (value.hasAccountValue() && alias.toByteArray().length == DomainUtils.EVM_ADDRESS_LENGTH) {
-                            transactionRecordBuilder.setEvmAddress(alias);
-                        }
-                    }
-                }
-            }
-
     }
 
     @Override
     public TransactionType getType() {
-        return TransactionType.CRYPTOCREATEACCOUNT;
+        return TransactionType.CRYPTOUPDATEACCOUNT;
     }
 }
