@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 	"github.com/pkg/errors"
 )
 
