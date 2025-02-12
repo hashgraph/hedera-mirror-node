@@ -464,7 +464,6 @@ stackgres:
       requests:
         cpu: "1000m"
         memory: "3Gi"
-
   enabled: false
   operator:
     image:
