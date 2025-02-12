@@ -124,8 +124,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         tokenAccount(ta -> ta.tokenId(tokenId).accountId(contractEntityId.getId()));
 
         // When
-        final var functionCall = contract.call_approveExternal(
-                asHexedEvmAddress(tokenId), getAddressFromEntity(spender), allowance);
+        final var functionCall =
+                contract.call_approveExternal(asHexedEvmAddress(tokenId), getAddressFromEntity(spender), allowance);
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
@@ -574,8 +574,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_freezeTokenExternal(
-                asHexedEvmAddress(tokenId), getAliasFromEntity(accountWithoutFreeze));
+        final var functionCall =
+                contract.call_freezeTokenExternal(asHexedEvmAddress(tokenId), getAliasFromEntity(accountWithoutFreeze));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
@@ -603,8 +603,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_unfreezeTokenExternal(
-                asHexedEvmAddress(tokenId), getAliasFromEntity(accountWithFreeze));
+        final var functionCall =
+                contract.call_unfreezeTokenExternal(asHexedEvmAddress(tokenId), getAliasFromEntity(accountWithFreeze));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);

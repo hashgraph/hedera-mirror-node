@@ -243,8 +243,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
         tokenAssociateAccountPersist(contractEntityId, tokenEntity);
         final var amount = 10L;
-        fungibleTokenAllowancePersist(
-                contractEntityId, owner, entityIdFromEvmAddress(toAddress(tokenId)), amount);
+        fungibleTokenAllowancePersist(contractEntityId, owner, entityIdFromEvmAddress(toAddress(tokenId)), amount);
         // When
         final var functionCall = contract.send_transferFrom(
                 toAddress(tokenId).toHexString(),
@@ -661,8 +660,7 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
         tokenAssociateAccountPersist(contractEntityId, tokenEntity);
         final var amount = 10L;
-        fungibleTokenAllowancePersist(
-                contractEntityId, owner, entityIdFromEvmAddress(toAddress(tokenId)), amount);
+        fungibleTokenAllowancePersist(contractEntityId, owner, entityIdFromEvmAddress(toAddress(tokenId)), amount);
         // When
         final var functionCall = contract.send_transferFromRedirect(
                 toAddress(tokenId).toHexString(),

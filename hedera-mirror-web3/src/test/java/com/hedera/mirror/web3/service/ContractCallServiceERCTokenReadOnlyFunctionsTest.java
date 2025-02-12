@@ -212,9 +212,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var tokenId = token.getTokenId();
         var entity = domainBuilder
                 .tokenAllowance()
-                .customize(a -> a.tokenId(tokenId)
-                        .owner(owner.getNum())
-                        .spender(spender.getNum()))
+                .customize(a -> a.tokenId(tokenId).owner(owner.getNum()).spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenId);
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -239,9 +237,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var tokenId = token.getTokenId();
         var entity = domainBuilder
                 .tokenAllowance()
-                .customize(a -> a.tokenId(tokenId)
-                        .owner(owner.getNum())
-                        .spender(spender.getNum()))
+                .customize(a -> a.tokenId(tokenId).owner(owner.getNum()).spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenId);
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -266,9 +262,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var tokenId = token.getTokenId();
         var entity = domainBuilder
                 .tokenAllowance()
-                .customize(a -> a.tokenId(tokenId)
-                        .owner(owner.getNum())
-                        .spender(spender.getNum()))
+                .customize(a -> a.tokenId(tokenId).owner(owner.getNum()).spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenId);
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -289,9 +283,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var tokenId = token.getTokenId();
         var entity = domainBuilder
                 .tokenAllowance()
-                .customize(a -> a.tokenId(tokenId)
-                        .owner(owner.getNum())
-                        .spender(spender.getNum()))
+                .customize(a -> a.tokenId(tokenId).owner(owner.getNum()).spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenId);
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
@@ -746,9 +738,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var tokenId = token.getTokenId();
         domainBuilder
                 .tokenAllowance()
-                .customize(a -> a.tokenId(tokenId)
-                        .owner(owner.getNum())
-                        .spender(spender.getNum()))
+                .customize(a -> a.tokenId(tokenId).owner(owner.getNum()).spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenId);
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
@@ -767,9 +757,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var tokenId = token.getTokenId();
         domainBuilder
                 .tokenAllowance()
-                .customize(a -> a.tokenId(tokenId)
-                        .owner(owner.getNum())
-                        .spender(spender.getNum()))
+                .customize(a -> a.tokenId(tokenId).owner(owner.getNum()).spender(spender.getNum()))
                 .persist();
         final var tokenAddress = toAddress(tokenId);
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
