@@ -28,7 +28,7 @@ spec:
         command:
         - "/bin/bash"
         - "-ecx"
-        - rm -fr /pgdata/data/.already_restored_from_volume_snapshot_.*
+        - rm -fr /pgdata/data/.already_restored_from_volume_snapshot_*
         volumeMounts:
         - mountPath: /pgdata
           name: pgdata
