@@ -31,7 +31,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.Expiry;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.HederaToken;
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenKey;
-import static com.hedera.services.utils.EntityIdUtils.addressFromId;
+import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.entityIdFromTokenId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -104,7 +104,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_hrcIsAssociated(addressFromId(token.getTokenId()));
+        final var functionCall = contract.call_hrcIsAssociated(asHexedEvmAddress(token.getTokenId()));
 
         // Then
         if (mirrorNodeEvmProperties.isModularizedServices()) {
@@ -192,7 +192,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         // When
         final var functionCall =
-                contract.call_isKycGranted(addressFromId(token.getTokenId()), getAddressFromEntity(account));
+                contract.call_isKycGranted(asHexedEvmAddress(token.getTokenId()), getAddressFromEntity(account));
 
         // Then
         assertThat(functionCall.send()).isTrue();
@@ -215,7 +215,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         // When
         final var functionCall =
-                contract.call_isKycGranted(addressFromId(tokenEntity.getTokenId()), getAliasFromEntity(account));
+                contract.call_isKycGranted(asHexedEvmAddress(tokenEntity.getTokenId()), getAliasFromEntity(account));
 
         // Then
         assertThat(functionCall.send()).isTrue();
@@ -274,7 +274,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_isTokenAddress(addressFromId(tokenEntity.getTokenId()));
+        final var functionCall = contract.call_isTokenAddress(asHexedEvmAddress(tokenEntity.getTokenId()));
 
         // Then
         assertThat(functionCall.send()).isTrue();
@@ -355,7 +355,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_getType(addressFromId(tokenEntity.getTokenId()));
+        final var functionCall = contract.call_getType(asHexedEvmAddress(tokenEntity.getTokenId()));
 
         // Then
         assertThat(functionCall.send()).isEqualTo(BigInteger.ZERO);
@@ -524,11 +524,11 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_getCustomFeesForToken(addressFromId(tokenId));
+        final var functionCall = contract.call_getCustomFeesForToken(asHexedEvmAddress(tokenId));
 
         final var expectedFee = new FixedFee(
                 BigInteger.valueOf(100L),
-                addressFromId(tokenId),
+                asHexedEvmAddress(tokenId),
                 false,
                 false,
                 Address.fromHexString(
@@ -565,7 +565,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_getCustomFeesForToken(addressFromId(tokenEntity.getTokenId()));
+        final var functionCall = contract.call_getCustomFeesForToken(asHexedEvmAddress(tokenEntity.getTokenId()));
 
         final var expectedFee = new PrecompileTestContract.FractionalFee(
                 BigInteger.valueOf(100L),
@@ -611,7 +611,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_getCustomFeesForToken(addressFromId(tokenId));
+        final var functionCall = contract.call_getCustomFeesForToken(asHexedEvmAddress(tokenId));
 
         final var expectedFee = new PrecompileTestContract.RoyaltyFee(
                 BigInteger.valueOf(20L),
@@ -686,7 +686,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
 
         // When
         final var functionCall = contract.call_htsAllowance(
-                addressFromId(tokenEntity.getTokenId()), getAliasFromEntity(owner), getAliasFromEntity(spender));
+                asHexedEvmAddress(tokenEntity.getTokenId()), getAliasFromEntity(owner), getAliasFromEntity(spender));
 
         // Then
         assertThat(functionCall.send()).isEqualTo(BigInteger.valueOf(amountGranted));

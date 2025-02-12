@@ -268,6 +268,10 @@ public final class EntityIdUtils {
         return CommonUtils.hex(asEvmAddress(id.num()));
     }
 
+    public static String asHexedEvmAddress(long tokenId) {
+        return CommonUtils.hex(asEvmAddress(tokenId));
+    }
+
     public static boolean isAlias(final AccountID idOrAlias) {
         return idOrAlias.getAccountNum() == 0 && !idOrAlias.getAlias().isEmpty();
     }
@@ -324,10 +328,6 @@ public final class EntityIdUtils {
 
     public static boolean isAliasSizeGreaterThanEvmAddress(final ByteString alias) {
         return alias.size() > EVM_ADDRESS_SIZE;
-    }
-
-    public static String addressFromId(long tokenId) {
-        return EvmTokenUtils.toAddress(tokenId).toHexString();
     }
 
     public static EntityId entityIdFromTokenId(long tokenId) {
