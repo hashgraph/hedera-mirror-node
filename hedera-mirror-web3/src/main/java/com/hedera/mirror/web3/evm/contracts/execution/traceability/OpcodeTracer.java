@@ -42,11 +42,9 @@ import com.swirlds.state.State;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
@@ -269,35 +267,25 @@ public class OpcodeTracer implements HederaOperationTracer {
         return BytesDecoder.getAbiEncodedRevertReason(revertReason);
     }
 
-    private Optional<Map<Bytes, Bytes>> getStorageUpdates(Address accountAddress) {
-        Map<Bytes, Bytes> storageUpdates = new HashMap<>();
+    private Map<Bytes, Bytes> getModularizedUpdatedStorage(Address accountAddress) {
+        Map<Bytes, Bytes> storageUpdates = new TreeMap<>();
         MapWritableStates states = (MapWritableStates) mirrorNodeState.getWritableStates(ContractService.NAME);
 
         try {
+            var accountContractID = EntityIdUtils.toContractID(accountAddress);
             var storageState = states.get(ContractStorageReadableKVState.KEY);
-            Set<SlotKey> modifiedKeys = storageState.modifiedKeys().stream()
+            storageState.modifiedKeys().stream()
                     .filter(SlotKey.class::isInstance)
                     .map(SlotKey.class::cast)
-                    .filter(SlotKey::hasContractID)
-                    .collect(Collectors.toSet());
-
-            if (modifiedKeys.isEmpty()) {
-                return Optional.empty();
-            }
-
-            var accountContractID = EntityIdUtils.toContractID(accountAddress);
-            for (SlotKey slotKey : modifiedKeys) {
-                if (!slotKey.contractID().equals(accountContractID)) {
-                    continue;
-                }
-
-                SlotValue slotValue = (SlotValue) storageState.get(slotKey);
-                if (slotValue != null) {
-                    storageUpdates.put(
-                            Bytes.wrap(slotKey.key().toByteArray()),
-                            Bytes.wrap(slotValue.value().toByteArray()));
-                }
-            }
+                    .filter(slotKey -> slotKey.contractID().equals(accountContractID))
+                    .forEach(slotKey -> {
+                        SlotValue slotValue = (SlotValue) storageState.get(slotKey);
+                        if (slotValue != null) {
+                            storageUpdates.put(
+                                    Bytes.wrap(slotKey.key().toByteArray()),
+                                    Bytes.wrap(slotValue.value().toByteArray()));
+                        }
+                    });
         } catch (IllegalArgumentException e) {
             log.warn(
                     "Failed to retrieve modified storage keys for service: {}, key: {}",
@@ -306,10 +294,6 @@ public class OpcodeTracer implements HederaOperationTracer {
                     e);
         }
 
-        return storageUpdates.isEmpty() ? Optional.empty() : Optional.of(storageUpdates);
-    }
-
-    private Map<Bytes, Bytes> getModularizedUpdatedStorage(Address accountAddress) {
-        return getStorageUpdates(accountAddress).map(TreeMap::new).orElseGet(TreeMap::new);
+        return storageUpdates;
     }
 }

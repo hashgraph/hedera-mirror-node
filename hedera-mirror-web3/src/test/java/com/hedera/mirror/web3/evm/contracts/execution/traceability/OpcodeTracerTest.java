@@ -550,32 +550,6 @@ class OpcodeTracerTest {
 
     @Test
     @DisplayName(
-            "given storage is enabled in tracer options, should skip slotKey when hasContractID is false for modularized services")
-    void shouldSkipSlotKeyWhenHasContractIDIsFalse() {
-        // Given
-        tracerOptions = tracerOptions.toBuilder().storage(true).build();
-        when(mirrorNodeEvmProperties.isModularizedServices()).thenReturn(true);
-        frame = setupInitialFrame(tracerOptions);
-
-        MapWritableStates mockStates = mock(MapWritableStates.class);
-        when(mirrorNodeState.getWritableStates(CONTRACT_SERVICE)).thenReturn(mockStates);
-        WritableKVState<SlotKey, SlotValue> mockStorageState = mock(WritableKVState.class);
-        doReturn(mockStorageState).when(mockStates).get(ContractStorageReadableKVState.KEY);
-
-        SlotKey slotKeyWithoutContractID = mock(SlotKey.class);
-        when(slotKeyWithoutContractID.hasContractID()).thenReturn(false);
-
-        when(mockStorageState.modifiedKeys()).thenReturn(Set.of(slotKeyWithoutContractID));
-
-        // When
-        final Opcode opcode = executeOperation(frame);
-
-        // Then
-        assertThat(opcode.storage()).isEmpty();
-    }
-
-    @Test
-    @DisplayName(
             "given storage is enabled in tracer options, should skip slotKey when contract address does not match for modularized services")
     void shouldSkipSlotKeyWhenContractAddressDoesNotMatch() {
         // Given
@@ -1054,8 +1028,6 @@ class OpcodeTracerTest {
      */
     private SlotKey createMockSlotKey(Address contractAddress) {
         SlotKey slotKey = mock(SlotKey.class);
-
-        when(slotKey.hasContractID()).thenReturn(true);
 
         ContractID testContractId = com.hedera.hapi.node.base.ContractID.newBuilder()
                 .contractNum(EntityIdUtils.numFromEvmAddress(contractAddress.toArray()))
