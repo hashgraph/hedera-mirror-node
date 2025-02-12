@@ -444,7 +444,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
-
     /**
      * Persists a record in the token_balance db table (consensus_timestamp, account_id, balance, token_id).
      * Each record represents the fungible token balance that an account holds at a given consensus timestamp.

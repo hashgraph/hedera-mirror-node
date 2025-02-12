@@ -370,7 +370,6 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var sender = accountEntityPersist();
         accountBalanceRecordsPersist(sender);
 
-
         long balanceTimestamp = treasuryAccount.getBalanceTimestamp();
         tokenBalancePersist(treasuryAccount.toEntityId(), EntityId.of(token.getTokenId()), balanceTimestamp);
 
@@ -844,8 +843,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var receiver = accountEntityWithEvmAddressPersist();
         final var token = fungibleTokenPersist();
         final var sponsor = accountEntityWithEvmAddressPersist();
-        tokenBalancePersist(
-                sponsor.toEntityId(), EntityId.of(token.getTokenId()), sponsor.getCreatedTimestamp());
+        tokenBalancePersist(sponsor.toEntityId(), EntityId.of(token.getTokenId()), sponsor.getCreatedTimestamp());
         accountBalanceRecordsPersist(sponsor);
 
         tokenAccountPersist(token.getTokenId(), sponsor.getId());
