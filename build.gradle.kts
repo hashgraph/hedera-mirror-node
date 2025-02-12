@@ -31,6 +31,7 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("grpcVersion", "1.70.0")
+    set("json-smart.version", "2.5.2") // Temporary until next Spring Boot
     set("mapStructVersion", "1.6.3")
     set("netty.version", "4.1.118.Final") // Temporary until next Spring Boot
     set("nodeJsVersion", "18.20.5")
