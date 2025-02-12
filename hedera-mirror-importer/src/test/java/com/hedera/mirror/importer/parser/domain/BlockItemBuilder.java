@@ -38,6 +38,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.Account;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
+import com.hederahashgraph.api.proto.java.CryptoCreate;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Schedule;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -189,29 +190,17 @@ public class BlockItemBuilder {
     public BlockItemBuilder.Builder cryptoCreate(RecordItem recordItem) {
         var transactionRecord = recordItem.getTransactionRecord();
         var accountId = transactionRecord.getReceipt().getAccountID();
-        var alias = transactionRecord.getAlias();
         var transactionOutput = TransactionOutput.newBuilder()
                 .setAccountCreate(CreateAccountOutput.newBuilder()
                         .setCreatedAccountId(accountId)
                         .build())
                 .build();
 
-        var stateChange = StateChange.newBuilder()
-                .setStateId(STATE_ID_ALIASES.getNumber())
-                .setMapUpdate(MapUpdateChange.newBuilder()
-                        .setValue(MapChangeValue.newBuilder()
-                                .setAccountValue(
-                                        Account.newBuilder().setAlias(alias).build())
-                                .build()))
-                .build();
-        var stateChanges =
-                StateChanges.newBuilder().addStateChanges(stateChange).build();
-
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(),
                 transactionResult(recordItem),
                 List.of(transactionOutput),
-                List.of(stateChanges));
+                Collections.emptyList());
     }
 
     public Builder fileAppend(RecordItem recordItem) {

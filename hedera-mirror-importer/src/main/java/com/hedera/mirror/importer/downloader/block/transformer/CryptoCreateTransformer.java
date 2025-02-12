@@ -21,6 +21,7 @@ import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_I
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
@@ -28,9 +29,14 @@ import jakarta.inject.Named;
 final class CryptoCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
+    protected void updateTransactionRecord(BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
         if (!blockItem.successful()) {
             return;
+        }
+
+        var alias = transactionBody.getCryptoCreateAccount().getAlias();
+        if (alias.size() == DomainUtils.EVM_ADDRESS_LENGTH) {
+            transactionRecordBuilder.setEvmAddress(alias);
         }
 
         var receiptBuilder = transactionRecordBuilder.getReceiptBuilder();
@@ -39,18 +45,7 @@ final class CryptoCreateTransformer extends AbstractBlockItemTransformer {
                 var output = transactionOutput.getAccountCreate();
                 if (output.hasCreatedAccountId()) {
                     receiptBuilder.setAccountID(output.getCreatedAccountId());
-                }
-            }
-        }
-
-        for (var stateChanges : blockItem.stateChanges()) {
-            for (var stateChange : stateChanges.getStateChangesList()) {
-                if (stateChange.getStateId() == STATE_ID_ALIASES.getNumber() && stateChange.hasMapUpdate()) {
-                    var value = stateChange.getMapUpdate().getValue();
-                    var alias = value.getAccountValue().getAlias();
-                    if (value.hasAccountValue() && alias.toByteArray().length == DomainUtils.EVM_ADDRESS_LENGTH) {
-                        transactionRecordBuilder.setEvmAddress(alias);
-                    }
+                    return;
                 }
             }
         }

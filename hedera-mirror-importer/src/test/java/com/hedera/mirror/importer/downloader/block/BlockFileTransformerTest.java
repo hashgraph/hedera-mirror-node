@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -112,8 +113,10 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
 
     @Test
     void cryptoCreateTransform() {
+        var alias = recordItemBuilder.bytes(20);
         var expectedRecordItem = recordItemBuilder
                 .cryptoCreate()
+                .record(r -> r.setEvmAddress(alias))
                 .recordItem(r -> r.hapiVersion(HAPI_VERSION))
                 .build();
 
@@ -121,15 +124,6 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var blockItem = blockItemBuilder.cryptoCreate(expectedRecordItem).build();
         var expectedAccountId =
                 blockItem.transactionOutput().getFirst().getAccountCreate().getCreatedAccountId();
-        var expectedEvmAddress = blockItem
-                .stateChanges()
-                .getFirst()
-                .getStateChangesList()
-                .getFirst()
-                .getMapUpdate()
-                .getValue()
-                .getAccountValue()
-                .getAlias();
 
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
@@ -137,7 +131,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var recordFile = blockFileTransformer.transform(blockFile);
 
         // then
-        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+         assertRecordFile(recordFile, blockFile, items -> assertThat(items)
                 .hasSize(1)
                 .first()
                 .satisfies(item -> assertRecordItem(item, expectedRecordItem))
@@ -147,7 +141,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 .returns(
                         expectedAccountId,
                         transactionRecord -> transactionRecord.getReceipt().getAccountID())
-                .returns(expectedEvmAddress, TransactionRecord::getEvmAddress));
+                .returns(alias, TransactionRecord::getEvmAddress));
     }
 
     @Test
