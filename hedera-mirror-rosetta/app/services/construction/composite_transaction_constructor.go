@@ -18,7 +18,7 @@ package construction
 
 import (
 	"context"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"

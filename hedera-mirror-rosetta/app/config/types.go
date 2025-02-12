@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 const EntityCacheKey = "entity"

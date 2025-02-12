@@ -16,7 +16,7 @@
 
 package interfaces
 
-import "github.com/hiero-ledger/hiero-sdk-go/v2"
+import "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 
 // Transaction defines the transaction methods used by constructor service
 // Remove the interface when SDK adds support of hiero.TransactionIsFrozen and

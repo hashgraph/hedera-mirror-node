@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )
