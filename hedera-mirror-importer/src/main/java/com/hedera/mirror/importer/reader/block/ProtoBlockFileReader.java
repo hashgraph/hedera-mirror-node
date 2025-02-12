@@ -131,7 +131,7 @@ public class ProtoBlockFileReader implements BlockFileReader {
         var blockFile = context.getBlockFile();
         var blockProof = blockItem.getBlockProof();
         var blockRootHashDigest = context.getBlockRootHashDigest();
-        var previousHash = DomainUtils.toBytes(blockProof.getPreviousBlockRootHash());
+        byte[] previousHash = DomainUtils.toBytes(blockProof.getPreviousBlockRootHash());
         blockFile.blockProof(blockProof).previousHash(DomainUtils.bytesToHex(previousHash));
         blockRootHashDigest.setPreviousHash(previousHash);
         blockRootHashDigest.setStartOfBlockStateHash(DomainUtils.toBytes(blockProof.getStartOfBlockStateRootHash()));
