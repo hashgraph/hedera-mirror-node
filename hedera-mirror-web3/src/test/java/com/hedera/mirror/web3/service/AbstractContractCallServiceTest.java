@@ -405,12 +405,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
-    protected void tokenAccountPersist(final long tokenId, final long accountId, Long balance) {
-        tokenAccount(ta -> {
-            ta.tokenId(tokenId).accountId(accountId).balance(balance);
-        });
-    }
-
     protected void tokenAccountPersist(final long tokenId, final long accountId) {
         tokenAccount(ta -> ta.tokenId(tokenId).accountId(accountId));
     }

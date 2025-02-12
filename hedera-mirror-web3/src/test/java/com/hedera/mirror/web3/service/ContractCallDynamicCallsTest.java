@@ -825,11 +825,11 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var tokenId = tokenEntity.getId();
         final var spenderId = spender.getId();
         final var ownerId = owner.getId();
-        tokenAccountPersist(tokenId, treasuryAccount.getId(), 1L);
-        tokenAccountPersist(tokenId, spenderId, 1L);
+        tokenAccountPersist(tokenId, treasuryAccount.getId());
+        tokenAccountPersist(tokenId, spenderId);
 
         if (!Objects.equals(ownerId, spenderId)) {
-            tokenAccountPersist(tokenId, ownerId, 1L);
+            tokenAccountPersist(tokenId, ownerId);
         }
 
         if (tokenType.equals(TokenTypeEnum.FUNGIBLE_COMMON)) {
