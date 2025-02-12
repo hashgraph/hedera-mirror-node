@@ -274,7 +274,8 @@ public class OpcodeTracer implements HederaOperationTracer {
         MapWritableStates states = (MapWritableStates) mirrorNodeState.getWritableStates(ContractService.NAME);
 
         try {
-            Set<SlotKey> modifiedKeys = states.get(ContractStorageReadableKVState.KEY).modifiedKeys().stream()
+            var storageState = states.get(ContractStorageReadableKVState.KEY);
+            Set<SlotKey> modifiedKeys = storageState.modifiedKeys().stream()
                     .filter(SlotKey.class::isInstance)
                     .map(SlotKey.class::cast)
                     .filter(SlotKey::hasContractID)
@@ -284,18 +285,17 @@ public class OpcodeTracer implements HederaOperationTracer {
                 return Optional.empty();
             }
 
+            var accountContractID = EntityIdUtils.toContractID(accountAddress);
             for (SlotKey slotKey : modifiedKeys) {
-                Address contractAddress = EntityIdUtils.asHexedEvmAddress(slotKey.contractID());
-                if (!accountAddress.equals(contractAddress)) {
+                if (!slotKey.contractID().equals(accountContractID)) {
                     continue;
                 }
 
-                SlotValue slotValue = (SlotValue)
-                        states.get(ContractStorageReadableKVState.KEY).get(slotKey);
+                SlotValue slotValue = (SlotValue) storageState.get(slotKey);
                 if (slotValue != null) {
                     storageUpdates.put(
-                            Bytes.of(slotKey.key().toByteArray()),
-                            Bytes.of(slotValue.value().toByteArray()));
+                            Bytes.wrap(slotKey.key().toByteArray()),
+                            Bytes.wrap(slotValue.value().toByteArray()));
                 }
             }
         } catch (IllegalArgumentException e) {
@@ -310,9 +310,6 @@ public class OpcodeTracer implements HederaOperationTracer {
     }
 
     private Map<Bytes, Bytes> getModularizedUpdatedStorage(Address accountAddress) {
-        return getStorageUpdates(accountAddress)
-                .map(storageUpdates -> storageUpdates.entrySet().stream()
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, TreeMap::new)))
-                .orElseGet(TreeMap::new);
+        return getStorageUpdates(accountAddress).map(TreeMap::new).orElseGet(TreeMap::new);
     }
 }
