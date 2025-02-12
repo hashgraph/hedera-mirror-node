@@ -362,6 +362,30 @@ prometheus:
         selector:
           matchLabels:
             app.kubernetes.io/name: traefik
+      - name: stackgres-collector
+        podMetricsEndpoints:
+          - honorLabels: true
+            honorTimestamps: true
+            interval: 1m
+            metricRelabelings:
+              - action: drop
+                regex: ^(pg_stat.*_user.*|pg_table.*|pgbouncer_show_clients.*)$
+                sourceLabels:
+                  - __name__
+            scrapeTimeout: 30s
+            path: /metrics
+            port: prom-http
+            scheme: https
+            tlsConfig:
+              ca:
+                secret:
+                  key: tls.crt
+                  name: stackgres-collector
+              serverName: stackgres-collector
+        selector:
+          matchLabels:
+            app: StackGresConfig
+            stackgres.io/collector: "true"
     prometheusSpec:
       podMonitorSelectorNilUsesHelmValues: false
       priorityClassName: high
@@ -417,6 +441,8 @@ promtail:
       operator: Exists
 
 stackgres:
+  cert:
+    collectorSecretName: stackgres-collector
   collector:
     config:
       exporters:
@@ -427,6 +453,7 @@ stackgres:
           metrics:
             receivers:
               - prometheus
+    name: stackgres-collector
     resources:
       limits:
         memory: "4Gi"
@@ -435,32 +462,8 @@ stackgres:
         memory: "3Gi"
         cpu: "1000m"
     prometheusOperator:
-      monitors:
-        - name: mirror-prometheus-prometheus
-          namespace: common
-          metadata:
-            namespace: common
-            name: mirror-stackgres-collector
-          spec:
-            podMetricsEndpoints:
-              - honorLabels: true
-                honorTimestamps: true
-                interval: 1m
-                metricRelabelings:
-                  - action: drop
-                    regex: ^(pg_stat.*_user.*|pg_table.*|pgbouncer_show_clients.*)$
-                    sourceLabels:
-                      - __name__
-                scrapeTimeout: 30s
-                path: /metrics
-                port: prom-http
-                scheme: https
-                tlsConfig:
-                  ca:
-                    secret:
-                      key: tls.crt
-                      name: mirror-stackgres-collector
-                  serverName: stackgres-collector
+      allowDiscovery: false
+      monitors: [] # Configured as part of the prometheus chart to enable finer control over scrape endpoints
 
   enabled: false
   operator:

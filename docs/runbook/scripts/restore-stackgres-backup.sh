@@ -12,7 +12,6 @@ CLUSTER_CONFIG=
 # Need to remove this marker file so backup is restored correctly
 function cleanSnapshotMarker() {
   for pvc in $(kubectl get pvc -l 'app=StackGresCluster' --output=custom-columns=':.metadata.name' --no-headers); do
-    local volumeName=$(kubectl get pvc "${pvc}" --output=custom-columns=':.spec.volumeName' --no-headers)
     log "Removing snapshot marker file for ${pvc}"
     cat <<EOF | kubectl apply -f -
 apiVersion: batch/v1
@@ -29,7 +28,7 @@ spec:
         command:
         - "/bin/bash"
         - "-ecx"
-        - rm -fr /pgdata/data/.already_restored_from_volume_snapshot_${volumeName}
+        - rm -fr /pgdata/data/.already_restored_from_volume_snapshot_.*
         volumeMounts:
         - mountPath: /pgdata
           name: pgdata
