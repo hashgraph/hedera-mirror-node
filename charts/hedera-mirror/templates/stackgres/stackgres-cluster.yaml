@@ -56,8 +56,6 @@ spec:
     version: {{ .Values.stackgres.postgresVersion | quote }}
   replication:
     mode: {{ .Values.stackgres.replication.mode }}
-    initialization:
-      mode: {{ .Values.stackgres.replication.initialization.mode }}
   shards:
     clusters: {{ .Values.stackgres.worker.instances }}
     configurations:
