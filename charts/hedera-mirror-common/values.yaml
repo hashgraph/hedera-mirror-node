@@ -456,7 +456,7 @@ stackgres:
     name: stackgres-collector
     prometheusOperator:
       allowDiscovery: false
-      monitors: [] # Configured as part of the prometheus chart to enable finer control over scrape endpoints
+      monitors: []  # Configured as part of the prometheus chart to enable finer control over scrape endpoints
     resources:
       limits:
         cpu: "1500m"
