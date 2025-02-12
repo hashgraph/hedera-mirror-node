@@ -33,12 +33,12 @@ import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.Hede
 import static com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenKey;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.entityIdFromTokenId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.FallbackFee;
@@ -507,7 +507,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var collectorAccount = accountEntityWithEvmAddressPersist();
         final var tokenEntity = fungibleTokenPersist();
         final var tokenId = tokenEntity.getTokenId();
-        final var entityId = entityIdFromTokenId(tokenId);
+        final var entityId = EntityId.of(tokenId);
         final var fixedFee = com.hedera.mirror.common.domain.token.FixedFee.builder()
                 .amount(100L)
                 .collectorAccountId(collectorAccount.toEntityId())
@@ -589,7 +589,7 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         final var collectorAccount = accountEntityWithEvmAddressPersist();
         final var tokenEntity = fungibleTokenPersist();
         final var tokenId = tokenEntity.getTokenId();
-        final var entityId = entityIdFromTokenId(tokenId);
+        final var entityId = EntityId.of(tokenId);
 
         final var royaltyFee = RoyaltyFee.builder()
                 .collectorAccountId(collectorAccount.toEntityId())

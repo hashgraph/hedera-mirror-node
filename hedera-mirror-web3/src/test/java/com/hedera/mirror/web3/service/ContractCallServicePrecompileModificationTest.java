@@ -25,7 +25,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ZERO_VALUE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.entityIdFromTokenId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -371,8 +370,9 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var sender = accountEntityPersist();
         accountBalanceRecordsPersist(sender);
 
+
         long balanceTimestamp = treasuryAccount.getBalanceTimestamp();
-        persistTokenBalance(treasuryAccount.toEntityId(), entityIdFromTokenId(token.getTokenId()), balanceTimestamp);
+        tokenBalancePersist(treasuryAccount.toEntityId(), EntityId.of(token.getTokenId()), balanceTimestamp);
 
         testWeb3jService.setSender(getAddressFromEntity(sender));
 
@@ -408,7 +408,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var totalSupply = token.getTotalSupply();
 
         long balanceTimestamp = treasury.getBalanceTimestamp();
-        persistTokenBalance(treasury.toEntityId(), tokenEntity.toEntityId(), balanceTimestamp);
+        tokenBalancePersist(treasury.toEntityId(), tokenEntity.toEntityId(), balanceTimestamp);
 
         Nft nft = domainBuilder
                 .nft()
@@ -454,8 +454,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         tokenAccountPersist(tokenEntity.getId(), owner.getId());
 
         Long createdTimestamp = owner.getCreatedTimestamp();
-        persistTokenBalance(owner.toEntityId(), tokenEntity.toEntityId(), createdTimestamp);
-        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), createdTimestamp);
+        tokenBalancePersist(owner.toEntityId(), tokenEntity.toEntityId(), createdTimestamp);
+        accountBalancePersist(treasuryEntity, createdTimestamp);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -844,8 +844,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var receiver = accountEntityWithEvmAddressPersist();
         final var token = fungibleTokenPersist();
         final var sponsor = accountEntityWithEvmAddressPersist();
-        persistTokenBalance(
-                sponsor.toEntityId(), entityIdFromTokenId(token.getTokenId()), sponsor.getCreatedTimestamp());
+        tokenBalancePersist(
+                sponsor.toEntityId(), EntityId.of(token.getTokenId()), sponsor.getCreatedTimestamp());
         accountBalanceRecordsPersist(sponsor);
 
         tokenAccountPersist(token.getTokenId(), sponsor.getId());
@@ -1099,10 +1099,10 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         accountBalanceRecordsPersist(receiver.toEntityId(), receiver.getCreatedTimestamp(), receiver.getBalance());
 
         long senderBalanceTimestamp = sender.getBalanceTimestamp();
-        persistTokenBalance(sender.toEntityId(), tokenEntity.toEntityId(), senderBalanceTimestamp);
+        tokenBalancePersist(sender.toEntityId(), tokenEntity.toEntityId(), senderBalanceTimestamp);
 
         long receiverBalanceTimestamp = receiver.getBalanceTimestamp();
-        persistTokenBalance(receiver.toEntityId(), tokenEntity.toEntityId(), receiverBalanceTimestamp);
+        tokenBalancePersist(receiver.toEntityId(), tokenEntity.toEntityId(), receiverBalanceTimestamp);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         // When
@@ -1236,9 +1236,9 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var payer = accountEntityWithEvmAddressPersist();
 
         long timestampForBalances = payer.getCreatedTimestamp();
-        persistAccountBalance(payer, payer.getBalance());
-        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
-        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+        accountBalancePersist(payer, timestampForBalances);
+        accountBalancePersist(sender, timestampForBalances);
+        accountBalancePersist(treasuryEntity, timestampForBalances);
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
@@ -1266,15 +1266,15 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var tokenId = token.getTokenId();
 
         long timestampForBalances = payer.getCreatedTimestamp();
-        final var entity = entityIdFromTokenId(tokenId);
-        persistAccountBalance(payer, payer.getBalance());
-        persistTokenBalance(payer.toEntityId(), entity, timestampForBalances);
+        final var entity = EntityId.of(tokenId);
+        accountBalancePersist(payer, payer.getCreatedTimestamp());
+        tokenBalancePersist(payer.toEntityId(), entity, timestampForBalances);
 
-        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
-        persistTokenBalance(sender.toEntityId(), entity, timestampForBalances);
+        accountBalancePersist(sender, timestampForBalances);
+        tokenBalancePersist(sender.toEntityId(), entity, timestampForBalances);
 
-        persistTokenBalance(receiver.toEntityId(), entity, timestampForBalances);
-        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+        tokenBalancePersist(receiver.toEntityId(), entity, timestampForBalances);
+        accountBalancePersist(treasuryEntity, timestampForBalances);
 
         tokenAccountPersist(tokenId, sender.getId());
         tokenAccountPersist(tokenId, receiver.getId());
@@ -1308,17 +1308,17 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var payer = accountEntityWithEvmAddressPersist();
         long timestampForBalances = payer.getCreatedTimestamp();
         final var tokenId = tokenEntity.getTokenId();
-        final var entity = entityIdFromTokenId(tokenId);
+        final var entity = EntityId.of(tokenId);
 
-        persistAccountBalance(payer, payer.getBalance());
-        persistTokenBalance(payer.toEntityId(), entity, timestampForBalances);
+        accountBalancePersist(payer, timestampForBalances);
+        tokenBalancePersist(payer.toEntityId(), entity, timestampForBalances);
 
-        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
-        persistTokenBalance(sender.toEntityId(), entity, timestampForBalances);
+        accountBalancePersist(sender, timestampForBalances);
+        tokenBalancePersist(sender.toEntityId(), entity, timestampForBalances);
 
-        persistTokenBalance(receiver.toEntityId(), entity, timestampForBalances);
+        tokenBalancePersist(receiver.toEntityId(), entity, timestampForBalances);
 
-        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+        accountBalancePersist(treasuryEntity, timestampForBalances);
 
         tokenAccountPersist(tokenId, sender.getId());
         tokenAccountPersist(tokenId, receiver.getId());

@@ -329,9 +329,4 @@ public final class EntityIdUtils {
     public static boolean isAliasSizeGreaterThanEvmAddress(final ByteString alias) {
         return alias.size() > EVM_ADDRESS_SIZE;
     }
-
-    public static EntityId entityIdFromTokenId(long tokenId) {
-        var address = EvmTokenUtils.toAddress(tokenId);
-        return EvmTokenUtils.entityIdFromEvmAddress(address);
-    }
 }

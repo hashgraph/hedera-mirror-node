@@ -62,6 +62,8 @@ class EntityIdUtilsTest {
     public static final ByteString EVM_ADDRESS = ByteString.fromHex("ebb9a1be370150759408cd7af48e9eda2b8ead57");
     public static final ByteString WRONG_EVM_ADDRESS = ByteString.fromHex("ebb9a1be3701cd7af48e9eda2b8ead57");
 
+    private static final String expectedHexedAddress = "0000000000000000000000000000000000000003";
+
     @Test
     void asSolidityAddressBytesWorksProperly() {
         final var id = AccountID.newBuilder()
@@ -218,7 +220,7 @@ class EntityIdUtilsTest {
     void asSolidityAddressHexWorksProperly() {
         final var id = new Id(1, 2, 3);
 
-        assertEquals("0000000000000000000000000000000000000003", EntityIdUtils.asHexedEvmAddress(id));
+        assertEquals(expectedHexedAddress, EntityIdUtils.asHexedEvmAddress(id));
     }
 
     @Test
@@ -229,7 +231,13 @@ class EntityIdUtilsTest {
                 .setAccountNum(3)
                 .build();
 
-        assertEquals("0000000000000000000000000000000000000003", EntityIdUtils.asHexedEvmAddress(accountId));
+        assertEquals(expectedHexedAddress, EntityIdUtils.asHexedEvmAddress(accountId));
+    }
+
+    @Test
+    void asSolidityAddressHexWorksProperlyForLong() {
+        var test = EntityIdUtils.asHexedEvmAddress(1);
+        assertEquals(expectedHexedAddress, EntityIdUtils.asHexedEvmAddress(3));
     }
 
     @Test

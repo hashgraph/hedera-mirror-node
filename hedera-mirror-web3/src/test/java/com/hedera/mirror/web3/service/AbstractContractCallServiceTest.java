@@ -434,24 +434,16 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * When an account balance is updated during a consensus event, an account_balance record with the consensus_timestamp,
      * account_id and balance is created.The balance_timestamp for the account entry is updated as well in the entity table.
      * @param account The account that the account_balance record is going to be created for
-     * @param balance The account balance that is going to be stored for the particular timestamp
      * @param timestamp The timestamp indicating the account balance update
      */
-    protected void persistAccountBalance(Entity account, long balance, long timestamp) {
+    protected void accountBalancePersist(Entity account, long timestamp) {
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(timestamp, account.toEntityId()))
-                        .balance(balance))
+                        .balance(account.getBalance()))
                 .persist();
     }
 
-    protected void persistAccountBalance(Entity account, long balance) {
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(account.getCreatedTimestamp(), account.toEntityId()))
-                        .balance(balance))
-                .persist();
-    }
 
     /**
      * Persists a record in the token_balance db table (consensus_timestamp, account_id, balance, token_id).
@@ -459,7 +451,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * No record for the token balance at a particular timestamp may result in INSUFFICIENT_TOKEN_BALANCE exception
      * for a historical query with the same timestamp.
      */
-    protected void persistTokenBalance(EntityId account, EntityId token, long timestamp) {
+    protected void tokenBalancePersist(EntityId account, EntityId token, long timestamp) {
         domainBuilder
                 .tokenBalance()
                 .customize(ab ->
