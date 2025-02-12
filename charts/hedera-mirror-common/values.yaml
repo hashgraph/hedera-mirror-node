@@ -454,16 +454,16 @@ stackgres:
             receivers:
               - prometheus
     name: stackgres-collector
-    resources:
-      limits:
-        memory: "4Gi"
-        cpu: "1500m"
-      requests:
-        memory: "3Gi"
-        cpu: "1000m"
     prometheusOperator:
       allowDiscovery: false
       monitors: [] # Configured as part of the prometheus chart to enable finer control over scrape endpoints
+    resources:
+      limits:
+        cpu: "1500m"
+        memory: "4Gi"
+      requests:
+        cpu: "1000m"
+        memory: "3Gi"
 
   enabled: false
   operator:
