@@ -32,6 +32,7 @@ plugins {
 extra.apply {
     set("grpcVersion", "1.70.0")
     set("mapStructVersion", "1.6.3")
+    set("netty.version", "4.1.118.Final") // Temporary until next Spring Boot
     set("nodeJsVersion", "18.20.5")
     set("protobufVersion", "3.25.5")
     set("reactorGrpcVersion", "1.2.4")
