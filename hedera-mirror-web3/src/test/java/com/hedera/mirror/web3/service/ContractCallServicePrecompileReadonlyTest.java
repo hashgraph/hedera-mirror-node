@@ -186,13 +186,13 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
         // Given
         final var account = accountEntityPersist();
         final var token = fungibleTokenPersist();
-        tokenAccountPersist(token.getTokenId(), account.getId());
+        final var tokenId = token.getTokenId();
+        tokenAccountPersist(tokenId, account.getId());
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall =
-                contract.call_isKycGranted(asHexedEvmAddress(token.getTokenId()), getAddressFromEntity(account));
+        final var functionCall = contract.call_isKycGranted(asHexedEvmAddress(tokenId), getAddressFromEntity(account));
 
         // Then
         assertThat(functionCall.send()).isTrue();
@@ -209,13 +209,13 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
                         .evmAddress(SENDER_ALIAS.toArray()))
                 .persist();
         final var token = fungibleTokenPersist();
-        tokenAccountPersist(token.getTokenId(), account.getId());
+        final var tokenId = token.getTokenId();
+        tokenAccountPersist(tokenId, account.getId());
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
 
         // When
-        final var functionCall =
-                contract.call_isKycGranted(asHexedEvmAddress(token.getTokenId()), getAliasFromEntity(account));
+        final var functionCall = contract.call_isKycGranted(asHexedEvmAddress(tokenId), getAliasFromEntity(account));
 
         // Then
         assertThat(functionCall.send()).isTrue();

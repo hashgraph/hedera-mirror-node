@@ -366,13 +366,13 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var treasuryAccount = accountEntityPersist();
         final var token = fungibleTokenPersistWithTreasuryAccount(treasuryAccount.toEntityId());
-        tokenAccountPersist(token.getTokenId(), treasuryAccount.getId());
+        final var tokenId = token.getTokenId();
+        tokenAccountPersist(tokenId, treasuryAccount.getId());
 
         final var sender = accountEntityPersist();
         accountBalanceRecordsPersist(sender);
 
-        tokenBalancePersist(
-                treasuryAccount.toEntityId(), EntityId.of(token.getTokenId()), treasuryAccount.getBalanceTimestamp());
+        tokenBalancePersist(treasuryAccount.toEntityId(), EntityId.of(tokenId), treasuryAccount.getBalanceTimestamp());
 
         testWeb3jService.setSender(getAddressFromEntity(sender));
 
@@ -381,8 +381,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_burnTokenExternal(
-                asHexedEvmAddress(token.getTokenId()), BigInteger.valueOf(4), new ArrayList<>());
+        final var functionCall =
+                contract.call_burnTokenExternal(asHexedEvmAddress(tokenId), BigInteger.valueOf(4), new ArrayList<>());
 
         final var result = functionCall.send();
 
@@ -844,16 +844,17 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var receiver = accountEntityWithEvmAddressPersist();
         final var token = fungibleTokenPersist();
+        final var tokenId = token.getTokenId();
         final var sponsor = accountEntityWithEvmAddressPersist();
-        tokenBalancePersist(sponsor.toEntityId(), EntityId.of(token.getTokenId()), sponsor.getCreatedTimestamp());
+        tokenBalancePersist(sponsor.toEntityId(), EntityId.of(tokenId), sponsor.getCreatedTimestamp());
         accountBalanceRecordsPersist(sponsor);
 
-        tokenAccountPersist(token.getTokenId(), sponsor.getId());
+        tokenAccountPersist(tokenId, sponsor.getId());
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
         final var functionCall = contract.call_createContractViaCreate2AndTransferFromIt(
-                asHexedEvmAddress(token.getTokenId()),
+                asHexedEvmAddress(tokenId),
                 getAliasFromEntity(sponsor),
                 getAliasFromEntity(receiver),
                 BigInteger.valueOf(10L));
