@@ -24,7 +24,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"

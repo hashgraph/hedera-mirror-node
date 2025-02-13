@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_ALIASES;
-
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -29,7 +27,8 @@ import jakarta.inject.Named;
 final class CryptoCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
+    protected void updateTransactionRecord(
+            BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
         if (!blockItem.successful()) {
             return;
         }

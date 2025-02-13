@@ -20,7 +20,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/cucumber/godog"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/bdd-client/client"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 const (
