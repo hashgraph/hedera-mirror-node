@@ -896,11 +896,26 @@ public class RecordItemBuilder {
                         .build());
         var nftPendingAirdrop = PendingAirdropRecord.newBuilder().setPendingAirdropId(nftPendingAirdropId);
 
-        return new Builder<>(TransactionType.TOKENAIRDROP, TokenAirdropTransactionBody.newBuilder())
-                .record(r -> r.addTokenTransferLists(tokenTransferList)
-                        .addTokenTransferLists(nftTransferList)
-                        .addNewPendingAirdrops(fungiblePendingAirdrop)
-                        .addNewPendingAirdrops(nftPendingAirdrop));
+        var body = TokenAirdropTransactionBody.newBuilder();
+        var builder = new Builder<>(TransactionType.TOKENAIRDROP, body);
+        var tokenTransfers = TokenTransferList.newBuilder()
+                .setToken(fungibleTokenId)
+                .addTransfers(accountAmount(sender, -100))
+                .addTransfers(accountAmount(pendingReceiver, 100));
+        body.addTokenTransfers(tokenTransfers);
+
+        var nftTransfers = TokenTransferList.newBuilder()
+                .setToken(nftTokenId)
+                .addNftTransfers(NftTransfer.newBuilder()
+                        .setSenderAccountID(sender)
+                        .setReceiverAccountID(pendingReceiver)
+                        .setSerialNumber(1));
+        body.addTokenTransfers(nftTransfers);
+
+        return builder.record(r -> r.addTokenTransferLists(tokenTransferList)
+                .addTokenTransferLists(nftTransferList)
+                .addNewPendingAirdrops(fungiblePendingAirdrop)
+                .addNewPendingAirdrops(nftPendingAirdrop));
     }
 
     public Builder<TokenCancelAirdropTransactionBody.Builder> tokenCancelAirdrop() {
@@ -955,14 +970,22 @@ public class RecordItemBuilder {
     }
 
     public Builder<TokenMintTransactionBody.Builder> tokenMint(TokenType tokenType) {
-        var transactionBody = TokenMintTransactionBody.newBuilder().setToken(tokenId());
+        var tokenId = tokenId();
+        var transactionBody = TokenMintTransactionBody.newBuilder().setToken(tokenId);
         var builder = new Builder<>(TransactionType.TOKENMINT, transactionBody);
 
         if (tokenType == FUNGIBLE_COMMON) {
             transactionBody.setAmount(1000L);
+            builder.receipt(b -> b.setNewTotalSupply(2000L));
         } else {
             transactionBody.addMetadata(bytes(16)).addMetadata(bytes(16));
-            builder.receipt(b -> b.addSerialNumbers(1L).addSerialNumbers(2L));
+            builder.receipt(b -> b.addSerialNumbers(1L).addSerialNumbers(2L).setNewTotalSupply(3L));
+            var tokenTransferList = TokenTransferList.newBuilder()
+                    .setToken(tokenId)
+                    .addNftTransfers(NftTransfer.newBuilder().setSerialNumber(1L))
+                    .addNftTransfers(NftTransfer.newBuilder().setSerialNumber(2L))
+                    .build();
+            builder.record(r -> r.addAllTokenTransferLists(List.of(tokenTransferList)));
         }
 
         return builder;
