@@ -203,21 +203,44 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var notAssociatedAccount = accountEntityPersist();
 
-        final var tokenEntity = tokenEntityPersist();
-
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
-
+        final var token = fungibleTokenPersist();
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
         final var functionCall = single
                 ? contract.call_associateTokenExternal(
-                        getAddressFromEntity(notAssociatedAccount), getAddressFromEntity(tokenEntity))
+                        getAddressFromEntity(notAssociatedAccount),
+                        toAddress(token.getTokenId()).toHexString())
                 : contract.call_associateTokensExternal(
-                        getAddressFromEntity(notAssociatedAccount), List.of(getAddressFromEntity(tokenEntity)));
+                        getAddressFromEntity(notAssociatedAccount),
+                        List.of(toAddress(token.getTokenId()).toHexString()));
+
+        // Then
+        verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
+        verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contract);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void associateTokenWithNullAutoRenew(final Boolean single) throws Exception {
+        // Given
+        final var notAssociatedAccount = accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT)
+                .balance(DEFAULT_ACCOUNT_BALANCE)
+                .autoRenewAccountId(null)
+                .alias(null)
+                .evmAddress(null));
+
+        final var token = fungibleTokenPersist();
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+
+        // When
+        final var functionCall = single
+                ? contract.call_associateTokenExternal(
+                        getAddressFromEntity(notAssociatedAccount),
+                        toAddress(token.getTokenId()).toHexString())
+                : contract.call_associateTokensExternal(
+                        getAddressFromEntity(notAssociatedAccount),
+                        List.of(toAddress(token.getTokenId()).toHexString()));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
