@@ -180,7 +180,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         // Given
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
         final var payer = accountEntityWithEvmAddressPersist();
-        persistAccountBalance(payer, payer.getBalance());
+        accountBalancePersist(payer, payer.getCreatedTimestamp());
         testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         meterRegistry.clear(); // Clear it as the contract deploy increases the gas limit metric
@@ -377,7 +377,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     void estimateGasForViewCall() {
         // Given
         final var payer = accountEntityWithEvmAddressPersist();
-        persistAccountBalance(payer, payer.getBalance());
+        accountBalancePersist(payer, payer.getCreatedTimestamp());
         testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
         final var contract = testWeb3jService.deploy(EthCall::deploy);
 
@@ -605,7 +605,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var receiverEntity = accountPersist();
         final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
         final var payer = accountEntityWithEvmAddressPersist();
-        persistAccountBalance(payer, payer.getBalance());
+        accountBalancePersist(payer, payer.getCreatedTimestamp());
         final var serviceParameters = getContractExecutionParametersWithValue(
                 Bytes.EMPTY, toAddress(payer.toEntityId()), receiverAddress, -5L);
         // Then
@@ -653,7 +653,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var receiverAddress = getAliasAddressFromEntity(receiverEntity);
         final var contract = testWeb3jService.deploy(EthCall::deploy);
         final var payer = accountEntityWithEvmAddressPersist();
-        persistAccountBalance(payer, payer.getBalance());
+        accountBalancePersist(payer, payer.getCreatedTimestamp());
         meterRegistry.clear();
         testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
         // When

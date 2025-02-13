@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_34_BLOCK;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_38_BLOCK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -54,17 +55,19 @@ class ContractCallServiceHistoricalNegativeTest extends AbstractContractCallServ
 
         // When
         final var functionCall = contract.call_isTokenAddress(getAddressFromEntity(tokenEntity));
-
         // Then
+        final var expectedErrorMessage = mirrorNodeEvmProperties.isModularizedServices()
+                ? INVALID_CONTRACT_ID.name()
+                : INVALID_TRANSACTION.name();
         assertThatThrownBy(functionCall::send)
                 .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(INVALID_TRANSACTION.name());
+                .hasMessage(expectedErrorMessage);
     }
 
     // Tests TokenRepository and NftRepository
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void tokenNotPersistedYetThrowsException(final boolean isNft) {
+    void tokenNotPersistedYet(final boolean isNft) throws Exception {
         // Given
         final var evm30RecordFile = recordFilePersist(EVM_V_34_BLOCK - 1);
         final var historicalRangeAfterEvm34 = setUpHistoricalContext(EVM_V_34_BLOCK);
@@ -81,7 +84,13 @@ class ContractCallServiceHistoricalNegativeTest extends AbstractContractCallServ
         final var functionCall = contract.call_isTokenAddress(getAddressFromEntity(tokenEntity));
 
         // Then
-        assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+        if (mirrorNodeEvmProperties.isModularizedServices()) {
+            // Modularized services just tries to fetch the token by id from the state
+            // and simply returns false if it does not exist without throwing an exception
+            assertThat(functionCall.send()).isFalse();
+        } else {
+            assertThatThrownBy(functionCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+        }
     }
 
     // Tests TokenAccountRepository
@@ -93,7 +102,7 @@ class ContractCallServiceHistoricalNegativeTest extends AbstractContractCallServ
         final var historicalRangeAfterEvm34 = setUpHistoricalContext(EVM_V_34_BLOCK);
         final var tokenEntity = tokenEntityPersistHistorical(evm30HistoricalRange);
         fungibleTokenPersistHistorical(tokenEntity, evm30HistoricalRange);
-        final var accountEntity = accountEntityWithAliasPersistHistorical(evm30HistoricalRange);
+        final var accountEntity = accountEntityNoEvmAddressPersistHistorical(evm30HistoricalRange);
         tokenAccountFrozenRelationshipPersistHistorical(tokenEntity, accountEntity, historicalRangeAfterEvm34);
 
         setupHistoricalStateInService(EVM_V_34_BLOCK - 1, evm30RecordFile);
@@ -303,7 +312,8 @@ class ContractCallServiceHistoricalNegativeTest extends AbstractContractCallServ
         final var evm30RecordFile = recordFilePersist(EVM_V_34_BLOCK - 1);
         final var evm30HistoricalRange = setupHistoricalStateInService(EVM_V_34_BLOCK - 1, evm30RecordFile);
         final var historicalRangeAfterEvm34 = setUpHistoricalContext(EVM_V_34_BLOCK);
-        final var feeCollector = accountWithBalancePersistHistorical(100L, evm30HistoricalRange);
+        final var feeCollector =
+                accountEntityNoEvmAddressWithBalancePersistHistorical(DEFAULT_ACCOUNT_BALANCE, evm30HistoricalRange);
 
         setupHistoricalStateInService(EVM_V_34_BLOCK - 1, evm30RecordFile);
         final var contract = testWeb3jService.deploy(EvmCodesHistorical::deploy);
@@ -311,13 +321,13 @@ class ContractCallServiceHistoricalNegativeTest extends AbstractContractCallServ
         // Persist the token, the account and the account balance in block 49. In block 50 enter another
         // account balance. The call against block 49 should return the first balance as the second
         // balance is not available at that point yet.
-        accountBalancePersistHistorical(feeCollector.toEntityId(), 200L, historicalRangeAfterEvm34);
-
+        accountBalancePersistHistorical(
+                feeCollector.toEntityId(), DEFAULT_ACCOUNT_BALANCE * 2, historicalRangeAfterEvm34);
         // When
         final var result = contract.call_getAccountBalance(getAddressFromEntity(feeCollector))
                 .send();
 
         // Then
-        assertThat(result).isEqualTo(BigInteger.valueOf(100L));
+        assertThat(result).isEqualTo(BigInteger.valueOf(DEFAULT_ACCOUNT_BALANCE));
     }
 }

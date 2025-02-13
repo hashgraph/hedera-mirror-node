@@ -1,12 +1,54 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -euox pipefail
 
 source ./utils.sh
 
 BACKUP_TO_RESTORE=
 CLUSTER=
 CLUSTER_CONFIG=
+
+# This is a bug in Stackgres start script that prevents backups from restoring if they have been restored previously
+# Need to remove this marker file so backup is restored correctly
+function cleanSnapshotMarker() {
+  for pvc in $(kubectl get pvc -l 'app=StackGresCluster' --output=custom-columns=':.metadata.name' --no-headers); do
+    log "Removing snapshot marker file for ${pvc}"
+    cat <<EOF | kubectl apply -f -
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: snap-marker-wiper
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+      - name: debian
+        image: debian:bookworm-slim
+        command:
+        - "/bin/bash"
+        - "-ecx"
+        - rm -fr /pgdata/data/.already_restored_from_volume_snapshot_*
+        volumeMounts:
+        - mountPath: /pgdata
+          name: pgdata
+      nodeSelector:
+        csi-type: zfs
+      restartPolicy: Never
+      tolerations:
+      - effect: NoSchedule
+        key: zfs
+        operator: Equal
+        value: "true"
+      volumes:
+      - name: pgdata
+        persistentVolumeClaim:
+          claimName: ${pvc}
+EOF
+      kubectl wait --for=condition=complete job/snap-marker-wiper --timeout=-1s
+      kubectl delete job/snap-marker-wiper
+    done
+}
 
 # Adjust coordinator pods storage
 # - Swap coord-0's PV with the backup's source PV if different. It's needed since the coordinator backup is always
@@ -120,6 +162,7 @@ function deleteCluster() {
   log "Deleted SGShardedCluster \"${CLUSTER}\", waiting for all pods to terminate"
   kubectl wait --for=delete pods -l 'app=StackGresCluster' --timeout=-1s
   log "All pods terminated"
+  kubectl annotate pvc -l 'app=StackGresCluster' stackgres.io/reconciliation-pause- --overwrite
 }
 
 function ensureNoBackupRunning() {
@@ -205,6 +248,8 @@ function prepare() {
 }
 
 function preserveResources() {
+  kubectl annotate pvc -l 'app=StackGresCluster' stackgres.io/reconciliation-pause="true" --overwrite
+
   for pvc in $(kubectl get pvc -l 'app=StackGresCluster' -o name); do
     kubectl patch "${pvc}" --type=json -p='[{"op": "remove", "path": "/metadata/ownerReferences"}]' || true
   done
@@ -229,6 +274,7 @@ function restoreBackup() {
 
   adjustCoordStorage
   rollbackZfsVolumes
+  cleanSnapshotMarker
 
   log "Creating SGShardedCluster with the restore configuration"
   echo "${CLUSTER_CONFIG}" | kubectl apply -f -
@@ -241,7 +287,6 @@ function restoreBackup() {
   # Once again remove ownerReferences since in restore they will get updated with new owners
   preserveResources
   deleteCluster
-
   log "Backup ${BACKUP_TO_RESTORE} restored successfully"
 }
 
