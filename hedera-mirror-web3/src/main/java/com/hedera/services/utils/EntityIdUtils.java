@@ -162,6 +162,9 @@ public final class EntityIdUtils {
     }
 
     public static com.hedera.hapi.node.base.AccountID toAccountId(final Long id) {
+        if (id == null) {
+            return null;
+        }
         final var decodedEntityId = EntityId.of(id);
 
         return toAccountId(decodedEntityId);
