@@ -16,7 +16,7 @@
 
 package domain
 
-import "github.com/hiero-ledger/hiero-sdk-go/v2"
+import "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 
 func GenEd25519KeyPair() (hiero.PrivateKey, hiero.PublicKey) {
 	sk, err := hiero.PrivateKeyGenerateEd25519()

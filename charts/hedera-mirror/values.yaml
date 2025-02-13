@@ -310,7 +310,7 @@ stackgres:
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
       work_mem: "12MB"
-    enableMetricsExporter: false
+    enableEnvoy: false
     enablePostgresUtil: true
     instances: 1
     pgbouncer:
@@ -326,8 +326,6 @@ stackgres:
           pool_mode: session
         mirror_importer:
           pool_mode: session
-    replication:
-      mode: sync-all
     resources:
       cpu: 100m
       memory: 1Gi
@@ -343,9 +341,13 @@ stackgres:
     - name: pg_trgm
       version: "1.6"
   nameOverride: citus
+  observability:
+    enableMetricsExporter: true
   podAntiAffinity: true
   postgresVersion: "16.2"
   priorityClassName: ""
+  replication:
+    mode: sync-all
   worker:
     config:
       autovacuum_max_workers: "2"
@@ -363,7 +365,7 @@ stackgres:
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
       work_mem: "12MB"
-    enableMetricsExporter: false
+    enableEnvoy: false
     enablePostgresUtil: true
     instances: 1
     overrides: []  # Override shard(s) configuration

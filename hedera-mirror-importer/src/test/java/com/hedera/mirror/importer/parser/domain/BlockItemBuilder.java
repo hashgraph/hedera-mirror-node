@@ -17,10 +17,12 @@
 package com.hedera.mirror.importer.parser.domain;
 
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_NFTS;
+import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_NODES;
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_PENDING_AIRDROPS;
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_SCHEDULES_BY_ID;
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_TOKENS;
 
+import com.google.protobuf.UInt64Value;
 import com.hedera.hapi.block.stream.output.protoc.CallContractOutput;
 import com.hedera.hapi.block.stream.output.protoc.CreateScheduleOutput;
 import com.hedera.hapi.block.stream.output.protoc.CryptoTransferOutput;
@@ -35,6 +37,7 @@ import com.hedera.hapi.block.stream.output.protoc.SubmitMessageOutput;
 import com.hedera.hapi.block.stream.output.protoc.TokenAirdropOutput;
 import com.hedera.hapi.block.stream.output.protoc.TransactionOutput;
 import com.hedera.hapi.block.stream.output.protoc.TransactionResult;
+import com.hedera.hapi.block.stream.output.protoc.UtilPrngOutput;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
@@ -162,6 +165,30 @@ public class BlockItemBuilder {
                 transactionResult(recordItem),
                 List.of(transactionOutput),
                 Collections.emptyList());
+    }
+
+    public BlockItemBuilder.Builder utilPrng(RecordItem recordItem) {
+        var transactionRecord = recordItem.getTransactionRecord();
+        var utilPrngOutputBuilder = UtilPrngOutput.newBuilder();
+        if (transactionRecord.hasPrngNumber()) {
+            utilPrngOutputBuilder.setPrngNumber(transactionRecord.getPrngNumber());
+        } else if (transactionRecord.hasPrngBytes()) {
+            utilPrngOutputBuilder.setPrngBytes(transactionRecord.getPrngBytes());
+        }
+        var transactionOutput = TransactionOutput.newBuilder()
+                .setUtilPrng(utilPrngOutputBuilder)
+                .build();
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(),
+                transactionResult(recordItem),
+                List.of(transactionOutput),
+                Collections.emptyList());
+    }
+
+    public BlockItemBuilder.Builder nodeCreate(RecordItem recordItem) {
+        var stateChanges = buildNodeIdStateChanges(recordItem);
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), List.of(stateChanges));
     }
 
     public BlockItemBuilder.Builder unknown() {
@@ -417,6 +444,35 @@ public class BlockItemBuilder {
 
         var changes = List.of(firstChange, secondChange, thirdChange, fourtChange);
 
+        return StateChanges.newBuilder().addAllStateChanges(changes).build();
+    }
+
+    private static StateChanges buildNodeIdStateChanges(RecordItem recordItem) {
+        var nodeId = recordItem.getTransactionRecord().getReceipt().getNodeId();
+        var key = MapChangeKey.newBuilder()
+                .setEntityNumberKey(UInt64Value.of(nodeId))
+                .build();
+        var mapUpdate = MapUpdateChange.newBuilder().setKey(key).build();
+
+        var firstChange = StateChange.newBuilder()
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .setStateId(1)
+                .build();
+
+        var secondChange =
+                StateChange.newBuilder().setStateId(STATE_ID_NODES.getNumber()).build();
+
+        var thirdChange = StateChange.newBuilder()
+                .setStateId(STATE_ID_NODES.getNumber())
+                .setMapUpdate(MapUpdateChange.newBuilder().build())
+                .build();
+
+        var fourthChange = StateChange.newBuilder()
+                .setMapUpdate(mapUpdate)
+                .setStateId(STATE_ID_NODES.getNumber())
+                .build();
+
+        var changes = List.of(firstChange, secondChange, thirdChange, fourthChange);
         return StateChanges.newBuilder().addAllStateChanges(changes).build();
     }
 

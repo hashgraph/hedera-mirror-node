@@ -26,7 +26,7 @@ import (
 	rosettaAsserter "github.com/coinbase/rosetta-sdk-go/asserter"
 	rosettaClient "github.com/coinbase/rosetta-sdk-go/client"
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )

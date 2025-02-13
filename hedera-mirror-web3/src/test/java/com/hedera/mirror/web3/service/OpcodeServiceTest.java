@@ -50,6 +50,7 @@ import com.hedera.mirror.web3.web3j.generated.NestedCalls;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.HederaToken;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.KeyValue;
 import com.hedera.mirror.web3.web3j.generated.NestedCalls.TokenKey;
+import com.hedera.mirror.web3.web3j.generated.StorageContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import java.math.BigInteger;
@@ -113,9 +114,9 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
                             """)
     void updateTokenKeysAndGetUpdatedTokenKeyForFungibleToken(final KeyValueType keyValueType, final KeyType keyType) {
         // Given
-        final var tokenEntity = fungibleTokenPersistWithTreasuryAccount(
+        final var token = fungibleTokenPersistWithTreasuryAccount(
                 domainBuilder.entity().persist().toEntityId());
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
+        final var tokenAddress = toAddress(token.getTokenId());
         final var contract = testWeb3jService.deploy(NestedCalls::deploy);
         final var contractAddress = contract.getContractAddress();
 
@@ -466,6 +467,33 @@ class OpcodeServiceTest extends AbstractContractCallServiceOpcodeTracerTest {
 
         // Then
         verifyOpcodesResponseWithExpectedReturnValue(opcodesResponse, options, HEX_PREFIX + expectedResult);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true, true", "false, true", "true, false", "false, false"})
+    void testGetUpdatedStorageCall(final boolean stack, final boolean memory) {
+        final var senderEntity = accountPersistWithAccountBalances();
+        final var contract = testWeb3jService.deploy(StorageContract::deploy);
+        final var options = new OpcodeTracerOptions(stack, memory, true);
+        final var functionCall = contract.send_updateStorage(BigInteger.ONE, BigInteger.TEN);
+
+        final var callData =
+                Bytes.fromHexString(functionCall.encodeFunctionCall()).toArray();
+        final var transactionIdOrHash = setUp(
+                ETHEREUMTRANSACTION,
+                contract,
+                callData,
+                true,
+                true,
+                senderEntity.toEntityId(),
+                ZERO_AMOUNT,
+                domainBuilder.timestamp());
+
+        // When
+        final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+        // Then
+        verifyOpcodesResponse(opcodesResponse, options);
     }
 
     @ParameterizedTest

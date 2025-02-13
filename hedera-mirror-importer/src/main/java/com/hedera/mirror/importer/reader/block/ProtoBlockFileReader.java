@@ -45,6 +45,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 
@@ -116,13 +117,10 @@ public class ProtoBlockFileReader implements BlockFileReader {
         Long consensusStart = blockHeader.hasFirstTransactionConsensusTime()
                 ? DomainUtils.timestampInNanosMax(blockHeader.getFirstTransactionConsensusTime())
                 : null;
-        var previousHash = DomainUtils.toBytes(blockHeader.getPreviousBlockHash());
         blockFileBuilder.blockHeader(blockHeader);
         blockFileBuilder.consensusStart(consensusStart);
         blockFileBuilder.consensusEnd(consensusStart);
         blockFileBuilder.index(blockHeader.getNumber());
-        blockFileBuilder.previousHash(DomainUtils.bytesToHex(previousHash));
-        context.getBlockRootHashDigest().setPreviousHash(previousHash);
     }
 
     private void readBlockProof(ReaderContext context) {
@@ -131,10 +129,13 @@ public class ProtoBlockFileReader implements BlockFileReader {
             throw new InvalidStreamFileException("Missing block proof in file " + context.getFilename());
         }
 
+        var blockFile = context.getBlockFile();
         var blockProof = blockItem.getBlockProof();
-        context.getBlockFile().blockProof(blockProof);
-        context.getBlockRootHashDigest()
-                .setStartOfBlockStateHash(DomainUtils.toBytes(blockProof.getStartOfBlockStateRootHash()));
+        var blockRootHashDigest = context.getBlockRootHashDigest();
+        byte[] previousHash = DomainUtils.toBytes(blockProof.getPreviousBlockRootHash());
+        blockFile.blockProof(blockProof).previousHash(DomainUtils.bytesToHex(previousHash));
+        blockRootHashDigest.setPreviousHash(previousHash);
+        blockRootHashDigest.setStartOfBlockStateHash(DomainUtils.toBytes(blockProof.getStartOfBlockStateRootHash()));
     }
 
     private void readEvents(ReaderContext context) {
@@ -145,7 +146,6 @@ public class ProtoBlockFileReader implements BlockFileReader {
 
     private void readEventTransactions(ReaderContext context) {
         BlockItem protoBlockItem;
-        com.hedera.mirror.common.domain.transaction.BlockItem previous = null;
         while ((protoBlockItem = context.readBlockItemFor(EVENT_TRANSACTION)) != null) {
             try {
                 var eventTransaction = protoBlockItem.getEventTransaction();
@@ -177,12 +177,12 @@ public class ProtoBlockFileReader implements BlockFileReader {
                             .transactionResult(transactionResult)
                             .transactionOutput(Collections.unmodifiableList(transactionOutputs))
                             .stateChanges(Collections.unmodifiableList(stateChangesList))
-                            .previous(previous)
+                            .previous(context.getLastBlockItem())
                             .build();
                     context.getBlockFile()
                             .item(blockItem)
                             .onNewTransaction(getTransactionConsensusTimestamp(transactionResult));
-                    previous = blockItem;
+                    context.setLastBlockItem(blockItem);
                 }
             } catch (InvalidProtocolBufferException e) {
                 throw new InvalidStreamFileException(
@@ -221,6 +221,10 @@ public class ProtoBlockFileReader implements BlockFileReader {
 
         @NonFinal
         private int index;
+
+        @NonFinal
+        @Setter
+        private com.hedera.mirror.common.domain.transaction.BlockItem lastBlockItem;
 
         ReaderContext(@NotNull List<BlockItem> blockItems, @NotNull String filename) {
             this.blockFile = BlockFile.builder();
