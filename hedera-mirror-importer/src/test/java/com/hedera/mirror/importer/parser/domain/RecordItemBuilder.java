@@ -970,8 +970,7 @@ public class RecordItemBuilder {
     }
 
     public Builder<TokenMintTransactionBody.Builder> tokenMint(TokenType tokenType) {
-        var tokenId = tokenId();
-        var transactionBody = TokenMintTransactionBody.newBuilder().setToken(tokenId);
+        var transactionBody = TokenMintTransactionBody.newBuilder().setToken(tokenId());
         var builder = new Builder<>(TransactionType.TOKENMINT, transactionBody);
 
         if (tokenType == FUNGIBLE_COMMON) {
@@ -980,12 +979,6 @@ public class RecordItemBuilder {
         } else {
             transactionBody.addMetadata(bytes(16)).addMetadata(bytes(16));
             builder.receipt(b -> b.addSerialNumbers(1L).addSerialNumbers(2L).setNewTotalSupply(3L));
-            var tokenTransferList = TokenTransferList.newBuilder()
-                    .setToken(tokenId)
-                    .addNftTransfers(NftTransfer.newBuilder().setSerialNumber(1L))
-                    .addNftTransfers(NftTransfer.newBuilder().setSerialNumber(2L))
-                    .build();
-            builder.record(r -> r.addAllTokenTransferLists(List.of(tokenTransferList)));
         }
 
         return builder;

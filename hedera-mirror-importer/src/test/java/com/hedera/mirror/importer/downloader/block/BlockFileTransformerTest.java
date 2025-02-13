@@ -38,11 +38,13 @@ import com.hedera.mirror.importer.parser.domain.BlockItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -963,10 +965,19 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
             names = {"FUNGIBLE_COMMON", "NON_FUNGIBLE_UNIQUE"})
     void tokenMint(TokenType type) {
         // given
-        var expectedRecordItem = recordItemBuilder
-                .tokenMint(type)
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
-                .build();
+        var builder = recordItemBuilder.tokenMint(type);
+        if (type.equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+            var tokenId = builder.build().getTransactionBody().getTokenMint().getToken();
+            var tokenTransferList = TokenTransferList.newBuilder()
+                    .setToken(tokenId)
+                    .addNftTransfers(NftTransfer.newBuilder().setSerialNumber(1L))
+                    .addNftTransfers(NftTransfer.newBuilder().setSerialNumber(2L))
+                    .build();
+            builder.record(r -> r.addAllTokenTransferLists(List.of(tokenTransferList)));
+        }
+
+        var expectedRecordItem =
+                builder.recordItem(r -> r.hapiVersion(HAPI_VERSION)).build();
         var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
         var blockItem = blockItemBuilder.tokenMint(expectedRecordItem).build();
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
