@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.EVM_V_34_BLOCK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -24,11 +23,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.generated.EvmCodesHistorical;
 import java.math.BigInteger;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,14 +38,8 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
 
     @BeforeEach
     void beforeEach() {
-        recordFileAfterEvm34 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_34_BLOCK))
-                .persist();
-        testWeb3jService.setBlockType(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
-        testWeb3jService.setHistoricalRange(
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        senderPersistHistorical(recordFileAfterEvm34);
+        recordFileAfterEvm34 = recordFilePersist(EVM_V_34_BLOCK);
+        setupHistoricalStateInService(EVM_V_34_BLOCK, recordFileAfterEvm34);
     }
 
     @ParameterizedTest
@@ -93,11 +84,5 @@ public class ContractCallEvmCodesHistoricalTest extends AbstractContractCallServ
         var expectedResult = ByteString.fromHex(recordFileAfterEvm34.getHash().substring(0, 64))
                 .toByteArray();
         assertThat(result).isEqualTo(expectedResult);
-    }
-
-    private void senderPersistHistorical(RecordFile recordFileHistorical) {
-        final var senderHistorical = accountEntityPersistHistorical(
-                Range.closedOpen(recordFileHistorical.getConsensusStart(), recordFileHistorical.getConsensusEnd()));
-        testWeb3jService.setSender(toAddress(senderHistorical.toEntityId()).toHexString());
     }
 }
