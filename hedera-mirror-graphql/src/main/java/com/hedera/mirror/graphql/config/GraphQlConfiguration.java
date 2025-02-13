@@ -45,7 +45,7 @@ class GraphQlConfiguration {
     static {
         // Configure GraphQL parsing limits to reject malicious input
         Consumer<Builder> consumer =
-                b -> b.maxCharacters(10000).maxRuleDepth(10).maxTokens(1000).maxWhitespaceTokens(1000);
+                b -> b.maxCharacters(10000).maxRuleDepth(100).maxTokens(1000).maxWhitespaceTokens(1000);
         ParserOptions.setDefaultParserOptions(
                 ParserOptions.getDefaultParserOptions().transform(consumer));
         ParserOptions.setDefaultOperationParserOptions(
@@ -54,7 +54,7 @@ class GraphQlConfiguration {
 
     @Bean
     GraphQlSourceBuilderCustomizer graphQlCustomizer(PreparsedDocumentProvider provider) {
-        var maxQueryComplexity = new MaxQueryComplexityInstrumentation(20);
+        var maxQueryComplexity = new MaxQueryComplexityInstrumentation(200);
         var maxQueryDepth = new MaxQueryDepthInstrumentation(10);
         var instrumentation = new ChainedInstrumentation(maxQueryComplexity, maxQueryDepth);
 
@@ -88,7 +88,7 @@ class GraphQlConfiguration {
                     .maxDocumentLength(11000)
                     .maxNameLength(100)
                     .maxNestingDepth(10)
-                    .maxNumberLength(8)
+                    .maxNumberLength(19)
                     .maxStringLength(11000)
                     .maxTokenCount(100)
                     .build();
