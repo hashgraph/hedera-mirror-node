@@ -278,6 +278,11 @@ class EntityIdUtilsTest {
     }
 
     @Test
+    void toAccountIdFromNullId() {
+        assertThat(EntityIdUtils.toAccountId((Long) null)).isNull();
+    }
+
+    @Test
     void toAccountIdFromShardRealmNum() {
         final var expectedAccountId = com.hedera.hapi.node.base.AccountID.newBuilder()
                 .shardNum(1)
