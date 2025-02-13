@@ -82,7 +82,7 @@ public class TransactionExecutionService {
         TransactionBody transactionBody;
         HederaEvmTransactionProcessingResult result = null;
         if (isContractCreate) {
-            transactionBody = buildContractCreateTransactionBody(params, estimatedGas, maxLifetime);
+            transactionBody = buildContractCreateTransactionBody(params, estimatedGas, maxLifetime, mirrorNodeEvmProperties.getContractCreateTxFee());
         } else {
             transactionBody = buildContractCallTransactionBody(params, estimatedGas);
         }
@@ -165,14 +165,14 @@ public class TransactionExecutionService {
     }
 
     private TransactionBody buildContractCreateTransactionBody(
-            final CallServiceParameters params, long estimatedGas, long maxLifetime) {
+            final CallServiceParameters params, long estimatedGas, long maxLifetime, long transactionFee) {
         return defaultTransactionBodyBuilder(params)
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .initcode(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
                                 params.getCallData().toArrayUnsafe()))
                         .gas(estimatedGas)
                         .autoRenewPeriod(new Duration(maxLifetime))
-                        .build())
+                        .build()).transactionFee(transactionFee)
                 .build();
     }
 

@@ -115,7 +115,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .entity()
                 .customize(e -> e.id(2L)
                         .num(2L)
-                        .balance(5000000000000000000L)
+                        .balance(1000000000000000000L)
                         .createdTimestamp(genesisRecordFile.getConsensusStart())
                         .timestampRange(Range.atLeast(genesisRecordFile.getConsensusStart())))
                 .persist();
@@ -131,6 +131,20 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .customize(ab -> ab.id(new AccountBalance.Id(
                                 treasuryEntity.getCreatedTimestamp(), treasuryEntity.toEntityId()))
                         .balance(treasuryEntity.getBalance()))
+                .persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(801L)
+                        .num(801L)
+                        .createdTimestamp(genesisRecordFile.getConsensusStart())
+                        .timestampRange(Range.atLeast(genesisRecordFile.getConsensusStart())))
+                .persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(800L)
+                        .num(800L)
+                        .createdTimestamp(genesisRecordFile.getConsensusStart())
+                        .timestampRange(Range.atLeast(genesisRecordFile.getConsensusStart())))
                 .persist();
     }
 
