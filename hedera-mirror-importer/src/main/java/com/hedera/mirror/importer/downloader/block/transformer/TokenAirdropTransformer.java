@@ -18,43 +18,43 @@ package com.hedera.mirror.importer.downloader.block.transformer;
 
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_PENDING_AIRDROPS;
 
+import com.hedera.hapi.block.stream.output.protoc.StateChanges;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import com.hederahashgraph.api.proto.java.PendingAirdropId.TokenReferenceCase;
 import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Named
 final class TokenAirdropTransformer extends AbstractBlockItemTransformer {
 
-    @SuppressWarnings("java:S3776")
     @Override
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        if (!blockItem.successful()) {
+    protected void updateTransactionRecord(
+            BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
+        if (!blockItem.successful() || !transactionBody.hasTokenAirdrop()) {
             return;
         }
 
-        for (var stateChanges : blockItem.stateChanges()) {
-            for (var stateChange : stateChanges.getStateChangesList()) {
-                if (stateChange.getStateId() == STATE_ID_PENDING_AIRDROPS.getNumber() && stateChange.hasMapUpdate()) {
-                    var mapUpdate = stateChange.getMapUpdate();
-                    var key = mapUpdate.getKey();
-                    if (key.hasPendingAirdropIdKey()) {
-                        var pendingId = key.getPendingAirdropIdKey();
-                        var pendingAirdrop = PendingAirdropRecord.newBuilder().setPendingAirdropId(pendingId);
-                        if (pendingId.getTokenReferenceCase() == TokenReferenceCase.FUNGIBLE_TOKEN_TYPE) {
-                            var value = mapUpdate.getValue();
-                            if (value.hasAccountPendingAirdropValue()) {
-                                var accountValue = value.getAccountPendingAirdropValue();
-                                if (accountValue.hasPendingAirdropValue()) {
-                                    pendingAirdrop.setPendingAirdropValue(accountValue.getPendingAirdropValue());
-                                }
-                            }
-                        }
-
-                        transactionRecordBuilder.addNewPendingAirdrops(pendingAirdrop);
-                    }
+        var pendingAirdropIds = pendingAirdropsInState(blockItem.stateChanges());
+        if (!pendingAirdropIds.isEmpty()) {
+            var eligibleAirdropIds =
+                    eligibleAirdropIds(transactionBody.getTokenAirdrop().getTokenTransfersList());
+            for (var pendingAirdrop : pendingAirdropIds) {
+                // Do not add airdrops that could not appear in the transfer list
+                if (eligibleAirdropIds.contains(pendingAirdrop.getPendingAirdropId())) {
+                    transactionRecordBuilder.addNewPendingAirdrops(pendingAirdrop);
                 }
             }
         }
@@ -65,6 +65,89 @@ final class TokenAirdropTransformer extends AbstractBlockItemTransformer {
                 var assessedCustomFees = output.getAssessedCustomFeesList();
                 transactionRecordBuilder.addAllAssessedCustomFees(assessedCustomFees);
             }
+        }
+    }
+
+    private Set<PendingAirdropRecord> pendingAirdropsInState(List<StateChanges> stateChangesList) {
+        Set<PendingAirdropRecord> pendingAirdropIds = new HashSet<>();
+        for (var stateChanges : stateChangesList) {
+            for (var stateChange : stateChanges.getStateChangesList()) {
+                if (stateChange.getStateId() == STATE_ID_PENDING_AIRDROPS.getNumber()
+                        && stateChange.hasMapUpdate()
+                        && stateChange.getMapUpdate().hasKey()
+                        && stateChange.getMapUpdate().getKey().hasPendingAirdropIdKey()) {
+                    var mapUpdate = stateChange.getMapUpdate();
+                    var pendingId = mapUpdate.getKey().getPendingAirdropIdKey();
+                    var pendingAirdrop = PendingAirdropRecord.newBuilder().setPendingAirdropId(pendingId);
+                    if (pendingId.getTokenReferenceCase() == TokenReferenceCase.FUNGIBLE_TOKEN_TYPE
+                            && mapUpdate.getValue().hasAccountPendingAirdropValue()
+                            && mapUpdate
+                                    .getValue()
+                                    .getAccountPendingAirdropValue()
+                                    .hasPendingAirdropValue()) {
+                        var accountValue = mapUpdate.getValue().getAccountPendingAirdropValue();
+                        pendingAirdrop.setPendingAirdropValue(accountValue.getPendingAirdropValue());
+                    }
+
+                    pendingAirdropIds.add(pendingAirdrop.build());
+                }
+            }
+        }
+
+        return pendingAirdropIds;
+    }
+
+    private Set<PendingAirdropId> eligibleAirdropIds(List<TokenTransferList> tokenTransfers) {
+        var eligibleAirdrops = new HashSet<PendingAirdropId>();
+        for (var transfer : tokenTransfers) {
+            var tokenId = transfer.getToken();
+            var accountAmounts = transfer.getTransfersList();
+            if (!accountAmounts.isEmpty()) {
+                eligibleFungiblePendingAirdrops(accountAmounts, tokenId, eligibleAirdrops);
+            }
+
+            var nftTransfers = transfer.getNftTransfersList();
+            if (!nftTransfers.isEmpty()) {
+                eligibleNftPendingAirdrops(nftTransfers, tokenId, eligibleAirdrops);
+            }
+        }
+
+        return eligibleAirdrops;
+    }
+
+    private void eligibleFungiblePendingAirdrops(
+            List<AccountAmount> accountAmounts, TokenID tokenId, Set<PendingAirdropId> eligibleAirdrops) {
+        var builder = PendingAirdropId.newBuilder().setFungibleTokenType(tokenId);
+        var receivers = new HashSet<AccountID>();
+        var senders = new HashSet<AccountID>();
+        for (var accountAmount : accountAmounts) {
+            if (accountAmount.hasAccountID()) {
+                var accountId = accountAmount.getAccountID();
+                if (accountAmount.getAmount() < 0) {
+                    senders.add(accountId);
+                } else {
+                    receivers.add(accountId);
+                }
+            }
+        }
+
+        for (var receiver : receivers) {
+            for (var sender : senders) {
+                eligibleAirdrops.add(
+                        builder.setReceiverId(receiver).setSenderId(sender).build());
+            }
+        }
+    }
+
+    private void eligibleNftPendingAirdrops(
+            List<NftTransfer> nftTransfers, TokenID tokenId, Set<PendingAirdropId> eligibleAirdrops) {
+        for (var nftTransfer : nftTransfers) {
+            var nftId = NftID.newBuilder().setTokenID(tokenId).setSerialNumber(nftTransfer.getSerialNumber());
+            eligibleAirdrops.add(PendingAirdropId.newBuilder()
+                    .setNonFungibleToken(nftId)
+                    .setReceiverId(nftTransfer.getReceiverAccountID())
+                    .setSenderId(nftTransfer.getSenderAccountID())
+                    .build());
         }
     }
 

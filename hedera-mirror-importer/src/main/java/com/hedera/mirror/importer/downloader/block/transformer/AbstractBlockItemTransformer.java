@@ -53,11 +53,12 @@ abstract class AbstractBlockItemTransformer implements BlockItemTransformer {
             transactionRecordBuilder.setScheduleRef(transactionResult.getScheduleRef());
         }
 
-        updateTransactionRecord(blockItem, transactionRecordBuilder);
+        updateTransactionRecord(blockItem, transactionBody, transactionRecordBuilder);
         return transactionRecordBuilder.build();
     }
 
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
+    protected void updateTransactionRecord(
+            BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
         // do nothing
     }
 

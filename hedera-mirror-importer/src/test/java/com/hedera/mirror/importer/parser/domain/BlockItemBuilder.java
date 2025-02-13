@@ -42,6 +42,8 @@ import com.hederahashgraph.api.proto.java.AccountPendingAirdrop;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
+import com.hederahashgraph.api.proto.java.PendingAirdropValue;
 import com.hederahashgraph.api.proto.java.Schedule;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Token;
@@ -268,6 +270,41 @@ public class BlockItemBuilder {
                             .build())
                     .build());
         }
+
+        // Add state changes that are not reflected in the possible state changes from the transaction body
+        changes.add(StateChange.newBuilder()
+                .setStateId(STATE_ID_PENDING_AIRDROPS.getNumber())
+                .setMapUpdate(MapUpdateChange.newBuilder()
+                        .setKey(MapChangeKey.newBuilder()
+                                .setPendingAirdropIdKey(PendingAirdropId.newBuilder()
+                                        .setFungibleTokenType(recordItemBuilder.tokenId())
+                                        .setReceiverId(recordItemBuilder.accountId())
+                                        .setSenderId(recordItemBuilder.accountId())
+                                        .build()))
+                        .setValue(MapChangeValue.newBuilder()
+                                .setAccountPendingAirdropValue(AccountPendingAirdrop.newBuilder()
+                                        .setPendingAirdropValue(PendingAirdropValue.newBuilder()
+                                                .setAmount(1)
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build());
+        changes.add(StateChange.newBuilder()
+                .setStateId(STATE_ID_PENDING_AIRDROPS.getNumber())
+                .setMapUpdate(MapUpdateChange.newBuilder()
+                        .setKey(MapChangeKey.newBuilder()
+                                .setPendingAirdropIdKey(PendingAirdropId.newBuilder()
+                                        .setNonFungibleToken(NftID.newBuilder()
+                                                .setTokenID(recordItemBuilder.tokenId())
+                                                .setSerialNumber(5000)
+                                                .build())
+                                        .setReceiverId(recordItemBuilder.accountId())
+                                        .setSenderId(recordItemBuilder.accountId())
+                                        .build()))
+                        .build())
+                .build());
+
         var stateChanges = StateChanges.newBuilder().addAllStateChanges(changes).build();
 
         var transactionOutput = TransactionOutput.newBuilder()

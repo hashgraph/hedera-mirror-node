@@ -35,6 +35,7 @@ import com.hedera.mirror.importer.parser.domain.BlockFileBuilder;
 import com.hedera.mirror.importer.parser.domain.BlockItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
+import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -602,10 +603,10 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                     .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
                     .returns(expectedFees, TransactionRecord::getAssessedCustomFeesList)
                     .extracting(TransactionRecord::getNewPendingAirdropsList)
-                    .returns(
-                            expectedFungibleKey, airdrops -> airdrops.getFirst().getPendingAirdropId())
-                    .returns(expectedAmount, airdrops -> airdrops.getFirst().getPendingAirdropValue())
-                    .returns(expectedNftKey, airdrops -> airdrops.get(1).getPendingAirdropId());
+                    .satisfies((Consumer<Collection<PendingAirdropRecord>>) airdrops -> assertThat(airdrops)
+                            .hasSize(2)
+                            .containsExactlyInAnyOrderElementsOf(
+                                    expectedRecordItem.getTransactionRecord().getNewPendingAirdropsList()));
         });
     }
 
@@ -913,6 +914,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                         "transactionRecord.receipt_.scheduleID_.memoizedIsInitialized",
                         "transactionRecord.receipt_.scheduleID_.memoizedSize",
                         "transactionRecord.assessedCustomFees_",
+                        "transactionRecord.newPendingAirdrops_",
                         "transactionRecord.parentConsensusTimestamp_",
                         // Record file builder transaction hash is not generated based on transaction bytes, so these
                         // will not match

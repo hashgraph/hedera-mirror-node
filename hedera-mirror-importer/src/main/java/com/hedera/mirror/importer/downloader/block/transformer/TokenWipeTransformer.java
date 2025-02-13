@@ -16,42 +16,19 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_NFTS;
-import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_TOKENS;
-
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
-final class TokenWipeTransformer extends AbstractBlockItemTransformer {
+final class TokenWipeTransformer extends AbstractTokenTransformer {
 
-    @SuppressWarnings("java:S3776")
     @Override
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
-        if (!blockItem.successful()) {
-            return;
-        }
-
-        var receiptBuilder = transactionRecordBuilder.getReceiptBuilder();
-        for (var stateChanges : blockItem.stateChanges()) {
-            for (var stateChange : stateChanges.getStateChangesList()) {
-                if (stateChange.hasMapUpdate()
-                        && (stateChange.getStateId() == STATE_ID_TOKENS.getNumber()
-                                || stateChange.getStateId() == STATE_ID_NFTS.getNumber())) {
-                    var mapUpdate = stateChange.getMapUpdate();
-                    if (mapUpdate.hasValue()) {
-                        var value = mapUpdate.getValue();
-                        if (value.hasTokenValue()) {
-                            receiptBuilder.setNewTotalSupply(
-                                    value.getTokenValue().getTotalSupply());
-                            return;
-                        }
-                    }
-                }
-            }
-        }
+    protected void updateTransactionRecord(
+            BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
+        updateTotalSupply(blockItem, transactionRecordBuilder);
     }
 
     @Override
