@@ -40,9 +40,11 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -93,10 +95,21 @@ public class ProtoBlockFileReaderTest {
                 .usingRecursiveComparison()
                 .ignoringFields("blockHeader", "blockProof", "items")
                 .isEqualTo(expected);
+        var expectedPreviousItems = new ArrayList<>(actual.getItems());
+        if (!expectedPreviousItems.isEmpty()) {
+            expectedPreviousItems.addFirst(null);
+            expectedPreviousItems.removeLast();
+        }
         assertThat(actual)
                 .returns(expected.getCount(), a -> (long) a.getItems().size())
                 .satisfies(a -> assertThat(a.getBlockHeader()).isNotNull())
-                .satisfies(a -> assertThat(a.getBlockProof()).isNotNull());
+                .satisfies(a -> assertThat(a.getBlockProof()).isNotNull())
+                .extracting(
+                        BlockFile::getItems,
+                        InstanceOfAssertFactories.collection(
+                                com.hedera.mirror.common.domain.transaction.BlockItem.class))
+                .map(com.hedera.mirror.common.domain.transaction.BlockItem::previous)
+                .containsExactlyElementsOf(expectedPreviousItems);
     }
 
     @Test
