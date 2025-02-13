@@ -544,6 +544,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         tokenAccountPersist(tokenEntityId, spenderEntityId);
         tokenAccountPersist(tokenEntityId, contractEntityId);
+        nftAllowancePersist(tokenEntityId, contractEntityId, contractEntityId);
 
         var tokenTransferList = new TokenTransferList(
                 tokenAddress.toHexString(),
@@ -571,7 +572,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
             final TokenTypeEnum tokenType, final long amount, final long serialNumber, final boolean approvalForAll) {
         // Given
         final var treasuryEntityId = accountEntityPersist().toEntityId();
-        final var spenderEntityId = spenderEntityPersistWithAlias();
+        final var spenderEntity = accountEntityPersist();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -579,12 +580,14 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
-                : nftPersist(treasuryEntityId, spenderEntityId);
+                : nftPersist(treasuryEntityId, spenderEntity.toEntityId());
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
 
-        tokenAccountPersist(tokenEntityId, spenderEntityId);
+        tokenAccountPersist(tokenEntityId, spenderEntity.toEntityId());
         tokenAccountPersist(tokenEntityId, contractEntityId);
+        nftAllowancePersist(tokenEntityId, spenderEntity.toEntityId(), contractEntityId);
+        nftAllowancePersist(tokenEntityId, contractEntityId, contractEntityId);
 
         TokenTransferList tokenTransferList;
         if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
@@ -593,7 +596,8 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                     List.of(
                             new AccountAmount(
                                     contractAddress.toHexString(), BigInteger.valueOf(-amount), approvalForAll),
-                            new AccountAmount(SPENDER_ALIAS.toHexString(), BigInteger.valueOf(amount), approvalForAll)),
+                            new AccountAmount(
+                                    getAddressFromEntity(spenderEntity), BigInteger.valueOf(amount), approvalForAll)),
                     List.of());
         } else {
             tokenTransferList = new TokenTransferList(
@@ -601,7 +605,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                     List.of(),
                     List.of(new NftTransfer(
                             contractAddress.toHexString(),
-                            SPENDER_ALIAS.toHexString(),
+                            getAddressFromEntity(spenderEntity),
                             BigInteger.valueOf(serialNumber),
                             approvalForAll)));
         }
@@ -621,15 +625,17 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var treasuryEntityId = accountEntityPersist().toEntityId();
         final var spenderEntityId = accountEntityPersist().toEntityId();
 
-        final var tokenEntity = nftPersist(treasuryEntityId, spenderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
+        final var token = nftPersist(treasuryEntityId, spenderEntityId);
+        final var tokenAddress = toAddress(token.getTokenId());
+        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
 
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), spenderEntityId);
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), contractEntityId);
+        tokenAccountPersist(tokenEntityId, spenderEntityId);
+        tokenAccountPersist(tokenEntityId, contractEntityId);
+        nftAllowancePersist(tokenEntityId, contractEntityId, spenderEntityId);
 
         // When
         final var functionCall = contract.send_transferFromNFTGetAllowance(tokenAddress.toHexString(), BigInteger.ONE);
