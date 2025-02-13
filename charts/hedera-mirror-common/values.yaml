@@ -362,6 +362,30 @@ prometheus:
         selector:
           matchLabels:
             app.kubernetes.io/name: traefik
+      - name: stackgres-collector
+        podMetricsEndpoints:
+          - honorLabels: true
+            honorTimestamps: true
+            interval: 1m
+            metricRelabelings:
+              - action: drop
+                regex: ^(pg_stat.*_user.*|pg_table.*|pgbouncer_show_clients.*)$
+                sourceLabels:
+                  - __name__
+            scrapeTimeout: 30s
+            path: /metrics
+            port: prom-http
+            scheme: https
+            tlsConfig:
+              ca:
+                secret:
+                  key: tls.crt
+                  name: stackgres-collector
+              serverName: stackgres-collector
+        selector:
+          matchLabels:
+            app: StackGresConfig
+            stackgres.io/collector: "true"
     prometheusSpec:
       podMonitorSelectorNilUsesHelmValues: false
       priorityClassName: high
@@ -417,6 +441,29 @@ promtail:
       operator: Exists
 
 stackgres:
+  cert:
+    collectorSecretName: stackgres-collector
+  collector:
+    config:
+      exporters:
+        prometheus:
+          metric_expiration: 2m
+      service:
+        pipelines:
+          metrics:
+            receivers:
+              - prometheus
+    name: stackgres-collector
+    prometheusOperator:
+      allowDiscovery: false
+      monitors: []  # Configured as part of the prometheus chart to enable finer control over scrape endpoints
+    resources:
+      limits:
+        cpu: "1500m"
+        memory: "4Gi"
+      requests:
+        cpu: "1000m"
+        memory: "3Gi"
   enabled: false
   operator:
     image:
