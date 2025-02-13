@@ -57,7 +57,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.util.Version;
@@ -720,13 +719,6 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         var blockItem = blockItemBuilder.tokenAirdrop(expectedRecordItem).build();
         var expectedFees =
                 blockItem.transactionOutput().getFirst().getTokenAirdrop().getAssessedCustomFeesList();
-        var pendingList = blockItem.stateChanges().getFirst().getStateChangesList();
-        var mapUpdate = pendingList.getFirst().getMapUpdate();
-        var expectedFungibleKey = mapUpdate.getKey().getPendingAirdropIdKey();
-        var expectedAmount =
-                mapUpdate.getValue().getAccountPendingAirdropValue().getPendingAirdropValue();
-        var expectedNftKey = pendingList.get(1).getMapUpdate().getKey().getPendingAirdropIdKey();
-
         var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
 
         // when
@@ -886,7 +878,9 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = TokenType.class, mode = Mode.EXCLUDE, names = "UNRECOGNIZED")
+    @EnumSource(
+            value = TokenType.class,
+            names = {"FUNGIBLE_COMMON", "NON_FUNGIBLE_UNIQUE"})
     void tokenMint(TokenType type) {
         // given
         var expectedRecordItem = recordItemBuilder
