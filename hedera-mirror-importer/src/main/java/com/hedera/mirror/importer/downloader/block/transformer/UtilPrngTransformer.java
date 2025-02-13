@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.downloader.block.transformer;
 
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 import lombok.CustomLog;
@@ -27,7 +28,7 @@ import lombok.CustomLog;
 final class UtilPrngTransformer extends AbstractBlockItemTransformer {
 
     @Override
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionRecord.Builder transactionRecordBuilder) {
+    protected void updateTransactionRecord(BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
 
         if (!blockItem.successful()) {
             return;
