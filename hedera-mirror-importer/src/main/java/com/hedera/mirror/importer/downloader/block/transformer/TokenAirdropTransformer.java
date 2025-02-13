@@ -74,13 +74,12 @@ final class TokenAirdropTransformer extends AbstractBlockItemTransformer {
             for (var stateChange : stateChanges.getStateChangesList()) {
                 if (stateChange.getStateId() == STATE_ID_PENDING_AIRDROPS.getNumber()
                         && stateChange.hasMapUpdate()
-                        && stateChange.getMapUpdate().hasKey()
-                        && stateChange.getMapUpdate().getKey().hasPendingAirdropIdKey()) {
+                        && stateChange.getMapUpdate().getKey().hasPendingAirdropIdKey()
+                        && stateChange.getMapUpdate().getValue().hasAccountPendingAirdropValue()) {
                     var mapUpdate = stateChange.getMapUpdate();
                     var pendingId = mapUpdate.getKey().getPendingAirdropIdKey();
                     var pendingAirdrop = PendingAirdropRecord.newBuilder().setPendingAirdropId(pendingId);
                     if (pendingId.getTokenReferenceCase() == TokenReferenceCase.FUNGIBLE_TOKEN_TYPE
-                            && mapUpdate.getValue().hasAccountPendingAirdropValue()
                             && mapUpdate
                                     .getValue()
                                     .getAccountPendingAirdropValue()
@@ -101,40 +100,36 @@ final class TokenAirdropTransformer extends AbstractBlockItemTransformer {
         var eligibleAirdrops = new HashSet<PendingAirdropId>();
         for (var transfer : tokenTransfers) {
             var tokenId = transfer.getToken();
-            var accountAmounts = transfer.getTransfersList();
-            if (!accountAmounts.isEmpty()) {
-                eligibleFungiblePendingAirdrops(accountAmounts, tokenId, eligibleAirdrops);
-            }
-
-            var nftTransfers = transfer.getNftTransfersList();
-            if (!nftTransfers.isEmpty()) {
-                eligibleNftPendingAirdrops(nftTransfers, tokenId, eligibleAirdrops);
-            }
+            eligibleFungiblePendingAirdrops(transfer.getTransfersList(), tokenId, eligibleAirdrops);
+            eligibleNftPendingAirdrops(transfer.getNftTransfersList(), tokenId, eligibleAirdrops);
         }
 
         return eligibleAirdrops;
     }
 
+    @SuppressWarnings("java:S3776")
     private void eligibleFungiblePendingAirdrops(
             List<AccountAmount> accountAmounts, TokenID tokenId, Set<PendingAirdropId> eligibleAirdrops) {
-        var builder = PendingAirdropId.newBuilder().setFungibleTokenType(tokenId);
-        var receivers = new HashSet<AccountID>();
-        var senders = new HashSet<AccountID>();
-        for (var accountAmount : accountAmounts) {
-            if (accountAmount.hasAccountID()) {
-                var accountId = accountAmount.getAccountID();
-                if (accountAmount.getAmount() < 0) {
-                    senders.add(accountId);
-                } else {
-                    receivers.add(accountId);
+        if (!accountAmounts.isEmpty()) {
+            var builder = PendingAirdropId.newBuilder().setFungibleTokenType(tokenId);
+            var receivers = new HashSet<AccountID>();
+            var senders = new HashSet<AccountID>();
+            for (var accountAmount : accountAmounts) {
+                if (accountAmount.hasAccountID()) {
+                    var accountId = accountAmount.getAccountID();
+                    if (accountAmount.getAmount() < 0) {
+                        senders.add(accountId);
+                    } else {
+                        receivers.add(accountId);
+                    }
                 }
             }
-        }
 
-        for (var receiver : receivers) {
-            for (var sender : senders) {
-                eligibleAirdrops.add(
-                        builder.setReceiverId(receiver).setSenderId(sender).build());
+            for (var receiver : receivers) {
+                for (var sender : senders) {
+                    eligibleAirdrops.add(
+                            builder.setReceiverId(receiver).setSenderId(sender).build());
+                }
             }
         }
     }

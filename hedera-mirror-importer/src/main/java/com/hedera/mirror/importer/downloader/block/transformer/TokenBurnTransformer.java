@@ -28,7 +28,11 @@ final class TokenBurnTransformer extends AbstractTokenTransformer {
     @Override
     protected void updateTransactionRecord(
             BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
-        updateTotalSupply(blockItem, transactionRecordBuilder);
+        if (!blockItem.successful()) {
+            return;
+        }
+
+        updateTotalSupply(blockItem.stateChanges(), transactionRecordBuilder);
     }
 
     @Override

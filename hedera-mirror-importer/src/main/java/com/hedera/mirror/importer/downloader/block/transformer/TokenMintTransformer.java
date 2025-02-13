@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_NFTS;
-
-import com.hedera.hapi.block.stream.output.protoc.StateChange;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -35,24 +32,14 @@ final class TokenMintTransformer extends AbstractTokenTransformer {
             return;
         }
 
-        for (var stateChanges : blockItem.stateChanges()) {
-            for (var stateChange : stateChanges.getStateChangesList()) {
-                if (hasSupplyUpdate(stateChange)) {
-                    updateTotalSupply(stateChange, transactionRecordBuilder);
-                } else if (hasSerialUpdate(stateChange)) {
-                    var serialNumber =
-                            stateChange.getMapUpdate().getKey().getNftIdKey().getSerialNumber();
-                    transactionRecordBuilder.getReceiptBuilder().addSerialNumbers(serialNumber);
-                }
+        updateTotalSupply(blockItem.stateChanges(), transactionRecordBuilder);
+
+        var tokenTransferLists = blockItem.transactionResult().getTokenTransferListsList();
+        for (var tokenTransferList : tokenTransferLists) {
+            for (var nftTransfer : tokenTransferList.getNftTransfersList()) {
+                transactionRecordBuilder.getReceiptBuilder().addSerialNumbers(nftTransfer.getSerialNumber());
             }
         }
-    }
-
-    private boolean hasSerialUpdate(StateChange stateChange) {
-        return stateChange.getStateId() == STATE_ID_NFTS.getNumber()
-                && stateChange.hasMapUpdate()
-                && stateChange.getMapUpdate().hasKey()
-                && stateChange.getMapUpdate().getKey().hasNftIdKey();
     }
 
     @Override
