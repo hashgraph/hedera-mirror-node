@@ -27,7 +27,8 @@ import jakarta.inject.Named;
 final class NodeCreateTransformer extends AbstractBlockItemTransformer {
 
     @Override
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
+    protected void updateTransactionRecord(
+            BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
         if (!blockItem.successful()) {
             return;
         }

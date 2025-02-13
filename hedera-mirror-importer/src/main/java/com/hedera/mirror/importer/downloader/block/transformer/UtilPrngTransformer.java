@@ -28,7 +28,8 @@ import lombok.CustomLog;
 final class UtilPrngTransformer extends AbstractBlockItemTransformer {
 
     @Override
-    protected void updateTransactionRecord(BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
+    protected void updateTransactionRecord(
+            BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
 
         if (!blockItem.successful()) {
             return;
