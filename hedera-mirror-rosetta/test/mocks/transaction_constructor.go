@@ -21,7 +21,7 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 	"github.com/stretchr/testify/mock"
 )
 

@@ -22,7 +22,7 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 )

@@ -222,6 +222,12 @@ public final class EntityIdUtils {
                 .build();
     }
 
+    public static com.hedera.hapi.node.base.ContractID toContractID(final Address address) {
+        return com.hedera.hapi.node.base.ContractID.newBuilder()
+                .contractNum(numFromEvmAddress(address.toArrayUnsafe()))
+                .build();
+    }
+
     public static Address toAddress(final com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
         final var evmAddressBytes = bytes.toByteArray();
         return Address.wrap(org.apache.tuweni.bytes.Bytes.wrap(evmAddressBytes));
