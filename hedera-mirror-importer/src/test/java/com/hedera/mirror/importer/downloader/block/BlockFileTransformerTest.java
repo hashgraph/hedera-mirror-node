@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.downloader.block;
 import static com.hedera.mirror.common.util.DomainUtils.createSha384Digest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3.Builder;
@@ -36,6 +37,7 @@ import com.hedera.mirror.importer.parser.domain.BlockFileBuilder;
 import com.hedera.mirror.importer.parser.domain.BlockItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -76,16 +78,21 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
         return Stream.of(
                 Arguments.of(TransactionType.CONSENSUSDELETETOPIC, recordItemBuilder.consensusDeleteTopic()),
                 Arguments.of(TransactionType.CONSENSUSUPDATETOPIC, recordItemBuilder.consensusUpdateTopic()),
+                Arguments.of(TransactionType.CRYPTOADDLIVEHASH, recordItemBuilder.cryptoAddLiveHash()),
+                Arguments.of(TransactionType.CRYPTOAPPROVEALLOWANCE, recordItemBuilder.cryptoApproveAllowance()),
+                Arguments.of(TransactionType.CRYPTODELETE, recordItemBuilder.cryptoDelete()),
+                Arguments.of(TransactionType.CRYPTODELETEALLOWANCE, recordItemBuilder.cryptoDeleteAllowance()),
+                Arguments.of(TransactionType.CRYPTODELETELIVEHASH, recordItemBuilder.cryptoDeleteLiveHash()),
+                Arguments.of(TransactionType.CRYPTOUPDATEACCOUNT, recordItemBuilder.cryptoUpdate()),
                 Arguments.of(TransactionType.FILEAPPEND, recordItemBuilder.fileAppend()),
                 Arguments.of(TransactionType.FILEDELETE, recordItemBuilder.fileDelete()),
                 Arguments.of(TransactionType.FILEUPDATE, recordItemBuilder.fileUpdate()),
                 Arguments.of(TransactionType.NODEDELETE, recordItemBuilder.nodeDelete()),
-                Arguments.of(TransactionType.NODEUPDATE, recordItemBuilder.nodeUpdate()),
                 Arguments.of(TransactionType.NODESTAKEUPDATE, recordItemBuilder.nodeStakeUpdate()),
+                Arguments.of(TransactionType.NODEUPDATE, recordItemBuilder.nodeUpdate()),
                 Arguments.of(TransactionType.SCHEDULEDELETE, recordItemBuilder.scheduleDelete()),
                 Arguments.of(TransactionType.SYSTEMDELETE, recordItemBuilder.systemDelete()),
                 Arguments.of(TransactionType.SYSTEMUNDELETE, recordItemBuilder.systemUndelete()),
-                Arguments.of(TransactionType.UNCHECKEDSUBMIT, recordItemBuilder.uncheckedSubmit()),
                 Arguments.of(TransactionType.TOKENASSOCIATE, recordItemBuilder.tokenAssociate()),
                 Arguments.of(TransactionType.TOKENCANCELAIRDROP, recordItemBuilder.tokenCancelAirdrop()),
                 Arguments.of(TransactionType.TOKENCLAIMAIRDROP, recordItemBuilder.tokenClaimAirdrop()),
@@ -101,6 +108,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                 Arguments.of(TransactionType.TOKENUNPAUSE, recordItemBuilder.tokenUnpause()),
                 Arguments.of(TransactionType.TOKENUPDATE, recordItemBuilder.tokenUpdate()),
                 Arguments.of(TransactionType.TOKENUPDATENFTS, recordItemBuilder.tokenUpdateNfts()),
+                Arguments.of(TransactionType.UNCHECKEDSUBMIT, recordItemBuilder.uncheckedSubmit()),
                 Arguments.of(TransactionType.UNKNOWN, recordItemBuilder.unknown()));
     }
 
@@ -172,6 +180,78 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                     .returns(expectedTransactionHash2, TransactionRecord::getTransactionHash)
                     .returns(expectedFees2, TransactionRecord::getAssessedCustomFeesList);
         });
+    }
+
+    static Stream<Arguments> provideAliasAndExpectedEvmAddress() {
+        RecordItemBuilder recordItemBuilder1 = new RecordItemBuilder();
+        var randomAlias = recordItemBuilder1.bytes(20);
+        return Stream.of(
+                arguments(ByteString.EMPTY, ByteString.EMPTY),
+                arguments(recordItemBuilder1.key().toByteString(), ByteString.EMPTY),
+                arguments(randomAlias, randomAlias));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideAliasAndExpectedEvmAddress")
+    void cryptoCreateTransform(ByteString alias, ByteString expectedEvmAddress) {
+        var expectedRecordItem = recordItemBuilder
+                .cryptoCreate()
+                .record(r -> r.clearEvmAddress().setEvmAddress(expectedEvmAddress))
+                .transactionBody(b -> b.clearAlias().setAlias(alias))
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.cryptoCreate(expectedRecordItem).build();
+        var expectedAccountId =
+                blockItem.transactionOutput().getFirst().getAccountCreate().getCreatedAccountId();
+
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(
+                        expectedAccountId,
+                        transactionRecord -> transactionRecord.getReceipt().getAccountID())
+                .returns(expectedEvmAddress, TransactionRecord::getEvmAddress));
+    }
+
+    @Test
+    void cryptoCreateUnsuccessfulTransform() {
+        var expectedRecordItem = recordItemBuilder
+                .cryptoCreate()
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION))
+                .receipt(r -> r.clearAccountID().setStatus(ResponseCodeEnum.INVALID_TRANSACTION))
+                .build();
+
+        var expectedTransactionHash = getExpectedTransactionHash(expectedRecordItem);
+        var blockItem = blockItemBuilder.cryptoCreate(expectedRecordItem).build();
+
+        var blockFile = blockFileBuilder.items(List.of(blockItem)).build();
+
+        // when
+        var recordFile = blockFileTransformer.transform(blockFile);
+
+        // then
+        assertRecordFile(recordFile, blockFile, items -> assertThat(items)
+                .hasSize(1)
+                .first()
+                .satisfies(item -> assertRecordItem(item, expectedRecordItem))
+                .returns(null, RecordItem::getPrevious)
+                .extracting(RecordItem::getTransactionRecord)
+                .returns(expectedTransactionHash, TransactionRecord::getTransactionHash)
+                .returns(
+                        AccountID.getDefaultInstance(),
+                        transactionRecord -> transactionRecord.getReceipt().getAccountID()));
     }
 
     @Test
@@ -1060,6 +1140,7 @@ class BlockFileTransformerTest extends ImporterIntegrationTest {
                         "transactionRecord.transactionID_.memoizedSize",
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedIsInitialized",
                         "transactionRecord.transactionID_.transactionValidStart_.memoizedSize",
+                        "transactionRecord.receipt_.accountID_.memoizedHashCode",
                         "transactionRecord.receipt_.fileID_.memoizedHashCode",
                         "transactionRecord.receipt_.fileID_.memoizedSize",
                         "transactionRecord.receipt_.fileID_.memoizedIsInitialized",
