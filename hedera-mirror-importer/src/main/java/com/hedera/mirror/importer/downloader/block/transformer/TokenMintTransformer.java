@@ -17,20 +17,17 @@
 package com.hedera.mirror.importer.downloader.block.transformer;
 
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_NFTS;
-import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_TOKENS;
 
-import com.hedera.hapi.block.stream.output.protoc.MapUpdateChange;
+import com.hedera.hapi.block.stream.output.protoc.StateChange;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 
 @Named
-final class TokenMintTransformer extends AbstractBlockItemTransformer {
+final class TokenMintTransformer extends AbstractTokenTransformer {
 
-    @SuppressWarnings("java:S3776")
     @Override
     protected void updateTransactionRecord(
             BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
@@ -38,37 +35,24 @@ final class TokenMintTransformer extends AbstractBlockItemTransformer {
             return;
         }
 
-        var receiptBuilder = transactionRecordBuilder.getReceiptBuilder();
         for (var stateChanges : blockItem.stateChanges()) {
             for (var stateChange : stateChanges.getStateChangesList()) {
-                if (stateChange.hasMapUpdate()) {
-                    var mapUpdate = stateChange.getMapUpdate();
-                    if (stateChange.getStateId() == STATE_ID_TOKENS.getNumber()) {
-                        if (setSupply(mapUpdate, receiptBuilder)) {
-                            return;
-                        }
-                    } else if (stateChange.getStateId() == STATE_ID_NFTS.getNumber()) {
-                        var key = mapUpdate.getKey();
-                        if (key.hasNftIdKey()) {
-                            receiptBuilder.addSerialNumbers(key.getNftIdKey().getSerialNumber());
-                            setSupply(mapUpdate, receiptBuilder);
-                        }
-                    }
+                if (hasSupplyUpdate(stateChange)) {
+                    updateTotalSupply(stateChange, transactionRecordBuilder);
+                } else if (hasSerialUpdate(stateChange)) {
+                    var serialNumber =
+                            stateChange.getMapUpdate().getKey().getNftIdKey().getSerialNumber();
+                    transactionRecordBuilder.getReceiptBuilder().addSerialNumbers(serialNumber);
                 }
             }
         }
     }
 
-    private boolean setSupply(MapUpdateChange mapUpdate, TransactionReceipt.Builder receiptBuilder) {
-        if (mapUpdate.hasValue()) {
-            var value = mapUpdate.getValue();
-            if (value.hasTokenValue()) {
-                receiptBuilder.setNewTotalSupply(value.getTokenValue().getTotalSupply());
-                return true;
-            }
-        }
-
-        return false;
+    private boolean hasSerialUpdate(StateChange stateChange) {
+        return stateChange.getStateId() == STATE_ID_NFTS.getNumber()
+                && stateChange.hasMapUpdate()
+                && stateChange.getMapUpdate().hasKey()
+                && stateChange.getMapUpdate().getKey().hasNftIdKey();
     }
 
     @Override

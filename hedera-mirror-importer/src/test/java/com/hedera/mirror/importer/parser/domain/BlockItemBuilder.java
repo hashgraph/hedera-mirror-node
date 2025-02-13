@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.PendingAirdropValue;
 import com.hederahashgraph.api.proto.java.Schedule;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Token;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Topic;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -321,23 +322,7 @@ public class BlockItemBuilder {
     }
 
     public Builder tokenBurn(RecordItem recordItem) {
-        var transactionRecord = recordItem.getTransactionRecord();
-        var receipt = transactionRecord.getReceipt();
-        var tokenId = receipt.getTokenID();
-        var supply = receipt.getNewTotalSupply();
-        var stateChange = StateChange.newBuilder()
-                .setStateId(STATE_ID_TOKENS.getNumber())
-                .setMapUpdate(MapUpdateChange.newBuilder()
-                        .setKey(MapChangeKey.newBuilder().setTokenIdKey(tokenId))
-                        .setValue(MapChangeValue.newBuilder()
-                                .setTokenValue(Token.newBuilder().setTotalSupply(supply)))
-                        .build())
-                .build();
-        return new BlockItemBuilder.Builder(
-                recordItem.getTransaction(),
-                transactionResult(recordItem),
-                Collections.emptyList(),
-                List.of(StateChanges.newBuilder().addStateChanges(stateChange).build()));
+        return tokenSupplyStateChanges(recordItem, List.of());
     }
 
     public Builder tokenCreate(RecordItem recordItem) {
@@ -358,102 +343,53 @@ public class BlockItemBuilder {
     }
 
     public Builder tokenMint(RecordItem recordItem) {
-        var transactionRecord = recordItem.getTransactionRecord();
-        var receipt = transactionRecord.getReceipt();
-        var tokenId = receipt.getTokenID();
-        var serialNumbers = receipt.getSerialNumbersList();
-        var supply = receipt.getNewTotalSupply();
-        if (serialNumbers.isEmpty()) {
-            var stateChange = StateChange.newBuilder()
-                    .setStateId(STATE_ID_TOKENS.getNumber())
-                    .setMapUpdate(MapUpdateChange.newBuilder()
-                            .setKey(MapChangeKey.newBuilder().setTokenIdKey(tokenId))
-                            .setValue(MapChangeValue.newBuilder()
-                                    .setTokenValue(Token.newBuilder().setTotalSupply(supply)))
-                            .build())
-                    .build();
-            return new BlockItemBuilder.Builder(
-                    recordItem.getTransaction(),
-                    transactionResult(recordItem),
-                    Collections.emptyList(),
-                    List.of(StateChanges.newBuilder()
-                            .addStateChanges(stateChange)
-                            .build()));
-        } else {
-            var stateChangesBuilder = StateChanges.newBuilder();
-            for (int i = 0; i < serialNumbers.size(); i++) {
-                var mapUpdate = MapUpdateChange.newBuilder()
-                        .setKey(MapChangeKey.newBuilder()
-                                .setNftIdKey(NftID.newBuilder()
-                                        .setTokenID(tokenId)
-                                        .setSerialNumber(serialNumbers.get(i))
-                                        .build()));
-
-                if (i == serialNumbers.size() - 1) {
-                    mapUpdate.setValue(MapChangeValue.newBuilder()
-                            .setTokenValue(Token.newBuilder().setTotalSupply(supply))
-                            .build());
-                }
-                stateChangesBuilder.addStateChanges(StateChange.newBuilder()
-                        .setStateId(STATE_ID_NFTS.getNumber())
-                        .setMapUpdate(mapUpdate.build()));
-            }
-
-            return new BlockItemBuilder.Builder(
-                    recordItem.getTransaction(),
-                    transactionResult(recordItem),
-                    Collections.emptyList(),
-                    List.of(stateChangesBuilder.build()));
-        }
+        var serialNumbers = recordItem.getTransactionRecord().getReceipt().getSerialNumbersList();
+        return tokenSupplyStateChanges(recordItem, serialNumbers);
     }
 
     public Builder tokenWipe(RecordItem recordItem) {
-        var transactionRecord = recordItem.getTransactionRecord();
-        var transactionBody = recordItem.getTransactionBody();
-        var receipt = transactionRecord.getReceipt();
+        var serialNumbers = recordItem.getTransactionBody().getTokenWipe().getSerialNumbersList();
+        return tokenSupplyStateChanges(recordItem, serialNumbers);
+    }
+
+    private Builder tokenSupplyStateChanges(RecordItem recordItem, List<Long> serialNumbers) {
+        var receipt = recordItem.getTransactionRecord().getReceipt();
         var tokenId = receipt.getTokenID();
-        var supply = receipt.getNewTotalSupply();
-
-        var serialNumbers = transactionBody.getTokenWipe().getSerialNumbersList();
-        if (serialNumbers.isEmpty()) {
-            var stateChange = StateChange.newBuilder()
-                    .setStateId(STATE_ID_TOKENS.getNumber())
-                    .setMapUpdate(MapUpdateChange.newBuilder()
-                            .setKey(MapChangeKey.newBuilder().setTokenIdKey(tokenId))
-                            .setValue(MapChangeValue.newBuilder()
-                                    .setTokenValue(Token.newBuilder().setTotalSupply(supply)))
-                            .build())
-                    .build();
-            return new BlockItemBuilder.Builder(
-                    recordItem.getTransaction(),
-                    transactionResult(recordItem),
-                    Collections.emptyList(),
-                    List.of(StateChanges.newBuilder()
-                            .addStateChanges(stateChange)
-                            .build()));
-        }
-
-        var stateChangesBuilder = StateChanges.newBuilder();
-        for (var serialNumber : serialNumbers) {
-            var mapUpdate = MapUpdateChange.newBuilder()
-                    .setKey(MapChangeKey.newBuilder()
-                            .setNftIdKey(NftID.newBuilder()
-                                    .setTokenID(tokenId)
-                                    .setSerialNumber(serialNumber)
-                                    .build()))
-                    .setValue(MapChangeValue.newBuilder()
-                            .setTokenValue(Token.newBuilder().setTotalSupply(supply)))
-                    .build();
-            stateChangesBuilder.addStateChanges(StateChange.newBuilder()
-                    .setStateId(STATE_ID_NFTS.getNumber())
-                    .setMapUpdate(mapUpdate));
-        }
-
+        var stateChangesBuilder =
+                StateChanges.newBuilder().addStateChanges(getNewSupplyState(tokenId, receipt.getNewTotalSupply()));
+        stateChangesBuilder.addAllStateChanges(getSerialNumbersStateChanges(serialNumbers, tokenId));
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(),
                 transactionResult(recordItem),
                 Collections.emptyList(),
                 List.of(stateChangesBuilder.build()));
+    }
+
+    private List<StateChange> getSerialNumbersStateChanges(List<Long> serialNumbers, TokenID tokenId) {
+        return serialNumbers.stream()
+                .map(serialNumber -> MapUpdateChange.newBuilder()
+                        .setKey(MapChangeKey.newBuilder()
+                                .setNftIdKey(NftID.newBuilder()
+                                        .setTokenID(tokenId)
+                                        .setSerialNumber(serialNumber)
+                                        .build()))
+                        .build())
+                .map(mapUpdate -> StateChange.newBuilder()
+                        .setStateId(STATE_ID_NFTS.getNumber())
+                        .setMapUpdate(mapUpdate)
+                        .build())
+                .toList();
+    }
+
+    private StateChange getNewSupplyState(TokenID tokenId, long newTotalSupply) {
+        return StateChange.newBuilder()
+                .setStateId(STATE_ID_TOKENS.getNumber())
+                .setMapUpdate(MapUpdateChange.newBuilder()
+                        .setKey(MapChangeKey.newBuilder().setTokenIdKey(tokenId))
+                        .setValue(MapChangeValue.newBuilder()
+                                .setTokenValue(Token.newBuilder().setTotalSupply(newTotalSupply)))
+                        .build())
+                .build();
     }
 
     private static StateChanges buildFileIdStateChanges(RecordItem recordItem) {

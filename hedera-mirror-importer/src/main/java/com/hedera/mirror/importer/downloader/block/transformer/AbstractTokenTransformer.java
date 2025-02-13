@@ -16,9 +16,9 @@
 
 package com.hedera.mirror.importer.downloader.block.transformer;
 
-import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_NFTS;
 import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_ID_TOKENS;
 
+import com.hedera.hapi.block.stream.output.protoc.StateChange;
 import com.hedera.mirror.common.domain.transaction.BlockItem;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
@@ -33,20 +33,23 @@ abstract class AbstractTokenTransformer extends AbstractBlockItemTransformer {
 
         for (var stateChanges : blockItem.stateChanges()) {
             for (var stateChange : stateChanges.getStateChangesList()) {
-                if ((stateChange.getStateId() == STATE_ID_TOKENS.getNumber()
-                                || stateChange.getStateId() == STATE_ID_NFTS.getNumber())
-                        && stateChange.hasMapUpdate()
-                        && stateChange.getMapUpdate().hasValue()
-                        && stateChange.getMapUpdate().getValue().hasTokenValue()) {
-                    var value = stateChange
-                            .getMapUpdate()
-                            .getValue()
-                            .getTokenValue()
-                            .getTotalSupply();
-                    transactionRecordBuilder.getReceiptBuilder().setNewTotalSupply(value);
+                if (hasSupplyUpdate(stateChange)) {
+                    updateTotalSupply(stateChange, transactionRecordBuilder);
                     return;
                 }
             }
         }
+    }
+
+    boolean hasSupplyUpdate(StateChange stateChange) {
+        return stateChange.getStateId() == STATE_ID_TOKENS.getNumber()
+                && stateChange.hasMapUpdate()
+                && stateChange.getMapUpdate().hasValue()
+                && stateChange.getMapUpdate().getValue().hasTokenValue();
+    }
+
+    void updateTotalSupply(StateChange stateChange, TransactionRecord.Builder transactionRecordBuilder) {
+        var value = stateChange.getMapUpdate().getValue().getTokenValue().getTotalSupply();
+        transactionRecordBuilder.getReceiptBuilder().setNewTotalSupply(value);
     }
 }
