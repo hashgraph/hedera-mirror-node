@@ -201,17 +201,17 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var notAssociatedAccount = accountEntityPersist();
 
-        final var tokenEntity = fungibleTokenPersist();
+        final var token = fungibleTokenPersist();
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
         final var functionCall = single
                 ? contract.call_associateTokenExternal(
                         getAddressFromEntity(notAssociatedAccount),
-                        toAddress(tokenEntity.getTokenId()).toHexString())
+                        toAddress(token.getTokenId()).toHexString())
                 : contract.call_associateTokensExternal(
                         getAddressFromEntity(notAssociatedAccount),
-                        List.of(toAddress(tokenEntity.getTokenId()).toHexString()));
+                        List.of(toAddress(token.getTokenId()).toHexString()));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
@@ -228,17 +228,17 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .alias(null)
                 .evmAddress(null));
 
-        final var tokenEntity = fungibleTokenPersist();
+        final var token = fungibleTokenPersist();
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
         final var functionCall = single
                 ? contract.call_associateTokenExternal(
                         getAddressFromEntity(notAssociatedAccount),
-                        toAddress(tokenEntity.getTokenId()).toHexString())
+                        toAddress(token.getTokenId()).toHexString())
                 : contract.call_associateTokensExternal(
                         getAddressFromEntity(notAssociatedAccount),
-                        List.of(toAddress(tokenEntity.getTokenId()).toHexString()));
+                        List.of(toAddress(token.getTokenId()).toHexString()));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
