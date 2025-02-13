@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 	log "github.com/sirupsen/logrus"
 )
 

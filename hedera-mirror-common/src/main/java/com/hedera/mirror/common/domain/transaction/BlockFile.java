@@ -44,10 +44,8 @@ public class BlockFile implements StreamFile<BlockItem> {
     private static final char BASENAME_PADDING = '0';
     private static final String COMPRESSED_FILE_SUFFIX = ".blk.gz";
 
-    // Contains the block number and the previous block hash
     private BlockHeader blockHeader;
 
-    // Used to generate block hash
     private BlockProof blockProof;
 
     @ToString.Exclude

@@ -116,13 +116,10 @@ public class ProtoBlockFileReader implements BlockFileReader {
         Long consensusStart = blockHeader.hasFirstTransactionConsensusTime()
                 ? DomainUtils.timestampInNanosMax(blockHeader.getFirstTransactionConsensusTime())
                 : null;
-        var previousHash = DomainUtils.toBytes(blockHeader.getPreviousBlockHash());
         blockFileBuilder.blockHeader(blockHeader);
         blockFileBuilder.consensusStart(consensusStart);
         blockFileBuilder.consensusEnd(consensusStart);
         blockFileBuilder.index(blockHeader.getNumber());
-        blockFileBuilder.previousHash(DomainUtils.bytesToHex(previousHash));
-        context.getBlockRootHashDigest().setPreviousHash(previousHash);
     }
 
     private void readBlockProof(ReaderContext context) {
@@ -131,10 +128,13 @@ public class ProtoBlockFileReader implements BlockFileReader {
             throw new InvalidStreamFileException("Missing block proof in file " + context.getFilename());
         }
 
+        var blockFile = context.getBlockFile();
         var blockProof = blockItem.getBlockProof();
-        context.getBlockFile().blockProof(blockProof);
-        context.getBlockRootHashDigest()
-                .setStartOfBlockStateHash(DomainUtils.toBytes(blockProof.getStartOfBlockStateRootHash()));
+        var blockRootHashDigest = context.getBlockRootHashDigest();
+        byte[] previousHash = DomainUtils.toBytes(blockProof.getPreviousBlockRootHash());
+        blockFile.blockProof(blockProof).previousHash(DomainUtils.bytesToHex(previousHash));
+        blockRootHashDigest.setPreviousHash(previousHash);
+        blockRootHashDigest.setStartOfBlockStateHash(DomainUtils.toBytes(blockProof.getStartOfBlockStateRootHash()));
     }
 
     private void readEvents(ReaderContext context) {

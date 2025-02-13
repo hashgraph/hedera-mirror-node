@@ -23,14 +23,22 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_FAILED
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.MESSAGE_CALL;
 
+import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.convert.BytesDecoder;
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.state.core.MapWritableStates;
+import com.hedera.mirror.web3.state.keyvalue.ContractStorageReadableKVState;
+import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.services.stream.proto.ContractActionType;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.state.State;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,10 +66,17 @@ import org.springframework.util.CollectionUtils;
 public class OpcodeTracer implements HederaOperationTracer {
 
     private final Map<Address, PrecompiledContract> hederaPrecompiles;
+    private final MirrorNodeEvmProperties evmProperties;
+    private final State mirrorNodeState;
 
-    public OpcodeTracer(final PrecompiledContractProvider precompiledContractProvider) {
+    public OpcodeTracer(
+            final PrecompiledContractProvider precompiledContractProvider,
+            MirrorNodeEvmProperties evmProperties,
+            State mirrorNodeState) {
         this.hederaPrecompiles = precompiledContractProvider.getHederaPrecompiles().entrySet().stream()
                 .collect(Collectors.toMap(e -> Address.fromHexString(e.getKey()), Map.Entry::getValue));
+        this.evmProperties = evmProperties;
+        this.mirrorNodeState = mirrorNodeState;
     }
 
     @Override
@@ -177,6 +192,10 @@ public class OpcodeTracer implements HederaOperationTracer {
                 return Collections.emptyMap();
             }
 
+            if (evmProperties.isModularizedServices()) {
+                return getModularizedUpdatedStorage(address);
+            }
+
             return new TreeMap<>(account.getUpdatedStorage());
         } catch (final ModificationNotAllowedException e) {
             log.warn("Failed to retrieve storage contents", e);
@@ -210,10 +229,10 @@ public class OpcodeTracer implements HederaOperationTracer {
     }
 
     /**
-     * When a contract tries to call a non-existing address
-     * (resulting in a {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} failure),
-     * a synthetic action is created to record this, otherwise the details of the intended call
-     * (e.g. the targeted invalid address) and sequence of events leading to the failure are lost
+     * When a contract tries to call a non-existing address (resulting in a
+     * {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} failure), a synthetic action is created to record
+     * this, otherwise the details of the intended call (e.g. the targeted invalid address) and sequence of events
+     * leading to the failure are lost
      */
     private boolean existsSyntheticActionForFrame(MessageFrame frame) {
         return (frame.getState() == EXCEPTIONAL_HALT || frame.getState() == COMPLETED_FAILED)
@@ -223,8 +242,9 @@ public class OpcodeTracer implements HederaOperationTracer {
     }
 
     /**
-     * Formats the revert reason to be consistent with the revert reason format in the EVM.
-     * <a href="https://besu.hyperledger.org/23.10.2/private-networks/how-to/send-transactions/revert-reason#revert-reason-format">...</a>
+     * Formats the revert reason to be consistent with the revert reason format in the EVM. <a
+     * href="https://besu.hyperledger.org/23.10.2/private-networks/how-to/send-transactions/revert-reason#revert-reason-format">...</a>
+     *
      * @param revertReason the revert reason
      * @return the formatted revert reason
      */
@@ -245,5 +265,35 @@ public class OpcodeTracer implements HederaOperationTracer {
         }
 
         return BytesDecoder.getAbiEncodedRevertReason(revertReason);
+    }
+
+    private Map<Bytes, Bytes> getModularizedUpdatedStorage(Address accountAddress) {
+        Map<Bytes, Bytes> storageUpdates = new TreeMap<>();
+        MapWritableStates states = (MapWritableStates) mirrorNodeState.getWritableStates(ContractService.NAME);
+
+        try {
+            var accountContractID = EntityIdUtils.toContractID(accountAddress);
+            var storageState = states.get(ContractStorageReadableKVState.KEY);
+            storageState.modifiedKeys().stream()
+                    .filter(SlotKey.class::isInstance)
+                    .map(SlotKey.class::cast)
+                    .filter(slotKey -> accountContractID.equals(slotKey.contractID()))
+                    .forEach(slotKey -> {
+                        SlotValue slotValue = (SlotValue) storageState.get(slotKey);
+                        if (slotValue != null) {
+                            storageUpdates.put(
+                                    Bytes.wrap(slotKey.key().toByteArray()),
+                                    Bytes.wrap(slotValue.value().toByteArray()));
+                        }
+                    });
+        } catch (IllegalArgumentException e) {
+            log.warn(
+                    "Failed to retrieve modified storage keys for service: {}, key: {}",
+                    ContractService.NAME,
+                    ContractStorageReadableKVState.KEY,
+                    e);
+        }
+
+        return storageUpdates;
     }
 }

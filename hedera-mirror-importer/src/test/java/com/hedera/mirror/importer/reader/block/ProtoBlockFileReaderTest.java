@@ -20,7 +20,6 @@ import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.google.protobuf.ByteString;
 import com.hedera.hapi.block.stream.input.protoc.EventHeader;
 import com.hedera.hapi.block.stream.input.protoc.RoundHeader;
 import com.hedera.hapi.block.stream.output.protoc.BlockHeader;
@@ -32,6 +31,7 @@ import com.hedera.hapi.block.stream.protoc.RecordFileItem;
 import com.hedera.hapi.platform.event.legacy.EventTransaction;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.BlockFile;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
@@ -183,7 +183,7 @@ public class ProtoBlockFileReaderTest {
         var eventHeader = BlockItem.newBuilder().setEventHeader(EventHeader.getDefaultInstance());
         var eventTransaction = BlockItem.newBuilder()
                 .setEventTransaction(EventTransaction.newBuilder()
-                        .setApplicationTransaction(ByteString.copyFrom(TestUtils.generateRandomByteArray(32))));
+                        .setApplicationTransaction(DomainUtils.fromBytes(TestUtils.generateRandomByteArray(32))));
         var transactionResult = BlockItem.newBuilder().setTransactionResult(TransactionResult.getDefaultInstance());
         var block = Block.newBuilder()
                 .addItems(blockHeader())
@@ -204,14 +204,15 @@ public class ProtoBlockFileReaderTest {
         return BlockItem.newBuilder()
                 .setBlockHeader(BlockHeader.newBuilder()
                         .setFirstTransactionConsensusTime(Timestamp.newBuilder().setSeconds(TIMESTAMP))
-                        .setPreviousBlockHash(ByteString.copyFrom(TestUtils.generateRandomByteArray(48))))
+                        .setPreviousBlockHash(DomainUtils.fromBytes(TestUtils.generateRandomByteArray(48))))
                 .build();
     }
 
     private BlockItem blockProof() {
         return BlockItem.newBuilder()
                 .setBlockProof(BlockProof.newBuilder()
-                        .setStartOfBlockStateRootHash(ByteString.copyFrom(TestUtils.generateRandomByteArray(48))))
+                        .setPreviousBlockRootHash(DomainUtils.fromBytes(TestUtils.generateRandomByteArray(48)))
+                        .setStartOfBlockStateRootHash(DomainUtils.fromBytes(TestUtils.generateRandomByteArray(48))))
                 .build();
     }
 
