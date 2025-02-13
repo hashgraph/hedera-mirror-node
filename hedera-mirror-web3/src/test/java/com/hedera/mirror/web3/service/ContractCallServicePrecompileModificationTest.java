@@ -24,6 +24,7 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.NEW_ECDSA_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ZERO_VALUE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
+import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -55,7 +56,6 @@ import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.TransferList;
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -81,17 +81,17 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var recipient = accountEntityWithEvmAddressPersist();
 
         final var tokenEntity = tokenEntityPersist();
-
+        final var tokenId = tokenEntity.getId();
         fungibleTokenPersist(tokenEntity, owner);
 
-        tokenAccountPersist(tokenEntity, spender);
-        tokenAccountPersist(tokenEntity, recipient);
+        tokenAccountPersist(tokenId, spender.getId());
+        tokenAccountPersist(tokenId, recipient.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-        tokenAccount(ta -> ta.tokenId(tokenEntity.getId()).accountId(contractEntityId.getId()));
+        tokenAccount(ta -> ta.tokenId(tokenId).accountId(contractEntityId.getId()));
 
         tokenAllowancePersist(10L, tokenEntity, spender, contractEntityId);
 
@@ -112,19 +112,20 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void approve(final BigInteger allowance) throws Exception {
         // Given
         final var spender = accountEntityPersist();
-        final var tokenEntity = persistFungibleToken();
+        final var token = fungibleTokenPersist();
+        final var tokenId = token.getTokenId();
 
-        tokenAccountPersist(tokenEntity, spender);
+        tokenAccountPersist(token.getTokenId(), spender.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-        tokenAccount(ta -> ta.tokenId(tokenEntity.getId()).accountId(contractEntityId.getId()));
+        tokenAccount(ta -> ta.tokenId(tokenId).accountId(contractEntityId.getId()));
 
         // When
-        final var functionCall = contract.call_approveExternal(
-                getAddressFromEntity(tokenEntity), getAddressFromEntity(spender), allowance);
+        final var functionCall =
+                contract.call_approveExternal(asHexedEvmAddress(tokenId), getAddressFromEntity(spender), allowance);
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
@@ -139,17 +140,18 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var spender = accountEntityPersist();
 
         final var tokenEntity = tokenEntityPersist();
+        final var tokenId = tokenEntity.getId();
 
-        Token token = nonFungibleTokenPersist(tokenEntity);
+        var token = nonFungibleTokenPersist(tokenEntity);
 
-        tokenAccountPersist(tokenEntity, owner);
-        tokenAccountPersist(tokenEntity, spender);
+        tokenAccountPersist(tokenId, owner.getId());
+        tokenAccountPersist(tokenId, spender.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-        tokenAccount(ta -> ta.tokenId(tokenEntity.getId()).accountId(contractEntityId.getId()));
+        tokenAccount(ta -> ta.tokenId(tokenId).accountId(contractEntityId.getId()));
 
         nonFungibleTokenInstancePersist(token, 1L, contractEntityId, spender.toEntityId());
 
@@ -176,7 +178,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
                 .persist();
 
-        tokenAccountPersist(tokenEntity, spender);
+        tokenAccountPersist(tokenEntity.getId(), spender.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -315,7 +317,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .treasuryAccountId(treasury.toEntityId()))
                 .persist();
-        tokenAccountPersist(tokenEntity, treasury);
+        tokenAccountPersist(tokenEntity.getId(), treasury.getId());
 
         final var totalSupply = token.getTotalSupply();
 
@@ -340,7 +342,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         nonFungibleTokenPersist(tokenEntity, treasury);
 
-        tokenAccountPersist(tokenEntity, treasury);
+        tokenAccountPersist(tokenEntity.getId(), treasury.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -362,16 +364,15 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @Test
     void burnFungibleToken() throws Exception {
         // Given
-        final var tokenEntity = tokenEntityPersist();
         final var treasuryAccount = accountEntityPersist();
-        final var token = fungibleTokenPersist(tokenEntity, treasuryAccount);
-        tokenAccountPersist(tokenEntity, treasuryAccount);
+        final var token = fungibleTokenPersistWithTreasuryAccount(treasuryAccount.toEntityId());
+        final var tokenId = token.getTokenId();
+        tokenAccountPersist(tokenId, treasuryAccount.getId());
 
         final var sender = accountEntityPersist();
         accountBalanceRecordsPersist(sender);
 
-        long balanceTimestamp = treasuryAccount.getBalanceTimestamp();
-        persistTokenBalance(treasuryAccount, tokenEntity, balanceTimestamp);
+        tokenBalancePersist(treasuryAccount.toEntityId(), EntityId.of(tokenId), treasuryAccount.getBalanceTimestamp());
 
         testWeb3jService.setSender(getAddressFromEntity(sender));
 
@@ -380,8 +381,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_burnTokenExternal(
-                getAddressFromEntity(tokenEntity), BigInteger.valueOf(4), new ArrayList<>());
+        final var functionCall =
+                contract.call_burnTokenExternal(asHexedEvmAddress(tokenId), BigInteger.valueOf(4), new ArrayList<>());
 
         final var result = functionCall.send();
 
@@ -403,11 +404,10 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                         .treasuryAccountId(treasury.toEntityId()))
                 .persist();
 
-        tokenAccountPersist(tokenEntity, treasury);
+        tokenAccountPersist(tokenEntity.getId(), treasury.getId());
         final var totalSupply = token.getTotalSupply();
 
-        long balanceTimestamp = treasury.getBalanceTimestamp();
-        persistTokenBalance(treasury, tokenEntity, balanceTimestamp);
+        tokenBalancePersist(treasury.toEntityId(), tokenEntity.toEntityId(), treasury.getBalanceTimestamp());
 
         Nft nft = domainBuilder
                 .nft()
@@ -450,11 +450,11 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var tokenEntity = tokenEntityPersist();
         fungibleTokenPersist(tokenEntity, treasuryEntity);
 
-        tokenAccountPersist(tokenEntity, owner);
+        tokenAccountPersist(tokenEntity.getId(), owner.getId());
 
         Long createdTimestamp = owner.getCreatedTimestamp();
-        persistTokenBalance(owner, tokenEntity, createdTimestamp);
-        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), createdTimestamp);
+        tokenBalancePersist(owner.toEntityId(), tokenEntity.toEntityId(), createdTimestamp);
+        accountBalancePersist(treasuryEntity, createdTimestamp);
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -480,7 +480,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                         .treasuryAccountId(tokenTreasury.toEntityId()))
                 .persist();
 
-        tokenAccountPersist(tokenEntity, owner);
+        tokenAccountPersist(tokenEntity.getId(), owner.getId());
         domainBuilder
                 .nft()
                 .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(owner.toEntityId()))
@@ -508,7 +508,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        tokenAccountPersist(tokenEntity, accountWithoutGrant);
+        tokenAccountPersist(tokenEntity.getId(), accountWithoutGrant.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -532,7 +532,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
-        tokenAccountPersist(tokenEntity, accountWithGrant);
+        tokenAccountPersist(tokenEntity.getId(), accountWithGrant.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -567,14 +567,15 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void freezeToken() throws Exception {
         // Given
         final var accountWithoutFreeze = accountEntityWithEvmAddressPersist();
-        final var tokenEntity = persistFungibleToken();
-        tokenAccountPersist(tokenEntity, accountWithoutFreeze);
+        final var token = fungibleTokenPersist();
+        final var tokenId = token.getTokenId();
+        tokenAccountPersist(tokenId, accountWithoutFreeze.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_freezeTokenExternal(
-                getAddressFromEntity(tokenEntity), getAliasFromEntity(accountWithoutFreeze));
+        final var functionCall =
+                contract.call_freezeTokenExternal(asHexedEvmAddress(tokenId), getAliasFromEntity(accountWithoutFreeze));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
@@ -586,11 +587,12 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var accountWithFreeze = accountEntityWithEvmAddressPersist();
 
-        final var tokenEntity = persistFungibleToken();
+        final var token = fungibleTokenPersist();
+        final var tokenId = token.getTokenId();
 
         domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                .customize(ta -> ta.tokenId(tokenId)
                         .accountId(accountWithFreeze.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .freezeStatus(TokenFreezeStatusEnum.FROZEN)
@@ -601,8 +603,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
-        final var functionCall = contract.call_unfreezeTokenExternal(
-                getAddressFromEntity(tokenEntity), getAliasFromEntity(accountWithFreeze));
+        final var functionCall =
+                contract.call_unfreezeTokenExternal(asHexedEvmAddress(tokenId), getAliasFromEntity(accountWithFreeze));
 
         // Then
         verifyEthCallAndEstimateGas(functionCall, contract, ZERO_VALUE);
@@ -641,7 +643,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                         .pauseStatus(TokenPauseStatusEnum.PAUSED))
                 .persist();
 
-        tokenAccountPersist(tokenEntity, sender);
+        tokenAccountPersist(tokenEntity.getId(), sender.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -705,10 +707,11 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var treasuryAccount = accountEntityPersist();
 
-        final var tokenForDenomination = persistFungibleToken();
+        final var tokenForDenomination = fungibleTokenPersist();
         final var feeCollector = accountEntityWithEvmAddressPersist();
+        final var tokenId = tokenForDenomination.getTokenId();
 
-        tokenAccountPersist(tokenForDenomination, feeCollector);
+        tokenAccountPersist(tokenId, feeCollector.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -719,11 +722,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 contract.getContractAddress(), TokenTypeEnum.FUNGIBLE_COMMON, treasuryAccount.toEntityId());
 
         final var fixedFee = new FixedFee(
-                BigInteger.valueOf(100L),
-                getAddressFromEntityId(tokenForDenomination.toEntityId()),
-                false,
-                false,
-                getAliasFromEntity(feeCollector));
+                BigInteger.valueOf(100L), asHexedEvmAddress(tokenId), false, false, getAliasFromEntity(feeCollector));
         final var fractionalFee = new FractionalFee(
                 BigInteger.valueOf(1L),
                 BigInteger.valueOf(100L),
@@ -795,10 +794,11 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         accountBalanceRecordsPersist(sender);
 
-        final var tokenForDenomination = persistFungibleToken();
+        final var tokenForDenomination = fungibleTokenPersist();
         final var feeCollector = accountEntityWithEvmAddressPersist();
+        final var tokenId = tokenForDenomination.getTokenId();
 
-        tokenAccountPersist(tokenForDenomination, feeCollector);
+        tokenAccountPersist(tokenId, feeCollector.getId());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
@@ -811,18 +811,13 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 .persist();
         final var token = populateHederaToken(
                 contract.getContractAddress(), TokenTypeEnum.NON_FUNGIBLE_UNIQUE, treasuryAccount.toEntityId());
-
         final var fixedFee = new FixedFee(
-                BigInteger.valueOf(100L),
-                getAddressFromEntityId(tokenForDenomination.toEntityId()),
-                false,
-                false,
-                getAliasFromEntity(feeCollector));
+                BigInteger.valueOf(100L), asHexedEvmAddress(tokenId), false, false, getAliasFromEntity(feeCollector));
         final var royaltyFee = new RoyaltyFee(
                 BigInteger.valueOf(1L),
                 BigInteger.valueOf(100L),
                 BigInteger.valueOf(10L),
-                getAddressFromEntity(tokenForDenomination),
+                asHexedEvmAddress(tokenId),
                 false,
                 getAliasFromEntity(feeCollector));
 
@@ -848,17 +843,18 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     void create2ContractAndTransferFromIt() throws Exception {
         // Given
         final var receiver = accountEntityWithEvmAddressPersist();
-        final var token = persistFungibleToken();
+        final var token = fungibleTokenPersist();
+        final var tokenId = token.getTokenId();
         final var sponsor = accountEntityWithEvmAddressPersist();
-        persistTokenBalance(sponsor, token, sponsor.getCreatedTimestamp());
+        tokenBalancePersist(sponsor.toEntityId(), EntityId.of(tokenId), sponsor.getCreatedTimestamp());
         accountBalanceRecordsPersist(sponsor);
 
-        tokenAccountPersist(token, sponsor);
+        tokenAccountPersist(tokenId, sponsor.getId());
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
 
         // When
         final var functionCall = contract.call_createContractViaCreate2AndTransferFromIt(
-                getAddressFromEntity(token),
+                asHexedEvmAddress(tokenId),
                 getAliasFromEntity(sponsor),
                 getAliasFromEntity(receiver),
                 BigInteger.valueOf(10L));
@@ -871,14 +867,14 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
     @Test
     void notExistingPrecompileCall() throws Exception {
         // Given
-        final var token = persistFungibleToken();
+        final var token = fungibleTokenPersist();
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         // Then
         if (mirrorNodeEvmProperties.isModularizedServices()) {
-            final var modularizedCall = contract.call_callNotExistingPrecompile(getAddressFromEntity(token));
+            final var modularizedCall = contract.call_callNotExistingPrecompile(asHexedEvmAddress(token.getTokenId()));
             assertThat(Bytes.wrap(modularizedCall.send())).isEqualTo(Bytes.EMPTY);
         } else {
-            final var functionCall = contract.send_callNotExistingPrecompile(getAddressFromEntity(token));
+            final var functionCall = contract.send_callNotExistingPrecompile(asHexedEvmAddress(token.getTokenId()));
             assertThatThrownBy(functionCall::send)
                     .isInstanceOf(MirrorEvmTransactionException.class)
                     .hasMessage(INVALID_TOKEN_ID.name());
@@ -1097,17 +1093,15 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var receiver = accountEntityWithEvmAddressPersist();
 
         // Create token-account associations so sender and receiver can operate with the token
-        tokenAccountPersist(tokenEntity, sender);
-        tokenAccountPersist(tokenEntity, receiver);
+        tokenAccountPersist(tokenEntity.getId(), sender.getId());
+        tokenAccountPersist(tokenEntity.getId(), receiver.getId());
 
         accountBalanceRecordsPersist(sender.toEntityId(), sender.getCreatedTimestamp(), sender.getBalance());
         accountBalanceRecordsPersist(receiver.toEntityId(), receiver.getCreatedTimestamp(), receiver.getBalance());
 
-        long senderBalanceTimestamp = sender.getBalanceTimestamp();
-        persistTokenBalance(sender, tokenEntity, senderBalanceTimestamp);
+        tokenBalancePersist(sender.toEntityId(), tokenEntity.toEntityId(), sender.getBalanceTimestamp());
 
-        long receiverBalanceTimestamp = receiver.getBalanceTimestamp();
-        persistTokenBalance(receiver, tokenEntity, receiverBalanceTimestamp);
+        tokenBalancePersist(receiver.toEntityId(), tokenEntity.toEntityId(), receiver.getBalanceTimestamp());
 
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         // When
@@ -1145,21 +1139,22 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         final var tokenEntity = tokenEntityPersist();
         final var treasuryAccount = accountEntityPersist();
+        final var tokenId = tokenEntity.getId();
 
         accountBalanceRecordsPersist(sender);
 
-        Token token = nonFungibleTokenPersist(tokenEntity, treasuryAccount);
+        var token = nonFungibleTokenPersist(tokenEntity, treasuryAccount);
 
         domainBuilder
                 .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(sender.toEntityId()))
+                .customize(n -> n.tokenId(tokenId).serialNumber(1L).accountId(sender.toEntityId()))
                 .persist();
         final var receiver = accountEntityWithEvmAddressPersist();
 
         nftAllowancePersist(token, sender, getEntity(contractId), sender);
 
-        tokenAccountPersist(tokenEntity, sender);
-        tokenAccountPersist(tokenEntity, receiver);
+        tokenAccountPersist(tokenId, sender.getId());
+        tokenAccountPersist(tokenId, receiver.getId());
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(sender));
@@ -1209,8 +1204,8 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
 
         nftAllowancePersist(token, sender, getEntity(contractId), sender);
 
-        tokenAccountPersist(tokenEntity, sender);
-        tokenAccountPersist(tokenEntity, receiver);
+        tokenAccountPersist(tokenEntity.getId(), sender.getId());
+        tokenAccountPersist(tokenEntity.getId(), receiver.getId());
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(sender));
@@ -1240,9 +1235,9 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var payer = accountEntityWithEvmAddressPersist();
 
         long timestampForBalances = payer.getCreatedTimestamp();
-        persistAccountBalance(payer, payer.getBalance());
-        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
-        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+        accountBalancePersist(payer, timestampForBalances);
+        accountBalancePersist(sender, timestampForBalances);
+        accountBalancePersist(treasuryEntity, timestampForBalances);
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
@@ -1264,27 +1259,29 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         final var sender = accountEntityWithEvmAddressPersist();
-        final var tokenEntity = persistFungibleToken();
+        final var token = fungibleTokenPersist();
         final var receiver = accountEntityWithEvmAddressPersist();
         final var payer = accountEntityWithEvmAddressPersist();
+        final var tokenId = token.getTokenId();
 
         long timestampForBalances = payer.getCreatedTimestamp();
-        persistAccountBalance(payer, payer.getBalance());
-        persistTokenBalance(payer, tokenEntity, timestampForBalances);
+        final var entity = EntityId.of(tokenId);
+        accountBalancePersist(payer, timestampForBalances);
+        tokenBalancePersist(payer.toEntityId(), entity, timestampForBalances);
 
-        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
-        persistTokenBalance(sender, tokenEntity, timestampForBalances);
+        accountBalancePersist(sender, timestampForBalances);
+        tokenBalancePersist(sender.toEntityId(), entity, timestampForBalances);
 
-        persistTokenBalance(receiver, tokenEntity, timestampForBalances);
-        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+        tokenBalancePersist(receiver.toEntityId(), entity, timestampForBalances);
+        accountBalancePersist(treasuryEntity, timestampForBalances);
 
-        tokenAccountPersist(tokenEntity, sender);
-        tokenAccountPersist(tokenEntity, receiver);
-        tokenAccountPersist(tokenEntity, payer);
+        tokenAccountPersist(tokenId, sender.getId());
+        tokenAccountPersist(tokenId, receiver.getId());
+        tokenAccountPersist(tokenId, payer.getId());
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
         final var tokenTransferList = new TokenTransferList(
-                getAddressFromEntity(tokenEntity),
+                asHexedEvmAddress(tokenId),
                 List.of(
                         new AccountAmount(getAliasFromEntity(sender), BigInteger.valueOf(5L), false),
                         new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(-5L), false)),
@@ -1305,24 +1302,26 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         // Given
         final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
         final var sender = accountEntityWithEvmAddressPersist();
-        final var tokenEntity = persistFungibleToken();
+        final var tokenEntity = fungibleTokenPersist();
         final var receiver = accountEntityWithEvmAddressPersist();
         final var payer = accountEntityWithEvmAddressPersist();
-
         long timestampForBalances = payer.getCreatedTimestamp();
-        persistAccountBalance(payer, payer.getBalance());
-        persistTokenBalance(payer, tokenEntity, timestampForBalances);
+        final var tokenId = tokenEntity.getTokenId();
+        final var entity = EntityId.of(tokenId);
 
-        persistAccountBalance(sender, sender.getBalance(), timestampForBalances);
-        persistTokenBalance(sender, tokenEntity, timestampForBalances);
+        accountBalancePersist(payer, timestampForBalances);
+        tokenBalancePersist(payer.toEntityId(), entity, timestampForBalances);
 
-        persistTokenBalance(receiver, tokenEntity, timestampForBalances);
+        accountBalancePersist(sender, timestampForBalances);
+        tokenBalancePersist(sender.toEntityId(), entity, timestampForBalances);
 
-        persistAccountBalance(treasuryEntity, treasuryEntity.getBalance(), timestampForBalances);
+        tokenBalancePersist(receiver.toEntityId(), entity, timestampForBalances);
 
-        tokenAccountPersist(tokenEntity, sender);
-        tokenAccountPersist(tokenEntity, receiver);
-        tokenAccountPersist(tokenEntity, payer);
+        accountBalancePersist(treasuryEntity, timestampForBalances);
+
+        tokenAccountPersist(tokenId, sender.getId());
+        tokenAccountPersist(tokenId, receiver.getId());
+        tokenAccountPersist(tokenId, payer.getId());
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
@@ -1331,7 +1330,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(5L), false)));
 
         final var tokenTransferList = new TokenTransferList(
-                getAddressFromEntity(tokenEntity),
+                asHexedEvmAddress(tokenId),
                 List.of(
                         new AccountAmount(getAliasFromEntity(sender), BigInteger.valueOf(5L), false),
                         new AccountAmount(getAliasFromEntity(receiver), BigInteger.valueOf(-5L), false)),
@@ -1355,21 +1354,22 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         final var receiver = accountEntityWithEvmAddressPersist();
         final var payer = accountEntityWithEvmAddressPersist();
         final var tokenEntity = tokenEntityPersist();
+        final var tokenId = tokenEntity.getId();
         accountBalanceRecordsPersist(payer);
         domainBuilder
                 .token()
-                .customize(t -> t.tokenId(tokenEntity.getId())
+                .customize(t -> t.tokenId(tokenId)
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .treasuryAccountId(tokenTreasury.toEntityId()))
                 .persist();
         domainBuilder
                 .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(sender.toEntityId()))
+                .customize(n -> n.tokenId(tokenId).serialNumber(1L).accountId(sender.toEntityId()))
                 .persist();
 
-        tokenAccountPersist(tokenEntity, payer);
-        tokenAccountPersist(tokenEntity, sender);
-        tokenAccountPersist(tokenEntity, receiver);
+        tokenAccountPersist(tokenId, payer.getId());
+        tokenAccountPersist(tokenId, sender.getId());
+        tokenAccountPersist(tokenId, receiver.getId());
 
         // When
         testWeb3jService.setSender(getAliasFromEntity(payer));
@@ -1540,16 +1540,6 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         };
     }
 
-    private Entity persistFungibleToken() {
-        final var tokenEntity = tokenEntityPersist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
-
-        return tokenEntity;
-    }
-
     private HederaToken convertTokenEntityToHederaToken(final Token token) {
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.id(token.getTokenId())).get();
@@ -1561,7 +1551,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 token.getName(),
                 token.getSymbol(),
                 treasuryAccountId != null
-                        ? EntityIdUtils.asHexedEvmAddress(new Id(
+                        ? asHexedEvmAddress(new Id(
                                 treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum()))
                         : Address.ZERO.toHexString(),
                 new String(token.getMetadata(), StandardCharsets.UTF_8),
@@ -1571,7 +1561,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 keys,
                 new Expiry(
                         BigInteger.valueOf(tokenEntity.getEffectiveExpiration()),
-                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId)),
+                        asHexedEvmAddress(new Id(0, 0, entityRenewAccountId)),
                         BigInteger.valueOf(tokenEntity.getEffectiveExpiration())));
     }
 
@@ -1583,7 +1573,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
         return new HederaToken(
                 token.getName(),
                 token.getSymbol(),
-                EntityIdUtils.asHexedEvmAddress(
+                asHexedEvmAddress(
                         new Id(treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum())),
                 new String(token.getMetadata(), StandardCharsets.UTF_8),
                 token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
@@ -1592,7 +1582,7 @@ class ContractCallServicePrecompileModificationTest extends AbstractContractCall
                 keys,
                 new Expiry(
                         BigInteger.valueOf(entity.getEffectiveExpiration()),
-                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId)),
+                        asHexedEvmAddress(new Id(0, 0, entityRenewAccountId)),
                         BigInteger.valueOf(entity.getEffectiveExpiration())));
     }
 }
