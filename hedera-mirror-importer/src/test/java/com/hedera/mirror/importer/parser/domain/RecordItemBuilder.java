@@ -68,6 +68,7 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -438,6 +439,18 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.CRYPTOADDLIVEHASH, builder);
     }
 
+    public Builder<CryptoDeleteLiveHashTransactionBody.Builder> cryptoDeleteLiveHash() {
+        var builder = CryptoDeleteLiveHashTransactionBody.newBuilder()
+                .setLiveHashToDelete(LiveHash.newBuilder()
+                        .setAccountId(accountId())
+                        .setDuration(duration(900))
+                        .setHash(bytes(48))
+                        .setKeys(KeyList.newBuilder().addKeys(key()))
+                        .build()
+                        .toByteString());
+        return new Builder<>(TransactionType.CRYPTODELETELIVEHASH, builder);
+    }
+
     public Builder<CryptoApproveAllowanceTransactionBody.Builder> cryptoApproveAllowance() {
         var builder = CryptoApproveAllowanceTransactionBody.newBuilder()
                 .addCryptoAllowances(CryptoAllowance.newBuilder()
@@ -592,7 +605,7 @@ public class RecordItemBuilder {
                 .setProxyAccountID(accountId())
                 .setReceiverSigRequired(false)
                 .setStakedNodeId(1L);
-        return new Builder<>(TransactionType.CRYPTOUPDATEACCOUNT, builder).receipt(r -> r.setAccountID(accountId));
+        return new Builder<>(TransactionType.CRYPTOUPDATEACCOUNT, builder);
     }
 
     public CustomFee.Builder customFee(CustomFee.FeeCase feeCase) {

@@ -21,6 +21,7 @@ import static com.hedera.hapi.block.stream.output.protoc.StateIdentifier.STATE_I
 
 import com.google.protobuf.UInt64Value;
 import com.hedera.hapi.block.stream.output.protoc.CallContractOutput;
+import com.hedera.hapi.block.stream.output.protoc.CreateAccountOutput;
 import com.hedera.hapi.block.stream.output.protoc.CreateScheduleOutput;
 import com.hedera.hapi.block.stream.output.protoc.CryptoTransferOutput;
 import com.hedera.hapi.block.stream.output.protoc.MapChangeKey;
@@ -255,6 +256,27 @@ public class BlockItemBuilder {
                 recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
 
+    public BlockItemBuilder.Builder cryptoCreate() {
+        var recordItem = recordItemBuilder.cryptoCreate().build();
+        return cryptoCreate(recordItem);
+    }
+
+    public BlockItemBuilder.Builder cryptoCreate(RecordItem recordItem) {
+        var transactionRecord = recordItem.getTransactionRecord();
+        var accountId = transactionRecord.getReceipt().getAccountID();
+        var transactionOutput = TransactionOutput.newBuilder()
+                .setAccountCreate(CreateAccountOutput.newBuilder()
+                        .setCreatedAccountId(accountId)
+                        .build())
+                .build();
+
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(),
+                transactionResult(recordItem),
+                List.of(transactionOutput),
+                Collections.emptyList());
+    }
+
     public Builder fileAppend(RecordItem recordItem) {
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
@@ -273,6 +295,11 @@ public class BlockItemBuilder {
     }
 
     public Builder fileUpdate(RecordItem recordItem) {
+        return new BlockItemBuilder.Builder(
+                recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
+    }
+
+    public BlockItemBuilder.Builder defaultRecordItem(RecordItem recordItem) {
         return new BlockItemBuilder.Builder(
                 recordItem.getTransaction(), transactionResult(recordItem), List.of(), Collections.emptyList());
     }
