@@ -16,11 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KEY;
-
 import com.google.common.collect.Range;
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -38,7 +34,6 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
-import org.hyperledger.besu.datatypes.Address;
 
 public abstract class AbstractContractCallServiceHistoricalTest extends AbstractContractCallServiceTest {
 
@@ -80,7 +75,7 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
-                        .balance(1_000_000_000_000L)
+                        .balance(DEFAULT_ACCOUNT_BALANCE)
                         .timestampRange(timestampRange)
                         .createdTimestamp(timestampRange.lowerEndpoint()))
                 .persist();
@@ -109,24 +104,17 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .customize(e -> e.type(EntityType.ACCOUNT)
                         .evmAddress(null)
                         .alias(null)
-                        .balance(1_000_000_000_000L)
+                        .balance(DEFAULT_ACCOUNT_BALANCE)
                         .timestampRange(timestampRange)
                         .createdTimestamp(timestampRange.lowerEndpoint()))
                 .persist();
     }
 
     protected Entity accountEntityWithAliasPersistHistorical(final Range<Long> timestampRange) {
-        return accountEntityWithAliasPersistHistorical(SENDER_ALIAS, SENDER_PUBLIC_KEY, timestampRange);
-    }
-
-    protected Entity accountEntityWithAliasPersistHistorical(
-            final Address evmAddress, final ByteString alias, final Range<Long> timestampRange) {
         return domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
-                        .alias(alias.toByteArray())
-                        .evmAddress(evmAddress.toArray())
-                        .balance(1_000_000_000_000L)
+                        .balance(DEFAULT_ACCOUNT_BALANCE)
                         .createdTimestamp(timestampRange.lowerEndpoint())
                         .timestampRange(timestampRange))
                 .persist();

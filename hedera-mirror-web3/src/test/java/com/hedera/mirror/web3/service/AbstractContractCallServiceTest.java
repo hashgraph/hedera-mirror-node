@@ -25,7 +25,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.google.common.collect.Range;
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -368,17 +367,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     protected Entity accountEntityWithEvmAddressPersist() {
         return accountEntityPersistCustomizable(e -> e.type(EntityType.ACCOUNT).balance(DEFAULT_ACCOUNT_BALANCE));
-    }
-
-    /**
-     *
-     * @param alias - the alias with which the account is created
-     * @param publicKey - the public key with which the account is created
-     * @return Entity object that is persisted in the db
-     */
-    protected Entity accountPersistWithAlias(final Address alias, final ByteString publicKey) {
-        return accountEntityPersistCustomizable(
-                e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()));
     }
 
     /**

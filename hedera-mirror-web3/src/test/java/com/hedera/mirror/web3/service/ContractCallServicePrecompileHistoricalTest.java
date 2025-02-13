@@ -28,7 +28,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ED25519_KEY;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ECDSA_TYPE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.KEY_WITH_ED_25519_TYPE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.LEDGER_ID;
-import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -531,7 +530,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         final var result = functionCall.send();
 
         // Then
-        assertThat(result).isEqualTo(SENDER_ALIAS.toHexString());
+        assertThat(result).isEqualTo(getAliasFromEntity(approvedAccount));
     }
 
     @ParameterizedTest
