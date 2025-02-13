@@ -47,6 +47,10 @@ server:
     connection-timeout: 3s
   port: 8083
   shutdown: graceful
+  tomcat:
+    connection-timeout: 3s
+    max-http-form-post-size: 20KB
+    max-swallow-size: 20KB
 spring:
   application:
     name: hedera-mirror-graphql
@@ -73,7 +77,7 @@ spring:
       validation-timeout: 3000
   graphql:
     graphiql:
-      enabled: true
+      enabled: false
     path: /graphql/alpha
   jpa:
     database: PostgreSQL
