@@ -350,7 +350,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         tokenAccountPersist(tokenId, ownerEntityId.getId());
 
         if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId);
+            nftAllowancePersist(tokenId, contractEntityId, ownerEntityId);
         }
 
         // When
@@ -397,7 +397,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         tokenAccountPersist(tokenId, ownerEntityId.getId());
 
         if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId);
+            nftAllowancePersist(tokenId, contractEntityId, ownerEntityId);
         }
 
         // When
@@ -546,6 +546,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         tokenAccountPersist(tokenId, spenderEntityId.getId());
         tokenAccountPersist(tokenId, contractEntityId.getId());
+        nftAllowancePersist(tokenId, contractEntityId, contractEntityId);
 
         var tokenTransferList = new TokenTransferList(
                 tokenAddress.toHexString(),
@@ -587,6 +588,8 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         tokenAccountPersist(tokenId, spenderEntityId.getId());
         tokenAccountPersist(tokenId, contractEntityId.getId());
+        nftAllowancePersist(tokenId, spenderEntityId, contractEntityId);
+        nftAllowancePersist(tokenId, contractEntityId, contractEntityId);
 
         TokenTransferList tokenTransferList;
         if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
@@ -633,6 +636,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         tokenAccountPersist(tokenId, spenderEntityId.getId());
         tokenAccountPersist(tokenId, contractEntityId.getId());
+        nftAllowancePersist(tokenId, contractEntityId, spenderEntityId);
 
         // When
         final var functionCall = contract.send_transferFromNFTGetAllowance(tokenAddress.toHexString(), BigInteger.ONE);
@@ -809,10 +813,10 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     }
 
     private void nftAllowancePersist(
-            final EntityId tokenEntityId, final EntityId spenderEntityId, final EntityId ownerEntityId) {
+            final long tokenEntityId, final EntityId spenderEntityId, final EntityId ownerEntityId) {
         domainBuilder
                 .nftAllowance()
-                .customize(a -> a.tokenId(tokenEntityId.getId())
+                .customize(a -> a.tokenId(tokenEntityId)
                         .spender(spenderEntityId.getId())
                         .owner(ownerEntityId.getId())
                         .payerAccountId(ownerEntityId)
