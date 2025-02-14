@@ -95,7 +95,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         if (tokenType.equals(TokenTypeEnum.FUNGIBLE_COMMON)) {
             fungibleTokenPersist(tokenEntity, treasuryAccount);
         } else {
-            Token token = nonFungibleTokenPersist(tokenEntity, treasuryAccount);
+            var token = nonFungibleTokenPersist(tokenEntity, treasuryAccount);
             nonFungibleTokenInstancePersist(
                     token,
                     1L,
@@ -286,10 +286,10 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var senderEntityId = accountEntityPersist().toEntityId();
         final var senderAddress = toAddress(senderEntityId.getId());
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+        final var token = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
                 : nftPersist(treasuryEntityId, ownerEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
+        final var tokenAddress = toAddress(token.getTokenId());
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
@@ -331,12 +331,12 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var ownerAddress = toAddress(ownerEntityId);
         final var spenderEntityId = accountEntityPersist().toEntityId();
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+        final var token = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
                 : nftPersist(treasuryEntityId, ownerEntityId, spenderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenId = tokenEntity.getTokenId();
-        final var tokenEntityId = entityIdFromEvmAddress(toAddress(tokenEntity.getTokenId()));
+        final var tokenId = token.getTokenId();
+        final var tokenAddress = toAddress(tokenId);
+        final var tokenEntityId = entityIdFromEvmAddress(toAddress(tokenId));
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -381,12 +381,12 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+        final var token = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
-                : nftPersist(treasuryEntityId, contractEntityId, spenderEntityId.toEntityId());
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
+                : nftPersist(treasuryEntityId, contractEntityId, spenderEntityId);
+        final var tokenId = token.getTokenId();
+        final var tokenAddress = toAddress(tokenId);
         final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
-        final var tokenId = tokenEntity.getTokenId();
 
         tokenAccountPersist(tokenId, contractEntityId.getId());
         tokenAccountPersist(tokenId, spenderEntityId.getId());
@@ -425,10 +425,10 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+        final var token = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
-                : nftPersist(treasuryEntityId, senderEntityId.toEntityId());
-        final var tokenId = tokenEntity.getTokenId();
+                : nftPersist(treasuryEntityId, senderEntityId);
+        final var tokenId = token.getTokenId();
         final var tokenAddress = toAddress(tokenId);
 
         tokenAccountPersist(tokenId, senderEntityId.getId());
@@ -463,13 +463,12 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+        final var token = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
                 : nftPersist(treasuryEntityId, spenderEntityId.toEntityId());
-        final var tokenId = tokenEntity.getTokenId();
+        final var tokenId = token.getTokenId();
         final var tokenAddress = toAddress(tokenId);
         final var spenderAddress = getAliasFromEntity(spenderEntityId);
-
         tokenAccountPersist(tokenId, spenderEntityId.getId());
         tokenAccountPersist(tokenId, contractEntityId.getId());
 
@@ -538,8 +537,8 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
 
         final var tokenEntity = nftPersist(treasuryEntityId, spenderEntityId.toEntityId());
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
         final var tokenId = tokenEntity.getTokenId();
+        final var tokenAddress = toAddress(tokenId);
 
         tokenAccountPersist(tokenId, spenderEntityId.getId());
         tokenAccountPersist(tokenId, contractEntityId.getId());
@@ -579,10 +578,10 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+        final var token = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
                 : nftPersist(treasuryEntityId, spenderEntityId.toEntityId());
-        final var tokenId = tokenEntity.getTokenId();
+        final var tokenId = token.getTokenId();
         final var tokenAddress = toAddress(tokenId);
 
         tokenAccountPersist(tokenId, spenderEntityId.getId());
@@ -659,11 +658,11 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
         final var contractEntityId = entityIdFromEvmAddress(contractAddress);
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+        final var token = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
                 : nftPersist(treasuryEntityId, treasuryEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenId = tokenEntity.getTokenId();
+        final var tokenId = token.getTokenId();
+        final var tokenAddress = toAddress(tokenId);
 
         tokenAccountPersist(tokenId, treasuryEntityId.getId());
         tokenAccountPersist(tokenId, spenderEntityId.getId());
@@ -693,10 +692,10 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+        final var token = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
                 : nftPersist(treasuryEntityId, treasuryEntityId);
-        final var tokenId = tokenEntity.getTokenId();
+        final var tokenId = token.getTokenId();
         final var tokenAddress = toAddress(tokenId);
 
         tokenAccountPersist(tokenId, spenderEntityId.getId());
@@ -818,17 +817,17 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         final var tokenId = tokenEntity.getId();
         final var spenderId = spender.getId();
         final var ownerId = owner.getId();
-        tokenAccountPersist(tokenId, treasuryAccount.getId(), 1L);
-        tokenAccountPersist(tokenId, spenderId, 1L);
+        tokenAccountPersist(tokenId, treasuryAccount.getId());
+        tokenAccountPersist(tokenId, spenderId);
 
         if (!Objects.equals(ownerId, spenderId)) {
-            tokenAccountPersist(tokenId, ownerId, 1L);
+            tokenAccountPersist(tokenId, ownerId);
         }
 
         if (tokenType.equals(TokenTypeEnum.FUNGIBLE_COMMON)) {
             fungibleTokenPersist(tokenEntity, treasuryAccount);
         } else {
-            Token token = nonFungibleTokenPersist(tokenEntity, treasuryAccount);
+            var token = nonFungibleTokenPersist(tokenEntity, treasuryAccount);
             nonFungibleTokenInstancePersist(token, 1L, owner.toEntityId(), spender.toEntityId());
         }
 

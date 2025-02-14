@@ -371,6 +371,17 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     /**
      *
+     * @param alias - the alias with which the account is created
+     * @param publicKey - the public key with which the account is created
+     * @return Entity object that is persisted in the db
+     */
+    protected Entity accountPersistWithAlias(final Address alias, final ByteString publicKey) {
+        return accountEntityPersistCustomizable(
+                e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()));
+    }
+
+    /**
+     *
      * @param customizer - the consumer with which to customize the entity
      * @return
      */
@@ -393,17 +404,8 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .persist();
     }
 
-    protected void tokenAccountPersist(final long tokenId, final long accountId, Long balance) {
-        tokenAccount(ta -> {
-            ta.tokenId(tokenId).accountId(accountId);
-            if (balance != null) {
-                ta.balance(balance);
-            }
-        });
-    }
-
     protected void tokenAccountPersist(final long tokenId, final long accountId) {
-        tokenAccountPersist(tokenId, accountId, null);
+        tokenAccount(ta -> ta.tokenId(tokenId).accountId(accountId));
     }
 
     /**
@@ -431,22 +433,13 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * When an account balance is updated during a consensus event, an account_balance record with the consensus_timestamp,
      * account_id and balance is created.The balance_timestamp for the account entry is updated as well in the entity table.
      * @param account The account that the account_balance record is going to be created for
-     * @param balance The account balance that is going to be stored for the particular timestamp
      * @param timestamp The timestamp indicating the account balance update
      */
-    protected void persistAccountBalance(Entity account, long balance, long timestamp) {
+    protected void accountBalancePersist(Entity account, long timestamp) {
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new AccountBalance.Id(timestamp, account.toEntityId()))
-                        .balance(balance))
-                .persist();
-    }
-
-    protected void persistAccountBalance(Entity account, long balance) {
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(account.getCreatedTimestamp(), account.toEntityId()))
-                        .balance(balance))
+                        .balance(account.getBalance()))
                 .persist();
     }
 
@@ -456,7 +449,7 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
      * No record for the token balance at a particular timestamp may result in INSUFFICIENT_TOKEN_BALANCE exception
      * for a historical query with the same timestamp.
      */
-    protected void persistTokenBalance(EntityId account, EntityId token, long timestamp) {
+    protected void tokenBalancePersist(EntityId account, EntityId token, long timestamp) {
         domainBuilder
                 .tokenBalance()
                 .customize(ab ->
