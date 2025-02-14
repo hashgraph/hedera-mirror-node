@@ -43,7 +43,7 @@ final class TokenAirdropTransformer extends AbstractBlockItemTransformer {
     @Override
     protected void updateTransactionRecord(
             BlockItem blockItem, TransactionBody transactionBody, TransactionRecord.Builder transactionRecordBuilder) {
-        if (!blockItem.successful() || !transactionBody.hasTokenAirdrop()) {
+        if (!blockItem.successful()) {
             return;
         }
 
