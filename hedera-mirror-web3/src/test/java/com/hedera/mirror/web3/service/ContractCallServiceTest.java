@@ -833,7 +833,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         final var token = tokenPersist();
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
         final var payer = accountEntityWithEvmAddressPersist();
-        persistAccountBalance(payer, payer.getBalance());
+        accountBalancePersist(payer, payer.getCreatedTimestamp());
         testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
 
         final var functionCall = contract.send_approve(
@@ -876,7 +876,7 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
             final CallType callType, final long gasLimit, final int gasUnit) {
         // Given
         final var payer = accountEntityWithEvmAddressPersist();
-        persistAccountBalance(payer, payer.getBalance());
+        accountBalancePersist(payer, payer.getBalance());
         testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
 
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
