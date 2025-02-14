@@ -162,15 +162,15 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 return contractExecutionService.callContract(serviceParameters).getGasUsed();
             }
         } catch (MirrorEvmTransactionException e) {
+            // Some tests expect to fail but still want to capture the gas used
             if (mirrorNodeEvmProperties.isModularizedServices()) {
                 return e.getResult().getGasUsed();
             } else {
-                HederaEvmTransactionProcessingResult result = e.getResult();
+                var result = e.getResult();
                 if (result != null) {
                     return result.getGasUsed();
                 }
             }
-            // Some tests expect to fail but still want to capture the gas used
             throw e;
         }
     }
