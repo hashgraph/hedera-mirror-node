@@ -129,7 +129,6 @@ public abstract class ContractCallService {
             CallServiceParameters params, long estimatedGas, boolean restoreGasToThrottleBucket)
             throws MirrorEvmTransactionException {
         HederaEvmTransactionProcessingResult result = null;
-        MirrorEvmTransactionException exceptionToThrow = null;
 
         try {
             if (!mirrorNodeEvmProperties.isModularizedServices()) {
@@ -138,22 +137,16 @@ public abstract class ContractCallService {
                 result = transactionExecutionService.execute(params, estimatedGas, gasUsedCounter);
             }
         } catch (IllegalStateException | IllegalArgumentException e) {
-            exceptionToThrow = new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);}
-        catch (MirrorEvmTransactionException e){
+            throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
+        } catch (MirrorEvmTransactionException e) {
             // This result is needed in case of exception to be still able to call restoreGasToBucket method
             result = e.getResult();
-            // In order to be able to restoreGasToBucket we have to capture the exception, then call
-            // restoreGasToBucket and finally throw the exception because there are some tests that depend on it
-            exceptionToThrow = e;
+            throw e;
         } finally {
             if (restoreGasToThrottleBucket) {
                 restoreGasToBucket(result, params.getGas());
             }
         }
-        if (exceptionToThrow != null) {
-            throw exceptionToThrow;
-        }
-
         return result;
     }
 

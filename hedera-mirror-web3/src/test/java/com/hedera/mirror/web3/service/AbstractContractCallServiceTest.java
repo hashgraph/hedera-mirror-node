@@ -51,7 +51,6 @@ import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -133,20 +132,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
                 .customize(ab -> ab.id(new AccountBalance.Id(
                                 treasuryEntity.getCreatedTimestamp(), treasuryEntity.toEntityId()))
                         .balance(treasuryEntity.getBalance()))
-                .persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(801L)
-                        .num(801L)
-                        .createdTimestamp(genesisRecordFile.getConsensusStart())
-                        .timestampRange(Range.atLeast(genesisRecordFile.getConsensusStart())))
-                .persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(800L)
-                        .num(800L)
-                        .createdTimestamp(genesisRecordFile.getConsensusStart())
-                        .timestampRange(Range.atLeast(genesisRecordFile.getConsensusStart())))
                 .persist();
     }
 
