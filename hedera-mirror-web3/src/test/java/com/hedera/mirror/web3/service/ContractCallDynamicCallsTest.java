@@ -33,13 +33,18 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.AccountAmount;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.NftTransfer;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TokenTransferList;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TransferList;
+import jakarta.annotation.PostConstruct;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
@@ -233,6 +238,56 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                 });
 
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+    }
+
+    @Test
+    void associateTokenTransferEthCallFailModularized() throws InvocationTargetException, IllegalAccessException {
+        // Given
+        final var modularizedServicesFlag = mirrorNodeEvmProperties.isModularizedServices();
+        final var backupProperties = mirrorNodeEvmProperties.getProperties();
+
+        try {
+            mirrorNodeEvmProperties.setModularizedServices(true);
+            Method postConstructMethod = Arrays.stream(MirrorNodeState.class.getDeclaredMethods())
+                    .filter(method -> method.isAnnotationPresent(PostConstruct.class))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("@PostConstruct method not found"));
+
+            postConstructMethod.setAccessible(true); // Make the method accessible
+            postConstructMethod.invoke(state);
+
+            final var treasuryAccount = accountEntityPersist();
+            final var sender = accountEntityPersist();
+
+            final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
+
+            // When
+            final var functionCall = contract.send_associateTokenTransfer(
+                    toAddress(EntityId.of(21496934L)).toHexString(), // Not existing address
+                    getAddressFromEntity(treasuryAccount),
+                    getAddressFromEntity(sender),
+                    BigInteger.ZERO,
+                    BigInteger.ONE);
+
+            final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                    .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                    .expectedErrorMessage("Failed to associate tokens")
+                    .build();
+
+            // Then
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .satisfies(ex -> {
+                        MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
+                        assertEquals("Failed to associate tokens", exception.getDetail());
+                    });
+
+            verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+        } finally {
+            // Restore changed property values.
+            mirrorNodeEvmProperties.setModularizedServices(modularizedServicesFlag);
+            mirrorNodeEvmProperties.setProperties(backupProperties);
+        }
     }
 
     @ParameterizedTest
