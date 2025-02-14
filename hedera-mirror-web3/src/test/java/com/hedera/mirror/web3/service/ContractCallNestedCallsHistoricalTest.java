@@ -56,7 +56,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
         // Given
         final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var spenderEntity = accountEntityWithAliasPersistHistorical(testWeb3jService.getHistoricalRange());
+        final var spenderEntity = accountEntityPersistHistorical(testWeb3jService.getHistoricalRange());
         final var nftAmountToMint = 2;
         final var nft = nftPersistHistorical(
                 nftAmountToMint,
@@ -84,7 +84,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
         final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
 
-        final var spenderEntity = accountEntityWithAliasPersistHistorical(testWeb3jService.getHistoricalRange());
+        final var spenderEntity = accountEntityPersistHistorical(testWeb3jService.getHistoricalRange());
         final var nftAmountToMint = 2;
         final var nft = nftPersistHistorical(
                 nftAmountToMint,
@@ -109,7 +109,7 @@ class ContractCallNestedCallsHistoricalTest extends AbstractContractCallServiceO
         // Given
         final var ownerEntity = accountEntityNoEvmAddressPersistHistorical(
                 Range.closedOpen(recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd()));
-        final var spenderEntity = accountEntityWithAliasPersistHistorical(testWeb3jService.getHistoricalRange());
+        final var spenderEntity = accountEntityPersistHistorical(testWeb3jService.getHistoricalRange());
         final var nftAmountToMint = 3;
         final var nft = nftPersistHistorical(
                 nftAmountToMint,

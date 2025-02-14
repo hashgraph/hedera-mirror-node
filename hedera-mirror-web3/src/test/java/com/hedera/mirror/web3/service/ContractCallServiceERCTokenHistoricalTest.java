@@ -103,8 +103,8 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
         @ValueSource(booleans = {true, false})
         void isApproveForAllWithAlias(final boolean isStatic) {
             // Given
-            final var owner = accountEntityWithAliasPersistHistorical(historicalRange);
-            final var spender = accountEntityWithAliasPersistHistorical(historicalRange);
+            final var owner = accountEntityPersistHistorical(historicalRange);
+            final var spender = accountEntityPersistHistorical(historicalRange);
             final var nftToken = nftPersistHistorical(owner.toEntityId(), owner.toEntityId(), spender.toEntityId());
             nftAllowancePersistHistorical(nftToken, owner, spender, historicalRange);
             final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
@@ -142,8 +142,8 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
         @ValueSource(booleans = {true, false})
         void allowanceWithAlias(final boolean isStatic) {
             // Given
-            final var owner = accountEntityWithAliasPersistHistorical(historicalRange);
-            final var spender = accountEntityWithAliasPersistHistorical(historicalRange);
+            final var owner = accountEntityPersistHistorical(historicalRange);
+            final var spender = accountEntityPersistHistorical(historicalRange);
             final var token = fungibleTokenPersistHistorical(historicalRange);
             final var amountGranted = 10L;
             fungibleTokenAllowancePersistHistorical(token, owner, spender, amountGranted);
@@ -233,7 +233,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
         @ValueSource(booleans = {true, false})
         void balanceOfWithAlias(final boolean isStatic) {
             // Given
-            final var owner = accountEntityWithAliasPersistHistorical(historicalRange);
+            final var owner = accountEntityPersistHistorical(historicalRange);
             final var token = fungibleTokenPersistHistorical(historicalRange);
             tokenAccountFrozenRelationshipPersistHistorical(token, owner, historicalRange);
             // The token needs to exist in the "token" table in order to get its type, so we duplicate the data for the
@@ -387,8 +387,8 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
         @ValueSource(booleans = {true, false})
         void isApproveForAllWithAlias(final boolean isStatic) throws Exception {
             // Given
-            final var owner = accountEntityWithAliasPersistHistorical(historicalRange);
-            final var spender = accountEntityWithAliasPersistHistorical(historicalRange);
+            final var owner = accountEntityPersistHistorical(historicalRange);
+            final var spender = accountEntityPersistHistorical(historicalRange);
             final var nftToken = nftPersistHistorical(owner.toEntityId(), owner.toEntityId(), spender.toEntityId());
             nftAllowancePersistHistorical(nftToken, owner, spender, historicalRange);
             final var contract = testWeb3jService.deploy(ERCTestContractHistorical::deploy);
@@ -438,8 +438,8 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
         @ValueSource(booleans = {true, false})
         void allowanceWithAlias(final boolean isStatic) throws Exception {
             // Given
-            final var owner = accountEntityWithAliasPersistHistorical(historicalRange);
-            final var spender = accountEntityWithAliasPersistHistorical(historicalRange);
+            final var owner = accountEntityPersistHistorical(historicalRange);
+            final var spender = accountEntityPersistHistorical(historicalRange);
             final var token = fungibleTokenPersistHistorical(historicalRange);
             final var amountGranted = 10L;
             fungibleTokenAllowancePersistHistorical(token, owner, spender, amountGranted);
@@ -537,7 +537,7 @@ class ContractCallServiceERCTokenHistoricalTest extends AbstractContractCallServ
         @ValueSource(booleans = {true, false})
         void balanceOfWithAlias(final boolean isStatic) throws Exception {
             // Given
-            final var owner = accountEntityWithAliasPersistHistorical(historicalRange);
+            final var owner = accountEntityPersistHistorical(historicalRange);
             final var token = fungibleTokenPersistHistorical(historicalRange);
             // The token needs to exist in the "token" table in order to get its type, so we duplicate the data for the
             // historical token.

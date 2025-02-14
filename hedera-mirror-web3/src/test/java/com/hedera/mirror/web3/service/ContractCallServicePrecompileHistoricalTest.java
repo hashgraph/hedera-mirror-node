@@ -130,7 +130,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void isKycGrantedWithAlias(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var account = accountEntityWithAliasPersistHistorical(historicalRange);
+        final var account = accountEntityPersistHistorical(historicalRange);
         final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
         fungibleTokenPersistHistorical(tokenEntity, historicalRange);
         tokenAccountFrozenRelationshipPersistHistorical(tokenEntity, account, historicalRange);
@@ -169,7 +169,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void isKycGrantedForNFTWithAlias(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var account = accountEntityWithAliasPersistHistorical(historicalRange);
+        final var account = accountEntityPersistHistorical(historicalRange);
         final var tokenEntity = nftPersistHistorical(historicalRange);
         tokenAccountFrozenRelationshipPersistHistorical(tokenEntity, account, historicalRange);
 
@@ -345,7 +345,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
         final var historicalRange = setUpHistoricalContext(blockNumber);
         final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
         fungibleTokenPersistHistorical(tokenEntity, historicalRange);
-        final var collectorAccount = accountEntityWithAliasPersistHistorical(historicalRange);
+        final var collectorAccount = accountEntityPersistHistorical(historicalRange);
         final var fixedFee = com.hedera.mirror.common.domain.token.FixedFee.builder()
                 .amount(100L)
                 .collectorAccountId(collectorAccount.toEntityId())
@@ -383,7 +383,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void getCustomFeesForTokenWithFractionalFee(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var collectorAccount = accountEntityWithAliasPersistHistorical(historicalRange);
+        final var collectorAccount = accountEntityPersistHistorical(historicalRange);
         final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
         fungibleTokenPersistHistorical(tokenEntity, historicalRange);
         final var fractionalFee = FractionalFee.builder()
@@ -427,7 +427,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void getCustomFeesForTokenWithRoyaltyFee(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var collectorAccount = accountEntityWithAliasPersistHistorical(historicalRange);
+        final var collectorAccount = accountEntityPersistHistorical(historicalRange);
         final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
         fungibleTokenPersistHistorical(tokenEntity, historicalRange);
         final var royaltyFee = RoyaltyFee.builder()
@@ -506,7 +506,7 @@ class ContractCallServicePrecompileHistoricalTest extends AbstractContractCallSe
     void getApproved(long blockNumber) throws Exception {
         // Given
         final var historicalRange = setUpHistoricalContext(blockNumber);
-        final var approvedAccount = accountEntityWithAliasPersistHistorical(historicalRange);
+        final var approvedAccount = accountEntityPersistHistorical(historicalRange);
         final var tokenEntity = tokenEntityPersistHistorical(historicalRange);
         domainBuilder
                 .token()
