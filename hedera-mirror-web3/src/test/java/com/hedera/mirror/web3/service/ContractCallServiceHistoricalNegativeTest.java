@@ -312,8 +312,8 @@ class ContractCallServiceHistoricalNegativeTest extends AbstractContractCallServ
         final var evm30RecordFile = recordFilePersist(EVM_V_34_BLOCK - 1);
         final var evm30HistoricalRange = setupHistoricalStateInService(EVM_V_34_BLOCK - 1, evm30RecordFile);
         final var historicalRangeAfterEvm34 = setUpHistoricalContext(EVM_V_34_BLOCK);
-        final var feeCollector =
-                accountEntityNoEvmAddressWithBalancePersistHistorical(DEFAULT_ACCOUNT_BALANCE, evm30HistoricalRange);
+        final var feeCollector = accountEntityNoEvmAddressPersistHistorical(evm30HistoricalRange);
+        accountBalancePersistHistorical(feeCollector.toEntityId(), DEFAULT_ACCOUNT_BALANCE, evm30HistoricalRange);
 
         setupHistoricalStateInService(EVM_V_34_BLOCK - 1, evm30RecordFile);
         final var contract = testWeb3jService.deploy(EvmCodesHistorical::deploy);

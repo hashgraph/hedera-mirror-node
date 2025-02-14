@@ -113,21 +113,6 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 timestampRange, e -> e.evmAddress(null).alias(null));
     }
 
-    protected Entity accountEntityNoEvmAddressWithBalancePersistHistorical(
-            final long balance, final Range<Long> timestampRange) {
-        final var entity = domainBuilder
-                .entity()
-                .customize(e -> e.balance(balance)
-                        .alias(null)
-                        .evmAddress(null)
-                        .timestampRange(timestampRange)
-                        .createdTimestamp(timestampRange.lowerEndpoint()))
-                .persist();
-        accountBalancePersistHistorical(entity.toEntityId(), balance, timestampRange);
-
-        return entity;
-    }
-
     protected void accountBalancePersistHistorical(
             final EntityId entityId, final long balance, final Range<Long> timestampRange) {
         // There needs to be an entry for account 0.0.2 in order for the account balance query to return the correct
