@@ -383,7 +383,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         final var token = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
-                : nftPersist(treasuryEntityId, contractEntityId, spenderEntityId);
+                : nftPersist(treasuryEntityId, contractEntityId, spenderEntityId.toEntityId());
         final var tokenId = token.getTokenId();
         final var tokenAddress = toAddress(tokenId);
         final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
@@ -427,7 +427,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         final var token = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersistWithTreasuryAccount(treasuryEntityId)
-                : nftPersist(treasuryEntityId, senderEntityId);
+                : nftPersist(treasuryEntityId, senderEntityId.toEntityId());
         final var tokenId = token.getTokenId();
         final var tokenAddress = toAddress(tokenId);
 

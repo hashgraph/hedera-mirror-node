@@ -848,7 +848,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
     @Test
     void ethCallBalanceOfWithAliasRedirect() {
         final var owner = accountEntityWithEvmAddressPersist();
-        final var token = fungibleTokenPersistWithTreasuryAccount(owner);
+        final var token = fungibleTokenPersistWithTreasuryAccount(owner.toEntityId());
         final var tokenId = token.getTokenId();
 
         domainBuilder

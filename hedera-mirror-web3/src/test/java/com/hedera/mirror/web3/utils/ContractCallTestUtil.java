@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.function.ToLongFunction;
 import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 
 @UtilityClass

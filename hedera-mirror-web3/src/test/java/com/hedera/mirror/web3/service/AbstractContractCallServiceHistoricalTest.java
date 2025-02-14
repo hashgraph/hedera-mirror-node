@@ -34,7 +34,6 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
 import org.apache.commons.lang3.tuple.Pair;
 
 public abstract class AbstractContractCallServiceHistoricalTest extends AbstractContractCallServiceTest {
@@ -73,8 +72,6 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
                 .persist();
     }
 
-
-
     protected Pair<Entity, Entity> accountTokenAndFrozenRelationshipPersistHistorical(
             final Range<Long> historicalRange) {
         final var account = accountEntityPersistHistorical(historicalRange);
@@ -93,8 +90,7 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
     }
 
     protected Entity accountEntityPersistHistoricalCustomizable(
-            final Range<Long> timestampRange,
-            Consumer<Entity.EntityBuilder<?, ?>> customizer) {
+            final Range<Long> timestampRange, Consumer<Entity.EntityBuilder<?, ?>> customizer) {
 
         return domainBuilder
                 .entity()
@@ -109,17 +105,12 @@ public abstract class AbstractContractCallServiceHistoricalTest extends Abstract
     }
 
     protected Entity accountEntityPersistHistorical(final Range<Long> timestampRange) {
-        return accountEntityPersistHistoricalCustomizable(
-                timestampRange,
-                e -> {}
-        );
+        return accountEntityPersistHistoricalCustomizable(timestampRange, e -> {});
     }
 
     protected Entity accountEntityNoEvmAddressPersistHistorical(final Range<Long> timestampRange) {
         return accountEntityPersistHistoricalCustomizable(
-                timestampRange,
-                e -> e.evmAddress(null).alias(null)
-        );
+                timestampRange, e -> e.evmAddress(null).alias(null));
     }
 
     protected Entity accountEntityNoEvmAddressWithBalancePersistHistorical(

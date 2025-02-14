@@ -371,17 +371,6 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     /**
      *
-     * @param alias - the alias with which the account is created
-     * @param publicKey - the public key with which the account is created
-     * @return Entity object that is persisted in the db
-     */
-    protected Entity accountPersistWithAlias(final Address alias, final ByteString publicKey) {
-        return accountEntityPersistCustomizable(
-                e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()));
-    }
-
-    /**
-     *
      * @param customizer - the consumer with which to customize the entity
      * @return
      */

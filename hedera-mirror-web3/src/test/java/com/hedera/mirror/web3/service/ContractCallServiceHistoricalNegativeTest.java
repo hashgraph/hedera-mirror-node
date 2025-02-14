@@ -102,7 +102,7 @@ class ContractCallServiceHistoricalNegativeTest extends AbstractContractCallServ
         final var historicalRangeAfterEvm34 = setUpHistoricalContext(EVM_V_34_BLOCK);
         final var tokenEntity = tokenEntityPersistHistorical(evm30HistoricalRange);
         fungibleTokenPersistHistorical(tokenEntity, evm30HistoricalRange);
-        final var accountEntity = accountEntityPersistHistorical(evm30HistoricalRange);
+        final var accountEntity = accountEntityNoEvmAddressPersistHistorical(evm30HistoricalRange);
         tokenAccountFrozenRelationshipPersistHistorical(tokenEntity, accountEntity, historicalRangeAfterEvm34);
 
         setupHistoricalStateInService(EVM_V_34_BLOCK - 1, evm30RecordFile);

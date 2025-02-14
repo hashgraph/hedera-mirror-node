@@ -25,8 +25,6 @@ import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ZERO_VALUE;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
 import static com.hedera.mirror.web3.utils.ContractCallTestUtil.longValueOf;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.entityIdFromTokenId;
-import static com.hedera.services.utils.EntityIdUtils.getAddressFromId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
