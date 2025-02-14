@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.graphql.config;
 
+import com.hedera.mirror.common.exception.MirrorNodeException;
 import graphql.ErrorType;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
@@ -27,7 +28,9 @@ import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter
 public class CustomExceptionResolver extends DataFetcherExceptionResolverAdapter {
     @Override
     protected GraphQLError resolveToSingleError(Throwable ex, DataFetchingEnvironment env) {
-        if (ex instanceof IllegalStateException || ex instanceof IllegalArgumentException) {
+        if (ex instanceof IllegalStateException
+                || ex instanceof IllegalArgumentException
+                || ex instanceof MirrorNodeException) {
             return GraphqlErrorBuilder.newError()
                     .errorType(ErrorType.ValidationError)
                     .message(ex.getMessage())

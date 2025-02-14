@@ -162,6 +162,9 @@ public final class EntityIdUtils {
     }
 
     public static com.hedera.hapi.node.base.AccountID toAccountId(final Long id) {
+        if (id == null) {
+            return null;
+        }
         final var decodedEntityId = EntityId.of(id);
 
         return toAccountId(decodedEntityId);
@@ -271,6 +274,10 @@ public final class EntityIdUtils {
 
     public static String asHexedEvmAddress(final Id id) {
         return CommonUtils.hex(asEvmAddress(id.num()));
+    }
+
+    public static String asHexedEvmAddress(long tokenId) {
+        return CommonUtils.hex(asEvmAddress(tokenId));
     }
 
     public static boolean isAlias(final AccountID idOrAlias) {
