@@ -51,6 +51,7 @@ import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TestWeb3jService.Web3jTestConfiguration;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -155,15 +156,21 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
 
     protected long gasUsedAfterExecution(final ContractExecutionParameters serviceParameters) {
         try {
-            return contractExecutionService.callContract(serviceParameters).getGasUsed();
-        } catch (MirrorEvmTransactionException e) {
-            var result = e.getResult();
-
-            // Some tests expect to fail but still want to capture the gas used
-            if (result != null) {
-                return result.getGasUsed();
+            if (mirrorNodeEvmProperties.isModularizedServices()) {
+                return contractExecutionService.callContract(serviceParameters).getGasUsed();
+            } else {
+                return contractExecutionService.callContract(serviceParameters).getGasUsed();
             }
-
+        } catch (MirrorEvmTransactionException e) {
+            if (mirrorNodeEvmProperties.isModularizedServices()) {
+                return e.getResult().getGasUsed();
+            } else {
+                HederaEvmTransactionProcessingResult result = e.getResult();
+                if (result != null) {
+                    return result.getGasUsed();
+                }
+            }
+            // Some tests expect to fail but still want to capture the gas used
             throw e;
         }
     }

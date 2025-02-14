@@ -82,7 +82,8 @@ public class TransactionExecutionService {
         TransactionBody transactionBody;
         HederaEvmTransactionProcessingResult result = null;
         if (isContractCreate) {
-            transactionBody = buildContractCreateTransactionBody(params, estimatedGas, maxLifetime, mirrorNodeEvmProperties.getContractCreateTxFee());
+            transactionBody = buildContractCreateTransactionBody(
+                    params, estimatedGas, maxLifetime, mirrorNodeEvmProperties.getContractCreateTxFee());
         } else {
             transactionBody = buildContractCallTransactionBody(params, estimatedGas);
         }
@@ -143,8 +144,14 @@ public class TransactionExecutionService {
         } else {
             var errorMessage = getErrorMessage(result).orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(errorMessage);
-            updateErrorGasUsedMetric(gasUsedCounter, result.gasUsed(), 1);
-            throw new MirrorEvmTransactionException(status.protoName(), detail, errorMessage.toHexString());
+            var gasUsed = result.gasUsed();
+            updateErrorGasUsedMetric(gasUsedCounter, gasUsed, 1);
+            // We need only the gasUsed from HederaEvmTransactionProcessingResult.failed
+            throw new MirrorEvmTransactionException(
+                    status.protoName(),
+                    detail,
+                    errorMessage.toHexString(),
+                    HederaEvmTransactionProcessingResult.failed(gasUsed, 0L, 0L, Optional.empty(), Optional.empty()));
         }
     }
 
@@ -172,7 +179,8 @@ public class TransactionExecutionService {
                                 params.getCallData().toArrayUnsafe()))
                         .gas(estimatedGas)
                         .autoRenewPeriod(new Duration(maxLifetime))
-                        .build()).transactionFee(transactionFee)
+                        .build())
+                .transactionFee(transactionFee)
                 .build();
     }
 

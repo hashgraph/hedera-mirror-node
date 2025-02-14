@@ -128,22 +128,34 @@ public abstract class ContractCallService {
     protected HederaEvmTransactionProcessingResult doProcessCall(
             CallServiceParameters params, long estimatedGas, boolean restoreGasToThrottleBucket)
             throws MirrorEvmTransactionException {
+        HederaEvmTransactionProcessingResult result = null;
+        MirrorEvmTransactionException exceptionToThrow = null;
+
         try {
-            HederaEvmTransactionProcessingResult result;
             if (!mirrorNodeEvmProperties.isModularizedServices()) {
                 result = mirrorEvmTxProcessor.execute(params, estimatedGas);
             } else {
                 result = transactionExecutionService.execute(params, estimatedGas, gasUsedCounter);
             }
-            if (!restoreGasToThrottleBucket) {
-                return result;
+        } catch (IllegalStateException | IllegalArgumentException | MirrorEvmTransactionException e) {
+            if (e instanceof MirrorEvmTransactionException) {
+                // This result is needed in case of exception to be still able to call restoreGasToBucket method
+                result = ((MirrorEvmTransactionException) e).getResult();
+                // In order to be able to restoreGasToBucket we have to capture the exception, then call
+                // restoreGasToBucket and finally throw the exception because there are some tests that depend on it
+                exceptionToThrow = (MirrorEvmTransactionException) e;
+            } else {
+                exceptionToThrow = new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
             }
-
-            restoreGasToBucket(result, params.getGas());
-            return result;
-        } catch (IllegalStateException | IllegalArgumentException e) {
-            throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
+        } finally {
+            if (restoreGasToThrottleBucket) {
+                restoreGasToBucket(result, params.getGas());
+                if (exceptionToThrow != null) {
+                    throw exceptionToThrow;
+                }
+            }
         }
+        return result;
     }
 
     private void restoreGasToBucket(HederaEvmTransactionProcessingResult result, long gasLimit) {
@@ -152,7 +164,9 @@ public abstract class ContractCallService {
         // of the gasLimit value back in the bucket.
         final var gasLimitToRestoreBaseline =
                 (long) (Math.floorDiv(gasLimit, gasUnit) * throttleProperties.getGasLimitRefundPercent() / 100f);
-        if (!result.isSuccessful() && gasLimit == result.getGasUsed()) {
+        if (result == null) {
+            gasLimitBucket.addTokens(gasLimitToRestoreBaseline);
+        } else if (!result.isSuccessful() && gasLimit == result.getGasUsed()) {
             gasLimitBucket.addTokens(gasLimitToRestoreBaseline);
         } else {
             // The transaction was successful or reverted, so restore the remaining gas back in the bucket or

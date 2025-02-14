@@ -832,6 +832,10 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         // Given
         final var token = tokenPersist();
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
+        final var payer = accountEntityWithEvmAddressPersist();
+        persistAccountBalance(payer, payer.getBalance());
+        testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
+
         final var functionCall = contract.send_approve(
                 toAddress(token.getId()).toHexString(), SPENDER_ALIAS.toHexString(), BigInteger.valueOf(2));
 
@@ -871,6 +875,10 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
     void ercPrecompileContractRevertReturnsExpectedGasToBucket(
             final CallType callType, final long gasLimit, final int gasUnit) {
         // Given
+        final var payer = accountEntityWithEvmAddressPersist();
+        persistAccountBalance(payer, payer.getBalance());
+        testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
+
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
         final var functionCall = contract.call_nameNonStatic(Address.ZERO.toHexString());
         given(throttleProperties.getGasUnit()).willReturn(gasUnit);
