@@ -45,7 +45,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -248,6 +250,8 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         try {
             mirrorNodeEvmProperties.setModularizedServices(true);
+            // Re-init the captors, because the flag was changed.
+            super.setUpArgumentCaptors();
             Method postConstructMethod = Arrays.stream(MirrorNodeState.class.getDeclaredMethods())
                     .filter(method -> method.isAnnotationPresent(PostConstruct.class))
                     .findFirst()
@@ -255,6 +259,11 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
             postConstructMethod.setAccessible(true); // Make the method accessible
             postConstructMethod.invoke(state);
+
+            final Map<String, String> propertiesMap = new HashMap<>();
+            propertiesMap.put("contracts.maxRefundPercentOfGasLimit", "100");
+            propertiesMap.put("contracts.maxGasPerSec", "15000000");
+            mirrorNodeEvmProperties.setProperties(propertiesMap);
 
             final var treasuryAccount = accountEntityPersist();
             final var sender = accountEntityPersist();
