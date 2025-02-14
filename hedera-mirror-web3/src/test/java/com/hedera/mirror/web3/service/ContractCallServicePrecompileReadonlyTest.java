@@ -195,7 +195,6 @@ class ContractCallServicePrecompileReadonlyTest extends AbstractContractCallServ
     @Test
     void isKycGrantedWithAlias() throws Exception {
         // Given
-
         final var account = accountEntityWithEvmAddressPersist();
         final var token = fungibleTokenPersist();
         final var tokenId = token.getTokenId();

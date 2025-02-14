@@ -26,7 +26,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -337,14 +336,5 @@ public final class EntityIdUtils {
 
     public static boolean isAliasSizeGreaterThanEvmAddress(final ByteString alias) {
         return alias.size() > EVM_ADDRESS_SIZE;
-    }
-
-    public static String getAddressFromId(long tokenId) {
-        return EvmTokenUtils.toAddress(tokenId).toHexString();
-    }
-
-    public static EntityId entityIdFromTokenId(long tokenId) {
-        var address = EvmTokenUtils.toAddress(tokenId);
-        return EvmTokenUtils.entityIdFromEvmAddress(address);
     }
 }

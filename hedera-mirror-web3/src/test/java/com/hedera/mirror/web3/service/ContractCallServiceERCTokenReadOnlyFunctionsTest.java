@@ -717,21 +717,22 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var spender = accountEntityWithEvmAddressPersist();
         final var owner = accountEntityWithEvmAddressPersist();
         final var ownerEntityId = owner.toEntityId();
-        final var tokenEntity = nftPersist(ownerEntityId);
+        final var token = nftPersist(ownerEntityId);
+        final var tokenId = token.getTokenId();
         domainBuilder
                 .nftAllowance()
-                .customize(a -> a.tokenId(tokenEntity.getTokenId())
+                .customize(a -> a.tokenId(tokenId)
                         .spender(spender.getId())
                         .owner(owner.getId())
                         .payerAccountId(ownerEntityId)
                         .approvedForAll(true))
                 .persist();
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
+        final var tokenAddress = toAddress(tokenId);
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
         final var functionCall = contract.send_isApprovedForAllRedirect(
                 tokenAddress.toHexString(),
                 toAddress(ownerEntityId).toHexString(), // TODO check this
-                toAddress(ownerEntityId).toHexString());
+                toAddress(spender.toEntityId()).toHexString());
         verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
