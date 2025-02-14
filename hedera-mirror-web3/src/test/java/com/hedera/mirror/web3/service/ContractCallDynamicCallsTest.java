@@ -340,7 +340,6 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                 : nftPersist(treasuryEntityId, ownerEntityId, spenderEntityId);
         final var tokenId = token.getTokenId();
         final var tokenAddress = toAddress(tokenId);
-        final var tokenEntityId = entityIdFromEvmAddress(toAddress(tokenId));
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -390,7 +389,6 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                 : nftPersist(treasuryEntityId, contractEntityId, spenderEntityId);
         final var tokenId = token.getTokenId();
         final var tokenAddress = toAddress(tokenId);
-        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
 
         tokenAccountPersist(tokenId, contractEntityId.getId());
         tokenAccountPersist(tokenId, spenderEntityId.getId());
