@@ -137,21 +137,15 @@ const getScheduleById = async (req, res) => {
   const schedule = rows[0];
   res.locals[constants.responseDataLabel] = formatScheduleRow(schedule);
 
-  let maxAge = 1;
   const now = Date.now() / 1000;
   const executedTimestamp = utils.nsToSecNs(schedule.executed_timestamp);
   const expirationTime = utils.nsToSecNs(schedule.expiration_time);
   const consensusTimestamp = utils.nsToSecNs(schedule.consensus_timestamp);
 
-  if (schedule.deleted || (executedTimestamp && executedTimestamp !== '')) {
-    maxAge = 3600;
-  } else if (!executedTimestamp) {
-    if (!expirationTime && now >= consensusTimestamp + 1860) {
-      maxAge = 3600;
-    } else if (expirationTime && now >= expirationTime + 60) {
-      maxAge = 3600;
-    }
-  }
+  const hasExecuted = !!executedTimestamp || schedule.deleted;
+  const hasAutoExpired = !expirationTime && now >= consensusTimestamp + 1860;
+  const hasExpired = expirationTime && now >= expirationTime + 60;
+  const maxAge = hasExecuted || hasAutoExpired || hasExpired ? 3600 : 1;
 
   res.locals[constants.responseDataLabel] = formatScheduleRow(rows[0]);
   res.set('Cache-Control', `public, max-age=${maxAge}`);
