@@ -134,7 +134,21 @@ const getScheduleById = async (req, res) => {
     throw new NotFoundError();
   }
 
+  const schedule = rows[0];
+  res.locals[constants.responseDataLabel] = formatScheduleRow(schedule);
+
+  const now = Date.now() / 1000;
+  const executedTimestamp = utils.nsToSecNs(schedule.executed_timestamp);
+  const expirationTime = utils.nsToSecNs(schedule.expiration_time);
+  const consensusTimestamp = utils.nsToSecNs(schedule.consensus_timestamp);
+
+  const hasExecuted = !!executedTimestamp || schedule.deleted;
+  const hasAutoExpired = !expirationTime && now >= consensusTimestamp + 1860;
+  const hasExpired = expirationTime && now >= expirationTime + 60;
+  const maxAge = hasExecuted || hasAutoExpired || hasExpired ? 3600 : 1;
+
   res.locals[constants.responseDataLabel] = formatScheduleRow(rows[0]);
+  res.set('Cache-Control', `public, max-age=${maxAge}`);
 };
 
 /**
