@@ -37,11 +37,11 @@ public record BlockItem(
         implements StreamItem {
 
     public BlockItem {
-        parent = parseParent(transactionResult, previous, parent);
+        parent = parseParent(transactionResult, previous);
         successful = parseSuccess(transactionResult, parent);
     }
 
-    private BlockItem parseParent(TransactionResult transactionResult, BlockItem previous, BlockItem parent) {
+    private BlockItem parseParent(TransactionResult transactionResult, BlockItem previous) {
         // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
         if (transactionResult.hasParentConsensusTimestamp() && previous != null) {
             var parentTimestamp = transactionResult.getParentConsensusTimestamp();

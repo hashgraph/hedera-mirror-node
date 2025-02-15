@@ -45,6 +45,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 
@@ -145,7 +146,6 @@ public class ProtoBlockFileReader implements BlockFileReader {
 
     private void readEventTransactions(ReaderContext context) {
         BlockItem protoBlockItem;
-        com.hedera.mirror.common.domain.transaction.BlockItem previous = null;
         while ((protoBlockItem = context.readBlockItemFor(EVENT_TRANSACTION)) != null) {
             try {
                 var eventTransaction = protoBlockItem.getEventTransaction();
@@ -177,12 +177,12 @@ public class ProtoBlockFileReader implements BlockFileReader {
                             .transactionResult(transactionResult)
                             .transactionOutput(Collections.unmodifiableList(transactionOutputs))
                             .stateChanges(Collections.unmodifiableList(stateChangesList))
-                            .previous(previous)
+                            .previous(context.getLastBlockItem())
                             .build();
                     context.getBlockFile()
                             .item(blockItem)
                             .onNewTransaction(getTransactionConsensusTimestamp(transactionResult));
-                    previous = blockItem;
+                    context.setLastBlockItem(blockItem);
                 }
             } catch (InvalidProtocolBufferException e) {
                 throw new InvalidStreamFileException(
@@ -221,6 +221,10 @@ public class ProtoBlockFileReader implements BlockFileReader {
 
         @NonFinal
         private int index;
+
+        @NonFinal
+        @Setter
+        private com.hedera.mirror.common.domain.transaction.BlockItem lastBlockItem;
 
         ReaderContext(@NotNull List<BlockItem> blockItems, @NotNull String filename) {
             this.blockFile = BlockFile.builder();
