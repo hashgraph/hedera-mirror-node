@@ -64,6 +64,7 @@ public class TransactionExecutionService {
     private static final AccountID TREASURY_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(2).build();
     private static final Duration TRANSACTION_DURATION = new Duration(15);
+    private static final long CONTRACT_CREATE_TX_FEE = 100_000_000L;
 
     private final State mirrorNodeState;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -82,8 +83,7 @@ public class TransactionExecutionService {
         TransactionBody transactionBody;
         HederaEvmTransactionProcessingResult result = null;
         if (isContractCreate) {
-            transactionBody = buildContractCreateTransactionBody(
-                    params, estimatedGas, maxLifetime, mirrorNodeEvmProperties.getContractCreateTxFee());
+            transactionBody = buildContractCreateTransactionBody(params, estimatedGas, maxLifetime);
         } else {
             transactionBody = buildContractCallTransactionBody(params, estimatedGas);
         }
@@ -146,7 +146,12 @@ public class TransactionExecutionService {
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(errorMessage);
             updateErrorGasUsedMetric(gasUsedCounter, result.gasUsed(), 1);
             if (ContractCallContext.get().getOpcodeTracerOptions() == null) {
-                throw new MirrorEvmTransactionException(status.protoName(), detail, errorMessage.toHexString(), HederaEvmTransactionProcessingResult.failed(result.gasUsed(), 0L, 0L, Optional.empty(), Optional.empty()));
+                throw new MirrorEvmTransactionException(
+                        status.protoName(),
+                        detail,
+                        errorMessage.toHexString(),
+                        HederaEvmTransactionProcessingResult.failed(
+                                result.gasUsed(), 0L, 0L, Optional.of(errorMessage), Optional.empty()));
             } else {
                 // If we are in an opcode trace scenario, we need to return a failed result in order to get the
                 // opcode list from the ContractCallContext. If we throw an exception instead of returning a result,
@@ -174,7 +179,7 @@ public class TransactionExecutionService {
     }
 
     private TransactionBody buildContractCreateTransactionBody(
-            final CallServiceParameters params, long estimatedGas, long maxLifetime, long transactionFee) {
+            final CallServiceParameters params, long estimatedGas, long maxLifetime) {
         return defaultTransactionBodyBuilder(params)
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .initcode(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
@@ -182,7 +187,7 @@ public class TransactionExecutionService {
                         .gas(estimatedGas)
                         .autoRenewPeriod(new Duration(maxLifetime))
                         .build())
-                .transactionFee(transactionFee)
+                .transactionFee(CONTRACT_CREATE_TX_FEE)
                 .build();
     }
 

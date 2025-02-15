@@ -156,9 +156,7 @@ public abstract class ContractCallService {
         // of the gasLimit value back in the bucket.
         final var gasLimitToRestoreBaseline =
                 (long) (Math.floorDiv(gasLimit, gasUnit) * throttleProperties.getGasLimitRefundPercent() / 100f);
-        if (result == null) {
-            gasLimitBucket.addTokens(gasLimitToRestoreBaseline);
-        } else if (!result.isSuccessful() && gasLimit == result.getGasUsed()) {
+        if (result == null || (!result.isSuccessful() && gasLimit == result.getGasUsed())) {
             gasLimitBucket.addTokens(gasLimitToRestoreBaseline);
         } else {
             // The transaction was successful or reverted, so restore the remaining gas back in the bucket or
