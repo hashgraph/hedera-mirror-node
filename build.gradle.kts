@@ -71,7 +71,7 @@ dependencies {
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.11")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
-        api("commons-beanutils:commons-beanutils:1.10.0")
+        api("commons-beanutils:commons-beanutils:1.10.1")
         api("commons-io:commons-io:2.18.0")
         api("io.cucumber:cucumber-bom:7.21.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
