@@ -731,7 +731,7 @@ class ContractCallServiceERCTokenReadOnlyFunctionsTest extends AbstractContractC
         final var contract = testWeb3jService.deploy(RedirectTestContract::deploy);
         final var functionCall = contract.send_isApprovedForAllRedirect(
                 tokenAddress.toHexString(),
-                toAddress(ownerEntityId).toHexString(), // TODO check this
+                toAddress(ownerEntityId).toHexString(),
                 toAddress(spender.toEntityId()).toHexString());
         verifyEthCallAndEstimateGas(functionCall, contract);
     }

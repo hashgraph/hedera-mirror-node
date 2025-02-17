@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.exception.BlockNumberNotFoundException.UNKNOWN_BLOCK_NUMBER;
@@ -1074,15 +1073,6 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
                         .alias(toEvmAddress(systemAccountEntityId))
                         .balance(20000L))
                 .persist();
-    }
-
-    private Entity tokenPersist() {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
-
-        domainBuilder.token().customize(t -> t.tokenId(tokenEntity.getId())).persist();
-
-        return tokenEntity;
     }
 
     @Nested
