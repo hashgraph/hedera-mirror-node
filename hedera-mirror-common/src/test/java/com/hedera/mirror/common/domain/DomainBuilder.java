@@ -1206,7 +1206,6 @@ public class DomainBuilder {
         var compressedKey = new byte[33];
         compressedKey[0] = prefix;
         System.arraycopy(fullPublicKey, 1, compressedKey, 1, 32); // Copy only X coordinate
-
         return ByteString.copyFrom(compressedKey);
     }
 
