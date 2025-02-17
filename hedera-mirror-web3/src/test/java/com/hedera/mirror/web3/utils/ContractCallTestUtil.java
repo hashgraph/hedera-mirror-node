@@ -16,24 +16,17 @@
 
 package com.hedera.mirror.web3.utils;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Arrays;
 import java.util.function.ToLongFunction;
 import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 
 @UtilityClass
 public class ContractCallTestUtil {
 
     public static final long TRANSACTION_GAS_LIMIT = 15_000_000L;
-    public static final ByteString SPENDER_PUBLIC_KEY =
-            ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
-    public static final Address SPENDER_ALIAS = Address.wrap(
-            Bytes.wrap(recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
 
     public static final double GAS_ESTIMATE_MULTIPLIER_LOWER_RANGE = 1.05;
     public static final double GAS_ESTIMATE_MULTIPLIER_UPPER_RANGE = 1.2;

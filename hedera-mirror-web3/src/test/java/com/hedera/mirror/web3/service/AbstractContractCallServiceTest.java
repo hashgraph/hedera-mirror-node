@@ -485,7 +485,15 @@ public abstract class AbstractContractCallServiceTest extends Web3IntegrationTes
     }
 
     protected String getAliasFromEntity(Entity entity) {
-        return Bytes.wrap(entity.getEvmAddress()).toHexString();
+        return getEvmAddressBytesFromEntity(entity).toHexString();
+    }
+
+    protected Bytes getEvmAddressBytesFromEntity(Entity entity) {
+        return Bytes.wrap(entity.getEvmAddress());
+    }
+
+    protected Address getAliasAddressFromEntity(final Entity entity) {
+        return Address.wrap(getEvmAddressBytesFromEntity(entity));
     }
 
     protected ContractDebugParameters getDebugParameters(
