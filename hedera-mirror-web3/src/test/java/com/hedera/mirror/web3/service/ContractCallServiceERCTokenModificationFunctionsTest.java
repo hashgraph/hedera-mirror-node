@@ -70,7 +70,6 @@ class ContractCallServiceERCTokenModificationFunctionsTest extends AbstractContr
         final var token = fungibleTokenPersist();
         final var tokenId = token.getTokenId();
         final var amountGranted = 13L;
-        final var tokenEntity = entityIdFromEvmAddress(toAddress(tokenId));
         final var tokenAddress = toAddress(tokenId);
         final var contract = testWeb3jService.deploy(ERCTestContract::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
