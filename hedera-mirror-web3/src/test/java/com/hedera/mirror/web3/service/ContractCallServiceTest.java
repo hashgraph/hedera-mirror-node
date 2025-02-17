@@ -1111,17 +1111,25 @@ class ContractCallServiceTest extends AbstractContractCallServiceTest {
         }
 
         @Test
-        void transferToNonExistingContract() {
-            // Given
-            final var serviceParameters =
-                    getContractExecutionParametersWithValue(Bytes.EMPTY, NON_EXISTING_ADDRESS, 1L);
+        void transferToNonExistingContract() throws Exception {
+            final var payer = accountEntityPersist();
+            accountBalancePersist(payer, payer.getCreatedTimestamp());
 
-            // When
-            final var result = contractExecutionService.processCall(serviceParameters);
+            testWeb3jService.setSender(toAddress(payer.toEntityId()).toHexString());
 
-            // Then
-            assertThat(result).isEqualTo(HEX_PREFIX);
-            assertGasLimit(serviceParameters);
+            final var contract = testWeb3jService.deploy(EthCall::deploy);
+            final var functionCall =
+                    contract.send_transferHbarsToAddress(NON_EXISTING_ADDRESS.toHexString(), BigInteger.ONE);
+
+            if (!mirrorNodeEvmProperties.isModularizedServices()) {
+                functionCall.send();
+                assertThat(testWeb3jService.getTransactionResult()).isEqualTo(HEX_PREFIX);
+            } else {
+                assertThatThrownBy(functionCall::send)
+                        .isInstanceOf(MirrorEvmTransactionException.class)
+                        .hasMessage(CONTRACT_REVERT_EXECUTED.name());
+            }
+            assertGasLimit(ETH_CALL, TRANSACTION_GAS_LIMIT);
         }
     }
 }
