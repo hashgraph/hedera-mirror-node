@@ -24,7 +24,7 @@
     "@hashgraph/proto": "^2.15.0",
     "@trufflesuite/bigint-buffer": "^1.1.10",
     "asn1js": "^3.0.5",
-    "compression": "^1.7.5",
+    "compression": "^1.8.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "express-http-context": "^1.2.4",
