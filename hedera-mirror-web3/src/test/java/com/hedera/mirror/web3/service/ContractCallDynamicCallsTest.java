@@ -649,7 +649,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         tokenAccountPersist(tokenId, spenderEntityId.getId());
         tokenAccountPersist(tokenId, contractEntityId.getId());
-        nftAllowancePersist(tokenId, spenderEntityId, contractEntityId);
+        nftAllowancePersist(tokenId, spenderEntityId.toEntityId(), contractEntityId);
         nftAllowancePersist(tokenId, contractEntityId, contractEntityId);
 
         TokenTransferList tokenTransferList;
