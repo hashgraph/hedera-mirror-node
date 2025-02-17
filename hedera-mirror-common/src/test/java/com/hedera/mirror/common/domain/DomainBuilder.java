@@ -1196,16 +1196,16 @@ public class DomainBuilder {
 
     private ByteString generateSecp256k1Key() {
         try {
-            ECKeyPair keyPair = Keys.createEcKeyPair();
-            BigInteger publicKey = keyPair.getPublicKey();
+            var keyPair = Keys.createEcKeyPair();
+            var publicKey = keyPair.getPublicKey();
 
             // Convert BigInteger public key to a full 65-byte uncompressed key
-            byte[] fullPublicKey =
+            var fullPublicKey =
                     Numeric.hexStringToByteArray(Numeric.toHexStringWithPrefixZeroPadded(publicKey, 130));
 
             // Convert to compressed format (33 bytes)
-            byte prefix = (byte) (fullPublicKey[64] % 2 == 0 ? 0x02 : 0x03); // 0x02 for even Y, 0x03 for odd Y
-            byte[] compressedKey = new byte[33];
+            var prefix = (byte) (fullPublicKey[64] % 2 == 0 ? 0x02 : 0x03); // 0x02 for even Y, 0x03 for odd Y
+            var compressedKey = new byte[33];
             compressedKey[0] = prefix;
             System.arraycopy(fullPublicKey, 1, compressedKey, 1, 32); // Copy only X coordinate
 
