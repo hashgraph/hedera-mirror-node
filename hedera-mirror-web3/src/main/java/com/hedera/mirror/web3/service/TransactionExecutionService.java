@@ -92,7 +92,7 @@ public class TransactionExecutionService {
         if (transactionRecord.receiptOrThrow().status() == com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS) {
             result = buildSuccessResult(isContractCreate, transactionRecord, params);
         } else {
-            handleFailedResult(transactionRecord, isContractCreate, gasUsedCounter);
+            result = handleFailedResult(transactionRecord, isContractCreate, gasUsedCounter);
         }
         return result;
     }
@@ -128,7 +128,7 @@ public class TransactionExecutionService {
                 params.getReceiver());
     }
 
-    private void handleFailedResult(
+    private HederaEvmTransactionProcessingResult handleFailedResult(
             final TransactionRecord transactionRecord,
             final boolean isContractCreate,
             final MeterProvider<Counter> gasUsedCounter)
@@ -144,7 +144,15 @@ public class TransactionExecutionService {
             var errorMessage = getErrorMessage(result).orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(errorMessage);
             updateErrorGasUsedMetric(gasUsedCounter, result.gasUsed(), 1);
-            throw new MirrorEvmTransactionException(status.protoName(), detail, errorMessage.toHexString());
+            if (ContractCallContext.get().getOpcodeTracerOptions() == null) {
+                throw new MirrorEvmTransactionException(status.protoName(), detail, errorMessage.toHexString());
+            } else {
+                // If we are in an opcode trace scenario, we need to return a failed result in order to get the
+                // opcode list from the ContractCallContext. If we throw an exception instead of returning a result,
+                // as in the regular case, we won't be able to get the opcode list.
+                return HederaEvmTransactionProcessingResult.failed(
+                        result.gasUsed(), 0L, 0L, Optional.of(errorMessage), Optional.empty());
+            }
         }
     }
 

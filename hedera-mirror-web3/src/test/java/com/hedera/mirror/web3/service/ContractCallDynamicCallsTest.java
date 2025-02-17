@@ -29,14 +29,21 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.state.MirrorNodeState;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderRecord;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.AccountAmount;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.NftTransfer;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TokenTransferList;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TransferList;
+import jakarta.annotation.PostConstruct;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -231,6 +238,63 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
     }
 
+    @Test
+    void associateTokenTransferEthCallFailModularized() throws InvocationTargetException, IllegalAccessException {
+        // Given
+        final var modularizedServicesFlag = mirrorNodeEvmProperties.isModularizedServices();
+        final var backupProperties = mirrorNodeEvmProperties.getProperties();
+
+        try {
+            mirrorNodeEvmProperties.setModularizedServices(true);
+            // Re-init the captors, because the flag was changed.
+            super.setUpArgumentCaptors();
+            Method postConstructMethod = Arrays.stream(MirrorNodeState.class.getDeclaredMethods())
+                    .filter(method -> method.isAnnotationPresent(PostConstruct.class))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("@PostConstruct method not found"));
+
+            postConstructMethod.setAccessible(true); // Make the method accessible
+            postConstructMethod.invoke(state);
+
+            final Map<String, String> propertiesMap = new HashMap<>();
+            propertiesMap.put("contracts.maxRefundPercentOfGasLimit", "100");
+            propertiesMap.put("contracts.maxGasPerSec", "15000000");
+            mirrorNodeEvmProperties.setProperties(propertiesMap);
+
+            final var treasuryAccount = accountEntityPersist();
+            final var sender = accountEntityPersist();
+
+            final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
+
+            // When
+            final var functionCall = contract.send_associateTokenTransfer(
+                    toAddress(EntityId.of(21496934L)).toHexString(), // Not existing address
+                    getAddressFromEntity(treasuryAccount),
+                    getAddressFromEntity(sender),
+                    BigInteger.ZERO,
+                    BigInteger.ONE);
+
+            final var contractFunctionProvider = ContractFunctionProviderRecord.builder()
+                    .contractAddress(Address.fromHexString(contract.getContractAddress()))
+                    .expectedErrorMessage("Failed to associate tokens")
+                    .build();
+
+            // Then
+            assertThatThrownBy(functionCall::send)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .satisfies(ex -> {
+                        MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
+                        assertEquals("Failed to associate tokens", exception.getDetail());
+                    });
+
+            verifyOpcodeTracerCall(functionCall.encodeFunctionCall(), contractFunctionProvider);
+        } finally {
+            // Restore changed property values.
+            mirrorNodeEvmProperties.setModularizedServices(modularizedServicesFlag);
+            mirrorNodeEvmProperties.setProperties(backupProperties);
+        }
+    }
+
     @ParameterizedTest
     @CsvSource(
             textBlock =
@@ -336,7 +400,6 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                 : nftPersist(treasuryEntityId, ownerEntityId, spenderEntityId);
         final var tokenId = token.getTokenId();
         final var tokenAddress = toAddress(tokenId);
-        final var tokenEntityId = entityIdFromEvmAddress(toAddress(tokenId));
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
@@ -346,7 +409,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
         tokenAccountPersist(tokenId, ownerEntityId.getId());
 
         if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId);
+            nftAllowancePersist(tokenId, contractEntityId, ownerEntityId);
         }
 
         // When
@@ -386,14 +449,13 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
                 : nftPersist(treasuryEntityId, contractEntityId, spenderEntityId.toEntityId());
         final var tokenId = token.getTokenId();
         final var tokenAddress = toAddress(tokenId);
-        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
 
         tokenAccountPersist(tokenId, contractEntityId.getId());
         tokenAccountPersist(tokenId, spenderEntityId.getId());
         tokenAccountPersist(tokenId, ownerEntityId.getId());
 
         if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId);
+            nftAllowancePersist(tokenId, contractEntityId, ownerEntityId);
         }
 
         // When
@@ -542,6 +604,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         tokenAccountPersist(tokenId, spenderEntityId.getId());
         tokenAccountPersist(tokenId, contractEntityId.getId());
+        nftAllowancePersist(tokenId, contractEntityId, contractEntityId);
 
         var tokenTransferList = new TokenTransferList(
                 tokenAddress.toHexString(),
@@ -586,6 +649,8 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         tokenAccountPersist(tokenId, spenderEntityId.getId());
         tokenAccountPersist(tokenId, contractEntityId.getId());
+        nftAllowancePersist(tokenId, spenderEntityId, contractEntityId);
+        nftAllowancePersist(tokenId, contractEntityId, contractEntityId);
 
         TokenTransferList tokenTransferList;
         if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
@@ -633,6 +698,7 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
 
         tokenAccountPersist(tokenId, spenderEntityId.getId());
         tokenAccountPersist(tokenId, contractEntityId.getId());
+        nftAllowancePersist(tokenId, contractEntityId, spenderEntityId);
 
         // When
         final var functionCall = contract.send_transferFromNFTGetAllowance(tokenAddress.toHexString(), BigInteger.ONE);
@@ -801,10 +867,10 @@ class ContractCallDynamicCallsTest extends AbstractContractCallServiceOpcodeTrac
     }
 
     private void nftAllowancePersist(
-            final EntityId tokenEntityId, final EntityId spenderEntityId, final EntityId ownerEntityId) {
+            final long tokenEntityId, final EntityId spenderEntityId, final EntityId ownerEntityId) {
         domainBuilder
                 .nftAllowance()
-                .customize(a -> a.tokenId(tokenEntityId.getId())
+                .customize(a -> a.tokenId(tokenEntityId)
                         .spender(spenderEntityId.getId())
                         .owner(ownerEntityId.getId())
                         .payerAccountId(ownerEntityId)
