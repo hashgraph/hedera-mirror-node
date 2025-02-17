@@ -56,6 +56,12 @@ import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.handle.metric.UnavailableMetrics;
 import com.hedera.node.config.data.VersionConfig;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.lifecycle.StartupNetworks;
@@ -84,6 +90,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 
@@ -358,6 +365,16 @@ public class MirrorNodeState implements State {
 
     private void registerServices(ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
+
+        final Configuration configuration = ConfigurationBuilder.create()
+                .withConfigDataType(MetricsConfig.class)
+                .build();
+
+        MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        PlatformMetricsFactoryImpl factory = new PlatformMetricsFactoryImpl(metricsConfig);
+        DefaultPlatformMetrics metrics = new DefaultPlatformMetrics(
+                null, new MetricKeyRegistry(), Executors.newSingleThreadScheduledExecutor(), factory, metricsConfig);
+
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 signatureVerifier(),
@@ -374,7 +391,7 @@ public class MirrorNodeState implements State {
                         new EntityIdService(),
                         new TokenServiceImpl(),
                         new FileServiceImpl(),
-                        new ContractServiceImpl(appContext),
+                        new ContractServiceImpl(appContext, metrics),
                         new BlockRecordService(),
                         new FeeService(),
                         new CongestionThrottleService(),
